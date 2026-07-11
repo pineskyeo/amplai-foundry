@@ -1,0 +1,49 @@
+---
+schema_version: 1
+id: MAP-0001
+namespace: org/default/project/amplai
+project: amplai
+kind: map
+status: active
+title: AMPLAI Knowledge Map
+summary: AMPLAI의 핵심 개념, 지식 거버넌스 원칙과 Foundry 검증 항목을 연결하는 MOC다.
+created_at: 2026-07-11
+updated_at: 2026-07-11
+source_refs: [SRC-20260711-001]
+relations:
+  - {type: related_to, target: CON-0001}
+  - {type: related_to, target: CON-0002}
+  - {type: related_to, target: CON-0003}
+  - {type: related_to, target: CON-0004}
+  - {type: related_to, target: CON-0007}
+  - {type: related_to, target: CON-0008}
+  - {type: related_to, target: PRI-0001}
+  - {type: related_to, target: PRI-0002}
+  - {type: related_to, target: PRI-0003}
+  - {type: related_to, target: PRI-0004}
+  - {type: related_to, target: DEC-0001}
+  - {type: related_to, target: DEC-0002}
+  - {type: related_to, target: QUE-0001}
+  - {type: related_to, target: QUE-0003}
+  - {type: related_to, target: QUE-0004}
+  - {type: related_to, target: EXP-0001}
+revision: 1
+tags: [map, knowledge, moc]
+---
+# AMPLAI Knowledge Map
+
+## Concepts
+
+- [[Harness는 Agent 실행을 통제하는 운영 껍질이다]]
+- [[Loop는 목표 달성까지 반복하는 제어 흐름이다]]
+- [[Meta-loop는 Loop 자체를 개선하는 반복이다]]
+- [[Context는 실행 입력이고 Memory는 재사용 가능한 보존 정보다]]
+- [[Canonical Knowledge는 검토된 공식 지식이다]]
+- [[Memory Candidate는 공식화 전의 지식 후보다]]
+
+## Governance
+
+- [[입력은 느슨하게 받고 내부 지식은 엄격하게 관리한다]]
+- [[공식 지식은 출처를 추적할 수 있어야 한다]]
+- [[공식 지식 변경은 Proposal과 검토를 거친다]]
+- [[검색 인덱스는 공식 원본에서 재생성 가능해야 한다]]
