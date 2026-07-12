@@ -1,14 +1,16 @@
 # Roadmap
 
-현재 Foundry 이후의 순서만 기록한다. 아래 항목은 이번 구현 범위가 아니다.
+| Version | Milestone | Status |
+|---|---|---|
+| v0.1 | Foundation | complete |
+| v0.2 | Source Intake | minimal path implemented |
+| v0.3 | Retrieval and Reconciliation | lexical retrieval implemented |
+| v0.4 | Candidate and Proposal | Proposal contract implemented |
+| v0.5 | Codex Curator Harness | implemented |
+| v0.6 | Safe Review and Apply | minimal path implemented |
+| v0.7 | Context Builder | minimal bundle implemented |
+| v0.8 | Knowledge Hygiene and GC | deferred |
+| v0.9 | MCP Connect | deferred |
+| v0.10 | Team Memory Server | deferred |
 
-1. Source ingestion과 SHA-256 중복 검사
-2. Memory Candidate와 Proposal schema
-3. Curator Agent Harness
-4. 안전한 Review/Apply
-5. SQLite FTS5 검색
-6. Knowledge Garbage Collection
-7. MCP Adapter
-8. 중앙 Memory Server와 다중 project
-
-세부 설계는 각 단계 착수 전에 별도 proposal과 review로 확정한다.
+이번 milestone은 v0.2부터 v0.6까지의 최소 동작 경로와 v0.7 Context Bundle의 선행 기능만 포함한다. 이후 기능은 별도 Proposal과 review 전에 구현하지 않는다.

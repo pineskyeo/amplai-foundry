@@ -28,3 +28,4 @@ approved_at: '2026-07-12T19:48:12.128245+09:00'
 approved_by: test-user
 applied_at: '2026-07-12T19:48:12.288787+09:00'
 applied_by: test-user
+git_commit_sha: de0997e154f25b90920adf7eb8a2a77c1f6fada8

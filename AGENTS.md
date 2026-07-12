@@ -24,3 +24,31 @@
 - `python -m pytest`, Ruff, mypy와 knowledge lint가 통과해야 완료로 보고한다.
 - 실행하지 않은 검증을 통과했다고 보고하지 않는다.
 - 실패를 숨기지 않고 명령, exit code와 원인을 기록한다.
+
+## Codex Curation Contract
+
+사용자가 GPT 답변 파일 경로와 함께 AMPLAI 지식 정리를 요청하면 다음 순서를 따른다.
+
+1. `amplai-foundry ingest {path} --project amplai --source-type chatgpt` 실행
+2. 반환된 Source ID 확인
+3. `amplai-foundry curate prepare {source_id} --project amplai --output .amplai/jobs/CURATE-{source_id}.md` 실행
+4. 기존 active knowledge 검색
+5. 원자 후보와 `CREATE`, `UPDATE`, `LINK`, `MERGE`, `SPLIT`, `SUPERSEDE`, `CONFLICT`, `IGNORE` 분류
+6. `.amplai/proposals/` 아래 Proposal과 draft 생성
+7. Proposal validate, diff, Vault lint 실행
+8. 변경, 중복, 충돌, 미해결 질문 보고
+
+사용자가 대화에 원문을 직접 붙여넣으면 원문 전체를 `.amplai/tmp/` 아래 UTF-8 임시 파일에 verbatim으로 저장한다. 이 파일을 `ingest`한 뒤 Source 생성 성공 시 임시 파일을 삭제하고 같은 workflow를 수행한다. 원문을 요약한 텍스트로 Source를 대체하지 않는다.
+
+“정리해줘”의 기본 결과는 Source, Proposal, validation report다. Canonical Vault는 수정하지 않는다.
+
+사용자가 “반영해”, “적용해”, “승인하고 적용해”, “proposal을 적용해”처럼 명시적으로 요청한 경우에만 다음 순서를 수행한다.
+
+1. Proposal diff 검토
+2. 사용자 요청을 승인 근거로 기록
+3. `proposal approve --approved-by user` 실행
+4. `proposal apply` 실행
+5. lint와 전체 test 실행
+6. commit 후 apply commit SHA를 후속 Proposal report에 기록
+
+`CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 Codex가 임의로 결정하지 않는다.

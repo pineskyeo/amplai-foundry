@@ -21,6 +21,8 @@
 - 해결되지 않은 `question`은 `active`다.
 - 종료된 `question`은 관련 decision 또는 knowledge relation이 필요하다.
 - `90-archive` directory의 note는 `archived`여야 한다.
+- Source는 `superseded` 상태와 `superseded_by`를 사용하지 않는다.
+- `supersedes` relation과 대상의 `superseded_by`는 양방향으로 일치한다.
 
 ## Replacement
 
