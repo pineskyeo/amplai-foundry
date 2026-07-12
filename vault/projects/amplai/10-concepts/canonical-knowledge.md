@@ -9,7 +9,7 @@ title: Canonical Knowledge는 검토된 공식 지식이다
 summary: Canonical Knowledge는 출처와 lifecycle을 갖고 팀이 공식 원본으로 승인한 장기 프로젝트 지식이다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: supports
     target: PRI-0002

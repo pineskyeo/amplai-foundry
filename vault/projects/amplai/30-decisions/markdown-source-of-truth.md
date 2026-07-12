@@ -9,7 +9,7 @@ title: Markdown을 현재 공식 지식 원본으로 사용한다
 summary: 검토된 프로젝트 지식은 현재 Markdown과 Git으로 관리하며 Obsidian과 AI가 같은 파일을 읽는다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: CON-0007

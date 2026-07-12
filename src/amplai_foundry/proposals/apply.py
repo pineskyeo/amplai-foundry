@@ -1,0 +1,153 @@
+"""Two-phase safe application of approved Proposal drafts."""
+
+from __future__ import annotations
+
+import os
+import shutil
+import tempfile
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from amplai_foundry.domain.models import MemoryObject
+from amplai_foundry.lint.engine import KnowledgeLinter
+from amplai_foundry.parsing.markdown import parse_markdown_file
+from amplai_foundry.proposals.diff import destination_for_create, proposal_diff
+from amplai_foundry.proposals.models import OperationType, Proposal, ProposalStatus
+from amplai_foundry.proposals.repository import ProposalRepository
+from amplai_foundry.proposals.validation import ProposalValidator
+from amplai_foundry.repositories.markdown import MarkdownMemoryRepository
+
+
+class ProposalApplyError(RuntimeError):
+    """An approved Proposal cannot be applied without violating safety gates."""
+
+
+@dataclass(frozen=True, slots=True)
+class ApplyResult:
+    proposal_id: str
+    touched_paths: tuple[str, ...]
+    diff: str
+
+
+def approve_proposal(
+    proposal: Proposal,
+    *,
+    approved_by: str,
+    now: datetime | None = None,
+) -> Proposal:
+    if proposal.status not in {ProposalStatus.DRAFT, ProposalStatus.REVIEWED}:
+        raise ProposalApplyError(f"status={proposal.status.value} Proposal은 승인할 수 없습니다.")
+    timestamp = now or datetime.now(ZoneInfo("Asia/Seoul"))
+    return proposal.model_copy(
+        update={
+            "status": ProposalStatus.APPROVED,
+            "approved_at": timestamp,
+            "approved_by": approved_by,
+        }
+    )
+
+
+class ProposalApplyService:
+    def __init__(self, vault: Path, repository: ProposalRepository) -> None:
+        self.vault = vault
+        self.repository = repository
+
+    def apply(self, proposal: Proposal, proposal_path: Path) -> ApplyResult:
+        if proposal.status is not ProposalStatus.APPROVED:
+            raise ProposalApplyError("approved Proposal만 apply할 수 있습니다.")
+        if any(operation.type is OperationType.CONFLICT for operation in proposal.operations):
+            raise ProposalApplyError(
+                "CONFLICT operation이 있는 Proposal은 자동 apply하지 않습니다."
+            )
+        unsupported = {
+            operation.type
+            for operation in proposal.operations
+            if operation.type in {OperationType.MERGE, OperationType.SPLIT}
+        }
+        if unsupported:
+            names = ", ".join(sorted(item.value for item in unsupported))
+            raise ProposalApplyError(f"minimal safe apply가 지원하지 않는 operation입니다: {names}")
+        validation_issues = ProposalValidator(self.vault).validate(proposal, proposal_path)
+        if validation_issues:
+            raise ProposalApplyError(
+                "Proposal 검증 실패: "
+                + "; ".join(f"{issue.code} {issue.message}" for issue in validation_issues)
+            )
+        before_report = KnowledgeLinter().lint(self.vault)
+        if before_report.error_count:
+            raise ProposalApplyError(
+                f"변경 전 Vault lint ERROR가 {before_report.error_count}개입니다."
+            )
+
+        rendered_diff = proposal_diff(proposal, proposal_path, self.vault)
+        lock_path = self.repository.root.parent / "apply.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            lock_descriptor = os.open(lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            raise ProposalApplyError("다른 Proposal apply가 진행 중입니다.") from None
+
+        temporary_root = Path(tempfile.mkdtemp(prefix="amplai-apply-", dir=self.vault.parent))
+        staging_vault = temporary_root / "vault"
+        backup_vault = temporary_root / "backup"
+        touched: list[str] = []
+        swapped = False
+        try:
+            shutil.copytree(self.vault, staging_vault)
+            current_repository = MarkdownMemoryRepository(staging_vault)
+            for operation in proposal.operations:
+                if not operation.draft_path:
+                    continue
+                draft_path = Path(operation.draft_path)
+                if not draft_path.is_absolute():
+                    draft_path = Path.cwd() / draft_path
+                draft_text = draft_path.read_text(encoding="utf-8")
+                if operation.type is OperationType.CREATE:
+                    document = parse_markdown_file(draft_path)
+                    draft = MemoryObject.model_validate(
+                        {**document.metadata, "content": document.content}
+                    )
+                    destination = destination_for_create(staging_vault, draft)
+                else:
+                    destination = Path(current_repository.path_for(operation.target_id or ""))
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(draft_text, encoding="utf-8")
+                touched.append(str(destination.relative_to(staging_vault)))
+            after_report = KnowledgeLinter().lint(staging_vault)
+            if after_report.error_count:
+                raise ProposalApplyError(
+                    f"임시 결과 Vault lint ERROR가 {after_report.error_count}개입니다."
+                )
+
+            os.replace(self.vault, backup_vault)
+            try:
+                os.replace(staging_vault, self.vault)
+                swapped = True
+                timestamp = datetime.now(ZoneInfo("Asia/Seoul"))
+                applied = proposal.model_copy(
+                    update={
+                        "status": ProposalStatus.APPLIED,
+                        "applied_at": timestamp,
+                        "applied_by": proposal.approved_by,
+                    }
+                )
+                self.repository.save(applied)
+            except Exception:
+                if self.vault.exists():
+                    shutil.rmtree(self.vault)
+                os.replace(backup_vault, self.vault)
+                swapped = False
+                raise
+            return ApplyResult(proposal.proposal_id, tuple(sorted(touched)), rendered_diff)
+        except ProposalApplyError:
+            raise
+        except Exception as error:
+            raise ProposalApplyError(f"apply를 원자적으로 완료하지 못했습니다: {error}") from error
+        finally:
+            os.close(lock_descriptor)
+            lock_path.unlink(missing_ok=True)
+            if swapped and backup_vault.exists():
+                shutil.rmtree(backup_vault)
+            shutil.rmtree(temporary_root, ignore_errors=True)

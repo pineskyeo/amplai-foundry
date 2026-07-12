@@ -9,7 +9,7 @@ title: AMPLAI Knowledge Map
 summary: AMPLAI의 핵심 개념, 지식 거버넌스 원칙과 Foundry 검증 항목을 연결하는 MOC다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - {type: related_to, target: CON-0001}
   - {type: related_to, target: CON-0002}

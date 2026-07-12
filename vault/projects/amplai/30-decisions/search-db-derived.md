@@ -9,7 +9,7 @@ title: 검색 DB는 파생 인덱스로 취급한다
 summary: 검색 DB는 공식 지식 원본이 아니며 canonical repository에서 언제든 다시 생성한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: PRI-0004

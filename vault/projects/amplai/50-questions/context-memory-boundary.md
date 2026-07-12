@@ -9,7 +9,7 @@ title: Context와 Memory의 정확한 module 경계는 어디인가
 summary: Retrieval, context assembly와 memory policy의 책임을 어느 module이 소유할지 결정이 필요하다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: depends_on
     target: CON-0004

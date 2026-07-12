@@ -9,7 +9,7 @@ title: 공식 지식은 출처를 추적할 수 있어야 한다
 summary: 모든 active 공식 지식은 근거가 된 source record를 하나 이상 가리킨다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: supports
     target: CON-0007

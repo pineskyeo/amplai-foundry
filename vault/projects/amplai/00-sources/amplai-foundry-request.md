@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-id: SRC-20260711-001
+id: SRC-20260711-86C363BF
 namespace: org/default/project/amplai
 project: amplai
 kind: source
@@ -13,7 +13,16 @@ source_refs: []
 relations: []
 revision: 1
 tags: [source, requirements, foundry]
+source_metadata:
+  source_type: repository-bootstrap
+  content_sha256: 86c363bf19b517b9b7db325b0e0d892de58d8fe82204e5ceb79ccb584c216b56
+  normalized_sha256: e92547123f0334398d86bf57d0422c364d21ca88e55ad9277d04121e57f63372
+  original_filename: amplai-foundry-request.md
+  media_type: text/markdown
+  ingested_at: 2026-07-11T18:00:00+09:00
+  created_by: user
 ---
+## Original Content
 # AMPLAI Foundry 초기 기반 구축 요청
 
 ## Source

@@ -9,7 +9,7 @@ title: 초기 AMPLAI는 External Agent Mode부터 시작한다
 summary: 초기 검증에서는 외부 Agent가 실행을 소유하고 AMPLAI는 지식과 capability 경계를 제공한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: CON-0006

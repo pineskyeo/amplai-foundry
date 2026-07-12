@@ -31,6 +31,15 @@ def validate_lifecycle(memory: MemoryObject) -> list[LifecycleViolation]:
                 "status=merged이지만 merged_into가 없습니다.",
             )
         )
+    if memory.kind is MemoryKind.SOURCE and (
+        memory.status is MemoryStatus.SUPERSEDED or memory.superseded_by is not None
+    ):
+        violations.append(
+            LifecycleViolation(
+                "LIFECYCLE_SOURCE_IMMUTABLE",
+                "Source는 superseded lifecycle을 사용할 수 없습니다.",
+            )
+        )
     if (
         memory.kind is MemoryKind.DECISION
         and memory.status in {MemoryStatus.ACTIVE, MemoryStatus.SUPERSEDED}

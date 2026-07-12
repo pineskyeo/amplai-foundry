@@ -9,7 +9,7 @@ title: AMPLAI Platform Map
 summary: AMPLAI의 integration mode, delivery architecture와 service boundary 질문을 연결하는 MOC다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-002]
+source_refs: [SRC-20260711-FC31D25D]
 relations:
   - {type: related_to, target: CON-0005}
   - {type: related_to, target: CON-0006}

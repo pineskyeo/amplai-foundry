@@ -9,7 +9,7 @@ title: 검색 인덱스는 공식 원본에서 재생성 가능해야 한다
 summary: 검색 DB와 vector index는 Canonical Knowledge에서 다시 만들 수 있는 파생 데이터로 유지한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: supports
     target: DEC-0002

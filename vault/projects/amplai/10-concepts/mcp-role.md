@@ -9,7 +9,7 @@ title: AMPLAI에서 MCP는 기능과 지식을 노출하는 Adapter다
 summary: MCP는 Memory Layer 자체가 아니라 외부 Agent가 AMPLAI capability에 접근하는 표준 경계다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: supports
     target: CON-0006

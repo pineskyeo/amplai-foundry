@@ -11,6 +11,7 @@ from amplai_foundry.lint.rules.lifecycle import validate_lifecycles
 from amplai_foundry.lint.rules.links import validate_links
 from amplai_foundry.lint.rules.provenance import validate_provenance
 from amplai_foundry.lint.rules.schema import validate_document
+from amplai_foundry.lint.rules.sources import validate_sources
 from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
 
 
@@ -67,6 +68,7 @@ class KnowledgeLinter:
         report.issues.extend(validate_links(records))
         report.issues.extend(validate_lifecycles(records))
         report.issues.extend(validate_provenance(records))
+        report.issues.extend(validate_sources(records))
         report.issues.extend(validate_hygiene(records, self.config, today=self.today))
         report.issues.sort(
             key=lambda issue: (str(issue.path), issue.line or 0, issue.severity, issue.code)

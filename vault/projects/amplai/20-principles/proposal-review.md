@@ -9,7 +9,7 @@ title: 공식 지식 변경은 Proposal과 검토를 거친다
 summary: Agent 또는 사람이 발견한 변경은 proposal로 제출하고 검토한 후 공식 지식에 반영한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: depends_on
     target: CON-0008

@@ -9,7 +9,7 @@ title: Loop는 목표 달성까지 반복하는 제어 흐름이다
 summary: Loop는 관찰, 판단, 행동, 검증을 종료 조건까지 반복하는 실행 단위다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: depends_on
     target: CON-0001

@@ -9,7 +9,7 @@ title: Vector 검색 도입 기준은 무엇인가
 summary: Keyword와 structured retrieval이 부족하다는 측정 결과가 있을 때 vector search의 도입 기준을 정한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: depends_on
     target: PRI-0004

@@ -9,7 +9,7 @@ title: 입력은 느슨하게 받고 내부 지식은 엄격하게 관리한다
 summary: 다양한 외부 입력은 수용하되 공식 지식으로 승격할 때는 공통 계약과 검토를 적용한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: supports
     target: CON-0008

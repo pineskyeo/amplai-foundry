@@ -9,7 +9,7 @@ title: MCP Gateway를 독립 서비스로 분리하는 시점은 언제인가
 summary: 독립 scaling, security 또는 release 요구가 생길 때 Gateway 분리 기준을 정해야 한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: depends_on
     target: CON-0005
