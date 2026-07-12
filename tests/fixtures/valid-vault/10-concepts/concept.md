@@ -9,10 +9,10 @@ title: 정상 fixture concept contract
 summary: 정상 fixture에서 schema와 provenance를 만족하는 concept다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-900]
+source_refs: [SRC-20260711-6635D803]
 relations:
   - type: derived_from
-    target: SRC-20260711-900
+    target: SRC-20260711-6635D803
 revision: 1
 tags: [concept, fixture]
 ---

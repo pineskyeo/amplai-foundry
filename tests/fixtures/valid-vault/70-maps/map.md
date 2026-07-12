@@ -9,7 +9,7 @@ title: 정상 fixture knowledge map
 summary: 정상 fixture의 atomic concept를 연결하는 작은 Map이다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-900]
+source_refs: [SRC-20260711-6635D803]
 relations:
   - type: related_to
     target: CON-0900

@@ -75,7 +75,10 @@ def test_missing_source_reference_is_detected(tmp_path: Path) -> None:
     source = (FIXTURES / "valid-vault" / "10-concepts" / "concept.md").read_text(encoding="utf-8")
     note = tmp_path / "10-concepts" / "concept.md"
     note.parent.mkdir(parents=True)
-    note.write_text(source.replace("SRC-20260711-900", "SRC-20260711-999"), encoding="utf-8")
+    note.write_text(
+        source.replace("SRC-20260711-6635D803", "SRC-20260711-FFFFFFFF"),
+        encoding="utf-8",
+    )
 
     assert "LINK_SOURCE_REF_MISSING" in codes(tmp_path)
 

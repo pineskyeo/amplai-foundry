@@ -9,10 +9,10 @@ title: 대체 대상이 빠진 과거 decision
 summary: superseded_by 누락을 검증하기 위한 의도적으로 잘못된 decision이다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-904]
+source_refs: [SRC-20260711-B5FE4983]
 relations:
   - type: derived_from
-    target: SRC-20260711-904
+    target: SRC-20260711-B5FE4983
 revision: 1
 tags: [decision, fixture]
 ---

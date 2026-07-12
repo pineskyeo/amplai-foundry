@@ -21,5 +21,5 @@ def test_markdown_repository_implements_read_contract() -> None:
     assert len(repository.list(namespace="org/default/project/test")) == 3
     assert [item.id for item in repository.find_by_kind(MemoryKind.MAP)] == ["MAP-0900"]
     assert [item.id for item in repository.find_referencing("CON-0900")] == ["MAP-0900"]
-    assert repository.exists("SRC-20260711-900")
+    assert repository.exists("SRC-20260711-6635D803")
     assert not repository.exists("CON-9999")
