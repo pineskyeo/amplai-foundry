@@ -102,11 +102,23 @@ class ProposalValidator:
                 )
                 issues.extend(draft_issues)
                 if draft is not None and draft.id in existing:
-                    issues.append(
-                        ProposalValidationIssue(
-                            "CREATE_ID_EXISTS", f"CREATE draft ID가 이미 존재합니다: {draft.id}"
+                    if proposal.status.value == "applied":
+                        if existing[draft.id] != draft:
+                            issues.append(
+                                ProposalValidationIssue(
+                                    "CREATE_APPLIED_DRIFT",
+                                    (
+                                        "적용된 CREATE draft와 현재 Vault 대상이 다릅니다: "
+                                        f"{draft.id}"
+                                    ),
+                                )
+                            )
+                    else:
+                        issues.append(
+                            ProposalValidationIssue(
+                                "CREATE_ID_EXISTS", f"CREATE draft ID가 이미 존재합니다: {draft.id}"
+                            )
                         )
-                    )
                 if draft is not None:
                     issues.extend(self._validate_draft_evidence(draft, operation))
             elif operation.draft_path:

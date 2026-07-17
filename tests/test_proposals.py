@@ -177,7 +177,12 @@ def test_draft_cannot_apply_and_only_approved_can_apply(tmp_path: Path) -> None:
     )
     assert (vault / result.touched_paths[0]).exists()
     assert KnowledgeLinter().lint(vault).error_count == 0
-    assert repository.get(proposal.proposal_id).status.value == "applied"  # type: ignore[union-attr]
+    applied = repository.get(proposal.proposal_id)
+    assert applied is not None
+    assert applied.status.value == "applied"
+    assert (
+        ProposalValidator(vault).validate(applied, repository.path_for(applied.proposal_id)) == []
+    )
 
 
 def test_pre_apply_lint_failure_leaves_vault_unchanged(tmp_path: Path) -> None:
