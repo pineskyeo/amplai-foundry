@@ -11,6 +11,13 @@ from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.ingestion.service import IngestionError, extract_original_content
 from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
+from amplai_foundry.proposals.codes import (
+    PROPOSAL_DRAFT_NAMESPACE_MISMATCH,
+    PROPOSAL_DRAFT_PROJECT_MISMATCH,
+    PROPOSAL_EVIDENCE_PROJECT_MISMATCH,
+    PROPOSAL_SOURCE_PROJECT_MISMATCH,
+    PROPOSAL_TARGET_PROJECT_MISMATCH,
+)
 from amplai_foundry.proposals.models import OperationType, Proposal, ProposalOperation
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository, MarkdownRepositoryError
 
@@ -45,6 +52,16 @@ class ProposalValidator:
                         "SOURCE_KIND", f"Proposal source_id가 Source가 아닙니다: {source_id}"
                     )
                 )
+            elif memory.project != proposal.project:
+                issues.append(
+                    ProposalValidationIssue(
+                        PROPOSAL_SOURCE_PROJECT_MISMATCH,
+                        (
+                            f"Source {source_id} project={memory.project}와 "
+                            f"Proposal project={proposal.project}가 다릅니다."
+                        ),
+                    )
+                )
 
         seen_evidence: set[str] = set()
         for operation in proposal.operations:
@@ -66,6 +83,17 @@ class ProposalValidator:
                         )
                     )
                 else:
+                    if memory.project != proposal.project:
+                        issues.append(
+                            ProposalValidationIssue(
+                                PROPOSAL_EVIDENCE_PROJECT_MISMATCH,
+                                (
+                                    f"Evidence Source {evidence.source_id} "
+                                    f"project={memory.project}와 Proposal "
+                                    f"project={proposal.project}가 다릅니다."
+                                ),
+                            )
+                        )
                     try:
                         source_path = Path(repository.path_for(evidence.source_id))
                         line_count = len(
@@ -95,6 +123,16 @@ class ProposalValidator:
                 )
             elif operation.target_id and operation.target_id in existing:
                 target = existing[operation.target_id]
+                if target.project != proposal.project:
+                    issues.append(
+                        ProposalValidationIssue(
+                            PROPOSAL_TARGET_PROJECT_MISMATCH,
+                            (
+                                f"target {target.id} project={target.project}와 "
+                                f"Proposal project={proposal.project}가 다릅니다."
+                            ),
+                        )
+                    )
                 if target.kind is MemoryKind.SOURCE:
                     issues.append(
                         ProposalValidationIssue(
@@ -249,10 +287,24 @@ class ProposalValidator:
         except (MarkdownParseError, ValidationError, OSError) as error:
             return None, [ProposalValidationIssue("DRAFT_INVALID", f"{resolved}: {error}")]
         issues: list[ProposalValidationIssue] = []
-        if memory.project != proposal.project or memory.namespace != proposal.namespace:
+        if memory.project != proposal.project:
             issues.append(
                 ProposalValidationIssue(
-                    "DRAFT_SCOPE", f"draft project/namespace가 Proposal과 다릅니다: {resolved}"
+                    PROPOSAL_DRAFT_PROJECT_MISMATCH,
+                    (
+                        f"draft project={memory.project}와 "
+                        f"Proposal project={proposal.project}가 다릅니다: {resolved}"
+                    ),
+                )
+            )
+        if memory.namespace != proposal.namespace:
+            issues.append(
+                ProposalValidationIssue(
+                    PROPOSAL_DRAFT_NAMESPACE_MISMATCH,
+                    (
+                        f"draft namespace={memory.namespace}와 "
+                        f"Proposal namespace={proposal.namespace}가 다릅니다: {resolved}"
+                    ),
                 )
             )
         return memory, issues

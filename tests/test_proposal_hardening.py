@@ -8,12 +8,16 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import ValidationError
 
+from amplai_foundry.domain.models import MemoryObject
+from amplai_foundry.domain.project import ProjectPathError
 from amplai_foundry.ingestion.service import SourceIngestionService
+from amplai_foundry.parsing.markdown import parse_markdown_file
 from amplai_foundry.proposals.apply import (
     ProposalApplyError,
     ProposalApplyService,
     approve_proposal,
 )
+from amplai_foundry.proposals.diff import destination_for_create
 from amplai_foundry.proposals.models import Proposal
 from amplai_foundry.proposals.repository import ProposalRepository
 from amplai_foundry.proposals.validation import ProposalValidator
@@ -33,6 +37,18 @@ def _setup(tmp_path: Path) -> tuple[Path, ProposalRepository, str]:
     )
     repository = ProposalRepository(tmp_path / ".amplai/proposals")
     return vault, repository, source.source_id
+
+
+def _add_project_source(vault: Path, project: str) -> str:
+    (vault / "projects" / project / "00-sources").mkdir(parents=True)
+    result = SourceIngestionService(vault).ingest(
+        f"{project} evidence line one\n{project} evidence line two\n".encode(),
+        project=project,
+        source_type="chatgpt",
+        title=f"{project} evidence",
+        now=NOW,
+    )
+    return result.source_id
 
 
 def _proposal_data(
@@ -101,12 +117,13 @@ def _write_concept(
     namespace: str = "org/default/project/amplai",
     kind: str = "concept",
     body: str = "원본 canonical 내용이다.",
+    identifier: str = "CON-9100",
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         f"""---
 schema_version: 1
-id: CON-9100
+id: {identifier}
 namespace: {namespace}
 project: {project}
 kind: {kind}
@@ -155,6 +172,12 @@ def _update_proposal(
             expected_target_sha256=hashlib.sha256(target.read_bytes()).hexdigest(),
         )
     )
+
+
+def _vault_snapshot(vault: Path) -> dict[Path, bytes]:
+    return {
+        path.relative_to(vault): path.read_bytes() for path in vault.rglob("*") if path.is_file()
+    }
 
 
 @pytest.mark.parametrize(
@@ -241,6 +264,244 @@ def test_historical_applied_proposal_without_preconditions_still_loads() -> None
 def test_committed_applied_v1_proposals_remain_loadable(path: Path) -> None:
     proposal = ProposalRepository.load(path)
     assert proposal.status.value == "applied"
+
+
+def test_validator_rejects_cross_project_declared_source(tmp_path: Path) -> None:
+    vault, repository, source_a = _setup(tmp_path)
+    source_b = _add_project_source(vault, "other")
+    proposal_path = repository.path_for("PROP-20260712-A1B2C3D4")
+    data = _proposal_data(
+        source_a,
+        proposal_id="PROP-20260712-A1B2C3D4",
+        operation_type="IGNORE",
+        kind="concept",
+        target_id=None,
+        draft_path=None,
+    )
+    data["source_ids"] = [source_b]
+    proposal = Proposal.model_validate(data)
+
+    codes = {issue.code for issue in ProposalValidator(vault).validate(proposal, proposal_path)}
+
+    assert "PROPOSAL_SOURCE_PROJECT_MISMATCH" in codes
+
+
+def test_validator_rejects_cross_project_evidence_source(tmp_path: Path) -> None:
+    vault, repository, source_a = _setup(tmp_path)
+    source_b = _add_project_source(vault, "other")
+    proposal_path = repository.path_for("PROP-20260712-A1B2C3D4")
+    data = _proposal_data(
+        source_a,
+        proposal_id="PROP-20260712-A1B2C3D4",
+        operation_type="IGNORE",
+        kind="concept",
+        target_id=None,
+        draft_path=None,
+    )
+    operations = data["operations"]
+    assert isinstance(operations, list)
+    operation = operations[0]
+    assert isinstance(operation, dict)
+    operation["evidence"] = [
+        {
+            "source_id": source_b,
+            "locator": {"type": "line_range", "start": 1, "end": 2},
+        }
+    ]
+    proposal = Proposal.model_validate(data)
+
+    codes = {issue.code for issue in ProposalValidator(vault).validate(proposal, proposal_path)}
+
+    assert "PROPOSAL_EVIDENCE_PROJECT_MISMATCH" in codes
+
+
+@pytest.mark.parametrize("operation_type", ["UPDATE", "LINK", "SUPERSEDE"])
+def test_validator_rejects_cross_project_target(tmp_path: Path, operation_type: str) -> None:
+    vault, repository, source_a = _setup(tmp_path)
+    source_b = _add_project_source(vault, "other")
+    target = vault / "projects/other/10-concepts/CON-9200-cross-project-target.md"
+    _write_concept(
+        target,
+        source_b,
+        revision=1,
+        project="other",
+        namespace="org/default/project/other",
+        identifier="CON-9200",
+    )
+    proposal_path = repository.path_for("PROP-20260712-A1B2C3D4")
+    draft = proposal_path.parent / "drafts/CON-9200.md"
+    _write_concept(
+        draft,
+        source_a,
+        revision=2,
+        updated_at="2026-07-13",
+        identifier="CON-9200",
+    )
+    proposal = Proposal.model_validate(
+        _proposal_data(
+            source_a,
+            proposal_id="PROP-20260712-A1B2C3D4",
+            operation_type=operation_type,
+            kind="concept",
+            target_id="CON-9200",
+            draft_path=draft,
+            expected_revision=1,
+            expected_target_sha256=hashlib.sha256(target.read_bytes()).hexdigest(),
+        )
+    )
+
+    codes = {issue.code for issue in ProposalValidator(vault).validate(proposal, proposal_path)}
+
+    assert "PROPOSAL_TARGET_PROJECT_MISMATCH" in codes
+
+
+@pytest.mark.parametrize(
+    ("draft_project", "draft_namespace", "expected_code"),
+    [
+        ("other", "org/default/project/other", "PROPOSAL_DRAFT_PROJECT_MISMATCH"),
+        ("amplai", "org/default/project/other", "PROPOSAL_DRAFT_NAMESPACE_MISMATCH"),
+    ],
+)
+@pytest.mark.parametrize("operation_type", ["CREATE", "UPDATE", "LINK", "SUPERSEDE"])
+def test_validator_rejects_cross_project_draft(
+    tmp_path: Path,
+    draft_project: str,
+    draft_namespace: str,
+    expected_code: str,
+    operation_type: str,
+) -> None:
+    vault, repository, source_a = _setup(tmp_path)
+    proposal_path = repository.path_for("PROP-20260712-A1B2C3D4")
+    draft = proposal_path.parent / "drafts/CON-9200.md"
+    target_id: str | None = None
+    expected_revision: int | None = None
+    expected_hash: str | None = None
+    revision = 1
+    if operation_type != "CREATE":
+        target = vault / "projects/amplai/10-concepts/CON-9200-scope-target.md"
+        _write_concept(target, source_a, revision=1, identifier="CON-9200")
+        target_id = "CON-9200"
+        expected_revision = 1
+        expected_hash = hashlib.sha256(target.read_bytes()).hexdigest()
+        revision = 2
+    _write_concept(
+        draft,
+        source_a,
+        revision=revision,
+        updated_at="2026-07-13",
+        project=draft_project,
+        namespace=draft_namespace,
+        identifier="CON-9200",
+    )
+    proposal = Proposal.model_validate(
+        _proposal_data(
+            source_a,
+            proposal_id="PROP-20260712-A1B2C3D4",
+            operation_type=operation_type,
+            kind="concept",
+            target_id=target_id,
+            draft_path=draft,
+            expected_revision=expected_revision,
+            expected_target_sha256=expected_hash,
+        )
+    )
+
+    codes = {issue.code for issue in ProposalValidator(vault).validate(proposal, proposal_path)}
+
+    assert expected_code in codes
+
+
+@pytest.mark.parametrize("operation_type", ["CREATE", "UPDATE"])
+def test_apply_rejects_cross_project_change_when_validator_is_bypassed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    operation_type: str,
+) -> None:
+    vault, repository, source_a = _setup(tmp_path)
+    source_b = _add_project_source(vault, "other")
+    proposal_path = repository.path_for("PROP-20260712-A1B2C3D4")
+    draft = proposal_path.parent / "drafts/CON-9200.md"
+    target_id: str | None = None
+    expected_revision: int | None = None
+    expected_hash: str | None = None
+    if operation_type == "CREATE":
+        _write_concept(
+            draft,
+            source_b,
+            revision=1,
+            project="other",
+            namespace="org/default/project/other",
+            identifier="CON-9200",
+        )
+        expected_code = "PROPOSAL_DRAFT_PROJECT_MISMATCH"
+    else:
+        target = vault / "projects/other/10-concepts/CON-9200-cross-project-target.md"
+        _write_concept(
+            target,
+            source_b,
+            revision=1,
+            project="other",
+            namespace="org/default/project/other",
+            identifier="CON-9200",
+        )
+        _write_concept(
+            draft,
+            source_a,
+            revision=2,
+            updated_at="2026-07-13",
+            identifier="CON-9200",
+        )
+        target_id = "CON-9200"
+        expected_revision = 1
+        expected_hash = hashlib.sha256(target.read_bytes()).hexdigest()
+        expected_code = "PROPOSAL_TARGET_PROJECT_MISMATCH"
+    proposal = Proposal.model_validate(
+        _proposal_data(
+            source_a,
+            proposal_id="PROP-20260712-A1B2C3D4",
+            operation_type=operation_type,
+            kind="concept",
+            target_id=target_id,
+            draft_path=draft,
+            status="approved",
+            expected_revision=expected_revision,
+            expected_target_sha256=expected_hash,
+        )
+    )
+    repository.save(proposal)
+    before = _vault_snapshot(vault)
+    monkeypatch.setattr(ProposalValidator, "validate", lambda *_args, **_kwargs: [])
+
+    with pytest.raises(ProposalApplyError, match=expected_code):
+        ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+
+    assert _vault_snapshot(vault) == before
+    stored = repository.get(proposal.proposal_id)
+    assert stored is not None
+    assert stored.status.value == "approved"
+
+
+def test_create_destination_rejects_project_root_symlink_to_sibling(
+    tmp_path: Path,
+) -> None:
+    vault = tmp_path / "vault"
+    other = vault / "projects/other"
+    other.mkdir(parents=True)
+    (vault / "projects/amplai").symlink_to(other, target_is_directory=True)
+    draft_path = tmp_path / "CON-9200.md"
+    _write_concept(draft_path, "SRC-20260712-A1B2C3D4", revision=1, identifier="CON-9200")
+    document = parse_markdown_file(draft_path)
+    draft = MemoryObject.model_validate({**document.metadata, "content": document.content})
+
+    with pytest.raises(ProjectPathError):
+        destination_for_create(
+            vault,
+            draft,
+            project="amplai",
+            namespace="org/default/project/amplai",
+        )
+
+    assert list(other.iterdir()) == []
 
 
 @pytest.mark.parametrize("operation_type", ["UPDATE", "LINK", "SUPERSEDE"])

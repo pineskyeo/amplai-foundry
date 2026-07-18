@@ -12,11 +12,20 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from pydantic import ValidationError
+
 from amplai_foundry.domain.enums import MemoryKind
 from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.lint.engine import KnowledgeLinter
 from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
+from amplai_foundry.proposals.codes import (
+    PROPOSAL_DRAFT_NAMESPACE_MISMATCH,
+    PROPOSAL_DRAFT_PROJECT_MISMATCH,
+    PROPOSAL_EVIDENCE_PROJECT_MISMATCH,
+    PROPOSAL_SOURCE_PROJECT_MISMATCH,
+    PROPOSAL_TARGET_PROJECT_MISMATCH,
+)
 from amplai_foundry.proposals.diff import destination_for_create, proposal_diff
 from amplai_foundry.proposals.models import OperationType, Proposal, ProposalStatus
 from amplai_foundry.proposals.repository import ProposalRepository
@@ -86,6 +95,7 @@ class ProposalApplyService:
         swapped = False
         try:
             self._reject_source_operations(proposal)
+            self._enforce_project_boundaries(proposal, proposal_path)
             self._enforce_preconditions_and_transitions(proposal)
             validation_issues = ProposalValidator(self.vault).validate(proposal, proposal_path)
             if validation_issues:
@@ -116,7 +126,12 @@ class ProposalApplyService:
                     draft = MemoryObject.model_validate(
                         {**document.metadata, "content": document.content}
                     )
-                    destination = destination_for_create(staging_vault, draft)
+                    destination = destination_for_create(
+                        staging_vault,
+                        draft,
+                        project=proposal.project,
+                        namespace=proposal.namespace,
+                    )
                 else:
                     destination = Path(current_repository.path_for(operation.target_id or ""))
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -187,6 +202,73 @@ class ProposalApplyService:
                 raise ProposalApplyError(
                     "PROPOSAL_SOURCE_CREATE_FORBIDDEN Source는 ingest로만 생성할 수 있습니다."
                 )
+
+    def _enforce_project_boundaries(
+        self,
+        proposal: Proposal,
+        proposal_path: Path,
+    ) -> None:
+        repository = MarkdownMemoryRepository(self.vault)
+        existing = {memory.id: memory for memory in repository.list()}
+        for source_id in proposal.source_ids:
+            source = existing.get(source_id)
+            if source is not None and source.project != proposal.project:
+                raise ProposalApplyError(
+                    f"{PROPOSAL_SOURCE_PROJECT_MISMATCH} "
+                    f"Source {source_id} project={source.project}와 "
+                    f"Proposal project={proposal.project}가 다릅니다."
+                )
+        for operation in proposal.operations:
+            for evidence in operation.evidence:
+                source = existing.get(evidence.source_id)
+                if source is not None and source.project != proposal.project:
+                    raise ProposalApplyError(
+                        f"{PROPOSAL_EVIDENCE_PROJECT_MISMATCH} "
+                        f"Evidence Source {evidence.source_id} project={source.project}와 "
+                        f"Proposal project={proposal.project}가 다릅니다."
+                    )
+            if operation.target_id:
+                target = existing.get(operation.target_id)
+                if target is not None and target.project != proposal.project:
+                    raise ProposalApplyError(
+                        f"{PROPOSAL_TARGET_PROJECT_MISMATCH} "
+                        f"target {target.id} project={target.project}와 "
+                        f"Proposal project={proposal.project}가 다릅니다."
+                    )
+            if not operation.draft_path:
+                continue
+            draft = self._load_apply_draft(operation.draft_path, proposal_path)
+            if draft.project != proposal.project:
+                raise ProposalApplyError(
+                    f"{PROPOSAL_DRAFT_PROJECT_MISMATCH} "
+                    f"draft project={draft.project}와 "
+                    f"Proposal project={proposal.project}가 다릅니다."
+                )
+            if draft.namespace != proposal.namespace:
+                raise ProposalApplyError(
+                    f"{PROPOSAL_DRAFT_NAMESPACE_MISMATCH} "
+                    f"draft namespace={draft.namespace}와 "
+                    f"Proposal namespace={proposal.namespace}가 다릅니다."
+                )
+
+    @staticmethod
+    def _load_apply_draft(draft_path: str, proposal_path: Path) -> MemoryObject:
+        path = Path(draft_path)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        drafts_root = (proposal_path.parent / "drafts").resolve()
+        try:
+            resolved = path.resolve()
+            resolved.relative_to(drafts_root)
+        except (OSError, ValueError) as error:
+            raise ProposalApplyError(
+                "DRAFT_PATH draft_path는 해당 Proposal drafts directory 안에 있어야 합니다."
+            ) from error
+        try:
+            document = parse_markdown_file(resolved)
+            return MemoryObject.model_validate({**document.metadata, "content": document.content})
+        except (MarkdownParseError, OSError, ValidationError) as error:
+            raise ProposalApplyError(f"DRAFT_INVALID {resolved}: {error}") from error
 
     def _enforce_preconditions_and_transitions(self, proposal: Proposal) -> None:
         repository = MarkdownMemoryRepository(self.vault)

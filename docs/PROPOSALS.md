@@ -20,6 +20,8 @@ Validation은 Pydantic schema, Source, evidence Source, target, draft scope를 �
 
 Source는 evidence로 참조할 수 있지만 Proposal로 생성하거나 변경할 수 없다. `CREATE kind=source`와 Source 대상 `UPDATE`, `LINK`, `SUPERSEDE`, `MERGE`, `SPLIT`은 거부한다.
 
+Proposal의 `source_ids`, evidence Source, target, draft는 모두 `Proposal.project`와 같은 project에 속한다. Draft namespace는 `Proposal.namespace`와 일치한다. CREATE destination은 draft가 아니라 검증된 Proposal project root에서 계산한다.
+
 ## Optimistic Concurrency
 
 새 `draft`, `reviewed`, `approved` Proposal의 `UPDATE`, `LINK`, `SUPERSEDE` operation은 다음 precondition을 기록한다.

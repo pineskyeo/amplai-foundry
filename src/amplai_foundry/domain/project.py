@@ -39,4 +39,7 @@ def project_root(vault: Path, project: str) -> Path:
     """Resolve a validated project root contained by ``vault/projects``."""
     validated = validate_project_id(project)
     projects_root = (vault / "projects").resolve()
-    return require_contained(projects_root / validated, projects_root, label="project")
+    resolved = require_contained(projects_root / validated, projects_root, label="project")
+    if resolved.parent != projects_root or resolved.name != validated:
+        raise ProjectPathError("project root는 다른 project를 가리키는 symlink일 수 없습니다.")
+    return resolved
