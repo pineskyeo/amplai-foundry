@@ -12,6 +12,7 @@ import typer
 
 from amplai_foundry.curation.context_builder import ContextBuilderError, CurateContextBuilder
 from amplai_foundry.domain.models import MemoryObject
+from amplai_foundry.domain.project import ProjectPathError, validate_project_id
 from amplai_foundry.ingestion.service import IngestionError, SourceIngestionService
 from amplai_foundry.lint.engine import KnowledgeLinter, LintExecutionError
 from amplai_foundry.parsing.markdown import parse_markdown_file
@@ -48,6 +49,17 @@ def _fatal(message: str, *, code: int = 2) -> Never:
     raise typer.Exit(code=code)
 
 
+def _project(value: str) -> str:
+    try:
+        return validate_project_id(value)
+    except ProjectPathError as error:
+        _fatal(str(error))
+
+
+def _optional_project(value: str | None) -> str | None:
+    return _project(value) if value is not None else None
+
+
 @app.command("ingest")
 def ingest_command(
     input_path: Annotated[str, typer.Argument(help="UTF-8 .md/.txt path, or '-' for stdin.")],
@@ -59,6 +71,7 @@ def ingest_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Register exact file or stdin bytes as an immutable Source."""
+    project = _project(project)
     original_filename: str | None = None
     media_type = "text/plain"
     if input_path == "-":
@@ -150,6 +163,7 @@ def search_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Search IDs, titles, summaries, tags, bodies, and relation targets."""
+    project = _optional_project(project)
     try:
         repository = MarkdownMemoryRepository(vault)
         results = LexicalKnowledgeSearch(repository, repository.path_for).search(
@@ -176,6 +190,7 @@ def source_list_command(
     vault: Annotated[Path, typer.Option("--vault")] = Path("vault"),
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
+    project = _optional_project(project)
     try:
         records = SourceIngestionService(vault).list(project=project)
     except IngestionError as error:
@@ -322,6 +337,7 @@ def curate_prepare_command(
     output: Annotated[Path, typer.Option("--output")],
     vault: Annotated[Path, typer.Option("--vault")] = Path("vault"),
 ) -> None:
+    project = _project(project)
     try:
         path = CurateContextBuilder(vault).write(source_id, project=project, output=output)
     except (ContextBuilderError, IngestionError, OSError, UnicodeError) as error:

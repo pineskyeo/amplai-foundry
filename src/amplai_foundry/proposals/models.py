@@ -6,10 +6,13 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
+from amplai_foundry.domain.project import ProjectId
+
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 ProposalId = Annotated[str, StringConstraints(pattern=r"^PROP-[0-9]{8}-[A-F0-9]{8}$")]
 OperationId = Annotated[str, StringConstraints(pattern=r"^OP-[0-9]{3}$")]
 MemoryId = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9]*-[A-Z0-9-]+$")]
+Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 
 
 class ProposalStatus(StrEnum):
@@ -71,6 +74,8 @@ class ProposalOperation(BaseModel):
     evidence: list[ProposalEvidence] = Field(min_length=1)
     confidence: Confidence
     draft_path: NonEmptyString | None = None
+    expected_revision: int | None = Field(default=None, ge=1)
+    expected_target_sha256: Sha256 | None = None
 
     @model_validator(mode="after")
     def validate_shape(self) -> "ProposalOperation":
@@ -94,6 +99,17 @@ class ProposalOperation(BaseModel):
         }
         if self.type in draft_required and not self.draft_path:
             raise ValueError(f"{self.type.value} operation에는 draft_path가 필요합니다.")
+        precondition_types = {
+            OperationType.UPDATE,
+            OperationType.LINK,
+            OperationType.SUPERSEDE,
+        }
+        if self.type not in precondition_types and (
+            self.expected_revision is not None or self.expected_target_sha256 is not None
+        ):
+            raise ValueError(
+                f"{self.type.value} operation에는 target precondition을 지정하지 않습니다."
+            )
         return self
 
 
@@ -104,7 +120,7 @@ class Proposal(BaseModel):
 
     proposal_version: Literal[1] = 1
     proposal_id: ProposalId
-    project: NonEmptyString
+    project: ProjectId
     namespace: NonEmptyString
     status: ProposalStatus = ProposalStatus.DRAFT
     source_ids: list[MemoryId] = Field(min_length=1)
@@ -137,6 +153,25 @@ class Proposal(BaseModel):
             raise ValueError("source_ids는 Proposal 안에서 고유해야 합니다.")
         if not self.namespace.endswith(f"/project/{self.project}"):
             raise ValueError("Proposal namespace와 project가 일치하지 않습니다.")
+        requires_preconditions = self.status in {
+            ProposalStatus.DRAFT,
+            ProposalStatus.REVIEWED,
+            ProposalStatus.APPROVED,
+        }
+        mutating_types = {
+            OperationType.UPDATE,
+            OperationType.LINK,
+            OperationType.SUPERSEDE,
+        }
+        if requires_preconditions:
+            for operation in self.operations:
+                if operation.type in mutating_types and (
+                    operation.expected_revision is None or operation.expected_target_sha256 is None
+                ):
+                    raise ValueError(
+                        f"{operation.type.value} operation에는 expected_revision과 "
+                        "expected_target_sha256가 필요합니다."
+                    )
         return self
 
 

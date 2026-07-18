@@ -10,6 +10,12 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
+from amplai_foundry.domain.project import (
+    ProjectPathError,
+    project_root,
+    require_contained,
+    validate_project_id,
+)
 from amplai_foundry.domain.source import SourceMetadata
 from amplai_foundry.ingestion.hashing import content_sha256, normalized_sha256
 from amplai_foundry.ingestion.identifiers import safe_slug, source_id
@@ -61,8 +67,12 @@ class SourceIngestionService:
             content.decode("utf-8")
         except UnicodeDecodeError as error:
             raise IngestionError("입력은 UTF-8이어야 합니다.") from error
-        project_root = self.vault / "projects" / project
-        if not project_root.is_dir():
+        try:
+            project = validate_project_id(project)
+            resolved_project_root = project_root(self.vault, project)
+        except ProjectPathError as error:
+            raise IngestionError(str(error)) from error
+        if not resolved_project_root.is_dir():
             raise IngestionError(f"project가 존재하지 않습니다: {project}")
         resolved_namespace = namespace or f"org/default/project/{project}"
         if not resolved_namespace.endswith(f"/project/{project}"):
@@ -72,7 +82,7 @@ class SourceIngestionService:
 
         exact_hash = content_sha256(content)
         normalized_hash = normalized_sha256(content)
-        duplicate = self._find_duplicate(project_root, exact_hash, normalized_hash)
+        duplicate = self._find_duplicate(resolved_project_root, exact_hash, normalized_hash)
         if duplicate is not None:
             duplicate_id, duplicate_path = duplicate
             return IngestionResult(
@@ -85,9 +95,20 @@ class SourceIngestionService:
 
         timestamp = now or datetime.now(ZoneInfo("Asia/Seoul"))
         identifier = source_id(timestamp.date(), exact_hash)
-        sources_dir = project_root / "00-sources"
+        try:
+            sources_dir = require_contained(
+                resolved_project_root / "00-sources",
+                resolved_project_root,
+                label="Source directory",
+            )
+            path = require_contained(
+                sources_dir / f"{identifier}-{safe_slug(title)}.md",
+                resolved_project_root,
+                label="Source",
+            )
+        except ProjectPathError as error:
+            raise IngestionError(str(error)) from error
         sources_dir.mkdir(parents=True, exist_ok=True)
-        path = sources_dir / f"{identifier}-{safe_slug(title)}.md"
         metadata = {
             "schema_version": 1,
             "id": identifier,
@@ -126,7 +147,7 @@ class SourceIngestionService:
             with os.fdopen(descriptor, "wb") as handle:
                 handle.write(payload)
         except FileExistsError:
-            duplicate = self._find_duplicate(project_root, exact_hash, normalized_hash)
+            duplicate = self._find_duplicate(resolved_project_root, exact_hash, normalized_hash)
             if duplicate is None:
                 raise IngestionError(f"Source ID 충돌이 발생했습니다: {identifier}") from None
             duplicate_id, duplicate_path = duplicate
@@ -162,7 +183,10 @@ class SourceIngestionService:
     def list(
         self, *, project: str | None = None
     ) -> builtins.list[tuple[Path, SourceMetadata, str]]:
-        root = self.vault / "projects" / project if project else self.vault
+        try:
+            root = project_root(self.vault, project) if project else self.vault.resolve()
+        except ProjectPathError as error:
+            raise IngestionError(str(error)) from error
         if project and not root.is_dir():
             raise IngestionError(f"project가 존재하지 않습니다: {project}")
         return self._source_records(root)

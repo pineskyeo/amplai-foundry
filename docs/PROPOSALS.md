@@ -18,6 +18,21 @@ amplai-foundry proposal diff PROP-...
 
 Validation은 Pydantic schema, Source, evidence Source, target, draft scope를 확인한다. Draft는 Proposal의 `drafts/` directory 밖을 참조할 수 없다.
 
+Source는 evidence로 참조할 수 있지만 Proposal로 생성하거나 변경할 수 없다. `CREATE kind=source`와 Source 대상 `UPDATE`, `LINK`, `SUPERSEDE`, `MERGE`, `SPLIT`은 거부한다.
+
+## Optimistic Concurrency
+
+새 `draft`, `reviewed`, `approved` Proposal의 `UPDATE`, `LINK`, `SUPERSEDE` operation은 다음 precondition을 기록한다.
+
+```yaml
+expected_revision: 3
+expected_target_sha256: 64자리-lowercase-sha256
+```
+
+`expected_target_sha256`은 Proposal 생성 시점 canonical target Markdown raw bytes의 SHA-256이다. Apply lock 안에서 현재 revision과 hash를 다시 검사한다. 하나라도 다르면 `PROPOSAL_STALE_REVISION` 또는 `PROPOSAL_STALE_TARGET_HASH`로 전체 Proposal을 거부한다. Vault와 Proposal status는 변경하지 않는다.
+
+이미 `applied`인 v1 Proposal은 역사적 artifact다. Precondition이 없어도 계속 load와 validation이 가능하며 기존 artifact를 다시 쓰지 않는다.
+
 ## Approval And Apply
 
 ```bash
@@ -25,7 +40,7 @@ amplai-foundry proposal approve PROP-... --approved-by user
 amplai-foundry proposal apply PROP-...
 ```
 
-Apply는 `approved` 상태만 허용한다. 변경 전 Vault와 staging Vault에서 lint ERROR 0을 요구한다. Staging 결과가 통과하면 같은 filesystem에서 Vault directory를 swap한다. Proposal 상태 저장이 실패하면 backup Vault를 복원한다.
+Apply는 `approved` 상태만 허용한다. Apply lock 안에서 Source 불변성, concurrency precondition, lifecycle transition을 다시 확인한다. 변경 전 Vault와 staging Vault에서 lint ERROR 0을 요구한다. Staging 결과가 통과하면 같은 filesystem에서 Vault directory를 swap한다. Proposal 상태 저장이 실패하면 backup Vault를 복원한다.
 
 Minimal apply는 draft 기반 `CREATE`, `UPDATE`, `LINK`, `SUPERSEDE`와 write가 없는 `IGNORE`를 처리한다. `CONFLICT`가 있으면 전체 apply를 거부한다. `MERGE`와 `SPLIT`은 현재 apply에서 거부하고 human이 새 Proposal shape를 결정한다.
 

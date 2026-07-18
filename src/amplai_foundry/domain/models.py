@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from amplai_foundry.domain.enums import MemoryKind, MemoryStatus, RelationType
+from amplai_foundry.domain.project import ProjectId
 from amplai_foundry.domain.source import SourceMetadata
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -29,7 +30,7 @@ class MemoryMetadata(BaseModel):
     schema_version: Literal[1] = 1
     id: MemoryId
     namespace: NonEmptyString
-    project: NonEmptyString
+    project: ProjectId
     kind: MemoryKind
     status: MemoryStatus
     title: NonEmptyString

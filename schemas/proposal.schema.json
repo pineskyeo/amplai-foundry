@@ -96,6 +96,32 @@
           "title": "Evidence",
           "type": "array"
         },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "expected_target_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Target Sha256"
+        },
         "kind": {
           "minLength": 1,
           "title": "Kind",
@@ -260,7 +286,7 @@
       "type": "array"
     },
     "project": {
-      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
       "title": "Project",
       "type": "string"
     },

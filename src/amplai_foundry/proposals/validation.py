@@ -1,11 +1,13 @@
 """Proposal schema, evidence, target, and draft validation."""
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import ValidationError
 
 from amplai_foundry.domain.enums import MemoryKind
+from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.ingestion.service import IngestionError, extract_original_content
 from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
@@ -46,6 +48,13 @@ class ProposalValidator:
 
         seen_evidence: set[str] = set()
         for operation in proposal.operations:
+            if operation.type is OperationType.CREATE and operation.kind == MemoryKind.SOURCE.value:
+                issues.append(
+                    ProposalValidationIssue(
+                        "PROPOSAL_SOURCE_CREATE_FORBIDDEN",
+                        "Source는 Proposal CREATE가 아니라 ingest로만 생성할 수 있습니다.",
+                    )
+                )
             for evidence in operation.evidence:
                 seen_evidence.add(evidence.source_id)
                 memory = existing.get(evidence.source_id)
@@ -86,6 +95,13 @@ class ProposalValidator:
                 )
             elif operation.target_id and operation.target_id in existing:
                 target = existing[operation.target_id]
+                if target.kind is MemoryKind.SOURCE:
+                    issues.append(
+                        ProposalValidationIssue(
+                            "PROPOSAL_SOURCE_MUTATION_FORBIDDEN",
+                            "Source는 ingest 이후 Proposal로 변경할 수 없습니다.",
+                        )
+                    )
                 if target.kind.value != operation.kind:
                     issues.append(
                         ProposalValidationIssue(
@@ -96,6 +112,30 @@ class ProposalValidator:
                             ),
                         )
                     )
+                if proposal.status.value != "applied" and operation.type in {
+                    OperationType.UPDATE,
+                    OperationType.LINK,
+                    OperationType.SUPERSEDE,
+                }:
+                    if operation.expected_revision != target.revision:
+                        issues.append(
+                            ProposalValidationIssue(
+                                "PROPOSAL_STALE_REVISION",
+                                (
+                                    f"target revision={target.revision}, "
+                                    f"expected_revision={operation.expected_revision}입니다."
+                                ),
+                            )
+                        )
+                    target_path = Path(repository.path_for(target.id))
+                    current_hash = hashlib.sha256(target_path.read_bytes()).hexdigest()
+                    if operation.expected_target_sha256 != current_hash:
+                        issues.append(
+                            ProposalValidationIssue(
+                                "PROPOSAL_STALE_TARGET_HASH",
+                                "target Markdown SHA-256가 Proposal 생성 시점과 다릅니다.",
+                            )
+                        )
             if operation.type is OperationType.CREATE and operation.draft_path:
                 draft, draft_issues = self._load_draft(
                     operation.draft_path, proposal, proposal_path
@@ -120,6 +160,13 @@ class ProposalValidator:
                             )
                         )
                 if draft is not None:
+                    if draft.kind is MemoryKind.SOURCE:
+                        issues.append(
+                            ProposalValidationIssue(
+                                "PROPOSAL_SOURCE_CREATE_FORBIDDEN",
+                                "Source는 Proposal CREATE가 아니라 ingest로만 생성할 수 있습니다.",
+                            )
+                        )
                     issues.extend(self._validate_draft_evidence(draft, operation))
             elif operation.draft_path:
                 draft, draft_issues = self._load_draft(
@@ -135,6 +182,19 @@ class ProposalValidator:
                     )
                 if draft is not None:
                     issues.extend(self._validate_draft_evidence(draft, operation))
+                    if (
+                        proposal.status.value != "applied"
+                        and operation.target_id
+                        and operation.target_id in existing
+                        and operation.type
+                        in {OperationType.UPDATE, OperationType.LINK, OperationType.SUPERSEDE}
+                    ):
+                        issues.extend(
+                            ProposalValidationIssue(violation.code, violation.message)
+                            for violation in validate_transition(
+                                existing[operation.target_id], draft, operation.type
+                            )
+                        )
         if not seen_evidence.issubset(set(proposal.source_ids)):
             issues.append(
                 ProposalValidationIssue(

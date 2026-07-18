@@ -4,9 +4,11 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
+from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from amplai_foundry.cli import app
+from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.ingestion.hashing import content_sha256, normalized_sha256
 from amplai_foundry.ingestion.identifiers import safe_slug, source_id
 from amplai_foundry.ingestion.service import (
@@ -101,6 +103,81 @@ def test_missing_project_and_mismatched_namespace_are_rejected(tmp_path: Path) -
         ingest(vault, b"content", project="missing")
     with pytest.raises(IngestionError, match="namespace"):
         ingest(vault, b"content", namespace="org/default/project/other")
+
+
+@pytest.mark.parametrize(
+    "project",
+    [".", "..", "../..", "/absolute", "a/b", r"a\b", "has space", "", "bad!project"],
+)
+def test_invalid_project_id_is_rejected_without_creating_files(
+    tmp_path: Path, project: str
+) -> None:
+    vault = project_vault(tmp_path)
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+    with pytest.raises((IngestionError, ValidationError, ValueError)):
+        ingest(vault, b"path traversal payload", project=project)
+
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+def test_source_destination_symlink_escape_is_rejected(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+    sources = vault / "projects/amplai/00-sources"
+    sources.rmdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    sources.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(IngestionError, match="root 밖"):
+        ingest(vault, b"must not escape")
+
+    assert list(outside.iterdir()) == []
+
+
+def test_cli_rejects_invalid_project_before_ingestion(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["ingest", "-", "--project", "../..", "--vault", str(vault)],
+        input="unsafe",
+    )
+
+    assert result.exit_code == 2
+    assert not list((vault / "projects/amplai/00-sources").glob("*.md"))
+
+
+def test_memory_object_rejects_invalid_project_id() -> None:
+    with pytest.raises(ValidationError):
+        MemoryObject.model_validate(
+            {
+                "schema_version": 1,
+                "id": "CON-9000",
+                "namespace": "org/default/project/../..",
+                "project": "../..",
+                "kind": "concept",
+                "status": "candidate",
+                "title": "Invalid project",
+                "summary": "경로로 사용할 수 없는 project를 가진 fixture다.",
+                "created_at": "2026-07-12",
+                "updated_at": "2026-07-12",
+                "source_refs": [],
+                "relations": [],
+                "revision": 1,
+                "tags": [],
+                "content": "충분한 본문",
+            }
+        )
 
 
 def test_verify_detects_original_content_mutation(tmp_path: Path) -> None:

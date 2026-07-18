@@ -4,6 +4,7 @@ from difflib import unified_diff
 from pathlib import Path
 
 from amplai_foundry.domain.models import MemoryObject
+from amplai_foundry.domain.project import project_root, require_contained
 from amplai_foundry.ingestion.identifiers import safe_slug
 from amplai_foundry.lint.rules.schema import KIND_DIRECTORIES
 from amplai_foundry.parsing.markdown import parse_markdown_file
@@ -16,7 +17,8 @@ DIRECTORY_BY_KIND = {kind: directory for directory, kind in KIND_DIRECTORIES.ite
 def destination_for_create(vault: Path, draft: MemoryObject) -> Path:
     directory = DIRECTORY_BY_KIND[draft.kind]
     filename = f"{draft.id}-{safe_slug(draft.title)}.md"
-    return vault / "projects" / draft.project / directory / filename
+    root = project_root(vault, draft.project)
+    return require_contained(root / directory / filename, root, label="Proposal destination")
 
 
 def proposal_diff(proposal: Proposal, proposal_path: Path, vault: Path) -> str:

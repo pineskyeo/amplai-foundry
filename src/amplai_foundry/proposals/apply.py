@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import tempfile
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from amplai_foundry.domain.enums import MemoryKind
+from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.lint.engine import KnowledgeLinter
-from amplai_foundry.parsing.markdown import parse_markdown_file
+from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
 from amplai_foundry.proposals.diff import destination_for_create, proposal_diff
 from amplai_foundry.proposals.models import OperationType, Proposal, ProposalStatus
 from amplai_foundry.proposals.repository import ProposalRepository
@@ -61,6 +65,7 @@ class ProposalApplyService:
             raise ProposalApplyError(
                 "CONFLICT operation이 있는 Proposal은 자동 apply하지 않습니다."
             )
+        self._reject_source_operations(proposal)
         unsupported = {
             operation.type
             for operation in proposal.operations
@@ -69,19 +74,6 @@ class ProposalApplyService:
         if unsupported:
             names = ", ".join(sorted(item.value for item in unsupported))
             raise ProposalApplyError(f"minimal safe apply가 지원하지 않는 operation입니다: {names}")
-        validation_issues = ProposalValidator(self.vault).validate(proposal, proposal_path)
-        if validation_issues:
-            raise ProposalApplyError(
-                "Proposal 검증 실패: "
-                + "; ".join(f"{issue.code} {issue.message}" for issue in validation_issues)
-            )
-        before_report = KnowledgeLinter().lint(self.vault)
-        if before_report.error_count:
-            raise ProposalApplyError(
-                f"변경 전 Vault lint ERROR가 {before_report.error_count}개입니다."
-            )
-
-        rendered_diff = proposal_diff(proposal, proposal_path, self.vault)
         lock_path = self.repository.root.parent / "apply.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -89,12 +81,27 @@ class ProposalApplyService:
         except FileExistsError:
             raise ProposalApplyError("다른 Proposal apply가 진행 중입니다.") from None
 
-        temporary_root = Path(tempfile.mkdtemp(prefix="amplai-apply-", dir=self.vault.parent))
-        staging_vault = temporary_root / "vault"
-        backup_vault = temporary_root / "backup"
+        temporary_root: Path | None = None
         touched: list[str] = []
         swapped = False
         try:
+            self._reject_source_operations(proposal)
+            self._enforce_preconditions_and_transitions(proposal)
+            validation_issues = ProposalValidator(self.vault).validate(proposal, proposal_path)
+            if validation_issues:
+                raise ProposalApplyError(
+                    "Proposal 검증 실패: "
+                    + "; ".join(f"{issue.code} {issue.message}" for issue in validation_issues)
+                )
+            before_report = KnowledgeLinter().lint(self.vault)
+            if before_report.error_count:
+                raise ProposalApplyError(
+                    f"변경 전 Vault lint ERROR가 {before_report.error_count}개입니다."
+                )
+            rendered_diff = proposal_diff(proposal, proposal_path, self.vault)
+            temporary_root = Path(tempfile.mkdtemp(prefix="amplai-apply-", dir=self.vault.parent))
+            staging_vault = temporary_root / "vault"
+            backup_vault = temporary_root / "backup"
             shutil.copytree(self.vault, staging_vault)
             current_repository = MarkdownMemoryRepository(staging_vault)
             for operation in proposal.operations:
@@ -148,6 +155,80 @@ class ProposalApplyService:
         finally:
             os.close(lock_descriptor)
             lock_path.unlink(missing_ok=True)
-            if swapped and backup_vault.exists():
+            if temporary_root is not None and swapped and backup_vault.exists():
                 shutil.rmtree(backup_vault)
-            shutil.rmtree(temporary_root, ignore_errors=True)
+            if temporary_root is not None:
+                shutil.rmtree(temporary_root, ignore_errors=True)
+
+    def _reject_source_operations(self, proposal: Proposal) -> None:
+        repository = MarkdownMemoryRepository(self.vault)
+        for operation in proposal.operations:
+            if operation.type is not OperationType.CREATE:
+                target = repository.get(operation.target_id or "")
+                if operation.kind == MemoryKind.SOURCE.value or (
+                    target is not None and target.kind is MemoryKind.SOURCE
+                ):
+                    raise ProposalApplyError(
+                        "PROPOSAL_SOURCE_MUTATION_FORBIDDEN "
+                        "Source는 ingest 이후 Proposal로 변경할 수 없습니다."
+                    )
+                continue
+            draft_is_source = False
+            if operation.draft_path:
+                draft_path = Path(operation.draft_path)
+                if not draft_path.is_absolute():
+                    draft_path = Path.cwd() / draft_path
+                with suppress(MarkdownParseError, OSError):
+                    draft_is_source = (
+                        parse_markdown_file(draft_path).metadata.get("kind")
+                        == MemoryKind.SOURCE.value
+                    )
+            if operation.kind == MemoryKind.SOURCE.value or draft_is_source:
+                raise ProposalApplyError(
+                    "PROPOSAL_SOURCE_CREATE_FORBIDDEN Source는 ingest로만 생성할 수 있습니다."
+                )
+
+    def _enforce_preconditions_and_transitions(self, proposal: Proposal) -> None:
+        repository = MarkdownMemoryRepository(self.vault)
+        for operation in proposal.operations:
+            if operation.type not in {
+                OperationType.UPDATE,
+                OperationType.LINK,
+                OperationType.SUPERSEDE,
+            }:
+                continue
+            target = repository.get(operation.target_id or "")
+            if target is None:
+                raise ProposalApplyError(
+                    f"TARGET_MISSING target_id가 없습니다: {operation.target_id}"
+                )
+            if target.kind is MemoryKind.SOURCE:
+                raise ProposalApplyError(
+                    "PROPOSAL_SOURCE_MUTATION_FORBIDDEN "
+                    "Source는 ingest 이후 Proposal로 변경할 수 없습니다."
+                )
+            if target.revision != operation.expected_revision:
+                raise ProposalApplyError(
+                    "PROPOSAL_STALE_REVISION "
+                    f"target revision={target.revision}, "
+                    f"expected_revision={operation.expected_revision}입니다."
+                )
+            target_path = Path(repository.path_for(target.id))
+            current_hash = hashlib.sha256(target_path.read_bytes()).hexdigest()
+            if current_hash != operation.expected_target_sha256:
+                raise ProposalApplyError(
+                    "PROPOSAL_STALE_TARGET_HASH "
+                    "target Markdown SHA-256가 Proposal 생성 시점과 다릅니다."
+                )
+            if not operation.draft_path:
+                continue
+            draft_path = Path(operation.draft_path)
+            if not draft_path.is_absolute():
+                draft_path = Path.cwd() / draft_path
+            document = parse_markdown_file(draft_path)
+            draft = MemoryObject.model_validate({**document.metadata, "content": document.content})
+            violations = validate_transition(target, draft, operation.type)
+            if violations:
+                raise ProposalApplyError(
+                    "; ".join(f"{violation.code} {violation.message}" for violation in violations)
+                )
