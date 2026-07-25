@@ -64,7 +64,7 @@ def approve_proposal(
 
 class ProposalApplyService:
     def __init__(self, vault: Path, repository: ProposalRepository) -> None:
-        self.vault = vault
+        self.vault = vault.resolve()
         self.repository = repository
 
     def apply(self, proposal: Proposal, proposal_path: Path) -> ApplyResult:

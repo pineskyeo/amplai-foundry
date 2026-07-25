@@ -185,6 +185,19 @@ def test_draft_cannot_apply_and_only_approved_can_apply(tmp_path: Path) -> None:
     )
 
 
+def test_apply_accepts_relative_vault_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    vault, repository, proposal, _source_id = saved_proposal(tmp_path)
+    approved = approve_proposal(proposal, approved_by="test-user", now=NOW)
+    monkeypatch.chdir(tmp_path)
+
+    result = ProposalApplyService(Path("vault"), repository).apply(
+        approved, repository.path_for(proposal.proposal_id)
+    )
+
+    assert (vault / result.touched_paths[0]).exists()
+    assert repository.get(proposal.proposal_id).status.value == "applied"  # type: ignore[union-attr]
+
+
 def test_pre_apply_lint_failure_leaves_vault_unchanged(tmp_path: Path) -> None:
     vault, repository, proposal, source_id = saved_proposal(tmp_path)
     invalid = vault / "projects/amplai/10-concepts/invalid.md"
