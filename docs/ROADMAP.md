@@ -1,6 +1,6 @@
 # AMPLAI Roadmap
 
-## Canonical Proposal
+## Approved Roadmap
 
 현재 상세 roadmap proposal은 다음 문서다.
 
@@ -8,7 +8,7 @@
 - [AMPLAI Master Roadmap Proposal v1](roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md)
 - [Machine-readable Roadmap](../plans/amplai-master-roadmap.yaml)
 
-`v2`는 review proposal이다. 각 Phase의 Architecture와 Decision은 별도 Proposal과 승인 절차를 거쳐 확정한다.
+`v2`는 2026-07-26 사용자 승인으로 공식 roadmap 기준이 됐다. 각 Phase의 Architecture와 Decision은 별도 Proposal과 승인 절차를 거쳐 확정한다.
 
 ## Current Baseline
 

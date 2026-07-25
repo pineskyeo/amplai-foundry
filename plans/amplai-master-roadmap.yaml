@@ -1,8 +1,10 @@
 schema_version: 1
 roadmap_id: amplai-master-roadmap
 version: 2
-status: review_proposal
+status: approved
 updated_at: 2026-07-25
+approved_at: 2026-07-26
+approved_by: user
 current_focus: phase-1a-minimal-project-identity
 
 north_star:

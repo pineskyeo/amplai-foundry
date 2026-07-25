@@ -1,8 +1,10 @@
 # AMPLAI Master Roadmap Proposal v2
 
-> 상태: Review Proposal  
+> 상태: Approved
 > 기준 저장소: `amplai-foundry-main` 0.1.0  
 > 갱신일: 2026-07-25  
+> 승인일: 2026-07-26
+> 승인자: user
 > 목적: 프로젝트 단위의 지식·온톨로지·에이전트 실행·평가·메타루프를 하나의 확장 가능한 AMPLAI 구조로 정렬한다.
 
 ## v2 핵심 변경
