@@ -28,6 +28,8 @@ def _schema_message(error: Mapping[str, Any]) -> tuple[str, str]:
     error_type = str(error["type"])
     if error_type == "missing":
         return "SCHEMA_REQUIRED_FIELD", f"필수 필드 '{location}'가 없습니다."
+    if "kind=source에는 source_metadata가 필요" in str(error["msg"]):
+        return "SOURCE_METADATA_REQUIRED", "kind=source에는 source_metadata가 필요합니다."
     if location == "kind" and error_type == "enum":
         return "SCHEMA_KIND", "허용되지 않은 kind입니다."
     if location == "status" and error_type == "enum":
@@ -92,4 +94,32 @@ def validate_document(
                 document.field_lines.get("status"),
             )
         )
+    if "projects" in path.parts:
+        project_index = path.parts.index("projects") + 1
+        path_project = path.parts[project_index] if project_index < len(path.parts) else ""
+        if memory.project != path_project:
+            issues.append(
+                LintIssue(
+                    Severity.ERROR,
+                    "SCHEMA_PROJECT_PATH",
+                    (
+                        f"Front Matter project={memory.project}와 "
+                        f"경로 project={path_project}가 다릅니다."
+                    ),
+                    path,
+                    memory.id,
+                    document.field_lines.get("project"),
+                )
+            )
+        if not memory.namespace.endswith(f"/project/{memory.project}"):
+            issues.append(
+                LintIssue(
+                    Severity.ERROR,
+                    "SCHEMA_NAMESPACE_PROJECT",
+                    f"namespace는 /project/{memory.project}로 끝나야 합니다.",
+                    path,
+                    memory.id,
+                    document.field_lines.get("namespace"),
+                )
+            )
     return memory, issues

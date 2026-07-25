@@ -9,7 +9,7 @@ title: Meta-loop는 Loop 자체를 개선하는 반복이다
 summary: Meta-loop는 여러 실행 결과를 평가해 Harness, 정책, 지식 또는 평가 기준을 개선한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: depends_on
     target: CON-0002

@@ -21,3 +21,5 @@ Relation은 현재 note에서 `target`으로 향하는 directed edge다. 역방�
 Front Matter relation은 machine contract다. 본문의 `[[Wiki Link]]`는 사람이 Obsidian에서 탐색하는 reading link다. 중요한 관계는 둘 다 기록하되, lint integrity는 structured relation을 기준으로 판단한다.
 
 `source_refs`, `superseded_by`, `merged_into`도 repository 안의 실제 ID를 가리켜야 한다. Self reference는 허용하지 않는다.
+
+`supersedes -> A`를 가진 note ID는 A의 `superseded_by`와 같아야 한다. Source를 `supersedes` target으로 사용할 수 없다.

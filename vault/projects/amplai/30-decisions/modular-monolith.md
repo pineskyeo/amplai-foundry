@@ -9,7 +9,7 @@ title: 초기 배포는 Modular Monolith로 시작한다
 summary: 초기 AMPLAI는 명확한 module 경계를 가진 단일 배포 단위로 시작한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: ARC-0001

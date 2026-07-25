@@ -22,6 +22,7 @@ class MarkdownMemoryRepository:
     def __init__(self, root: Path) -> None:
         self.root = root
         self._objects: dict[str, MemoryObject] | None = None
+        self._paths: dict[str, Path] = {}
 
     def _load(self) -> dict[str, MemoryObject]:
         if self._objects is not None:
@@ -38,6 +39,7 @@ class MarkdownMemoryRepository:
             if memory.id in objects:
                 raise MarkdownRepositoryError(f"duplicate memory id: {memory.id}")
             objects[memory.id] = memory
+            self._paths[memory.id] = path
         self._objects = objects
         return objects
 
@@ -64,3 +66,9 @@ class MarkdownMemoryRepository:
     def exists(self, memory_id: str) -> bool:
         """Return whether an ID is present."""
         return memory_id in self._load()
+
+    def path_for(self, memory_id: str) -> str:
+        """Return the adapter path for display and diffs."""
+        self._load()
+        path = self._paths.get(memory_id)
+        return str(path) if path else ""

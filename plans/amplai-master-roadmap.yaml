@@ -1,0 +1,113 @@
+schema_version: 1
+roadmap_id: amplai-master-roadmap
+version: 2
+status: approved
+updated_at: 2026-07-25
+approved_at: 2026-07-26
+approved_by: user
+current_focus: phase-1a-minimal-project-identity
+
+north_star:
+  user_contract: >-
+    The user provides intent, goals, and evidence; AMPLAI determines project scope,
+    storage structure, knowledge type, relationships, proposal flow, and validation.
+  first_user_vertical_slice: >-
+    Process a roadmap file with the instruction "이 로드맵을 AMPLAI에 반영해줘"
+    without asking the user for folders, IDs, knowledge categories, or relation names.
+
+phases:
+  - id: phase-0-foundry-baseline
+    order: 0
+    status: validating
+    depends_on: []
+    definition_of_done:
+      - clean clone passes tests and vault lint
+      - current memory contract is fixed as a golden fixture
+
+  - id: phase-1a-minimal-project-identity
+    order: 10
+    status: planned
+    depends_on:
+      - phase-0-foundry-baseline
+    definition_of_done:
+      - projects may reuse the same local memory ID without collision
+      - input is not applied to an unresolved or incorrect project
+      - ambiguous project resolution is safely held for review
+
+  - id: phase-1b-knowledge-intake-steward
+    order: 20
+    status: backlog
+    depends_on:
+      - phase-1a-minimal-project-identity
+    definition_of_done:
+      - user supplies only intent and source artifacts
+      - source registration, classification, comparison, proposal, and validation are reproducible
+      - repeated ingestion does not create duplicate canonical notes
+      - authoritative meaning cannot change without required approval
+      - ambiguous classification is held rather than forced
+
+  - id: phase-1c-full-project-pack
+    order: 30
+    status: backlog
+    depends_on:
+      - phase-1b-knowledge-intake-steward
+    definition_of_done:
+      - amplai and cortex packs load in one workspace
+      - canonical assets remain portable across clone paths
+      - derived runtime state is rebuildable
+      - domain imports are version locked
+
+  - id: phase-2-ontology-kernel
+    order: 40
+    status: backlog
+    depends_on:
+      - phase-1c-full-project-pack
+
+  - id: phase-3-dc-test-e2e-vertical-slice
+    order: 50
+    status: backlog
+    depends_on:
+      - phase-2-ontology-kernel
+
+  - id: phase-4-context-runtime
+    order: 60
+    status: backlog
+    depends_on:
+      - phase-3-dc-test-e2e-vertical-slice
+
+  - id: phase-5-external-agent-harness
+    order: 70
+    status: backlog
+    depends_on:
+      - phase-4-context-runtime
+
+  - id: phase-6-development-agent
+    order: 80
+    status: backlog
+    depends_on:
+      - phase-5-external-agent-harness
+
+  - id: phase-7-management-agent
+    order: 90
+    status: backlog
+    depends_on:
+      - phase-5-external-agent-harness
+
+  - id: phase-8-evaluation-observatory
+    order: 100
+    status: backlog
+    depends_on:
+      - phase-6-development-agent
+      - phase-7-management-agent
+
+  - id: phase-9-proposal-driven-meta-loop
+    order: 110
+    status: backlog
+    depends_on:
+      - phase-8-evaluation-observatory
+
+  - id: phase-10-central-hybrid-platform
+    order: 120
+    status: backlog
+    depends_on:
+      - phase-9-proposal-driven-meta-loop

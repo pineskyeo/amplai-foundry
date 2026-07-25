@@ -12,3 +12,7 @@ build/
 .DS_Store
 .obsidian/workspace*.json
 .obsidian/cache
+.amplai/tmp/
+.amplai/jobs/
+.amplai/apply.lock
+.amplai/proposals/**/*.tmp

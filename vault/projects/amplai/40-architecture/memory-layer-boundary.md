@@ -9,7 +9,7 @@ title: Memory Layer는 Domain Contract와 Repository Port를 소유한다
 summary: Memory Layer 상위 기능은 Memory Object와 repository interface에 의존하고 저장 adapter에는 의존하지 않는다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-002]
+source_refs: [SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: CON-0007

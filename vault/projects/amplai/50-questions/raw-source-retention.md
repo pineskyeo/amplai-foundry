@@ -9,7 +9,7 @@ title: Raw Source 보존 기간은 얼마인가
 summary: 출처 검증, 개인정보, 비용과 삭제 의무를 함께 고려한 원문 보존 정책이 필요하다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: depends_on
     target: PRI-0002

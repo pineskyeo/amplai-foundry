@@ -20,7 +20,7 @@ def memory_data(**overrides: object) -> dict[str, object]:
         "summary": "A complete storage-independent memory object.",
         "created_at": date(2026, 7, 11),
         "updated_at": date(2026, 7, 11),
-        "source_refs": ["SRC-20260711-001"],
+        "source_refs": ["SRC-20260711-86C363BF"],
         "relations": [{"type": "related_to", "target": "CON-0001"}],
         "revision": 1,
         "tags": ["test"],

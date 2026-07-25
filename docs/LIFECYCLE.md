@@ -14,6 +14,7 @@
 
 ## Invariants
 
+- Source는 ingest-only immutable record다. Proposal은 Source를 생성하거나 변경하지 않는다.
 - `superseded`는 `superseded_by`가 필요하다.
 - `merged`는 `merged_into`가 필요하다.
 - Active 공식 지식은 `source_refs`가 필요하다. `source` note는 예외다.
@@ -21,6 +22,24 @@
 - 해결되지 않은 `question`은 `active`다.
 - 종료된 `question`은 관련 decision 또는 knowledge relation이 필요하다.
 - `90-archive` directory의 note는 `archived`여야 한다.
+- Source는 `superseded` 상태와 `superseded_by`를 사용하지 않는다.
+- `supersedes` relation과 대상의 `superseded_by`는 양방향으로 일치한다.
+
+## Allowed Transitions
+
+| Before | Allowed after |
+|---|---|
+| `candidate` | `candidate`, `active`, `rejected`, `archived` |
+| `active` | `active`, `deprecated`, `superseded`, `merged`, `archived` |
+| `deprecated` | `deprecated`, `active`, `superseded`, `archived` |
+| `superseded` | `superseded` |
+| `merged` | `merged` |
+| `rejected` | `rejected` |
+| `archived` | `archived` |
+
+`superseded`, `merged`, `rejected`, `archived`는 terminal status다. 현재 정책은 terminal status의 복구 또는 재활성화를 허용하지 않는다.
+
+`UPDATE`, `LINK`, `SUPERSEDE`는 ID, project, namespace, kind, created_at을 유지한다. Revision은 정확히 1 증가하고 updated_at은 이전 값보다 같거나 늦어야 한다.
 
 ## Replacement
 

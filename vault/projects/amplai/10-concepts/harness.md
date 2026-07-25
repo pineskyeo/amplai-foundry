@@ -9,7 +9,7 @@ title: Harness는 Agent 실행을 통제하는 운영 껍질이다
 summary: Harness는 Agent의 입력, 도구, 정책, 관찰, 종료 조건을 묶어 반복 가능한 실행을 만든다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: related_to
     target: CON-0002

@@ -1,0 +1,31 @@
+proposal_version: 1
+proposal_id: PROP-20260712-E116EE23
+project: amplai
+namespace: org/default/project/amplai
+status: applied
+source_ids:
+- SRC-20260712-E116EE23
+created_at: '2026-07-12T20:00:00+09:00'
+created_by: codex
+operations:
+- operation_id: OP-001
+  type: UPDATE
+  target_id: CON-0004
+  kind: concept
+  title: Context는 실행 입력이고 Memory는 재사용 가능한 보존 정보다
+  reason: 기존 Context와 Memory 경계 설명에 검토 상태와 검색 선행 조건을 보완한다.
+  evidence:
+  - source_id: SRC-20260712-E116EE23
+    locator:
+      type: line_range
+      start: 3
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260712-E116EE23/drafts/CON-0004.md
+notes:
+- 기존 Concept 보완으로 분류했다. 새 Concept을 만들지 않는다.
+approved_at: '2026-07-12T19:48:12.128245+09:00'
+approved_by: test-user
+applied_at: '2026-07-12T19:48:12.288787+09:00'
+applied_by: test-user
+git_commit_sha: de0997e154f25b90920adf7eb8a2a77c1f6fada8

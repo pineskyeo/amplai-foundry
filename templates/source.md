@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-id: SRC-YYYYMMDD-NNN
+id: SRC-YYYYMMDD-SHA256XX
 namespace: org/default/project/amplai
 project: amplai
 kind: source
@@ -13,9 +13,17 @@ source_refs: []
 relations: []
 revision: 1
 tags: [source]
+source_metadata:
+  source_type: {source type}
+  content_sha256: {64 lowercase hexadecimal characters}
+  normalized_sha256: {64 lowercase hexadecimal characters}
+  original_filename: {filename or null}
+  media_type: text/markdown
+  ingested_at: YYYY-MM-DDTHH:MM:SS+09:00
+  created_by: user
 ---
 # Source 제목
 
-## Source
+## Original Content
 
-원문 위치, 수집 시점, 작성자와 검증에 필요한 context를 기록한다.
+입력 원문 전체를 그대로 기록한다. 이 template을 직접 복사하지 않고 `amplai-foundry ingest`를 사용한다.

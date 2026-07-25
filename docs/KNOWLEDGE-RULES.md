@@ -20,4 +20,4 @@ Active 공식 지식은 하나 이상의 `source_refs`를 가진다. `source` ki
 
 기존 결정을 조용히 덮어쓰지 않는다. 대체 결정은 `supersedes` relation을 사용하고 이전 결정은 `superseded_by`를 기록한다. 삭제보다 lifecycle state를 사용한다.
 
-공식 지식 변경 자동화는 현재 금지다. 향후 Memory Candidate와 Proposal이 도입돼도 review/apply gate를 통과해야 한다.
+공식 지식의 무승인 변경은 금지다. 모든 변경은 Proposal과 human review를 거친다. 승인된 Proposal만 safe apply gate를 통과한다.

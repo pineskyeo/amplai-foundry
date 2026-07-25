@@ -4,16 +4,19 @@ AMPLAI Foundry는 검토된 장기 프로젝트 지식을 저장하고 검증하
 
 ## Scope
 
-현재 구현은 다음 범위만 포함한다.
+현재 구현은 다음 범위를 포함한다.
 
 - `MemoryObject`, lifecycle, relation domain contract
-- 읽기 전용 `MarkdownMemoryRepository`
+- 읽기 전용 `MarkdownMemoryRepository`와 deterministic lexical search
+- immutable Source ingestion과 SHA-256 duplicate detection
+- Proposal validation, diff, approval, safe apply
+- Codex Curator Harness와 Context Bundle
 - Obsidian에서 바로 열 수 있는 `vault/`
-- 결정론적 `lint`, `stats`, `show` CLI
+- 결정론적 `lint`, `stats`, `show`, `schema` CLI
 - 26개 AMPLAI sample note
 - offline unit/CLI test
 
-LLM 연결, 자동 추출·승인·병합, vector DB, embedding, MCP server, web UI, 중앙 server와 실행 event 저장은 포함하지 않는다.
+외부 LLM 연결, 자동 승인, vector DB, embedding, MCP server, web UI, 중앙 server와 실행 event 저장은 포함하지 않는다.
 
 ## Install
 
@@ -33,6 +36,42 @@ amplai-foundry lint vault/
 amplai-foundry stats vault/
 amplai-foundry show DEC-0001 --vault vault/
 ```
+
+### GPT Response File
+
+```bash
+amplai-foundry ingest ~/Downloads/gpt-answer.md \
+  --project amplai \
+  --source-type chatgpt
+```
+
+### Clipboard Input
+
+```bash
+pbpaste | amplai-foundry ingest - \
+  --project amplai \
+  --source-type chatgpt
+```
+
+### Search And Curate
+
+```bash
+amplai-foundry search "MCP Memory Context" --project amplai
+amplai-foundry curate prepare SRC-... \
+  --project amplai \
+  --output .amplai/jobs/CURATE-SRC-....md
+```
+
+### Review And Apply
+
+```bash
+amplai-foundry proposal validate .amplai/proposals/PROP-.../proposal.yaml
+amplai-foundry proposal diff PROP-...
+amplai-foundry proposal approve PROP-... --approved-by user
+amplai-foundry proposal apply PROP-...
+```
+
+`approve`와 `apply`는 human의 명시적 요청 뒤에만 실행한다. `CONFLICT`가 있는 Proposal은 apply하지 않는다.
 
 `lint` exit code는 다음과 같다.
 
@@ -65,6 +104,7 @@ python -m pytest
 ruff check .
 ruff format --check .
 mypy src
+amplai-foundry schema check
 amplai-foundry lint vault/
 amplai-foundry stats vault/
 ```

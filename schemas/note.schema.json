@@ -1,11 +1,247 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "MemoryKind": {
+      "description": "Kinds of reviewed, long-lived project knowledge.",
+      "enum": [
+        "source",
+        "concept",
+        "principle",
+        "decision",
+        "question",
+        "architecture",
+        "experiment",
+        "map"
+      ],
+      "title": "MemoryKind",
+      "type": "string"
+    },
+    "MemoryRelation": {
+      "additionalProperties": false,
+      "description": "A typed, directed link to another memory object.",
+      "properties": {
+        "target": {
+          "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+          "title": "Target",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/RelationType"
+        }
+      },
+      "required": [
+        "type",
+        "target"
+      ],
+      "title": "MemoryRelation",
+      "type": "object"
+    },
+    "MemoryStatus": {
+      "description": "Lifecycle states of official knowledge.",
+      "enum": [
+        "candidate",
+        "active",
+        "superseded",
+        "deprecated",
+        "merged",
+        "rejected",
+        "archived"
+      ],
+      "title": "MemoryStatus",
+      "type": "string"
+    },
+    "RelationType": {
+      "description": "Directed relationships between memory objects.",
+      "enum": [
+        "related_to",
+        "depends_on",
+        "supports",
+        "contradicts",
+        "supersedes",
+        "implements",
+        "derived_from"
+      ],
+      "title": "RelationType",
+      "type": "string"
+    },
+    "SourceMetadata": {
+      "additionalProperties": false,
+      "description": "Source-specific provenance and integrity metadata.",
+      "properties": {
+        "content_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "created_by": {
+          "minLength": 1,
+          "title": "Created By",
+          "type": "string"
+        },
+        "ingested_at": {
+          "format": "date-time",
+          "title": "Ingested At",
+          "type": "string"
+        },
+        "media_type": {
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "original_filename": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Filename"
+        },
+        "source_type": {
+          "minLength": 1,
+          "title": "Source Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_type",
+        "content_sha256",
+        "normalized_sha256",
+        "media_type",
+        "ingested_at",
+        "created_by"
+      ],
+      "title": "SourceMetadata",
+      "type": "object"
+    }
+  },
   "$id": "https://amplai.local/schemas/note.schema.json",
-  "title": "AMPLAI Memory Object Front Matter",
-  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "Canonical Front Matter contract independent of a storage adapter.",
+  "properties": {
+    "created_at": {
+      "format": "date",
+      "title": "Created At",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/MemoryKind"
+    },
+    "merged_into": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Merged Into"
+    },
+    "namespace": {
+      "minLength": 1,
+      "title": "Namespace",
+      "type": "string"
+    },
+    "project": {
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "title": "Project",
+      "type": "string"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/MemoryRelation"
+      },
+      "title": "Relations",
+      "type": "array"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_metadata": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceMetadata"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "source_refs": {
+      "items": {
+        "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+        "type": "string"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/MemoryStatus"
+    },
+    "summary": {
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    },
+    "superseded_by": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Superseded By"
+    },
+    "tags": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
   "required": [
-    "schema_version",
     "id",
     "namespace",
     "project",
@@ -15,47 +251,8 @@
     "summary",
     "created_at",
     "updated_at",
-    "source_refs",
-    "relations",
-    "revision",
-    "tags"
+    "revision"
   ],
-  "properties": {
-    "schema_version": {"const": 1},
-    "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$"},
-    "namespace": {"type": "string", "minLength": 1},
-    "project": {"type": "string", "minLength": 1},
-    "kind": {
-      "enum": ["source", "concept", "principle", "decision", "question", "architecture", "experiment", "map"]
-    },
-    "status": {
-      "enum": ["candidate", "active", "superseded", "deprecated", "merged", "rejected", "archived"]
-    },
-    "title": {"type": "string", "minLength": 1},
-    "summary": {"type": "string", "minLength": 1},
-    "created_at": {"type": "string", "format": "date"},
-    "updated_at": {"type": "string", "format": "date"},
-    "source_refs": {
-      "type": "array",
-      "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$"}
-    },
-    "relations": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["type", "target"],
-        "properties": {
-          "type": {
-            "enum": ["related_to", "depends_on", "supports", "contradicts", "supersedes", "implements", "derived_from"]
-          },
-          "target": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$"}
-        }
-      }
-    },
-    "superseded_by": {"type": ["string", "null"]},
-    "merged_into": {"type": ["string", "null"]},
-    "revision": {"type": "integer", "minimum": 1},
-    "tags": {"type": "array", "items": {"type": "string", "minLength": 1}}
-  }
+  "title": "AMPLAI Memory Object Front Matter",
+  "type": "object"
 }

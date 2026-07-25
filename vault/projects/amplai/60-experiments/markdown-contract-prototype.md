@@ -9,7 +9,7 @@ title: Markdown Memory Contract 첫 검증
 summary: 같은 Markdown을 사람이 읽고 Python이 검증하는 Foundry prototype으로 domain contract의 실용성을 시험한다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001, SRC-20260711-002]
+source_refs: [SRC-20260711-86C363BF, SRC-20260711-FC31D25D]
 relations:
   - type: implements
     target: DEC-0001

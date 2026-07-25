@@ -9,7 +9,7 @@ title: Memory Candidate는 공식화 전의 지식 후보다
 summary: Memory Candidate는 실행이나 source에서 발견됐지만 아직 Canonical Knowledge로 승인되지 않은 정보다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-001]
+source_refs: [SRC-20260711-86C363BF]
 relations:
   - type: related_to
     target: CON-0007

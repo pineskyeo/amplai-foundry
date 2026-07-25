@@ -9,7 +9,7 @@ title: 존재하지 않는 relation target fixture
 summary: LINK_RELATION_TARGET_MISSING 규칙을 검증하는 concept다.
 created_at: 2026-07-11
 updated_at: 2026-07-11
-source_refs: [SRC-20260711-902]
+source_refs: [SRC-20260711-86BF88EB]
 relations:
   - type: related_to
     target: CON-9999
