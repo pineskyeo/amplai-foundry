@@ -1,0 +1,122 @@
+proposal_version: 1
+proposal_id: PROP-20260725-9FEFBEAF
+project: amplai
+namespace: org/default/project/amplai
+status: draft
+source_ids:
+  - SRC-20260725-9FEFBEAF
+created_at: '2026-07-25T09:22:45+09:00'
+created_by: codex
+operations:
+  - operation_id: OP-001
+    type: CREATE
+    kind: concept
+    title: AMPLAI는 프로젝트 중심 AI 운영체제다
+    reason: AMPLAI의 제품 경계와 runtime-independent Knowledge Layer 책임을 후보 개념으로 분리한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 5, end: 9}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 24, end: 48}
+    confidence: medium
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/CON-0009.md
+  - operation_id: OP-002
+    type: CREATE
+    kind: principle
+    title: 프로젝트가 Memory를 소유하고 Runtime은 이를 사용한다
+    reason: Agent별 memory가 아니라 project scope의 공유 지식을 소유권 원칙으로 기록한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 101, end: 108}
+    confidence: high
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/PRI-0005.md
+  - operation_id: OP-003
+    type: CREATE
+    kind: concept
+    title: Hermes는 Project Memory를 사용하는 Work Manager다
+    reason: Hermes의 검색, 계획, 위임, 결과 취합 책임을 구현 agent와 분리한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 11, end: 15}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 52, end: 72}
+    confidence: medium
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/CON-0010.md
+  - operation_id: OP-004
+    type: CREATE
+    kind: concept
+    title: Implementation Agent는 위임받은 변경을 구현하고 검증한다
+    reason: Claude Code와 Codex가 수행할 수 있는 구현 역할을 vendor-independent 개념으로 정의한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 17, end: 20}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 65, end: 72}
+    confidence: medium
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/CON-0011.md
+  - operation_id: OP-005
+    type: CREATE
+    kind: concept
+    title: Governor는 승인과 정책 경계를 집행한다
+    reason: 역할 그림에 제시된 Governor를 기존 Proposal review 원칙과 연결되는 후보 개념으로 기록한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 24, end: 48}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 112, end: 119}
+    confidence: low
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/CON-0012.md
+  - operation_id: OP-006
+    type: CREATE
+    kind: architecture
+    title: AMPLAI 역할 경계는 Knowledge Layer·Governor·Work Manager·Implementation Agent를 분리한다
+    reason: 지식, 정책, 업무 조정, 구현 실행 책임을 하나의 architecture 후보로 연결한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 24, end: 48}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 112, end: 119}
+    confidence: medium
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/ARC-0003.md
+  - operation_id: OP-007
+    type: CREATE
+    kind: question
+    title: 운영 Memory와 Canonical Knowledge의 저장 경계는 어디인가
+    reason: 원문의 Session, Jira State, Documents 범위가 현재 canonical/execution memory 구분과 다르다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 35, end: 42}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 76, end: 97}
+    confidence: high
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/QUE-0006.md
+  - operation_id: OP-008
+    type: CREATE
+    kind: question
+    title: Project Memory의 Source of Truth 범위는 어디까지인가
+    reason: 현재 Markdown canonical source 결정과 Jira/session 등 외부 operational state의 권위를 구분해야 한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 101, end: 119}
+    confidence: high
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/QUE-0007.md
+  - operation_id: OP-009
+    type: UPDATE
+    target_id: MAP-0002
+    kind: map
+    title: AMPLAI Platform Map에 역할 경계 후보를 연결한다
+    reason: 신규 역할 개념, architecture와 open question을 MOC에서 탐색할 수 있게 연결한다.
+    evidence:
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 5, end: 48}
+      - source_id: SRC-20260725-9FEFBEAF
+        locator: {type: line_range, start: 101, end: 119}
+    confidence: high
+    draft_path: .amplai/proposals/PROP-20260725-9FEFBEAF/drafts/MAP-0002.md
+    expected_revision: 1
+    expected_target_sha256: 6dd117af15d048fdeadb7242b0275d4b569e5c0f5c342b9ab103efa26d8951f3
+notes:
+  - 원문의 .amplai directory 구조와 Session JSONL 선택은 canonical 결정으로 확정하지 않는다.
+  - Project Memory의 소유권 원칙과 Markdown+Git canonical 저장 결정은 개념적 소유권과 물리 저장소로 구분한다.
+  - Codex와 Claude Code는 Implementation Agent 역할의 예시이며 특정 runtime의 유일한 역할로 고정하지 않는다.
+

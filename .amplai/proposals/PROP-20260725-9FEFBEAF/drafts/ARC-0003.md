@@ -1,0 +1,29 @@
+---
+schema_version: 1
+id: ARC-0003
+namespace: org/default/project/amplai
+project: amplai
+kind: architecture
+status: candidate
+title: AMPLAI 역할 경계는 Knowledge Layer·Governor·Work Manager·Implementation Agent를 분리한다
+summary: 프로젝트 지식, 정책 집행, 업무 조정과 구현 실행을 독립 책임으로 분리하는 architecture 후보다.
+created_at: 2026-07-25
+updated_at: 2026-07-25
+source_refs: [SRC-20260725-9FEFBEAF]
+relations:
+  - {type: depends_on, target: ARC-0001}
+  - {type: implements, target: PRI-0005}
+  - {type: related_to, target: CON-0010}
+  - {type: related_to, target: CON-0011}
+  - {type: related_to, target: CON-0012}
+revision: 1
+tags: [architecture, roles, boundary]
+---
+# AMPLAI 역할 경계는 Knowledge Layer·Governor·Work Manager·Implementation Agent를 분리한다
+
+## Boundary
+
+Knowledge Layer는 Project Memory의 도메인 계약, provenance와 retrieval 경계를 제공한다. Governor는 정책과 승인 조건을 집행하고, Work Manager는 업무 상태를 모아 계획과 위임을 수행하며, Implementation Agent는 위임된 변경을 구현하고 검증한다.
+
+Hermes는 Work Manager 후보이고 Claude Code와 Codex는 Implementation Agent 역할을 수행할 수 있다. 모든 Runtime은 project-owned knowledge를 공유하지만 각 실행의 session state와 tool event를 canonical knowledge에 자동 편입하지 않는다.
+
