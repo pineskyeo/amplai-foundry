@@ -61,6 +61,15 @@ def test_markdown_and_text_file_create_source(
     assert found[1].media_type == media_type
 
 
+def test_immutable_source_is_exempt_from_atomic_body_size_hygiene(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+    ingest(vault, b"x" * 8_001)
+
+    codes = {issue.code for issue in KnowledgeLinter().lint(vault).issues}
+
+    assert "HYGIENE_BODY_LARGE" not in codes
+
+
 def test_exact_and_normalized_duplicates_do_not_create_files(tmp_path: Path) -> None:
     vault = project_vault(tmp_path)
     first = ingest(vault, b"line one\r\nline two\r\n")

@@ -33,7 +33,7 @@ def validate_hygiene(
 
     for path, memory in records:
         body_length = len(memory.content.strip())
-        if body_length < config.min_body_characters:
+        if memory.kind is not MemoryKind.SOURCE and body_length < config.min_body_characters:
             issues.append(
                 LintIssue(
                     Severity.WARNING,
@@ -43,7 +43,7 @@ def validate_hygiene(
                     memory.id,
                 )
             )
-        if body_length > config.max_body_characters:
+        if memory.kind is not MemoryKind.SOURCE and body_length > config.max_body_characters:
             issues.append(
                 LintIssue(
                     Severity.WARNING,
