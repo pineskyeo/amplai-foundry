@@ -1,0 +1,178 @@
+proposal_version: 1
+proposal_id: PROP-20260728-E0C88A4D
+project: amplai
+namespace: org/default/project/amplai
+status: applied
+source_ids:
+- SRC-20260728-E0C88A4D
+created_at: '2026-07-28T07:18:00+09:00'
+created_by: codex
+operations:
+- operation_id: OP-001
+  type: UPDATE
+  target_id: CON-0008
+  kind: concept
+  title: Memory Candidate에 비교 가능한 의미 구조를 보강한다
+  reason: 기존 Candidate 계약에 project scope, proposition, modality, polarity와 constraints를
+    비교 입력으로 보존하되 미확정 ontology schema로 고정하지 않는다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: medium
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/CON-0008.md
+  expected_revision: 2
+  expected_target_sha256: 5138e69d83697eed866834beac8df2c0e8c17754a0c1663d564e6b9824ff6c82
+- operation_id: OP-002
+  type: UPDATE
+  target_id: QUE-0009
+  kind: question
+  title: Semantic Identity 비교 정책의 미결정 축을 구체화한다
+  reason: 새 질문을 중복 생성하지 않고 기존 QUE-0009에 identity, relation, status corpus, threshold,
+    persistence와 escalation 쟁점을 명시한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/QUE-0009.md
+  expected_revision: 1
+  expected_target_sha256: ba5d431a888f05f20699b8f0c91f6c71a6d9be714a81a400a566fc26ed02da32
+- operation_id: OP-003
+  type: CREATE
+  kind: concept
+  title: Semantic Anchor는 여러 Source 표현을 하나의 검토 가능한 의미 identity로 연결한다
+  reason: Source content identity와 semantic identity를 분리하고 여러 표현, canonical target과
+    comparison history를 연결할 provisional runtime concept를 기록한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: medium
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/CON-0013.md
+- operation_id: OP-004
+  type: CREATE
+  kind: principle
+  title: Semantic identity 비교는 knowledge kind 선택과 canonical 생성보다 먼저 수행한다
+  reason: suggested kind가 달라도 기존 의미 target을 먼저 비교하여 같은 의미의 별도 Concept, Principle,
+    Decision 생성 가능성을 낮추는 순서 원칙을 제안한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/PRI-0006.md
+- operation_id: OP-005
+  type: CREATE
+  kind: architecture
+  title: Semantic Identity & Comparison Kernel은 Candidate와 Proposal 사이의 비교 경계를 제공한다
+  reason: ARC-0004의 broad compiler 안에서 candidate validation, project-scoped retrieval,
+    comparison, policy와 durable report 책임을 atomic component architecture로 분리한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/ARC-0006.md
+- operation_id: OP-006
+  type: CREATE
+  kind: decision
+  title: UNCERTAIN semantic comparison은 Canonical CREATE나 UPDATE를 승인하지 않는다
+  reason: 새로운 의미인지 충분히 판정하지 못한 Candidate를 durable comparison hold로 보존하고 canonical
+    mutation으로 전달하지 않는 v1 안전 정책 후보다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/DEC-0005.md
+- operation_id: OP-007
+  type: CREATE
+  kind: decision
+  title: Phase 1B의 첫 신규 구현 slice는 Phase 1A gate 뒤 Semantic Comparison 계약을 고정한다
+  reason: 이미 구현된 Source ingestion 기반 다음에 Semantic Identity contract, deterministic
+    comparison policy와 Golden Set을 먼저 검증하는 sequencing 후보를 기록한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: medium
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/DEC-0006.md
+- operation_id: OP-008
+  type: UPDATE
+  target_id: EXP-0002
+  kind: experiment
+  title: Knowledge Steward Golden Set에 semantic comparison pair와 routing metric을 추가한다
+  reason: 기존 Golden Set을 duplicate, refine, conflict, new, uncertain, cross-kind,
+    cross-project와 candidate-status 사례 및 false-merge/false-create metric으로 구체화한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/EXP-0002.md
+  expected_revision: 1
+  expected_target_sha256: e31abf3c791af2fe340cf74bbb3e6eea4b515a3b896f6b69e7faf8097212d82a
+- operation_id: OP-009
+  type: UPDATE
+  target_id: MAP-0001
+  kind: map
+  title: AMPLAI Knowledge Map에 Semantic Identity 후보를 연결한다
+  reason: 새 concept, principle, architecture와 decision 후보가 적용될 경우 MOC에서 탐색되고 orphan
+    warning이 발생하지 않도록 연결한다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260728-E0C88A4D/drafts/MAP-0001.md
+  expected_revision: 3
+  expected_target_sha256: 35167b11017f68146b6d3283cd9a4d5493d7d1d58ed3a3e49090e2eeac6277ac
+- operation_id: OP-010
+  type: IGNORE
+  kind: roadmap_update
+  title: Approved roadmap와 current_focus의 직접 변경
+  reason: Phase 1A는 아직 완료되지 않았고 roadmap subphase numbering은 이전 미승인 제안과 충돌한다. Candidate
+    Decision 검토와 명시적 승인 전에는 docs/ROADMAP.md와 machine-readable roadmap을 변경하지 않는다.
+  evidence:
+  - source_id: SRC-20260728-E0C88A4D
+    locator:
+      type: line_range
+      start: 4
+      end: 4
+  confidence: high
+notes:
+- Source의 전체 referenced conversation은 Original Content line 4(Vault file line 32)의
+  한 physical line에 저장돼 현재 line_range locator로 세부 claim을 분리할 수 없다. 각 operation reason과
+  summary에 해당 section 의미를 제한해 기록한다.
+- 현재 curation retrieval은 이미 active knowledge를 cross-kind로 검색한다. 이번 Proposal은 cross-kind
+  search 신규 구현이 아니라 semantic recall, candidate-status coverage와 structured ComparisonResult
+  경계를 제안한다.
+- REFINES를 모든 kind에 UPDATE로 매핑하지 않는다. Decision 변경은 기존 supersedes lifecycle 계약을 따라야
+  하며 Principle과 Architecture 의미 변경도 review 대상이다.
+- SemanticAnchor 이름, ID, persistence, relation enum, confidence threshold와 pass threshold는
+  승인·실험 전까지 provisional이다.
+- 외부 embedding service, vector DB, 자동 merge/apply, 기존 Vault 대규모 migration과 Phase 1A
+  완료 표시는 포함하지 않는다.
+approved_at: '2026-07-28T07:24:59.865536+09:00'
+approved_by: user
+applied_at: '2026-07-28T07:25:00.302182+09:00'
+applied_by: user
