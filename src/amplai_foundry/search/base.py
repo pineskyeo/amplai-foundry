@@ -8,6 +8,7 @@ from typing import Protocol
 class SearchResult:
     score: int
     id: str
+    namespace: str
     kind: str
     status: str
     title: str

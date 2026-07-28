@@ -14,5 +14,6 @@ build/
 .obsidian/cache
 .amplai/tmp/
 .amplai/jobs/
+.amplai/runtime/
 .amplai/apply.lock
 .amplai/proposals/**/*.tmp

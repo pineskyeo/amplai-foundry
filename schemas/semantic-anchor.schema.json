@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "ClaimModality": {
+      "enum": [
+        "must",
+        "must_not",
+        "should",
+        "should_not",
+        "may",
+        "is",
+        "is_not"
+      ],
+      "title": "ClaimModality",
+      "type": "string"
+    },
+    "MemoryRef": {
+      "additionalProperties": false,
+      "description": "Qualified memory identity; local IDs are only unique inside a namespace.",
+      "properties": {
+        "local_id": {
+          "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "namespace": {
+          "minLength": 1,
+          "title": "Namespace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "local_id"
+      ],
+      "title": "MemoryRef",
+      "type": "object"
+    },
+    "ProjectRef": {
+      "additionalProperties": false,
+      "description": "Stable identity for one project independent of its clone path.",
+      "properties": {
+        "namespace": {
+          "pattern": "^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)+$",
+          "title": "Namespace",
+          "type": "string"
+        },
+        "project_id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+          "title": "Project Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_id",
+        "namespace"
+      ],
+      "title": "ProjectRef",
+      "type": "object"
+    },
+    "SemanticClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "modality": {
+          "$ref": "#/$defs/ClaimModality"
+        },
+        "object": {
+          "minLength": 1,
+          "title": "Object",
+          "type": "string"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        }
+      },
+      "required": [
+        "modality",
+        "action",
+        "object"
+      ],
+      "title": "SemanticClaim",
+      "type": "object"
+    },
+    "SemanticDescriptor": {
+      "additionalProperties": false,
+      "description": "Canonical structured meaning attached to an approved MemoryObject.",
+      "properties": {
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "canonical_statement": {
+          "minLength": 1,
+          "title": "Canonical Statement",
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/SemanticClaim"
+        },
+        "constraints": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/SemanticScope"
+        },
+        "signature": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Signature",
+          "type": "string"
+        }
+      },
+      "required": [
+        "signature",
+        "scope",
+        "claim",
+        "canonical_statement"
+      ],
+      "title": "SemanticDescriptor",
+      "type": "object"
+    },
+    "SemanticScope": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "domain": {
+          "minLength": 1,
+          "title": "Domain",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "target",
+        "actor"
+      ],
+      "title": "SemanticScope",
+      "type": "object"
+    }
+  },
+  "$id": "https://amplai.local/schemas/semantic-anchor.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "descriptor": {
+      "$ref": "#/$defs/SemanticDescriptor"
+    },
+    "project": {
+      "$ref": "#/$defs/ProjectRef"
+    },
+    "provisional": {
+      "default": false,
+      "title": "Provisional",
+      "type": "boolean"
+    },
+    "semantic_id": {
+      "pattern": "^SEM-[A-F0-9]{12}$",
+      "title": "Semantic Id",
+      "type": "string"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/MemoryRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "target_refs": {
+      "items": {
+        "$ref": "#/$defs/MemoryRef"
+      },
+      "title": "Target Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "semantic_id",
+    "project",
+    "descriptor"
+  ],
+  "title": "AMPLAI Semantic Anchor",
+  "type": "object"
+}

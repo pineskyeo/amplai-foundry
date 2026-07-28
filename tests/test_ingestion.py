@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -80,6 +81,83 @@ def test_exact_and_normalized_duplicates_do_not_create_files(tmp_path: Path) -> 
     assert normalized.status == "duplicate"
     assert exact.source_id == normalized.source_id == first.source_id
     assert len(list((vault / "projects/amplai/00-sources").glob("*.md"))) == 1
+
+
+def test_concurrent_duplicate_ingestion_is_idempotent(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda _index: ingest(vault, b"concurrent immutable source"),
+                range(2),
+            )
+        )
+
+    assert sorted(result.status for result in results) == ["created", "duplicate"]
+    assert results[0].source_id == results[1].source_id
+    assert len(list((vault / "projects/amplai/00-sources").glob("*.md"))) == 1
+
+
+def test_tampered_duplicate_candidate_fails_closed(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+    first = ingest(vault, b"immutable duplicate")
+    path = Path(first.path)
+    path.write_bytes(path.read_bytes() + b" tampered")
+
+    with pytest.raises(IngestionError, match="변조"):
+        ingest(vault, b"immutable duplicate")
+
+
+def test_source_id_prefix_collision_fails_closed(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+    first = b"collision-validation-47709\n"
+    second = b"collision-validation-60816\n"
+
+    created = ingest(vault, first)
+    assert created.source_id == "SRC-20260712-C3F8A156"
+    with pytest.raises(IngestionError, match="hash prefix 충돌"):
+        ingest(vault, second)
+
+
+@pytest.mark.parametrize("title", ["   ", "unsafe\n## Original Content"])
+def test_invalid_source_title_creates_no_file(tmp_path: Path, title: str) -> None:
+    vault = project_vault(tmp_path)
+
+    with pytest.raises(IngestionError, match=r"title|metadata"):
+        ingest(vault, b"safe bytes", title=title)
+
+    assert not list((vault / "projects/amplai/00-sources").glob("*.md"))
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("source_type", "unsafe\n## Original Content\nevil"),
+        ("original_filename", "unsafe\n## Original Content\nevil"),
+        ("created_by", "unsafe\n## Original Content\nevil"),
+        ("media_type", "text/plain\n## Original Content\nevil"),
+    ],
+)
+def test_metadata_marker_text_cannot_shift_original_boundary(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    vault = project_vault(tmp_path)
+    result = ingest(vault, b"ORIGINAL", **{field: value})
+
+    assert extract_original_content(Path(result.path)) == b"ORIGINAL"
+    assert SourceIngestionService(vault).verify(result.source_id).valid
+
+
+def test_original_payload_may_contain_the_source_marker(tmp_path: Path) -> None:
+    vault = project_vault(tmp_path)
+    original = b"before\n## Original Content\nafter"
+
+    result = ingest(vault, original)
+
+    assert extract_original_content(Path(result.path)) == original
 
 
 def test_hashes_and_source_id_are_deterministic() -> None:
@@ -201,6 +279,32 @@ def test_verify_detects_original_content_mutation(tmp_path: Path) -> None:
     assert not service.verify(result.source_id).valid
     codes = {issue.code for issue in KnowledgeLinter().lint(vault).issues}
     assert "SOURCE_CONTENT_HASH" in codes
+
+
+def test_source_lookup_fails_closed_when_local_id_exists_in_multiple_projects(
+    tmp_path: Path,
+) -> None:
+    vault = project_vault(tmp_path)
+    (vault / "projects/cortex/00-sources").mkdir(parents=True)
+    first = ingest(vault, b"shared source bytes")
+    second = ingest(
+        vault,
+        b"shared source bytes",
+        project="cortex",
+        title="Cortex source",
+    )
+    assert first.source_id == second.source_id
+    service = SourceIngestionService(vault)
+
+    with pytest.raises(IngestionError, match="여러 project"):
+        service.find(first.source_id)
+    with pytest.raises(IngestionError, match="여러 project"):
+        service.verify(first.source_id)
+
+    amplai = service.find(first.source_id, project="amplai")
+    cortex = service.find(first.source_id, project="cortex")
+    assert amplai is not None and "projects/amplai" in str(amplai[0])
+    assert cortex is not None and "projects/cortex" in str(cortex[0])
 
 
 def test_linter_detects_missing_source_metadata_and_bad_hash(tmp_path: Path) -> None:

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import re
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -20,6 +22,8 @@ class ProposalRepository:
         self.root = root
 
     def path_for(self, identifier: str) -> Path:
+        if re.fullmatch(r"PROP-[0-9]{8}-[A-F0-9]{8}", identifier) is None:
+            raise ProposalRepositoryError("Proposal ID 형식이 올바르지 않습니다.")
         return self.root / identifier / "proposal.yaml"
 
     def get(self, identifier: str) -> Proposal | None:
@@ -37,16 +41,30 @@ class ProposalRepository:
     def save(self, proposal: Proposal) -> Path:
         path = self.path_for(proposal.proposal_id)
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(".yaml.tmp")
         payload = yaml.safe_dump(
             proposal.model_dump(mode="json", exclude_none=True),
             allow_unicode=True,
             sort_keys=False,
         )
+        descriptor = -1
+        temporary: Path | None = None
         try:
-            temporary.write_text(payload, encoding="utf-8")
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=".proposal.",
+                suffix=".tmp",
+                dir=path.parent,
+            )
+            temporary = Path(temporary_name)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                descriptor = -1
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
             os.replace(temporary, path)
         except OSError as error:
-            temporary.unlink(missing_ok=True)
+            if descriptor >= 0:
+                os.close(descriptor)
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
             raise ProposalRepositoryError(f"Proposal을 저장할 수 없습니다: {error}") from error
         return path

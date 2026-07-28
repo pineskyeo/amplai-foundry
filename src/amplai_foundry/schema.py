@@ -4,13 +4,22 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel
+
 from amplai_foundry.domain.models import MemoryMetadata
+from amplai_foundry.intake.models import IntakeRun, IntentRequest, ResolutionHoldRecord
+from amplai_foundry.projects.models import DomainLock, ProjectManifest
 from amplai_foundry.proposals.models import Proposal
+from amplai_foundry.roadmaps.models import RoadmapChangeProposal, RoadmapDefinition
+from amplai_foundry.semantics.models import (
+    ComparisonResult,
+    KnowledgeCandidate,
+    SemanticAnchor,
+)
+from amplai_foundry.semantics.repository import SemanticAnchorSet
 
 
-def _schema(
-    model: type[MemoryMetadata] | type[Proposal], *, identifier: str, title: str
-) -> dict[str, Any]:
+def _schema(model: type[BaseModel], *, identifier: str, title: str) -> dict[str, Any]:
     schema = model.model_json_schema(mode="validation")
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     schema["$id"] = identifier
@@ -30,6 +39,61 @@ def generated_schemas() -> dict[Path, str]:
             Proposal,
             identifier="https://amplai.local/schemas/proposal.schema.json",
             title="AMPLAI Knowledge Proposal",
+        ),
+        Path("schemas/project-manifest.schema.json"): _schema(
+            ProjectManifest,
+            identifier="https://amplai.local/schemas/project-manifest.schema.json",
+            title="AMPLAI Project Pack Manifest",
+        ),
+        Path("schemas/domain-lock.schema.json"): _schema(
+            DomainLock,
+            identifier="https://amplai.local/schemas/domain-lock.schema.json",
+            title="AMPLAI Domain Lock",
+        ),
+        Path("schemas/intent-request.schema.json"): _schema(
+            IntentRequest,
+            identifier="https://amplai.local/schemas/intent-request.schema.json",
+            title="AMPLAI Intent Request",
+        ),
+        Path("schemas/intake-run.schema.json"): _schema(
+            IntakeRun,
+            identifier="https://amplai.local/schemas/intake-run.schema.json",
+            title="AMPLAI Intake Run",
+        ),
+        Path("schemas/resolution-hold.schema.json"): _schema(
+            ResolutionHoldRecord,
+            identifier="https://amplai.local/schemas/resolution-hold.schema.json",
+            title="AMPLAI Resolution Hold",
+        ),
+        Path("schemas/knowledge-candidate.schema.json"): _schema(
+            KnowledgeCandidate,
+            identifier="https://amplai.local/schemas/knowledge-candidate.schema.json",
+            title="AMPLAI Knowledge Candidate",
+        ),
+        Path("schemas/comparison-result.schema.json"): _schema(
+            ComparisonResult,
+            identifier="https://amplai.local/schemas/comparison-result.schema.json",
+            title="AMPLAI Semantic Comparison Result",
+        ),
+        Path("schemas/semantic-anchor.schema.json"): _schema(
+            SemanticAnchor,
+            identifier="https://amplai.local/schemas/semantic-anchor.schema.json",
+            title="AMPLAI Semantic Anchor",
+        ),
+        Path("schemas/semantic-anchor-set.schema.json"): _schema(
+            SemanticAnchorSet,
+            identifier="https://amplai.local/schemas/semantic-anchor-set.schema.json",
+            title="AMPLAI Semantic Anchor Set",
+        ),
+        Path("schemas/roadmap.schema.json"): _schema(
+            RoadmapDefinition,
+            identifier="https://amplai.local/schemas/roadmap.schema.json",
+            title="AMPLAI Roadmap Definition",
+        ),
+        Path("schemas/roadmap-proposal.schema.json"): _schema(
+            RoadmapChangeProposal,
+            identifier="https://amplai.local/schemas/roadmap-proposal.schema.json",
+            title="AMPLAI Roadmap Change Proposal",
         ),
     }
     return {

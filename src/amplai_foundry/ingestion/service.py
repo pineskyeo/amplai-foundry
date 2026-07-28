@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import builtins
 import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import yaml
 
+from amplai_foundry.domain.identity import ProjectRef
+from amplai_foundry.domain.models import MemoryMetadata
 from amplai_foundry.domain.project import (
     ProjectPathError,
     project_root,
@@ -18,7 +21,7 @@ from amplai_foundry.domain.project import (
 )
 from amplai_foundry.domain.source import SourceMetadata
 from amplai_foundry.ingestion.hashing import content_sha256, normalized_sha256
-from amplai_foundry.ingestion.identifiers import safe_slug, source_id
+from amplai_foundry.ingestion.identifiers import source_id
 from amplai_foundry.ingestion.result import IngestionResult, VerificationResult
 from amplai_foundry.parsing.markdown import MarkdownParseError, parse_markdown_file
 
@@ -35,9 +38,22 @@ def extract_original_content(path: Path) -> bytes:
         data = path.read_bytes()
     except OSError as error:
         raise IngestionError(f"Source를 읽을 수 없습니다: {error}") from error
-    marker_index = data.find(ORIGINAL_CONTENT_MARKER)
+    if not data.startswith(b"---\n"):
+        raise IngestionError("Source가 YAML Front Matter로 시작하지 않습니다.")
+    front_matter_end = data.find(b"\n---\n", 4)
+    if front_matter_end < 0:
+        raise IngestionError("Source YAML Front Matter 종료 marker가 없습니다.")
+    body_start = front_matter_end + len(b"\n---\n")
+    marker_index = data.find(ORIGINAL_CONTENT_MARKER, body_start)
     if marker_index < 0:
         raise IngestionError("Source 본문에 '## Original Content' marker가 없습니다.")
+    controlled_heading = data[body_start:marker_index]
+    if controlled_heading and (
+        not controlled_heading.startswith(b"# ")
+        or not controlled_heading.endswith(b"\n\n")
+        or b"\n" in controlled_heading[:-2]
+    ):
+        raise IngestionError("Source 본문 header/원문 경계가 올바르지 않습니다.")
     return data[marker_index + len(ORIGINAL_CONTENT_MARKER) :]
 
 
@@ -61,12 +77,6 @@ class SourceIngestionService:
         now: datetime | None = None,
     ) -> IngestionResult:
         """Create one source unless exact or normalized content already exists."""
-        if not content:
-            raise IngestionError("빈 입력은 Source로 등록할 수 없습니다.")
-        try:
-            content.decode("utf-8")
-        except UnicodeDecodeError as error:
-            raise IngestionError("입력은 UTF-8이어야 합니다.") from error
         try:
             project = validate_project_id(project)
             resolved_project_root = project_root(self.vault, project)
@@ -75,11 +85,47 @@ class SourceIngestionService:
         if not resolved_project_root.is_dir():
             raise IngestionError(f"project가 존재하지 않습니다: {project}")
         resolved_namespace = namespace or f"org/default/project/{project}"
-        if not resolved_namespace.endswith(f"/project/{project}"):
-            raise IngestionError(
-                f"namespace는 /project/{project}로 끝나야 합니다: {resolved_namespace}"
-            )
+        try:
+            project_ref = ProjectRef(project_id=project, namespace=resolved_namespace)
+        except ValueError as error:
+            raise IngestionError(str(error)) from error
+        return self.ingest_project(
+            content,
+            project=project_ref,
+            project_root_path=resolved_project_root,
+            source_type=source_type,
+            title=title,
+            original_filename=original_filename,
+            media_type=media_type,
+            created_by=created_by,
+            now=now,
+        )
 
+    def ingest_project(
+        self,
+        content: bytes,
+        *,
+        project: ProjectRef,
+        project_root_path: Path,
+        source_type: str,
+        title: str,
+        original_filename: str | None = None,
+        media_type: str = "text/plain",
+        created_by: str = "user",
+        now: datetime | None = None,
+    ) -> IngestionResult:
+        """Register a Source in a portable Project Pack memory root."""
+        if not content:
+            raise IngestionError("빈 입력은 Source로 등록할 수 없습니다.")
+        if "\n" in title or "\r" in title:
+            raise IngestionError("Source title에는 줄바꿈을 포함할 수 없습니다.")
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise IngestionError("입력은 UTF-8이어야 합니다.") from error
+        resolved_project_root = project_root_path.resolve()
+        if not resolved_project_root.is_dir():
+            raise IngestionError(f"project memory root가 존재하지 않습니다: {project_root_path}")
         exact_hash = content_sha256(content)
         normalized_hash = normalized_sha256(content)
         duplicate = self._find_duplicate(resolved_project_root, exact_hash, normalized_hash)
@@ -102,18 +148,28 @@ class SourceIngestionService:
                 label="Source directory",
             )
             path = require_contained(
-                sources_dir / f"{identifier}-{safe_slug(title)}.md",
+                sources_dir / f"{identifier}.md",
                 resolved_project_root,
                 label="Source",
             )
         except ProjectPathError as error:
             raise IngestionError(str(error)) from error
         sources_dir.mkdir(parents=True, exist_ok=True)
+        colliding_paths = [
+            existing_path
+            for existing_path, _metadata, existing_id in self._source_records(resolved_project_root)
+            if existing_id == identifier
+        ]
+        if colliding_paths:
+            raise IngestionError(
+                f"Source ID hash prefix 충돌이 발생했습니다: {identifier}; "
+                + ", ".join(str(item) for item in colliding_paths)
+            )
         metadata = {
             "schema_version": 1,
             "id": identifier,
-            "namespace": resolved_namespace,
-            "project": project,
+            "namespace": project.namespace,
+            "project": project.project_id,
             "kind": "source",
             "status": "active",
             "title": title,
@@ -134,33 +190,58 @@ class SourceIngestionService:
                 created_by=created_by,
             ).model_dump(mode="json"),
         }
+        try:
+            validated_metadata = MemoryMetadata.model_validate(metadata)
+        except ValueError as error:
+            raise IngestionError(f"Source metadata가 유효하지 않습니다: {error}") from error
         front_matter = yaml.safe_dump(
-            metadata,
+            validated_metadata.model_dump(mode="json", exclude_none=True),
             allow_unicode=True,
             sort_keys=False,
             default_flow_style=False,
         ).encode("utf-8")
         prefix = b"---\n" + front_matter + b"---\n# " + title.encode("utf-8") + b"\n\n"
         payload = prefix + ORIGINAL_CONTENT_MARKER + content
+        temporary_path: Path | None = None
         try:
-            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=f".{identifier}.",
+                suffix=".tmp",
+                dir=sources_dir,
+            )
+            temporary_path = Path(temporary_name)
+            os.chmod(temporary_path, 0o644)
             with os.fdopen(descriptor, "wb") as handle:
                 handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.link(temporary_path, path)
         except FileExistsError:
             duplicate = self._find_duplicate(resolved_project_root, exact_hash, normalized_hash)
             if duplicate is None:
-                raise IngestionError(f"Source ID 충돌이 발생했습니다: {identifier}") from None
+                raise IngestionError(
+                    f"Source ID hash prefix 충돌이 발생했습니다: {identifier}"
+                ) from None
             duplicate_id, duplicate_path = duplicate
             return IngestionResult(
                 "duplicate", duplicate_id, str(duplicate_path), exact_hash, duplicate_id
             )
         except OSError as error:
             raise IngestionError(f"Source를 생성할 수 없습니다: {error}") from error
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
         return IngestionResult("created", identifier, str(path), exact_hash, None)
 
-    def verify(self, identifier: str) -> VerificationResult:
+    def verify(
+        self,
+        identifier: str,
+        *,
+        project: str | None = None,
+        namespace: str | None = None,
+    ) -> VerificationResult:
         """Compare one source's original bytes with its stored exact hash."""
-        found = self.find(identifier)
+        found = self.find(identifier, project=project, namespace=namespace)
         if found is None:
             raise IngestionError(f"Source ID가 존재하지 않습니다: {identifier}")
         path, metadata = found
@@ -174,11 +255,33 @@ class SourceIngestionService:
             expected_sha256=metadata.content_sha256,
         )
 
-    def find(self, identifier: str) -> tuple[Path, SourceMetadata] | None:
+    def find(
+        self,
+        identifier: str,
+        *,
+        project: str | None = None,
+        namespace: str | None = None,
+    ) -> tuple[Path, SourceMetadata] | None:
+        matches: list[tuple[Path, SourceMetadata]] = []
         for path, metadata, source_identifier in self._source_records(self.vault):
-            if source_identifier == identifier:
-                return path, metadata
-        return None
+            if source_identifier != identifier:
+                continue
+            try:
+                document = parse_markdown_file(path)
+            except MarkdownParseError as error:
+                raise IngestionError(f"Source metadata를 읽을 수 없습니다: {error}") from error
+            if project is not None and document.metadata.get("project") != project:
+                continue
+            if namespace is not None and document.metadata.get("namespace") != namespace:
+                continue
+            matches.append((path, metadata))
+        if len(matches) > 1:
+            paths = ", ".join(str(path) for path, _metadata in matches)
+            raise IngestionError(
+                f"Source ID가 여러 project에 존재합니다: {identifier}; "
+                f"project 또는 namespace를 지정하세요: {paths}"
+            )
+        return matches[0] if matches else None
 
     def list(
         self, *, project: str | None = None
@@ -199,6 +302,21 @@ class SourceIngestionService:
                 metadata.content_sha256 == exact_hash
                 or metadata.normalized_sha256 == normalized_hash
             ):
+                try:
+                    original = extract_original_content(path)
+                except IngestionError as error:
+                    raise IngestionError(
+                        f"중복 후보 Source 무결성 검증에 실패했습니다: {path}: {error}"
+                    ) from error
+                actual_exact = content_sha256(original)
+                actual_normalized = normalized_sha256(original)
+                if (
+                    actual_exact != metadata.content_sha256
+                    or actual_normalized != metadata.normalized_sha256
+                ):
+                    raise IngestionError(
+                        f"중복 후보 Source가 변조되었습니다: {identifier} ({path})"
+                    )
                 return identifier, path
         return None
 

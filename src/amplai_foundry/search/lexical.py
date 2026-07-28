@@ -3,6 +3,7 @@
 import re
 from collections.abc import Callable
 
+from amplai_foundry.domain.identity import MemoryRef
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.repositories.base import MemoryRepository
 from amplai_foundry.search.base import SearchResult
@@ -18,7 +19,7 @@ class LexicalKnowledgeSearch:
     def __init__(
         self,
         repository: MemoryRepository,
-        path_for: Callable[[str], str] | None = None,
+        path_for: Callable[[MemoryRef | str], str] | None = None,
     ) -> None:
         self.repository = repository
         self.path_for = path_for or (lambda _identifier: "")
@@ -49,14 +50,21 @@ class LexicalKnowledgeSearch:
             SearchResult(
                 score=score,
                 id=memory.id,
+                namespace=memory.namespace,
                 kind=memory.kind.value,
                 status=memory.status.value,
                 title=memory.title,
                 summary=memory.summary,
-                path=self.path_for(memory.id),
+                path=self._path(memory),
             )
             for score, memory in ranked[:limit]
         ]
+
+    def _path(self, memory: MemoryObject) -> str:
+        try:
+            return self.path_for(memory.id)
+        except RuntimeError:
+            return self.path_for(memory.ref)
 
     @staticmethod
     def _score(memory: MemoryObject, query: str, query_tokens: set[str]) -> int:

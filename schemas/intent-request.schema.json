@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "media_type": {
+          "default": "text/markdown",
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "source_type": {
+          "default": "document",
+          "minLength": 1,
+          "title": "Source Type",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "AuthorityContext": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "can_approve_authoritative": {
+          "default": false,
+          "title": "Can Approve Authoritative",
+          "type": "boolean"
+        },
+        "can_auto_apply_low_risk": {
+          "default": false,
+          "title": "Can Auto Apply Low Risk",
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/AuthorityKind"
+        }
+      },
+      "required": [
+        "kind",
+        "actor"
+      ],
+      "title": "AuthorityContext",
+      "type": "object"
+    },
+    "AuthorityKind": {
+      "enum": [
+        "user",
+        "agent",
+        "system"
+      ],
+      "title": "AuthorityKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://amplai.local/schemas/intent-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "minItems": 1,
+      "title": "Artifacts",
+      "type": "array"
+    },
+    "authority": {
+      "$ref": "#/$defs/AuthorityContext"
+    },
+    "expected_outcome": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Outcome"
+    },
+    "instruction": {
+      "minLength": 1,
+      "title": "Instruction",
+      "type": "string"
+    },
+    "project_hint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Project Hint"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "instruction",
+    "artifacts",
+    "authority"
+  ],
+  "title": "AMPLAI Intent Request",
+  "type": "object"
+}

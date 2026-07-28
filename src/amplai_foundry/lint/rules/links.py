@@ -3,30 +3,37 @@
 from pathlib import Path
 
 from amplai_foundry.domain.enums import MemoryKind, RelationType
+from amplai_foundry.domain.identity import MemoryRef
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.lint.result import LintIssue, Severity
 
 
-def validate_links(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
+def validate_links(
+    records: list[tuple[Path, MemoryObject]],
+    *,
+    external_refs: set[MemoryRef] | None = None,
+) -> list[LintIssue]:
     """Ensure relation targets and provenance source IDs exist."""
-    existing = {memory.id for _, memory in records}
-    kinds = {memory.id: memory.kind for _, memory in records}
-    memories = {memory.id: memory for _, memory in records}
+    existing = {memory.ref for _, memory in records} | (external_refs or set())
+    kinds = {memory.ref: memory.kind for _, memory in records}
+    memories = {memory.ref: memory for _, memory in records}
     issues: list[LintIssue] = []
     for path, memory in records:
         for relation in memory.relations:
-            if relation.target not in existing:
+            target_ref = relation.to_ref(memory.namespace)
+            if target_ref not in existing:
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
                         "LINK_RELATION_TARGET_MISSING",
-                        f"relation target {relation.target}가 존재하지 않습니다.",
+                        f"relation target {target_ref}가 존재하지 않습니다.",
                         path,
                         memory.id,
                     )
                 )
         for source_ref in memory.source_refs:
-            if source_ref not in existing:
+            qualified_source = MemoryRef(namespace=memory.namespace, local_id=source_ref)
+            if qualified_source not in existing:
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
@@ -36,7 +43,7 @@ def validate_links(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
                         memory.id,
                     )
                 )
-            elif kinds[source_ref] is not MemoryKind.SOURCE:
+            elif kinds[qualified_source] is not MemoryKind.SOURCE:
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
@@ -50,7 +57,12 @@ def validate_links(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
             ("superseded_by", memory.superseded_by),
             ("merged_into", memory.merged_into),
         ):
-            if lifecycle_target and lifecycle_target not in existing:
+            qualified_target = (
+                MemoryRef(namespace=memory.namespace, local_id=lifecycle_target)
+                if lifecycle_target
+                else None
+            )
+            if qualified_target and qualified_target not in existing:
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
@@ -60,10 +72,16 @@ def validate_links(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
                         memory.id,
                     )
                 )
-        if memory.superseded_by and memory.superseded_by in memories:
-            replacement = memories[memory.superseded_by]
+        superseded_by_ref = (
+            MemoryRef(namespace=memory.namespace, local_id=memory.superseded_by)
+            if memory.superseded_by
+            else None
+        )
+        if superseded_by_ref and superseded_by_ref in memories:
+            replacement = memories[superseded_by_ref]
             if not any(
-                relation.type is RelationType.SUPERSEDES and relation.target == memory.id
+                relation.type is RelationType.SUPERSEDES
+                and relation.to_ref(replacement.namespace) == memory.ref
                 for relation in replacement.relations
             ):
                 issues.append(
@@ -76,9 +94,10 @@ def validate_links(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
                     )
                 )
         for relation in memory.relations:
-            if relation.type is not RelationType.SUPERSEDES or relation.target not in memories:
+            target_ref = relation.to_ref(memory.namespace)
+            if relation.type is not RelationType.SUPERSEDES or target_ref not in memories:
                 continue
-            superseded_target = memories[relation.target]
+            superseded_target = memories[target_ref]
             if superseded_target.superseded_by != memory.id:
                 issues.append(
                     LintIssue(

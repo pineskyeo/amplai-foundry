@@ -6,11 +6,12 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from amplai_foundry.domain.enums import MemoryKind, MemoryStatus, RelationType
+from amplai_foundry.domain.identity import MemoryId, MemoryNamespace, MemoryRef
 from amplai_foundry.domain.project import ProjectId
+from amplai_foundry.domain.semantic import SemanticDescriptor
 from amplai_foundry.domain.source import SourceMetadata
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-MemoryId = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9]*-[A-Z0-9-]+$")]
 
 
 class MemoryRelation(BaseModel):
@@ -20,6 +21,14 @@ class MemoryRelation(BaseModel):
 
     type: RelationType
     target: MemoryId
+    target_namespace: MemoryNamespace | None = None
+
+    def to_ref(self, owner_namespace: str) -> MemoryRef:
+        """Resolve a local or explicitly cross-project relation target."""
+        return MemoryRef(
+            namespace=self.target_namespace or owner_namespace,
+            local_id=self.target,
+        )
 
 
 class MemoryMetadata(BaseModel):
@@ -29,7 +38,7 @@ class MemoryMetadata(BaseModel):
 
     schema_version: Literal[1] = 1
     id: MemoryId
-    namespace: NonEmptyString
+    namespace: MemoryNamespace
     project: ProjectId
     kind: MemoryKind
     status: MemoryStatus
@@ -43,6 +52,7 @@ class MemoryMetadata(BaseModel):
     merged_into: MemoryId | None = None
     revision: int = Field(ge=1)
     tags: list[NonEmptyString] = Field(default_factory=list)
+    semantic: SemanticDescriptor | None = None
     source_metadata: SourceMetadata | None = None
 
     @model_validator(mode="after")
@@ -60,12 +70,23 @@ class MemoryObject(MemoryMetadata):
 
     content: str = ""
 
-    def referenced_ids(self) -> set[str]:
-        """Return every structured memory reference made by this object."""
-        references = {relation.target for relation in self.relations}
-        references.update(self.source_refs)
+    @property
+    def ref(self) -> MemoryRef:
+        return MemoryRef(namespace=self.namespace, local_id=self.id)
+
+    def referenced_refs(self) -> set[MemoryRef]:
+        """Return every structured reference as a qualified identity."""
+        references = {relation.to_ref(self.namespace) for relation in self.relations}
+        references.update(
+            MemoryRef(namespace=self.namespace, local_id=source_ref)
+            for source_ref in self.source_refs
+        )
         if self.superseded_by:
-            references.add(self.superseded_by)
+            references.add(MemoryRef(namespace=self.namespace, local_id=self.superseded_by))
         if self.merged_into:
-            references.add(self.merged_into)
+            references.add(MemoryRef(namespace=self.namespace, local_id=self.merged_into))
         return references
+
+    def referenced_ids(self) -> set[str]:
+        """Backward-compatible local ID view of structured references."""
+        return {reference.local_id for reference in self.referenced_refs()}

@@ -1,5 +1,18 @@
 {
   "$defs": {
+    "ClaimModality": {
+      "enum": [
+        "must",
+        "must_not",
+        "should",
+        "should_not",
+        "may",
+        "is",
+        "is_not"
+      ],
+      "title": "ClaimModality",
+      "type": "string"
+    },
     "MemoryKind": {
       "description": "Kinds of reviewed, long-lived project knowledge.",
       "enum": [
@@ -23,6 +36,19 @@
           "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9-]+$",
           "title": "Target",
           "type": "string"
+        },
+        "target_namespace": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Namespace"
         },
         "type": {
           "$ref": "#/$defs/RelationType"
@@ -62,6 +88,117 @@
       ],
       "title": "RelationType",
       "type": "string"
+    },
+    "SemanticClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "modality": {
+          "$ref": "#/$defs/ClaimModality"
+        },
+        "object": {
+          "minLength": 1,
+          "title": "Object",
+          "type": "string"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        }
+      },
+      "required": [
+        "modality",
+        "action",
+        "object"
+      ],
+      "title": "SemanticClaim",
+      "type": "object"
+    },
+    "SemanticDescriptor": {
+      "additionalProperties": false,
+      "description": "Canonical structured meaning attached to an approved MemoryObject.",
+      "properties": {
+        "aliases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "canonical_statement": {
+          "minLength": 1,
+          "title": "Canonical Statement",
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/SemanticClaim"
+        },
+        "constraints": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/SemanticScope"
+        },
+        "signature": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Signature",
+          "type": "string"
+        }
+      },
+      "required": [
+        "signature",
+        "scope",
+        "claim",
+        "canonical_statement"
+      ],
+      "title": "SemanticDescriptor",
+      "type": "object"
+    },
+    "SemanticScope": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "domain": {
+          "minLength": 1,
+          "title": "Domain",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "target",
+        "actor"
+      ],
+      "title": "SemanticScope",
+      "type": "object"
     },
     "SourceMetadata": {
       "additionalProperties": false,
@@ -181,6 +318,17 @@
       "default": 1,
       "title": "Schema Version",
       "type": "integer"
+    },
+    "semantic": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SemanticDescriptor"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "source_metadata": {
       "anyOf": [

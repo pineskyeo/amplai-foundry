@@ -1,8 +1,8 @@
 # AMPLAI Master Roadmap Proposal v2
 
 > 상태: Approved
-> 기준 저장소: `amplai-foundry-main` 0.1.0  
-> 갱신일: 2026-07-25  
+> 기준 저장소: `amplai-foundry-main` 0.2.0
+> 갱신일: 2026-07-28
 > 승인일: 2026-07-26
 > 승인자: user
 > 목적: 프로젝트 단위의 지식·온톨로지·에이전트 실행·평가·메타루프를 하나의 확장 가능한 AMPLAI 구조로 정렬한다.
@@ -87,7 +87,7 @@ AMPLAI 내부 처리
 
 ## 2. 현재 AMPLAI Foundry의 위치
 
-현재 저장소는 **Phase 0: Canonical Memory Foundation**으로 평가한다.
+현재 저장소는 **Phase 0~1 구현 완료, Phase 2 착수 가능** 상태로 평가한다.
 
 ### 이미 잘 만들어진 기반
 
@@ -101,6 +101,10 @@ AMPLAI 내부 처리
 - External Agent Mode 우선
 - Modular Monolith 우선
 - Harness, Loop, Meta-loop 개념의 초기 정의
+- `(namespace, local_id)` qualified identity와 fail-closed Project Resolver
+- Intent-driven Source → Candidate → Compare → Proposal vertical slice
+- 이동 가능한 Project Pack, domain lock, 재생성 가능한 runtime index
+- versioned Roadmap change와 Minimal Evaluation Record
 
 ### 현재 코드에서 확인된 구현 범위
 
@@ -108,21 +112,11 @@ AMPLAI 내부 처리
 - `source`, `concept`, `principle`, `decision`, `question`, `architecture`, `experiment`, `map`
 - `lint`, `stats`, `show` CLI
 - Markdown Repository Adapter
-- 테스트 19개 통과 (`PYTHONPATH=src` 기준)
+- 단일 `verify` 명령으로 회귀·형식·타입·schema·Vault·Pack 검증
 - Vault lint 0 error, 0 warning
 
-### 아직 없는 핵심 기능
+### Phase 2 이후 남은 핵심 기능
 
-- 사용자의 의도를 기록 작업으로 변환하는 Client Partner 계약
-- 프로젝트 자동 선택과 최소 Project Identity
-- Source 수집·해시·중복 판별
-- 입력 문서 유형 및 지식 유형 자동 분류
-- 기존 Canonical Knowledge와 중복·충돌·대체 비교
-- Memory Candidate, Proposal, Review, Apply
-- 안전 변경 자동 적용과 위험 변경 승인 분리
-- Roadmap/Tracker 자동 갱신
-- 프로젝트 Manifest와 완전한 Project Pack 계약
-- 다중 프로젝트 Import와 Domain Lock
 - 정식 Ontology Module과 Domain Registry
 - Project Fact 및 Knowledge Graph Instance
 - 시스템 DB·파일 Mapping
@@ -692,7 +686,7 @@ AMPLAI의 자기 발전은 **무제한 자기 수정**이 아니라 다음의 �
 
 ## Phase 0 — Foundry Baseline 고정
 
-**상태:** 현재 구현됨, 보강 필요
+**상태:** 완료 (0.2.0)
 
 **목표**
 - 현재 계약을 회귀 기준으로 고정한다.
@@ -710,6 +704,8 @@ AMPLAI의 자기 발전은 **무제한 자기 수정**이 아니라 다음의 �
 ---
 
 ## Phase 1A — Minimal Project Identity와 Intent Boundary
+
+**상태:** 완료 (0.2.0)
 
 **목표**
 - 입력된 Source·Candidate·Proposal이 어느 프로젝트에 속하는지 안전하게 결정할 최소 경계를 만든다.
@@ -742,6 +738,8 @@ ProjectResolver
 ## Phase 1B — Knowledge Intake & Steward Vertical Slice
 
 **최우선 사용자 가치 단계**
+
+**상태:** 완료 (0.2.0)
 
 **목표**
 - 사용자가 저장 구조를 설명하지 않고도 자연어 의도와 파일만으로 지식 반영 절차를 시작하게 한다.
@@ -807,6 +805,7 @@ Validation Runner
 - optimistic revision check
 - 승인된 Apply만 Canonical Repository 변경
 - Supersede 변경의 원자적 적용
+- Phase 8 replay의 씨앗이 되는 `MinimalEvaluationRecord` 저장
 
 **자동 적용 범위**
 - Source 원본과 메타데이터 등록
@@ -830,6 +829,8 @@ Validation Runner
 ---
 
 ## Phase 1C — Full Project Pack v1과 Multi-project Local Workspace
+
+**상태:** 완료 (0.2.0)
 
 **목표**
 - 프로젝트를 독립적으로 이동·복제·검증할 수 있는 완전한 단위로 만든다.
@@ -1221,9 +1222,11 @@ ReplaySet
 
 ---
 
-## 12. 가장 먼저 착수할 설계·구현 패키지
+## 12. 최초 완료 설계·구현 패키지
 
-다음 작업은 `Full Project Pack` 전체가 아니라 **Phase 1A + Phase 1B의 최소 Vertical Slice**다.
+이 절은 최초 착수 순서의 역사적 기록이다. **Phase 1A + Phase 1B 최소 Vertical
+Slice와 Phase 1C Full Project Pack은 0.2.0에서 완료**됐으며, 현재 다음 작업은
+machine-readable roadmap의 `Phase 2 — Ontology Kernel`이다.
 
 ### 12.1 목표 사용자 경험
 
@@ -1243,7 +1246,7 @@ AMPLAI:
 
 사용자는 저장 구조를 알 필요가 없어야 한다.
 
-### 12.2 제안할 Canonical Knowledge
+### 12.2 확정한 Canonical Knowledge
 
 ```text
 CON — Knowledge Steward는 지식 입력을 통제된 변경 Proposal로 변환한다
@@ -1259,7 +1262,7 @@ QUE — Canonical Candidate의 묶음 승인 UX는 어떻게 구성할 것인가
 EXP — Roadmap 한 건을 자연어 요청만으로 반영하는 E2E 실험
 ```
 
-### 12.3 첫 구현 순서
+### 12.3 완료한 구현 순서
 
 1. `ProjectRef`, `MemoryRef`, `IntentRequest`, `AuthorityContext` 모델
 2. 최소 `ProjectResolver`와 안전한 unresolved 상태
@@ -1274,7 +1277,7 @@ EXP — Roadmap 한 건을 자연어 요청만으로 반영하는 E2E 실험
 11. 첫 E2E Fixture: `이 로드맵을 반영해줘`
 12. 동일 입력 재처리, 오분류, 프로젝트 불명확, 승인 거부 테스트
 
-### 12.4 첫 단계 완료 정의
+### 12.4 충족한 완료 정의
 
 ```text
 입력물과 “반영해줘”라는 의도만으로 전체 Pipeline 실행
@@ -1285,7 +1288,7 @@ EXP — Roadmap 한 건을 자연어 요청만으로 반영하는 E2E 실험
 변경과 검증 결과를 사람이 이해하는 요약으로 제공
 ```
 
-### 12.5 이후 Full Project Pack으로 확장하는 이유
+### 12.5 Full Project Pack으로 확장한 이유
 
 - Intake가 먼저 동작해야 Project Pack의 저장 계약이 실제 사용자 흐름으로 검증된다.
 - Source, Candidate, Proposal, Tracker의 실제 요구를 확인한 뒤 Pack 구조를 고정해야 과설계를 줄인다.

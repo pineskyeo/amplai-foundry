@@ -29,7 +29,9 @@ def validate_hygiene(
     """Evaluate size, connectivity, title, chronology, and question-age warnings."""
     issues: list[LintIssue] = []
     maps = [memory for _, memory in records if memory.kind is MemoryKind.MAP]
-    mapped_ids = {relation.target for memory in maps for relation in memory.relations}
+    mapped_refs = {
+        relation.to_ref(memory.namespace) for memory in maps for relation in memory.relations
+    }
 
     for path, memory in records:
         body_length = len(memory.content.strip())
@@ -63,7 +65,7 @@ def validate_hygiene(
                     memory.id,
                 )
             )
-        if memory.kind not in {MemoryKind.SOURCE, MemoryKind.MAP} and memory.id not in mapped_ids:
+        if memory.kind not in {MemoryKind.SOURCE, MemoryKind.MAP} and memory.ref not in mapped_refs:
             issues.append(
                 LintIssue(
                     Severity.WARNING,
@@ -114,6 +116,8 @@ def validate_hygiene(
 
     for index, (left_path, left) in enumerate(records):
         for right_path, right in records[index + 1 :]:
+            if left.namespace != right.namespace:
+                continue
             ratio = SequenceMatcher(None, left.title.casefold(), right.title.casefold()).ratio()
             if ratio >= config.similar_title_ratio:
                 issues.append(

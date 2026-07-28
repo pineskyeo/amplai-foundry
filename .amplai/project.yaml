@@ -1,0 +1,24 @@
+schema_version: 1
+project_id: amplai
+namespace: org/default/project/amplai
+name: AMPLAI Foundry
+aliases:
+  - amplai
+  - amplai-foundry
+default: true
+imports: []
+profiles:
+  - amplai-foundry
+canonical:
+  memory: vault/projects/amplai
+  proposals: .amplai/proposals
+  intake: .amplai/intake
+  semantic: .amplai/semantic
+  ontology: .amplai/ontology
+  skills: .amplai/skills
+  policies: .amplai/policies
+  agents: .amplai/agents
+  evals: .amplai/evals
+  roadmap: plans/amplai-master-roadmap.yaml
+runtime:
+  root: .amplai/runtime

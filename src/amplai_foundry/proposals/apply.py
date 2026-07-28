@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from pydantic import ValidationError
 
 from amplai_foundry.domain.enums import MemoryKind
+from amplai_foundry.domain.identity import MemoryRef
 from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.lint.engine import KnowledgeLinter
@@ -28,6 +29,7 @@ from amplai_foundry.proposals.codes import (
 )
 from amplai_foundry.proposals.diff import destination_for_create, proposal_diff
 from amplai_foundry.proposals.models import OperationType, Proposal, ProposalStatus
+from amplai_foundry.proposals.paths import ProposalPathError, resolve_draft_path
 from amplai_foundry.proposals.repository import ProposalRepository
 from amplai_foundry.proposals.validation import ProposalValidator
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository
@@ -53,8 +55,9 @@ def approve_proposal(
     if proposal.status not in {ProposalStatus.DRAFT, ProposalStatus.REVIEWED}:
         raise ProposalApplyError(f"status={proposal.status.value} Proposal은 승인할 수 없습니다.")
     timestamp = now or datetime.now(ZoneInfo("Asia/Seoul"))
-    return proposal.model_copy(
-        update={
+    return Proposal.model_validate(
+        {
+            **proposal.model_dump(),
             "status": ProposalStatus.APPROVED,
             "approved_at": timestamp,
             "approved_by": approved_by,
@@ -74,7 +77,7 @@ class ProposalApplyService:
             raise ProposalApplyError(
                 "CONFLICT operation이 있는 Proposal은 자동 apply하지 않습니다."
             )
-        self._reject_source_operations(proposal)
+        self._reject_source_operations(proposal, proposal_path)
         unsupported = {
             operation.type
             for operation in proposal.operations
@@ -94,9 +97,9 @@ class ProposalApplyService:
         touched: list[str] = []
         swapped = False
         try:
-            self._reject_source_operations(proposal)
+            self._reject_source_operations(proposal, proposal_path)
             self._enforce_project_boundaries(proposal, proposal_path)
-            self._enforce_preconditions_and_transitions(proposal)
+            self._enforce_preconditions_and_transitions(proposal, proposal_path)
             validation_issues = ProposalValidator(self.vault).validate(proposal, proposal_path)
             if validation_issues:
                 raise ProposalApplyError(
@@ -117,9 +120,7 @@ class ProposalApplyService:
             for operation in proposal.operations:
                 if not operation.draft_path:
                     continue
-                draft_path = Path(operation.draft_path)
-                if not draft_path.is_absolute():
-                    draft_path = Path.cwd() / draft_path
+                draft_path = resolve_draft_path(operation.draft_path, proposal_path)
                 draft_text = draft_path.read_text(encoding="utf-8")
                 if operation.type is OperationType.CREATE:
                     document = parse_markdown_file(draft_path)
@@ -133,7 +134,12 @@ class ProposalApplyService:
                         namespace=proposal.namespace,
                     )
                 else:
-                    destination = Path(current_repository.path_for(operation.target_id or ""))
+                    destination = Path(
+                        current_repository.path_for(
+                            operation.target_id or "",
+                            namespace=proposal.namespace,
+                        )
+                    )
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_text(draft_text, encoding="utf-8")
                 touched.append(str(destination.relative_to(staging_vault)))
@@ -148,8 +154,9 @@ class ProposalApplyService:
                 os.replace(staging_vault, self.vault)
                 swapped = True
                 timestamp = datetime.now(ZoneInfo("Asia/Seoul"))
-                applied = proposal.model_copy(
-                    update={
+                applied = Proposal.model_validate(
+                    {
+                        **proposal.model_dump(),
                         "status": ProposalStatus.APPLIED,
                         "applied_at": timestamp,
                         "applied_by": proposal.approved_by,
@@ -175,11 +182,14 @@ class ProposalApplyService:
             if temporary_root is not None:
                 shutil.rmtree(temporary_root, ignore_errors=True)
 
-    def _reject_source_operations(self, proposal: Proposal) -> None:
+    def _reject_source_operations(self, proposal: Proposal, proposal_path: Path) -> None:
         repository = MarkdownMemoryRepository(self.vault)
         for operation in proposal.operations:
             if operation.type is not OperationType.CREATE:
-                target = repository.get(operation.target_id or "")
+                target = repository.get(
+                    operation.target_id or "",
+                    namespace=proposal.namespace,
+                )
                 if operation.kind == MemoryKind.SOURCE.value or (
                     target is not None and target.kind is MemoryKind.SOURCE
                 ):
@@ -190,10 +200,8 @@ class ProposalApplyService:
                 continue
             draft_is_source = False
             if operation.draft_path:
-                draft_path = Path(operation.draft_path)
-                if not draft_path.is_absolute():
-                    draft_path = Path.cwd() / draft_path
-                with suppress(MarkdownParseError, OSError):
+                with suppress(MarkdownParseError, OSError, ProposalPathError):
+                    draft_path = resolve_draft_path(operation.draft_path, proposal_path)
                     draft_is_source = (
                         parse_markdown_file(draft_path).metadata.get("kind")
                         == MemoryKind.SOURCE.value
@@ -209,9 +217,12 @@ class ProposalApplyService:
         proposal_path: Path,
     ) -> None:
         repository = MarkdownMemoryRepository(self.vault)
-        existing = {memory.id: memory for memory in repository.list()}
+        existing = {memory.ref: memory for memory in repository.list()}
         for source_id in proposal.source_ids:
-            source = existing.get(source_id)
+            source = ProposalValidator._resolve_for_boundary_check(
+                existing,
+                MemoryRef(namespace=proposal.namespace, local_id=source_id),
+            )
             if source is not None and source.project != proposal.project:
                 raise ProposalApplyError(
                     f"{PROPOSAL_SOURCE_PROJECT_MISMATCH} "
@@ -220,7 +231,13 @@ class ProposalApplyService:
                 )
         for operation in proposal.operations:
             for evidence in operation.evidence:
-                source = existing.get(evidence.source_id)
+                source = ProposalValidator._resolve_for_boundary_check(
+                    existing,
+                    MemoryRef(
+                        namespace=proposal.namespace,
+                        local_id=evidence.source_id,
+                    ),
+                )
                 if source is not None and source.project != proposal.project:
                     raise ProposalApplyError(
                         f"{PROPOSAL_EVIDENCE_PROJECT_MISMATCH} "
@@ -228,7 +245,13 @@ class ProposalApplyService:
                         f"Proposal project={proposal.project}가 다릅니다."
                     )
             if operation.target_id:
-                target = existing.get(operation.target_id)
+                target = ProposalValidator._resolve_for_boundary_check(
+                    existing,
+                    MemoryRef(
+                        namespace=proposal.namespace,
+                        local_id=operation.target_id,
+                    ),
+                )
                 if target is not None and target.project != proposal.project:
                     raise ProposalApplyError(
                         f"{PROPOSAL_TARGET_PROJECT_MISMATCH} "
@@ -253,14 +276,9 @@ class ProposalApplyService:
 
     @staticmethod
     def _load_apply_draft(draft_path: str, proposal_path: Path) -> MemoryObject:
-        path = Path(draft_path)
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        drafts_root = (proposal_path.parent / "drafts").resolve()
         try:
-            resolved = path.resolve()
-            resolved.relative_to(drafts_root)
-        except (OSError, ValueError) as error:
+            resolved = resolve_draft_path(draft_path, proposal_path)
+        except (OSError, ProposalPathError) as error:
             raise ProposalApplyError(
                 "DRAFT_PATH draft_path는 해당 Proposal drafts directory 안에 있어야 합니다."
             ) from error
@@ -270,7 +288,11 @@ class ProposalApplyService:
         except (MarkdownParseError, OSError, ValidationError) as error:
             raise ProposalApplyError(f"DRAFT_INVALID {resolved}: {error}") from error
 
-    def _enforce_preconditions_and_transitions(self, proposal: Proposal) -> None:
+    def _enforce_preconditions_and_transitions(
+        self,
+        proposal: Proposal,
+        proposal_path: Path,
+    ) -> None:
         repository = MarkdownMemoryRepository(self.vault)
         for operation in proposal.operations:
             if operation.type not in {
@@ -279,7 +301,10 @@ class ProposalApplyService:
                 OperationType.SUPERSEDE,
             }:
                 continue
-            target = repository.get(operation.target_id or "")
+            target = repository.get(
+                operation.target_id or "",
+                namespace=proposal.namespace,
+            )
             if target is None:
                 raise ProposalApplyError(
                     f"TARGET_MISSING target_id가 없습니다: {operation.target_id}"
@@ -295,7 +320,7 @@ class ProposalApplyService:
                     f"target revision={target.revision}, "
                     f"expected_revision={operation.expected_revision}입니다."
                 )
-            target_path = Path(repository.path_for(target.id))
+            target_path = Path(repository.path_for(target.ref))
             current_hash = hashlib.sha256(target_path.read_bytes()).hexdigest()
             if current_hash != operation.expected_target_sha256:
                 raise ProposalApplyError(
@@ -304,9 +329,7 @@ class ProposalApplyService:
                 )
             if not operation.draft_path:
                 continue
-            draft_path = Path(operation.draft_path)
-            if not draft_path.is_absolute():
-                draft_path = Path.cwd() / draft_path
+            draft_path = resolve_draft_path(operation.draft_path, proposal_path)
             document = parse_markdown_file(draft_path)
             draft = MemoryObject.model_validate({**document.metadata, "content": document.content})
             violations = validate_transition(target, draft, operation.type)

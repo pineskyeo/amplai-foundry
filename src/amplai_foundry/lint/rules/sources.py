@@ -13,11 +13,19 @@ from amplai_foundry.lint.result import LintIssue, Severity
 SOURCE_ID_PATTERN = re.compile(r"^SRC-[0-9]{8}-([A-F0-9]{8})$")
 
 
-def validate_sources(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue]:
+def validate_sources(
+    records: list[tuple[Path, MemoryObject]],
+    *,
+    root: Path | None = None,
+) -> list[LintIssue]:
     """Verify original bytes, source IDs, locations, and normalized duplicates."""
     issues: list[LintIssue] = []
-    by_normalized_hash: dict[str, list[tuple[Path, MemoryObject]]] = defaultdict(list)
+    by_normalized_hash: dict[tuple[str, str], list[tuple[Path, MemoryObject]]] = defaultdict(list)
     for path, memory in records:
+        try:
+            contract_path = path.relative_to(root) if root is not None else path
+        except ValueError:
+            contract_path = path
         if memory.kind is not MemoryKind.SOURCE:
             continue
         metadata = memory.source_metadata
@@ -73,11 +81,17 @@ def validate_sources(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue
                     memory.id,
                 )
             )
-        by_normalized_hash[metadata.normalized_sha256].append((path, memory))
+        by_normalized_hash[(memory.namespace, metadata.normalized_sha256)].append((path, memory))
 
-        if "projects" in path.parts:
-            project_index = path.parts.index("projects") + 1
-            if project_index >= len(path.parts) or path.parts[project_index] != memory.project:
+        project_indexes = [
+            index for index, part in enumerate(contract_path.parts) if part == "projects"
+        ]
+        if project_indexes:
+            project_index = project_indexes[-1] + 1
+            if (
+                project_index >= len(contract_path.parts)
+                or contract_path.parts[project_index] != memory.project
+            ):
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
@@ -88,8 +102,8 @@ def validate_sources(records: list[tuple[Path, MemoryObject]]) -> list[LintIssue
                     )
                 )
             if (
-                project_index + 1 >= len(path.parts)
-                or path.parts[project_index + 1] != "00-sources"
+                project_index + 1 >= len(contract_path.parts)
+                or contract_path.parts[project_index + 1] != "00-sources"
             ):
                 issues.append(
                     LintIssue(

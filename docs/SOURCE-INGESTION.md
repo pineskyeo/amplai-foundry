@@ -14,15 +14,15 @@ Source는 수집 당시 원문 bytes를 보존하는 ingest-only immutable recor
 amplai-foundry ingest response.md --project amplai --source-type chatgpt --json
 cat response.md | amplai-foundry ingest - --project amplai --source-type chatgpt
 amplai-foundry source list --project amplai
-amplai-foundry source show SRC-...
-amplai-foundry source verify SRC-...
+amplai-foundry source show SRC-... --project amplai
+amplai-foundry source verify SRC-... --project amplai
 ```
 
 파일 입력은 `.md`와 `.txt`만 허용한다. stdin은 `-`를 사용한다. 빈 입력과 non-UTF-8 입력은 거부한다.
 
 ## Identity And Path
 
-새 ID는 `SRC-YYYYMMDD-{SHA256 8자리}` 형식이다. 파일은 `vault/projects/{project}/00-sources/{id}-{slug}.md`에 저장한다.
+새 ID는 `SRC-YYYYMMDD-{SHA256 8자리}` 형식이다. 파일은 `vault/projects/{project}/00-sources/{id}.md`에 저장해 title 차이가 ID-level atomic create를 우회하지 못하게 한다. 같은 32-bit hash prefix에 서로 다른 원문이 충돌하면 두 번째 입력을 fail-closed로 거부한다.
 
 `project`, path project, namespace suffix는 일치한다. `--namespace` 생략 시 `org/default/project/{project}`를 사용한다.
 

@@ -42,9 +42,13 @@ def _schema_message(error: Mapping[str, Any]) -> tuple[str, str]:
 
 
 def validate_document(
-    path: Path, document: ParsedMarkdown
+    path: Path,
+    document: ParsedMarkdown,
+    *,
+    logical_path: Path | None = None,
 ) -> tuple[MemoryObject | None, list[LintIssue]]:
     """Validate parsed metadata and path placement."""
+    contract_path = logical_path or path
     raw_id = str(document.metadata.get("id", "UNKNOWN"))
     try:
         memory = MemoryObject.model_validate({**document.metadata, "content": document.content})
@@ -67,7 +71,8 @@ def validate_document(
 
     issues = []
     expected_kind = next(
-        (kind for directory, kind in KIND_DIRECTORIES.items() if directory in path.parts), None
+        (kind for directory, kind in KIND_DIRECTORIES.items() if directory in contract_path.parts),
+        None,
     )
     if expected_kind is not None and memory.kind is not expected_kind:
         issues.append(
@@ -83,7 +88,7 @@ def validate_document(
                 document.field_lines.get("kind"),
             )
         )
-    if "90-archive" in path.parts and memory.status.value != "archived":
+    if "90-archive" in contract_path.parts and memory.status.value != "archived":
         issues.append(
             LintIssue(
                 Severity.ERROR,
@@ -94,9 +99,14 @@ def validate_document(
                 document.field_lines.get("status"),
             )
         )
-    if "projects" in path.parts:
-        project_index = path.parts.index("projects") + 1
-        path_project = path.parts[project_index] if project_index < len(path.parts) else ""
+    project_indexes = [
+        index for index, part in enumerate(contract_path.parts) if part == "projects"
+    ]
+    if project_indexes:
+        project_index = project_indexes[-1] + 1
+        path_project = (
+            contract_path.parts[project_index] if project_index < len(contract_path.parts) else ""
+        )
         if memory.project != path_project:
             issues.append(
                 LintIssue(

@@ -3,6 +3,7 @@
 from datetime import date
 from pathlib import Path
 
+from amplai_foundry.domain.identity import MemoryRef
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.lint.result import LintIssue, LintReport, Severity
 from amplai_foundry.lint.rules.hygiene import HygieneConfig, validate_hygiene
@@ -31,7 +32,12 @@ class KnowledgeLinter:
         self.config = config or HygieneConfig()
         self.today = today or date.today()
 
-    def lint(self, root: Path) -> LintReport:
+    def lint(
+        self,
+        root: Path,
+        *,
+        external_refs: set[MemoryRef] | None = None,
+    ) -> LintReport:
         """Scan all Markdown notes below a vault root."""
         if not root.exists():
             raise LintExecutionError(f"vault 경로가 존재하지 않습니다: {root}")
@@ -58,17 +64,25 @@ class KnowledgeLinter:
                     )
                 )
                 continue
-            memory, issues = validate_document(path, document)
+            try:
+                logical_path = path.relative_to(root)
+            except ValueError:
+                logical_path = path
+            memory, issues = validate_document(
+                path,
+                document,
+                logical_path=logical_path,
+            )
             report.issues.extend(issues)
             if memory is not None:
                 records.append((path, memory))
 
         report.memories = [memory for _, memory in records]
         report.issues.extend(validate_identifiers(records))
-        report.issues.extend(validate_links(records))
+        report.issues.extend(validate_links(records, external_refs=external_refs))
         report.issues.extend(validate_lifecycles(records))
         report.issues.extend(validate_provenance(records))
-        report.issues.extend(validate_sources(records))
+        report.issues.extend(validate_sources(records, root=root))
         report.issues.extend(validate_hygiene(records, self.config, today=self.today))
         report.issues.sort(
             key=lambda issue: (str(issue.path), issue.line or 0, issue.severity, issue.code)

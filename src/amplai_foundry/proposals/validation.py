@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from amplai_foundry.domain.enums import MemoryKind
+from amplai_foundry.domain.identity import MemoryRef
 from amplai_foundry.domain.lifecycle import validate_transition
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.ingestion.service import IngestionError, extract_original_content
@@ -18,7 +19,13 @@ from amplai_foundry.proposals.codes import (
     PROPOSAL_SOURCE_PROJECT_MISMATCH,
     PROPOSAL_TARGET_PROJECT_MISMATCH,
 )
-from amplai_foundry.proposals.models import OperationType, Proposal, ProposalOperation
+from amplai_foundry.proposals.models import (
+    OperationType,
+    Proposal,
+    ProposalOperation,
+    ProposalStatus,
+)
+from amplai_foundry.proposals.paths import ProposalPathError, resolve_draft_path
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository, MarkdownRepositoryError
 
 
@@ -36,12 +43,18 @@ class ProposalValidator:
         issues: list[ProposalValidationIssue] = []
         try:
             repository = MarkdownMemoryRepository(self.vault)
-            existing = {memory.id: memory for memory in repository.list()}
+            existing = {memory.ref: memory for memory in repository.list()}
         except MarkdownRepositoryError as error:
             return [ProposalValidationIssue("VAULT_INVALID", str(error))]
+        current_state_statuses = {
+            ProposalStatus.DRAFT,
+            ProposalStatus.REVIEWED,
+            ProposalStatus.APPROVED,
+        }
 
         for source_id in proposal.source_ids:
-            memory = existing.get(source_id)
+            source_ref = MemoryRef(namespace=proposal.namespace, local_id=source_id)
+            memory = self._resolve_for_boundary_check(existing, source_ref)
             if memory is None:
                 issues.append(
                     ProposalValidationIssue("SOURCE_MISSING", f"Source가 없습니다: {source_id}")
@@ -74,7 +87,11 @@ class ProposalValidator:
                 )
             for evidence in operation.evidence:
                 seen_evidence.add(evidence.source_id)
-                memory = existing.get(evidence.source_id)
+                evidence_ref = MemoryRef(
+                    namespace=proposal.namespace,
+                    local_id=evidence.source_id,
+                )
+                memory = self._resolve_for_boundary_check(existing, evidence_ref)
                 if memory is None or memory.kind is not MemoryKind.SOURCE:
                     issues.append(
                         ProposalValidationIssue(
@@ -95,7 +112,7 @@ class ProposalValidator:
                             )
                         )
                     try:
-                        source_path = Path(repository.path_for(evidence.source_id))
+                        source_path = Path(repository.path_for(evidence_ref))
                         line_count = len(
                             extract_original_content(source_path).decode("utf-8").splitlines()
                         )
@@ -111,18 +128,28 @@ class ProposalValidator:
                                 ),
                             )
                         )
+            target = (
+                self._resolve_for_boundary_check(
+                    existing,
+                    MemoryRef(
+                        namespace=proposal.namespace,
+                        local_id=operation.target_id,
+                    ),
+                )
+                if operation.target_id
+                else None
+            )
             if (
                 operation.type is not OperationType.CREATE
                 and operation.target_id
-                and operation.target_id not in existing
+                and target is None
             ):
                 issues.append(
                     ProposalValidationIssue(
                         "TARGET_MISSING", f"target_id가 없습니다: {operation.target_id}"
                     )
                 )
-            elif operation.target_id and operation.target_id in existing:
-                target = existing[operation.target_id]
+            elif target is not None:
                 if target.project != proposal.project:
                     issues.append(
                         ProposalValidationIssue(
@@ -150,7 +177,7 @@ class ProposalValidator:
                             ),
                         )
                     )
-                if proposal.status.value != "applied" and operation.type in {
+                if proposal.status in current_state_statuses and operation.type in {
                     OperationType.UPDATE,
                     OperationType.LINK,
                     OperationType.SUPERSEDE,
@@ -165,7 +192,7 @@ class ProposalValidator:
                                 ),
                             )
                         )
-                    target_path = Path(repository.path_for(target.id))
+                    target_path = Path(repository.path_for(target.ref))
                     current_hash = hashlib.sha256(target_path.read_bytes()).hexdigest()
                     if operation.expected_target_sha256 != current_hash:
                         issues.append(
@@ -179,9 +206,12 @@ class ProposalValidator:
                     operation.draft_path, proposal, proposal_path
                 )
                 issues.extend(draft_issues)
-                if draft is not None and draft.id in existing:
-                    if proposal.status.value == "applied":
-                        if existing[draft.id] != draft:
+                if draft is not None and draft.ref in existing:
+                    if proposal.status is ProposalStatus.APPLIED:
+                        current = existing[draft.ref]
+                        if current.revision < draft.revision or (
+                            current.revision == draft.revision and current != draft
+                        ):
                             issues.append(
                                 ProposalValidationIssue(
                                     "CREATE_APPLIED_DRIFT",
@@ -191,7 +221,7 @@ class ProposalValidator:
                                     ),
                                 )
                             )
-                    else:
+                    elif proposal.status in current_state_statuses:
                         issues.append(
                             ProposalValidationIssue(
                                 "CREATE_ID_EXISTS", f"CREATE draft ID가 이미 존재합니다: {draft.id}"
@@ -221,16 +251,17 @@ class ProposalValidator:
                 if draft is not None:
                     issues.extend(self._validate_draft_evidence(draft, operation))
                     if (
-                        proposal.status.value != "applied"
-                        and operation.target_id
-                        and operation.target_id in existing
+                        proposal.status in current_state_statuses
+                        and target is not None
                         and operation.type
                         in {OperationType.UPDATE, OperationType.LINK, OperationType.SUPERSEDE}
                     ):
                         issues.extend(
                             ProposalValidationIssue(violation.code, violation.message)
                             for violation in validate_transition(
-                                existing[operation.target_id], draft, operation.type
+                                target,
+                                draft,
+                                operation.type,
                             )
                         )
         if not seen_evidence.issubset(set(proposal.source_ids)):
@@ -240,6 +271,27 @@ class ProposalValidator:
                 )
             )
         return issues
+
+    @staticmethod
+    def _resolve_for_boundary_check(
+        existing: dict[MemoryRef, MemoryObject],
+        requested: MemoryRef,
+    ) -> MemoryObject | None:
+        """Resolve exact refs first, then one foreign local-ID match for diagnostics.
+
+        The fallback preserves the hard boundary error for legacy proposals that
+        name a local ID from another project. Multiple foreign matches remain
+        unresolved because choosing one would itself be ambiguous.
+        """
+        exact = existing.get(requested)
+        if exact is not None:
+            return exact
+        matches = [
+            memory
+            for reference, memory in existing.items()
+            if reference.local_id == requested.local_id
+        ]
+        return matches[0] if len(matches) == 1 else None
 
     @staticmethod
     def _validate_draft_evidence(
@@ -268,14 +320,9 @@ class ProposalValidator:
     def _load_draft(
         draft_path: str, proposal: Proposal, proposal_path: Path
     ) -> tuple[MemoryObject | None, list[ProposalValidationIssue]]:
-        path = Path(draft_path)
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        proposal_dir = proposal_path.parent.resolve()
         try:
-            resolved = path.resolve()
-            resolved.relative_to(proposal_dir / "drafts")
-        except (OSError, ValueError):
+            resolved = resolve_draft_path(draft_path, proposal_path)
+        except (OSError, ProposalPathError):
             return None, [
                 ProposalValidationIssue(
                     "DRAFT_PATH", "draft_path는 해당 Proposal drafts directory 안에 있어야 합니다."

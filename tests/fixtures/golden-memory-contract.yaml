@@ -1,0 +1,15 @@
+schema_version: 1
+description: Phase 0 canonical parser and MemoryObject contract snapshot
+objects:
+  - path: 00-sources/source.md
+    ref: org/default/project/test#SRC-20260711-6635D803
+    raw_sha256: 87be2052368d4f23a89f932a94747b7184fe6f2e24e801727ab51abc6be92e6f
+    model_sha256: 98af620a99eca623a18a8bacfcc2a3cfef593329fa760ba43495dc591c05b0b4
+  - path: 10-concepts/concept.md
+    ref: org/default/project/test#CON-0900
+    raw_sha256: f60b95525aee9f01dace8b5177646128f987d82c7d7584c28c3bcde2b018d84f
+    model_sha256: fb214dfdecdf4e8ec1fa168c2390b2c4a81762340ea25da66a37c68910833b83
+  - path: 70-maps/map.md
+    ref: org/default/project/test#MAP-0900
+    raw_sha256: 5c974af7f182e686c6a0c7ee035612a598c75dc4611178b8adeba183919afd90
+    model_sha256: c0f4b59f56a39da050b39accd5d464685cc39569d58ec523605d37b0cc3d3070

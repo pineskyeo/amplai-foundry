@@ -23,9 +23,9 @@ def validate_identifiers(
 ) -> list[LintIssue]:
     """Check ID uniqueness, prefix consistency, and self references."""
     issues: list[LintIssue] = []
-    grouped: dict[str, list[Path]] = defaultdict(list)
+    grouped: dict[tuple[str, str], list[Path]] = defaultdict(list)
     for path, memory in records:
-        grouped[memory.id].append(path)
+        grouped[(memory.namespace, memory.id)].append(path)
         expected_prefix = KIND_PREFIXES[memory.kind.value]
         if not memory.id.startswith(expected_prefix):
             issues.append(
@@ -37,7 +37,7 @@ def validate_identifiers(
                     memory.id,
                 )
             )
-        if memory.id in memory.referenced_ids():
+        if memory.ref in memory.referenced_refs():
             issues.append(
                 LintIssue(
                     Severity.ERROR,
@@ -47,14 +47,14 @@ def validate_identifiers(
                     memory.id,
                 )
             )
-    for memory_id, paths in grouped.items():
+    for (namespace, memory_id), paths in grouped.items():
         if len(paths) > 1:
             for path in paths:
                 issues.append(
                     LintIssue(
                         Severity.ERROR,
                         "IDENTIFIER_DUPLICATE",
-                        f"ID {memory_id}가 {len(paths)}개 파일에서 중복됩니다.",
+                        f"MemoryRef {namespace}#{memory_id}가 {len(paths)}개 파일에서 중복됩니다.",
                         path,
                         memory_id,
                     )

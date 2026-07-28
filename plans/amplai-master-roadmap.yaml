@@ -1,11 +1,11 @@
 schema_version: 1
 roadmap_id: amplai-master-roadmap
-version: 2
+version: 3
 status: approved
-updated_at: 2026-07-25
+updated_at: 2026-07-28
 approved_at: 2026-07-26
 approved_by: user
-current_focus: phase-1a-minimal-project-identity
+current_focus: phase-2-ontology-kernel
 
 north_star:
   user_contract: >-
@@ -18,7 +18,7 @@ north_star:
 phases:
   - id: phase-0-foundry-baseline
     order: 0
-    status: validating
+    status: completed
     depends_on: []
     definition_of_done:
       - clean clone passes tests and vault lint
@@ -26,7 +26,7 @@ phases:
 
   - id: phase-1a-minimal-project-identity
     order: 10
-    status: planned
+    status: completed
     depends_on:
       - phase-0-foundry-baseline
     definition_of_done:
@@ -36,7 +36,7 @@ phases:
 
   - id: phase-1b-knowledge-intake-steward
     order: 20
-    status: backlog
+    status: completed
     depends_on:
       - phase-1a-minimal-project-identity
     definition_of_done:
@@ -45,10 +45,11 @@ phases:
       - repeated ingestion does not create duplicate canonical notes
       - authoritative meaning cannot change without required approval
       - ambiguous classification is held rather than forced
+      - every intake run persists a minimal evaluation record for later observatory replay
 
   - id: phase-1c-full-project-pack
     order: 30
-    status: backlog
+    status: completed
     depends_on:
       - phase-1b-knowledge-intake-steward
     definition_of_done:

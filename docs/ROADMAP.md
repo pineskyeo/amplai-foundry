@@ -8,7 +8,9 @@
 - [AMPLAI Master Roadmap Proposal v1](roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md)
 - [Machine-readable Roadmap](../plans/amplai-master-roadmap.yaml)
 
-`v2`는 2026-07-26 사용자 승인으로 공식 roadmap 기준이 됐다. 각 Phase의 Architecture와 Decision은 별도 Proposal과 승인 절차를 거쳐 확정한다.
+`v2`는 2026-07-26 사용자 승인으로 공식 roadmap 기준이 됐다. 현재 실행 상태의
+authoritative source는 machine-readable roadmap이며, 각 변경은 versioned
+`RoadmapChangeProposal`과 승인/정책 gate를 거친다.
 
 ## Current Baseline
 
@@ -16,30 +18,30 @@
 
 | Capability | Current Status |
 |---|---|
-| Canonical Memory Foundation | 구현 |
-| Immutable Source Ingestion | 구현 |
-| Lexical Search | 구현 |
-| Proposal Validate/Diff/Approve/Apply | 구현 |
-| Source Immutability | 구현 |
-| Optimistic Concurrency | 구현 |
-| Proposal Project Boundary | 구현 |
-| Untrusted Source Context Boundary | 구현 |
-| Canonical Corpus | 39 notes |
-| Test Baseline | 122 passed |
+| Phase 0 Golden Contract / Clean-clone Gate | 완료 |
+| Qualified `(namespace, local_id)` Identity | 완료 |
+| Fail-closed Project Resolution | 완료 |
+| Governed Knowledge Intake + Minimal Evaluation | 완료 |
+| Semantic Golden Set / Conflict Hold | 완료 |
+| Roadmap Proposal / Review / Apply / Safe Tracker Policy | 완료 |
+| Portable Full Project Pack / Deterministic Archive | 완료 |
+| Canonical Corpus | 53 notes |
+| Test Baseline | `amplai-foundry verify` 전체 gate 통과가 기준 |
 
 이 표는 implementation delta만 기록한다. Roadmap Phase의 완료 판정은 machine-readable roadmap의 `definition_of_done`과 별도 Gate를 따른다.
 
 ## Current Focus
 
-현재 focus는 `Phase 1A — Minimal Project Identity`다.
+Phase 0과 Phase 1A~1C는 `0.2.0`에서 완료됐다.
 
-- 완료: `ProjectId` 형식과 filesystem containment
-- 완료: Proposal Source, evidence, target, draft project boundary
-- 미완료: `(namespace, local_id)` qualified identity
-- 미완료: ambiguous project resolution과 review hold
-- 미완료: multi-project local ID coexistence
+- 같은 local ID를 여러 Project Pack이 안전하게 소유한다.
+- 프로젝트/분류 불확실성은 canonical 변경 대신 영구 evaluation hold로 남는다.
+- Source → Candidate → Compare → Proposal → Review/Policy → Apply가 재현 가능하다.
+- Project Pack은 clone 경로와 무관하며 runtime을 제외한 deterministic archive로 이동한다.
 
-다음 단계는 `Phase 1B — Knowledge Intake & Steward`다. Source ingestion과 Proposal apply 기반은 이미 존재하지만 intent resolution, artifact classification, comparison, risk policy와 roadmap updater는 미구현이다.
+현재 focus는 `Phase 2 — Ontology Kernel`이다. Phase 1 계약을 깨지 않고 domain
+module, typed ontology object, constraint validation과 migration 경계를 설계하는 것이
+다음 작업이다.
 
 ## Product Direction
 

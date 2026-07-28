@@ -99,7 +99,21 @@ def test_schema_generate_and_check_use_pydantic_contracts(tmp_path: Path) -> Non
 
     paths = write_schemas(tmp_path)
 
-    assert len(paths) == 2
+    assert {path.name for path in paths} == {
+        "comparison-result.schema.json",
+        "domain-lock.schema.json",
+        "intake-run.schema.json",
+        "intent-request.schema.json",
+        "knowledge-candidate.schema.json",
+        "note.schema.json",
+        "project-manifest.schema.json",
+        "proposal.schema.json",
+        "resolution-hold.schema.json",
+        "roadmap-proposal.schema.json",
+        "roadmap.schema.json",
+        "semantic-anchor-set.schema.json",
+        "semantic-anchor.schema.json",
+    }
     assert not check_schemas(tmp_path)
     assert '"source_metadata"' in (tmp_path / "schemas/note.schema.json").read_text(
         encoding="utf-8"

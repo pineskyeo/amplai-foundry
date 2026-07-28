@@ -13,6 +13,7 @@ from amplai_foundry.proposals.codes import (
     PROPOSAL_DRAFT_PROJECT_MISMATCH,
 )
 from amplai_foundry.proposals.models import OperationType, Proposal
+from amplai_foundry.proposals.paths import resolve_draft_path
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository
 
 DIRECTORY_BY_KIND = {kind: directory for directory, kind in KIND_DIRECTORIES.items()}
@@ -38,7 +39,8 @@ def destination_for_create(
         )
     directory = DIRECTORY_BY_KIND[draft.kind]
     filename = f"{draft.id}-{safe_slug(draft.title)}.md"
-    root = project_root(vault, project)
+    nested_root = vault / "projects" / project
+    root = project_root(vault, project) if nested_root.is_dir() else vault.resolve()
     return require_contained(root / directory / filename, root, label="Proposal destination")
 
 
@@ -52,9 +54,7 @@ def proposal_diff(proposal: Proposal, proposal_path: Path, vault: Path) -> str:
             continue
         if not operation.draft_path:
             continue
-        draft_path = Path(operation.draft_path)
-        if not draft_path.is_absolute():
-            draft_path = Path.cwd() / draft_path
+        draft_path = resolve_draft_path(operation.draft_path, proposal_path)
         draft_text = draft_path.read_text(encoding="utf-8")
         if operation.type is OperationType.CREATE:
             document = parse_markdown_file(draft_path)
@@ -67,7 +67,12 @@ def proposal_diff(proposal: Proposal, proposal_path: Path, vault: Path) -> str:
             )
             before = ""
         else:
-            destination = Path(repository.path_for(operation.target_id or ""))
+            destination = Path(
+                repository.path_for(
+                    operation.target_id or "",
+                    namespace=proposal.namespace,
+                )
+            )
             before = destination.read_text(encoding="utf-8")
         chunks.extend(
             unified_diff(

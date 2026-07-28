@@ -31,7 +31,7 @@ class CurateContextBuilder:
         except ProjectPathError as error:
             raise ContextBuilderError(str(error)) from error
         service = SourceIngestionService(self.vault)
-        found = service.find(source_id)
+        found = service.find(source_id, project=project)
         if found is None:
             raise ContextBuilderError(f"Source ID가 존재하지 않습니다: {source_id}")
         source_path, source_metadata = found
