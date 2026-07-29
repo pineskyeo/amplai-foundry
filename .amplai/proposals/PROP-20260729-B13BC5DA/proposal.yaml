@@ -1,0 +1,105 @@
+proposal_version: 1
+proposal_id: PROP-20260729-B13BC5DA
+project: amplai
+namespace: org/default/project/amplai
+status: applied
+source_ids:
+- SRC-20260729-B13BC5DA
+created_at: '2026-07-29T16:30:00+09:00'
+created_by: codex
+operations:
+- operation_id: OP-001
+  type: UPDATE
+  target_id: CON-0010
+  kind: concept
+  title: Hermes 역할에 messenger gateway와 제한된 AMPLAI API 경계를 추가한다
+  reason: 기존 Hermes concept를 중복 생성하지 않고 channel 접수와 direct Git/shell/canonical write
+    금지 책임을 구체화한다.
+  evidence:
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 37
+      end: 82
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260729-B13BC5DA/drafts/CON-0010.md
+  expected_revision: 2
+  expected_target_sha256: d2e7ce4ca50eb69e3a34a00f1157eee2f201c8c6bcd11ff5c63fb2dadb8c1223
+- operation_id: OP-002
+  type: UPDATE
+  target_id: ARC-0003
+  kind: architecture
+  title: 역할 경계에 channel adapter와 AMPLAI authority 소유권을 추가한다
+  reason: 기존 role architecture에 messenger가 표현 계층이고 AMPLAI가 project, approval, apply와
+    audit를 소유한다는 경계를 보강한다.
+  evidence:
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 52
+      end: 70
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 117
+      end: 134
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260729-B13BC5DA/drafts/ARC-0003.md
+  expected_revision: 1
+  expected_target_sha256: 2b4a37252c5e077ce01f9c17871bbb5677cca5545ce52c364a533c48d83a099b
+- operation_id: OP-003
+  type: CREATE
+  kind: architecture
+  title: Messenger Proposal Control은 channel adapter와 AMPLAI authority를 분리한다
+  reason: Slack, Telegram과 Hermes가 같은 ProposalAction core contract를 사용하는 adapter architecture를
+    원자 경계로 기록한다.
+  evidence:
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 83
+      end: 156
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260729-B13BC5DA/drafts/ARC-0007.md
+- operation_id: OP-004
+  type: CREATE
+  kind: decision
+  title: 메신저 Proposal Action은 AMPLAI가 재검증하고 승인과 Apply를 분리한다
+  reason: 메신저 click을 authority로 취급하지 않고 stale, replay와 권한을 fail-closed 처리하는 승인 정책을
+    확정한다.
+  evidence:
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 117
+      end: 134
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 146
+      end: 156
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260729-B13BC5DA/drafts/DEC-0007.md
+- operation_id: OP-005
+  type: UPDATE
+  target_id: MAP-0002
+  kind: map
+  title: AMPLAI Platform Map에 Messenger Proposal Control을 연결한다
+  reason: 새 architecture와 Decision을 Platform MOC에서 탐색하고 orphan warning을 방지한다.
+  evidence:
+  - source_id: SRC-20260729-B13BC5DA
+    locator:
+      type: line_range
+      start: 146
+      end: 156
+  confidence: high
+  draft_path: .amplai/proposals/PROP-20260729-B13BC5DA/drafts/MAP-0002.md
+  expected_revision: 3
+  expected_target_sha256: bed50b000bf09381d1d5ea32c8ccce0248c4971bf86da7cd5a63ffdd03a7e65d
+notes:
+- 기존 Phase 0과 Phase 1A~1C 완료 상태 및 phase-2 current focus를 유지한다.
+- Slack·Telegram adapter와 Action Token 구현은 외부 channel 연결 전에 별도 검증한다.
+approved_at: '2026-07-29T16:22:37.164233+09:00'
+approved_by: user
+applied_at: '2026-07-29T16:22:37.635789+09:00'
+applied_by: user
