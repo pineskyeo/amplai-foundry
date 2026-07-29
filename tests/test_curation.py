@@ -101,13 +101,17 @@ def test_schema_generate_and_check_use_pydantic_contracts(tmp_path: Path) -> Non
 
     assert {path.name for path in paths} == {
         "comparison-result.schema.json",
+        "authority-context.schema.json",
         "domain-lock.schema.json",
+        "external-actor-binding.schema.json",
         "intake-run.schema.json",
         "intent-request.schema.json",
         "knowledge-candidate.schema.json",
         "note.schema.json",
         "project-manifest.schema.json",
         "proposal.schema.json",
+        "proposal-action.schema.json",
+        "proposal-action-audit.schema.json",
         "resolution-hold.schema.json",
         "roadmap-proposal.schema.json",
         "roadmap.schema.json",

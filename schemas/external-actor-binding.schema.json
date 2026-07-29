@@ -1,0 +1,92 @@
+{
+  "$defs": {
+    "ActorBindingStatus": {
+      "enum": [
+        "active",
+        "disabled"
+      ],
+      "title": "ActorBindingStatus",
+      "type": "string"
+    },
+    "ActorRef": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {
+          "pattern": "^ACT-[A-Z0-9-]+$",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "$ref": "#/$defs/ActorType"
+        }
+      },
+      "required": [
+        "actor_id",
+        "actor_type"
+      ],
+      "title": "ActorRef",
+      "type": "object"
+    },
+    "ActorType": {
+      "enum": [
+        "human",
+        "service",
+        "agent"
+      ],
+      "title": "ActorType",
+      "type": "string"
+    },
+    "ChannelProvider": {
+      "enum": [
+        "slack",
+        "telegram",
+        "hermes",
+        "web",
+        "cli"
+      ],
+      "title": "ChannelProvider",
+      "type": "string"
+    }
+  },
+  "$id": "https://amplai.local/schemas/external-actor-binding.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Immutable provider identity mapped to one AMPLAI actor.",
+  "properties": {
+    "actor_ref": {
+      "$ref": "#/$defs/ActorRef"
+    },
+    "external_actor_id": {
+      "minLength": 1,
+      "title": "External Actor Id",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/ChannelProvider"
+    },
+    "status": {
+      "$ref": "#/$defs/ActorBindingStatus",
+      "default": "active"
+    },
+    "workspace_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Workspace Id"
+    }
+  },
+  "required": [
+    "provider",
+    "external_actor_id",
+    "actor_ref"
+  ],
+  "title": "AMPLAI External Actor Binding",
+  "type": "object"
+}

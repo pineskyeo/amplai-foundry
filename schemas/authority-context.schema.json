@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "ActorRef": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {
+          "pattern": "^ACT-[A-Z0-9-]+$",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "$ref": "#/$defs/ActorType"
+        }
+      },
+      "required": [
+        "actor_id",
+        "actor_type"
+      ],
+      "title": "ActorRef",
+      "type": "object"
+    },
+    "ActorType": {
+      "enum": [
+        "human",
+        "service",
+        "agent"
+      ],
+      "title": "ActorType",
+      "type": "string"
+    },
+    "AuthorityPermission": {
+      "enum": [
+        "proposal.read",
+        "proposal.decide",
+        "proposal.apply"
+      ],
+      "title": "AuthorityPermission",
+      "type": "string"
+    },
+    "AuthoritySource": {
+      "additionalProperties": false,
+      "properties": {
+        "channel": {
+          "$ref": "#/$defs/ChannelRef"
+        },
+        "request_id": {
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "channel"
+      ],
+      "title": "AuthoritySource",
+      "type": "object"
+    },
+    "ChannelProvider": {
+      "enum": [
+        "slack",
+        "telegram",
+        "hermes",
+        "web",
+        "cli"
+      ],
+      "title": "ChannelProvider",
+      "type": "string"
+    },
+    "ChannelRef": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel Id"
+        },
+        "chat_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chat Id"
+        },
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/ChannelProvider"
+        },
+        "thread_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thread Id"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        }
+      },
+      "required": [
+        "provider",
+        "message_id"
+      ],
+      "title": "ChannelRef",
+      "type": "object"
+    },
+    "ProjectRef": {
+      "additionalProperties": false,
+      "description": "Stable identity for one project independent of its clone path.",
+      "properties": {
+        "namespace": {
+          "pattern": "^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)+$",
+          "title": "Namespace",
+          "type": "string"
+        },
+        "project_id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+          "title": "Project Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_id",
+        "namespace"
+      ],
+      "title": "ProjectRef",
+      "type": "object"
+    }
+  },
+  "$id": "https://amplai.local/schemas/authority-context.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Server-created authority resolved from actor, project, binding, and policy.",
+  "properties": {
+    "actor_ref": {
+      "$ref": "#/$defs/ActorRef"
+    },
+    "authenticated_at": {
+      "format": "date-time",
+      "title": "Authenticated At",
+      "type": "string"
+    },
+    "permissions": {
+      "items": {
+        "$ref": "#/$defs/AuthorityPermission"
+      },
+      "minItems": 1,
+      "title": "Permissions",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "project_ref": {
+      "$ref": "#/$defs/ProjectRef"
+    },
+    "source": {
+      "$ref": "#/$defs/AuthoritySource"
+    }
+  },
+  "required": [
+    "actor_ref",
+    "project_ref",
+    "permissions",
+    "source",
+    "authenticated_at"
+  ],
+  "title": "AMPLAI Governance Authority Context",
+  "type": "object"
+}

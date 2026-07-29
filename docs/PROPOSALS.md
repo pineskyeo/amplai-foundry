@@ -2,7 +2,7 @@
 
 ## Domain Contract
 
-Proposal은 Source evidence에서 파생한 canonical knowledge 변경 제안이다. 상태는 `draft`, `reviewed`, `approved`, `applied`, `rejected`, `superseded`다.
+Proposal은 Source evidence에서 파생한 canonical knowledge 변경 제안이다. 상태는 `draft`, `reviewed`, `changes_requested`, `approved`, `applied`, `rejected`, `superseded`다.
 
 Operation은 `CREATE`, `UPDATE`, `LINK`, `MERGE`, `SPLIT`, `SUPERSEDE`, `CONFLICT`, `IGNORE`를 지원한다. Confidence는 사실 여부가 아니라 curator 판단 강도이며 `low`, `medium`, `high`만 사용한다.
 
@@ -47,3 +47,9 @@ Apply는 `approved` 상태만 허용한다. Apply lock 안에서 Source 불변�
 Minimal apply는 draft 기반 `CREATE`, `UPDATE`, `LINK`, `SUPERSEDE`와 write가 없는 `IGNORE`를 처리한다. `CONFLICT`가 있으면 전체 apply를 거부한다. `MERGE`와 `SPLIT`은 현재 apply에서 거부하고 human이 새 Proposal shape를 결정한다.
 
 Git commit SHA는 apply commit 뒤의 후속 Proposal report commit에 기록한다. Commit이 자기 hash를 같은 commit content에 기록할 수 없으므로 두 단계 기록을 사용한다.
+
+## Messenger Decision Action
+
+Slack, Telegram, Hermes와 다른 UI는 [Messenger Proposal Control](MESSENGER-PROPOSAL-CONTROL.md)의 channel-independent `ProposalAction`을 사용한다.
+
+Message button은 authority가 아니다. AMPLAI가 qualified Proposal identity, server-created authority, revision, digest, token, idempotency와 현재 상태를 다시 검사한다.

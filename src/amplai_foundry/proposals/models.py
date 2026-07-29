@@ -18,6 +18,7 @@ Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 class ProposalStatus(StrEnum):
     DRAFT = "draft"
     REVIEWED = "reviewed"
+    CHANGES_REQUESTED = "changes_requested"
     APPROVED = "approved"
     APPLIED = "applied"
     REJECTED = "rejected"
@@ -119,6 +120,7 @@ class Proposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     proposal_version: Literal[1] = 1
+    revision: int = Field(default=1, ge=1)
     proposal_id: ProposalId
     project: ProjectId
     namespace: NonEmptyString

@@ -7,6 +7,14 @@ from typing import Any
 from pydantic import BaseModel
 
 from amplai_foundry.domain.models import MemoryMetadata
+from amplai_foundry.governance.models import (
+    AuthorityContext as GovernanceAuthorityContext,
+)
+from amplai_foundry.governance.models import (
+    ExternalActorBinding,
+    ProposalAction,
+    ProposalActionAuditEvent,
+)
 from amplai_foundry.intake.models import IntakeRun, IntentRequest, ResolutionHoldRecord
 from amplai_foundry.projects.models import DomainLock, ProjectManifest
 from amplai_foundry.proposals.models import Proposal
@@ -39,6 +47,26 @@ def generated_schemas() -> dict[Path, str]:
             Proposal,
             identifier="https://amplai.local/schemas/proposal.schema.json",
             title="AMPLAI Knowledge Proposal",
+        ),
+        Path("schemas/proposal-action.schema.json"): _schema(
+            ProposalAction,
+            identifier="https://amplai.local/schemas/proposal-action.schema.json",
+            title="AMPLAI Proposal Action",
+        ),
+        Path("schemas/proposal-action-audit.schema.json"): _schema(
+            ProposalActionAuditEvent,
+            identifier="https://amplai.local/schemas/proposal-action-audit.schema.json",
+            title="AMPLAI Proposal Action Audit Event",
+        ),
+        Path("schemas/authority-context.schema.json"): _schema(
+            GovernanceAuthorityContext,
+            identifier="https://amplai.local/schemas/authority-context.schema.json",
+            title="AMPLAI Governance Authority Context",
+        ),
+        Path("schemas/external-actor-binding.schema.json"): _schema(
+            ExternalActorBinding,
+            identifier="https://amplai.local/schemas/external-actor-binding.schema.json",
+            title="AMPLAI External Actor Binding",
         ),
         Path("schemas/project-manifest.schema.json"): _schema(
             ProjectManifest,

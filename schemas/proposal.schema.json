@@ -175,6 +175,7 @@
       "enum": [
         "draft",
         "reviewed",
+        "changes_requested",
         "approved",
         "applied",
         "rejected",
@@ -299,6 +300,12 @@
       "const": 1,
       "default": 1,
       "title": "Proposal Version",
+      "type": "integer"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
       "type": "integer"
     },
     "source_ids": {

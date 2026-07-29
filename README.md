@@ -145,4 +145,4 @@ amplai-foundry verify
 
 상위 기능은 `MemoryRepository` port에 의존한다. 현재 Markdown adapter 뒤에 SQLite 또는 PostgreSQL repository를 추가할 수 있다. FTS와 vector search는 canonical repository에서 재생성하는 파생 index로 유지한다.
 
-현재 계약의 세부 내용은 [Memory Domain Model](docs/MEMORY-DOMAIN-MODEL.md), [Lifecycle](docs/LIFECYCLE.md), [Relationships](docs/RELATIONSHIPS.md), [Project Pack](docs/PROJECT-PACK.md), [Knowledge Intake](docs/KNOWLEDGE-INTAKE.md), [Semantic Comparison](docs/SEMANTIC-COMPARISON.md), [Roadmap Changes](docs/ROADMAP-CHANGES.md), [Versioning](docs/VERSIONING.md)을 참조한다.
+현재 계약의 세부 내용은 [Memory Domain Model](docs/MEMORY-DOMAIN-MODEL.md), [Lifecycle](docs/LIFECYCLE.md), [Relationships](docs/RELATIONSHIPS.md), [Project Pack](docs/PROJECT-PACK.md), [Knowledge Intake](docs/KNOWLEDGE-INTAKE.md), [Semantic Comparison](docs/SEMANTIC-COMPARISON.md), [Messenger Proposal Control](docs/MESSENGER-PROPOSAL-CONTROL.md), [Roadmap Changes](docs/ROADMAP-CHANGES.md), [Versioning](docs/VERSIONING.md)을 참조한다.
