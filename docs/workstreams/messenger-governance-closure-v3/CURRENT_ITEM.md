@@ -1,5 +1,17 @@
 # Current Item — MGC-010
 
+## Status
+
+PASS at `9f3215ff9549f89749bdd805eea5fd783f6b5cb1`.
+
+- A1–A17 satisfied
+- Full `amplai-foundry verify`: 7/7 PASS
+- Subagent review: Contract PASS, Evidence PASS, Ops PASS
+- Final blocking counts: P0 0, P1 0, Blocking-P2 0
+- Advisory: Git ref observation currently holds the SQLite writer transaction; a narrower
+  per-project serialization boundary and a permanent populated-v14 strict-dispatch fixture are
+  follow-up hardening items.
+
 ## Goal
 
 `publish_pending` ApplyJob의 immutable staging 결과를 durable `PublishIntent`로 준비하고,
