@@ -331,13 +331,21 @@ def test_action_and_opaque_credential_contract_rejects_unsupported_input(
         b"payload=%7B%22type%22%3A%22block_actions%22%2C%22type%22%3A%22block_actions%22%7D",
         b"payload=%7B%7D&payload=%7B%7D",
         b"payload=%7B%22value%22%3ANaN%7D",
-        b"payload=%7B%22type%22%3A%22block_actions%22%2C%22user%22%3A%7B%22id%22%3A%22%FF%22%7D%7D",
         b"\xff",
     ),
 )
 def test_malformed_form_json_and_duplicate_fields_fail_closed(body: bytes) -> None:
     with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
         _authenticator().verify(_envelope(body))
+
+
+def test_percent_encoded_invalid_utf8_actor_fails_an_otherwise_valid_payload() -> None:
+    body = _body()
+    invalid_actor_body = body.replace(b"U456", b"%FF", 1)
+    assert invalid_actor_body != body
+
+    with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
+        _authenticator().verify(_envelope(invalid_actor_body))
 
 
 def test_non_slack_provider_and_wrong_installation_are_denied() -> None:
