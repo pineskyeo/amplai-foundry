@@ -45,11 +45,13 @@ from amplai_foundry.governance import (
     LegacyProposalImportService,
     LegacyProposalMigrationPlan,
     LegacyProposalPlanItem,
+    OutboxDispatcher,
     ProposalRef,
     ProposalSubmissionService,
     PublishGovernanceError,
     PublishPreparationService,
     PublishResolutionService,
+    YamlProjectionDestination,
 )
 from amplai_foundry.governance.apply_jobs import (
     ApplyGovernanceError,
@@ -2454,6 +2456,19 @@ def test_progressed_v18_backfill_preserves_next_active_projection_revision(
             (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
         ).fetchone() == ("apply_requested", item.state_revision + 2)
     GovernanceEventService(latest).reconcile()
+    dispatcher = OutboxDispatcher(latest, clock=lambda: NOW)
+    live_projection = YamlProjectionDestination(
+        tmp_path / "projections" / "reviewed-live.yaml",
+        destination_ref=yaml_destination,
+    )
+    history_projection = YamlProjectionDestination(
+        tmp_path / "projections" / "reviewed-history.yaml",
+        destination_ref=history_destination,
+    )
+    assert dispatcher.deliver_next("live-dispatch-1", live_projection) is not None
+    assert dispatcher.deliver_next("live-dispatch-2", live_projection) is not None
+    assert dispatcher.deliver_next("live-dispatch-3", live_projection) is None
+    assert dispatcher.deliver_next("history-dispatch", history_projection) is not None
 
 
 def test_progressed_v18_without_live_outbox_routes_backfill_to_history(
@@ -2522,6 +2537,46 @@ def test_progressed_v18_without_live_outbox_routes_backfill_to_history(
             (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
         ).fetchone() == ("reviewed", item.state_revision + 1)
     GovernanceEventService(latest).reconcile()
+    decisions = DecisionService(
+        latest, AuthorityService(latest, clock=lambda: NOW), clock=lambda: NOW
+    )
+    approve = next(
+        token
+        for token in decisions.issue_tokens(
+            item.proposal_ref,
+            authority_request=authority_request,
+        )
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    decisions.decide(
+        item.proposal_ref,
+        action=DecisionAction.APPROVE,
+        authority_request=authority_request,
+        raw_token=approve.raw_token,
+        idempotency_key="post-history-approved-decision",
+        request_fingerprint="e" * 64,
+    )
+    dispatcher = OutboxDispatcher(latest, clock=lambda: NOW)
+    assert (
+        dispatcher.deliver_next(
+            "history-first-dispatch",
+            YamlProjectionDestination(
+                tmp_path / "projections" / "draft-history.yaml",
+                destination_ref=history_destination,
+            ),
+        )
+        is not None
+    )
+    assert (
+        dispatcher.deliver_next(
+            "live-after-history-dispatch",
+            YamlProjectionDestination(
+                tmp_path / "projections" / "draft-live.yaml",
+                destination_ref=live_destination,
+            ),
+        )
+        is not None
+    )
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

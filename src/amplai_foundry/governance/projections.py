@@ -26,6 +26,7 @@ class YamlProjectionRecord(BaseModel):
 
     schema_version: int = Field(default=1, ge=1)
     proposal_ref: ProposalRef
+    destination_sequence: int | None = Field(default=None, ge=1)
     source_state_revision: int = Field(ge=1)
     aggregate_sequence: int = Field(ge=1)
     payload_digest: Digest
@@ -44,7 +45,7 @@ class YamlProjectionDestination:
                 return None
             if self._matches_event(current, event):
                 return self._receipt(current)
-            if current.aggregate_sequence >= event.aggregate_sequence:
+            if self._destination_sequence(current) >= event.destination_sequence:
                 raise OutboxReconcileError("YAML_PROJECTION_DIVERGED")
             return None
 
@@ -58,18 +59,22 @@ class YamlProjectionDestination:
             current = self._read()
             if current is not None and self._matches_event(current, event):
                 return self._receipt(current)
-            if current is not None and current.aggregate_sequence == event.aggregate_sequence:
+            if (
+                current is not None
+                and self._destination_sequence(current) == event.destination_sequence
+            ):
                 raise GovernanceEventError("YAML_PROJECTION_DIVERGED")
             if current is None:
-                if event.aggregate_sequence != 1:
+                if event.destination_sequence != 1:
                     raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
             elif (
-                event.aggregate_sequence != current.aggregate_sequence + 1
+                event.destination_sequence != self._destination_sequence(current) + 1
                 or event.source_state_revision <= current.source_state_revision
             ):
                 raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
             record = YamlProjectionRecord(
                 proposal_ref=event.proposal_ref,
+                destination_sequence=event.destination_sequence,
                 source_state_revision=event.source_state_revision,
                 aggregate_sequence=event.aggregate_sequence,
                 payload_digest=event.payload_digest,
@@ -169,12 +174,17 @@ class YamlProjectionDestination:
     @classmethod
     def _matches_event(cls, record: YamlProjectionRecord, event: OutboxEventView) -> bool:
         return (
-            record.aggregate_sequence == event.aggregate_sequence
+            cls._destination_sequence(record) == event.destination_sequence
+            and record.aggregate_sequence == event.aggregate_sequence
             and record.proposal_ref == event.proposal_ref
             and record.source_state_revision == event.source_state_revision
             and record.payload_digest == event.payload_digest
             and cls._payload_digest(record.payload) == record.payload_digest
         )
+
+    @staticmethod
+    def _destination_sequence(record: YamlProjectionRecord) -> int:
+        return record.destination_sequence or record.aggregate_sequence
 
     @staticmethod
     def _receipt(record: YamlProjectionRecord) -> str:

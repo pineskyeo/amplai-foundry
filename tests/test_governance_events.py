@@ -1128,6 +1128,62 @@ def test_yaml_projection_rejects_reverse_order_and_applies_sequence_cas(tmp_path
     assert projection.reconcile(second[0]) == second_receipt
 
 
+def test_yaml_projection_uses_per_destination_sequence_across_aggregate_gaps(
+    tmp_path: Path,
+) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    live_ref = "yaml:proposal"
+    history_ref = "migration-history:proposal"
+    _audit1, first_events = _append(
+        events,
+        store,
+        command_id="command-live-1",
+        state_revision=2,
+        destinations=(OutboxDestination(destination_ref=live_ref),),
+    )
+    _audit2, history_events = _append(
+        events,
+        store,
+        command_id="command-history",
+        state_revision=3,
+        destinations=(OutboxDestination(destination_ref=history_ref),),
+    )
+    _audit3, second_events = _append(
+        events,
+        store,
+        command_id="command-live-2",
+        state_revision=4,
+        destinations=(OutboxDestination(destination_ref=live_ref),),
+    )
+    first = next(event for event in first_events if event.destination_ref.startswith("yaml:"))
+    live_ref = first.destination_ref
+    live = YamlProjectionDestination(
+        tmp_path / "projection/live.yaml",
+        destination_ref=live_ref,
+    )
+    history_projection = YamlProjectionDestination(
+        tmp_path / "projection/history.yaml",
+        destination_ref=history_ref,
+    )
+    history = next(
+        event for event in history_events if event.destination_ref.startswith("yaml:")
+    ).model_copy(update={"destination_ref": history_ref, "destination_sequence": 1})
+    second = next(
+        event for event in second_events if event.destination_ref.startswith("yaml:")
+    ).model_copy(update={"destination_sequence": 2})
+
+    live.send(first)
+    live.send(second)
+    history_projection.send(history)
+
+    assert live.reconcile(second) is not None
+    assert history_projection.reconcile(history) is not None
+    assert (
+        yaml.safe_load((tmp_path / "projection/live.yaml").read_text())["destination_sequence"] == 2
+    )
+
+
 def test_yaml_projection_concurrent_duplicate_is_idempotent(tmp_path: Path) -> None:
     store, _active, _draft = _active_proposal(tmp_path)
     events = GovernanceEventService(store, clock=lambda: NOW)
