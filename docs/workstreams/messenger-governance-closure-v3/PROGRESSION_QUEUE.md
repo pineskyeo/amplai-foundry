@@ -7,7 +7,7 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 
 # Progression Queue
 
-- [ ] MGC-001 — Governance Store Foundation
+- [~] MGC-001 — Governance Store Foundation
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
 - [ ] MGC-002 — Immutable Definition Store
