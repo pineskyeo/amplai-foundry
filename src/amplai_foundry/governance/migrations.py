@@ -138,7 +138,7 @@ INITIAL_MIGRATIONS = (
         statements=(
             """
             CREATE TABLE governance_action_tokens (
-                token_id TEXT PRIMARY KEY,
+                token_id TEXT PRIMARY KEY NOT NULL,
                 token_hash TEXT NOT NULL UNIQUE,
                 project_namespace TEXT NOT NULL,
                 project_id TEXT NOT NULL,
@@ -349,7 +349,7 @@ class MigrationRunner:
             expected_columns.update(
                 {
                     "governance_action_tokens": (
-                        ("token_id", "TEXT", 0, 1),
+                        ("token_id", "TEXT", 1, 1),
                         ("token_hash", "TEXT", 1, 0),
                         ("project_namespace", "TEXT", 1, 0),
                         ("project_id", "TEXT", 1, 0),
