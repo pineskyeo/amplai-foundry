@@ -2057,6 +2057,124 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=18,
+        name="legacy-proposal-migration-state",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_migrations (
+                migration_id TEXT PRIMARY KEY NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                freeze_id TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL,
+                snapshot_digest TEXT NOT NULL,
+                plan_digest TEXT NOT NULL UNIQUE,
+                mapping_policy_version INTEGER NOT NULL CHECK (mapping_policy_version >= 1),
+                base_revision TEXT NOT NULL,
+                validation_policy_ref TEXT NOT NULL,
+                project_pack_backup_path TEXT NOT NULL,
+                project_pack_backup_digest TEXT NOT NULL,
+                governance_backup_path TEXT NOT NULL,
+                governance_backup_digest TEXT NOT NULL,
+                proposal_count INTEGER NOT NULL CHECK (proposal_count >= 1),
+                status TEXT NOT NULL CHECK (status IN ('prepared', 'state_imported')),
+                prepared_at TEXT NOT NULL,
+                state_imported_at TEXT,
+                CHECK (
+                    length(migration_id) = 20
+                    AND substr(migration_id, 1, 4) = 'MPL-'
+                    AND substr(migration_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(snapshot_id) = 20
+                    AND substr(snapshot_id, 1, 4) = 'MPS-'
+                    AND substr(snapshot_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(snapshot_digest) = 71
+                    AND substr(snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(plan_digest) = 71
+                    AND substr(plan_digest, 1, 7) = 'sha256:'
+                    AND substr(plan_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(project_pack_backup_digest) = 71
+                    AND substr(project_pack_backup_digest, 1, 7) = 'sha256:'
+                    AND substr(project_pack_backup_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(governance_backup_digest) = 71
+                    AND substr(governance_backup_digest, 1, 7) = 'sha256:'
+                    AND substr(governance_backup_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (status = 'prepared' AND state_imported_at IS NULL)
+                    OR (status = 'state_imported' AND state_imported_at IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_migration_items (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                source_status TEXT NOT NULL,
+                source_revision INTEGER NOT NULL CHECK (source_revision >= 1),
+                target_status TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                proposal_artifact_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                approval_disposition TEXT NOT NULL,
+                imported_at TEXT NOT NULL,
+                PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
+                UNIQUE (project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migrations(migration_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    )
+                    ON DELETE RESTRICT,
+                CHECK (
+                    source_status IN (
+                        'draft', 'reviewed', 'changes_requested', 'approved',
+                        'applied', 'rejected', 'superseded'
+                    )
+                ),
+                CHECK (
+                    target_status IN (
+                        'draft', 'reviewed', 'changes_requested', 'approved',
+                        'applied', 'rejected', 'superseded',
+                        'legacy_approval_review_required'
+                    )
+                ),
+                CHECK (
+                    approval_disposition IN (
+                        'not_required', 'legacy_audit_present', 'synthetic_required'
+                    )
+                ),
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(proposal_artifact_digest) = 71
+                    AND substr(proposal_artifact_digest, 1, 7) = 'sha256:'
+                    AND substr(proposal_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
 )
 
 
@@ -2601,6 +2719,47 @@ class MigrationRunner:
                 ("proposal_id", "TEXT", 1, 0),
                 ("before_job_status", "TEXT", 1, 0),
                 ("stream_revision", "INTEGER", 1, 0),
+            )
+        if schema_version >= 18:
+            expected_columns.update(
+                {
+                    "governance_legacy_migrations": (
+                        ("migration_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("freeze_id", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("snapshot_digest", "TEXT", 1, 0),
+                        ("plan_digest", "TEXT", 1, 0),
+                        ("mapping_policy_version", "INTEGER", 1, 0),
+                        ("base_revision", "TEXT", 1, 0),
+                        ("validation_policy_ref", "TEXT", 1, 0),
+                        ("project_pack_backup_path", "TEXT", 1, 0),
+                        ("project_pack_backup_digest", "TEXT", 1, 0),
+                        ("governance_backup_path", "TEXT", 1, 0),
+                        ("governance_backup_digest", "TEXT", 1, 0),
+                        ("proposal_count", "INTEGER", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("prepared_at", "TEXT", 1, 0),
+                        ("state_imported_at", "TEXT", 0, 0),
+                    ),
+                    "governance_legacy_migration_items": (
+                        ("migration_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 2),
+                        ("project_id", "TEXT", 1, 3),
+                        ("proposal_id", "TEXT", 1, 4),
+                        ("source_status", "TEXT", 1, 0),
+                        ("source_revision", "INTEGER", 1, 0),
+                        ("target_status", "TEXT", 1, 0),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("proposal_artifact_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("approval_disposition", "TEXT", 1, 0),
+                        ("imported_at", "TEXT", 1, 0),
+                    ),
+                }
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
