@@ -98,6 +98,11 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyTargetStatus,
     LegacyVerifiedProposal,
 )
+from amplai_foundry.governance.legacy_rollback import (
+    LegacyMigrationRollbackPlan,
+    LegacyMigrationRollbackPlanner,
+    LegacyRollbackRoot,
+)
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
     ActorRef,
@@ -212,6 +217,8 @@ __all__ = [
     "LegacyMigrationImportResult",
     "LegacyMigrationLifecycleError",
     "LegacyMigrationLifecycleState",
+    "LegacyMigrationRollbackPlan",
+    "LegacyMigrationRollbackPlanner",
     "LegacyMigrationScanConfig",
     "LegacyMigrationScanError",
     "LegacyMigrationVerificationReport",
@@ -222,6 +229,7 @@ __all__ = [
     "LegacyProposalMigrationPlan",
     "LegacyProposalPlanItem",
     "LegacyProposalSnapshot",
+    "LegacyRollbackRoot",
     "LegacySnapshotFile",
     "LegacyTargetStatus",
     "LegacyVerifiedProposal",
