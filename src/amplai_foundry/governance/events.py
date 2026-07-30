@@ -462,12 +462,11 @@ class GovernanceEventService:
         ).fetchone()
         if active_decision_mismatch is not None:
             raise GovernanceEventError("DECISION_RESULT_ROOT_MISMATCH")
-        has_apply_tables = (
-            connection.execute(
-                "SELECT 1 FROM sqlite_master WHERE type = 'table' "
-                "AND name = 'governance_apply_grants'"
-            ).fetchone()
-            is not None
+        has_apply_tables = any(
+            str(row[1]) == "grant_id"
+            for row in connection.execute(
+                "PRAGMA table_info(governance_apply_request_results)"
+            ).fetchall()
         )
         consumed_grant_mismatch = (
             connection.execute(
@@ -491,10 +490,11 @@ class GovernanceEventService:
                 """
             SELECT 1
             FROM governance_apply_request_results r
-            JOIN governance_apply_grants g ON g.grant_id = r.grant_id
-            JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
-            JOIN governance_apply_jobs j ON j.job_id = r.job_id
-            WHERE g.state != 'consumed'
+            LEFT JOIN governance_apply_grants g ON g.grant_id = r.grant_id
+            LEFT JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
+            LEFT JOIN governance_apply_jobs j ON j.job_id = r.job_id
+            WHERE g.grant_id IS NULL OR s.snapshot_id IS NULL OR j.job_id IS NULL
+               OR g.state != 'consumed'
                OR g.snapshot_id != r.snapshot_id
                OR g.project_namespace != r.project_namespace
                OR g.project_id != r.project_id OR g.proposal_id != r.proposal_id
@@ -513,6 +513,36 @@ class GovernanceEventService:
             else None
         )
         if apply_result_mismatch is not None:
+            raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
+        orphan_apply_job = (
+            connection.execute(
+                """
+                SELECT 1 FROM governance_apply_jobs j
+                LEFT JOIN governance_apply_request_results r ON r.job_id = j.job_id
+                GROUP BY j.job_id
+                HAVING COUNT(r.idempotency_key) != 1
+                LIMIT 1
+                """
+            ).fetchone()
+            if has_apply_tables
+            else None
+        )
+        if orphan_apply_job is not None:
+            raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
+        orphan_approved_snapshot = (
+            connection.execute(
+                """
+                SELECT 1 FROM governance_approved_snapshots s
+                LEFT JOIN governance_apply_grants g ON g.snapshot_id = s.snapshot_id
+                GROUP BY s.snapshot_id
+                HAVING COUNT(g.grant_id) < 1
+                LIMIT 1
+                """
+            ).fetchone()
+            if has_apply_tables
+            else None
+        )
+        if orphan_approved_snapshot is not None:
             raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
         active_apply_mismatch = (
             connection.execute(

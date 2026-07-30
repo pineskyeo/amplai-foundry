@@ -226,6 +226,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (7, "decision-outbox-integrity-roots"),
         (8, "audit-manifest-integrity-finalize"),
         (9, "apply-grant-job-foundation"),
+        (10, "apply-request-grant-root"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -424,6 +425,31 @@ def test_version_six_store_with_decision_event_upgrades_and_backfills(tmp_path: 
         }
     assert "governance_active_proposals" in tables
     assert "governance_definition_revisions" in tables
+
+
+def test_version_nine_store_upgrades_without_rewriting_frozen_migration(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    assert INITIAL_MIGRATIONS[8].checksum == (
+        "4e96a5e88425f23905542c5e01d96dec3bc5345ad05b9b61296bc6767c6f03ac"
+    )
+    version_nine = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:9]),
+    )
+    assert version_nine.initialize().schema_version == 9
+
+    upgraded = GovernanceStore(path)
+    assert upgraded.initialize().schema_version == 10
+    with upgraded.connect() as connection:
+        columns = tuple(
+            str(row[1])
+            for row in connection.execute(
+                "PRAGMA table_info(governance_apply_request_results)"
+            ).fetchall()
+        )
+        assert "grant_id" in columns
 
 
 def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(

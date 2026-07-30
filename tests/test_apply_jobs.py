@@ -36,6 +36,7 @@ from amplai_foundry.governance.apply_jobs import (
     ApplyGrantService,
     ApplyRequestService,
 )
+from amplai_foundry.governance.events import GovernanceEventError
 from amplai_foundry.governance.store import GovernanceStore
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
@@ -71,7 +72,12 @@ def _request() -> DirectAuthorityRequest:
     )
 
 
-def _fixture(tmp_path: Path, *, grant_apply_permission: bool = True):
+def _fixture(
+    tmp_path: Path,
+    *,
+    grant_apply_permission: bool = True,
+    include_action_token: bool = False,
+):
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
     objects = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
@@ -135,12 +141,13 @@ def _fixture(tmp_path: Path, *, grant_apply_permission: bool = True):
         idempotency_key=decision_key,
         request_fingerprint=hashlib.sha256(decision_key.encode()).hexdigest(),
     )
-    return (
+    result = (
         store,
         active,
         ApplyGrantService(store, authority, objects, clock=lambda: NOW),
         decision_key,
     )
+    return (*result, approve.raw_token) if include_action_token else result
 
 
 def test_approved_decision_issues_snapshot_scoped_hash_only_grant(tmp_path: Path) -> None:
@@ -505,6 +512,8 @@ def test_apply_request_atomically_creates_job_audit_and_two_outbox_events(
             "SELECT COUNT(*) FROM governance_outbox_events WHERE aggregate_sequence = 2"
         ).fetchone() == (2,)
     store.initialize()
+    for database_file in tmp_path.glob("governance.db*"):
+        assert issued.raw_grant.encode() not in database_file.read_bytes()
 
 
 def test_apply_request_replay_returns_original_job_before_grant_state_validation(
@@ -522,10 +531,15 @@ def test_apply_request_replay_returns_original_job_before_grant_state_validation
         idempotency_key=key,
         request_fingerprint=fingerprint,
     )
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_actors SET status = 'disabled', updated_at = ? WHERE actor_id = ?",
+            ((NOW + timedelta(seconds=1)).isoformat(), ACTOR.actor_id),
+        )
     replay = service.request_apply(
         PROPOSAL,
         authority_request=_request(),
-        raw_grant=issued.raw_grant,
+        raw_grant="",
         idempotency_key=key,
         request_fingerprint=fingerprint,
     )
@@ -590,6 +604,70 @@ def test_expired_apply_grant_does_not_mutate_proposal_or_create_job(tmp_path: Pa
         assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (0,)
 
 
+def test_wrong_channel_apply_grant_is_rejected_without_mutation(tmp_path: Path) -> None:
+    store, active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    wrong_channel_request = DirectAuthorityRequest(
+        provider=ChannelProvider.SLACK,
+        provider_installation_ref="T123:APP1",
+        external_actor_id="U123",
+        project_ref=PROJECT,
+        request_id="request-apply-wrong-channel",
+        channel=ChannelRef(
+            provider=ChannelProvider.SLACK,
+            workspace_id="T123",
+            channel_id="C999",
+            message_id="1710000000.999999",
+        ),
+    )
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+
+    with pytest.raises(ApplyGovernanceError, match="APPLY_GRANT_CHANNEL_MISMATCH"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=wrong_channel_request,
+            raw_grant=issued.raw_grant,
+            idempotency_key="apply-wrong-channel-1",
+            request_fingerprint=hashlib.sha256(b"apply-wrong-channel-1").hexdigest(),
+        )
+    assert active.get(PROPOSAL).status.value == "approved"
+    assert grants.get_grant(issued.record.grant_id).state.value == "issued"
+
+
+def test_consumed_grant_with_new_key_and_action_token_are_rejected(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path, include_action_token=True)
+    store, _active, grants, decision_key, action_token = fixture
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+    key = "apply-consume-1"
+    service.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key=key,
+        request_fingerprint=hashlib.sha256(key.encode()).hexdigest(),
+    )
+
+    with pytest.raises(ApplyGovernanceError, match="APPLY_GRANT_CONSUMED"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key="apply-consume-2",
+            request_fingerprint=hashlib.sha256(b"apply-consume-2").hexdigest(),
+        )
+    with pytest.raises(ApplyGovernanceError, match="APPLY_GRANT_INVALID"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=action_token,
+            idempotency_key="apply-action-token-1",
+            request_fingerprint=hashlib.sha256(b"apply-action-token-1").hexdigest(),
+        )
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (1,)
+
+
 def test_apply_event_failure_rolls_back_proposal_grant_job_and_result(tmp_path: Path) -> None:
     store, active, grants, decision_key = _fixture(tmp_path)
     issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
@@ -619,3 +697,138 @@ def test_apply_event_failure_rolls_back_proposal_grant_job_and_result(tmp_path: 
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_apply_request_results"
         ).fetchone() == (0,)
+
+
+def test_concurrent_same_apply_request_creates_one_job_and_replays_loser(
+    tmp_path: Path,
+) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+    barrier = threading.Barrier(2)
+    key = "apply-concurrent-1"
+    fingerprint = hashlib.sha256(key.encode()).hexdigest()
+
+    def request():
+        barrier.wait()
+        return service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key=key,
+            request_fingerprint=fingerprint,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(lambda _index: request(), range(2)))
+    assert {result.replayed for result in results} == {False, True}
+    assert results[0].job_id == results[1].job_id
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_request_results"
+        ).fetchone() == (1,)
+
+
+def test_second_apply_outbox_failure_rolls_back_entire_request(tmp_path: Path) -> None:
+    store, active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_second_apply_outbox_failure
+            BEFORE INSERT ON governance_outbox_events
+            WHEN NEW.aggregate_sequence = 2 AND NEW.destination_ref LIKE 'provider:%'
+            BEGIN SELECT RAISE(ABORT, 'injected second apply outbox failure'); END
+            """
+        )
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected second apply outbox failure"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key="apply-outbox-rollback-1",
+            request_fingerprint=hashlib.sha256(b"apply-outbox-rollback-1").hexdigest(),
+        )
+    assert active.get(PROPOSAL).status.value == "approved"
+    assert grants.get_grant(issued.record.grant_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_request_results"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE command_id LIKE 'apply:%'"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_events WHERE aggregate_sequence = 2"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT aggregate_sequence FROM governance_aggregate_sequences"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT MIN(next_sequence), MAX(next_sequence) FROM governance_outbox_destinations"
+        ).fetchone() == (2, 2)
+
+
+def test_startup_rejects_orphan_apply_job_without_result(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    snapshot = grants.get_snapshot(issued.record.snapshot_id)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_apply_jobs(
+                job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                approved_snapshot_digest, expected_base_revision, status,
+                attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
+                staged_artifact_digest, publish_request_digest, last_error_code,
+                created_at, updated_at
+            ) VALUES (
+                'JOB-ORPHAN', ?, ?, ?, ?, ?, ?, 'queued', 0, 0,
+                NULL, NULL, NULL, NULL, NULL, NULL, ?, ?
+            )
+            """,
+            (
+                snapshot.snapshot_id,
+                PROPOSAL.project_ref.namespace,
+                PROPOSAL.project_ref.project_id,
+                PROPOSAL.proposal_id,
+                snapshot.snapshot_digest,
+                snapshot.expected_base_revision,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(GovernanceEventError, match="APPLY_RESULT_ROOT_MISMATCH"):
+        store.initialize()
+
+
+def test_startup_rejects_approved_snapshot_without_grant_root(tmp_path: Path) -> None:
+    store, _active, _grants, _decision_key = _fixture(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_approved_snapshots(
+                snapshot_id, project_namespace, project_id, proposal_id,
+                definition_digest, snapshot_digest, content_revision,
+                state_revision, decision_epoch, expected_base_revision, approved_at
+            ) VALUES (
+                'APS-ORPHAN', ?, ?, ?, ?, ?, 99, 99, 99, 'bbbbbbb', ?
+            )
+            """,
+            (
+                PROPOSAL.project_ref.namespace,
+                PROPOSAL.project_ref.project_id,
+                PROPOSAL.proposal_id,
+                f"sha256:{'d' * 64}",
+                f"sha256:{'e' * 64}",
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(GovernanceEventError, match="APPLY_RESULT_ROOT_MISMATCH"):
+        store.initialize()

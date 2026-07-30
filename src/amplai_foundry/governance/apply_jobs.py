@@ -506,20 +506,19 @@ class ApplyRequestService:
         idempotency_key: str,
         request_fingerprint: str,
     ) -> ApplyRequestResult:
-        self._validate_command(idempotency_key, request_fingerprint, raw_grant)
+        self._validate_replay_key(idempotency_key, request_fingerprint)
         with self.store.connect() as connection, governance_transaction(connection):
-            authority = self._authenticate(authority_request, connection)
-            self._require_apply_authority(authority, ref)
-            channel_json = ApplyGrantService._channel_json(authority.source.channel)
             replay = self._result_row(connection, idempotency_key)
             if replay is not None:
                 return self._replay_result(
                     replay,
                     ref=ref,
-                    authority=authority,
-                    channel_json=channel_json,
                     request_fingerprint=request_fingerprint,
                 )
+            self._validate_grant_material(raw_grant, idempotency_key)
+            authority = self._authenticate(authority_request, connection)
+            self._require_apply_authority(authority, ref)
+            channel_json = ApplyGrantService._channel_json(authority.source.channel)
             if self._contains_persisted_secret(connection, idempotency_key):
                 raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")
 
@@ -729,18 +728,10 @@ class ApplyRequestService:
         row: tuple[object, ...],
         *,
         ref: ProposalRef,
-        authority: AuthorityContext,
-        channel_json: str,
         request_fingerprint: str,
     ) -> ApplyRequestResult:
         original_ref = ApplyGrantService._proposal_ref(row[1], row[2], row[3])
-        if (
-            str(row[0]) != request_fingerprint
-            or original_ref != ref
-            or (str(row[7]), str(row[8]))
-            != (authority.actor_ref.actor_id, authority.actor_ref.actor_type.value)
-            or str(row[9]) != channel_json
-        ):
+        if str(row[0]) != request_fingerprint or original_ref != ref:
             raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")
         return ApplyRequestResult(
             proposal_ref=original_ref,
@@ -753,13 +744,16 @@ class ApplyRequestService:
         )
 
     @staticmethod
-    def _validate_command(key: str, fingerprint: str, raw_grant: str) -> None:
+    def _validate_replay_key(key: str, fingerprint: str) -> None:
         if not key.strip():
             raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
         if len(key) > 512:
             raise ValueError("idempotency_key는 512자를 초과할 수 없습니다.")
         if len(fingerprint) != 64 or any(c not in "0123456789abcdef" for c in fingerprint):
             raise ValueError("request_fingerprint는 lowercase SHA-256 hex여야 합니다.")
+
+    @staticmethod
+    def _validate_grant_material(raw_grant: str, key: str) -> None:
         if not raw_grant or len(raw_grant.encode("utf-8")) > 64:
             raise ApplyGovernanceError("APPLY_GRANT_INVALID")
         if raw_grant in key:

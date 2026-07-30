@@ -824,10 +824,6 @@ INITIAL_MIGRATIONS = (
                 expires_at TEXT NOT NULL,
                 state TEXT NOT NULL CHECK (state IN ('issued', 'consumed', 'expired', 'revoked')),
                 resolved_at TEXT,
-                UNIQUE (
-                    grant_id, snapshot_id, project_namespace, project_id, proposal_id,
-                    allowed_actor_id, allowed_actor_type, bound_channel_json
-                ),
                 FOREIGN KEY (
                     snapshot_id, project_namespace, project_id, proposal_id,
                     approved_snapshot_digest, content_revision, state_revision,
@@ -1000,6 +996,66 @@ INITIAL_MIGRATIONS = (
                 project_id TEXT NOT NULL,
                 proposal_id TEXT NOT NULL,
                 snapshot_id TEXT NOT NULL,
+                job_id TEXT NOT NULL UNIQUE,
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                channel_json TEXT NOT NULL,
+                proposal_status TEXT NOT NULL CHECK (proposal_status = 'apply_requested'),
+                processed_at TEXT NOT NULL,
+                FOREIGN KEY (snapshot_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_approved_snapshots(
+                        snapshot_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) REFERENCES governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) ON DELETE RESTRICT,
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_apply_request_results_no_update
+            BEFORE UPDATE ON governance_apply_request_results
+            BEGIN
+                SELECT RAISE(ABORT, 'apply request result is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_apply_request_results_no_delete
+            BEFORE DELETE ON governance_apply_request_results
+            BEGIN
+                SELECT RAISE(ABORT, 'apply request result is durable');
+            END
+            """,
+        ),
+    ),
+    Migration(
+        version=10,
+        name="apply-request-grant-root",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_apply_grant_result_identity
+            ON governance_apply_grants(
+                grant_id, snapshot_id, project_namespace, project_id, proposal_id,
+                allowed_actor_id, allowed_actor_type, bound_channel_json
+            )
+            """,
+            """
+            ALTER TABLE governance_apply_request_results
+            RENAME TO governance_apply_request_results_v9
+            """,
+            """
+            CREATE TABLE governance_apply_request_results (
+                idempotency_key TEXT PRIMARY KEY NOT NULL,
+                request_fingerprint TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL,
                 grant_id TEXT NOT NULL UNIQUE,
                 job_id TEXT NOT NULL UNIQUE,
                 actor_id TEXT NOT NULL,
@@ -1029,6 +1085,32 @@ INITIAL_MIGRATIONS = (
                 )
             ) WITHOUT ROWID
             """,
+            """
+            INSERT INTO governance_apply_request_results(
+                idempotency_key, request_fingerprint, project_namespace, project_id,
+                proposal_id, snapshot_id, grant_id, job_id, actor_id, actor_type,
+                channel_json, proposal_status, processed_at
+            )
+            SELECT r.idempotency_key, r.request_fingerprint, r.project_namespace,
+                   r.project_id, r.proposal_id, r.snapshot_id,
+                   (
+                       SELECT g.grant_id FROM governance_apply_grants g
+                       WHERE g.snapshot_id = r.snapshot_id
+                         AND g.project_namespace = r.project_namespace
+                         AND g.project_id = r.project_id
+                         AND g.proposal_id = r.proposal_id
+                         AND g.allowed_actor_id = r.actor_id
+                         AND g.allowed_actor_type = r.actor_type
+                         AND g.bound_channel_json = r.channel_json
+                         AND g.state = 'consumed'
+                       ORDER BY g.resolved_at DESC, g.grant_id
+                       LIMIT 1
+                   ),
+                   r.job_id, r.actor_id, r.actor_type, r.channel_json,
+                   r.proposal_status, r.processed_at
+            FROM governance_apply_request_results_v9 r
+            """,
+            "DROP TABLE governance_apply_request_results_v9",
             """
             CREATE TRIGGER governance_apply_request_results_no_update
             BEFORE UPDATE ON governance_apply_request_results
@@ -1428,7 +1510,6 @@ class MigrationRunner:
                         ("project_id", "TEXT", 1, 0),
                         ("proposal_id", "TEXT", 1, 0),
                         ("snapshot_id", "TEXT", 1, 0),
-                        ("grant_id", "TEXT", 1, 0),
                         ("job_id", "TEXT", 1, 0),
                         ("actor_id", "TEXT", 1, 0),
                         ("actor_type", "TEXT", 1, 0),
@@ -1437,6 +1518,13 @@ class MigrationRunner:
                         ("processed_at", "TEXT", 1, 0),
                     ),
                 }
+            )
+        if schema_version >= 10:
+            apply_result_columns = expected_columns["governance_apply_request_results"]
+            expected_columns["governance_apply_request_results"] = (
+                *apply_result_columns[:6],
+                ("grant_id", "TEXT", 1, 0),
+                *apply_result_columns[6:],
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
