@@ -95,12 +95,14 @@ from amplai_foundry.governance.projections import (
     YamlProjectionRecord,
 )
 from amplai_foundry.governance.publish import (
+    CandidateCommitEvidence,
     ProjectPublishGateView,
     PublishGateState,
     PublishGovernanceError,
     PublishIntentState,
     PublishIntentView,
     PublishOutcome,
+    PublishPreparationService,
     PublishResultView,
 )
 
@@ -128,6 +130,7 @@ __all__ = [
     "BindingTarget",
     "BindingTransitionView",
     "BindingView",
+    "CandidateCommitEvidence",
     "CanonicalDefinition",
     "ChannelProvider",
     "ChannelRef",
@@ -181,6 +184,7 @@ __all__ = [
     "PublishIntentState",
     "PublishIntentView",
     "PublishOutcome",
+    "PublishPreparationService",
     "PublishResultView",
     "VerifiedProviderCommand",
     "YamlProjectionDestination",

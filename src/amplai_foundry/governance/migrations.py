@@ -1328,16 +1328,32 @@ INITIAL_MIGRATIONS = (
                 CHECK (
                     length(expected_old_ref) IN (40, 64)
                     AND expected_old_ref NOT GLOB '*[^0-9a-f]*'
+                    AND substr(expected_old_ref, 1, length(expected_base_revision))
+                        = expected_base_revision
                 ),
                 CHECK (
                     length(candidate_commit) IN (40, 64)
                     AND candidate_commit NOT GLOB '*[^0-9a-f]*'
+                    AND length(candidate_commit) = length(expected_old_ref)
+                    AND candidate_commit != expected_old_ref
                 ),
                 CHECK (
                     length(canonical_ref) BETWEEN 12 AND 255
                     AND substr(canonical_ref, 1, 11) = 'refs/heads/'
-                    AND canonical_ref NOT GLOB '*[[:space:]~^:?*\\[]*'
+                    AND canonical_ref NOT GLOB '*[^ -~]*'
+                    AND instr(canonical_ref, ' ') = 0
+                    AND instr(canonical_ref, '~') = 0
+                    AND instr(canonical_ref, '^') = 0
+                    AND instr(canonical_ref, ':') = 0
+                    AND instr(canonical_ref, '?') = 0
+                    AND instr(canonical_ref, '*') = 0
+                    AND instr(canonical_ref, '[') = 0
+                    AND instr(canonical_ref, '\\') = 0
                     AND substr(canonical_ref, -1) != '/'
+                    AND substr(canonical_ref, -1) != '.'
+                    AND instr(canonical_ref, '/.') = 0
+                    AND instr(canonical_ref, '.lock/') = 0
+                    AND substr(canonical_ref, -5) != '.lock'
                     AND instr(canonical_ref, '..') = 0
                     AND instr(canonical_ref, '//') = 0
                     AND instr(canonical_ref, '@{') = 0
@@ -1429,6 +1445,23 @@ INITIAL_MIGRATIONS = (
                 CHECK (
                     length(canonical_ref) BETWEEN 12 AND 255
                     AND substr(canonical_ref, 1, 11) = 'refs/heads/'
+                    AND canonical_ref NOT GLOB '*[^ -~]*'
+                    AND instr(canonical_ref, ' ') = 0
+                    AND instr(canonical_ref, '~') = 0
+                    AND instr(canonical_ref, '^') = 0
+                    AND instr(canonical_ref, ':') = 0
+                    AND instr(canonical_ref, '?') = 0
+                    AND instr(canonical_ref, '*') = 0
+                    AND instr(canonical_ref, '[') = 0
+                    AND instr(canonical_ref, '\\') = 0
+                    AND substr(canonical_ref, -1) != '/'
+                    AND substr(canonical_ref, -1) != '.'
+                    AND instr(canonical_ref, '/.') = 0
+                    AND instr(canonical_ref, '.lock/') = 0
+                    AND substr(canonical_ref, -5) != '.lock'
+                    AND instr(canonical_ref, '..') = 0
+                    AND instr(canonical_ref, '//') = 0
+                    AND instr(canonical_ref, '@{') = 0
                 )
             ) WITHOUT ROWID
             """,
@@ -1521,6 +1554,26 @@ INITIAL_MIGRATIONS = (
                 CHECK (outcome != 'published' OR actual_ref = candidate_commit),
                 CHECK (outcome != 'cancelled' OR actual_ref = expected_old_ref)
             ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_publish_result_intent_consistency
+            BEFORE INSERT ON governance_publish_results
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_publish_intents i
+                WHERE i.intent_id = NEW.intent_id
+                  AND i.job_id = NEW.job_id
+                  AND i.snapshot_id = NEW.snapshot_id
+                  AND i.project_namespace = NEW.project_namespace
+                  AND i.project_id = NEW.project_id
+                  AND i.proposal_id = NEW.proposal_id
+                  AND i.fencing_token = NEW.fencing_token
+                  AND i.expected_old_ref = NEW.expected_old_ref
+                  AND i.candidate_commit = NEW.candidate_commit
+                  AND i.status = NEW.outcome
+                  AND i.resolved_at = NEW.resolved_at
+                  AND i.last_error_code IS NEW.error_code
+            )
+            BEGIN SELECT RAISE(ABORT, 'publish result does not match terminal intent'); END
             """,
             """
             CREATE TRIGGER governance_publish_results_no_update

@@ -1008,6 +1008,79 @@ class GovernanceEventService:
                         or str(job[3]) != "publish_pending"
                     ):
                         raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
+        has_publish_tables = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                "AND name = 'governance_publish_intents'"
+            ).fetchone()
+            is not None
+        )
+        if has_publish_tables:
+            intent_root_mismatch = connection.execute(
+                """
+                SELECT 1
+                FROM governance_publish_intents i
+                LEFT JOIN governance_project_publish_gates g
+                  ON g.active_intent_id = i.intent_id
+                LEFT JOIN governance_publish_results r
+                  ON r.intent_id = i.intent_id
+                WHERE (
+                    i.status IN ('prepared', 'recovery_hold')
+                    AND (
+                        r.intent_id IS NOT NULL
+                        OR g.project_namespace IS NULL
+                        OR g.project_namespace != i.project_namespace
+                        OR g.project_id != i.project_id
+                        OR g.canonical_ref != i.canonical_ref
+                        OR (i.status = 'prepared' AND g.state != 'locked')
+                        OR (i.status = 'recovery_hold' AND g.state != 'recovery_hold')
+                    )
+                ) OR (
+                    i.status IN ('published', 'publish_conflict', 'cancelled', 'failed')
+                    AND (
+                        g.project_namespace IS NOT NULL
+                        OR r.intent_id IS NULL
+                        OR r.job_id != i.job_id
+                        OR r.snapshot_id != i.snapshot_id
+                        OR r.project_namespace != i.project_namespace
+                        OR r.project_id != i.project_id
+                        OR r.proposal_id != i.proposal_id
+                        OR r.fencing_token != i.fencing_token
+                        OR r.expected_old_ref != i.expected_old_ref
+                        OR r.candidate_commit != i.candidate_commit
+                        OR r.outcome != i.status
+                        OR r.error_code IS NOT i.last_error_code
+                        OR r.resolved_at != i.resolved_at
+                    )
+                )
+                LIMIT 1
+                """
+            ).fetchone()
+            if intent_root_mismatch is not None:
+                raise GovernanceEventError("PUBLISH_INTENT_ROOT_MISMATCH")
+            gate_root_mismatch = connection.execute(
+                """
+                SELECT 1
+                FROM governance_project_publish_gates g
+                LEFT JOIN governance_publish_intents i
+                  ON i.intent_id = g.active_intent_id
+                WHERE (
+                    g.state = 'unlocked' AND g.active_intent_id IS NOT NULL
+                ) OR (
+                    g.state IN ('locked', 'recovery_hold') AND (
+                        i.intent_id IS NULL
+                        OR i.project_namespace != g.project_namespace
+                        OR i.project_id != g.project_id
+                        OR i.canonical_ref != g.canonical_ref
+                        OR (g.state = 'locked' AND i.status != 'prepared')
+                        OR (g.state = 'recovery_hold' AND i.status != 'recovery_hold')
+                    )
+                )
+                LIMIT 1
+                """
+            ).fetchone()
+            if gate_root_mismatch is not None:
+                raise GovernanceEventError("PUBLISH_GATE_ROOT_MISMATCH")
         orphan_audit = connection.execute(
             """
             SELECT 1

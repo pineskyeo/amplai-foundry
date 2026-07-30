@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -20,6 +21,7 @@ from amplai_foundry.governance import (
     AuthorityService,
     BindingApproval,
     BindingTarget,
+    CandidateCommitEvidence,
     ChannelProvider,
     ChannelRef,
     DecisionAction,
@@ -32,6 +34,8 @@ from amplai_foundry.governance import (
     ProposalDefinitionManifest,
     ProposalRef,
     ProposalSubmissionService,
+    PublishGovernanceError,
+    PublishPreparationService,
     canonicalize_definition,
 )
 from amplai_foundry.governance.apply_jobs import (
@@ -190,7 +194,43 @@ def _publish_pending_job_fixture(tmp_path: Path):
     return store, published
 
 
-def _insert_prepared_publish_foundation(store: GovernanceStore, job_id: str) -> str:
+class FakePublishGit:
+    def __init__(
+        self,
+        *,
+        current_ref: str = "a13d92f" + "a" * 33,
+        candidate_commit: str = "b" * 40,
+    ) -> None:
+        self.current_ref = current_ref
+        self.candidate_commit = candidate_commit
+        self.inspected: tuple[bytes, bytes] | None = None
+
+    def read_ref(self, canonical_ref: str) -> str:
+        assert canonical_ref == "refs/heads/main"
+        return self.current_ref
+
+    def inspect_candidate(
+        self,
+        candidate_commit: str,
+        *,
+        artifact_bytes: bytes,
+        publish_request_bytes: bytes,
+    ) -> CandidateCommitEvidence:
+        assert candidate_commit == self.candidate_commit
+        self.inspected = (artifact_bytes, publish_request_bytes)
+        return CandidateCommitEvidence(
+            candidate_commit=candidate_commit,
+            candidate_tree_digest=f"sha256:{hashlib.sha256(artifact_bytes).hexdigest()}",
+        )
+
+
+def _insert_prepared_publish_foundation(
+    store: GovernanceStore,
+    job_id: str,
+    *,
+    canonical_ref: str = "refs/heads/main",
+    create_gate: bool = True,
+) -> str:
     intent_id = "PBI-0000000000000001"
     with store.connect() as connection:
         row = connection.execute(
@@ -217,22 +257,29 @@ def _insert_prepared_publish_foundation(store: GovernanceStore, job_id: str) -> 
                 intent_id,
                 job_id,
                 *row,
-                "refs/heads/main",
-                "a" * 40,
+                canonical_ref,
+                "a13d92f" + "a" * 33,
                 "b" * 40,
                 f"sha256:{'c' * 64}",
                 NOW.isoformat(),
             ),
         )
-        connection.execute(
-            """
-            INSERT INTO governance_project_publish_gates(
-                project_namespace, project_id, canonical_ref, active_intent_id,
-                gate_revision, state, updated_at
-            ) VALUES (?, ?, 'refs/heads/main', ?, 1, 'locked', ?)
-            """,
-            (PROJECT.namespace, PROJECT.project_id, intent_id, NOW.isoformat()),
-        )
+        if create_gate:
+            connection.execute(
+                """
+                INSERT INTO governance_project_publish_gates(
+                    project_namespace, project_id, canonical_ref, active_intent_id,
+                    gate_revision, state, updated_at
+                ) VALUES (?, ?, ?, ?, 1, 'locked', ?)
+                """,
+                (
+                    PROJECT.namespace,
+                    PROJECT.project_id,
+                    canonical_ref,
+                    intent_id,
+                    NOW.isoformat(),
+                ),
+            )
     return intent_id
 
 
@@ -1546,4 +1593,200 @@ def test_publish_gate_model_rejects_unsafe_canonical_ref() -> None:
             gate_revision=1,
             state=PublishGateState.UNLOCKED,
             updated_at=NOW,
+        )
+
+
+@pytest.mark.parametrize(
+    "canonical_ref",
+    (
+        "refs/heads/main evil",
+        "refs/heads/main~evil",
+        "refs/heads/main?evil",
+        "refs/heads/main[evil",
+        "refs/heads/main\\evil",
+        "refs/heads/main\tevil",
+        "refs/heads/main.",
+        "refs/heads/.hidden",
+        "refs/heads/release.lock",
+        "refs/heads/group/.hidden",
+    ),
+)
+def test_publish_persistence_rejects_git_invalid_canonical_refs(
+    tmp_path: Path,
+    canonical_ref: str,
+) -> None:
+    assert (
+        subprocess.run(
+            ("git", "check-ref-format", canonical_ref),
+            check=False,
+            capture_output=True,
+        ).returncode
+        != 0
+    )
+    store, job = _publish_pending_job_fixture(tmp_path)
+    with pytest.raises(sqlite3.IntegrityError):
+        _insert_prepared_publish_foundation(
+            store,
+            job.job_id,
+            canonical_ref=canonical_ref,
+        )
+    with store.connect() as connection, pytest.raises(sqlite3.IntegrityError):
+        connection.execute(
+            """
+            INSERT INTO governance_project_publish_gates(
+                project_namespace, project_id, canonical_ref, active_intent_id,
+                gate_revision, state, updated_at
+            ) VALUES (?, ?, ?, NULL, 1, 'unlocked', ?)
+            """,
+            (PROJECT.namespace, PROJECT.project_id, canonical_ref, NOW.isoformat()),
+        )
+    with pytest.raises(ValidationError):
+        ProjectPublishGateView(
+            project_ref=PROJECT,
+            canonical_ref=canonical_ref,
+            active_intent_id=None,
+            gate_revision=1,
+            state=PublishGateState.UNLOCKED,
+            updated_at=NOW,
+        )
+
+
+def test_publish_result_rejects_prepared_intent_contradiction(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+    with (
+        store.connect() as connection,
+        pytest.raises(
+            sqlite3.IntegrityError,
+            match="does not match terminal intent",
+        ),
+    ):
+        connection.execute(
+            """
+            INSERT INTO governance_publish_results(
+                intent_id, job_id, snapshot_id, project_namespace, project_id,
+                proposal_id, fencing_token, expected_old_ref, candidate_commit,
+                actual_ref, outcome, error_code, resolved_at
+            )
+            SELECT intent_id, job_id, snapshot_id, project_namespace, project_id,
+                   proposal_id, fencing_token, expected_old_ref, candidate_commit,
+                   candidate_commit, 'published', NULL, ?
+            FROM governance_publish_intents WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), intent_id),
+        )
+
+
+def test_startup_rejects_prepared_publish_intent_without_gate(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    _insert_prepared_publish_foundation(store, job.job_id, create_gate=False)
+
+    with pytest.raises(GovernanceEventError, match="PUBLISH_INTENT_ROOT_MISMATCH"):
+        store.check_startup()
+
+
+def test_startup_rejects_terminal_publish_intent_without_result(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            UPDATE governance_publish_intents
+            SET status = 'published', resolved_at = ? WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), intent_id),
+        )
+        connection.execute(
+            """
+            UPDATE governance_project_publish_gates
+            SET active_intent_id = NULL, gate_revision = gate_revision + 1,
+                state = 'unlocked', updated_at = ?
+            WHERE project_namespace = ? AND project_id = ?
+            """,
+            (NOW.isoformat(), PROJECT.namespace, PROJECT.project_id),
+        )
+
+    with pytest.raises(GovernanceEventError, match="PUBLISH_INTENT_ROOT_MISMATCH"):
+        store.check_startup()
+
+
+def test_publish_prepare_atomically_roots_verified_candidate(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    git = FakePublishGit()
+    service = PublishPreparationService(store, git, clock=lambda: NOW)
+
+    prepared = service.prepare(
+        job.job_id,
+        fencing_token=job.fencing_token,
+        canonical_ref="refs/heads/main",
+        candidate_commit="b" * 40,
+    )
+
+    assert prepared.status.value == "prepared"
+    assert prepared.expected_old_ref == "a13d92f" + "a" * 33
+    assert prepared.candidate_commit == "b" * 40
+    assert git.inspected == (
+        b"immutable staged tree",
+        b'{"canonical_ref":"refs/heads/main"}',
+    )
+    with store.connect() as connection:
+        gate = connection.execute(
+            """
+            SELECT active_intent_id, gate_revision, state
+            FROM governance_project_publish_gates
+            """
+        ).fetchone()
+    assert gate == (prepared.intent_id, 1, "locked")
+    assert store.check_startup().healthy
+
+
+def test_publish_prepare_late_gate_failure_rolls_back_intent(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_publish_gate_failure
+            BEFORE INSERT ON governance_project_publish_gates
+            BEGIN SELECT RAISE(ABORT, 'injected publish gate failure'); END
+            """
+        )
+    service = PublishPreparationService(store, FakePublishGit(), clock=lambda: NOW)
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected publish gate failure"):
+        service.prepare(
+            job.job_id,
+            fencing_token=job.fencing_token,
+            canonical_ref="refs/heads/main",
+            candidate_commit="b" * 40,
+        )
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_intents").fetchone() == (
+            0,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_project_publish_gates"
+        ).fetchone() == (0,)
+
+
+def test_publish_prepare_rejects_stale_fence_and_base_revision(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    service = PublishPreparationService(store, FakePublishGit(), clock=lambda: NOW)
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_PREPARATION_ROOT_MISMATCH"):
+        service.prepare(
+            job.job_id,
+            fencing_token=job.fencing_token + 1,
+            canonical_ref="refs/heads/main",
+            candidate_commit="b" * 40,
+        )
+    conflicting = PublishPreparationService(
+        store,
+        FakePublishGit(current_ref="d" * 40),
+        clock=lambda: NOW,
+    )
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_BASE_REVISION_CONFLICT"):
+        conflicting.prepare(
+            job.job_id,
+            fencing_token=job.fencing_token,
+            canonical_ref="refs/heads/main",
+            candidate_commit="b" * 40,
         )
