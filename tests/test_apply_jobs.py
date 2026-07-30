@@ -40,6 +40,8 @@ from amplai_foundry.governance import (
     ProposalSubmissionService,
     PublishGovernanceError,
     PublishPreparationService,
+    PublishResolutionService,
+    PublishResolutionType,
     SubprocessGitCandidateInspector,
     canonicalize_definition,
 )
@@ -1283,9 +1285,9 @@ def test_claim_prioritizes_runnable_job_over_older_exhausted_job(tmp_path: Path)
     with store.connect() as connection:
         connection.execute(
             """
-            INSERT INTO governance_active_proposals VALUES (
-                ?, ?, ?, ?, 1, 3, 1, 'apply_requested', ?, ?
-            )
+                INSERT INTO governance_active_proposals VALUES (
+                    ?, ?, ?, ?, 1, 3, 1, 'apply_requested', ?, ?, NULL
+                )
             """,
             (
                 PROJECT.namespace,
@@ -1529,7 +1531,10 @@ def test_populated_v12_publish_roots_upgrade_to_v13_without_rewrite(tmp_path: Pa
             "SELECT MAX(version) FROM governance_schema_migrations"
         ).fetchone() == (12,)
 
-    upgraded = GovernanceStore(tmp_path / "governance.db")
+    upgraded = GovernanceStore(
+        tmp_path / "governance.db",
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:13]),
+    )
 
     assert upgraded.initialize().schema_version == 13
     assert upgraded.check_startup().healthy
@@ -1551,6 +1556,30 @@ def test_populated_v12_publish_roots_upgrade_to_v13_without_rewrite(tmp_path: Pa
         assert connection.execute("SELECT COUNT(*) FROM governance_publish_claims").fetchone() == (
             0,
         )
+    latest = GovernanceStore(tmp_path / "governance.db")
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    assert latest.check_startup().healthy
+    with latest.connect() as connection:
+        assert (
+            connection.execute(
+                "SELECT * FROM governance_publish_intents WHERE intent_id = ?",
+                (intent_id,),
+            ).fetchone()
+            == before_intent
+        )
+        assert (
+            connection.execute(
+                "SELECT * FROM governance_project_publish_gates WHERE active_intent_id = ?",
+                (intent_id,),
+            ).fetchone()
+            == before_gate
+        )
+        assert connection.execute(
+            "SELECT applied_revision FROM governance_active_proposals"
+        ).fetchone() == (None,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (0,)
 
 
 def test_publish_gate_requires_monotonic_revision_and_explicit_release(tmp_path: Path) -> None:
@@ -2242,4 +2271,392 @@ def test_startup_rejects_active_publish_claim_root_mismatch(tmp_path: Path) -> N
         connection.close()
 
     with pytest.raises(GovernanceStoreError, match="foreign key integrity check"):
+        store.initialize()
+
+
+def test_post_cas_recovery_atomically_finalizes_publish(tmp_path: Path) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    coordinator = FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher-before-kill",
+        clock=lambda: NOW,
+    )
+    assert coordinator.publish_prepared_ref(prepared.intent_id) is GitCASOutcome.UPDATED
+
+    recovered = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="recovery-after-kill",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+
+    assert recovered.resolution_type is PublishResolutionType.PUBLISHED
+    assert recovered.actual_ref == candidate
+    assert recovered.applied_revision == candidate
+    assert git("rev-parse", "refs/heads/main").stdout.strip() == candidate
+    with store.connect() as connection:
+        assert (
+            connection.execute(
+                "SELECT state, resolved_at FROM governance_publish_claims WHERE intent_id = ?",
+                (prepared.intent_id,),
+            ).fetchone()[0]
+            == "released"
+        )
+        assert connection.execute(
+            "SELECT status FROM governance_publish_intents WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("published",)
+        assert connection.execute(
+            "SELECT outcome, actual_ref FROM governance_publish_results WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("published", candidate)
+        assert connection.execute(
+            "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
+            (prepared.job_id,),
+        ).fetchone() == ("succeeded",)
+        assert connection.execute(
+            """
+            SELECT status, applied_revision FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL.proposal_id),
+        ).fetchone() == ("applied", candidate)
+        assert connection.execute(
+            "SELECT state, active_intent_id FROM governance_project_publish_gates"
+        ).fetchone() == ("unlocked", None)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type = 'publish.published'"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            """
+            SELECT COUNT(*) FROM governance_outbox_events o
+            JOIN governance_audit_events a ON a.aggregate_sequence = o.aggregate_sequence
+             AND a.project_namespace = o.project_namespace AND a.project_id = o.project_id
+             AND a.proposal_id = o.proposal_id
+            WHERE a.event_type = 'publish.published'
+            """
+        ).fetchone() == (2,)
+    assert store.check_startup().healthy
+
+
+def test_pre_cas_recovery_releases_for_retry_without_state_loss(tmp_path: Path) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+
+    recovered = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="pre-cas-recovery",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+
+    assert recovered.resolution_type is PublishResolutionType.RETRY_RELEASED
+    assert recovered.intent_status == "prepared"
+    assert recovered.job_status == "publish_pending"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state FROM governance_publish_claims WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("released",)
+        assert connection.execute(
+            "SELECT state, active_intent_id FROM governance_project_publish_gates"
+        ).fetchone() == ("locked", prepared.intent_id)
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_results").fetchone() == (
+            0,
+        )
+    assert store.check_startup().healthy
+
+
+def test_recovery_records_publish_conflict_and_job_hold(tmp_path: Path) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    tracked = repository / "other.txt"
+    tracked.write_text("other\n", encoding="utf-8")
+    git("add", "other.txt")
+    other_tree = git("write-tree").stdout.strip()
+    other = git("commit-tree", other_tree, "-p", candidate, "-m", "other").stdout.strip()
+    git("update-ref", "refs/heads/main", other)
+
+    recovered = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="conflict-recovery",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+
+    assert recovered.resolution_type is PublishResolutionType.PUBLISH_CONFLICT
+    assert recovered.actual_ref == other
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
+            (prepared.job_id,),
+        ).fetchone() == ("recovery_hold",)
+        assert connection.execute(
+            "SELECT status FROM governance_active_proposals WHERE proposal_id = ?",
+            (PROPOSAL.proposal_id,),
+        ).fetchone() == ("apply_requested",)
+        assert connection.execute(
+            "SELECT outcome, actual_ref FROM governance_publish_results WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("publish_conflict", other)
+
+
+def test_ambiguous_ref_read_moves_intent_and_gate_to_recovery_hold(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    inspector = SubprocessGitCandidateInspector(repository)
+
+    def fail_read(_canonical_ref: str) -> str:
+        raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
+
+    monkeypatch.setattr(inspector, "read_ref", fail_read)
+    recovered = PublishResolutionService(
+        store,
+        inspector,
+        coordinator_id="ambiguous-recovery",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+
+    assert recovered.resolution_type is PublishResolutionType.RECOVERY_HOLD
+    assert recovered.actual_ref is None
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status, last_error_code FROM governance_publish_intents"
+        ).fetchone() == ("recovery_hold", "PUBLISH_GIT_COMMAND_FAILED")
+        assert connection.execute(
+            "SELECT state FROM governance_project_publish_gates"
+        ).fetchone() == ("recovery_hold",)
+        assert connection.execute(
+            "SELECT status FROM governance_active_proposals WHERE proposal_id = ?",
+            (PROPOSAL.proposal_id,),
+        ).fetchone() == ("apply_requested",)
+    assert store.check_startup().healthy
+
+
+def test_late_publish_outbox_failure_rolls_back_database_finalization(
+    tmp_path: Path,
+) -> None:
+    store, repository, _git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher-before-outbox-failure",
+        clock=lambda: NOW,
+    ).publish_prepared_ref(prepared.intent_id)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_publish_outbox_failure
+            BEFORE INSERT ON governance_outbox_events
+            WHEN NEW.destination_ref LIKE 'apply-job:%:observer'
+            BEGIN SELECT RAISE(ABORT, 'injected publish outbox failure'); END
+            """
+        )
+    service = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="publish-finalizer",
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected publish outbox failure"):
+        service.recover(prepared.intent_id)
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state FROM governance_publish_claims WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("active",)
+        assert connection.execute(
+            "SELECT status FROM governance_publish_intents WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("prepared",)
+        assert connection.execute(
+            "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
+            (prepared.job_id,),
+        ).fetchone() == ("publish_pending",)
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_results").fetchone() == (
+            0,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (0,)
+        connection.execute("DROP TRIGGER inject_publish_outbox_failure")
+
+    recovered = service.recover(prepared.intent_id)
+    assert recovered.resolution_type is PublishResolutionType.PUBLISHED
+    assert recovered.applied_revision == candidate
+
+
+@pytest.mark.parametrize(
+    ("method", "expected_intent", "expected_proposal"),
+    (
+        ("fail", "failed", "apply_failed"),
+        ("cancel", "cancelled", "apply_failed"),
+    ),
+)
+def test_unchanged_ref_can_be_failed_or_cancelled_authoritatively(
+    tmp_path: Path,
+    method: str,
+    expected_intent: str,
+    expected_proposal: str,
+) -> None:
+    store, repository, _git, prepared, base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    service = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id=f"{method}-resolver",
+        clock=lambda: NOW,
+    )
+
+    resolved = (
+        service.fail_if_unchanged(prepared.intent_id, error_code="PUBLISH_POLICY_FAILED")
+        if method == "fail"
+        else service.cancel_if_unchanged(prepared.intent_id)
+    )
+
+    assert resolved.intent_status == expected_intent
+    assert resolved.proposal_status == expected_proposal
+    assert resolved.actual_ref == base
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
+            (prepared.job_id,),
+        ).fetchone() == ("dead_letter",)
+        assert connection.execute(
+            "SELECT status, applied_revision FROM governance_active_proposals"
+        ).fetchone() == (expected_proposal, None)
+        assert connection.execute(
+            "SELECT state FROM governance_project_publish_gates"
+        ).fetchone() == ("unlocked",)
+    assert store.check_startup().healthy
+
+
+@pytest.mark.parametrize("observed", ("expected", "candidate"))
+def test_recovery_hold_can_resume_from_observed_ref(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    observed: str,
+) -> None:
+    store, repository, git, prepared, base, candidate = _real_prepared_publish_fixture(tmp_path)
+    failing_inspector = SubprocessGitCandidateInspector(repository)
+
+    def fail_read(_canonical_ref: str) -> str:
+        raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
+
+    monkeypatch.setattr(failing_inspector, "read_ref", fail_read)
+    held = PublishResolutionService(
+        store,
+        failing_inspector,
+        coordinator_id="hold-resolver",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+    assert held.resolution_type is PublishResolutionType.RECOVERY_HOLD
+    if observed == "candidate":
+        git("update-ref", "refs/heads/main", candidate, base)
+
+    resumed = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="resume-resolver",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+
+    expected = (
+        PublishResolutionType.PUBLISHED
+        if observed == "candidate"
+        else PublishResolutionType.RETRY_RELEASED
+    )
+    assert resumed.resolution_type is expected
+    assert resumed.resolution_sequence == 2
+    with store.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT claim_fencing_token, state FROM governance_publish_claims
+            WHERE intent_id = ? ORDER BY claim_fencing_token
+            """,
+            (prepared.intent_id,),
+        ).fetchall() == [(1, "released"), (2, "released")]
+    assert store.check_startup().healthy
+
+
+def test_competing_recovery_finalizers_create_one_terminal_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher",
+        clock=lambda: NOW,
+    ).publish_prepared_ref(prepared.intent_id)
+    barrier = threading.Barrier(2)
+    original_read = SubprocessGitCandidateInspector(repository).read_ref
+
+    def resolve(index: int) -> str:
+        inspector = SubprocessGitCandidateInspector(repository)
+
+        def synchronized_read(canonical_ref: str) -> str:
+            value = original_read(canonical_ref)
+            barrier.wait()
+            return value
+
+        monkeypatch.setattr(inspector, "read_ref", synchronized_read)
+        try:
+            return (
+                PublishResolutionService(
+                    store,
+                    inspector,
+                    coordinator_id=f"recovery-{index}",
+                    clock=lambda: NOW,
+                )
+                .recover(prepared.intent_id)
+                .resolution_type.value
+            )
+        except PublishGovernanceError as error:
+            return error.code
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(resolve, range(2)))
+
+    assert sorted(outcomes) == ["PUBLISH_CLAIM_STALE", "published"]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_results WHERE actual_ref = ?",
+            (candidate,),
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (1,)
+
+
+def test_startup_rejects_publish_resolution_state_tamper(tmp_path: Path) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher",
+        clock=lambda: NOW,
+    ).publish_prepared_ref(prepared.intent_id)
+    PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="resolver",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "UPDATE governance_publish_resolution_events SET error_code = 'tampered'"
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="durable"):
+            connection.execute("DELETE FROM governance_publish_resolution_events")
+        connection.execute(
+            "UPDATE governance_active_proposals SET applied_revision = ?",
+            ("f" * 40,),
+        )
+
+    with pytest.raises(GovernanceEventError, match="PUBLISH_RESOLUTION_ROOT_MISMATCH"):
         store.initialize()

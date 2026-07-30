@@ -111,6 +111,11 @@ from amplai_foundry.governance.publish import (
     PublishPreparationService,
     PublishResultView,
 )
+from amplai_foundry.governance.publish_resolution import (
+    PublishResolutionService,
+    PublishResolutionType,
+    PublishResolutionView,
+)
 
 __all__ = [
     "ActionTokenState",
@@ -194,6 +199,9 @@ __all__ = [
     "PublishIntentView",
     "PublishOutcome",
     "PublishPreparationService",
+    "PublishResolutionService",
+    "PublishResolutionType",
+    "PublishResolutionView",
     "PublishResultView",
     "SubprocessGitCandidateInspector",
     "VerifiedProviderCommand",

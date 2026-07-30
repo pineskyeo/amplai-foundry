@@ -1677,6 +1677,134 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=14,
+        name="authoritative-publish-resolution",
+        statements=(
+            """
+            ALTER TABLE governance_active_proposals
+            ADD COLUMN applied_revision TEXT CHECK (
+                applied_revision IS NULL OR (
+                    length(applied_revision) IN (40, 64)
+                    AND applied_revision NOT GLOB '*[^0-9a-f]*'
+                )
+            )
+            """,
+            """
+            DROP TRIGGER governance_publish_claim_blocks_intent_transition
+            """,
+            """
+            CREATE TRIGGER governance_publish_claim_blocks_intent_transition
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.status IN ('prepared', 'recovery_hold')
+             AND NEW.status != OLD.status
+             AND EXISTS (
+                SELECT 1 FROM governance_publish_claims c
+                WHERE c.intent_id = OLD.intent_id AND c.state = 'active'
+             )
+            BEGIN SELECT RAISE(ABORT, 'active publish claim blocks intent transition'); END
+            """,
+            """
+            CREATE TABLE governance_publish_resolution_events (
+                resolution_event_id TEXT PRIMARY KEY NOT NULL,
+                command_id TEXT NOT NULL UNIQUE,
+                intent_id TEXT NOT NULL,
+                resolution_sequence INTEGER NOT NULL CHECK (resolution_sequence >= 1),
+                claim_id TEXT NOT NULL,
+                resolver_id TEXT NOT NULL CHECK (length(resolver_id) BETWEEN 1 AND 128),
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                job_id TEXT NOT NULL,
+                resolution_type TEXT NOT NULL CHECK (
+                    resolution_type IN (
+                        'published', 'publish_conflict', 'recovery_hold',
+                        'failed', 'cancelled', 'retry_released'
+                    )
+                ),
+                actual_ref TEXT,
+                intent_status TEXT NOT NULL CHECK (
+                    intent_status IN (
+                        'prepared', 'published', 'publish_conflict',
+                        'cancelled', 'recovery_hold', 'failed'
+                    )
+                ),
+                job_status TEXT NOT NULL CHECK (
+                    job_status IN ('publish_pending', 'succeeded', 'dead_letter', 'recovery_hold')
+                ),
+                proposal_status TEXT NOT NULL CHECK (
+                    proposal_status IN ('apply_requested', 'apply_failed', 'applied')
+                ),
+                proposal_state_revision INTEGER NOT NULL CHECK (proposal_state_revision >= 3),
+                applied_revision TEXT,
+                error_code TEXT,
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE (intent_id, resolution_sequence),
+                FOREIGN KEY (intent_id) REFERENCES governance_publish_intents(intent_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (claim_id) REFERENCES governance_publish_claims(claim_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (job_id) REFERENCES governance_apply_jobs(job_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    actual_ref IS NULL OR (
+                        length(actual_ref) IN (40, 64)
+                        AND actual_ref NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (
+                    applied_revision IS NULL OR (
+                        length(applied_revision) IN (40, 64)
+                        AND applied_revision NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (length(payload_digest) = 71 AND substr(payload_digest, 1, 7) = 'sha256:'),
+                CHECK (
+                    (resolution_type = 'published'
+                     AND intent_status = 'published' AND job_status = 'succeeded'
+                     AND proposal_status = 'applied' AND actual_ref = applied_revision
+                     AND error_code IS NULL)
+                    OR (resolution_type = 'publish_conflict'
+                     AND intent_status = 'publish_conflict' AND job_status = 'recovery_hold'
+                     AND proposal_status = 'apply_requested' AND actual_ref IS NOT NULL
+                     AND applied_revision IS NULL AND error_code IS NOT NULL)
+                    OR (resolution_type = 'recovery_hold'
+                     AND intent_status = 'recovery_hold' AND job_status = 'recovery_hold'
+                     AND proposal_status = 'apply_requested' AND applied_revision IS NULL
+                     AND error_code IS NOT NULL)
+                    OR (resolution_type = 'failed'
+                     AND intent_status = 'failed' AND job_status = 'dead_letter'
+                     AND proposal_status = 'apply_failed' AND actual_ref IS NOT NULL
+                     AND applied_revision IS NULL AND error_code IS NOT NULL)
+                    OR (resolution_type = 'cancelled'
+                     AND intent_status = 'cancelled' AND job_status = 'dead_letter'
+                     AND proposal_status = 'apply_failed' AND actual_ref IS NOT NULL
+                     AND applied_revision IS NULL AND error_code IS NOT NULL)
+                    OR (resolution_type = 'retry_released'
+                     AND intent_status = 'prepared' AND job_status = 'publish_pending'
+                     AND proposal_status = 'apply_requested' AND actual_ref IS NOT NULL
+                     AND applied_revision IS NULL AND error_code IS NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_events_no_update
+            BEFORE UPDATE ON governance_publish_resolution_events
+            BEGIN SELECT RAISE(ABORT, 'publish resolution event is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_events_no_delete
+            BEFORE DELETE ON governance_publish_resolution_events
+            BEGIN SELECT RAISE(ABORT, 'publish resolution event is durable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -2182,6 +2310,34 @@ class MigrationRunner:
                 ("claimed_at", "TEXT", 1, 0),
                 ("resolved_at", "TEXT", 0, 0),
             )
+        if schema_version >= 14:
+            expected_columns["governance_active_proposals"] = (
+                *expected_columns["governance_active_proposals"],
+                ("applied_revision", "TEXT", 0, 0),
+            )
+            expected_columns["governance_publish_resolution_events"] = (
+                ("resolution_event_id", "TEXT", 1, 1),
+                ("command_id", "TEXT", 1, 0),
+                ("intent_id", "TEXT", 1, 0),
+                ("resolution_sequence", "INTEGER", 1, 0),
+                ("claim_id", "TEXT", 1, 0),
+                ("resolver_id", "TEXT", 1, 0),
+                ("project_namespace", "TEXT", 1, 0),
+                ("project_id", "TEXT", 1, 0),
+                ("proposal_id", "TEXT", 1, 0),
+                ("job_id", "TEXT", 1, 0),
+                ("resolution_type", "TEXT", 1, 0),
+                ("actual_ref", "TEXT", 0, 0),
+                ("intent_status", "TEXT", 1, 0),
+                ("job_status", "TEXT", 1, 0),
+                ("proposal_status", "TEXT", 1, 0),
+                ("proposal_state_revision", "INTEGER", 1, 0),
+                ("applied_revision", "TEXT", 0, 0),
+                ("error_code", "TEXT", 0, 0),
+                ("payload_digest", "TEXT", 1, 0),
+                ("payload_json", "TEXT", 1, 0),
+                ("created_at", "TEXT", 1, 0),
+            )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
             actual = tuple(
@@ -2202,6 +2358,8 @@ class MigrationRunner:
         for table, expected_sql in expected_create_sql.items():
             if schema_version >= 7 and table == "governance_audit_events":
                 expected_sql = self._expected_altered_audit_sql()
+            if schema_version >= 14 and table == "governance_active_proposals":
+                expected_sql = self._expected_altered_active_proposal_sql()
             row = connection.execute(
                 "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
                 (table,),
@@ -2297,6 +2455,32 @@ class MigrationRunner:
             ).fetchone()
         if row is None:
             raise GovernanceMigrationError("audit schema fixture를 생성할 수 없습니다.")
+        return " ".join(str(row[0]).split())
+
+    def _expected_altered_active_proposal_sql(self) -> str:
+        base = next(
+            statement
+            for statement in self.migrations[1].statements
+            if "CREATE TABLE governance_active_proposals" in statement
+        )
+        alters = tuple(
+            statement
+            for migration in self.migrations[2:]
+            for statement in migration.statements
+            if statement.strip().startswith("ALTER TABLE governance_active_proposals")
+        )
+        with sqlite3.connect(":memory:") as fixture:
+            fixture.execute(base)
+            for statement in alters:
+                fixture.execute(statement)
+            row = fixture.execute(
+                """
+                SELECT sql FROM sqlite_master
+                WHERE type = 'table' AND name = 'governance_active_proposals'
+                """
+            ).fetchone()
+        if row is None:
+            raise GovernanceMigrationError("active proposal schema fixture를 생성할 수 없습니다.")
         return " ".join(str(row[0]).split())
 
     @staticmethod
