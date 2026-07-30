@@ -109,6 +109,7 @@ class PublishResolutionProjectionPayload(BaseModel):
     aggregate_ref: ProposalRef
     applied_revision: str | None = Field(default=None, pattern=r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
     actual_ref: str | None = Field(default=None, pattern=r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+    before_job_status: str
     error_code: str | None = None
     intent_id: str = Field(pattern=r"^PBI-[A-F0-9]{16}$")
     intent_status: str
@@ -118,6 +119,7 @@ class PublishResolutionProjectionPayload(BaseModel):
     proposal_status: str
     resolution_sequence: int = Field(ge=1)
     resolution_type: str
+    stream_revision: int = Field(ge=1)
 
 
 class AuditEventView(BaseModel):
@@ -374,11 +376,14 @@ class GovernanceEventService:
             raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
         row = connection.execute(
             """
-            SELECT command_id, project_namespace, project_id, proposal_id,
+            SELECT e.command_id, e.project_namespace, e.project_id, e.proposal_id,
                    resolution_type, intent_status, job_status, proposal_status,
-                   payload_digest, payload_json, claim_id, resolver_id
-            FROM governance_publish_resolution_events
-            WHERE resolution_event_id = ?
+                   payload_digest, payload_json, e.claim_id, resolver_id,
+                   r.before_job_status, r.stream_revision
+            FROM governance_publish_resolution_events e
+            JOIN governance_publish_resolution_roots r
+              ON r.resolution_event_id = e.resolution_event_id
+            WHERE e.resolution_event_id = ?
             """,
             (resolution_event_id,),
         ).fetchone()
@@ -394,6 +399,8 @@ class GovernanceEventService:
             or str(row[8]) != payload_digest
             or str(row[9]) != payload_json
             or str(row[11]) != coordinator_id
+            or str(row[12]) != payload.before_job_status
+            or int(row[13]) != payload.stream_revision
         ):
             raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_SOURCE_MISMATCH")
         destinations = (
@@ -412,10 +419,10 @@ class GovernanceEventService:
             actor_type="service",
             policy_snapshot_id=self._digest(str(row[10]).encode("utf-8")),
             destinations=destinations,
-            before_state="publish_pending",
+            before_state=payload.before_job_status,
             after_state=payload.job_status,
             definition_digest=self._publish_definition_digest(connection, payload.intent_id),
-            source_state_revision=payload.resolution_sequence,
+            source_state_revision=payload.stream_revision,
             payload=payload,
         )
 
@@ -975,6 +982,40 @@ class GovernanceEventService:
             ).fetchone()
             is not None
         )
+        applied_revision_mismatch = (
+            connection.execute(
+                """
+                SELECT 1 FROM governance_active_proposals
+                WHERE (status = 'applied') != (applied_revision IS NOT NULL)
+                LIMIT 1
+                """
+            ).fetchone()
+            if has_publish_resolution_events
+            else None
+        )
+        if applied_revision_mismatch is not None:
+            raise GovernanceEventError("PUBLISH_RESOLUTION_ROOT_MISMATCH")
+        if has_publish_resolution_events:
+            resolution_root_mismatch = connection.execute(
+                """
+                SELECT 1
+                FROM governance_publish_resolution_events e
+                LEFT JOIN governance_publish_resolution_roots r
+                  ON r.resolution_event_id = e.resolution_event_id
+                 AND r.intent_id = e.intent_id AND r.claim_id = e.claim_id
+                 AND r.job_id = e.job_id
+                 AND r.project_namespace = e.project_namespace
+                 AND r.project_id = e.project_id AND r.proposal_id = e.proposal_id
+                WHERE r.resolution_event_id IS NULL
+                UNION ALL
+                SELECT 1 FROM governance_publish_resolution_events
+                WHERE resolution_type IN ('published', 'publish_conflict', 'failed', 'cancelled')
+                GROUP BY intent_id HAVING COUNT(*) != 1
+                LIMIT 1
+                """
+            ).fetchone()
+            if resolution_root_mismatch is not None:
+                raise GovernanceEventError("PUBLISH_RESOLUTION_ROOT_MISMATCH")
         resolution_rows = (
             connection.execute(
                 """
@@ -982,10 +1023,21 @@ class GovernanceEventService:
                        e.resolution_type, e.intent_status, e.job_status, e.proposal_status,
                        e.payload_digest, e.payload_json, e.resolution_sequence,
                        e.intent_id, e.job_id, e.actual_ref, e.applied_revision,
-                       e.error_code, e.claim_id, e.resolver_id, s.definition_digest
+                       e.error_code, e.claim_id, e.resolver_id, s.definition_digest,
+                       r.before_job_status, r.stream_revision
                 FROM governance_publish_resolution_events e
-                JOIN governance_publish_claims c ON c.claim_id = e.claim_id
-                JOIN governance_publish_intents i ON i.intent_id = e.intent_id
+                JOIN governance_publish_resolution_roots r
+                  ON r.resolution_event_id = e.resolution_event_id
+                 AND r.intent_id = e.intent_id AND r.claim_id = e.claim_id
+                 AND r.job_id = e.job_id
+                 AND r.project_namespace = e.project_namespace
+                 AND r.project_id = e.project_id AND r.proposal_id = e.proposal_id
+                JOIN governance_publish_claims c
+                  ON c.claim_id = e.claim_id AND c.intent_id = e.intent_id
+                JOIN governance_publish_intents i
+                  ON i.intent_id = e.intent_id AND i.job_id = e.job_id
+                 AND i.project_namespace = e.project_namespace
+                 AND i.project_id = e.project_id AND i.proposal_id = e.proposal_id
                 JOIN governance_approved_snapshots s ON s.snapshot_id = i.snapshot_id
                 ORDER BY e.intent_id, e.resolution_sequence
                 """
@@ -1018,6 +1070,8 @@ class GovernanceEventService:
                 or resolution_payload.actual_ref != resolution[13]
                 or resolution_payload.applied_revision != resolution[14]
                 or resolution_payload.error_code != resolution[15]
+                or resolution_payload.before_job_status != str(resolution[19])
+                or resolution_payload.stream_revision != int(resolution[20])
             ):
                 raise GovernanceEventError("PUBLISH_RESOLUTION_ROOT_MISMATCH")
             resolution_destinations = (
@@ -1032,7 +1086,7 @@ class GovernanceEventService:
             command_id = str(resolution[0])
             decision_commands[command_id] = (
                 str(resolution[8]),
-                resolution_payload.resolution_sequence,
+                resolution_payload.stream_revision,
                 cls._destination_manifest_digest(resolution_destinations),
                 2,
             )
@@ -1047,7 +1101,7 @@ class GovernanceEventService:
                 audit.event_type != f"publish.{resolution[4]}"
                 or audit.actor_id != str(resolution[17])
                 or audit.actor_type != "service"
-                or audit.before_state != "publish_pending"
+                or audit.before_state != str(resolution[19])
                 or audit.after_state != str(resolution[6])
                 or audit.definition_digest != str(resolution[18])
                 or audit.destination_manifest_digest != decision_commands[command_id][2]

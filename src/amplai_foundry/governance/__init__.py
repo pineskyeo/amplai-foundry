@@ -112,6 +112,7 @@ from amplai_foundry.governance.publish import (
     PublishResultView,
 )
 from amplai_foundry.governance.publish_resolution import (
+    FencedGitPublishWorkflow,
     PublishResolutionService,
     PublishResolutionType,
     PublishResolutionView,
@@ -160,6 +161,7 @@ __all__ = [
     "ExternalActorBinding",
     "ExternalActorIdentity",
     "FencedGitPublishCoordinator",
+    "FencedGitPublishWorkflow",
     "FileProposalActionLedger",
     "GitCASOutcome",
     "GitPublishAmbiguousError",

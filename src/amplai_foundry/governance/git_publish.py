@@ -400,11 +400,47 @@ class FencedGitPublishCoordinator:
             return GitCASOutcome.UPDATED
         if actual != intent.expected_old_ref:
             return GitCASOutcome.CONFLICT
-        return self._backend._compare_and_swap_ref(
-            intent.canonical_ref,
-            expected_old_ref=intent.expected_old_ref,
-            candidate_commit=intent.candidate_commit,
+        return self._compare_and_swap_under_claim(
+            intent,
+            claim_id=claim_id,
+            claim_fence=claim_fence,
         )
+
+    def _compare_and_swap_under_claim(
+        self,
+        intent: PublishIntentView,
+        *,
+        claim_id: str,
+        claim_fence: int,
+    ) -> GitCASOutcome:
+        with self.store.connect() as connection, governance_transaction(connection):
+            rooted = connection.execute(
+                """
+                SELECT 1
+                FROM governance_publish_claims c
+                JOIN governance_publish_intents i ON i.intent_id = c.intent_id
+                JOIN governance_project_publish_gates g
+                  ON g.project_namespace = i.project_namespace
+                 AND g.project_id = i.project_id
+                WHERE c.claim_id = ? AND c.intent_id = ?
+                  AND c.coordinator_id = ? AND c.claim_fencing_token = ?
+                  AND c.state = 'active' AND i.status = 'prepared'
+                  AND g.state = 'locked' AND g.active_intent_id = i.intent_id
+                """,
+                (claim_id, intent.intent_id, self.coordinator_id, claim_fence),
+            ).fetchone()
+            if rooted is None:
+                raise PublishGovernanceError("PUBLISH_CLAIM_STALE")
+            actual = self._backend.read_ref(intent.canonical_ref)
+            if actual == intent.candidate_commit:
+                return GitCASOutcome.UPDATED
+            if actual != intent.expected_old_ref:
+                return GitCASOutcome.CONFLICT
+            return self._backend._compare_and_swap_ref(
+                intent.canonical_ref,
+                expected_old_ref=intent.expected_old_ref,
+                candidate_commit=intent.candidate_commit,
+            )
 
     def _claim_prepared(
         self,

@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
+import os
 import sqlite3
 import subprocess
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -30,6 +33,7 @@ from amplai_foundry.governance import (
     DecisionService,
     DirectAuthorityRequest,
     FencedGitPublishCoordinator,
+    FencedGitPublishWorkflow,
     GitCASOutcome,
     GitPublishAmbiguousError,
     ImmutableDefinitionObjectStore,
@@ -72,6 +76,42 @@ CHANNEL = ChannelRef(
     channel_id="C456",
     message_id="1710000000.000200",
 )
+
+
+def _hard_kill_before_cas(
+    database_path: str,
+    repository_path: str,
+    intent_id: str,
+    marker_path: str,
+) -> None:
+    coordinator = FencedGitPublishCoordinator(
+        GovernanceStore(Path(database_path)),
+        Path(repository_path),
+        coordinator_id="hard-kill-before-cas",
+    )
+
+    def block_candidate(*_args, **_kwargs):
+        Path(marker_path).write_text("claimed", encoding="utf-8")
+        time.sleep(30)
+
+    coordinator._backend.inspect_candidate = block_candidate
+    coordinator.publish_prepared_ref(intent_id)
+
+
+def _hard_kill_after_cas(
+    database_path: str,
+    repository_path: str,
+    intent_id: str,
+    marker_path: str,
+) -> None:
+    coordinator = FencedGitPublishCoordinator(
+        GovernanceStore(Path(database_path)),
+        Path(repository_path),
+        coordinator_id="hard-kill-after-cas",
+    )
+    coordinator.publish_prepared_ref(intent_id)
+    Path(marker_path).write_text("published", encoding="utf-8")
+    os._exit(73)
 
 
 def _approval(index: int) -> BindingApproval:
@@ -1556,6 +1596,26 @@ def test_populated_v12_publish_roots_upgrade_to_v13_without_rewrite(tmp_path: Pa
         assert connection.execute("SELECT COUNT(*) FROM governance_publish_claims").fetchone() == (
             0,
         )
+        connection.execute(
+            """
+            INSERT INTO governance_publish_claims(
+                claim_id, intent_id, project_namespace, project_id,
+                coordinator_id, claim_fencing_token, state, claimed_at, resolved_at
+            ) VALUES
+                ('PCL-0000000000000001', ?, ?, ?, 'legacy-released', 1,
+                 'released', '2026-07-30T11:00:00Z', '2026-07-30T11:01:00Z'),
+                ('PCL-0000000000000002', ?, ?, ?, 'legacy-active', 2,
+                 'active', '2026-07-30T11:02:00Z', NULL)
+            """,
+            (
+                intent_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                intent_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+            ),
+        )
     latest = GovernanceStore(tmp_path / "governance.db")
     assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
     assert latest.check_startup().healthy
@@ -1574,6 +1634,15 @@ def test_populated_v12_publish_roots_upgrade_to_v13_without_rewrite(tmp_path: Pa
             ).fetchone()
             == before_gate
         )
+        assert connection.execute(
+            """
+            SELECT claim_id, claim_fencing_token, state
+            FROM governance_publish_claims ORDER BY claim_fencing_token
+            """
+        ).fetchall() == [
+            ("PCL-0000000000000001", 1, "released"),
+            ("PCL-0000000000000002", 2, "active"),
+        ]
         assert connection.execute(
             "SELECT applied_revision FROM governance_active_proposals"
         ).fetchone() == (None,)
@@ -2434,6 +2503,40 @@ def test_ambiguous_ref_read_moves_intent_and_gate_to_recovery_hold(
     assert store.check_startup().healthy
 
 
+def test_repeated_recovery_hold_refreshes_authoritative_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    inspector = SubprocessGitCandidateInspector(repository)
+    errors = iter(("PUBLISH_GIT_COMMAND_FAILED", "PUBLISH_GIT_RESULT_AMBIGUOUS"))
+
+    def fail_read(_canonical_ref: str) -> str:
+        raise PublishGovernanceError(next(errors))
+
+    monkeypatch.setattr(inspector, "read_ref", fail_read)
+    service = PublishResolutionService(
+        store, inspector, coordinator_id="repeat-hold", clock=lambda: NOW
+    )
+    service.recover(prepared.intent_id)
+    service.recover(prepared.intent_id)
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status, last_error_code FROM governance_publish_intents"
+        ).fetchone() == ("recovery_hold", "PUBLISH_GIT_RESULT_AMBIGUOUS")
+        assert connection.execute(
+            "SELECT status, last_error_code FROM governance_apply_jobs"
+        ).fetchone() == ("recovery_hold", "PUBLISH_GIT_RESULT_AMBIGUOUS")
+        assert connection.execute(
+            """
+            SELECT before_job_status, stream_revision
+            FROM governance_publish_resolution_roots ORDER BY stream_revision
+            """
+        ).fetchall() == [("publish_pending", 4), ("recovery_hold", 5)]
+    assert store.check_startup().healthy
+
+
 def test_late_publish_outbox_failure_rolls_back_database_finalization(
     tmp_path: Path,
 ) -> None:
@@ -2530,6 +2633,158 @@ def test_unchanged_ref_can_be_failed_or_cancelled_authoritatively(
         assert connection.execute(
             "SELECT state FROM governance_project_publish_gates"
         ).fetchone() == ("unlocked",)
+    assert store.check_startup().healthy
+
+
+@pytest.mark.parametrize("method", ("fail", "cancel"))
+def test_fail_or_cancel_converges_candidate_to_published(
+    tmp_path: Path,
+    method: str,
+) -> None:
+    store, repository, git, prepared, base, candidate = _real_prepared_publish_fixture(tmp_path)
+    git("update-ref", prepared.canonical_ref, candidate, base)
+    service = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id=f"{method}-candidate-resolver",
+        clock=lambda: NOW,
+    )
+
+    resolved = (
+        service.fail_if_unchanged(prepared.intent_id, error_code="PUBLISH_POLICY_FAILED")
+        if method == "fail"
+        else service.cancel_if_unchanged(prepared.intent_id)
+    )
+
+    assert resolved.resolution_type is PublishResolutionType.PUBLISHED
+    assert resolved.applied_revision == candidate
+    assert store.check_startup().healthy
+
+
+def test_public_publish_workflow_finalizes_and_terminal_retry_is_idempotent(
+    tmp_path: Path,
+) -> None:
+    store, repository, _git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    workflow = FencedGitPublishWorkflow(
+        FencedGitPublishCoordinator(
+            store, repository, coordinator_id="workflow-publisher", clock=lambda: NOW
+        ),
+        PublishResolutionService(
+            store,
+            SubprocessGitCandidateInspector(repository),
+            coordinator_id="workflow-resolver",
+            clock=lambda: NOW,
+        ),
+    )
+
+    first = workflow.publish(prepared.intent_id)
+    replay = workflow.resolution.recover(prepared.intent_id)
+
+    assert first.resolution_type is PublishResolutionType.PUBLISHED
+    assert first.applied_revision == candidate
+    assert replay.resolution_event_id == first.resolution_event_id
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (1,)
+    assert store.check_startup().healthy
+
+
+def test_live_publisher_and_cancel_serialize_before_cas(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    coordinator = FencedGitPublishCoordinator(
+        store, repository, coordinator_id="live-publisher", clock=lambda: NOW
+    )
+    entered_cas = threading.Event()
+    release_cas = threading.Event()
+    original_cas = coordinator._backend._compare_and_swap_ref
+
+    def blocked_cas(*args, **kwargs):
+        entered_cas.set()
+        assert release_cas.wait(timeout=5)
+        return original_cas(*args, **kwargs)
+
+    monkeypatch.setattr(coordinator._backend, "_compare_and_swap_ref", blocked_cas)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        publishing = executor.submit(coordinator.publish_prepared_ref, prepared.intent_id)
+        assert entered_cas.wait(timeout=5)
+        cancelling = executor.submit(
+            PublishResolutionService(
+                store,
+                SubprocessGitCandidateInspector(repository),
+                coordinator_id="cancel-resolver",
+                clock=lambda: NOW,
+            ).cancel_if_unchanged,
+            prepared.intent_id,
+        )
+        release_cas.set()
+        assert publishing.result(timeout=5) is GitCASOutcome.UPDATED
+        resolved = cancelling.result(timeout=5)
+
+    assert resolved.resolution_type is PublishResolutionType.PUBLISHED
+    assert git("rev-parse", prepared.canonical_ref).stdout.strip() == candidate
+    assert store.check_startup().healthy
+
+
+def test_process_kill_before_cas_preserves_retryable_database_truth(tmp_path: Path) -> None:
+    store, repository, git, prepared, base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    marker = tmp_path / "before-cas.marker"
+    process = multiprocessing.get_context("spawn").Process(
+        target=_hard_kill_before_cas,
+        args=(str(store.path), str(repository), prepared.intent_id, str(marker)),
+    )
+    process.start()
+    deadline = time.monotonic() + 10
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert marker.exists()
+    process.terminate()
+    process.join(timeout=5)
+
+    assert git("rev-parse", prepared.canonical_ref).stdout.strip() == base
+    recovered = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="recover-pre-cas-kill",
+        clock=lambda: NOW,
+    ).recover(prepared.intent_id)
+    assert recovered.resolution_type is PublishResolutionType.RETRY_RELEASED
+    assert store.check_startup().healthy
+
+
+def test_process_kill_after_cas_recovers_exactly_once(tmp_path: Path) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    marker = tmp_path / "after-cas.marker"
+    process = multiprocessing.get_context("spawn").Process(
+        target=_hard_kill_after_cas,
+        args=(str(store.path), str(repository), prepared.intent_id, str(marker)),
+    )
+    process.start()
+    process.join(timeout=10)
+    assert not process.is_alive()
+    assert marker.exists()
+    assert git("rev-parse", prepared.canonical_ref).stdout.strip() == candidate
+
+    service = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="recover-post-cas-kill",
+        clock=lambda: NOW,
+    )
+    first = service.recover(prepared.intent_id)
+    replay = service.recover(prepared.intent_id)
+    assert first.resolution_type is PublishResolutionType.PUBLISHED
+    assert replay.resolution_event_id == first.resolution_event_id
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_results").fetchone() == (
+            1,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (1,)
     assert store.check_startup().healthy
 
 

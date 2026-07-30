@@ -1805,6 +1805,136 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=15,
+        name="publish-resolution-composite-roots",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_publish_claim_composite_identity
+            ON governance_publish_claims(claim_id, intent_id)
+            """,
+            """
+            CREATE UNIQUE INDEX governance_publish_intent_composite_identity
+            ON governance_publish_intents(
+                intent_id, job_id, project_namespace, project_id, proposal_id
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX governance_apply_job_composite_identity
+            ON governance_apply_jobs(job_id, project_namespace, project_id, proposal_id)
+            """,
+            """
+            CREATE UNIQUE INDEX governance_publish_resolution_composite_identity
+            ON governance_publish_resolution_events(
+                resolution_event_id, intent_id, claim_id, job_id,
+                project_namespace, project_id, proposal_id
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_terminal_publish_resolution
+            ON governance_publish_resolution_events(intent_id)
+            WHERE resolution_type IN ('published', 'publish_conflict', 'failed', 'cancelled')
+            """,
+            """
+            CREATE TABLE governance_publish_resolution_roots (
+                resolution_event_id TEXT PRIMARY KEY NOT NULL,
+                intent_id TEXT NOT NULL,
+                claim_id TEXT NOT NULL,
+                job_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                before_job_status TEXT NOT NULL CHECK (
+                    before_job_status IN ('publish_pending', 'recovery_hold')
+                ),
+                stream_revision INTEGER NOT NULL CHECK (stream_revision >= 1),
+                FOREIGN KEY (
+                    resolution_event_id, intent_id, claim_id, job_id,
+                    project_namespace, project_id, proposal_id
+                ) REFERENCES governance_publish_resolution_events(
+                    resolution_event_id, intent_id, claim_id, job_id,
+                    project_namespace, project_id, proposal_id
+                ) ON DELETE RESTRICT,
+                FOREIGN KEY (claim_id, intent_id)
+                    REFERENCES governance_publish_claims(claim_id, intent_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (intent_id, job_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_publish_intents(
+                        intent_id, job_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (job_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_apply_jobs(
+                        job_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                UNIQUE (job_id, stream_revision)
+            ) WITHOUT ROWID
+            """,
+            """
+            INSERT INTO governance_publish_resolution_roots(
+                resolution_event_id, intent_id, claim_id, job_id,
+                project_namespace, project_id, proposal_id,
+                before_job_status, stream_revision
+            )
+            SELECT e.resolution_event_id, e.intent_id, e.claim_id, e.job_id,
+                   e.project_namespace, e.project_id, e.proposal_id,
+                   COALESCE(
+                       (SELECT prior.job_status
+                        FROM governance_publish_resolution_events prior
+                        WHERE prior.intent_id = e.intent_id
+                          AND prior.resolution_sequence = e.resolution_sequence - 1),
+                       'publish_pending'
+                   ),
+                   (SELECT COALESCE(MAX(j.event_sequence), 0)
+                    FROM governance_apply_job_events j WHERE j.job_id = e.job_id)
+                   + e.resolution_sequence
+            FROM governance_publish_resolution_events e
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_update
+            BEFORE UPDATE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_delete
+            BEFORE DELETE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_active_proposal_applied_revision_insert_guard
+            BEFORE INSERT ON governance_active_proposals
+            WHEN (NEW.status = 'applied') != (NEW.applied_revision IS NOT NULL)
+            BEGIN SELECT RAISE(ABORT, 'applied proposal revision invariant'); END
+            """,
+            """
+            CREATE TRIGGER governance_active_proposal_applied_revision_update_guard
+            BEFORE UPDATE ON governance_active_proposals
+            WHEN (NEW.status = 'applied') != (NEW.applied_revision IS NOT NULL)
+            BEGIN SELECT RAISE(ABORT, 'applied proposal revision invariant'); END
+            """,
+            """
+            DROP TRIGGER governance_publish_intent_state_requires_transition
+            """,
+            """
+            CREATE TRIGGER governance_publish_intent_state_requires_transition
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.status = NEW.status
+             AND NOT (
+                 OLD.status = 'recovery_hold'
+                 AND OLD.resolved_at IS NEW.resolved_at
+                 AND NEW.resolved_at IS NULL
+             )
+             AND (
+                 OLD.resolved_at IS NOT NEW.resolved_at
+                 OR OLD.last_error_code IS NOT NEW.last_error_code
+             )
+            BEGIN SELECT RAISE(ABORT, 'publish intent state requires transition'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -2337,6 +2467,18 @@ class MigrationRunner:
                 ("payload_digest", "TEXT", 1, 0),
                 ("payload_json", "TEXT", 1, 0),
                 ("created_at", "TEXT", 1, 0),
+            )
+        if schema_version >= 15:
+            expected_columns["governance_publish_resolution_roots"] = (
+                ("resolution_event_id", "TEXT", 1, 1),
+                ("intent_id", "TEXT", 1, 0),
+                ("claim_id", "TEXT", 1, 0),
+                ("job_id", "TEXT", 1, 0),
+                ("project_namespace", "TEXT", 1, 0),
+                ("project_id", "TEXT", 1, 0),
+                ("proposal_id", "TEXT", 1, 0),
+                ("before_job_status", "TEXT", 1, 0),
+                ("stream_revision", "INTEGER", 1, 0),
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

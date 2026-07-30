@@ -5,6 +5,7 @@ from __future__ import annotations
 import secrets
 import sqlite3
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import cast
@@ -14,6 +15,10 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from amplai_foundry.governance.events import (
     GovernanceEventService,
     PublishResolutionProjectionPayload,
+)
+from amplai_foundry.governance.git_publish import (
+    FencedGitPublishCoordinator,
+    GitPublishAmbiguousError,
 )
 from amplai_foundry.governance.publish import (
     PublishGitInspector,
@@ -73,6 +78,9 @@ class PublishResolutionService:
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def recover(self, intent_id: str) -> PublishResolutionView:
+        existing = self._existing_terminal_resolution(intent_id)
+        if existing is not None:
+            return existing
         intent, claim_id = self._ensure_claim(intent_id)
         try:
             actual_ref = self.git.read_ref(intent.canonical_ref)
@@ -103,8 +111,19 @@ class PublishResolutionService:
 
     def fail_if_unchanged(self, intent_id: str, *, error_code: str) -> PublishResolutionView:
         self._validate_error_code(error_code)
+        existing = self._existing_terminal_resolution(intent_id)
+        if existing is not None:
+            return existing
         intent, claim_id = self._ensure_claim(intent_id)
         actual_ref = self.git.read_ref(intent.canonical_ref)
+        if actual_ref == intent.candidate_commit:
+            return self._commit_resolution(
+                intent_id,
+                claim_id=claim_id,
+                resolution_type=PublishResolutionType.PUBLISHED,
+                actual_ref=actual_ref,
+                error_code=None,
+            )
         if actual_ref != intent.expected_old_ref:
             return self._commit_resolution(
                 intent_id,
@@ -122,8 +141,19 @@ class PublishResolutionService:
         )
 
     def cancel_if_unchanged(self, intent_id: str) -> PublishResolutionView:
+        existing = self._existing_terminal_resolution(intent_id)
+        if existing is not None:
+            return existing
         intent, claim_id = self._ensure_claim(intent_id)
         actual_ref = self.git.read_ref(intent.canonical_ref)
+        if actual_ref == intent.candidate_commit:
+            return self._commit_resolution(
+                intent_id,
+                claim_id=claim_id,
+                resolution_type=PublishResolutionType.PUBLISHED,
+                actual_ref=actual_ref,
+                error_code=None,
+            )
         if actual_ref != intent.expected_old_ref:
             return self._commit_resolution(
                 intent_id,
@@ -203,6 +233,7 @@ class PublishResolutionService:
                 raise PublishGovernanceError("PUBLISH_GIT_REF_INVALID")
             current_proposal_status = str(root[13])
             current_proposal_revision = int(str(root[14]))
+            before_job_status = str(root[11])
             intent_status, job_status, proposal_status, applied_revision = self._targets(
                 resolution_type,
                 candidate=intent.candidate_commit,
@@ -322,10 +353,21 @@ class PublishResolutionService:
                     (intent_id,),
                 ).fetchone()[0]
             )
+            job_event_sequence = int(
+                connection.execute(
+                    """
+                    SELECT COALESCE(MAX(event_sequence), 0)
+                    FROM governance_apply_job_events WHERE job_id = ?
+                    """,
+                    (intent.job_id,),
+                ).fetchone()[0]
+            )
+            stream_revision = job_event_sequence + sequence
             payload = PublishResolutionProjectionPayload(
                 aggregate_ref=intent.proposal_ref,
                 applied_revision=applied_revision,
                 actual_ref=actual_ref,
+                before_job_status=before_job_status,
                 error_code=error_code,
                 intent_id=intent_id,
                 intent_status=intent_status,
@@ -335,6 +377,7 @@ class PublishResolutionService:
                 proposal_status=proposal_status,
                 resolution_sequence=sequence,
                 resolution_type=resolution_type.value,
+                stream_revision=stream_revision,
             )
             payload_json = GovernanceEventService._canonical_json(payload.model_dump(mode="json"))
             payload_digest = GovernanceEventService._digest(payload_json.encode("utf-8"))
@@ -372,6 +415,26 @@ class PublishResolutionService:
                     payload_digest,
                     payload_json,
                     timestamp,
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO governance_publish_resolution_roots(
+                    resolution_event_id, intent_id, claim_id, job_id,
+                    project_namespace, project_id, proposal_id,
+                    before_job_status, stream_revision
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    resolution_event_id,
+                    intent_id,
+                    claim_id,
+                    intent.job_id,
+                    intent.proposal_ref.project_ref.namespace,
+                    intent.proposal_ref.project_ref.project_id,
+                    intent.proposal_ref.proposal_id,
+                    before_job_status,
+                    stream_revision,
                 ),
             )
             GovernanceEventService(
@@ -444,7 +507,7 @@ class PublishResolutionService:
         error_code: str | None,
         timestamp: str,
     ) -> None:
-        if current_status.value == next_status:
+        if current_status.value == next_status and next_status != "recovery_hold":
             return
         resolved_at = (
             timestamp
@@ -461,6 +524,38 @@ class PublishResolutionService:
         )
         if updated.rowcount != 1:
             raise PublishGovernanceError("PUBLISH_INTENT_STALE")
+
+    def _existing_terminal_resolution(self, intent_id: str) -> PublishResolutionView | None:
+        with self.store.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT resolution_event_id, intent_id, resolution_sequence,
+                       resolution_type, actual_ref, intent_status, job_status,
+                       proposal_status, proposal_state_revision, applied_revision,
+                       error_code, created_at
+                FROM governance_publish_resolution_events
+                WHERE intent_id = ? AND resolution_type IN (
+                    'published', 'publish_conflict', 'failed', 'cancelled'
+                )
+                """,
+                (intent_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return PublishResolutionView(
+            resolution_event_id=str(row[0]),
+            intent_id=str(row[1]),
+            resolution_sequence=int(row[2]),
+            resolution_type=PublishResolutionType(str(row[3])),
+            actual_ref=cast(str | None, row[4]),
+            intent_status=str(row[5]),
+            job_status=str(row[6]),
+            proposal_status=str(row[7]),
+            proposal_state_revision=int(row[8]),
+            applied_revision=cast(str | None, row[9]),
+            error_code=cast(str | None, row[10]),
+            created_at=datetime.fromisoformat(str(row[11]).replace("Z", "+00:00")),
+        )
 
     @staticmethod
     def _insert_result(
@@ -522,3 +617,20 @@ class PublishResolutionService:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("clock은 timezone-aware datetime을 반환해야 합니다.")
         return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+class FencedGitPublishWorkflow:
+    """Public publish boundary that always converges Git evidence into DB truth."""
+
+    def __init__(
+        self,
+        coordinator: FencedGitPublishCoordinator,
+        resolution: PublishResolutionService,
+    ) -> None:
+        self.coordinator = coordinator
+        self.resolution = resolution
+
+    def publish(self, intent_id: str) -> PublishResolutionView:
+        with suppress(GitPublishAmbiguousError):
+            self.coordinator.publish_prepared_ref(intent_id)
+        return self.resolution.recover(intent_id)

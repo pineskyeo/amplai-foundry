@@ -99,12 +99,15 @@ def _transition_state_fixture(
             """
             UPDATE governance_active_proposals
             SET status = ?, state_revision = state_revision + 1,
+                applied_revision = CASE WHEN ? = 'applied' THEN ? ELSE NULL END,
                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
             WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
               AND status = ? AND state_revision = ?
             """,
             (
                 next_status.value,
+                next_status.value,
+                "0" * 40,
                 ref.project_ref.namespace,
                 ref.project_ref.project_id,
                 ref.proposal_id,
