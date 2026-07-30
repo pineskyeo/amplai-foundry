@@ -35,3 +35,12 @@
 - Status: accepted
 - Decision: destination rollback provenance는 import Audit/Outbox 생성 전에 실제 이전 cursor와 command에 결합해 attest하며, 동시 attestation이 없는 predecessor evidence는 신뢰하지 않는다.
 - Source: MGC-011 Slice 4 Package 4.2b1 operations review
+
+## D-007 — Versioned Rollback Evidence Compatibility
+
+- Status: accepted
+- Decision: reachable v28 rollback evidence는 `scope_version=1`로 그대로 보존한다.
+  신규 synthetic hold provenance와 exact deletion은 additive v29의
+  `scope_version=2`로만 생성한다. v1 synthetic hold는 삭제하지 않고 exact migration
+  evidence로 검증하며 terminal rolled-back gate가 mutation을 차단한다.
+- Source: MGC-011 Slice 4 Package 4.2b2 compatibility review
