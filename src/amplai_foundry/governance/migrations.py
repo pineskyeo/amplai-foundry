@@ -3220,6 +3220,85 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=27,
+        name="legacy-rollback-provenance-attestation",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_import_destination_attestations (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                destination_ref TEXT NOT NULL,
+                captured_at TEXT NOT NULL,
+                attestation_version INTEGER NOT NULL CHECK (attestation_version = 1),
+                PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_import_destination_roots(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_destination_attestations_insert_guard
+            BEFORE INSERT ON governance_legacy_import_destination_attestations
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_import_destination_roots p
+                JOIN governance_legacy_import_commands c
+                  ON c.migration_id = p.migration_id
+                 AND c.project_namespace = p.project_namespace
+                 AND c.project_id = p.project_id AND c.proposal_id = p.proposal_id
+                WHERE p.migration_id = NEW.migration_id
+                  AND p.project_namespace = NEW.project_namespace
+                  AND p.project_id = NEW.project_id
+                  AND p.proposal_id = NEW.proposal_id
+                  AND p.destination_ref = NEW.destination_ref
+                  AND p.captured_at = NEW.captured_at
+                  AND c.occurred_at = NEW.captured_at
+                  AND json_extract(c.payload_json, '$.projection_destination_ref') =
+                      NEW.destination_ref
+                  AND NOT EXISTS (
+                      SELECT 1 FROM governance_audit_events e
+                      WHERE e.command_id = c.command_id
+                  )
+                  AND (
+                      (
+                          p.existed_before = 0
+                          AND NOT EXISTS (
+                              SELECT 1 FROM governance_outbox_destinations d
+                              WHERE d.destination_ref = p.destination_ref
+                          )
+                      )
+                      OR
+                      (
+                          p.existed_before = 1
+                          AND EXISTS (
+                              SELECT 1 FROM governance_outbox_destinations d
+                              WHERE d.destination_ref = p.destination_ref
+                                AND d.next_sequence = p.previous_next_sequence
+                                AND d.delivered_sequence = p.previous_delivered_sequence
+                                AND d.operator_hold = p.previous_operator_hold
+                                AND d.updated_at = p.previous_updated_at
+                          )
+                      )
+                  )
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy destination attestation mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_destination_attestations_no_update
+            BEFORE UPDATE ON governance_legacy_import_destination_attestations
+            BEGIN SELECT RAISE(ABORT, 'legacy destination attestation is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_destination_attestations_no_delete
+            BEFORE DELETE ON governance_legacy_import_destination_attestations
+            BEGIN SELECT RAISE(ABORT, 'legacy destination attestation is durable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -3887,6 +3966,30 @@ class MigrationRunner:
                 ("report_json", "TEXT", 1, 0),
                 ("verified_by", "TEXT", 1, 0),
                 ("verified_at", "TEXT", 1, 0),
+            )
+        if schema_version >= 26:
+            expected_columns["governance_legacy_import_destination_roots"] = (
+                ("migration_id", "TEXT", 1, 1),
+                ("project_namespace", "TEXT", 1, 2),
+                ("project_id", "TEXT", 1, 3),
+                ("proposal_id", "TEXT", 1, 4),
+                ("destination_ref", "TEXT", 1, 0),
+                ("existed_before", "INTEGER", 1, 0),
+                ("previous_next_sequence", "INTEGER", 0, 0),
+                ("previous_delivered_sequence", "INTEGER", 0, 0),
+                ("previous_operator_hold", "INTEGER", 0, 0),
+                ("previous_updated_at", "TEXT", 0, 0),
+                ("captured_at", "TEXT", 1, 0),
+            )
+        if schema_version >= 27:
+            expected_columns["governance_legacy_import_destination_attestations"] = (
+                ("migration_id", "TEXT", 1, 1),
+                ("project_namespace", "TEXT", 1, 2),
+                ("project_id", "TEXT", 1, 3),
+                ("proposal_id", "TEXT", 1, 4),
+                ("destination_ref", "TEXT", 1, 0),
+                ("captured_at", "TEXT", 1, 0),
+                ("attestation_version", "INTEGER", 1, 0),
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

@@ -264,7 +264,8 @@ class LegacyMigrationRollbackPlanner:
                    a.applied_revision, i.target_status,
                    p.destination_ref, p.existed_before, p.previous_next_sequence,
                    p.previous_delivered_sequence, p.previous_operator_hold,
-                   p.previous_updated_at
+                   p.previous_updated_at, p.captured_at,
+                   t.destination_ref, t.captured_at, t.attestation_version
             FROM governance_legacy_migration_items i
             JOIN governance_active_proposals a
               ON a.project_namespace = i.project_namespace
@@ -290,6 +291,10 @@ class LegacyMigrationRollbackPlanner:
               ON p.migration_id = i.migration_id
              AND p.project_namespace = i.project_namespace
              AND p.project_id = i.project_id AND p.proposal_id = i.proposal_id
+            JOIN governance_legacy_import_destination_attestations t
+              ON t.migration_id = p.migration_id
+             AND t.project_namespace = p.project_namespace
+             AND t.project_id = p.project_id AND t.proposal_id = p.proposal_id
             WHERE i.migration_id = ? AND i.project_namespace = ? AND i.project_id = ?
             ORDER BY i.proposal_id
             """,
@@ -327,6 +332,11 @@ class LegacyMigrationRollbackPlanner:
                 or int(row[33]) != 0
                 or row[34] is not None
                 or str(row[36]) != str(row[18])
+                or str(row[43]) != str(row[18])
+                or str(row[42]) != str(row[44])
+                or int(row[45]) != 1
+                or (bool(row[37]) and int(row[38]) != int(row[19]))
+                or (not bool(row[37]) and int(row[19]) != 1)
                 or LegacyMigrationRollbackPlanner._proposal_root_counts(
                     connection,
                     project_ref,
@@ -386,6 +396,7 @@ class LegacyMigrationRollbackPlanner:
             "governance_legacy_approval_reviews",
             "governance_legacy_event_backfill_pending",
             "governance_legacy_import_commands",
+            "governance_legacy_import_destination_attestations",
             "governance_legacy_import_destination_roots",
             "governance_legacy_migration_items",
             "governance_outbox_events",
@@ -401,8 +412,10 @@ class LegacyMigrationRollbackPlanner:
         required_columns = {"project_namespace", "project_id", "proposal_id"}
         for table_row in tables:
             table = str(table_row[0])
-            if table in planned_tables or not table.replace("_", "").isalnum():
+            if table in planned_tables:
                 continue
+            if not table.replace("_", "").isalnum():
+                return True
             columns = {
                 str(column[1])
                 for column in connection.execute(f"PRAGMA table_info({table})").fetchall()

@@ -2071,7 +2071,7 @@ def test_rollback_planner_rejects_unknown_scope_and_stale_revision_without_mutat
     assert _logical_store_snapshot(store) == before
 
 
-def test_rollback_planner_rejects_predecessor_action_token_dependents(
+def test_rollback_planner_rejects_predecessor_without_attested_provenance(
     tmp_path: Path,
 ) -> None:
     root = _legacy_tree(tmp_path / "project", status="reviewed")
@@ -2112,33 +2112,6 @@ def test_rollback_planner_rejects_predecessor_action_token_dependents(
             "governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
             (migration.plan_id,),
         ).fetchone() == ("staged_verified", 1)
-        outbox = connection.execute(
-            """
-            SELECT o.destination_ref
-            FROM governance_outbox_events o
-            WHERE o.project_namespace = ? AND o.project_id = ? AND o.proposal_id = ?
-            """,
-            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
-        ).fetchone()
-        assert outbox is not None
-        connection.execute(
-            """
-            INSERT INTO governance_legacy_import_destination_roots(
-                migration_id, project_namespace, project_id, proposal_id,
-                destination_ref, existed_before, previous_next_sequence,
-                previous_delivered_sequence, previous_operator_hold,
-                previous_updated_at, captured_at
-            ) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, NULL, ?)
-            """,
-            (
-                migration.plan_id,
-                PROJECT.namespace,
-                PROJECT.project_id,
-                PROPOSAL_ID,
-                outbox[0],
-                NOW.isoformat(),
-            ),
-        )
     with pytest.raises(
         LegacyMigrationLifecycleError,
         match="LEGACY_MIGRATION_ROLLBACK_ROOT_MISMATCH",
@@ -2151,6 +2124,139 @@ def test_rollback_planner_rejects_predecessor_action_token_dependents(
             migration.plan_id,
             authority_request=authority_request,
             expected_lifecycle_revision=1,
+        )
+
+
+def test_rollback_planner_rejects_unplanned_action_token_dependent(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    with store.connect() as connection:
+        active = connection.execute(
+            """
+            SELECT active_definition_digest, content_revision, state_revision, decision_epoch
+            FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        ).fetchone()
+        assert active is not None
+        connection.execute(
+            """
+            INSERT INTO governance_action_tokens(
+                token_id, token_hash, project_namespace, project_id, proposal_id,
+                active_definition_digest, content_revision, state_revision,
+                decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
+                bound_channel_json, issued_at, expires_at, state, resolved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approve', ?, 'human', ?, ?, ?,
+                      'issued', NULL)
+            """,
+            (
+                "TOK-FFFFFFFFFFFFFFFF",
+                f"sha256:{'f' * 64}",
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                active[0],
+                active[1],
+                active[2],
+                active[3],
+                REVIEWER.actor_id,
+                json.dumps(CHANNEL.model_dump(mode="json"), separators=(",", ":"), sort_keys=True),
+                NOW.isoformat(),
+                (NOW + timedelta(minutes=15)).isoformat(),
+            ),
+        )
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_ROLLBACK_ROOT_MISMATCH",
+    ):
+        LegacyMigrationRollbackPlanner(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).plan(
+            migration.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+        )
+
+
+def test_v27_does_not_retroactively_trust_v26_destination_provenance(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v26 = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:26]),
+    )
+    v26.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v26,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+
+    latest = GovernanceStore(path)
+    latest.initialize()
+    with latest.connect() as connection:
+        provenance = connection.execute(
+            """
+            SELECT destination_ref, captured_at
+            FROM governance_legacy_import_destination_roots
+            WHERE migration_id = ?
+            """,
+            (migration.plan_id,),
+        ).fetchone()
+        assert provenance is not None
+        with pytest.raises(sqlite3.IntegrityError, match="attestation mismatch"):
+            connection.execute(
+                """
+                INSERT INTO governance_legacy_import_destination_attestations(
+                    migration_id, project_namespace, project_id, proposal_id,
+                    destination_ref, captured_at, attestation_version
+                ) VALUES (?, ?, ?, ?, ?, ?, 1)
+                """,
+                (
+                    migration.plan_id,
+                    PROJECT.namespace,
+                    PROJECT.project_id,
+                    PROPOSAL_ID,
+                    provenance[0],
+                    provenance[1],
+                ),
+            )
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_ROLLBACK_ROOT_MISMATCH",
+    ):
+        LegacyMigrationRollbackPlanner(
+            latest,
+            AuthorityService(latest, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).plan(
+            migration.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
         )
 
 

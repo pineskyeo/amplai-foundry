@@ -2116,15 +2116,6 @@ class LegacyProposalImportService:
                     occurred_text,
                 ),
             )
-        _audit, outbox = GovernanceEventService(
-            self.store,
-            clock=lambda: occurred_at,
-        )._append_legacy_import_in_transaction(
-            connection,
-            item.proposal_ref,
-            command_id=command_id,
-            payload=payload,
-        )
         destination_provenance_table = connection.execute(
             """
             SELECT 1 FROM sqlite_schema
@@ -2133,8 +2124,6 @@ class LegacyProposalImportService:
             """
         ).fetchone()
         if destination_provenance_table is not None:
-            if len(outbox) != 1 or outbox[0].destination_ref != payload.projection_destination_ref:
-                raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
             connection.execute(
                 """
                 INSERT INTO governance_legacy_import_destination_roots(
@@ -2158,6 +2147,43 @@ class LegacyProposalImportService:
                     occurred_text,
                 ),
             )
+            destination_attestation_table = connection.execute(
+                """
+                SELECT 1 FROM sqlite_schema
+                WHERE type = 'table'
+                  AND name = 'governance_legacy_import_destination_attestations'
+                """
+            ).fetchone()
+            if destination_attestation_table is not None:
+                connection.execute(
+                    """
+                    INSERT INTO governance_legacy_import_destination_attestations(
+                        migration_id, project_namespace, project_id, proposal_id,
+                        destination_ref, captured_at, attestation_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1)
+                    """,
+                    (
+                        plan.plan_id,
+                        item.proposal_ref.project_ref.namespace,
+                        item.proposal_ref.project_ref.project_id,
+                        item.proposal_ref.proposal_id,
+                        payload.projection_destination_ref,
+                        occurred_text,
+                    ),
+                )
+        _audit, outbox = GovernanceEventService(
+            self.store,
+            clock=lambda: occurred_at,
+        )._append_legacy_import_in_transaction(
+            connection,
+            item.proposal_ref,
+            command_id=command_id,
+            payload=payload,
+        )
+        if destination_provenance_table is not None and (
+            len(outbox) != 1 or outbox[0].destination_ref != payload.projection_destination_ref
+        ):
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
         connection.execute(
             """
             DELETE FROM governance_legacy_event_backfill_pending
