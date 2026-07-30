@@ -15,10 +15,11 @@
 
 - Planning: PASS
 - Implementation: MGC-001–011 PASS / MGC-012 ACTIVE
-- Subagent Review: MGC-011 final A1–A17 gate PASS at `c3d635f` — P0/P1/Blocking-P2 0
+- Subagent Review: MGC-012 Package 1 PASS at `ef35201` — P0/P1/Blocking-P2 0
 - Repository Verification: PASS — all seven verify stages
 
 ## Next
 
-`MGC-012 — Slack Reference Adapter`의 frozen acceptance와 구현 경계를 확정한 뒤,
-raw-body verification과 durable ack ingress부터 작은 package로 구현한다.
+`MGC-012 — Slack Reference Adapter` Package 2의 durable ingress ack boundary와
+background decision handoff를 구현한다. Package 1 raw-body authentication과 normalized
+message `block_actions` contract는 `ef35201`에서 완료되었다.

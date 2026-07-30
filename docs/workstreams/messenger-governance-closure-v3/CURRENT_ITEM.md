@@ -33,7 +33,12 @@ message projection과 retry는 background path에서 수행한다.
 
 ## Current Package
 
-- Package 1 — raw-body signature/timestamp/allowlist contract and fail-closed fixtures
+- Package 1 — raw-body signature/timestamp/allowlist contract and fail-closed fixtures:
+  `PASS` at `ef35201`
+- Tests: `649/649 PASS`
+- Verification: `7/7 PASS`
+- Review: Contract·Evidence·Ops blocker 0
+- Next: Package 2 — durable ingress ack boundary and background decision handoff
 
 ## Out Of Scope
 

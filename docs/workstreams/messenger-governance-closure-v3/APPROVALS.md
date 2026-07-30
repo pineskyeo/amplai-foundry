@@ -14,5 +14,6 @@
 | `APR-008` | MGC-011 Slice 4 Package 4.2c1 forward-recovery planning gate | PASS | `eb1334a`, 601 tests, all seven verify stages, three subagent reviews with zero blockers | 2026-07-31 |
 | `APR-009` | MGC-011 Slice 4 Package 4.2c2 atomic forward-recovery execution gate | PASS | `f6f2449`, 611 tests, all seven verify stages, three subagent reviews with zero blockers | 2026-07-31 |
 | `APR-010` | MGC-011 A1–A17 final acceptance gate | PASS | `c3d635f`, 611 tests, all seven verify stages, three final subagent reviews with zero blockers | 2026-07-31 |
+| `APR-011` | MGC-012 Package 1 Slack raw authentication gate | PASS | `ef35201`, 649 tests, all seven verify stages, three subagent reviews with zero blockers | 2026-07-31 |
 
 Item gate approval은 각 checkpoint 후 추가한다.

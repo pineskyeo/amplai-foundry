@@ -72,3 +72,12 @@
   command evidence를 함께 요구하며 public 또는 committed-incomplete command 우회를
   차단한다. MGC-012 Slack Reference Adapter로 진행한다.
 - Source: MGC-011 final Contract·Evidence·Ops gate
+
+## D-011 — Slack Authentication Boundary
+
+- Status: accepted
+- Decision: Slack message button ingress는 raw form body의 `v0` HMAC과 5-minute
+  timestamp를 deserialize 전에 검증한다. Installation identity는 기존 Authority 계약과
+  동일한 단일 `workspace_id:api_app_id` 형식이다. Parser는 strict UTF-8, duplicate-key
+  rejection과 body/depth/node/string budget을 적용하며 unsupported surface는 fail-closed한다.
+- Source: MGC-012 Package 1 Contract·Evidence·Ops review
