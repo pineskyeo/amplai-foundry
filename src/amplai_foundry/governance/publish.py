@@ -144,6 +144,7 @@ class CandidateCommitEvidence(BaseModel):
     candidate_commit: GitObjectId
     parent_commit: GitObjectId
     candidate_tree_digest: Digest
+    canonical_ref: CanonicalBranchRef
 
 
 class PublishGitInspector(Protocol):
@@ -202,6 +203,8 @@ class PublishPreparationService:
         )
         current_ref = _GIT_OBJECT_ID_ADAPTER.validate_python(self.git.read_ref(checked_ref))
         if evidence.candidate_commit != checked_candidate:
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
+        if evidence.canonical_ref != checked_ref:
             raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
         if len(current_ref) != len(checked_candidate) or current_ref == checked_candidate:
             raise PublishGovernanceError("PUBLISH_CANDIDATE_INVALID")

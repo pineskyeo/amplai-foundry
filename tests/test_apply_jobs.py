@@ -226,6 +226,7 @@ class FakePublishGit:
             candidate_commit=candidate_commit,
             parent_commit=self.parent_commit,
             candidate_tree_digest=f"sha256:{hashlib.sha256(artifact_bytes).hexdigest()}",
+            canonical_ref="refs/heads/main",
         )
 
 

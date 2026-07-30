@@ -53,6 +53,11 @@ from amplai_foundry.governance.events import (
     OutboxState,
     ProjectionDestination,
 )
+from amplai_foundry.governance.git_publish import (
+    GitCASOutcome,
+    GitPublishAmbiguousError,
+    SubprocessGitPublishBackend,
+)
 from amplai_foundry.governance.ingress import (
     IngressAck,
     IngressCommandView,
@@ -149,6 +154,8 @@ __all__ = [
     "ExternalActorBinding",
     "ExternalActorIdentity",
     "FileProposalActionLedger",
+    "GitCASOutcome",
+    "GitPublishAmbiguousError",
     "GovernanceEventError",
     "ImmutableDefinitionObjectStore",
     "IngressAck",
@@ -186,6 +193,7 @@ __all__ = [
     "PublishOutcome",
     "PublishPreparationService",
     "PublishResultView",
+    "SubprocessGitPublishBackend",
     "VerifiedProviderCommand",
     "YamlProjectionDestination",
     "YamlProjectionRecord",
