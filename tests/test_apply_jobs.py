@@ -30,6 +30,8 @@ from amplai_foundry.governance import (
     DecisionService,
     DirectAuthorityRequest,
     FencedGitPublishCoordinator,
+    GitCASOutcome,
+    GitPublishAmbiguousError,
     ImmutableDefinitionObjectStore,
     OutboxDispatcher,
     OutboxState,
@@ -48,9 +50,13 @@ from amplai_foundry.governance.apply_jobs import (
     ApplyRequestService,
 )
 from amplai_foundry.governance.events import GovernanceEventError
-from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS
+from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, MigrationRunner
 from amplai_foundry.governance.publish import ProjectPublishGateView, PublishGateState
-from amplai_foundry.governance.store import GovernanceStore, governance_transaction
+from amplai_foundry.governance.store import (
+    GovernanceStore,
+    GovernanceStoreError,
+    governance_transaction,
+)
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
@@ -91,8 +97,12 @@ def _fixture(
     grant_apply_permission: bool = True,
     include_action_token: bool = False,
     base_revision: str = "a13d92f",
+    migration_runner: MigrationRunner | None = None,
 ):
-    store = GovernanceStore(tmp_path / "governance.db")
+    store = GovernanceStore(
+        tmp_path / "governance.db",
+        migration_runner=migration_runner,
+    )
     store.initialize()
     objects = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     canonical = canonicalize_definition(
@@ -164,8 +174,17 @@ def _fixture(
     return (*result, approve.raw_token) if include_action_token else result
 
 
-def _queued_job_fixture(tmp_path: Path, *, base_revision: str = "a13d92f"):
-    store, _active, grants, decision_key = _fixture(tmp_path, base_revision=base_revision)
+def _queued_job_fixture(
+    tmp_path: Path,
+    *,
+    base_revision: str = "a13d92f",
+    migration_runner: MigrationRunner | None = None,
+):
+    store, _active, grants, decision_key = _fixture(
+        tmp_path,
+        base_revision=base_revision,
+        migration_runner=migration_runner,
+    )
     issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
     request = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
     result = request.request_apply(
@@ -184,8 +203,13 @@ def _publish_pending_job_fixture(
     artifact_bytes: bytes = b"immutable staged tree",
     publish_request_bytes: bytes = b'{"canonical_ref":"refs/heads/main"}',
     base_revision: str = "a13d92f",
+    migration_runner: MigrationRunner | None = None,
 ):
-    store, job_id = _queued_job_fixture(tmp_path, base_revision=base_revision)
+    store, job_id = _queued_job_fixture(
+        tmp_path,
+        base_revision=base_revision,
+        migration_runner=migration_runner,
+    )
     jobs = ApplyJobService(store, clock=lambda: NOW)
     leased = jobs.claim_next("worker-publish-fixture")
     assert leased is not None
@@ -1485,6 +1509,50 @@ def test_publish_intent_is_relationally_rooted_and_immutable(tmp_path: Path) -> 
             )
 
 
+def test_populated_v12_publish_roots_upgrade_to_v13_without_rewrite(tmp_path: Path) -> None:
+    legacy_runner = MigrationRunner(INITIAL_MIGRATIONS[:12])
+    store, job = _publish_pending_job_fixture(
+        tmp_path,
+        migration_runner=legacy_runner,
+    )
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+    with store.connect() as connection:
+        before_intent = connection.execute(
+            "SELECT * FROM governance_publish_intents WHERE intent_id = ?",
+            (intent_id,),
+        ).fetchone()
+        before_gate = connection.execute(
+            "SELECT * FROM governance_project_publish_gates WHERE active_intent_id = ?",
+            (intent_id,),
+        ).fetchone()
+        assert connection.execute(
+            "SELECT MAX(version) FROM governance_schema_migrations"
+        ).fetchone() == (12,)
+
+    upgraded = GovernanceStore(tmp_path / "governance.db")
+
+    assert upgraded.initialize().schema_version == 13
+    assert upgraded.check_startup().healthy
+    with upgraded.connect() as connection:
+        assert (
+            connection.execute(
+                "SELECT * FROM governance_publish_intents WHERE intent_id = ?",
+                (intent_id,),
+            ).fetchone()
+            == before_intent
+        )
+        assert (
+            connection.execute(
+                "SELECT * FROM governance_project_publish_gates WHERE active_intent_id = ?",
+                (intent_id,),
+            ).fetchone()
+            == before_gate
+        )
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_claims").fetchone() == (
+            0,
+        )
+
+
 def test_publish_gate_requires_monotonic_revision_and_explicit_release(tmp_path: Path) -> None:
     store, job = _publish_pending_job_fixture(tmp_path)
     intent_id = _insert_prepared_publish_foundation(store, job.job_id)
@@ -1884,7 +1952,7 @@ def test_competing_publish_prepare_creates_one_locked_intent(tmp_path: Path) -> 
         ).fetchone() == (1,)
 
 
-def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path) -> None:
+def _real_prepared_publish_fixture(tmp_path: Path):
     repository = tmp_path / "canonical"
     repository.mkdir()
 
@@ -1935,6 +2003,11 @@ def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path)
         canonical_ref="refs/heads/main",
         candidate_commit=candidate,
     )
+    return store, repository, git, prepared, base, candidate
+
+
+def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
     coordinator = FencedGitPublishCoordinator(
         store,
         repository,
@@ -1994,3 +2067,179 @@ def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path)
             (prepared.intent_id,),
         ).fetchone() == ("publish-coordinator-1", 1, "active")
     assert store.check_startup().healthy
+
+
+def test_pre_cas_failure_releases_claim_and_retry_advances_fence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    failing = FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publish-coordinator-failing",
+        clock=lambda: NOW,
+    )
+
+    def reject_candidate(*_args, **_kwargs):
+        raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
+
+    monkeypatch.setattr(failing._backend, "inspect_candidate", reject_candidate)
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_CANDIDATE_MISMATCH"):
+        failing.publish_prepared_ref(prepared.intent_id)
+
+    retry = FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publish-coordinator-retry",
+        clock=lambda: NOW,
+    )
+    assert retry.publish_prepared_ref(prepared.intent_id) is GitCASOutcome.UPDATED
+    with store.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT coordinator_id, claim_fencing_token, state
+            FROM governance_publish_claims WHERE intent_id = ?
+            ORDER BY claim_fencing_token
+            """,
+            (prepared.intent_id,),
+        ).fetchall() == [
+            ("publish-coordinator-failing", 1, "released"),
+            ("publish-coordinator-retry", 2, "active"),
+        ]
+    assert retry._backend.read_ref(prepared.canonical_ref) == candidate
+    assert store.check_startup().healthy
+
+
+def test_competing_publish_coordinators_create_one_active_claim(tmp_path: Path) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    barrier = threading.Barrier(2)
+
+    def publish(index: int) -> str:
+        coordinator = FencedGitPublishCoordinator(
+            store,
+            repository,
+            coordinator_id=f"publish-coordinator-{index}",
+            clock=lambda: NOW,
+        )
+        barrier.wait()
+        try:
+            return coordinator.publish_prepared_ref(prepared.intent_id).value
+        except PublishGovernanceError as error:
+            return error.code
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(publish, range(2)))
+
+    assert sorted(outcomes) == ["PUBLISH_CLAIM_ACTIVE", "updated"]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_claims WHERE state = 'active'"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_claims WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == (1,)
+
+
+@pytest.mark.parametrize(
+    "case",
+    ("expected_unchanged", "conflict", "replay", "ambiguous"),
+)
+def test_post_cas_boundary_outcomes_retain_durable_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    store, repository, git, prepared, _base, candidate = _real_prepared_publish_fixture(tmp_path)
+    coordinator = FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id=f"publish-coordinator-{case}",
+        clock=lambda: NOW,
+    )
+    if case == "replay":
+        git("update-ref", "refs/heads/main", candidate)
+    elif case == "ambiguous":
+
+        def ambiguous(*_args, **_kwargs):
+            raise GitPublishAmbiguousError()
+
+        monkeypatch.setattr(coordinator._backend, "_compare_and_swap_ref", ambiguous)
+    else:
+        outcome = (
+            GitCASOutcome.EXPECTED_UNCHANGED
+            if case == "expected_unchanged"
+            else GitCASOutcome.CONFLICT
+        )
+        monkeypatch.setattr(
+            coordinator._backend,
+            "_compare_and_swap_ref",
+            lambda *_args, **_kwargs: outcome,
+        )
+
+    if case == "ambiguous":
+        with pytest.raises(GitPublishAmbiguousError):
+            coordinator.publish_prepared_ref(prepared.intent_id)
+    else:
+        result = coordinator.publish_prepared_ref(prepared.intent_id)
+        expected = GitCASOutcome.UPDATED if case == "replay" else outcome
+        assert result is expected
+    with store.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT claim_fencing_token, state FROM governance_publish_claims
+            WHERE intent_id = ?
+            """,
+            (prepared.intent_id,),
+        ).fetchone() == (1, "active")
+    assert store.check_startup().healthy
+
+
+def test_startup_rejects_publish_claim_fencing_gap(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_publish_claims(
+                claim_id, intent_id, project_namespace, project_id, coordinator_id,
+                claim_fencing_token, state, claimed_at, resolved_at
+            ) VALUES (?, ?, ?, ?, 'coordinator-gap', 2, 'released', ?, ?)
+            """,
+            (
+                "PCL-0000000000000002",
+                intent_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(GovernanceEventError, match="PUBLISH_CLAIM_ROOT_MISMATCH"):
+        store.initialize()
+
+
+def test_startup_rejects_active_publish_claim_root_mismatch(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+    connection = sqlite3.connect(store.path)
+    try:
+        connection.execute("PRAGMA foreign_keys=OFF")
+        connection.execute(
+            """
+            INSERT INTO governance_publish_claims(
+                claim_id, intent_id, project_namespace, project_id, coordinator_id,
+                claim_fencing_token, state, claimed_at, resolved_at
+            ) VALUES (?, ?, 'org/default/project/other', 'other',
+                      'coordinator-root', 1, 'active', ?, NULL)
+            """,
+            ("PCL-0000000000000003", intent_id, NOW.isoformat()),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    with pytest.raises(GovernanceStoreError, match="foreign key integrity check"):
+        store.initialize()
