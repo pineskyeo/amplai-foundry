@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from amplai_foundry.domain.identity import MemoryRef, ProjectRef
 from amplai_foundry.governance.definitions import (
@@ -74,8 +75,8 @@ class FailingBeforePublishStore(ImmutableDefinitionObjectStore):
 
 
 class BlockingBeforePublishStore(ImmutableDefinitionObjectStore):
-    def __init__(self, project_ref: ProjectRef, root: Path, marker: Path) -> None:
-        super().__init__(project_ref, root)
+    def __init__(self, project_ref: ProjectRef, project_root: Path, marker: Path) -> None:
+        super().__init__(project_ref, project_root)
         self.marker = marker
 
     def _before_publish(self, temporary: Path, canonical: Path) -> None:
@@ -83,9 +84,56 @@ class BlockingBeforePublishStore(ImmutableDefinitionObjectStore):
         time.sleep(60)
 
 
-def _run_blocking_input_write(root: str, marker: str) -> None:
-    store = BlockingBeforePublishStore(PROJECT, Path(root), Path(marker))
+class BlockingAfterPublishStore(ImmutableDefinitionObjectStore):
+    def __init__(
+        self,
+        project_ref: ProjectRef,
+        project_root: Path,
+        marker: Path,
+        checkpoint: str,
+    ) -> None:
+        super().__init__(project_ref, project_root)
+        self.marker = marker
+        self.checkpoint = checkpoint
+
+    def _block(self, checkpoint: str) -> None:
+        if self.checkpoint == checkpoint:
+            self.marker.write_text("ready", encoding="utf-8")
+            time.sleep(60)
+
+    def _after_publish(self, canonical: Path) -> None:
+        self._block("after_publish")
+
+    def _after_directory_fsync(self, canonical: Path) -> None:
+        self._block("after_directory_fsync")
+
+
+class SwappingProjectRootStore(ImmutableDefinitionObjectStore):
+    def __init__(
+        self,
+        project_ref: ProjectRef,
+        project_root: Path,
+        moved_root: Path,
+        replacement: Path,
+    ) -> None:
+        super().__init__(project_ref, project_root)
+        self.moved_root = moved_root
+        self.replacement = replacement
+
+    def _before_publish(self, temporary: Path, canonical: Path) -> None:
+        self.project_root.rename(self.moved_root)
+        self.project_root.symlink_to(self.replacement, target_is_directory=True)
+
+
+def _run_blocking_input_write(project_root: str, marker: str) -> None:
+    store = BlockingBeforePublishStore(PROJECT, Path(project_root), Path(marker))
     payload = b"# Draft\n"
+    store.put_input_object(PROPOSAL, payload, sha256_digest(payload))
+
+
+def _run_post_publish_blocking_write(project_root: str, marker: str, checkpoint: str) -> None:
+    store = BlockingAfterPublishStore(PROJECT, Path(project_root), Path(marker), checkpoint)
+    payload = b"# Published Draft\n"
     store.put_input_object(PROPOSAL, payload, sha256_digest(payload))
 
 
@@ -134,10 +182,64 @@ def test_canonicalization_v1_is_deterministic_and_binds_all_contract_fields() ->
     assert all(canonicalize_definition(item).digest != first.digest for item in changed_manifests)
 
 
+def test_every_mutable_digest_leaf_changes_the_definition_identity() -> None:
+    base = _manifest()
+    base_digest = canonicalize_definition(base).digest
+    alternate_project = ProjectRef(
+        project_id="amplai",
+        namespace="org/alternate/project/amplai",
+    )
+    changed = (
+        base.model_copy(
+            update={
+                "proposal_ref": ProposalRef(
+                    project_ref=alternate_project,
+                    proposal_id=base.proposal_ref.proposal_id,
+                )
+            }
+        ),
+        base.model_copy(
+            update={
+                "evidence": (
+                    base.evidence[0].model_copy(
+                        update={
+                            "source_ref": MemoryRef(
+                                namespace=base.evidence[0].source_ref.namespace,
+                                local_id="SRC-0002",
+                            )
+                        }
+                    ),
+                )
+            }
+        ),
+        base.model_copy(
+            update={
+                "apply_inputs": (
+                    base.apply_inputs[0].model_copy(update={"object_digest": f"sha256:{'4' * 64}"}),
+                )
+            }
+        ),
+        base.model_copy(
+            update={
+                "apply_inputs": (
+                    base.apply_inputs[0].model_copy(update={"media_type": "application/json"}),
+                )
+            }
+        ),
+    )
+    assert all(canonicalize_definition(item).digest != base_digest for item in changed)
+
+    payload = base.model_dump(mode="json")
+    for field in ("schema_version", "canonicalization_version"):
+        invalid = {**payload, field: 2}
+        with pytest.raises(ValidationError):
+            ProposalDefinitionManifest.model_validate(invalid)
+
+
 def test_definition_and_input_objects_use_digest_paths_and_idempotent_retry(
     tmp_path: Path,
 ) -> None:
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / ".amplai/proposals")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     definition = canonicalize_definition(_manifest())
     input_bytes = b"# Draft\n"
     input_digest = sha256_digest(input_bytes)
@@ -164,7 +266,7 @@ def test_definition_and_input_objects_use_digest_paths_and_idempotent_retry(
 
 
 def test_concurrent_same_object_writes_publish_one_complete_object(tmp_path: Path) -> None:
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     payload = b"# Concurrent Draft\n"
     digest = sha256_digest(payload)
 
@@ -181,8 +283,28 @@ def test_concurrent_same_object_writes_publish_one_complete_object(tmp_path: Pat
     assert list(references[0].path.parent.glob("*.tmp")) == []
 
 
+def test_same_local_proposal_id_is_isolated_by_project_root(tmp_path: Path) -> None:
+    amplai_root = tmp_path / "amplai"
+    cortex_root = tmp_path / "cortex"
+    amplai_root.mkdir()
+    cortex_root.mkdir()
+    amplai = ImmutableDefinitionObjectStore(PROJECT, amplai_root)
+    cortex = ImmutableDefinitionObjectStore(OTHER_PROJECT, cortex_root)
+    payload = b"# Shared local ID\n"
+    digest = sha256_digest(payload)
+
+    amplai_ref = amplai.put_input_object(PROPOSAL, payload, digest)
+    cortex_ref = cortex.put_input_object(OTHER_PROPOSAL, payload, digest)
+
+    assert amplai_ref.path != cortex_ref.path
+    amplai_ref.path.write_bytes(b"corrupt")
+    with pytest.raises(DefinitionObjectIntegrityError):
+        amplai.get_input_object(PROPOSAL, digest)
+    assert cortex.get_input_object(OTHER_PROPOSAL, digest) == payload
+
+
 def test_expected_digest_and_definition_ref_must_match_canonical_bytes(tmp_path: Path) -> None:
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     definition = canonicalize_definition(_manifest())
 
     with pytest.raises(DefinitionObjectIntegrityError, match="expected identity"):
@@ -202,7 +324,7 @@ def test_expected_digest_and_definition_ref_must_match_canonical_bytes(tmp_path:
 
 
 def test_existing_different_bytes_are_never_overwritten(tmp_path: Path) -> None:
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     payload = b"# Draft\n"
     digest = sha256_digest(payload)
     path = store.put_input_object(PROPOSAL, payload, digest).path
@@ -216,12 +338,14 @@ def test_existing_different_bytes_are_never_overwritten(tmp_path: Path) -> None:
 
 
 def test_noncanonical_or_tampered_definition_fails_closed(tmp_path: Path) -> None:
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
     definition = canonicalize_definition(_manifest())
     noncanonical = definition.canonical_bytes.replace(b'"base_revision"', b'"base_revision" ')
 
     with pytest.raises(DefinitionObjectIntegrityError, match="canonical bytes"):
         store.put_definition_object(PROPOSAL, noncanonical, definition.digest)
+    with pytest.raises(DefinitionObjectIntegrityError, match="검증할 수 없습니다"):
+        store.put_definition_object(PROPOSAL, b"not-json", definition.digest)
 
     path = store.put_definition_object(
         PROPOSAL,
@@ -234,38 +358,54 @@ def test_noncanonical_or_tampered_definition_fails_closed(tmp_path: Path) -> Non
 
 
 def test_write_failure_cleans_temp_and_exposes_no_canonical_object(tmp_path: Path) -> None:
-    root = tmp_path / "objects"
-    store = FailingBeforePublishStore(PROJECT, root)
+    store = FailingBeforePublishStore(PROJECT, tmp_path)
     payload = b"# Draft\n"
     digest = sha256_digest(payload)
 
     with pytest.raises(DefinitionObjectStoreError, match="기록할 수 없습니다"):
         store.put_input_object(PROPOSAL, payload, digest)
 
-    target_dir = root / PROPOSAL.proposal_id / "inputs"
+    target_dir = tmp_path / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs"
     assert not (target_dir / f"{digest}.md").exists()
     assert list(target_dir.glob("*.tmp")) == []
 
 
-def test_symlinked_object_root_is_rejected_before_external_write(tmp_path: Path) -> None:
-    external = tmp_path / "external"
-    external.mkdir()
-    linked_root = tmp_path / "linked-objects"
-    linked_root.symlink_to(external, target_is_directory=True)
-    store = ImmutableDefinitionObjectStore(PROJECT, linked_root)
-    payload = b"# Draft\n"
-
+def test_symlinked_project_root_is_rejected_before_external_write(tmp_path: Path) -> None:
+    external_parent = tmp_path / "external"
+    project = external_parent / "project"
+    project.mkdir(parents=True)
+    linked_parent = tmp_path / "linked-parent"
+    linked_parent.symlink_to(external_parent, target_is_directory=True)
     with pytest.raises(DefinitionObjectStoreError, match="symlink"):
-        store.put_input_object(PROPOSAL, payload, sha256_digest(payload))
+        ImmutableDefinitionObjectStore(PROJECT, linked_parent / "project")
 
-    assert list(external.iterdir()) == []
+    assert list(project.iterdir()) == []
+
+
+def test_project_root_swap_during_publish_cannot_redirect_open_directory_fd(
+    tmp_path: Path,
+) -> None:
+    project_root = tmp_path / "project"
+    moved_root = tmp_path / "moved-project"
+    replacement = tmp_path / "replacement"
+    project_root.mkdir()
+    replacement.mkdir()
+    store = SwappingProjectRootStore(PROJECT, project_root, moved_root, replacement)
+    payload = b"# Anchored write\n"
+    digest = sha256_digest(payload)
+
+    with pytest.raises(DefinitionObjectStoreError, match="identity가 write 중 변경"):
+        store.put_input_object(PROPOSAL, payload, digest)
+
+    assert list(replacement.iterdir()) == []
+    anchored = moved_root / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs" / f"{digest}.md"
+    assert anchored.read_bytes() == payload
 
 
 def test_hard_kill_before_publish_exposes_no_partial_canonical_object(tmp_path: Path) -> None:
-    root = tmp_path / "objects"
     marker = tmp_path / "ready"
     context = multiprocessing.get_context("spawn")
-    process = context.Process(target=_run_blocking_input_write, args=(str(root), str(marker)))
+    process = context.Process(target=_run_blocking_input_write, args=(str(tmp_path), str(marker)))
     process.start()
     deadline = time.monotonic() + 5
     while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
@@ -277,14 +417,49 @@ def test_hard_kill_before_publish_exposes_no_partial_canonical_object(tmp_path: 
     assert not process.is_alive()
 
     payload = b"# Draft\n"
-    canonical = root / PROPOSAL.proposal_id / "inputs" / f"{sha256_digest(payload)}.md"
+    canonical = (
+        tmp_path
+        / ".amplai/proposals"
+        / PROPOSAL.proposal_id
+        / "inputs"
+        / f"{sha256_digest(payload)}.md"
+    )
     assert not canonical.exists()
+
+
+@pytest.mark.parametrize("checkpoint", ["after_publish", "after_directory_fsync"])
+def test_hard_kill_after_publish_leaves_complete_rehash_valid_object(
+    tmp_path: Path,
+    checkpoint: str,
+) -> None:
+    marker = tmp_path / "ready"
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(
+        target=_run_post_publish_blocking_write,
+        args=(str(tmp_path), str(marker), checkpoint),
+    )
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), f"writer가 {checkpoint} checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    payload = b"# Published Draft\n"
+    digest = sha256_digest(payload)
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
+    assert store.get_input_object(PROPOSAL, digest) == payload
+    assert store.put_input_object(PROPOSAL, payload, digest).path.is_file()
 
 
 def test_atomic_publish_fsyncs_file_and_parent_directory(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    (tmp_path / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs").mkdir(parents=True)
     calls: list[str] = []
     original_fsync = os.fsync
 
@@ -295,7 +470,7 @@ def test_atomic_publish_fsyncs_file_and_parent_directory(
 
     monkeypatch.setattr(os, "fsync", recording_fsync)
     payload = b"# Draft\n"
-    ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects").put_input_object(
+    ImmutableDefinitionObjectStore(PROJECT, tmp_path).put_input_object(
         PROPOSAL,
         payload,
         sha256_digest(payload),
@@ -304,10 +479,37 @@ def test_atomic_publish_fsyncs_file_and_parent_directory(
     assert calls == ["file", "directory"]
 
 
+def test_file_fsync_failure_exposes_no_canonical_object(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_fsync = os.fsync
+    failed = False
+
+    def fail_first_file_fsync(descriptor: int) -> None:
+        nonlocal failed
+        if stat.S_ISREG(os.fstat(descriptor).st_mode) and not failed:
+            failed = True
+            raise OSError("injected file fsync failure")
+        original_fsync(descriptor)
+
+    monkeypatch.setattr(os, "fsync", fail_first_file_fsync)
+    payload = b"# File fsync failure\n"
+    digest = sha256_digest(payload)
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
+
+    with pytest.raises(DefinitionObjectStoreError, match="기록할 수 없습니다"):
+        store.put_input_object(PROPOSAL, payload, digest)
+
+    path = tmp_path / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs" / f"{digest}.md"
+    assert not path.exists()
+
+
 def test_directory_fsync_failure_leaves_only_complete_retryable_object(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    (tmp_path / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs").mkdir(parents=True)
     original_fsync = os.fsync
     failed = False
 
@@ -321,12 +523,12 @@ def test_directory_fsync_failure_leaves_only_complete_retryable_object(
     monkeypatch.setattr(os, "fsync", fail_first_directory_fsync)
     payload = b"# Durable Draft\n"
     digest = sha256_digest(payload)
-    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path / "objects")
+    store = ImmutableDefinitionObjectStore(PROJECT, tmp_path)
 
     with pytest.raises(DefinitionObjectStoreError, match="기록할 수 없습니다"):
         store.put_input_object(PROPOSAL, payload, digest)
 
-    path = tmp_path / "objects" / PROPOSAL.proposal_id / "inputs" / f"{digest}.md"
+    path = tmp_path / ".amplai/proposals" / PROPOSAL.proposal_id / "inputs" / f"{digest}.md"
     assert path.read_bytes() == payload
 
     monkeypatch.setattr(os, "fsync", original_fsync)
