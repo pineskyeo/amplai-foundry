@@ -34,6 +34,14 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
 3. Audit/idempotency import, synthetic approval hold, and ordered projection
 4. Verification, pre-activation rollback, activation boundary, and recovery tests
 
+## Slice Status
+
+- Slice 1: `PASS` at `9b195d3`
+- Focused tests: `20/20 PASS`
+- Full verification: `7/7 PASS`
+- Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`, `Advisory=0`
+- Next: Slice 2 — atomic qualified definition and Proposal state import
+
 ## Out Of Scope
 
 - legacy files의 rewrite 또는 삭제
