@@ -63,6 +63,29 @@ def legacy_mutation_block(connection: sqlite3.Connection, ref: ProposalRef) -> s
     return "LEGACY_MIGRATION_NOT_ACTIVATED"
 
 
+def legacy_definition_revision_block(
+    connection: sqlite3.Connection,
+    ref: ProposalRef,
+) -> str | None:
+    """Require the governed forward-recovery path after legacy activation."""
+
+    if not _table_exists(connection, "governance_legacy_migration_lifecycle_heads"):
+        return None
+    lifecycle = connection.execute(
+        """
+        SELECT h.state
+        FROM governance_legacy_migration_items i
+        JOIN governance_legacy_migration_lifecycle_heads h
+          ON h.migration_id = i.migration_id
+        WHERE i.project_namespace = ? AND i.project_id = ? AND i.proposal_id = ?
+        """,
+        (ref.project_ref.namespace, ref.project_ref.project_id, ref.proposal_id),
+    ).fetchone()
+    if lifecycle is not None and str(lifecycle[0]) == "activated":
+        return "LEGACY_FORWARD_RECOVERY_REQUIRED"
+    return None
+
+
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
     return (
         connection.execute(

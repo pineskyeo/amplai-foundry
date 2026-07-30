@@ -10,7 +10,10 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.authority import AuthorityService, DirectAuthorityRequest
-from amplai_foundry.governance.legacy_gates import legacy_mutation_block
+from amplai_foundry.governance.legacy_gates import (
+    legacy_definition_revision_block,
+    legacy_mutation_block,
+)
 from amplai_foundry.governance.models import AuthorityPermission, Digest, ProposalRef
 from amplai_foundry.governance.object_store import DefinitionObjectRef
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
@@ -64,6 +67,7 @@ _STATE_ONLY_TRANSITIONS = {
 _DEFINITION_REVISION_STATUSES = frozenset(
     {ActiveProposalStatus.DRAFT, ActiveProposalStatus.CHANGES_REQUESTED}
 )
+_LEGACY_FORWARD_RECOVERY_CAPABILITY = object()
 
 
 def state_transition_allowed(
@@ -236,7 +240,15 @@ class ActiveProposalRepository:
         expected_active_digest: str | None,
         expected_state_revision: int,
         next_digest: str,
+        *,
+        _legacy_recovery_capability: object | None = None,
     ) -> ActiveProposalView:
+        recovery_block = legacy_definition_revision_block(connection, current.proposal_ref)
+        if (
+            recovery_block is not None
+            and _legacy_recovery_capability is not _LEGACY_FORWARD_RECOVERY_CAPABILITY
+        ):
+            raise ActiveProposalError(recovery_block)
         if (
             current.active_definition_digest != expected_active_digest
             or current.state_revision != expected_state_revision
@@ -303,6 +315,61 @@ class ActiveProposalRepository:
         if row is None:
             raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
         return self._view(row, current.proposal_ref)
+
+    def _activate_next_for_legacy_forward_recovery(
+        self,
+        connection: sqlite3.Connection,
+        current: ActiveProposalView,
+        expected_active_digest: str,
+        expected_state_revision: int,
+        next_digest: str,
+        *,
+        recovery_id: str,
+        migration_id: str,
+    ) -> ActiveProposalView:
+        """Activate one revision through the authenticated recovery transaction only."""
+
+        capability = connection.execute(
+            """
+            SELECT 1
+            FROM governance_legacy_forward_recovery_commands c
+            JOIN governance_legacy_migration_items i
+              ON i.migration_id = c.migration_id
+             AND i.project_namespace = c.project_namespace
+             AND i.project_id = c.project_id
+            WHERE c.recovery_id = ? AND c.migration_id = ?
+              AND c.project_namespace = ? AND c.project_id = ?
+              AND i.proposal_id = ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM governance_legacy_forward_recovery_items r
+                  WHERE r.recovery_id = c.recovery_id
+                    AND r.project_namespace = i.project_namespace
+                    AND r.project_id = i.project_id
+                    AND r.proposal_id = i.proposal_id
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM governance_legacy_forward_recovery_results r
+                  WHERE r.recovery_id = c.recovery_id
+              )
+            """,
+            (
+                recovery_id,
+                migration_id,
+                current.proposal_ref.project_ref.namespace,
+                current.proposal_ref.project_ref.project_id,
+                current.proposal_ref.proposal_id,
+            ),
+        ).fetchone()
+        if capability is None:
+            raise ActiveProposalError("LEGACY_FORWARD_RECOVERY_REQUIRED")
+        return self._activate_next(
+            connection,
+            current,
+            expected_active_digest,
+            expected_state_revision,
+            next_digest,
+            _legacy_recovery_capability=_LEGACY_FORWARD_RECOVERY_CAPABILITY,
+        )
 
     @staticmethod
     def _insert_revision(

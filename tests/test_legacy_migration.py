@@ -3913,6 +3913,33 @@ def test_forward_recovery_executor_atomically_revises_and_replays(tmp_path: Path
         objects,
         clock=lambda: NOW,
     )
+    active_repository = ActiveProposalRepository(store, objects)
+    with pytest.raises(ActiveProposalError, match="LEGACY_FORWARD_RECOVERY_REQUIRED"):
+        active_repository.activate_definition_revision(
+            ref,
+            expected_active_digest=plan.roots[0].active_definition_digest,
+            expected_state_revision=plan.roots[0].state_revision,
+            next_object_ref=next_object,
+        )
+    current_before_recovery = active_repository.get(ref)
+    assert current_before_recovery is not None
+    assert (
+        current_before_recovery.active_definition_digest == plan.roots[0].active_definition_digest
+    )
+    with store.connect() as connection:
+        with pytest.raises(ActiveProposalError, match="LEGACY_FORWARD_RECOVERY_REQUIRED"):
+            active_repository._activate_next_for_legacy_forward_recovery(
+                connection,
+                current_before_recovery,
+                plan.roots[0].active_definition_digest,
+                plan.roots[0].state_revision,
+                next_object.digest,
+                recovery_id="LFR-0000000000000000",
+                migration_id=migration.plan_id,
+            )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_commands"
+        ).fetchone() == (0,)
 
     result = executor.execute(
         plan,
