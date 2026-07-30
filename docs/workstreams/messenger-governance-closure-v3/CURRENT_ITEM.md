@@ -1,49 +1,49 @@
-# Current Item — MGC-005
+# Current Item — MGC-006
 
 ## Goal
 
-Provider 인증이 끝난 command를 raw secret 없이 durable ingress에 commit한 뒤에만 성공 ack한다.
-Worker는 atomic lease와 bounded retry로 command를 처리하고 crash 후 안전하게 reclaim한다.
+외부 Provider identity를 governed Actor binding으로 해석하고, production mutation에 사용할
+`AuthorityContext`를 서버가 단일 경로에서 생성한다.
 
 ## Frozen Acceptance
 
-- A1: Ingress entrypoint가 raw size 제한과 Provider authenticity를 durable write 전에 검증함
-- A2: durable ingress가 raw request body와 raw Token을 저장하지 않고 body digest와 credential hash만 저장함
-- A3: Provider installation과 immutable external event scope를 포함한 fingerprint로 duplicate command를 식별함
-- A4: 신규 ingress가 commit된 뒤에만 accepted ack 결과를 반환함
-- A5: DB unavailable 또는 busy timeout이면 accepted로 표시하지 않고 3초 이내 non-success 결과를 반환함
-- A6: Ingress state가 `pending → leased → completed | retry_wait | recovery_hold`, `retry_wait → leased → dead_letter` 전이만 허용함
-- A7: claim이 lease owner, expiry, monotonic generation과 attempt를 한 SQLite transaction에서 갱신함
-- A8: 만료된 lease를 다른 Worker가 reclaim하고 stale generation Worker의 finalize를 거부함
-- A9: retry가 bounded attempt와 deterministic backoff를 적용하고 한도 도달 시 dead letter로 전이함
-- A10: 동일 Provider fingerprint replay가 기존 command ID와 ack 결과를 반환하고 row를 중복 생성하지 않음
-- A11: verified credential hash를 사용하는 connection-bound decision integration seam을 제공하고 raw Token 재저장을 요구하지 않음
-- A12: ingress transaction과 worker claim/finalize에 Provider network 또는 filesystem I/O가 없음
-- A13: hard-kill, busy/unavailable, replay, lease reclaim, stale finalize와 raw-secret absence test가 통과함
+- A1: Production `AuthorityContext` 생성 경로가 `AuthorityService.authenticate()` 하나로 제한됨
+- A2: Public request가 permission 또는 AuthorityContext를 주입할 수 없음
+- A3: 외부 identity가 Provider, installation/workspace와 immutable external actor ID의 composite key로 저장됨
+- A4: active external identity binding이 유일하며 silent overwrite를 거부함
+- A5: binding create/rebind/disable이 explicit approval, reason과 before/after diff를 요구함
+- A6: rebind가 기존 active binding disable과 새 binding activation을 한 SQLite transaction으로 수행함
+- A7: binding transition record가 append-only이며 승인자, 사유, 이전·이후 Actor를 보존함
+- A8: unmapped·disabled Actor와 Project permission 부재가 fail-closed함
+- A9: decision permission은 human Actor에게만 부여하고 Service/Agent decision을 거부함
+- A10: Intake Policy Actor 권한이 `proposal.read`, `proposal.submit_review`로 제한됨
+- A11: pending ingress 처리 시 binding과 Project permission을 다시 조회해 Authority를 생성함
+- A12: Actor/Authority 실패가 Proposal, Token과 ingress decision result를 변경하지 않음
+- A13: binding race, rebind rollback, disabled/unmapped, cross-Project permission과 human-only test가 통과함
 - A14: existing test와 `amplai-foundry verify` 통과
 - A15: Subagent review P0/P1/Blocking-P2 0건
 
 ## In Scope
 
-- Provider-independent verified ingress command model
-- Schema v4 ingress queue와 fingerprint uniqueness
-- Commit-before-ack application service
-- Atomic lease claim, reclaim, generation fencing와 attempts
-- Retry wait, deterministic backoff, recovery hold와 dead letter
-- Credential-hash decision seam
-- Failure, hard-kill, concurrency와 raw-secret absence test
+- Schema v5 Actor, external binding, permission policy와 transition record
+- Server-created AuthorityService
+- Approved binding create/rebind/disable commands
+- Active identity uniqueness와 atomic rebind
+- Project-scoped permission resolution
+- Human decision와 Intake Actor policy
+- Ingress execution 시 Authority 재평가 seam
+- Failure, rollback, race와 cross-Project test
 
 ## Out Of Scope
 
-- Slack request signature implementation → `MGC-012`
-- Telegram webhook secret implementation → `MGC-013`
-- Actor binding과 server-created AuthorityContext → `MGC-006`
-- Production CLI/Intake mutation 경로 폐쇄 → `MGC-007`
-- Audit/outbox projection → `MGC-008`
-- Provider-specific message rendering과 ack transport → `MGC-012`, `MGC-013`
+- Audit hash chain과 projection outbox → `MGC-008`
+- Direct CLI/Intake mutation closure → `MGC-007`
+- Slack/Telegram Provider verification → `MGC-012`, `MGC-013`
+- ApplyGrant permission execution → `MGC-009`
+- Activation administration UI → `MGC-015`
 
 ## Review Team
 
-- Ingress authenticity and secret-minimization reviewer subagent
-- Lease, retry and crash-recovery reviewer subagent
-- Transaction and evidence reviewer subagent
+- Authority injection and human-decision reviewer subagent
+- Binding transition and race reviewer subagent
+- Permission/failure evidence reviewer subagent

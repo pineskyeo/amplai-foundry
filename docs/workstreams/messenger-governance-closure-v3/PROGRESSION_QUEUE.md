@@ -19,11 +19,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-004 — ActionToken And Decision Replay
   class: code
   gate: PASS at `ec17ce3`
-- [~] MGC-005 — Durable Provider Ingress
+- [x] MGC-005 — Durable Provider Ingress
+  class: code
+  gate: PASS at `315455c`
+- [~] MGC-006 — Authority And Actor Binding
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-006 — Authority And Actor Binding
-  class: code
 - [ ] MGC-007 — Direct Mutation Closure
   class: code
 - [ ] MGC-008 — Ordered Transactional Outbox
