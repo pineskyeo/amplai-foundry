@@ -42,10 +42,7 @@ class YamlProjectionDestination:
             current = self._read()
             if current is None:
                 return None
-            if (
-                current.aggregate_sequence == event.aggregate_sequence
-                and current.payload_digest == event.payload_digest
-            ):
+            if self._matches_event(current, event):
                 return self._receipt(current)
             if current.aggregate_sequence >= event.aggregate_sequence:
                 raise OutboxReconcileError("YAML_PROJECTION_DIVERGED")
@@ -59,11 +56,10 @@ class YamlProjectionDestination:
             raise GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
         with self._locked():
             current = self._read()
-            if current is not None and (
-                current.aggregate_sequence == event.aggregate_sequence
-                and current.payload_digest == event.payload_digest
-            ):
+            if current is not None and self._matches_event(current, event):
                 return self._receipt(current)
+            if current is not None and current.aggregate_sequence == event.aggregate_sequence:
+                raise GovernanceEventError("YAML_PROJECTION_DIVERGED")
             if current is None:
                 if event.aggregate_sequence != 1:
                     raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
@@ -169,6 +165,16 @@ class YamlProjectionDestination:
             sort_keys=True,
         ).encode("utf-8")
         return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+
+    @classmethod
+    def _matches_event(cls, record: YamlProjectionRecord, event: OutboxEventView) -> bool:
+        return (
+            record.aggregate_sequence == event.aggregate_sequence
+            and record.proposal_ref == event.proposal_ref
+            and record.source_state_revision == event.source_state_revision
+            and record.payload_digest == event.payload_digest
+            and cls._payload_digest(record.payload) == record.payload_digest
+        )
 
     @staticmethod
     def _receipt(record: YamlProjectionRecord) -> str:

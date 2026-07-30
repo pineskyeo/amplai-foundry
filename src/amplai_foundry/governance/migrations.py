@@ -469,6 +469,8 @@ INITIAL_MIGRATIONS = (
                 before_state TEXT NOT NULL,
                 after_state TEXT NOT NULL,
                 definition_digest TEXT NOT NULL,
+                destination_manifest_digest TEXT NOT NULL,
+                destination_count INTEGER NOT NULL CHECK (destination_count >= 1),
                 previous_event_hash TEXT,
                 event_hash TEXT NOT NULL,
                 occurred_at TEXT NOT NULL,
@@ -481,6 +483,11 @@ INITIAL_MIGRATIONS = (
                     length(definition_digest) = 71
                     AND substr(definition_digest, 1, 7) = 'sha256:'
                     AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(destination_manifest_digest) = 71
+                    AND substr(destination_manifest_digest, 1, 7) = 'sha256:'
+                    AND substr(destination_manifest_digest, 8) NOT GLOB '*[^0-9a-f]*'
                 ),
                 CHECK (
                     previous_event_hash IS NULL OR (
@@ -617,6 +624,20 @@ INITIAL_MIGRATIONS = (
             ) WITHOUT ROWID
             """,
             """
+            CREATE TRIGGER governance_outbox_dead_letters_no_update
+            BEFORE UPDATE ON governance_outbox_dead_letters
+            BEGIN
+                SELECT RAISE(ABORT, 'governance dead letter is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_outbox_dead_letters_no_delete
+            BEFORE DELETE ON governance_outbox_dead_letters
+            BEGIN
+                SELECT RAISE(ABORT, 'governance dead letter is append-only');
+            END
+            """,
+            """
             CREATE TABLE governance_operator_holds (
                 hold_id TEXT PRIMARY KEY NOT NULL,
                 scope_kind TEXT NOT NULL CHECK (scope_kind = 'outbox_destination'),
@@ -629,6 +650,20 @@ INITIAL_MIGRATIONS = (
                     ON DELETE RESTRICT,
                 CHECK (resolved_at IS NULL)
             ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_operator_holds_no_update
+            BEFORE UPDATE ON governance_operator_holds
+            BEGIN
+                SELECT RAISE(ABORT, 'governance operator hold is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_operator_holds_no_delete
+            BEFORE DELETE ON governance_operator_holds
+            BEGIN
+                SELECT RAISE(ABORT, 'governance operator hold is append-only');
+            END
             """,
         ),
     ),
@@ -892,6 +927,8 @@ class MigrationRunner:
                         ("before_state", "TEXT", 1, 0),
                         ("after_state", "TEXT", 1, 0),
                         ("definition_digest", "TEXT", 1, 0),
+                        ("destination_manifest_digest", "TEXT", 1, 0),
+                        ("destination_count", "INTEGER", 1, 0),
                         ("previous_event_hash", "TEXT", 0, 0),
                         ("event_hash", "TEXT", 1, 0),
                         ("occurred_at", "TEXT", 1, 0),

@@ -44,7 +44,6 @@ from amplai_foundry.governance.definitions import (
 from amplai_foundry.governance.events import (
     AuditEventView,
     GovernanceEventError,
-    GovernanceEventService,
     OutboxConfig,
     OutboxDestination,
     OutboxDispatcher,
@@ -139,7 +138,6 @@ __all__ = [
     "ExternalActorIdentity",
     "FileProposalActionLedger",
     "GovernanceEventError",
-    "GovernanceEventService",
     "ImmutableDefinitionObjectStore",
     "IngressAck",
     "IngressAuthorityRequest",

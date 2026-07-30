@@ -22,8 +22,8 @@ from amplai_foundry.governance.authority import (
     IngressAuthorityRequest,
 )
 from amplai_foundry.governance.events import (
+    DecisionProjectionPayload,
     GovernanceEventService,
-    OutboxDestination,
 )
 from amplai_foundry.governance.models import (
     ActorRef,
@@ -270,6 +270,14 @@ class DecisionService:
             request_fingerprint,
             credential_hash,
         )
+        if (
+            connection.execute(
+                "SELECT 1 FROM governance_action_tokens WHERE token_hash = ?",
+                (self._token_hash(idempotency_key),),
+            ).fetchone()
+            is not None
+        ):
+            raise DecisionError("IDEMPOTENCY_CONFLICT")
         processed_at = self._aware(self._clock())
         channel_json = self._channel_json(authority.source.channel)
         actor_ref = authority.actor_ref
@@ -378,41 +386,21 @@ class DecisionService:
                 self._timestamp(processed_at),
             ),
         )
-        event_payload: dict[str, object] = {
-            "action": action.value,
-            "active_definition_digest": str(token[4]),
-            "aggregate_ref": ref.model_dump(mode="json"),
-            "content_revision": int(token[5]),
-            "decision_epoch": int(token[7]),
-            "proposal_status": next_status.value,
-            "state_revision": next_state_revision,
-        }
-        channel_digest = hashlib.sha256(channel_json.encode("utf-8")).hexdigest()
-        GovernanceEventService(self.store, clock=self._clock).append_decision_in_transaction(
+        event_payload = DecisionProjectionPayload(
+            action=action.value,
+            active_definition_digest=str(token[4]),
+            aggregate_ref=ref,
+            content_revision=int(token[5]),
+            decision_epoch=int(token[7]),
+            proposal_status=next_status.value,
+            state_revision=next_state_revision,
+        )
+        GovernanceEventService(self.store, clock=self._clock)._append_decision_in_transaction(
             connection,
             ref,
-            command_id=idempotency_key,
-            event_type=f"proposal.{next_status.value}",
+            decision_result_key=idempotency_key,
             authority=authority,
-            before_state=ActiveProposalStatus.REVIEWED.value,
-            after_state=next_status.value,
-            definition_digest=str(token[4]),
-            source_state_revision=next_state_revision,
             payload=event_payload,
-            destinations=(
-                OutboxDestination(
-                    destination_ref=(
-                        f"yaml:{ref.project_ref.namespace}:"
-                        f"{ref.project_ref.project_id}:{ref.proposal_id}"
-                    ),
-                ),
-                OutboxDestination(
-                    destination_ref=(
-                        f"provider:{authority.source.channel.provider.value}:{channel_digest}"
-                    ),
-                    supersession_key=f"proposal-card:{ref.proposal_id}",
-                ),
-            ),
         )
         return DecisionResult(
             proposal_ref=ref,
@@ -572,6 +560,8 @@ class DecisionService:
         DecisionService._validate_replay_key(idempotency_key, fingerprint)
         if not raw_token or len(raw_token.encode("utf-8")) > 64:
             raise DecisionError("ACTION_TOKEN_INVALID")
+        if raw_token in idempotency_key:
+            raise DecisionError("IDEMPOTENCY_CONFLICT")
 
     @staticmethod
     def _validate_verified_command(

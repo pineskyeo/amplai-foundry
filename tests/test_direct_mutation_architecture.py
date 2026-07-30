@@ -11,6 +11,7 @@ from amplai_foundry.governance import (
     ChannelRef,
     ExternalActorIdentity,
 )
+from amplai_foundry.governance.events import DecisionProjectionPayload
 from amplai_foundry.intake.models import ArtifactRef, IntentRequest
 
 SOURCE_ROOT = Path("src/amplai_foundry")
@@ -106,6 +107,46 @@ def test_removed_direct_mutation_symbols_do_not_reenter_production_code() -> Non
                 findings.append(f"{path}:{node.lineno}:{_reflective_symbol(node)}")
 
     assert findings == []
+
+
+def test_decision_event_append_has_one_production_caller_and_is_not_exported() -> None:
+    callers: list[str] = []
+    for path in _python_sources():
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "_append_decision_in_transaction"
+            ):
+                callers.append(str(path))
+    assert callers == [str(SOURCE_ROOT / "governance/decisions.py")]
+
+    governance_init = (SOURCE_ROOT / "governance/__init__.py").read_text(encoding="utf-8")
+    assert "GovernanceEventService" not in governance_init
+
+
+@pytest.mark.parametrize("secret_field", ("raw_token", "raw_credential", "action_token"))
+def test_decision_projection_payload_forbids_secret_fields(secret_field: str) -> None:
+    with pytest.raises(ValidationError):
+        DecisionProjectionPayload.model_validate(
+            {
+                "action": "approve",
+                "active_definition_digest": f"sha256:{'a' * 64}",
+                "aggregate_ref": {
+                    "project_ref": {
+                        "namespace": "org/default/project/amplai",
+                        "project_id": "amplai",
+                    },
+                    "proposal_id": "PROP-20260730-ABCDEF12",
+                },
+                "content_revision": 1,
+                "decision_epoch": 1,
+                "proposal_status": "approved",
+                "state_revision": 2,
+                secret_field: "secret",
+            }
+        )
 
 
 def test_governance_authority_context_is_constructed_only_by_authority_service() -> None:

@@ -52,6 +52,20 @@ class OutboxDestination(BaseModel):
     supersession_key: str | None = None
 
 
+class DecisionProjectionPayload(BaseModel):
+    """Secret-free projection payload derived from a persisted Decision result."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    action: str = Field(pattern=r"^(approve|reject|request_changes)$")
+    active_definition_digest: Digest
+    aggregate_ref: ProposalRef
+    content_revision: int = Field(ge=1)
+    decision_epoch: int = Field(ge=1)
+    proposal_status: str = Field(pattern=r"^(approved|rejected|changes_requested)$")
+    state_revision: int = Field(ge=2)
+
+
 class AuditEventView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -66,6 +80,8 @@ class AuditEventView(BaseModel):
     before_state: str
     after_state: str
     definition_digest: Digest
+    destination_manifest_digest: Digest
+    destination_count: int = Field(ge=1)
     previous_event_hash: Digest | None = None
     event_hash: Digest
     occurred_at: AwareDatetime
@@ -115,27 +131,49 @@ class GovernanceEventService:
         self.store = store
         self._clock = clock or _system_now
 
-    def append_decision_in_transaction(
+    def _append_decision_in_transaction(
         self,
         connection: sqlite3.Connection,
         ref: ProposalRef,
         *,
-        command_id: str,
-        event_type: str,
+        decision_result_key: str,
         authority: AuthorityContext,
-        before_state: str,
-        after_state: str,
-        definition_digest: str,
-        source_state_revision: int,
-        payload: Mapping[str, object],
-        destinations: Sequence[OutboxDestination],
+        payload: DecisionProjectionPayload,
     ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
         if not connection.in_transaction:
             raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
         if authority.project_ref != ref.project_ref:
             raise GovernanceEventError("AUTHORITY_DENIED")
-        if not destinations:
-            raise GovernanceEventError("OUTBOX_DESTINATION_REQUIRED")
+        decision_result = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id, action, actor_id,
+                   actor_type, proposal_status, active_definition_digest,
+                   content_revision, state_revision, decision_epoch
+            FROM governance_decision_results WHERE idempotency_key = ?
+            """,
+            (decision_result_key,),
+        ).fetchone()
+        expected_result = (
+            *self._identity(ref),
+            payload.action,
+            authority.actor_ref.actor_id,
+            authority.actor_ref.actor_type.value,
+            payload.proposal_status,
+            payload.active_definition_digest,
+            payload.content_revision,
+            payload.state_revision,
+            payload.decision_epoch,
+        )
+        if decision_result is None or tuple(decision_result) != expected_result:
+            raise GovernanceEventError("DECISION_AUDIT_SOURCE_MISMATCH")
+        destinations = self._decision_destinations(ref, authority)
+        command_id = self._decision_command_id(decision_result_key)
+        event_type = f"proposal.{payload.proposal_status}"
+        before_state = "reviewed"
+        after_state = payload.proposal_status
+        definition_digest = payload.active_definition_digest
+        source_state_revision = payload.state_revision
+        destination_manifest_digest = self._destination_manifest_digest(destinations)
         occurred_at = self._aware(self._clock())
         timestamp = self._timestamp(occurred_at)
         previous = connection.execute(
@@ -162,6 +200,8 @@ class GovernanceEventService:
             before_state=before_state,
             after_state=after_state,
             definition_digest=definition_digest,
+            destination_manifest_digest=destination_manifest_digest,
+            destination_count=len(destinations),
             previous_event_hash=previous_hash,
             occurred_at=timestamp,
         )
@@ -199,8 +239,9 @@ class GovernanceEventService:
                 event_id, command_id, event_type, project_namespace, project_id,
                 proposal_id, aggregate_sequence, actor_id, actor_type,
                 policy_snapshot_id, before_state, after_state, definition_digest,
+                destination_manifest_digest, destination_count,
                 previous_event_hash, event_hash, occurred_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 event_id,
@@ -214,12 +255,14 @@ class GovernanceEventService:
                 before_state,
                 after_state,
                 definition_digest,
+                destination_manifest_digest,
+                len(destinations),
                 previous_hash,
                 event_hash,
                 timestamp,
             ),
         )
-        payload_json = self._canonical_json(dict(payload))
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
         payload_digest = self._digest(payload_json.encode("utf-8"))
         outbox: list[OutboxEventView] = []
         seen_destinations: set[str] = set()
@@ -268,6 +311,69 @@ class GovernanceEventService:
 
     @classmethod
     def reconcile_connection(cls, connection: sqlite3.Connection) -> None:
+        decision_commands: dict[str, tuple[str, int, str, int]] = {}
+        decision_rows = connection.execute(
+            """
+            SELECT idempotency_key, project_namespace, project_id, proposal_id,
+                   action, actor_id, actor_type, proposal_status,
+                   active_definition_digest, content_revision,
+                   state_revision, decision_epoch, channel_json
+            FROM governance_decision_results
+            """
+        ).fetchall()
+        for decision in decision_rows:
+            command_id = cls._decision_command_id(str(decision[0]))
+            decision_payload = DecisionProjectionPayload(
+                action=str(decision[4]),
+                active_definition_digest=str(decision[8]),
+                aggregate_ref=cls._proposal_ref(decision[1], decision[2], decision[3]),
+                content_revision=int(decision[9]),
+                decision_epoch=int(decision[11]),
+                proposal_status=str(decision[7]),
+                state_revision=int(decision[10]),
+            )
+            expected_payload_json = cls._canonical_json(decision_payload.model_dump(mode="json"))
+            channel = cast(dict[str, object], json.loads(str(decision[12])))
+            channel_digest = hashlib.sha256(
+                cls._canonical_json(channel).encode("utf-8")
+            ).hexdigest()
+            expected_destinations = (
+                OutboxDestination(
+                    destination_ref=f"yaml:{decision[1]}:{decision[2]}:{decision[3]}"
+                ),
+                OutboxDestination(
+                    destination_ref=f"provider:{channel['provider']}:{channel_digest}",
+                    supersession_key=f"proposal-card:{decision[3]}",
+                ),
+            )
+            decision_commands[command_id] = (
+                cls._digest(expected_payload_json.encode("utf-8")),
+                int(decision[10]),
+                cls._destination_manifest_digest(expected_destinations),
+                len(expected_destinations),
+            )
+            audits = connection.execute(
+                """
+                SELECT * FROM governance_audit_events
+                WHERE command_id = ? AND project_namespace = ?
+                  AND project_id = ? AND proposal_id = ?
+                """,
+                (command_id, decision[1], decision[2], decision[3]),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            if (
+                audit.event_type != f"proposal.{decision[7]}"
+                or audit.actor_id != str(decision[5])
+                or audit.actor_type != str(decision[6])
+                or audit.before_state != "reviewed"
+                or audit.after_state != str(decision[7])
+                or audit.definition_digest != str(decision[8])
+                or audit.destination_manifest_digest != decision_commands[command_id][2]
+                or audit.destination_count != decision_commands[command_id][3]
+            ):
+                raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
         orphan_audit = connection.execute(
             """
             SELECT 1
@@ -305,20 +411,50 @@ class GovernanceEventService:
                 view = cls._audit_view(cast(tuple[object, ...], row))
                 if view.aggregate_sequence != expected_sequence:
                     raise GovernanceEventError("AUDIT_SEQUENCE_GAP")
+                if view.command_id not in decision_commands:
+                    raise GovernanceEventError("AUDIT_DECISION_SOURCE_MISMATCH")
                 if view.previous_event_hash != previous_hash:
                     raise GovernanceEventError("AUDIT_HASH_CHAIN_INVALID")
                 expected_hash = cls._audit_hash_from_view(view)
                 if view.event_hash != expected_hash:
                     raise GovernanceEventError("AUDIT_HASH_CHAIN_INVALID")
-                outbox_count = connection.execute(
+                outbox_rows = connection.execute(
                     """
-                    SELECT COUNT(*) FROM governance_outbox_events
+                    SELECT destination_ref, supersession_key, payload_digest,
+                           payload_json, source_state_revision
+                    FROM governance_outbox_events
                     WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
                       AND aggregate_sequence = ?
+                    ORDER BY destination_ref
                     """,
                     (*cls._identity(ref), expected_sequence),
-                ).fetchone()
-                if outbox_count is None or int(outbox_count[0]) < 1:
+                ).fetchall()
+                destination_refs = tuple(str(row[0]) for row in outbox_rows)
+                expected_payload_digest, expected_state_revision, _, _ = decision_commands[
+                    view.command_id
+                ]
+                if any(
+                    str(outbox_row[2]) != expected_payload_digest
+                    or cls._digest(str(outbox_row[3]).encode("utf-8")) != expected_payload_digest
+                    or int(outbox_row[4]) != expected_state_revision
+                    for outbox_row in outbox_rows
+                ):
+                    raise GovernanceEventError("AUDIT_OUTBOX_PAYLOAD_MISMATCH")
+                manifest_digest = cls._destination_manifest_digest(
+                    tuple(
+                        OutboxDestination(
+                            destination_ref=str(outbox_row[0]),
+                            supersession_key=(
+                                str(outbox_row[1]) if outbox_row[1] is not None else None
+                            ),
+                        )
+                        for outbox_row in outbox_rows
+                    )
+                )
+                if (
+                    len(destination_refs) != view.destination_count
+                    or manifest_digest != view.destination_manifest_digest
+                ):
                     raise GovernanceEventError("AUDIT_OUTBOX_MISMATCH")
                 previous_hash = view.event_hash
             if len(events) != int(aggregate[3]) or previous_hash != aggregate[4]:
@@ -360,6 +496,43 @@ class GovernanceEventService:
             ).fetchone()
             if (has_blocking_hold is not None) != bool(operator_hold):
                 raise GovernanceEventError("OUTBOX_OPERATOR_HOLD_MISMATCH")
+            for sequence, _digest, _payload, state in rows:
+                event_id_row = connection.execute(
+                    """
+                    SELECT event_id FROM governance_outbox_events
+                    WHERE destination_ref = ? AND destination_sequence = ?
+                    """,
+                    (destination_ref, sequence),
+                ).fetchone()
+                if event_id_row is None:
+                    raise GovernanceEventError("OUTBOX_SEQUENCE_GAP")
+                event_id = str(event_id_row[0])
+                dead_letters = int(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM governance_outbox_dead_letters WHERE event_id = ?",
+                        (event_id,),
+                    ).fetchone()[0]
+                )
+                holds = int(
+                    connection.execute(
+                        """
+                        SELECT COUNT(*) FROM governance_operator_holds
+                        WHERE source_event_id = ? AND scope_ref = ? AND resolved_at IS NULL
+                        """,
+                        (event_id, destination_ref),
+                    ).fetchone()[0]
+                )
+                expected = (
+                    1
+                    if str(state)
+                    in {
+                        OutboxState.DEAD_LETTER.value,
+                        OutboxState.RECOVERY_HOLD.value,
+                    }
+                    else 0
+                )
+                if dead_letters != expected or holds != expected:
+                    raise GovernanceEventError("OUTBOX_OPERATOR_HOLD_MISMATCH")
 
     def _enqueue(
         self,
@@ -451,6 +624,8 @@ class GovernanceEventService:
             before_state=view.before_state,
             after_state=view.after_state,
             definition_digest=view.definition_digest,
+            destination_manifest_digest=view.destination_manifest_digest,
+            destination_count=view.destination_count,
             previous_event_hash=view.previous_event_hash,
             occurred_at=GovernanceEventService._timestamp(view.occurred_at),
         )
@@ -479,6 +654,51 @@ class GovernanceEventService:
         )
 
     @staticmethod
+    def _decision_destinations(
+        ref: ProposalRef,
+        authority: AuthorityContext,
+    ) -> tuple[OutboxDestination, OutboxDestination]:
+        channel_json = GovernanceEventService._canonical_json(
+            authority.source.channel.model_dump(mode="json", exclude_none=True)
+        )
+        channel_digest = hashlib.sha256(channel_json.encode("utf-8")).hexdigest()
+        return (
+            OutboxDestination(
+                destination_ref=(
+                    f"yaml:{ref.project_ref.namespace}:"
+                    f"{ref.project_ref.project_id}:{ref.proposal_id}"
+                )
+            ),
+            OutboxDestination(
+                destination_ref=(
+                    f"provider:{authority.source.channel.provider.value}:{channel_digest}"
+                ),
+                supersession_key=f"proposal-card:{ref.proposal_id}",
+            ),
+        )
+
+    @staticmethod
+    def _destination_manifest_digest(destinations: Sequence[OutboxDestination]) -> str:
+        manifest = sorted(
+            (
+                {
+                    "destination_ref": destination.destination_ref,
+                    "supersession_key": destination.supersession_key,
+                }
+                for destination in destinations
+            ),
+            key=lambda item: str(item["destination_ref"]),
+        )
+        return GovernanceEventService._digest(
+            GovernanceEventService._canonical_json({"destinations": manifest}).encode("utf-8")
+        )
+
+    @staticmethod
+    def _decision_command_id(idempotency_key: str) -> str:
+        digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+        return f"decision:sha256:{digest}"
+
+    @staticmethod
     def _audit_view(row: tuple[object, ...]) -> AuditEventView:
         return AuditEventView.model_validate(
             {
@@ -496,9 +716,11 @@ class GovernanceEventService:
                 "before_state": row[10],
                 "after_state": row[11],
                 "definition_digest": row[12],
-                "previous_event_hash": row[13],
-                "event_hash": row[14],
-                "occurred_at": row[15],
+                "destination_manifest_digest": row[13],
+                "destination_count": row[14],
+                "previous_event_hash": row[15],
+                "event_hash": row[16],
+                "occurred_at": row[17],
             }
         )
 
@@ -741,10 +963,27 @@ class OutboxDispatcher:
                 or current.destination_sequence >= replacement.destination_sequence
             ):
                 raise GovernanceEventError("OUTBOX_SUPERSEDE_INVALID")
-            connection.execute(
-                "UPDATE governance_outbox_events SET state = 'superseded' WHERE event_id = ?",
-                (event_id,),
+            updated = connection.execute(
+                """
+                UPDATE governance_outbox_events SET state = 'superseded'
+                WHERE event_id = ? AND state = 'pending'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM governance_outbox_events later
+                    WHERE later.destination_ref = ?
+                      AND later.supersession_key = ?
+                      AND later.state = 'pending'
+                      AND later.destination_sequence > ?
+                  )
+                """,
+                (
+                    event_id,
+                    current.destination_ref,
+                    current.supersession_key,
+                    replacement.destination_sequence,
+                ),
             )
+            if updated.rowcount != 1:
+                raise GovernanceEventError("OUTBOX_SUPERSEDE_INVALID")
             return self._get_in_connection(connection, event_id)
 
     def deliver_next(
