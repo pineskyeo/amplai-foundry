@@ -2104,8 +2104,18 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
         assert yaml_rows == [
             (1, item.state_revision + 2),
             (2, item.state_revision + 3),
-            (3, item.state_revision + 4),
         ]
+        assert connection.execute(
+            """
+            SELECT destination_sequence, source_state_revision
+            FROM governance_outbox_events
+            WHERE destination_ref = ?
+            """,
+            (
+                f"migration-history:{plan.plan_id}:{PROJECT.namespace}:"
+                f"{PROJECT.project_id}:{PROPOSAL_ID}",
+            ),
+        ).fetchall() == [(1, item.state_revision)]
         assert connection.execute(
             "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
             (v18_apply.job_id,),
@@ -2141,6 +2151,199 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
             idempotency_key="v18-progressed-review",
             request_fingerprint="b" * 64,
         )
+
+
+def test_progressed_v18_backfill_preserves_next_active_projection_revision(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status="reviewed")
+    _source_store, objects, dry_run, source_service, backup = _import_fixture(
+        tmp_path / "source-fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    imported = source_service.import_state(plan, backup)
+    item = plan.proposals[0]
+    assert item.approval_disposition is LegacyApprovalDisposition.NOT_REQUIRED
+
+    path = tmp_path / "reviewed-v18-runtime" / "governance.db"
+    v18 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:18]))
+    v18.initialize()
+    with v18.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals(
+                project_namespace, project_id, proposal_id, active_definition_digest,
+                content_revision, state_revision, decision_epoch, status,
+                created_at, updated_at, applied_revision
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'reviewed', ?, ?, NULL)
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                imported.definition_digests[0],
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_definition_revisions(
+                project_namespace, project_id, proposal_id, content_revision,
+                definition_digest, previous_definition_digest, activated_from_status,
+                activated_at
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                item.content_revision,
+                imported.definition_digests[0],
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migrations(
+                migration_id, project_namespace, project_id, freeze_id,
+                snapshot_id, snapshot_digest, plan_digest, mapping_policy_version,
+                base_revision, validation_policy_ref, project_pack_backup_path,
+                project_pack_backup_digest, governance_backup_path,
+                governance_backup_digest, proposal_count, status, prepared_at,
+                state_imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1,
+                      'state_imported', ?, ?)
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                plan.freeze.freeze_id,
+                plan.snapshot_id,
+                plan.snapshot_digest,
+                plan.plan_digest,
+                plan.mapping_policy_version,
+                plan.base_revision,
+                plan.validation_policy_ref,
+                backup.project_pack_backup_path,
+                backup.project_pack_backup_digest,
+                backup.governance_backup_path,
+                backup.governance_backup_digest,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_items(
+                migration_id, project_namespace, project_id, proposal_id,
+                source_status, source_revision, target_status, definition_digest,
+                proposal_artifact_digest, content_revision, state_revision,
+                decision_epoch, approval_disposition, imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                item.source_status.value,
+                item.source_revision,
+                item.target_status.value,
+                imported.definition_digests[0],
+                item.proposal_artifact_digest,
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                item.approval_disposition.value,
+                NOW.isoformat(),
+            ),
+        )
+
+    authority_request = _migration_authority(v18)
+    authority = AuthorityService(v18, clock=lambda: NOW)
+    decisions = DecisionService(v18, authority, clock=lambda: NOW)
+    approve = next(
+        token
+        for token in decisions.issue_tokens(
+            item.proposal_ref,
+            authority_request=authority_request,
+        )
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    decision_key = "v18-reviewed-approved-decision"
+    decisions.decide(
+        item.proposal_ref,
+        action=DecisionAction.APPROVE,
+        authority_request=authority_request,
+        raw_token=approve.raw_token,
+        idempotency_key=decision_key,
+        request_fingerprint="c" * 64,
+    )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    assert (
+        LegacyProposalImportService(dry_run, latest, objects).import_state(plan, backup) == imported
+    )
+    latest_authority = AuthorityService(latest, clock=lambda: NOW)
+    grant = ApplyGrantService(
+        latest,
+        latest_authority,
+        objects,
+        clock=lambda: NOW,
+    )._issue_from_approved_decision(
+        decision_key,
+        authority_request=authority_request,
+    )
+    ApplyRequestService(latest, latest_authority, clock=lambda: NOW).request_apply(
+        item.proposal_ref,
+        authority_request=authority_request,
+        raw_grant=grant.raw_grant,
+        idempotency_key="post-backfill-apply-request",
+        request_fingerprint="d" * 64,
+    )
+
+    yaml_destination = f"yaml:{PROJECT.namespace}:{PROJECT.project_id}:{PROPOSAL_ID}"
+    history_destination = (
+        f"migration-history:{plan.plan_id}:{PROJECT.namespace}:{PROJECT.project_id}:{PROPOSAL_ID}"
+    )
+    with latest.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT destination_sequence, source_state_revision
+            FROM governance_outbox_events
+            WHERE destination_ref = ? ORDER BY destination_sequence
+            """,
+            (yaml_destination,),
+        ).fetchall() == [
+            (1, item.state_revision + 1),
+            (2, item.state_revision + 2),
+        ]
+        assert connection.execute(
+            """
+            SELECT destination_sequence, source_state_revision
+            FROM governance_outbox_events WHERE destination_ref = ?
+            """,
+            (history_destination,),
+        ).fetchall() == [(1, item.state_revision)]
+        assert connection.execute(
+            """
+            SELECT status, state_revision FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        ).fetchone() == ("apply_requested", item.state_revision + 2)
+    GovernanceEventService(latest).reconcile()
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

@@ -1090,6 +1090,68 @@ def test_apply_job_lease_reclaim_increments_fence_and_rejects_stale_worker(
         )
 
 
+def test_apply_job_heartbeat_rechecks_legacy_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-legacy-heartbeat")
+    assert claimed is not None
+
+    def blocked(_connection: sqlite3.Connection, _job_id: str) -> None:
+        raise ApplyGovernanceError("LEGACY_APPROVAL_REVIEW_REQUIRED")
+
+    monkeypatch.setattr(ApplyJobService, "_require_legacy_ready", staticmethod(blocked))
+    with pytest.raises(ApplyGovernanceError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
+        jobs.heartbeat(
+            job_id,
+            worker_id="worker-legacy-heartbeat",
+            fencing_token=claimed.fencing_token,
+        )
+
+
+def test_apply_job_claim_skips_blocked_oldest_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store, blocked_job_id = _queued_job_fixture(tmp_path)
+    eligible_job_id = "JOB-0000000000000002"
+    with store.connect() as connection:
+        connection.execute("DROP INDEX governance_one_active_apply_job")
+        connection.execute(
+            """
+            INSERT INTO governance_apply_jobs
+            SELECT ?, snapshot_id, project_namespace, project_id, proposal_id,
+                   approved_snapshot_digest, expected_base_revision, status,
+                   attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
+                   staged_artifact_digest, publish_request_digest, last_error_code,
+                   ?, ?
+            FROM governance_apply_jobs WHERE job_id = ?
+            """,
+            (
+                eligible_job_id,
+                (NOW + timedelta(seconds=1)).isoformat(),
+                (NOW + timedelta(seconds=1)).isoformat(),
+                blocked_job_id,
+            ),
+        )
+
+    original_gate = ApplyJobService._require_legacy_ready
+
+    def gate(connection: sqlite3.Connection, job_id: str) -> None:
+        if job_id == blocked_job_id:
+            raise ApplyGovernanceError("LEGACY_MIGRATION_EVENT_BACKFILL_PENDING")
+        original_gate(connection, job_id)
+
+    monkeypatch.setattr(ApplyJobService, "_require_legacy_ready", staticmethod(gate))
+    claimed = ApplyJobService(store, clock=lambda: NOW).claim_next("worker-eligible")
+
+    assert claimed is not None
+    assert claimed.job_id == eligible_job_id
+    assert (
+        ApplyJobService(store, clock=lambda: NOW).get_job(blocked_job_id).status.value == "queued"
+    )
+
+
 def test_apply_job_retry_wait_reclaims_only_after_due_time(tmp_path: Path) -> None:
     store, job_id = _queued_job_fixture(tmp_path)
     clock = [NOW]

@@ -81,6 +81,7 @@ class LegacyMigrationProjectionPayload(BaseModel):
     idempotency_key: str = Field(min_length=1)
     mapping_policy_version: int = Field(ge=1)
     migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    projection_destination_ref: str | None = Field(default=None, min_length=1)
     reason: str | None = None
     imported_state_revision: int = Field(ge=1)
     source_artifact_digest: Digest
@@ -389,10 +390,9 @@ class GovernanceEventService:
             ),
             destinations=(
                 OutboxDestination(
-                    destination_ref=(
-                        f"yaml:{ref.project_ref.namespace}:"
-                        f"{ref.project_ref.project_id}:{ref.proposal_id}"
-                    )
+                    destination_ref=payload.projection_destination_ref
+                    or f"yaml:{ref.project_ref.namespace}:"
+                    f"{ref.project_ref.project_id}:{ref.proposal_id}"
                 ),
             ),
             before_state=payload.source_status,
@@ -966,7 +966,9 @@ class GovernanceEventService:
                 raise GovernanceEventError("LEGACY_MIGRATION_EVENT_ROOT_MISMATCH") from error
             ref = cls._proposal_ref(legacy[2], legacy[3], legacy[4])
             expected_destination = OutboxDestination(
-                destination_ref=f"yaml:{legacy[2]}:{legacy[3]}:{legacy[4]}"
+                destination_ref=legacy_payload.projection_destination_ref
+                or f"yaml:{ref.project_ref.namespace}:"
+                f"{ref.project_ref.project_id}:{ref.proposal_id}"
             )
             expected_payload_digest = cls._digest(str(legacy[16]).encode("utf-8"))
             if (

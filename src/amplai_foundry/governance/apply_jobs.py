@@ -858,7 +858,7 @@ class ApplyJobService:
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
             lease_expires = ApplyGrantService._timestamp(now + lease_ttl)
-            row = connection.execute(
+            rows = connection.execute(
                 """
                 SELECT job_id, status, fencing_token, lease_expires_at, attempts
                 FROM governance_apply_jobs
@@ -867,13 +867,24 @@ class ApplyJobService:
                    OR (status IN ('leased', 'running') AND lease_expires_at <= ?)
                 ORDER BY CASE WHEN attempts < ? THEN 0 ELSE 1 END,
                          created_at, job_id
-                LIMIT 1
                 """,
                 (timestamp, timestamp, self._max_attempts),
-            ).fetchone()
+            ).fetchall()
+            row = None
+            for candidate in rows:
+                try:
+                    self._require_legacy_ready(connection, str(candidate[0]))
+                except ApplyGovernanceError as error:
+                    if error.code in {
+                        "LEGACY_MIGRATION_EVENT_BACKFILL_PENDING",
+                        "LEGACY_APPROVAL_REVIEW_REQUIRED",
+                    }:
+                        continue
+                    raise
+                row = candidate
+                break
             if row is None:
                 return None
-            self._require_legacy_ready(connection, str(row[0]))
             if int(row[4]) >= self._max_attempts:
                 dead_lettered = connection.execute(
                     """
@@ -961,6 +972,7 @@ class ApplyJobService:
         if lease_ttl <= timedelta(0):
             raise ValueError("lease TTL은 0보다 커야 합니다.")
         with self.store.connect() as connection, governance_transaction(connection):
+            self._require_legacy_ready(connection, job_id)
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
             expires = ApplyGrantService._timestamp(now + lease_ttl)

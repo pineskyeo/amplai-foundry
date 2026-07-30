@@ -1452,6 +1452,7 @@ class LegacyProposalImportService:
         prepared: _PreparedLegacyDefinition,
         *,
         projection_state_revision: int | None = None,
+        projection_destination_ref: str | None = None,
     ) -> None:
         item = prepared.plan_item
         evidence = prepared.approval_evidence
@@ -1514,6 +1515,12 @@ class LegacyProposalImportService:
             idempotency_key=idempotency_key,
             mapping_policy_version=plan.mapping_policy_version,
             migration_id=plan.plan_id,
+            projection_destination_ref=projection_destination_ref
+            or (
+                f"yaml:{item.proposal_ref.project_ref.namespace}:"
+                f"{item.proposal_ref.project_ref.project_id}:"
+                f"{item.proposal_ref.proposal_id}"
+            ),
             reason=reason,
             imported_state_revision=item.state_revision,
             source_artifact_digest=prepared.approval_artifact_digest,
@@ -1955,8 +1962,12 @@ class LegacyProposalImportService:
                         if actual_command != expected_command:
                             raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
                     if pending is not None:
-                        projection_state_revision = self._backfill_projection_revision(
+                        (
+                            projection_destination_ref,
+                            projection_state_revision,
+                        ) = self._backfill_projection_target(
                             connection,
+                            plan,
                             item,
                             active,
                         )
@@ -1976,6 +1987,7 @@ class LegacyProposalImportService:
                                 expected_source_digest,
                             ),
                             projection_state_revision=projection_state_revision,
+                            projection_destination_ref=projection_destination_ref,
                         )
                 except (DefinitionObjectStoreError, ValidationError, yaml.YAMLError) as error:
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
@@ -1986,11 +1998,12 @@ class LegacyProposalImportService:
         return self._result(plan)
 
     @staticmethod
-    def _backfill_projection_revision(
+    def _backfill_projection_target(
         connection: sqlite3.Connection,
+        plan: LegacyProposalMigrationPlan,
         item: LegacyProposalPlanItem,
         active: sqlite3.Row | tuple[object, ...],
-    ) -> int:
+    ) -> tuple[str, int]:
         destination_ref = (
             f"yaml:{item.proposal_ref.project_ref.namespace}:"
             f"{item.proposal_ref.project_ref.project_id}:{item.proposal_ref.proposal_id}"
@@ -2003,8 +2016,15 @@ class LegacyProposalImportService:
             (destination_ref,),
         ).fetchone()
         current_revision = int(str(active[2]))
-        latest_revision = int(latest[0]) if latest is not None else 0
-        return max(item.state_revision, current_revision, latest_revision + 1)
+        if latest is None:
+            return destination_ref, max(item.state_revision, current_revision)
+        historical_destination_ref = (
+            f"migration-history:{plan.plan_id}:"
+            f"{item.proposal_ref.project_ref.namespace}:"
+            f"{item.proposal_ref.project_ref.project_id}:"
+            f"{item.proposal_ref.proposal_id}"
+        )
+        return historical_destination_ref, item.state_revision
 
     @staticmethod
     def _require_root_identity(
