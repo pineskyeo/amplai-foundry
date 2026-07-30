@@ -3166,6 +3166,60 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=26,
+        name="legacy-rollback-destination-provenance",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_import_destination_roots (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                destination_ref TEXT NOT NULL,
+                existed_before INTEGER NOT NULL CHECK (existed_before IN (0, 1)),
+                previous_next_sequence INTEGER,
+                previous_delivered_sequence INTEGER,
+                previous_operator_hold INTEGER,
+                previous_updated_at TEXT,
+                captured_at TEXT NOT NULL,
+                PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_migration_items(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    (
+                        existed_before = 0
+                        AND previous_next_sequence IS NULL
+                        AND previous_delivered_sequence IS NULL
+                        AND previous_operator_hold IS NULL
+                        AND previous_updated_at IS NULL
+                    )
+                    OR
+                    (
+                        existed_before = 1
+                        AND previous_next_sequence >= 1
+                        AND previous_delivered_sequence >= 0
+                        AND previous_delivered_sequence < previous_next_sequence
+                        AND previous_operator_hold IN (0, 1)
+                        AND previous_updated_at IS NOT NULL
+                    )
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_import_destination_roots_no_update
+            BEFORE UPDATE ON governance_legacy_import_destination_roots
+            BEGIN SELECT RAISE(ABORT, 'legacy destination provenance is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_import_destination_roots_no_delete
+            BEFORE DELETE ON governance_legacy_import_destination_roots
+            BEGIN SELECT RAISE(ABORT, 'legacy destination provenance is durable'); END
+            """,
+        ),
+    ),
 )
 
 

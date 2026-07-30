@@ -242,6 +242,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (23, "legacy-verification-idempotency-binding"),
         (24, "legacy-migration-lifecycle-gate"),
         (25, "legacy-lifecycle-compatibility-hardening"),
+        (26, "legacy-rollback-destination-provenance"),
     ]
     assert INITIAL_MIGRATIONS[19].checksum == (
         "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"
@@ -260,6 +261,9 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     )
     assert INITIAL_MIGRATIONS[24].checksum == (
         "7982b44fe801c1742e88deebef8c78315aab0bdb1a44f0002dfdfda66cdeb369"
+    )
+    assert INITIAL_MIGRATIONS[25].checksum == (
+        "f3e51e4eaf5d5a82248f4d5f0e381c7c2868e0f1f82d2b97e7b47b8c4b1e1921"
     )
     assert metadata == ("amplai-governance",)
 

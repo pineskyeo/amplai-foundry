@@ -2040,6 +2040,13 @@ class LegacyProposalImportService:
         )
         payload_json = _compact_json(payload.model_dump(mode="json"))
         payload_digest = sha256_digest(payload_json.encode("utf-8"))
+        destination_before = connection.execute(
+            """
+            SELECT next_sequence, delivered_sequence, operator_hold, updated_at
+            FROM governance_outbox_destinations WHERE destination_ref = ?
+            """,
+            (payload.projection_destination_ref,),
+        ).fetchone()
         existing_idempotency = connection.execute(
             """
             SELECT request_fingerprint FROM governance_legacy_import_commands
@@ -2109,7 +2116,7 @@ class LegacyProposalImportService:
                     occurred_text,
                 ),
             )
-        GovernanceEventService(
+        _audit, outbox = GovernanceEventService(
             self.store,
             clock=lambda: occurred_at,
         )._append_legacy_import_in_transaction(
@@ -2118,6 +2125,39 @@ class LegacyProposalImportService:
             command_id=command_id,
             payload=payload,
         )
+        destination_provenance_table = connection.execute(
+            """
+            SELECT 1 FROM sqlite_schema
+            WHERE type = 'table'
+              AND name = 'governance_legacy_import_destination_roots'
+            """
+        ).fetchone()
+        if destination_provenance_table is not None:
+            if len(outbox) != 1 or outbox[0].destination_ref != payload.projection_destination_ref:
+                raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
+            connection.execute(
+                """
+                INSERT INTO governance_legacy_import_destination_roots(
+                    migration_id, project_namespace, project_id, proposal_id,
+                    destination_ref, existed_before, previous_next_sequence,
+                    previous_delivered_sequence, previous_operator_hold,
+                    previous_updated_at, captured_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    plan.plan_id,
+                    item.proposal_ref.project_ref.namespace,
+                    item.proposal_ref.project_ref.project_id,
+                    item.proposal_ref.proposal_id,
+                    payload.projection_destination_ref,
+                    int(destination_before is not None),
+                    destination_before[0] if destination_before is not None else None,
+                    destination_before[1] if destination_before is not None else None,
+                    destination_before[2] if destination_before is not None else None,
+                    destination_before[3] if destination_before is not None else None,
+                    occurred_text,
+                ),
+            )
         connection.execute(
             """
             DELETE FROM governance_legacy_event_backfill_pending
