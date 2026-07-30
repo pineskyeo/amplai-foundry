@@ -1165,7 +1165,7 @@ class LegacyProposalImportService:
         backup: LegacyMigrationBackupEvidence,
     ) -> LegacyMigrationImportResult | None:
         values = self._root_values(plan, backup)
-        with self.store.connect() as connection:
+        with self.store.connect() as connection, governance_transaction(connection):
             root = self._select_root(connection, plan.plan_id)
             if root is None or str(root[15]) != "state_imported":
                 return None
@@ -1195,7 +1195,6 @@ class LegacyProposalImportService:
                     int(row[7]),
                     int(row[8]),
                     str(row[9]),
-                    str(row[10]) if row[10] is not None else None,
                 )
                 expected_without_digest = (
                     item.proposal_ref.proposal_id,
@@ -1207,9 +1206,16 @@ class LegacyProposalImportService:
                     item.state_revision,
                     item.decision_epoch,
                     item.approval_disposition.value,
-                    item.legacy_git_revision,
                 )
                 if actual_without_digest != expected_without_digest:
+                    raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                persisted_git_revision = str(row[10]) if row[10] is not None else None
+                provenance_repair_required = (
+                    persisted_git_revision is None and item.legacy_git_revision is not None
+                )
+                if not provenance_repair_required and (
+                    persisted_git_revision != item.legacy_git_revision
+                ):
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
                 definition_digest = str(row[4])
                 active = connection.execute(
@@ -1277,12 +1283,39 @@ class LegacyProposalImportService:
                         or manifest.preconditions != (expected_mapping,)
                     ):
                         raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                    proposal_payload: bytes | None = None
                     for descriptor in manifest.apply_inputs:
-                        self.objects.get_input_object(
+                        input_payload = self.objects.get_input_object(
                             item.proposal_ref,
                             descriptor.object_digest,
                         )
-                except (DefinitionObjectStoreError, ValidationError) as error:
+                        if descriptor.logical_name == "proposal.yaml":
+                            proposal_payload = input_payload
+                    if provenance_repair_required:
+                        if proposal_payload is None:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                        legacy_proposal = Proposal.model_validate(yaml.safe_load(proposal_payload))
+                        if legacy_proposal.git_commit_sha != item.legacy_git_revision:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                        repaired = connection.execute(
+                            """
+                            UPDATE governance_legacy_migration_items
+                            SET legacy_git_revision = ?
+                            WHERE migration_id = ? AND project_namespace = ?
+                              AND project_id = ? AND proposal_id = ?
+                              AND legacy_git_revision IS NULL
+                            """,
+                            (
+                                item.legacy_git_revision,
+                                plan.plan_id,
+                                plan.project_ref.namespace,
+                                plan.project_ref.project_id,
+                                item.proposal_ref.proposal_id,
+                            ),
+                        )
+                        if repaired.rowcount != 1:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                except (DefinitionObjectStoreError, ValidationError, yaml.YAMLError) as error:
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
         return self._result(plan)
 

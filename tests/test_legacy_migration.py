@@ -983,6 +983,7 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migrations_no_delete",
         "governance_legacy_migration_items_insert_guard",
         "governance_legacy_migration_items_no_update",
+        "governance_legacy_migration_items_provenance_guard",
         "governance_legacy_migration_items_no_delete",
     }
 
@@ -1097,6 +1098,156 @@ def test_populated_v18_store_upgrades_to_v19_without_rewriting_migration_evidenc
             connection.execute("UPDATE governance_legacy_migration_items SET source_revision = 2")
         with pytest.raises(sqlite3.DatabaseError, match="root is durable"):
             connection.execute("DELETE FROM governance_legacy_migrations")
+
+
+def test_populated_v18_applied_hold_upgrade_repairs_git_provenance_on_replay(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status="applied")
+    _source_store, objects, dry_run, source_service, backup = _import_fixture(
+        tmp_path / "source-fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    imported = source_service.import_state(plan, backup)
+    item = plan.proposals[0]
+    assert item.source_status.value == "applied"
+    assert item.target_status.value == "legacy_approval_review_required"
+    assert item.legacy_git_revision == "a13d92f"
+
+    path = tmp_path / "v18-runtime" / "governance.db"
+    v18 = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:18]),
+    )
+    v18.initialize()
+    with v18.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals(
+                project_namespace, project_id, proposal_id, active_definition_digest,
+                content_revision, state_revision, decision_epoch, status,
+                created_at, updated_at, applied_revision
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'changes_requested', ?, ?, NULL)
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                imported.definition_digests[0],
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_definition_revisions(
+                project_namespace, project_id, proposal_id, content_revision,
+                definition_digest, previous_definition_digest, activated_from_status,
+                activated_at
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                item.content_revision,
+                imported.definition_digests[0],
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migrations(
+                migration_id, project_namespace, project_id, freeze_id,
+                snapshot_id, snapshot_digest, plan_digest, mapping_policy_version,
+                base_revision, validation_policy_ref, project_pack_backup_path,
+                project_pack_backup_digest, governance_backup_path,
+                governance_backup_digest, proposal_count, status, prepared_at,
+                state_imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1,
+                      'state_imported', ?, ?)
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                plan.freeze.freeze_id,
+                plan.snapshot_id,
+                plan.snapshot_digest,
+                plan.plan_digest,
+                plan.mapping_policy_version,
+                plan.base_revision,
+                plan.validation_policy_ref,
+                backup.project_pack_backup_path,
+                backup.project_pack_backup_digest,
+                backup.governance_backup_path,
+                backup.governance_backup_digest,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_items(
+                migration_id, project_namespace, project_id, proposal_id,
+                source_status, source_revision, target_status, definition_digest,
+                proposal_artifact_digest, content_revision, state_revision,
+                decision_epoch, approval_disposition, imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                item.source_status.value,
+                item.source_revision,
+                item.target_status.value,
+                imported.definition_digests[0],
+                item.proposal_artifact_digest,
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                item.approval_disposition.value,
+                NOW.isoformat(),
+            ),
+        )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == 19
+    with latest.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT status, applied_revision FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        ).fetchone() == ("draft", None)
+        assert connection.execute(
+            "SELECT legacy_git_revision FROM governance_legacy_migration_items"
+        ).fetchone() == (None,)
+
+    replay_service = LegacyProposalImportService(dry_run, latest, objects)
+    assert replay_service.import_state(plan, backup) == imported
+    with latest.connect() as connection:
+        assert connection.execute(
+            "SELECT legacy_git_revision FROM governance_legacy_migration_items"
+        ).fetchone() == ("a13d92f",)
+        with pytest.raises(sqlite3.DatabaseError, match="provenance repair is invalid"):
+            connection.execute(
+                """
+                UPDATE governance_legacy_migration_items
+                SET legacy_git_revision = 'fffffff'
+                """
+            )
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:
