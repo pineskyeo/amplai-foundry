@@ -493,15 +493,25 @@ class LegacyMigrationForwardRecoveryExecutor:
                     if row is None:
                         raise LegacyMigrationLifecycleError("LEGACY_FORWARD_RECOVERY_PLAN_STALE")
                     current = repository._view(row, root.proposal_ref)
-                    updated = repository._activate_next_for_legacy_forward_recovery(
+                    recovery_scope = repository._begin_legacy_forward_recovery_scope(
                         connection,
-                        current,
-                        root.active_definition_digest,
-                        root.state_revision,
-                        next_object.digest,
                         recovery_id=recovery_id,
                         migration_id=plan.migration_id,
+                        proposal_refs=(root.proposal_ref,),
                     )
+                    try:
+                        updated = repository._activate_next_for_legacy_forward_recovery(
+                            connection,
+                            current,
+                            root.active_definition_digest,
+                            root.state_revision,
+                            next_object.digest,
+                            recovery_id=recovery_id,
+                            migration_id=plan.migration_id,
+                            recovery_scope=recovery_scope,
+                        )
+                    finally:
+                        repository._end_legacy_forward_recovery_scope(recovery_scope)
                     item_id = self._identifier("LFI")
                     payload = LegacyForwardRecoveryProjectionPayload(
                         aggregate_ref=root.proposal_ref,

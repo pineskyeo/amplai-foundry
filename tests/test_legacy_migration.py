@@ -3927,7 +3927,7 @@ def test_forward_recovery_executor_atomically_revises_and_replays(tmp_path: Path
         current_before_recovery.active_definition_digest == plan.roots[0].active_definition_digest
     )
     with store.connect() as connection:
-        with pytest.raises(ActiveProposalError, match="LEGACY_FORWARD_RECOVERY_REQUIRED"):
+        with pytest.raises(ActiveProposalError, match="GOVERNANCE_TRANSACTION_REQUIRED"):
             active_repository._activate_next_for_legacy_forward_recovery(
                 connection,
                 current_before_recovery,
@@ -3936,10 +3936,65 @@ def test_forward_recovery_executor_atomically_revises_and_replays(tmp_path: Path
                 next_object.digest,
                 recovery_id="LFR-0000000000000000",
                 migration_id=migration.plan_id,
+                recovery_scope=object(),
             )
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_forward_recovery_commands"
         ).fetchone() == (0,)
+
+    incomplete_path = tmp_path / "incomplete-command.db"
+    with store.connect() as source, sqlite3.connect(incomplete_path) as target:
+        source.backup(target)
+    incomplete_store = GovernanceStore(incomplete_path)
+    incomplete_recovery_id = "LFR-0000000000000001"
+    with incomplete_store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_forward_recovery_commands(
+                recovery_id, migration_id, project_namespace, project_id,
+                idempotency_key, request_fingerprint, recovery_root_digest,
+                expected_lifecycle_revision, activation_event_digest,
+                actor_id, actor_type, request_id, channel_json, reason, occurred_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                incomplete_recovery_id,
+                migration.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                "legacy-forward-recovery:committed-incomplete:1",
+                "f" * 64,
+                plan.recovery_root_digest,
+                plan.expected_lifecycle_revision,
+                plan.activation_event_digest,
+                MANAGER.actor_id,
+                MANAGER.actor_type.value,
+                "REQ-COMMITTED-INCOMPLETE",
+                "{}",
+                "committed incomplete command must not become a later capability",
+                NOW.isoformat().replace("+00:00", "Z"),
+            ),
+        )
+    incomplete_repository = ActiveProposalRepository(incomplete_store, objects)
+    incomplete_current = incomplete_repository.get(ref)
+    assert incomplete_current is not None
+    with (
+        incomplete_store.connect() as connection,
+        governance_transaction(connection),
+        pytest.raises(ActiveProposalError, match="LEGACY_FORWARD_RECOVERY_REQUIRED"),
+    ):
+        incomplete_repository._activate_next_for_legacy_forward_recovery(
+            connection,
+            incomplete_current,
+            plan.roots[0].active_definition_digest,
+            plan.roots[0].state_revision,
+            next_object.digest,
+            recovery_id=incomplete_recovery_id,
+            migration_id=migration.plan_id,
+            recovery_scope=object(),
+        )
+    unchanged_incomplete = incomplete_repository.get(ref)
+    assert unchanged_incomplete == incomplete_current
 
     result = executor.execute(
         plan,

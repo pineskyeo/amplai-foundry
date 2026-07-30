@@ -67,7 +67,6 @@ _STATE_ONLY_TRANSITIONS = {
 _DEFINITION_REVISION_STATUSES = frozenset(
     {ActiveProposalStatus.DRAFT, ActiveProposalStatus.CHANGES_REQUESTED}
 )
-_LEGACY_FORWARD_RECOVERY_CAPABILITY = object()
 
 
 def state_transition_allowed(
@@ -113,6 +112,10 @@ class ActiveProposalRepository:
     def __init__(self, store: GovernanceStore, definitions: DefinitionObjectReader) -> None:
         self.store = store
         self.definitions = definitions
+        self._legacy_forward_recovery_scopes: dict[
+            object,
+            tuple[sqlite3.Connection, str, str, tuple[ProposalRef, ...]],
+        ] = {}
 
     def get(self, ref: ProposalRef) -> ActiveProposalView | None:
         with self.store.connect() as connection:
@@ -241,12 +244,13 @@ class ActiveProposalRepository:
         expected_state_revision: int,
         next_digest: str,
         *,
-        _legacy_recovery_capability: object | None = None,
+        _legacy_recovery_scope: object | None = None,
     ) -> ActiveProposalView:
         recovery_block = legacy_definition_revision_block(connection, current.proposal_ref)
-        if (
-            recovery_block is not None
-            and _legacy_recovery_capability is not _LEGACY_FORWARD_RECOVERY_CAPABILITY
+        if recovery_block is not None and not self._legacy_forward_recovery_scope_allows(
+            _legacy_recovery_scope,
+            connection,
+            current.proposal_ref,
         ):
             raise ActiveProposalError(recovery_block)
         if (
@@ -326,9 +330,21 @@ class ActiveProposalRepository:
         *,
         recovery_id: str,
         migration_id: str,
+        recovery_scope: object,
     ) -> ActiveProposalView:
         """Activate one revision through the authenticated recovery transaction only."""
 
+        if not connection.in_transaction:
+            raise ActiveProposalError("GOVERNANCE_TRANSACTION_REQUIRED")
+        scope = self._legacy_forward_recovery_scopes.get(recovery_scope)
+        if (
+            scope is None
+            or scope[0] is not connection
+            or scope[1] != recovery_id
+            or scope[2] != migration_id
+            or current.proposal_ref not in scope[3]
+        ):
+            raise ActiveProposalError("LEGACY_FORWARD_RECOVERY_REQUIRED")
         capability = connection.execute(
             """
             SELECT 1
@@ -368,8 +384,41 @@ class ActiveProposalRepository:
             expected_active_digest,
             expected_state_revision,
             next_digest,
-            _legacy_recovery_capability=_LEGACY_FORWARD_RECOVERY_CAPABILITY,
+            _legacy_recovery_scope=recovery_scope,
         )
+
+    def _begin_legacy_forward_recovery_scope(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        recovery_id: str,
+        migration_id: str,
+        proposal_refs: tuple[ProposalRef, ...],
+    ) -> object:
+        if not connection.in_transaction:
+            raise ActiveProposalError("GOVERNANCE_TRANSACTION_REQUIRED")
+        scope = object()
+        self._legacy_forward_recovery_scopes[scope] = (
+            connection,
+            recovery_id,
+            migration_id,
+            proposal_refs,
+        )
+        return scope
+
+    def _end_legacy_forward_recovery_scope(self, recovery_scope: object) -> None:
+        self._legacy_forward_recovery_scopes.pop(recovery_scope, None)
+
+    def _legacy_forward_recovery_scope_allows(
+        self,
+        recovery_scope: object | None,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+    ) -> bool:
+        if recovery_scope is None or not connection.in_transaction:
+            return False
+        scope = self._legacy_forward_recovery_scopes.get(recovery_scope)
+        return scope is not None and scope[0] is connection and ref in scope[3]
 
     @staticmethod
     def _insert_revision(
