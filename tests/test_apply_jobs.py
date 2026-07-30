@@ -862,6 +862,13 @@ def test_apply_job_lease_reclaim_increments_fence_and_rejects_stale_worker(
     assert first.fencing_token == 1
     running = jobs.start(job_id, worker_id="worker-1", fencing_token=1)
     assert running.status.value == "running"
+    heartbeat = jobs.heartbeat(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=1,
+        lease_ttl=timedelta(seconds=1),
+    )
+    assert heartbeat.lease_expires_at == first.lease_expires_at
 
     clock[0] += timedelta(seconds=3)
     second = jobs.claim_next("worker-2", lease_ttl=timedelta(seconds=5))
@@ -872,11 +879,12 @@ def test_apply_job_lease_reclaim_increments_fence_and_rejects_stale_worker(
     with pytest.raises(ApplyGovernanceError, match="APPLY_JOB_FENCE_STALE"):
         jobs.heartbeat(job_id, worker_id="worker-1", fencing_token=1)
     with pytest.raises(ApplyGovernanceError, match="APPLY_JOB_FENCE_STALE"):
-        jobs.stage(
+        jobs.stage_for_publish(
             job_id,
             worker_id="worker-1",
             fencing_token=1,
             artifact_digest=f"sha256:{'a' * 64}",
+            publish_request_digest=f"sha256:{'b' * 64}",
         )
 
 
@@ -903,26 +911,23 @@ def test_apply_job_retry_wait_reclaims_only_after_due_time(tmp_path: Path) -> No
     assert reclaimed.attempts == 2
 
 
-def test_apply_job_stages_and_prepares_publish_without_canonical_write(tmp_path: Path) -> None:
+def test_apply_job_atomically_stages_publish_input_without_canonical_write(
+    tmp_path: Path,
+) -> None:
     store, job_id = _queued_job_fixture(tmp_path)
     jobs = ApplyJobService(store, clock=lambda: NOW)
     claimed = jobs.claim_next("worker-1")
     assert claimed is not None
     jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
-    staged = jobs.stage(
+    publish = jobs.stage_for_publish(
         job_id,
         worker_id="worker-1",
         fencing_token=claimed.fencing_token,
         artifact_digest=f"sha256:{'a' * 64}",
-    )
-    assert staged.status.value == "staged"
-    assert staged.lease_owner is None
-    publish = jobs.prepare_publish(
-        job_id,
-        fencing_token=claimed.fencing_token,
         publish_request_digest=f"sha256:{'b' * 64}",
     )
     assert publish.status.value == "publish_pending"
+    assert publish.lease_owner is None
     assert publish.staged_artifact_digest == f"sha256:{'a' * 64}"
     assert publish.publish_request_digest == f"sha256:{'b' * 64}"
 

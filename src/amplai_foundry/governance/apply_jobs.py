@@ -831,10 +831,10 @@ class ApplyJobService:
         self._validate_worker(worker_id)
         if lease_ttl <= timedelta(0):
             raise ValueError("lease TTL은 0보다 커야 합니다.")
-        now = ApplyGrantService._aware(self._clock())
-        timestamp = ApplyGrantService._timestamp(now)
-        lease_expires = ApplyGrantService._timestamp(now + lease_ttl)
         with self.store.connect() as connection, governance_transaction(connection):
+            now = ApplyGrantService._aware(self._clock())
+            timestamp = ApplyGrantService._timestamp(now)
+            lease_expires = ApplyGrantService._timestamp(now + lease_ttl)
             row = connection.execute(
                 """
                 SELECT job_id, status, fencing_token, lease_expires_at
@@ -893,44 +893,57 @@ class ApplyJobService:
         self._validate_worker(worker_id)
         if lease_ttl <= timedelta(0):
             raise ValueError("lease TTL은 0보다 커야 합니다.")
-        now = ApplyGrantService._aware(self._clock())
-        timestamp = ApplyGrantService._timestamp(now)
-        expires = ApplyGrantService._timestamp(now + lease_ttl)
         with self.store.connect() as connection, governance_transaction(connection):
+            now = ApplyGrantService._aware(self._clock())
+            timestamp = ApplyGrantService._timestamp(now)
+            expires = ApplyGrantService._timestamp(now + lease_ttl)
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs
-                SET lease_expires_at = ?, updated_at = ?
+                SET lease_expires_at = CASE
+                        WHEN lease_expires_at > ? THEN lease_expires_at ELSE ? END,
+                    updated_at = ?
                 WHERE job_id = ? AND status IN ('leased', 'running')
                   AND lease_owner = ? AND fencing_token = ? AND lease_expires_at > ?
                 """,
-                (expires, timestamp, job_id, worker_id, fencing_token, timestamp),
+                (expires, expires, timestamp, job_id, worker_id, fencing_token, timestamp),
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
             return self._job_view(connection, job_id)
 
-    def stage(
+    def stage_for_publish(
         self,
         job_id: str,
         *,
         worker_id: str,
         fencing_token: int,
         artifact_digest: str,
+        publish_request_digest: str,
     ) -> ApplyJobView:
         self._validate_digest(artifact_digest)
-        now = ApplyGrantService._aware(self._clock())
-        timestamp = ApplyGrantService._timestamp(now)
+        self._validate_digest(publish_request_digest)
         with self.store.connect() as connection, governance_transaction(connection):
+            now = ApplyGrantService._aware(self._clock())
+            timestamp = ApplyGrantService._timestamp(now)
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs
-                SET status = 'staged', staged_artifact_digest = ?,
+                SET status = 'publish_pending', staged_artifact_digest = ?,
+                    publish_request_digest = ?,
                     lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
                 WHERE job_id = ? AND status = 'running' AND lease_owner = ?
                   AND fencing_token = ? AND lease_expires_at > ?
                 """,
-                (artifact_digest, timestamp, job_id, worker_id, fencing_token, timestamp),
+                (
+                    artifact_digest,
+                    publish_request_digest,
+                    timestamp,
+                    job_id,
+                    worker_id,
+                    fencing_token,
+                    timestamp,
+                ),
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
@@ -949,10 +962,10 @@ class ApplyJobService:
             raise ValueError("retry delay는 0보다 커야 합니다.")
         if not error_code.strip() or len(error_code) > 128:
             raise ValueError("error_code가 유효하지 않습니다.")
-        now = ApplyGrantService._aware(self._clock())
-        timestamp = ApplyGrantService._timestamp(now)
-        retry_at = ApplyGrantService._timestamp(now + retry_delay)
         with self.store.connect() as connection, governance_transaction(connection):
+            now = ApplyGrantService._aware(self._clock())
+            timestamp = ApplyGrantService._timestamp(now)
+            retry_at = ApplyGrantService._timestamp(now + retry_delay)
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs
@@ -975,29 +988,6 @@ class ApplyJobService:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
             return self._job_view(connection, job_id)
 
-    def prepare_publish(
-        self,
-        job_id: str,
-        *,
-        fencing_token: int,
-        publish_request_digest: str,
-    ) -> ApplyJobView:
-        self._validate_digest(publish_request_digest)
-        timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
-        with self.store.connect() as connection, governance_transaction(connection):
-            updated = connection.execute(
-                """
-                UPDATE governance_apply_jobs
-                SET status = 'publish_pending', publish_request_digest = ?, updated_at = ?
-                WHERE job_id = ? AND status = 'staged' AND fencing_token = ?
-                  AND staged_artifact_digest IS NOT NULL
-                """,
-                (publish_request_digest, timestamp, job_id, fencing_token),
-            )
-            if updated.rowcount != 1:
-                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
-            return self._job_view(connection, job_id)
-
     def get_job(self, job_id: str) -> ApplyJobView:
         with self.store.connect() as connection:
             return self._job_view(connection, job_id)
@@ -1012,8 +1002,8 @@ class ApplyJobService:
         next_status: ApplyJobState,
     ) -> ApplyJobView:
         self._validate_worker(worker_id)
-        timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
         with self.store.connect() as connection, governance_transaction(connection):
+            timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs SET status = ?, updated_at = ?
