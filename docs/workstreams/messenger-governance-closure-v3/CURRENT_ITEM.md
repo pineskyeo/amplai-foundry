@@ -39,12 +39,14 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
 - Slice 1: `PASS` at `9b195d3`
 - Slice 2: `PASS` at `91dab70`
 - Slice 3: `PASS` at `53d2223`
-- Full tests: `519/519 PASS`
+- Slice 4 Package 4.1 — A13 verification: `PASS` at `ef6ef06`
+- Full tests: `534/534 PASS`
 - Full verification: `7/7 PASS`
 - Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`
 - Retained advisory: `OPS-S2-06` — interrupted immutable object cleanup/accounting,
   owner `MGC-011 Slice 4`
-- Next: Slice 4 — Verification, pre-activation rollback, activation boundary, recovery tests
+- Next: Slice 4 Package 4.2 — A14/A15 pre-activation rollback, activation boundary,
+  and forward-recovery tests
 
 ## Out Of Scope
 
