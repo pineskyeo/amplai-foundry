@@ -7,6 +7,13 @@ from amplai_foundry.governance.authority import (
     FileExternalActorBindingRepository,
     ProjectPermissionPolicy,
 )
+from amplai_foundry.governance.definitions import (
+    ApplyInputDescriptor,
+    CanonicalDefinition,
+    DefinitionEvidence,
+    ProposalDefinitionManifest,
+    canonicalize_definition,
+)
 from amplai_foundry.governance.ledger import FileProposalActionLedger
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
@@ -24,6 +31,14 @@ from amplai_foundry.governance.models import (
     ProposalActionType,
     ProposalRef,
 )
+from amplai_foundry.governance.object_store import (
+    DefinitionObjectCollisionError,
+    DefinitionObjectIntegrityError,
+    DefinitionObjectRef,
+    DefinitionObjectStoreError,
+    ImmutableDefinitionObjectStore,
+    sha256_digest,
+)
 from amplai_foundry.governance.service import (
     ActionTokenVerifier,
     ProposalActionError,
@@ -36,17 +51,25 @@ __all__ = [
     "ActorBindingStatus",
     "ActorRef",
     "ActorType",
+    "ApplyInputDescriptor",
     "AuthorityContext",
     "AuthorityPermission",
     "AuthorityResolutionError",
     "AuthorityService",
     "AuthoritySource",
+    "CanonicalDefinition",
     "ChannelProvider",
     "ChannelRef",
+    "DefinitionEvidence",
+    "DefinitionObjectCollisionError",
+    "DefinitionObjectIntegrityError",
+    "DefinitionObjectRef",
+    "DefinitionObjectStoreError",
     "ExternalActorBinding",
     "ExternalActorBindingRepository",
     "FileExternalActorBindingRepository",
     "FileProposalActionLedger",
+    "ImmutableDefinitionObjectStore",
     "ProjectPermissionPolicy",
     "ProposalAction",
     "ProposalActionAuditEvent",
@@ -54,6 +77,9 @@ __all__ = [
     "ProposalActionResult",
     "ProposalActionService",
     "ProposalActionType",
+    "ProposalDefinitionManifest",
     "ProposalRef",
+    "canonicalize_definition",
     "proposal_digest",
+    "sha256_digest",
 ]
