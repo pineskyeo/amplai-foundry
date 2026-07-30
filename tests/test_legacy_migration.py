@@ -3688,6 +3688,123 @@ def test_forward_recovery_requires_resolution_of_synthetic_legacy_approval(
     assert plan.roots[0].state_revision == review.state_revision
 
 
+def test_forward_recovery_public_planner_rejects_dependent_approved_snapshot(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    imported = import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate dependent-state recovery fixture",
+        idempotency_key="legacy-activation:forward-dependent:1",
+        request_fingerprint="7" * 64,
+    )
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_approved_snapshots(
+                snapshot_id, project_namespace, project_id, proposal_id,
+                definition_digest, snapshot_digest, content_revision,
+                state_revision, decision_epoch, expected_base_revision, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 2, 1, 'a13d92f', ?)
+            """,
+            (
+                "SNP-0000000000000001",
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                imported.definition_digests[0],
+                f"sha256:{'8' * 64}",
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_DEPENDENT_STATE",
+    ):
+        LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+            migration.plan_id,
+            (migration.proposals[0].proposal_ref,),
+            authority_request=authority_request,
+            expected_lifecycle_revision=3,
+        )
+
+
+@pytest.mark.parametrize(
+    ("table", "guard"),
+    [
+        (
+            "governance_definition_revisions",
+            "governance_legacy_rollback_definition_delete_guard",
+        ),
+        (
+            "governance_legacy_import_commands",
+            "governance_legacy_import_commands_no_delete",
+        ),
+        ("governance_audit_events", "governance_audit_events_no_delete"),
+        ("governance_outbox_events", "governance_outbox_events_no_delete"),
+    ],
+)
+def test_forward_recovery_reconciles_immutable_import_graph_after_activation(
+    tmp_path: Path,
+    table: str,
+    guard: str | None,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate immutable import graph fixture",
+        idempotency_key=f"legacy-activation:forward-graph:{table}",
+        request_fingerprint="9" * 64,
+    )
+    with store.connect() as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        if guard is not None:
+            connection.execute(f"DROP TRIGGER {guard}")
+        connection.execute(f"DELETE FROM {table}")
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_ROOT_MISMATCH",
+    ):
+        LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+            migration.plan_id,
+            (migration.proposals[0].proposal_ref,),
+            authority_request=authority_request,
+            expected_lifecycle_revision=3,
+        )
+
+
 def test_forward_recovery_plan_requires_activated_terminal_boundary(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store, _objects, dry_run, import_service, backup = _import_fixture(

@@ -147,7 +147,6 @@ class LegacyMigrationForwardRecoveryPlanner:
                     or any(ref.project_ref != context.project_ref for ref in requested)
                 ):
                     raise LegacyMigrationLifecycleError("AUTHORITY_DENIED")
-                GovernanceEventService.reconcile_connection(connection)
                 LegacyProposalImportService.reconcile_verification_roots(connection)
                 LegacyMigrationActivationService.reconcile_roots(connection)
                 head = connection.execute(
@@ -185,6 +184,7 @@ class LegacyMigrationForwardRecoveryPlanner:
                     context.project_ref,
                     requested,
                 )
+                GovernanceEventService.reconcile_connection(connection)
                 planned_at = self._aware(self._clock())
                 preimage = {
                     "activation_event_digest": str(head[4]),
