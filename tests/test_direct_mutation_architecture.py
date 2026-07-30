@@ -126,6 +126,26 @@ def test_decision_event_append_has_one_production_caller_and_is_not_exported() -
     assert "GovernanceEventService" not in governance_init
 
 
+def test_apply_grant_issuer_is_private_and_package_unexported() -> None:
+    source = (SOURCE_ROOT / "governance/apply_jobs.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    issuer = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "ApplyGrantService"
+    )
+    public_issue_methods = {
+        node.name
+        for node in issuer.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name.startswith("issue")
+        and not node.name.startswith("_")
+    }
+    assert public_issue_methods == set()
+    governance_init = (SOURCE_ROOT / "governance/__init__.py").read_text(encoding="utf-8")
+    assert "ApplyGrantService" not in governance_init
+
+
 @pytest.mark.parametrize("secret_field", ("raw_token", "raw_credential", "action_token"))
 def test_decision_projection_payload_forbids_secret_fields(secret_field: str) -> None:
     with pytest.raises(ValidationError):

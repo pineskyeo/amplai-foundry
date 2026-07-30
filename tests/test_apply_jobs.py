@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
-from datetime import UTC, datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -20,6 +22,7 @@ from amplai_foundry.governance import (
     ChannelProvider,
     ChannelRef,
     DecisionAction,
+    DecisionError,
     DecisionService,
     DirectAuthorityRequest,
     ImmutableDefinitionObjectStore,
@@ -138,8 +141,14 @@ def _fixture(tmp_path: Path, *, grant_apply_permission: bool = True):
 
 def test_approved_decision_issues_snapshot_scoped_hash_only_grant(tmp_path: Path) -> None:
     store, _active, grants, decision_key = _fixture(tmp_path)
+    delayed = ApplyGrantService(
+        store,
+        grants.authority_service,
+        grants.definitions,
+        clock=lambda: NOW + timedelta(days=7),
+    )
 
-    issued = grants._issue_from_approved_decision(
+    issued = delayed._issue_from_approved_decision(
         decision_key,
         authority_request=_request(),
     )
@@ -147,9 +156,12 @@ def test_approved_decision_issues_snapshot_scoped_hash_only_grant(tmp_path: Path
     assert issued.record.proposal_ref == PROPOSAL
     assert issued.record.allowed_actor_ref == ACTOR
     assert issued.record.bound_channel_ref == CHANNEL
+    assert issued.record.allowed_action == "request_apply"
     assert "raw_grant=<redacted>" in repr(issued)
-    snapshot = grants.get_snapshot(issued.record.snapshot_id)
+    snapshot = delayed.get_snapshot(issued.record.snapshot_id)
     assert snapshot.expected_base_revision == "a13d92f"
+    assert snapshot.approved_at == NOW
+    assert issued.record.issued_at == NOW + timedelta(days=7)
     assert snapshot.snapshot_digest == issued.record.approved_snapshot_digest
     with store.connect() as connection:
         assert connection.execute(
@@ -211,3 +223,136 @@ def test_apply_snapshot_and_grant_issuance_fields_are_immutable(tmp_path: Path) 
                 "DELETE FROM governance_apply_grants WHERE grant_id = ?",
                 (issued.record.grant_id,),
             )
+
+
+def test_duplicate_concurrent_card_issue_creates_one_issued_grant(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    barrier = threading.Barrier(2)
+
+    def issue():
+        barrier.wait()
+        try:
+            return grants._issue_from_approved_decision(
+                decision_key,
+                authority_request=_request(),
+            )
+        except ApplyGovernanceError as error:
+            return error.code
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(lambda _index: issue(), range(2)))
+    assert sum(not isinstance(result, str) for result in results) == 1
+    assert "APPLY_GRANT_ALREADY_ISSUED" in results
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_grants WHERE state = 'issued'"
+        ).fetchone() == (1,)
+
+
+def test_snapshot_identity_ttl_and_job_identity_are_relationally_enforced(
+    tmp_path: Path,
+) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    with store.connect() as connection:
+        snapshot = connection.execute(
+            """
+            SELECT snapshot_id, project_namespace, project_id, proposal_id,
+                   snapshot_digest, content_revision, state_revision, decision_epoch,
+                   expected_base_revision
+            FROM governance_approved_snapshots
+            """
+        ).fetchone()
+        assert snapshot is not None
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_apply_grants(
+                    grant_id, grant_hash, snapshot_id, project_namespace, project_id,
+                    proposal_id, approved_snapshot_digest, content_revision,
+                    state_revision, decision_epoch, allowed_action, allowed_actor_id,
+                    allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                    state, resolved_at
+                ) VALUES (
+                    'AGR-EVIL', ?, ?, 'evil/ns', 'evil', ?, ?, 999, 999, 999,
+                    'request_apply', 'ACT-APPLIER-1', 'human', ?, ?, ?, 'issued', NULL
+                )
+                """,
+                (
+                    f"sha256:{'e' * 64}",
+                    snapshot[0],
+                    PROPOSAL.proposal_id,
+                    f"sha256:{'f' * 64}",
+                    CHANNEL.model_dump_json(exclude_none=True),
+                    NOW.isoformat(),
+                    (NOW - timedelta(seconds=1)).isoformat(),
+                ),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    approved_snapshot_digest, expected_base_revision, status,
+                    attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
+                    staged_artifact_digest, publish_request_digest, last_error_code,
+                    created_at, updated_at
+                ) VALUES (
+                    'JOB-EVIL', ?, 'evil/ns', 'evil', ?, ?, 'not-a-revision',
+                    'queued', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?
+                )
+                """,
+                (
+                    snapshot[0],
+                    PROPOSAL.proposal_id,
+                    f"sha256:{'f' * 64}",
+                    NOW.isoformat(),
+                    NOW.isoformat(),
+                ),
+            )
+    assert grants.get_grant(issued.record.grant_id) == issued.record
+
+
+def test_raw_apply_grant_cannot_persist_as_decision_idempotency_key(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    decisions = DecisionService(store, grants.authority_service, clock=lambda: NOW)
+
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
+        decisions.decide(
+            PROPOSAL,
+            action=DecisionAction.REJECT,
+            authority_request=_request(),
+            raw_token="not-a-real-token",
+            idempotency_key=f"prefix-{issued.raw_grant}-suffix",
+            request_fingerprint=hashlib.sha256(b"cross-secret").hexdigest(),
+        )
+    with store.connect() as connection:
+        persisted = connection.execute(
+            "SELECT COUNT(*) FROM governance_decision_results WHERE idempotency_key LIKE '%prefix%'"
+        ).fetchone()
+    assert persisted == (0,)
+    for database_file in tmp_path.glob("governance.db*"):
+        assert issued.raw_grant.encode() not in database_file.read_bytes()
+
+
+def test_grant_insert_failure_rolls_back_new_snapshot(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_apply_grant_failure
+            BEFORE INSERT ON governance_apply_grants
+            BEGIN
+                SELECT RAISE(ABORT, 'injected grant failure');
+            END
+            """
+        )
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected grant failure"):
+        grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_approved_snapshots"
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_grants").fetchone() == (0,)

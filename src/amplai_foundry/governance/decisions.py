@@ -270,7 +270,7 @@ class DecisionService:
             request_fingerprint,
             credential_hash,
         )
-        if self._contains_issued_token(connection, idempotency_key):
+        if self._contains_persisted_secret(connection, idempotency_key):
             raise DecisionError("IDEMPOTENCY_CONFLICT")
         processed_at = self._aware(self._clock())
         channel_json = self._channel_json(authority.source.channel)
@@ -613,7 +613,7 @@ class DecisionService:
         return f"sha256:{hashlib.sha256(raw_token.encode('utf-8')).hexdigest()}"
 
     @staticmethod
-    def _contains_issued_token(connection: sqlite3.Connection, value: str) -> bool:
+    def _contains_persisted_secret(connection: sqlite3.Connection, value: str) -> bool:
         """Match every token-shaped substring without persisting raw credentials."""
 
         token_length = 32  # secrets.token_hex(16)
@@ -631,8 +631,11 @@ class DecisionService:
         return (
             connection.execute(
                 f"""
-                SELECT 1 FROM governance_action_tokens
-                WHERE token_hash IN ({placeholders})
+                SELECT 1 FROM (
+                    SELECT token_hash AS secret_hash FROM governance_action_tokens
+                    UNION ALL
+                    SELECT grant_hash AS secret_hash FROM governance_apply_grants
+                ) WHERE secret_hash IN ({placeholders})
                 LIMIT 1
                 """,
                 hashes,

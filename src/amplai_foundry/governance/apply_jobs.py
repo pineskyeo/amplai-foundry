@@ -10,7 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
@@ -85,6 +85,7 @@ class ApplyGrantView(BaseModel):
     content_revision: int = Field(ge=1)
     state_revision: int = Field(ge=2)
     decision_epoch: int = Field(ge=1)
+    allowed_action: Literal["request_apply"]
     allowed_actor_ref: ActorRef
     bound_channel_ref: ChannelRef
     issued_at: AwareDatetime
@@ -208,7 +209,7 @@ class ApplyGrantService:
                     int(str(source[5])),
                     int(str(source[6])),
                     manifest.base_revision,
-                    self._timestamp(issued_at),
+                    str(source[7]),
                 ),
             )
             snapshot = connection.execute(
@@ -233,15 +234,33 @@ class ApplyGrantService:
                 manifest.base_revision,
             ):
                 raise ApplyGovernanceError("APPROVED_SNAPSHOT_CONFLICT")
+            already_issued = connection.execute(
+                """
+                SELECT 1 FROM governance_apply_grants
+                WHERE snapshot_id = ? AND allowed_action = 'request_apply'
+                  AND allowed_actor_id = ? AND bound_channel_json = ?
+                  AND state = 'issued'
+                """,
+                (
+                    snapshot[0],
+                    authority.actor_ref.actor_id,
+                    self._channel_json(authority.source.channel),
+                ),
+            ).fetchone()
+            if already_issued is not None:
+                raise ApplyGovernanceError("APPLY_GRANT_ALREADY_ISSUED")
             connection.execute(
                 """
                 INSERT INTO governance_apply_grants(
                     grant_id, grant_hash, snapshot_id, project_namespace, project_id,
                     proposal_id, approved_snapshot_digest, content_revision,
                     state_revision, decision_epoch, allowed_actor_id,
-                    allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                    allowed_action, allowed_actor_type, bound_channel_json, issued_at, expires_at,
                     state, resolved_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'human', ?, ?, ?, 'issued', NULL)
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'request_apply',
+                    'human', ?, ?, ?, 'issued', NULL
+                )
                 """,
                 (
                     grant_id,
@@ -339,8 +358,9 @@ class ApplyGrantService:
             """
             SELECT snapshot_id, project_namespace, project_id, proposal_id,
                    approved_snapshot_digest, content_revision, state_revision,
-                   decision_epoch, allowed_actor_id, allowed_actor_type,
-                   bound_channel_json, issued_at, expires_at, state, resolved_at
+                   decision_epoch, allowed_action, allowed_actor_id,
+                   allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                   state, resolved_at
             FROM governance_apply_grants WHERE grant_id = ?
             """,
             (grant_id,),
@@ -356,12 +376,13 @@ class ApplyGrantService:
                 "content_revision": row[5],
                 "state_revision": row[6],
                 "decision_epoch": row[7],
-                "allowed_actor_ref": {"actor_id": row[8], "actor_type": row[9]},
-                "bound_channel_ref": json.loads(str(row[10])),
-                "issued_at": row[11],
-                "expires_at": row[12],
-                "state": row[13],
-                "resolved_at": row[14],
+                "allowed_action": row[8],
+                "allowed_actor_ref": {"actor_id": row[9], "actor_type": row[10]},
+                "bound_channel_ref": json.loads(str(row[11])),
+                "issued_at": row[12],
+                "expires_at": row[13],
+                "state": row[14],
+                "resolved_at": row[15],
             }
         )
 

@@ -760,6 +760,15 @@ INITIAL_MIGRATIONS = (
                     project_namespace, project_id, proposal_id,
                     definition_digest, content_revision, decision_epoch
                 ),
+                UNIQUE (
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    snapshot_digest, content_revision, state_revision,
+                    decision_epoch
+                ),
+                UNIQUE (
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    snapshot_digest, expected_base_revision
+                ),
                 FOREIGN KEY (project_namespace, project_id, proposal_id)
                     REFERENCES governance_active_proposals(
                         project_namespace, project_id, proposal_id
@@ -792,6 +801,7 @@ INITIAL_MIGRATIONS = (
                 content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
                 state_revision INTEGER NOT NULL CHECK (state_revision >= 2),
                 decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                allowed_action TEXT NOT NULL CHECK (allowed_action = 'request_apply'),
                 allowed_actor_id TEXT NOT NULL,
                 allowed_actor_type TEXT NOT NULL CHECK (allowed_actor_type = 'human'),
                 bound_channel_json TEXT NOT NULL,
@@ -799,17 +809,29 @@ INITIAL_MIGRATIONS = (
                 expires_at TEXT NOT NULL,
                 state TEXT NOT NULL CHECK (state IN ('issued', 'consumed', 'expired', 'revoked')),
                 resolved_at TEXT,
-                FOREIGN KEY (snapshot_id)
-                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    approved_snapshot_digest, content_revision, state_revision,
+                    decision_epoch
+                ) REFERENCES governance_approved_snapshots(
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    snapshot_digest, content_revision, state_revision, decision_epoch
+                ) ON DELETE RESTRICT,
                 CHECK (
                     length(grant_hash) = 71
                     AND substr(grant_hash, 1, 7) = 'sha256:'
                     AND substr(grant_hash, 8) NOT GLOB '*[^0-9a-f]*'
                 ),
                 CHECK (
+                    length(approved_snapshot_digest) = 71
+                    AND substr(approved_snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(approved_snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
                     (state = 'issued' AND resolved_at IS NULL)
                     OR (state != 'issued' AND resolved_at IS NOT NULL)
-                )
+                ),
+                CHECK (expires_at > issued_at)
             ) WITHOUT ROWID
             """,
             """
@@ -825,6 +847,7 @@ INITIAL_MIGRATIONS = (
               OR OLD.content_revision != NEW.content_revision
               OR OLD.state_revision != NEW.state_revision
               OR OLD.decision_epoch != NEW.decision_epoch
+              OR OLD.allowed_action != NEW.allowed_action
               OR OLD.allowed_actor_id != NEW.allowed_actor_id
               OR OLD.allowed_actor_type != NEW.allowed_actor_type
               OR OLD.bound_channel_json != NEW.bound_channel_json
@@ -840,6 +863,12 @@ INITIAL_MIGRATIONS = (
             BEGIN
                 SELECT RAISE(ABORT, 'apply grant is durable');
             END
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_issued_apply_grant
+            ON governance_apply_grants(
+                snapshot_id, allowed_action, allowed_actor_id, bound_channel_json
+            ) WHERE state = 'issued'
             """,
             """
             CREATE TABLE governance_apply_jobs (
@@ -866,8 +895,22 @@ INITIAL_MIGRATIONS = (
                 last_error_code TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                FOREIGN KEY (snapshot_id)
-                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    approved_snapshot_digest, expected_base_revision
+                ) REFERENCES governance_approved_snapshots(
+                    snapshot_id, project_namespace, project_id, proposal_id,
+                    snapshot_digest, expected_base_revision
+                ) ON DELETE RESTRICT,
+                CHECK (
+                    length(approved_snapshot_digest) = 71
+                    AND substr(approved_snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(approved_snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(expected_base_revision) BETWEEN 7 AND 64
+                    AND expected_base_revision NOT GLOB '*[^0-9a-f]*'
+                ),
                 CHECK (
                     (status IN ('leased', 'running')
                      AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
@@ -1297,6 +1340,7 @@ class MigrationRunner:
                         ("content_revision", "INTEGER", 1, 0),
                         ("state_revision", "INTEGER", 1, 0),
                         ("decision_epoch", "INTEGER", 1, 0),
+                        ("allowed_action", "TEXT", 1, 0),
                         ("allowed_actor_id", "TEXT", 1, 0),
                         ("allowed_actor_type", "TEXT", 1, 0),
                         ("bound_channel_json", "TEXT", 1, 0),
