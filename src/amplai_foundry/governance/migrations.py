@@ -2662,6 +2662,28 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=23,
+        name="legacy-verification-idempotency-binding",
+        statements=(
+            """
+            CREATE TRIGGER governance_legacy_migration_verifications_idempotency_guard
+            BEFORE INSERT ON governance_legacy_migration_verifications
+            WHEN json_valid(NEW.report_json) = 1
+              AND json_type(NEW.report_json, '$.proposals') IS 'array'
+              AND EXISTS (
+                    SELECT 1
+                    FROM json_each(NEW.report_json, '$.proposals') AS proposal
+                    WHERE json_type(proposal.value, '$.idempotency_key') IS NOT 'text'
+                       OR length(json_extract(proposal.value, '$.idempotency_key')) = 0
+                )
+            BEGIN SELECT RAISE(
+                ABORT,
+                'legacy verification idempotency evidence is required'
+            ); END
+            """,
+        ),
+    ),
 )
 
 

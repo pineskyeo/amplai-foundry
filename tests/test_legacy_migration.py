@@ -1426,6 +1426,81 @@ def test_v21_verification_without_command_idempotency_key_upgrades_and_replays(
     assert replay.proposals[0].idempotency_key is None
 
 
+def test_latest_schema_rejects_new_predecessor_shaped_verification(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    snapshot = dry_run.create_snapshot(plan.freeze)
+    with store.connect() as connection:
+        proposals = service._verification_proposals(connection, plan)
+    predecessor_proposals = tuple(
+        item.model_copy(update={"idempotency_key": None}) for item in proposals
+    )
+    verification_id, report_digest = service._verification_identity(
+        plan,
+        snapshot,
+        predecessor_proposals,
+    )
+    predecessor = LegacyMigrationVerificationReport(
+        verification_id=verification_id,
+        migration_id=plan.plan_id,
+        project_ref=plan.project_ref,
+        snapshot_id=snapshot.snapshot_id,
+        snapshot_digest=snapshot.snapshot_digest,
+        plan_digest=plan.plan_digest,
+        source_files=snapshot.files,
+        source_total_bytes=snapshot.total_bytes,
+        proposals=predecessor_proposals,
+        report_digest=report_digest,
+        verified_by=plan.freeze.actor_id,
+        verified_at=NOW,
+    )
+    predecessor_payload = predecessor.model_dump(mode="json", exclude_none=True)
+
+    with (
+        store.connect() as connection,
+        pytest.raises(
+            sqlite3.DatabaseError,
+            match="legacy verification idempotency evidence is required",
+        ),
+    ):
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_verifications(
+                verification_id, migration_id, project_namespace, project_id,
+                snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                source_file_count, report_digest, report_json, verified_by,
+                verified_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                predecessor.verification_id,
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                snapshot.snapshot_id,
+                snapshot.snapshot_digest,
+                plan.plan_digest,
+                len(predecessor.proposals),
+                len(snapshot.files),
+                predecessor.report_digest,
+                json.dumps(
+                    predecessor_payload,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                predecessor.verified_by,
+                str(predecessor_payload["verified_at"]),
+            ),
+        )
+
+
 def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
@@ -2142,6 +2217,7 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migration_verifications_no_update",
         "governance_legacy_migration_verifications_no_delete",
         "governance_legacy_migration_verifications_insert_guard",
+        "governance_legacy_migration_verifications_idempotency_guard",
     }
 
 
