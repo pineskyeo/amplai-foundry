@@ -1587,6 +1587,96 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=13,
+        name="durable-publish-coordinator-claim",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_publish_intent_claim_identity
+            ON governance_publish_intents(intent_id, project_namespace, project_id)
+            """,
+            """
+            CREATE TABLE governance_publish_claims (
+                claim_id TEXT PRIMARY KEY NOT NULL,
+                intent_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                coordinator_id TEXT NOT NULL,
+                claim_fencing_token INTEGER NOT NULL CHECK (claim_fencing_token >= 1),
+                state TEXT NOT NULL CHECK (state IN ('active', 'released')),
+                claimed_at TEXT NOT NULL,
+                resolved_at TEXT,
+                UNIQUE (intent_id, claim_fencing_token),
+                FOREIGN KEY (intent_id, project_namespace, project_id)
+                    REFERENCES governance_publish_intents(
+                        intent_id, project_namespace, project_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(claim_id) = 20
+                    AND substr(claim_id, 1, 4) = 'PCL-'
+                    AND substr(claim_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (length(coordinator_id) BETWEEN 1 AND 128),
+                CHECK (
+                    (state = 'active' AND resolved_at IS NULL)
+                    OR (state = 'released' AND resolved_at IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_active_publish_claim
+            ON governance_publish_claims(project_namespace, project_id)
+            WHERE state = 'active'
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_active_publish_intent_claim
+            ON governance_publish_claims(intent_id)
+            WHERE state = 'active'
+            """,
+            """
+            CREATE TRIGGER governance_publish_claim_identity_immutable
+            BEFORE UPDATE ON governance_publish_claims
+            WHEN OLD.claim_id != NEW.claim_id
+              OR OLD.intent_id != NEW.intent_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.coordinator_id != NEW.coordinator_id
+              OR OLD.claim_fencing_token != NEW.claim_fencing_token
+              OR OLD.claimed_at != NEW.claimed_at
+            BEGIN SELECT RAISE(ABORT, 'publish claim identity is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_claim_transition_guard
+            BEFORE UPDATE ON governance_publish_claims
+            WHEN NOT (OLD.state = 'active' AND NEW.state = 'released')
+            BEGIN SELECT RAISE(ABORT, 'invalid publish claim transition'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_claims_no_delete
+            BEFORE DELETE ON governance_publish_claims
+            BEGIN SELECT RAISE(ABORT, 'publish claim is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_claim_blocks_intent_transition
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.status = 'prepared' AND NEW.status != 'prepared'
+             AND EXISTS (
+                SELECT 1 FROM governance_publish_claims c
+                WHERE c.intent_id = OLD.intent_id AND c.state = 'active'
+             )
+            BEGIN SELECT RAISE(ABORT, 'active publish claim blocks intent transition'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_claim_blocks_gate_transition
+            BEFORE UPDATE ON governance_project_publish_gates
+            WHEN EXISTS (
+                SELECT 1 FROM governance_publish_claims c
+                WHERE c.intent_id = OLD.active_intent_id AND c.state = 'active'
+            )
+            BEGIN SELECT RAISE(ABORT, 'active publish claim blocks gate transition'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -2079,6 +2169,18 @@ class MigrationRunner:
                         ("resolved_at", "TEXT", 1, 0),
                     ),
                 }
+            )
+        if schema_version >= 13:
+            expected_columns["governance_publish_claims"] = (
+                ("claim_id", "TEXT", 1, 1),
+                ("intent_id", "TEXT", 1, 0),
+                ("project_namespace", "TEXT", 1, 0),
+                ("project_id", "TEXT", 1, 0),
+                ("coordinator_id", "TEXT", 1, 0),
+                ("claim_fencing_token", "INTEGER", 1, 0),
+                ("state", "TEXT", 1, 0),
+                ("claimed_at", "TEXT", 1, 0),
+                ("resolved_at", "TEXT", 0, 0),
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

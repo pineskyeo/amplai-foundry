@@ -1081,6 +1081,53 @@ class GovernanceEventService:
             ).fetchone()
             if gate_root_mismatch is not None:
                 raise GovernanceEventError("PUBLISH_GATE_ROOT_MISMATCH")
+            has_publish_claims = (
+                connection.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                    "AND name = 'governance_publish_claims'"
+                ).fetchone()
+                is not None
+            )
+            if has_publish_claims:
+                claim_root_mismatch = connection.execute(
+                    """
+                    SELECT 1
+                    FROM governance_publish_claims c
+                    JOIN governance_publish_intents i ON i.intent_id = c.intent_id
+                    LEFT JOIN governance_project_publish_gates g
+                      ON g.active_intent_id = c.intent_id
+                    WHERE c.project_namespace != i.project_namespace
+                       OR c.project_id != i.project_id
+                       OR (c.state = 'active' AND (
+                            i.status != 'prepared'
+                            OR g.project_namespace IS NULL
+                            OR g.state != 'locked'
+                            OR g.project_namespace != c.project_namespace
+                            OR g.project_id != c.project_id
+                       ))
+                    LIMIT 1
+                    """
+                ).fetchone()
+                if claim_root_mismatch is not None:
+                    raise GovernanceEventError("PUBLISH_CLAIM_ROOT_MISMATCH")
+                claim_sequences = connection.execute(
+                    """
+                    SELECT intent_id, claim_fencing_token
+                    FROM governance_publish_claims
+                    ORDER BY intent_id, claim_fencing_token
+                    """
+                ).fetchall()
+                previous_intent: str | None = None
+                expected_fence = 0
+                for claim in claim_sequences:
+                    intent_id = str(claim[0])
+                    if intent_id != previous_intent:
+                        previous_intent = intent_id
+                        expected_fence = 1
+                    else:
+                        expected_fence += 1
+                    if int(claim[1]) != expected_fence:
+                        raise GovernanceEventError("PUBLISH_CLAIM_ROOT_MISMATCH")
         orphan_audit = connection.execute(
             """
             SELECT 1

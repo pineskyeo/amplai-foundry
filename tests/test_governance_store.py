@@ -229,6 +229,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (10, "apply-request-grant-root"),
         (11, "apply-job-lifecycle-roots"),
         (12, "fenced-publish-foundation"),
+        (13, "durable-publish-coordinator-claim"),
     ]
     assert metadata == ("amplai-governance",)
 

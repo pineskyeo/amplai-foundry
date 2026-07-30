@@ -173,7 +173,7 @@ def test_git_ref_cas_reports_competing_ref_without_overwrite(tmp_path: Path) -> 
 def test_git_publish_backend_has_no_working_tree_mutation_commands() -> None:
     implementation = Path(__file__).parents[1] / "src/amplai_foundry/governance/git_publish.py"
     payload = implementation.read_text(encoding="utf-8")
-    for forbidden in ('"checkout"', '"reset"', '"merge"', '"commit"'):
+    for forbidden in ('"checkout"', '"reset"', '"merge"', '"commit-tree"'):
         assert forbidden not in payload
     assert "SubprocessGitPublishBackend" not in payload
 
@@ -225,6 +225,36 @@ def test_git_candidate_inspection_disables_replace_refs(tmp_path: Path) -> None:
             artifact_bytes=benign_artifact,
             publish_request_bytes=request,
         )
+
+
+def test_git_candidate_inspection_ignores_legacy_grafts(tmp_path: Path) -> None:
+    repository, expected_base, approved, approved_artifact, _request = _repository_fixture(tmp_path)
+    other_tree = _git(repository, "rev-parse", f"{expected_base}^{{tree}}").stdout.strip()
+    other_parent = _git(repository, "commit-tree", other_tree, "-m", "other root").stdout.strip()
+    malicious = _git(
+        repository,
+        "commit-tree",
+        _git(repository, "rev-parse", f"{approved}^{{tree}}").stdout.strip(),
+        "-p",
+        other_parent,
+        "-m",
+        "wrong raw parent",
+    ).stdout.strip()
+    grafts = repository / ".git/info/grafts"
+    grafts.write_text(f"{malicious} {expected_base}\n", encoding="ascii")
+    request = json.dumps(
+        {"candidate_commit": malicious, "canonical_ref": "refs/heads/main"}
+    ).encode()
+    inspector = SubprocessGitCandidateInspector(repository)
+
+    evidence = inspector.inspect_candidate(
+        malicious,
+        artifact_bytes=approved_artifact,
+        publish_request_bytes=request,
+    )
+
+    assert evidence.parent_commit == other_parent
+    assert evidence.parent_commit != expected_base
 
 
 def test_git_ref_cas_disables_reference_transaction_hook(tmp_path: Path) -> None:

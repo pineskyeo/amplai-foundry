@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import os
+import secrets
 import select
 import signal
 import subprocess
 import time
 from collections.abc import Callable, Mapping
 from contextlib import suppress
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, cast
@@ -25,7 +27,7 @@ from amplai_foundry.governance.publish import (
     PublishIntentView,
     PublishPreparationService,
 )
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 _CANONICAL_REF_ADAPTER = TypeAdapter(CanonicalBranchRef)
 _GIT_OBJECT_ID_ADAPTER = TypeAdapter(GitObjectId)
@@ -118,20 +120,33 @@ class _SubprocessGitBackend:
             raise PublishGovernanceError("PUBLISH_REQUEST_INVALID") from error
         if request.candidate_commit != checked_candidate:
             raise PublishGovernanceError("PUBLISH_REQUEST_INVALID")
-        resolved = self._run("rev-parse", "--verify", f"{checked_candidate}^{{commit}}")
-        if resolved.stdout.strip() != checked_candidate:
+        object_kind = self._run("cat-file", "-t", checked_candidate).stdout.strip()
+        if object_kind != "commit":
             raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
-        ancestry = self._run("rev-list", "--parents", "-n", "1", checked_candidate)
-        parts = ancestry.stdout.strip().split()
-        if len(parts) != 2 or parts[0] != checked_candidate:
+        commit_bytes = self._run_bytes(
+            "cat-file",
+            "commit",
+            checked_candidate,
+            max_output_bytes=1024 * 1024,
+        )
+        headers = commit_bytes.split(b"\n\n", 1)[0].splitlines()
+        tree_headers = tuple(line[5:] for line in headers if line.startswith(b"tree "))
+        parent_headers = tuple(line[7:] for line in headers if line.startswith(b"parent "))
+        if len(tree_headers) != 1 or len(parent_headers) != 1:
             raise PublishGovernanceError("PUBLISH_CANDIDATE_PARENT_INVALID")
-        parent = _GIT_OBJECT_ID_ADAPTER.validate_python(parts[1])
+        try:
+            tree_object = _GIT_OBJECT_ID_ADAPTER.validate_python(tree_headers[0].decode("ascii"))
+            parent = _GIT_OBJECT_ID_ADAPTER.validate_python(parent_headers[0].decode("ascii"))
+        except (UnicodeDecodeError, ValidationError) as error:
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_PARENT_INVALID") from error
+        if len(tree_object) != len(checked_candidate) or len(parent) != len(checked_candidate):
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_PARENT_INVALID")
         tree_listing = self._run_bytes(
             "ls-tree",
             "-r",
             "-z",
             "--full-tree",
-            f"{checked_candidate}^{{tree}}",
+            tree_object,
             max_output_bytes=len(artifact_bytes),
         )
         if tree_listing != artifact_bytes:
@@ -346,16 +361,56 @@ class FencedGitPublishCoordinator:
         store: GovernanceStore,
         repository: Path,
         *,
+        coordinator_id: str,
         timeout_seconds: float = 10.0,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
+        if not coordinator_id.strip() or len(coordinator_id) > 128:
+            raise ValueError("coordinator_id가 유효하지 않습니다.")
         self.store = store
+        self.coordinator_id = coordinator_id
+        self._clock = clock or (lambda: datetime.now(UTC))
         self._backend = _SubprocessGitBackend(
             repository,
             timeout_seconds=timeout_seconds,
         )
 
     def publish_prepared_ref(self, intent_id: str) -> GitCASOutcome:
-        with self.store.connect() as connection:
+        intent, roots, claim_id, claim_fence = self._claim_prepared(intent_id)
+        artifact_bytes = cast(bytes, roots[0])
+        publish_request_bytes = cast(bytes, roots[1])
+        try:
+            evidence = self._backend.inspect_candidate(
+                intent.candidate_commit,
+                artifact_bytes=artifact_bytes,
+                publish_request_bytes=publish_request_bytes,
+            )
+            if (
+                evidence.candidate_commit != intent.candidate_commit
+                or evidence.parent_commit != intent.expected_old_ref
+                or evidence.candidate_tree_digest != intent.candidate_tree_digest
+                or evidence.canonical_ref != intent.canonical_ref
+            ):
+                raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
+            actual = self._backend.read_ref(intent.canonical_ref)
+        except PublishGovernanceError:
+            self._release_pre_cas_claim(claim_id, claim_fence)
+            raise
+        if actual == intent.candidate_commit:
+            return GitCASOutcome.UPDATED
+        if actual != intent.expected_old_ref:
+            return GitCASOutcome.CONFLICT
+        return self._backend._compare_and_swap_ref(
+            intent.canonical_ref,
+            expected_old_ref=intent.expected_old_ref,
+            candidate_commit=intent.candidate_commit,
+        )
+
+    def _claim_prepared(
+        self,
+        intent_id: str,
+    ) -> tuple[PublishIntentView, tuple[object, ...], str, int]:
+        with self.store.connect() as connection, governance_transaction(connection):
             intent = PublishPreparationService._intent_view(connection, intent_id)
             roots = connection.execute(
                 """
@@ -375,31 +430,62 @@ class FencedGitPublishCoordinator:
                 """,
                 (intent_id,),
             ).fetchone()
-        self._verify_prepared_roots(intent, roots)
-        artifact_bytes = cast(bytes, roots[0])
-        publish_request_bytes = cast(bytes, roots[1])
-        evidence = self._backend.inspect_candidate(
-            intent.candidate_commit,
-            artifact_bytes=artifact_bytes,
-            publish_request_bytes=publish_request_bytes,
-        )
-        if (
-            evidence.candidate_commit != intent.candidate_commit
-            or evidence.parent_commit != intent.expected_old_ref
-            or evidence.candidate_tree_digest != intent.candidate_tree_digest
-            or evidence.canonical_ref != intent.canonical_ref
-        ):
-            raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
-        actual = self._backend.read_ref(intent.canonical_ref)
-        if actual == intent.candidate_commit:
-            return GitCASOutcome.UPDATED
-        if actual != intent.expected_old_ref:
-            return GitCASOutcome.CONFLICT
-        return self._backend._compare_and_swap_ref(
-            intent.canonical_ref,
-            expected_old_ref=intent.expected_old_ref,
-            candidate_commit=intent.candidate_commit,
-        )
+            self._verify_prepared_roots(intent, roots)
+            active = connection.execute(
+                """
+                SELECT 1 FROM governance_publish_claims
+                WHERE intent_id = ? AND state = 'active'
+                """,
+                (intent_id,),
+            ).fetchone()
+            if active is not None:
+                raise PublishGovernanceError("PUBLISH_CLAIM_ACTIVE")
+            sequence = connection.execute(
+                """
+                SELECT COALESCE(MAX(claim_fencing_token), 0) + 1
+                FROM governance_publish_claims WHERE intent_id = ?
+                """,
+                (intent_id,),
+            ).fetchone()
+            claim_fence = int(sequence[0])
+            claim_id = f"PCL-{secrets.token_hex(8).upper()}"
+            connection.execute(
+                """
+                INSERT INTO governance_publish_claims(
+                    claim_id, intent_id, project_namespace, project_id,
+                    coordinator_id, claim_fencing_token, state, claimed_at, resolved_at
+                ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, NULL)
+                """,
+                (
+                    claim_id,
+                    intent_id,
+                    intent.proposal_ref.project_ref.namespace,
+                    intent.proposal_ref.project_ref.project_id,
+                    self.coordinator_id,
+                    claim_fence,
+                    self._timestamp(self._clock()),
+                ),
+            )
+            return intent, cast(tuple[object, ...], roots), claim_id, claim_fence
+
+    def _release_pre_cas_claim(self, claim_id: str, claim_fence: int) -> None:
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_publish_claims
+                SET state = 'released', resolved_at = ?
+                WHERE claim_id = ? AND coordinator_id = ?
+                  AND claim_fencing_token = ? AND state = 'active'
+                """,
+                (
+                    self._timestamp(self._clock()),
+                    claim_id,
+                    self.coordinator_id,
+                    claim_fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise PublishGovernanceError("PUBLISH_CLAIM_STALE")
 
     @staticmethod
     def _verify_prepared_roots(
@@ -414,3 +500,9 @@ class FencedGitPublishCoordinator:
             or str(roots[4]) != intent.canonical_ref
         ):
             raise PublishGovernanceError("PUBLISH_INTENT_NOT_PREPARED")
+
+    @staticmethod
+    def _timestamp(value: datetime) -> str:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("clock은 timezone-aware datetime을 반환해야 합니다.")
+        return value.astimezone(UTC).isoformat().replace("+00:00", "Z")

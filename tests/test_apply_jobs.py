@@ -1935,20 +1935,62 @@ def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path)
         canonical_ref="refs/heads/main",
         candidate_commit=candidate,
     )
-    coordinator = FencedGitPublishCoordinator(store, repository)
+    coordinator = FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publish-coordinator-1",
+        clock=lambda: NOW,
+    )
 
     with pytest.raises(PublishGovernanceError, match="PUBLISH_INTENT_NOT_FOUND"):
         coordinator.publish_prepared_ref("PBI-FFFFFFFFFFFFFFFF")
 
     first = coordinator.publish_prepared_ref(prepared.intent_id)
-    replay = coordinator.publish_prepared_ref(prepared.intent_id)
 
     assert first.value == "updated"
-    assert replay.value == "updated"
+    with (
+        store.connect() as connection,
+        pytest.raises(
+            sqlite3.IntegrityError,
+            match="active publish claim blocks intent transition",
+        ),
+    ):
+        connection.execute(
+            """
+            UPDATE governance_publish_intents
+            SET status = 'cancelled', resolved_at = ? WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), prepared.intent_id),
+        )
+    with (
+        store.connect() as connection,
+        pytest.raises(
+            sqlite3.IntegrityError,
+            match="active publish claim blocks gate transition",
+        ),
+    ):
+        connection.execute(
+            """
+            UPDATE governance_project_publish_gates
+            SET state = 'unlocked', active_intent_id = NULL,
+                gate_revision = gate_revision + 1, updated_at = ?
+            WHERE active_intent_id = ?
+            """,
+            (NOW.isoformat(), prepared.intent_id),
+        )
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_CLAIM_ACTIVE"):
+        coordinator.publish_prepared_ref(prepared.intent_id)
     assert git("rev-parse", "refs/heads/main").stdout.strip() == candidate
     with store.connect() as connection:
         assert connection.execute(
             "SELECT status FROM governance_publish_intents WHERE intent_id = ?",
             (prepared.intent_id,),
         ).fetchone() == ("prepared",)
+        assert connection.execute(
+            """
+            SELECT coordinator_id, claim_fencing_token, state
+            FROM governance_publish_claims WHERE intent_id = ?
+            """,
+            (prepared.intent_id,),
+        ).fetchone() == ("publish-coordinator-1", 1, "active")
     assert store.check_startup().healthy
