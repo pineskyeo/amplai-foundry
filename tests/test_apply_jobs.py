@@ -38,7 +38,8 @@ from amplai_foundry.governance.apply_jobs import (
     ApplyRequestService,
 )
 from amplai_foundry.governance.events import GovernanceEventError
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS
+from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
@@ -883,8 +884,8 @@ def test_apply_job_lease_reclaim_increments_fence_and_rejects_stale_worker(
             job_id,
             worker_id="worker-1",
             fencing_token=1,
-            artifact_digest=f"sha256:{'a' * 64}",
-            publish_request_digest=f"sha256:{'b' * 64}",
+            artifact_bytes=b"stale artifact",
+            publish_request_bytes=b"stale publish input",
         )
 
 
@@ -923,13 +924,33 @@ def test_apply_job_atomically_stages_publish_input_without_canonical_write(
         job_id,
         worker_id="worker-1",
         fencing_token=claimed.fencing_token,
-        artifact_digest=f"sha256:{'a' * 64}",
-        publish_request_digest=f"sha256:{'b' * 64}",
+        artifact_bytes=b"staged patch bytes",
+        publish_request_bytes=b'{"action":"publish"}',
     )
     assert publish.status.value == "publish_pending"
     assert publish.lease_owner is None
-    assert publish.staged_artifact_digest == f"sha256:{'a' * 64}"
-    assert publish.publish_request_digest == f"sha256:{'b' * 64}"
+    assert publish.staged_artifact_digest == (
+        f"sha256:{hashlib.sha256(b'staged patch bytes').hexdigest()}"
+    )
+    expected_publish_digest = hashlib.sha256(b'{"action":"publish"}').hexdigest()
+    assert publish.publish_request_digest == f"sha256:{expected_publish_digest}"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT artifact_bytes FROM governance_staging_artifacts"
+        ).fetchone() == (b"staged patch bytes",)
+        assert connection.execute(
+            "SELECT publish_request_bytes FROM governance_publish_inputs"
+        ).fetchone() == (b'{"action":"publish"}',)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_job_events"
+        ).fetchone() == (3,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type LIKE 'apply_job.%'"
+        ).fetchone() == (3,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_events WHERE aggregate_sequence >= 3"
+        ).fetchone() == (6,)
+    store.initialize()
 
 
 def test_concurrent_apply_job_claim_has_one_winner(tmp_path: Path) -> None:
@@ -947,3 +968,110 @@ def test_concurrent_apply_job_claim_has_one_winner(tmp_path: Path) -> None:
     assert len(winners) == 1
     assert winners[0].job_id == job_id
     assert winners[0].fencing_token == 1
+
+
+def test_apply_job_event_failure_rolls_back_claim_and_outbox(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_job_audit_failure
+            BEFORE INSERT ON governance_audit_events
+            WHEN NEW.event_type = 'apply_job.claimed'
+            BEGIN SELECT RAISE(ABORT, 'injected job audit failure'); END
+            """
+        )
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected job audit failure"):
+        jobs.claim_next("worker-1")
+    job = jobs.get_job(job_id)
+    assert job.status.value == "queued"
+    assert job.attempts == 0
+    assert job.fencing_token == 0
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_job_events"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type LIKE 'apply_job.%'"
+        ).fetchone() == (0,)
+
+
+def test_startup_rejects_apply_job_counter_regression(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_apply_jobs SET attempts = 0, fencing_token = 0 WHERE job_id = ?",
+            (job_id,),
+        )
+
+    with pytest.raises(GovernanceEventError, match="APPLY_JOB_EVENT_ROOT_MISMATCH"):
+        store.initialize()
+
+
+def test_retry_attempt_cap_converges_to_dead_letter(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW, max_attempts=1)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    result = jobs.schedule_retry(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=claimed.fencing_token,
+        retry_delay=timedelta(seconds=1),
+        error_code="NON_RECOVERABLE",
+    )
+    assert result.status.value == "dead_letter"
+    assert result.retry_at is None
+    assert jobs.claim_next("worker-2") is None
+
+
+def test_startup_rejects_corrupt_staging_artifact_bytes(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+    jobs.stage_for_publish(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=claimed.fencing_token,
+        artifact_bytes=b"original artifact",
+        publish_request_bytes=b"original publish input",
+    )
+    trigger_sql = next(
+        statement
+        for statement in INITIAL_MIGRATIONS[10].statements
+        if "CREATE TRIGGER governance_staging_artifacts_no_update" in statement
+    )
+    with store.connect() as connection:
+        connection.execute("DROP TRIGGER governance_staging_artifacts_no_update")
+        connection.execute(
+            "UPDATE governance_staging_artifacts SET artifact_bytes = ? WHERE job_id = ?",
+            (b"corrupt artifact", job_id),
+        )
+        connection.execute(trigger_sql)
+
+    with pytest.raises(GovernanceEventError, match="APPLY_ARTIFACT_ROOT_MISMATCH"):
+        store.initialize()
+
+
+def test_claim_samples_clock_after_waiting_for_database_write_lock(tmp_path: Path) -> None:
+    store, _job_id = _queued_job_fixture(tmp_path)
+    clock = [NOW]
+    jobs = ApplyJobService(store, clock=lambda: clock[0])
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with store.connect() as connection, governance_transaction(connection):
+            future = executor.submit(
+                lambda: jobs.claim_next("worker-after-lock", lease_ttl=timedelta(seconds=5))
+            )
+            threading.Event().wait(0.05)
+            assert not future.done()
+            clock[0] += timedelta(seconds=10)
+        claimed = future.result(timeout=5)
+    assert claimed is not None
+    assert claimed.lease_expires_at == NOW + timedelta(seconds=15)

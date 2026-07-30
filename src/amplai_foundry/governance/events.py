@@ -9,6 +9,7 @@ import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from itertools import pairwise
 from typing import Protocol, cast
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
@@ -82,6 +83,22 @@ class ApplyProjectionPayload(BaseModel):
     proposal_status: str = Field(pattern=r"^apply_requested$")
     snapshot_id: str = Field(min_length=1)
     state_revision: int = Field(ge=3)
+
+
+class ApplyJobProjectionPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    aggregate_ref: ProposalRef
+    attempts: int = Field(ge=1)
+    event_type: str
+    fencing_token: int = Field(ge=1)
+    job_id: str
+    lease_expires_at: AwareDatetime | None = None
+    publish_request_digest: Digest | None = None
+    retry_at: AwareDatetime | None = None
+    staged_artifact_digest: Digest | None = None
+    status: str
+    worker_id: str
 
 
 class AuditEventView(BaseModel):
@@ -189,7 +206,10 @@ class GovernanceEventService:
             ref,
             command_id=self._decision_command_id(decision_result_key),
             event_type=f"proposal.{payload.proposal_status}",
-            authority=authority,
+            actor_id=authority.actor_ref.actor_id,
+            actor_type=authority.actor_ref.actor_type.value,
+            policy_snapshot_id=self._policy_snapshot(authority),
+            destinations=self._decision_destinations(ref, authority),
             before_state="reviewed",
             after_state=payload.proposal_status,
             definition_digest=payload.active_definition_digest,
@@ -245,11 +265,83 @@ class GovernanceEventService:
             ref,
             command_id=self._apply_command_id(apply_result_key),
             event_type="proposal.apply_requested",
-            authority=authority,
+            actor_id=authority.actor_ref.actor_id,
+            actor_type=authority.actor_ref.actor_type.value,
+            policy_snapshot_id=self._policy_snapshot(authority),
+            destinations=self._decision_destinations(ref, authority),
             before_state="approved",
             after_state="apply_requested",
             definition_digest=payload.active_definition_digest,
             source_state_revision=payload.state_revision,
+            payload=payload,
+        )
+
+    def _append_apply_job_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        job_event_id: str,
+        payload: ApplyJobProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        row = connection.execute(
+            """
+            SELECT e.command_id, e.project_namespace, e.project_id, e.proposal_id,
+                   e.event_type, e.worker_id, e.before_status, e.status,
+                   e.payload_digest, e.payload_json, s.definition_digest
+            FROM governance_apply_job_events e
+            JOIN governance_approved_snapshots s ON s.snapshot_id = e.snapshot_id
+            WHERE e.job_event_id = ?
+            """,
+            (job_event_id,),
+        ).fetchone()
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
+        payload_digest = self._digest(payload_json.encode("utf-8"))
+        if (
+            row is None
+            or tuple(str(value) for value in row[1:4]) != self._identity(ref)
+            or str(row[4]) != payload.event_type
+            or str(row[5]) != payload.worker_id
+            or str(row[7]) != payload.status
+            or str(row[8]) != payload_digest
+            or str(row[9]) != payload_json
+        ):
+            raise GovernanceEventError("APPLY_JOB_AUDIT_SOURCE_MISMATCH")
+        destinations = (
+            OutboxDestination(
+                destination_ref=(
+                    f"yaml:{ref.project_ref.namespace}:"
+                    f"{ref.project_ref.project_id}:{ref.proposal_id}"
+                )
+            ),
+            OutboxDestination(
+                destination_ref=f"apply-job:{payload.job_id}",
+                supersession_key=f"apply-job:{payload.job_id}",
+            ),
+        )
+        return self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=str(row[0]),
+            event_type=f"apply_job.{payload.event_type}",
+            actor_id=payload.worker_id,
+            actor_type="service",
+            policy_snapshot_id=self._digest(
+                self._canonical_json(
+                    {
+                        "fencing_token": payload.fencing_token,
+                        "job_id": payload.job_id,
+                        "worker_id": payload.worker_id,
+                    }
+                ).encode("utf-8")
+            ),
+            destinations=destinations,
+            before_state=str(row[6]),
+            after_state=payload.status,
+            definition_digest=str(row[10]),
+            source_state_revision=payload.fencing_token,
             payload=payload,
         )
 
@@ -260,14 +352,16 @@ class GovernanceEventService:
         *,
         command_id: str,
         event_type: str,
-        authority: AuthorityContext,
+        actor_id: str,
+        actor_type: str,
+        policy_snapshot_id: str,
+        destinations: Sequence[OutboxDestination],
         before_state: str,
         after_state: str,
         definition_digest: str,
         source_state_revision: int,
         payload: BaseModel,
     ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
-        destinations = self._decision_destinations(ref, authority)
         destination_manifest_digest = self._destination_manifest_digest(destinations)
         occurred_at = self._aware(self._clock())
         timestamp = self._timestamp(occurred_at)
@@ -282,15 +376,14 @@ class GovernanceEventService:
         aggregate_sequence = int(previous[0]) + 1 if previous is not None else 1
         previous_hash = str(previous[1]) if previous is not None else None
         event_id = self._identifier("EVT")
-        policy_snapshot_id = self._policy_snapshot(authority)
         event_hash = self._audit_hash(
             event_id=event_id,
             command_id=command_id,
             event_type=event_type,
             ref=ref,
             aggregate_sequence=aggregate_sequence,
-            actor_id=authority.actor_ref.actor_id,
-            actor_type=authority.actor_ref.actor_type.value,
+            actor_id=actor_id,
+            actor_type=actor_type,
             policy_snapshot_id=policy_snapshot_id,
             before_state=before_state,
             after_state=after_state,
@@ -344,8 +437,8 @@ class GovernanceEventService:
                 event_type,
                 *self._identity(ref),
                 aggregate_sequence,
-                authority.actor_ref.actor_id,
-                authority.actor_ref.actor_type.value,
+                actor_id,
+                actor_type,
                 policy_snapshot_id,
                 before_state,
                 after_state,
@@ -702,6 +795,160 @@ class GovernanceEventService:
                 or audit.destination_count != decision_commands[command_id][3]
             ):
                 raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
+        has_job_events = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                "AND name = 'governance_apply_job_events'"
+            ).fetchone()
+            is not None
+        )
+        job_event_rows = (
+            connection.execute(
+                """
+            SELECT e.command_id, e.project_namespace, e.project_id, e.proposal_id,
+                   e.event_type, e.worker_id, e.before_status, e.status,
+                   e.attempts, e.fencing_token, e.payload_digest, e.payload_json,
+                   e.job_id, s.definition_digest
+            FROM governance_apply_job_events e
+            JOIN governance_approved_snapshots s ON s.snapshot_id = e.snapshot_id
+            ORDER BY e.created_at, e.job_event_id
+            """
+            ).fetchall()
+            if has_job_events
+            else ()
+        )
+        for job_event in job_event_rows:
+            payload_json = str(job_event[11])
+            payload_digest = cls._digest(payload_json.encode("utf-8"))
+            try:
+                job_payload = ApplyJobProjectionPayload.model_validate_json(payload_json)
+            except ValueError as error:
+                raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH") from error
+            ref = cls._proposal_ref(job_event[1], job_event[2], job_event[3])
+            if (
+                str(job_event[10]) != payload_digest
+                or job_payload.aggregate_ref != ref
+                or job_payload.event_type != str(job_event[4])
+                or job_payload.worker_id != str(job_event[5])
+                or job_payload.status != str(job_event[7])
+                or job_payload.attempts != int(job_event[8])
+                or job_payload.fencing_token != int(job_event[9])
+                or job_payload.job_id != str(job_event[12])
+            ):
+                raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+            job_destinations = (
+                OutboxDestination(
+                    destination_ref=f"yaml:{job_event[1]}:{job_event[2]}:{job_event[3]}"
+                ),
+                OutboxDestination(
+                    destination_ref=f"apply-job:{job_event[12]}",
+                    supersession_key=f"apply-job:{job_event[12]}",
+                ),
+            )
+            command_id = str(job_event[0])
+            decision_commands[command_id] = (
+                payload_digest,
+                job_payload.fencing_token,
+                cls._destination_manifest_digest(job_destinations),
+                2,
+            )
+            audits = connection.execute(
+                "SELECT * FROM governance_audit_events WHERE command_id = ?",
+                (command_id,),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            if (
+                audit.event_type != f"apply_job.{job_event[4]}"
+                or audit.actor_id != str(job_event[5])
+                or audit.actor_type != "service"
+                or audit.before_state != str(job_event[6])
+                or audit.after_state != str(job_event[7])
+                or audit.definition_digest != str(job_event[13])
+                or audit.destination_manifest_digest != decision_commands[command_id][2]
+                or audit.destination_count != 2
+            ):
+                raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
+        if has_job_events:
+            jobs = connection.execute(
+                """
+                SELECT job_id, status, attempts, fencing_token, lease_expires_at,
+                       retry_at, staged_artifact_digest, publish_request_digest
+                FROM governance_apply_jobs
+                """
+            ).fetchall()
+            for job in jobs:
+                events = connection.execute(
+                    """
+                    SELECT e.status, e.attempts, e.fencing_token, e.lease_expires_at,
+                           e.retry_at, e.staged_artifact_digest, e.publish_request_digest
+                    FROM governance_apply_job_events e
+                    JOIN governance_audit_events a ON a.command_id = e.command_id
+                    WHERE e.job_id = ?
+                    ORDER BY a.aggregate_sequence DESC
+                    """,
+                    (job[0],),
+                ).fetchall()
+                if not events:
+                    if str(job[1]) != "queued":
+                        raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+                    continue
+                latest = events[0]
+                if tuple(job[1:]) != tuple(latest):
+                    raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+                if str(job[1]) == "publish_pending":
+                    artifact_count = connection.execute(
+                        """
+                        SELECT COUNT(*) FROM governance_staging_artifacts
+                        WHERE job_id = ? AND fencing_token = ? AND artifact_digest = ?
+                        """,
+                        (job[0], job[3], job[6]),
+                    ).fetchone()[0]
+                    publish_count = connection.execute(
+                        """
+                        SELECT COUNT(*) FROM governance_publish_inputs
+                        WHERE job_id = ? AND fencing_token = ?
+                          AND publish_request_digest = ?
+                        """,
+                        (job[0], job[3], job[7]),
+                    ).fetchone()[0]
+                    if artifact_count != 1 or publish_count != 1:
+                        raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
+                chronological = tuple(reversed(events))
+                for previous, current in pairwise(chronological):
+                    if int(current[1]) < int(previous[1]) or int(current[2]) < int(previous[2]):
+                        raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+            for table, digest_column, bytes_column in (
+                ("governance_staging_artifacts", "artifact_digest", "artifact_bytes"),
+                (
+                    "governance_publish_inputs",
+                    "publish_request_digest",
+                    "publish_request_bytes",
+                ),
+            ):
+                roots = connection.execute(
+                    f"SELECT job_id, fencing_token, {digest_column}, {bytes_column} FROM {table}"
+                ).fetchall()
+                for root in roots:
+                    if cls._digest(bytes(root[3])) != str(root[2]):
+                        raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
+                    job = connection.execute(
+                        """
+                        SELECT fencing_token, staged_artifact_digest,
+                               publish_request_digest, status
+                        FROM governance_apply_jobs WHERE job_id = ?
+                        """,
+                        (root[0],),
+                    ).fetchone()
+                    expected_index = 1 if table == "governance_staging_artifacts" else 2
+                    if (
+                        job is None
+                        or int(job[0]) != int(root[1])
+                        or str(job[expected_index]) != str(root[2])
+                        or str(job[3]) != "publish_pending"
+                    ):
+                        raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
         orphan_audit = connection.execute(
             """
             SELECT 1

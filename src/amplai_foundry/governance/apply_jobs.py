@@ -20,7 +20,11 @@ from amplai_foundry.governance.authority import (
     DirectAuthorityRequest,
 )
 from amplai_foundry.governance.definitions import ProposalDefinitionManifest
-from amplai_foundry.governance.events import ApplyProjectionPayload, GovernanceEventService
+from amplai_foundry.governance.events import (
+    ApplyJobProjectionPayload,
+    ApplyProjectionPayload,
+    GovernanceEventService,
+)
 from amplai_foundry.governance.models import (
     ActorRef,
     ActorType,
@@ -818,9 +822,13 @@ class ApplyJobService:
         store: GovernanceStore,
         *,
         clock: Callable[[], datetime] | None = None,
+        max_attempts: int = 3,
     ) -> None:
+        if max_attempts < 1:
+            raise ValueError("max_attempts는 1 이상이어야 합니다.")
         self.store = store
         self._clock = clock or _system_now
+        self._max_attempts = max_attempts
 
     def claim_next(
         self,
@@ -871,7 +879,16 @@ class ApplyJobService:
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_CLAIM_CONFLICT")
-            return self._job_view(connection, str(row[0]))
+            view = self._job_view(connection, str(row[0]))
+            self._record_event(
+                connection,
+                view,
+                event_type="claimed",
+                worker_id=worker_id,
+                before_status=str(row[1]),
+                created_at=timestamp,
+            )
+            return view
 
     def start(self, job_id: str, *, worker_id: str, fencing_token: int) -> ApplyJobView:
         return self._lease_update(
@@ -910,7 +927,16 @@ class ApplyJobService:
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
-            return self._job_view(connection, job_id)
+            view = self._job_view(connection, job_id)
+            self._record_event(
+                connection,
+                view,
+                event_type="heartbeat",
+                worker_id=worker_id,
+                before_status=view.status.value,
+                created_at=timestamp,
+            )
+            return view
 
     def stage_for_publish(
         self,
@@ -918,14 +944,39 @@ class ApplyJobService:
         *,
         worker_id: str,
         fencing_token: int,
-        artifact_digest: str,
-        publish_request_digest: str,
+        artifact_bytes: bytes,
+        publish_request_bytes: bytes,
     ) -> ApplyJobView:
-        self._validate_digest(artifact_digest)
-        self._validate_digest(publish_request_digest)
+        if not artifact_bytes or not publish_request_bytes:
+            raise ValueError("staging artifact와 publish input은 비어 있을 수 없습니다.")
+        artifact_digest = self._content_digest(artifact_bytes)
+        publish_request_digest = self._content_digest(publish_request_bytes)
         with self.store.connect() as connection, governance_transaction(connection):
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
+            connection.execute(
+                """
+                INSERT INTO governance_staging_artifacts(
+                    job_id, fencing_token, artifact_digest, artifact_bytes, created_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (job_id, fencing_token, artifact_digest, artifact_bytes, timestamp),
+            )
+            connection.execute(
+                """
+                INSERT INTO governance_publish_inputs(
+                    job_id, fencing_token, publish_request_digest,
+                    publish_request_bytes, created_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    job_id,
+                    fencing_token,
+                    publish_request_digest,
+                    publish_request_bytes,
+                    timestamp,
+                ),
+            )
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs
@@ -947,7 +998,16 @@ class ApplyJobService:
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
-            return self._job_view(connection, job_id)
+            view = self._job_view(connection, job_id)
+            self._record_event(
+                connection,
+                view,
+                event_type="publish_prepared",
+                worker_id=worker_id,
+                before_status="running",
+                created_at=timestamp,
+            )
+            return view
 
     def schedule_retry(
         self,
@@ -966,16 +1026,23 @@ class ApplyJobService:
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
             retry_at = ApplyGrantService._timestamp(now + retry_delay)
+            before = connection.execute(
+                "SELECT status, attempts FROM governance_apply_jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
+            exhausted = before is not None and int(before[1]) >= self._max_attempts
+            next_status = "dead_letter" if exhausted else "retry_wait"
+            next_retry_at = None if exhausted else retry_at
             updated = connection.execute(
                 """
                 UPDATE governance_apply_jobs
-                SET status = 'retry_wait', lease_owner = NULL, lease_expires_at = NULL,
+                SET status = ?, lease_owner = NULL, lease_expires_at = NULL,
                     retry_at = ?, last_error_code = ?, updated_at = ?
                 WHERE job_id = ? AND status IN ('leased', 'running')
                   AND lease_owner = ? AND fencing_token = ? AND lease_expires_at > ?
                 """,
                 (
-                    retry_at,
+                    next_status,
+                    next_retry_at,
                     error_code,
                     timestamp,
                     job_id,
@@ -986,7 +1053,16 @@ class ApplyJobService:
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
-            return self._job_view(connection, job_id)
+            view = self._job_view(connection, job_id)
+            self._record_event(
+                connection,
+                view,
+                event_type="dead_lettered" if exhausted else "retry_scheduled",
+                worker_id=worker_id,
+                before_status=str(before[0]) if before is not None else "missing",
+                created_at=timestamp,
+            )
+            return view
 
     def get_job(self, job_id: str) -> ApplyJobView:
         with self.store.connect() as connection:
@@ -1022,7 +1098,90 @@ class ApplyJobService:
             )
             if updated.rowcount != 1:
                 raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
-            return self._job_view(connection, job_id)
+            view = self._job_view(connection, job_id)
+            self._record_event(
+                connection,
+                view,
+                event_type="started",
+                worker_id=worker_id,
+                before_status=expected_status.value,
+                created_at=timestamp,
+            )
+            return view
+
+    def _record_event(
+        self,
+        connection: sqlite3.Connection,
+        view: ApplyJobView,
+        *,
+        event_type: str,
+        worker_id: str,
+        before_status: str,
+        created_at: str,
+    ) -> None:
+        payload = ApplyJobProjectionPayload(
+            aggregate_ref=view.proposal_ref,
+            attempts=view.attempts,
+            event_type=event_type,
+            fencing_token=view.fencing_token,
+            job_id=view.job_id,
+            lease_expires_at=view.lease_expires_at,
+            publish_request_digest=view.publish_request_digest,
+            retry_at=view.retry_at,
+            staged_artifact_digest=view.staged_artifact_digest,
+            status=view.status.value,
+            worker_id=worker_id,
+        )
+        payload_json = GovernanceEventService._canonical_json(payload.model_dump(mode="json"))
+        payload_digest = GovernanceEventService._digest(payload_json.encode("utf-8"))
+        job_event_id = ApplyGrantService._identifier("JEV")
+        command_id = f"apply-job:{job_event_id}"
+        connection.execute(
+            """
+            INSERT INTO governance_apply_job_events(
+                job_event_id, command_id, job_id, snapshot_id, project_namespace,
+                project_id, proposal_id, event_type, worker_id, before_status,
+                status, attempts, fencing_token, lease_expires_at, retry_at,
+                staged_artifact_digest, publish_request_digest, last_error_code,
+                payload_digest, payload_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                job_event_id,
+                command_id,
+                view.job_id,
+                view.snapshot_id,
+                *ApplyGrantService._identity(view.proposal_ref),
+                event_type,
+                worker_id,
+                before_status,
+                view.status.value,
+                view.attempts,
+                view.fencing_token,
+                (
+                    ApplyGrantService._timestamp(view.lease_expires_at)
+                    if view.lease_expires_at is not None
+                    else None
+                ),
+                (
+                    ApplyGrantService._timestamp(view.retry_at)
+                    if view.retry_at is not None
+                    else None
+                ),
+                view.staged_artifact_digest,
+                view.publish_request_digest,
+                view.last_error_code,
+                payload_digest,
+                payload_json,
+                created_at,
+            ),
+        )
+        GovernanceEventService(self.store, clock=self._clock)._append_apply_job_in_transaction(
+            connection,
+            view.proposal_ref,
+            job_event_id=job_event_id,
+            payload=payload,
+        )
 
     @staticmethod
     def _job_view(connection: sqlite3.Connection, job_id: str) -> ApplyJobView:
@@ -1065,3 +1224,7 @@ class ApplyJobService:
             or any(character not in "0123456789abcdef" for character in value[7:])
         ):
             raise ValueError("digest는 canonical SHA-256이어야 합니다.")
+
+    @staticmethod
+    def _content_digest(value: bytes) -> str:
+        return f"sha256:{hashlib.sha256(value).hexdigest()}"

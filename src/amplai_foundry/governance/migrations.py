@@ -1127,6 +1127,105 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=11,
+        name="apply-job-lifecycle-roots",
+        statements=(
+            """
+            CREATE TABLE governance_apply_job_events (
+                job_event_id TEXT PRIMARY KEY NOT NULL,
+                command_id TEXT NOT NULL UNIQUE,
+                job_id TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                event_type TEXT NOT NULL CHECK (event_type IN (
+                    'claimed', 'started', 'heartbeat', 'retry_scheduled',
+                    'publish_prepared', 'dead_lettered'
+                )),
+                worker_id TEXT NOT NULL,
+                before_status TEXT NOT NULL,
+                status TEXT NOT NULL,
+                attempts INTEGER NOT NULL CHECK (attempts >= 1),
+                fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+                lease_expires_at TEXT,
+                retry_at TEXT,
+                staged_artifact_digest TEXT,
+                publish_request_digest TEXT,
+                last_error_code TEXT,
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) REFERENCES governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) ON DELETE RESTRICT,
+                CHECK (length(payload_digest) = 71 AND substr(payload_digest, 1, 7) = 'sha256:'),
+                CHECK (staged_artifact_digest IS NULL OR length(staged_artifact_digest) = 71),
+                CHECK (publish_request_digest IS NULL OR length(publish_request_digest) = 71)
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_apply_job_events_no_update
+            BEFORE UPDATE ON governance_apply_job_events
+            BEGIN SELECT RAISE(ABORT, 'apply job event is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_apply_job_events_no_delete
+            BEFORE DELETE ON governance_apply_job_events
+            BEGIN SELECT RAISE(ABORT, 'apply job event is durable'); END
+            """,
+            """
+            CREATE TABLE governance_staging_artifacts (
+                job_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+                artifact_digest TEXT NOT NULL,
+                artifact_bytes BLOB NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (job_id, fencing_token),
+                FOREIGN KEY (job_id) REFERENCES governance_apply_jobs(job_id) ON DELETE RESTRICT,
+                CHECK (length(artifact_digest) = 71 AND substr(artifact_digest, 1, 7) = 'sha256:')
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_staging_artifacts_no_update
+            BEFORE UPDATE ON governance_staging_artifacts
+            BEGIN SELECT RAISE(ABORT, 'staging artifact is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_staging_artifacts_no_delete
+            BEFORE DELETE ON governance_staging_artifacts
+            BEGIN SELECT RAISE(ABORT, 'staging artifact is durable'); END
+            """,
+            """
+            CREATE TABLE governance_publish_inputs (
+                job_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+                publish_request_digest TEXT NOT NULL,
+                publish_request_bytes BLOB NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (job_id, fencing_token),
+                FOREIGN KEY (job_id) REFERENCES governance_apply_jobs(job_id) ON DELETE RESTRICT,
+                CHECK (
+                    length(publish_request_digest) = 71
+                    AND substr(publish_request_digest, 1, 7) = 'sha256:'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_publish_inputs_no_update
+            BEFORE UPDATE ON governance_publish_inputs
+            BEGIN SELECT RAISE(ABORT, 'publish input is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_inputs_no_delete
+            BEFORE DELETE ON governance_publish_inputs
+            BEGIN SELECT RAISE(ABORT, 'publish input is durable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -1525,6 +1624,48 @@ class MigrationRunner:
                 *apply_result_columns[:6],
                 ("grant_id", "TEXT", 1, 0),
                 *apply_result_columns[6:],
+            )
+        if schema_version >= 11:
+            expected_columns.update(
+                {
+                    "governance_apply_job_events": (
+                        ("job_event_id", "TEXT", 1, 1),
+                        ("command_id", "TEXT", 1, 0),
+                        ("job_id", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("event_type", "TEXT", 1, 0),
+                        ("worker_id", "TEXT", 1, 0),
+                        ("before_status", "TEXT", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("attempts", "INTEGER", 1, 0),
+                        ("fencing_token", "INTEGER", 1, 0),
+                        ("lease_expires_at", "TEXT", 0, 0),
+                        ("retry_at", "TEXT", 0, 0),
+                        ("staged_artifact_digest", "TEXT", 0, 0),
+                        ("publish_request_digest", "TEXT", 0, 0),
+                        ("last_error_code", "TEXT", 0, 0),
+                        ("payload_digest", "TEXT", 1, 0),
+                        ("payload_json", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_staging_artifacts": (
+                        ("job_id", "TEXT", 1, 1),
+                        ("fencing_token", "INTEGER", 1, 2),
+                        ("artifact_digest", "TEXT", 1, 0),
+                        ("artifact_bytes", "BLOB", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_publish_inputs": (
+                        ("job_id", "TEXT", 1, 1),
+                        ("fencing_token", "INTEGER", 1, 2),
+                        ("publish_request_digest", "TEXT", 1, 0),
+                        ("publish_request_bytes", "BLOB", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                }
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

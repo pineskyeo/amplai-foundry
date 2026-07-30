@@ -227,6 +227,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (8, "audit-manifest-integrity-finalize"),
         (9, "apply-grant-job-foundation"),
         (10, "apply-request-grant-root"),
+        (11, "apply-job-lifecycle-roots"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -441,7 +442,7 @@ def test_version_nine_store_upgrades_without_rewriting_frozen_migration(
     assert version_nine.initialize().schema_version == 9
 
     upgraded = GovernanceStore(path)
-    assert upgraded.initialize().schema_version == 10
+    assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
     with upgraded.connect() as connection:
         columns = tuple(
             str(row[1])
