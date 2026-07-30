@@ -20,6 +20,7 @@ from amplai_foundry.governance.authority import (
     DirectAuthorityRequest,
 )
 from amplai_foundry.governance.definitions import ProposalDefinitionManifest
+from amplai_foundry.governance.events import ApplyProjectionPayload, GovernanceEventService
 from amplai_foundry.governance.models import (
     ActorRef,
     ActorType,
@@ -92,6 +93,18 @@ class ApplyGrantView(BaseModel):
     expires_at: AwareDatetime
     state: ApplyGrantState
     resolved_at: AwareDatetime | None = None
+
+
+class ApplyRequestResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    proposal_ref: ProposalRef
+    snapshot_id: str
+    grant_id: str
+    job_id: str
+    proposal_status: Literal["apply_requested"]
+    processed_at: AwareDatetime
+    replayed: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -468,3 +481,315 @@ class ApplyGrantService:
     @staticmethod
     def _timestamp(value: datetime) -> str:
         return value.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+class ApplyRequestService:
+    """Atomically consume an ApplyGrant and create one queued ApplyJob."""
+
+    def __init__(
+        self,
+        store: GovernanceStore,
+        authority_service: AuthorityService,
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        self.store = store
+        self.authority_service = authority_service
+        self._clock = clock or _system_now
+
+    def request_apply(
+        self,
+        ref: ProposalRef,
+        *,
+        authority_request: DirectAuthorityRequest,
+        raw_grant: str,
+        idempotency_key: str,
+        request_fingerprint: str,
+    ) -> ApplyRequestResult:
+        self._validate_command(idempotency_key, request_fingerprint, raw_grant)
+        with self.store.connect() as connection, governance_transaction(connection):
+            authority = self._authenticate(authority_request, connection)
+            self._require_apply_authority(authority, ref)
+            channel_json = ApplyGrantService._channel_json(authority.source.channel)
+            replay = self._result_row(connection, idempotency_key)
+            if replay is not None:
+                return self._replay_result(
+                    replay,
+                    ref=ref,
+                    authority=authority,
+                    channel_json=channel_json,
+                    request_fingerprint=request_fingerprint,
+                )
+            if self._contains_persisted_secret(connection, idempotency_key):
+                raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")
+
+            processed_at = ApplyGrantService._aware(self._clock())
+            grant_hash = ApplyGrantService._secret_hash(raw_grant)
+            grant = connection.execute(
+                """
+                SELECT grant_id, snapshot_id, project_namespace, project_id, proposal_id,
+                       approved_snapshot_digest, content_revision, state_revision,
+                       decision_epoch, allowed_action, allowed_actor_id,
+                       allowed_actor_type, bound_channel_json, expires_at, state
+                FROM governance_apply_grants WHERE grant_hash = ?
+                """,
+                (grant_hash,),
+            ).fetchone()
+            if grant is None:
+                raise ApplyGovernanceError("APPLY_GRANT_INVALID")
+            if tuple(str(value) for value in grant[2:5]) != ApplyGrantService._identity(ref):
+                raise ApplyGovernanceError("APPLY_GRANT_INVALID")
+            if str(grant[14]) != ApplyGrantState.ISSUED.value:
+                raise ApplyGovernanceError("APPLY_GRANT_CONSUMED")
+            if processed_at >= self._parse_timestamp(str(grant[13])):
+                raise ApplyGovernanceError("APPLY_GRANT_EXPIRED")
+            if str(grant[9]) != "request_apply":
+                raise ApplyGovernanceError("APPLY_GRANT_INVALID")
+            if (str(grant[10]), str(grant[11])) != (
+                authority.actor_ref.actor_id,
+                authority.actor_ref.actor_type.value,
+            ):
+                raise ApplyGovernanceError("APPLY_GRANT_ACTOR_MISMATCH")
+            if str(grant[12]) != channel_json:
+                raise ApplyGovernanceError("APPLY_GRANT_CHANNEL_MISMATCH")
+
+            snapshot = connection.execute(
+                """
+                SELECT definition_digest, snapshot_digest, content_revision,
+                       state_revision, decision_epoch, expected_base_revision
+                FROM governance_approved_snapshots
+                WHERE snapshot_id = ? AND project_namespace = ? AND project_id = ?
+                  AND proposal_id = ?
+                """,
+                (grant[1], *ApplyGrantService._identity(ref)),
+            ).fetchone()
+            proposal = connection.execute(
+                """
+                SELECT active_definition_digest, content_revision, state_revision,
+                       decision_epoch, status
+                FROM governance_active_proposals
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                """,
+                ApplyGrantService._identity(ref),
+            ).fetchone()
+            expected_proposal = (
+                (snapshot[0], snapshot[2], snapshot[3], snapshot[4], "approved")
+                if snapshot is not None
+                else None
+            )
+            if (
+                snapshot is None
+                or tuple(snapshot[1:5]) != tuple(grant[5:9])
+                or proposal is None
+                or tuple(proposal) != expected_proposal
+            ):
+                raise ApplyGovernanceError("APPROVED_SNAPSHOT_STALE")
+            active_job = connection.execute(
+                """
+                SELECT 1 FROM governance_apply_jobs
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                  AND status IN (
+                    'queued', 'leased', 'running', 'retry_wait', 'staged',
+                    'publish_pending', 'recovery_hold'
+                  )
+                """,
+                ApplyGrantService._identity(ref),
+            ).fetchone()
+            if active_job is not None:
+                raise ApplyGovernanceError("APPLY_ALREADY_RUNNING")
+
+            timestamp = ApplyGrantService._timestamp(processed_at)
+            updated = connection.execute(
+                """
+                UPDATE governance_active_proposals
+                SET status = 'apply_requested', state_revision = state_revision + 1,
+                    updated_at = ?
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                  AND status = 'approved' AND active_definition_digest = ?
+                  AND content_revision = ? AND state_revision = ? AND decision_epoch = ?
+                """,
+                (timestamp, *ApplyGrantService._identity(ref), *proposal[:4]),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPROVED_SNAPSHOT_STALE")
+            consumed = connection.execute(
+                """
+                UPDATE governance_apply_grants
+                SET state = 'consumed', resolved_at = ?
+                WHERE grant_id = ? AND state = 'issued'
+                """,
+                (timestamp, grant[0]),
+            )
+            if consumed.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_GRANT_CONSUMED")
+            job_id = ApplyGrantService._identifier("JOB")
+            connection.execute(
+                """
+                INSERT INTO governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    approved_snapshot_digest, expected_base_revision, status,
+                    attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
+                    staged_artifact_digest, publish_request_digest, last_error_code,
+                    created_at, updated_at
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, 'queued', 0, 0,
+                    NULL, NULL, NULL, NULL, NULL, NULL, ?, ?
+                )
+                """,
+                (
+                    job_id,
+                    grant[1],
+                    *ApplyGrantService._identity(ref),
+                    grant[5],
+                    snapshot[5],
+                    timestamp,
+                    timestamp,
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO governance_apply_request_results(
+                    idempotency_key, request_fingerprint, project_namespace, project_id,
+                    proposal_id, snapshot_id, grant_id, job_id, actor_id, actor_type,
+                    channel_json, proposal_status, processed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'apply_requested', ?)
+                """,
+                (
+                    idempotency_key,
+                    request_fingerprint,
+                    *ApplyGrantService._identity(ref),
+                    grant[1],
+                    grant[0],
+                    job_id,
+                    authority.actor_ref.actor_id,
+                    authority.actor_ref.actor_type.value,
+                    channel_json,
+                    timestamp,
+                ),
+            )
+            next_state_revision = int(snapshot[3]) + 1
+            events = GovernanceEventService(self.store, clock=self._clock)
+            events._append_apply_request_in_transaction(
+                connection,
+                ref,
+                apply_result_key=idempotency_key,
+                authority=authority,
+                payload=ApplyProjectionPayload(
+                    action="request_apply",
+                    active_definition_digest=str(snapshot[0]),
+                    aggregate_ref=ref,
+                    approved_snapshot_digest=str(snapshot[1]),
+                    content_revision=int(snapshot[2]),
+                    decision_epoch=int(snapshot[4]),
+                    expected_base_revision=str(snapshot[5]),
+                    job_id=job_id,
+                    proposal_status="apply_requested",
+                    snapshot_id=str(grant[1]),
+                    state_revision=next_state_revision,
+                ),
+            )
+            return ApplyRequestResult(
+                proposal_ref=ref,
+                snapshot_id=str(grant[1]),
+                grant_id=str(grant[0]),
+                job_id=job_id,
+                proposal_status="apply_requested",
+                processed_at=processed_at,
+            )
+
+    def _authenticate(
+        self, request: DirectAuthorityRequest, connection: sqlite3.Connection
+    ) -> AuthorityContext:
+        try:
+            return self.authority_service.authenticate(request, connection=connection)
+        except AuthorityResolutionError as error:
+            raise ApplyGovernanceError(error.code) from error
+
+    @staticmethod
+    def _require_apply_authority(authority: AuthorityContext, ref: ProposalRef) -> None:
+        ApplyGrantService._require_apply_authority(authority, ref)
+
+    @staticmethod
+    def _result_row(connection: sqlite3.Connection, key: str) -> tuple[object, ...] | None:
+        return cast(
+            tuple[object, ...] | None,
+            connection.execute(
+                """
+                SELECT request_fingerprint, project_namespace, project_id, proposal_id,
+                       snapshot_id, grant_id, job_id, actor_id, actor_type, channel_json,
+                       proposal_status, processed_at
+                FROM governance_apply_request_results WHERE idempotency_key = ?
+                """,
+                (key,),
+            ).fetchone(),
+        )
+
+    @staticmethod
+    def _replay_result(
+        row: tuple[object, ...],
+        *,
+        ref: ProposalRef,
+        authority: AuthorityContext,
+        channel_json: str,
+        request_fingerprint: str,
+    ) -> ApplyRequestResult:
+        original_ref = ApplyGrantService._proposal_ref(row[1], row[2], row[3])
+        if (
+            str(row[0]) != request_fingerprint
+            or original_ref != ref
+            or (str(row[7]), str(row[8]))
+            != (authority.actor_ref.actor_id, authority.actor_ref.actor_type.value)
+            or str(row[9]) != channel_json
+        ):
+            raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")
+        return ApplyRequestResult(
+            proposal_ref=original_ref,
+            snapshot_id=str(row[4]),
+            grant_id=str(row[5]),
+            job_id=str(row[6]),
+            proposal_status="apply_requested",
+            processed_at=ApplyRequestService._parse_timestamp(str(row[11])),
+            replayed=True,
+        )
+
+    @staticmethod
+    def _validate_command(key: str, fingerprint: str, raw_grant: str) -> None:
+        if not key.strip():
+            raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
+        if len(key) > 512:
+            raise ValueError("idempotency_key는 512자를 초과할 수 없습니다.")
+        if len(fingerprint) != 64 or any(c not in "0123456789abcdef" for c in fingerprint):
+            raise ValueError("request_fingerprint는 lowercase SHA-256 hex여야 합니다.")
+        if not raw_grant or len(raw_grant.encode("utf-8")) > 64:
+            raise ApplyGovernanceError("APPLY_GRANT_INVALID")
+        if raw_grant in key:
+            raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")
+
+    @staticmethod
+    def _contains_persisted_secret(connection: sqlite3.Connection, value: str) -> bool:
+        token_length = 32
+        candidates = {
+            value[index : index + token_length]
+            for index in range(max(len(value) - token_length + 1, 0))
+            if all(c in "0123456789abcdef" for c in value[index : index + token_length])
+        }
+        if not candidates:
+            return False
+        hashes = tuple(ApplyGrantService._secret_hash(candidate) for candidate in candidates)
+        placeholders = ",".join("?" for _ in hashes)
+        return (
+            connection.execute(
+                f"""
+            SELECT 1 FROM (
+                SELECT token_hash AS secret_hash FROM governance_action_tokens
+                UNION ALL SELECT grant_hash AS secret_hash FROM governance_apply_grants
+            ) WHERE secret_hash IN ({placeholders}) LIMIT 1
+            """,
+                hashes,
+            ).fetchone()
+            is not None
+        )
+
+    @staticmethod
+    def _parse_timestamp(value: str) -> datetime:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))

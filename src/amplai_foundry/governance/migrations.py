@@ -824,6 +824,10 @@ INITIAL_MIGRATIONS = (
                 expires_at TEXT NOT NULL,
                 state TEXT NOT NULL CHECK (state IN ('issued', 'consumed', 'expired', 'revoked')),
                 resolved_at TEXT,
+                UNIQUE (
+                    grant_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    allowed_actor_id, allowed_actor_type, bound_channel_json
+                ),
                 FOREIGN KEY (
                     snapshot_id, project_namespace, project_id, proposal_id,
                     approved_snapshot_digest, content_revision, state_revision,
@@ -996,6 +1000,7 @@ INITIAL_MIGRATIONS = (
                 project_id TEXT NOT NULL,
                 proposal_id TEXT NOT NULL,
                 snapshot_id TEXT NOT NULL,
+                grant_id TEXT NOT NULL UNIQUE,
                 job_id TEXT NOT NULL UNIQUE,
                 actor_id TEXT NOT NULL,
                 actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
@@ -1006,6 +1011,13 @@ INITIAL_MIGRATIONS = (
                     REFERENCES governance_approved_snapshots(
                         snapshot_id, project_namespace, project_id, proposal_id
                     ) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    grant_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    actor_id, actor_type, channel_json
+                ) REFERENCES governance_apply_grants(
+                    grant_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    allowed_actor_id, allowed_actor_type, bound_channel_json
+                ) ON DELETE RESTRICT,
                 FOREIGN KEY (
                     job_id, snapshot_id, project_namespace, project_id, proposal_id
                 ) REFERENCES governance_apply_jobs(
@@ -1416,6 +1428,7 @@ class MigrationRunner:
                         ("project_id", "TEXT", 1, 0),
                         ("proposal_id", "TEXT", 1, 0),
                         ("snapshot_id", "TEXT", 1, 0),
+                        ("grant_id", "TEXT", 1, 0),
                         ("job_id", "TEXT", 1, 0),
                         ("actor_id", "TEXT", 1, 0),
                         ("actor_type", "TEXT", 1, 0),

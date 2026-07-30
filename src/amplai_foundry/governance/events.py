@@ -66,6 +66,24 @@ class DecisionProjectionPayload(BaseModel):
     state_revision: int = Field(ge=2)
 
 
+class ApplyProjectionPayload(BaseModel):
+    """Secret-free projection payload derived from a persisted Apply request."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    action: str = Field(pattern=r"^request_apply$")
+    active_definition_digest: Digest
+    aggregate_ref: ProposalRef
+    approved_snapshot_digest: Digest
+    content_revision: int = Field(ge=1)
+    decision_epoch: int = Field(ge=1)
+    expected_base_revision: str = Field(pattern=r"^[0-9a-f]{7,64}$")
+    job_id: str = Field(min_length=1)
+    proposal_status: str = Field(pattern=r"^apply_requested$")
+    snapshot_id: str = Field(min_length=1)
+    state_revision: int = Field(ge=3)
+
+
 class AuditEventView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -166,13 +184,90 @@ class GovernanceEventService:
         )
         if decision_result is None or tuple(decision_result) != expected_result:
             raise GovernanceEventError("DECISION_AUDIT_SOURCE_MISMATCH")
+        return self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=self._decision_command_id(decision_result_key),
+            event_type=f"proposal.{payload.proposal_status}",
+            authority=authority,
+            before_state="reviewed",
+            after_state=payload.proposal_status,
+            definition_digest=payload.active_definition_digest,
+            source_state_revision=payload.state_revision,
+            payload=payload,
+        )
+
+    def _append_apply_request_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        apply_result_key: str,
+        authority: AuthorityContext,
+        payload: ApplyProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        if authority.project_ref != ref.project_ref:
+            raise GovernanceEventError("AUTHORITY_DENIED")
+        source = connection.execute(
+            """
+            SELECT r.project_namespace, r.project_id, r.proposal_id, r.actor_id,
+                   r.actor_type, r.proposal_status, r.snapshot_id, r.job_id,
+                   s.definition_digest, s.snapshot_digest, s.content_revision,
+                   s.state_revision + 1, s.decision_epoch, s.expected_base_revision
+            FROM governance_apply_request_results r
+            JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
+              AND s.project_namespace = r.project_namespace
+              AND s.project_id = r.project_id AND s.proposal_id = r.proposal_id
+            WHERE r.idempotency_key = ?
+            """,
+            (apply_result_key,),
+        ).fetchone()
+        expected = (
+            *self._identity(ref),
+            authority.actor_ref.actor_id,
+            authority.actor_ref.actor_type.value,
+            payload.proposal_status,
+            payload.snapshot_id,
+            payload.job_id,
+            payload.active_definition_digest,
+            payload.approved_snapshot_digest,
+            payload.content_revision,
+            payload.state_revision,
+            payload.decision_epoch,
+            payload.expected_base_revision,
+        )
+        if source is None or tuple(source) != expected:
+            raise GovernanceEventError("APPLY_AUDIT_SOURCE_MISMATCH")
+        return self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=self._apply_command_id(apply_result_key),
+            event_type="proposal.apply_requested",
+            authority=authority,
+            before_state="approved",
+            after_state="apply_requested",
+            definition_digest=payload.active_definition_digest,
+            source_state_revision=payload.state_revision,
+            payload=payload,
+        )
+
+    def _append_verified_event_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        command_id: str,
+        event_type: str,
+        authority: AuthorityContext,
+        before_state: str,
+        after_state: str,
+        definition_digest: str,
+        source_state_revision: int,
+        payload: BaseModel,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
         destinations = self._decision_destinations(ref, authority)
-        command_id = self._decision_command_id(decision_result_key)
-        event_type = f"proposal.{payload.proposal_status}"
-        before_state = "reviewed"
-        after_state = payload.proposal_status
-        definition_digest = payload.active_definition_digest
-        source_state_revision = payload.state_revision
         destination_manifest_digest = self._destination_manifest_digest(destinations)
         occurred_at = self._aware(self._clock())
         timestamp = self._timestamp(occurred_at)
@@ -367,6 +462,80 @@ class GovernanceEventService:
         ).fetchone()
         if active_decision_mismatch is not None:
             raise GovernanceEventError("DECISION_RESULT_ROOT_MISMATCH")
+        has_apply_tables = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                "AND name = 'governance_apply_grants'"
+            ).fetchone()
+            is not None
+        )
+        consumed_grant_mismatch = (
+            connection.execute(
+                """
+            SELECT 1
+            FROM governance_apply_grants g
+            LEFT JOIN governance_apply_request_results r ON r.grant_id = g.grant_id
+            WHERE g.state = 'consumed'
+            GROUP BY g.grant_id
+            HAVING COUNT(r.idempotency_key) != 1
+            LIMIT 1
+            """
+            ).fetchone()
+            if has_apply_tables
+            else None
+        )
+        if consumed_grant_mismatch is not None:
+            raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
+        apply_result_mismatch = (
+            connection.execute(
+                """
+            SELECT 1
+            FROM governance_apply_request_results r
+            JOIN governance_apply_grants g ON g.grant_id = r.grant_id
+            JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
+            JOIN governance_apply_jobs j ON j.job_id = r.job_id
+            WHERE g.state != 'consumed'
+               OR g.snapshot_id != r.snapshot_id
+               OR g.project_namespace != r.project_namespace
+               OR g.project_id != r.project_id OR g.proposal_id != r.proposal_id
+               OR g.allowed_action != 'request_apply'
+               OR g.allowed_actor_id != r.actor_id OR g.allowed_actor_type != r.actor_type
+               OR g.bound_channel_json != r.channel_json
+               OR j.snapshot_id != r.snapshot_id
+               OR j.project_namespace != r.project_namespace
+               OR j.project_id != r.project_id OR j.proposal_id != r.proposal_id
+               OR j.approved_snapshot_digest != s.snapshot_digest
+               OR j.expected_base_revision != s.expected_base_revision
+            LIMIT 1
+            """
+            ).fetchone()
+            if has_apply_tables
+            else None
+        )
+        if apply_result_mismatch is not None:
+            raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
+        active_apply_mismatch = (
+            connection.execute(
+                """
+            SELECT 1 FROM governance_active_proposals p
+            WHERE p.status = 'apply_requested' AND (
+                SELECT COUNT(*) FROM governance_apply_request_results r
+                JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
+                WHERE r.project_namespace = p.project_namespace
+                  AND r.project_id = p.project_id AND r.proposal_id = p.proposal_id
+                  AND s.definition_digest = p.active_definition_digest
+                  AND s.content_revision = p.content_revision
+                  AND s.state_revision + 1 = p.state_revision
+                  AND s.decision_epoch = p.decision_epoch
+            ) != 1
+            LIMIT 1
+            """
+            ).fetchone()
+            if has_apply_tables
+            else None
+        )
+        if active_apply_mismatch is not None:
+            raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
         decision_commands: dict[str, tuple[str, int, str, int]] = {}
         decision_rows = connection.execute(
             """
@@ -430,6 +599,79 @@ class GovernanceEventService:
                 or audit.destination_count != decision_commands[command_id][3]
             ):
                 raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
+        apply_rows = (
+            connection.execute(
+                """
+            SELECT r.idempotency_key, r.project_namespace, r.project_id, r.proposal_id,
+                   r.actor_id, r.actor_type, r.proposal_status, r.snapshot_id, r.job_id,
+                   r.channel_json, s.definition_digest, s.snapshot_digest,
+                   s.content_revision, s.state_revision + 1, s.decision_epoch,
+                   s.expected_base_revision
+            FROM governance_apply_request_results r
+            JOIN governance_approved_snapshots s ON s.snapshot_id = r.snapshot_id
+              AND s.project_namespace = r.project_namespace
+              AND s.project_id = r.project_id AND s.proposal_id = r.proposal_id
+            """
+            ).fetchall()
+            if has_apply_tables
+            else ()
+        )
+        for apply in apply_rows:
+            command_id = cls._apply_command_id(str(apply[0]))
+            ref = cls._proposal_ref(apply[1], apply[2], apply[3])
+            payload = ApplyProjectionPayload(
+                action="request_apply",
+                active_definition_digest=str(apply[10]),
+                aggregate_ref=ref,
+                approved_snapshot_digest=str(apply[11]),
+                content_revision=int(apply[12]),
+                decision_epoch=int(apply[14]),
+                expected_base_revision=str(apply[15]),
+                job_id=str(apply[8]),
+                proposal_status="apply_requested",
+                snapshot_id=str(apply[7]),
+                state_revision=int(apply[13]),
+            )
+            expected_payload_json = cls._canonical_json(payload.model_dump(mode="json"))
+            channel = cast(dict[str, object], json.loads(str(apply[9])))
+            channel_digest = hashlib.sha256(
+                cls._canonical_json(channel).encode("utf-8")
+            ).hexdigest()
+            apply_destinations = (
+                OutboxDestination(destination_ref=f"yaml:{apply[1]}:{apply[2]}:{apply[3]}"),
+                OutboxDestination(
+                    destination_ref=f"provider:{channel['provider']}:{channel_digest}",
+                    supersession_key=f"proposal-card:{apply[3]}",
+                ),
+            )
+            decision_commands[command_id] = (
+                cls._digest(expected_payload_json.encode("utf-8")),
+                int(apply[13]),
+                cls._destination_manifest_digest(apply_destinations),
+                len(apply_destinations),
+            )
+            audits = connection.execute(
+                """
+                SELECT * FROM governance_audit_events
+                WHERE command_id = ? AND project_namespace = ?
+                  AND project_id = ? AND proposal_id = ?
+                """,
+                (command_id, apply[1], apply[2], apply[3]),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            if (
+                audit.event_type != "proposal.apply_requested"
+                or audit.actor_id != str(apply[4])
+                or audit.actor_type != str(apply[5])
+                or audit.before_state != "approved"
+                or audit.after_state != "apply_requested"
+                or audit.definition_digest != str(apply[10])
+                or audit.destination_manifest_digest != decision_commands[command_id][2]
+                or audit.destination_count != decision_commands[command_id][3]
+            ):
+                raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
         orphan_audit = connection.execute(
             """
             SELECT 1
@@ -468,7 +710,7 @@ class GovernanceEventService:
                 if view.aggregate_sequence != expected_sequence:
                     raise GovernanceEventError("AUDIT_SEQUENCE_GAP")
                 if view.command_id not in decision_commands:
-                    raise GovernanceEventError("AUDIT_DECISION_SOURCE_MISMATCH")
+                    raise GovernanceEventError("AUDIT_SOURCE_MISMATCH")
                 if view.previous_event_hash != previous_hash:
                     raise GovernanceEventError("AUDIT_HASH_CHAIN_INVALID")
                 expected_hash = cls._audit_hash_from_view(view)
@@ -753,6 +995,11 @@ class GovernanceEventService:
     def _decision_command_id(idempotency_key: str) -> str:
         digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
         return f"decision:sha256:{digest}"
+
+    @staticmethod
+    def _apply_command_id(idempotency_key: str) -> str:
+        digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+        return f"apply:sha256:{digest}"
 
     @staticmethod
     def _audit_view(row: tuple[object, ...]) -> AuditEventView:

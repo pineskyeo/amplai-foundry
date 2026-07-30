@@ -31,7 +31,11 @@ from amplai_foundry.governance import (
     ProposalSubmissionService,
     canonicalize_definition,
 )
-from amplai_foundry.governance.apply_jobs import ApplyGovernanceError, ApplyGrantService
+from amplai_foundry.governance.apply_jobs import (
+    ApplyGovernanceError,
+    ApplyGrantService,
+    ApplyRequestService,
+)
 from amplai_foundry.governance.store import GovernanceStore
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
@@ -437,7 +441,7 @@ def test_snapshot_job_and_result_root_constraints_reject_malformed_identity(
                 """
                 INSERT INTO governance_apply_request_results VALUES (
                     'apply-result-evil', ?, 'wrong/ns', 'wrong-project', ?,
-                    ?, 'JOB-VALID', 'ACT-APPLIER-1', 'human', ?,
+                    ?, ?, 'JOB-VALID', 'ACT-APPLIER-1', 'human', ?,
                     'apply_requested', ?
                 )
                 """,
@@ -445,6 +449,7 @@ def test_snapshot_job_and_result_root_constraints_reject_malformed_identity(
                     hashlib.sha256(b"apply-result-evil").hexdigest(),
                     PROPOSAL.proposal_id,
                     snapshot.snapshot_id,
+                    issued.record.grant_id,
                     CHANNEL.model_dump_json(exclude_none=True),
                     NOW.isoformat(),
                 ),
@@ -457,3 +462,160 @@ def test_snapshot_job_and_result_root_constraints_reject_malformed_identity(
                 WHERE job_id = 'JOB-VALID'
                 """
             )
+
+
+def test_apply_request_atomically_creates_job_audit_and_two_outbox_events(
+    tmp_path: Path,
+) -> None:
+    store, active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    service = ApplyRequestService(
+        store,
+        grants.authority_service,
+        clock=lambda: NOW + timedelta(seconds=1),
+    )
+    key = "apply-request-1"
+    fingerprint = hashlib.sha256(key.encode()).hexdigest()
+
+    result = service.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key=key,
+        request_fingerprint=fingerprint,
+    )
+
+    assert result.proposal_status == "apply_requested"
+    assert result.grant_id == issued.record.grant_id
+    assert active.get(PROPOSAL).status.value == "apply_requested"
+    assert grants.get_grant(issued.record.grant_id).state.value == "consumed"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status, attempts, fencing_token FROM governance_apply_jobs"
+        ).fetchone() == ("queued", 0, 0)
+        assert connection.execute(
+            "SELECT grant_id, job_id FROM governance_apply_request_results"
+        ).fetchone() == (issued.record.grant_id, result.job_id)
+        audit = connection.execute(
+            "SELECT event_type, before_state, after_state FROM governance_audit_events "
+            "WHERE command_id LIKE 'apply:%'"
+        ).fetchone()
+        assert audit == ("proposal.apply_requested", "approved", "apply_requested")
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_events WHERE aggregate_sequence = 2"
+        ).fetchone() == (2,)
+    store.initialize()
+
+
+def test_apply_request_replay_returns_original_job_before_grant_state_validation(
+    tmp_path: Path,
+) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+    key = "apply-replay-1"
+    fingerprint = hashlib.sha256(key.encode()).hexdigest()
+    first = service.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key=key,
+        request_fingerprint=fingerprint,
+    )
+    replay = service.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key=key,
+        request_fingerprint=fingerprint,
+    )
+
+    assert replay.replayed is True
+    assert replay.job_id == first.job_id
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE command_id LIKE 'apply:%'"
+        ).fetchone() == (1,)
+
+
+def test_apply_request_replay_fingerprint_conflict_has_no_side_effect(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+    key = "apply-conflict-1"
+    service.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key=key,
+        request_fingerprint=hashlib.sha256(key.encode()).hexdigest(),
+    )
+
+    with pytest.raises(ApplyGovernanceError, match="IDEMPOTENCY_CONFLICT"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key=key,
+            request_fingerprint=hashlib.sha256(b"different").hexdigest(),
+        )
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (1,)
+
+
+def test_expired_apply_grant_does_not_mutate_proposal_or_create_job(tmp_path: Path) -> None:
+    store, active, grants, decision_key = _fixture(tmp_path)
+    issuer = ApplyGrantService(
+        store, grants.authority_service, grants.definitions, clock=lambda: NOW
+    )
+    issued = issuer._issue_from_approved_decision(
+        decision_key, authority_request=_request(), ttl=timedelta(seconds=1)
+    )
+    service = ApplyRequestService(
+        store, grants.authority_service, clock=lambda: NOW + timedelta(seconds=1)
+    )
+
+    with pytest.raises(ApplyGovernanceError, match="APPLY_GRANT_EXPIRED"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key="apply-expired-1",
+            request_fingerprint=hashlib.sha256(b"apply-expired-1").hexdigest(),
+        )
+    assert active.get(PROPOSAL).status.value == "approved"
+    assert grants.get_grant(issued.record.grant_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (0,)
+
+
+def test_apply_event_failure_rolls_back_proposal_grant_job_and_result(tmp_path: Path) -> None:
+    store, active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_apply_audit_failure
+            BEFORE INSERT ON governance_audit_events
+            WHEN NEW.command_id LIKE 'apply:%'
+            BEGIN SELECT RAISE(ABORT, 'injected apply audit failure'); END
+            """
+        )
+    service = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected apply audit failure"):
+        service.request_apply(
+            PROPOSAL,
+            authority_request=_request(),
+            raw_grant=issued.raw_grant,
+            idempotency_key="apply-rollback-1",
+            request_fingerprint=hashlib.sha256(b"apply-rollback-1").hexdigest(),
+        )
+    assert active.get(PROPOSAL).status.value == "approved"
+    assert grants.get_grant(issued.record.grant_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_request_results"
+        ).fetchone() == (0,)
