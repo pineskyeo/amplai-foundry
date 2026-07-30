@@ -47,6 +47,8 @@ USER = ActorRef(actor_id="ACT-USER-1", actor_type=ActorType.HUMAN)
 
 
 def _payload(**changes: object) -> dict[str, object]:
+    # Shape follows Slack's block_actions message example and required-field table:
+    # https://docs.slack.dev/reference/interaction-payloads/block_actions-payload/
     payload: dict[str, object] = {
         "type": "block_actions",
         "trigger_id": "123.456.fixture",
@@ -235,6 +237,8 @@ def test_missing_or_duplicate_case_insensitive_headers_fail_closed() -> None:
         ({"type": "view_submission"}, "SLACK_PAYLOAD_UNSUPPORTED"),
         ({"actions": []}, "SLACK_PAYLOAD_INVALID"),
         ({"user": {"id": "", "team_id": "T123"}}, "SLACK_PAYLOAD_INVALID"),
+        ({"user": {"team_id": "T123"}}, "SLACK_PAYLOAD_INVALID"),
+        ({"user": "U456"}, "SLACK_PAYLOAD_INVALID"),
         ({"trigger_id": ""}, "SLACK_PAYLOAD_INVALID"),
         (
             {
@@ -327,6 +331,7 @@ def test_action_and_opaque_credential_contract_rejects_unsupported_input(
         b"payload=%7B%22type%22%3A%22block_actions%22%2C%22type%22%3A%22block_actions%22%7D",
         b"payload=%7B%7D&payload=%7B%7D",
         b"payload=%7B%22value%22%3ANaN%7D",
+        b"payload=%7B%22type%22%3A%22block_actions%22%2C%22user%22%3A%7B%22id%22%3A%22%FF%22%7D%7D",
         b"\xff",
     ),
 )
@@ -527,7 +532,62 @@ def test_authenticator_enforces_raw_body_and_json_resource_budgets() -> None:
     with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
         _authenticator().verify(_envelope(nested_body))
 
+    nested: object = 0
+    for _ in range(40):
+        nested = [nested]
+    depth_body = _body(_payload(extra_depth=nested))
+    with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
+        _authenticator().verify(_envelope(depth_body))
+
     node_payload = _payload(extra_nodes=list(range(2_100)))
     node_body = _body(node_payload)
     with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
         _authenticator().verify(_envelope(node_body))
+
+    string_limited = SlackBlockActionAuthenticator(
+        SlackInstallationPolicy(
+            provider_installation_ref=INSTALLATION_REF,
+            signing_secret=SecretStr(SIGNING_SECRET),
+            api_app_id="A123",
+            workspace_ids=frozenset({"T123"}),
+            max_json_string_bytes=64,
+        ),
+        clock=lambda: NOW,
+    )
+    string_body = _body(_payload(extra_string="한" * 22))
+    with pytest.raises(IngressError, match="SLACK_PAYLOAD_INVALID"):
+        string_limited.verify(_envelope(string_body))
+
+
+def test_slack_official_signing_vector_matches_documented_signature() -> None:
+    # Vector from https://docs.slack.dev/authentication/verifying-requests-from-slack/
+    secret = "8f742231b10e8888abcd99yyyzzz85a5"
+    timestamp = "1531420618"
+    body = (
+        b"token=xyzz0WbapA4vBCDEFasx0q6G&team_id=T1DC2JH3J&team_domain=testteamnow"
+        b"&channel_id=G8PSS9T3V&channel_name=foobar&user_id=U2CERLKJA"
+        b"&user_name=roadrunner&command=%2Fwebhook-collect&text="
+        b"&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT1DC2JH3J%2F"
+        b"397700885554%2F96rGlfmibIGlgcZRskXaIFfN"
+        b"&trigger_id=398738663015.47445629121.803a0bc887a14d10d2c447fce8b6703c"
+    )
+    authenticator = SlackBlockActionAuthenticator(
+        SlackInstallationPolicy(
+            provider_installation_ref=INSTALLATION_REF,
+            signing_secret=SecretStr(secret),
+            api_app_id="A123",
+            workspace_ids=frozenset({"T123"}),
+        ),
+        clock=lambda: datetime.fromtimestamp(int(timestamp), tz=UTC),
+    )
+
+    verified_timestamp = authenticator._verify_signature(
+        {
+            "x-slack-request-timestamp": timestamp,
+            "x-slack-signature": (
+                "v0=a2114d57b48eac39b9ad189dd8316235a7b4a8d21a10bd27519666489c69b503"
+            ),
+        },
+        body,
+    )
+    assert verified_timestamp == int(timestamp)

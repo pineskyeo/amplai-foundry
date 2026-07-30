@@ -229,6 +229,8 @@ class SlackBlockActionAuthenticator:
                 text,
                 keep_blank_values=True,
                 strict_parsing=True,
+                encoding="utf-8",
+                errors="strict",
                 max_num_fields=2,
             )
         except (UnicodeDecodeError, ValueError) as error:
