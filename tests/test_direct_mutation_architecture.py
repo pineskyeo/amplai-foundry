@@ -20,7 +20,7 @@ def _python_sources() -> tuple[Path, ...]:
     return tuple(sorted(SOURCE_ROOT.rglob("*.py")))
 
 
-def _import_bindings(tree: ast.AST) -> dict[str, str]:
+def _symbol_bindings(tree: ast.AST) -> dict[str, str]:
     bindings: dict[str, str] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module is not None:
@@ -29,6 +29,19 @@ def _import_bindings(tree: ast.AST) -> dict[str, str]:
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign):
+                continue
+            resolved = _qualified_name(node.value, bindings)
+            if resolved.rsplit(".", 1)[-1] != "AuthorityContext":
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name) and bindings.get(target.id) != resolved:
+                    bindings[target.id] = resolved
+                    changed = True
     return bindings
 
 
@@ -39,6 +52,35 @@ def _qualified_name(node: ast.expr, bindings: dict[str, str]) -> str:
         base = _qualified_name(node.value, bindings)
         return f"{base}.{node.attr}" if base else node.attr
     return ""
+
+
+def _reflective_symbol(node: ast.Call) -> str | None:
+    if (
+        isinstance(node.func, ast.Name)
+        and node.func.id == "getattr"
+        and len(node.args) >= 2
+        and isinstance(node.args[1], ast.Constant)
+        and isinstance(node.args[1].value, str)
+    ):
+        return node.args[1].value
+    if isinstance(node.func, ast.Subscript):
+        index = node.func.slice
+        if isinstance(index, ast.Constant) and isinstance(index.value, str):
+            return index.value
+    return None
+
+
+def _authority_context_findings(source: str, *, filename: str) -> list[str]:
+    tree = ast.parse(source, filename=filename)
+    bindings = _symbol_bindings(tree)
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        resolved = _qualified_name(node.func, bindings).rsplit(".", 1)[-1]
+        if resolved == "AuthorityContext" or _reflective_symbol(node) == "AuthorityContext":
+            findings.append(f"{filename}:{node.lineno}")
+    return findings
 
 
 def test_removed_direct_mutation_symbols_do_not_reenter_production_code() -> None:
@@ -60,6 +102,8 @@ def test_removed_direct_mutation_symbols_do_not_reenter_production_code() -> Non
                 findings.append(f"{path}:{node.lineno}:{node.id}")
             if isinstance(node, ast.Attribute) and node.attr in forbidden:
                 findings.append(f"{path}:{node.lineno}:{node.attr}")
+            if isinstance(node, ast.Call) and _reflective_symbol(node) in forbidden:
+                findings.append(f"{path}:{node.lineno}:{_reflective_symbol(node)}")
 
     assert findings == []
 
@@ -70,13 +114,12 @@ def test_governance_authority_context_is_constructed_only_by_authority_service()
     for path in _python_sources():
         if path == allowed:
             continue
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        bindings = _import_bindings(tree)
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            if _qualified_name(node.func, bindings).rsplit(".", 1)[-1] == "AuthorityContext":
-                findings.append(f"{path}:{node.lineno}")
+        findings.extend(
+            _authority_context_findings(
+                path.read_text(encoding="utf-8"),
+                filename=str(path),
+            )
+        )
 
     assert findings == []
 
@@ -176,9 +219,19 @@ def test_private_fixture_mutators_have_no_external_production_callers() -> None:
     for path in _python_sources():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if not isinstance(node, (ast.Name, ast.Attribute)):
+            symbol: str | None = None
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    imported = alias.name.rsplit(".", 1)[-1]
+                    if imported in defining_modules and path not in defining_modules[imported]:
+                        findings.append(f"{path}:{node.lineno}:{imported}")
                 continue
-            symbol = node.id if isinstance(node, ast.Name) else node.attr
+            if isinstance(node, ast.Name):
+                symbol = node.id
+            elif isinstance(node, ast.Attribute):
+                symbol = node.attr
+            elif isinstance(node, ast.Call):
+                symbol = _reflective_symbol(node)
             if symbol not in defining_modules:
                 continue
             allowed = defining_modules[symbol]
@@ -187,13 +240,42 @@ def test_private_fixture_mutators_have_no_external_production_callers() -> None:
     assert findings == []
 
 
-def test_architecture_name_resolution_detects_aliased_authority_constructor() -> None:
-    tree = ast.parse("from amplai_foundry.governance.models import AuthorityContext as AC\nAC()\n")
-    bindings = _import_bindings(tree)
-    call = next(node for node in ast.walk(tree) if isinstance(node, ast.Call))
-    assert _qualified_name(call.func, bindings) == (
-        "amplai_foundry.governance.models.AuthorityContext"
+@pytest.mark.parametrize(
+    "source",
+    (
+        "from amplai_foundry.governance.models import AuthorityContext as AC\nAC()\n",
+        "from amplai_foundry.governance.models import AuthorityContext\n"
+        "AC = AuthorityContext\nAC()\n",
+        "import amplai_foundry.governance.models as models\n"
+        'getattr(models, "AuthorityContext")()\n',
+    ),
+)
+def test_architecture_name_resolution_detects_authority_aliases(source: str) -> None:
+    assert _authority_context_findings(source, filename="synthetic.py")
+
+
+def test_private_fixture_guard_detects_alias_and_reflective_access() -> None:
+    private_symbols = {"_approve_legacy_proposal", "_save_legacy_fixture"}
+    source = (
+        "from amplai_foundry.proposals.apply import "
+        "_approve_legacy_proposal as approve\n"
+        "approve(None)\n"
+        'getattr(repository, "_save_legacy_fixture")(None)\n'
     )
+    tree = ast.parse(source)
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            found.update(
+                alias.name.rsplit(".", 1)[-1]
+                for alias in node.names
+                if alias.name.rsplit(".", 1)[-1] in private_symbols
+            )
+        elif isinstance(node, ast.Call):
+            reflected = _reflective_symbol(node)
+            if reflected in private_symbols:
+                found.add(reflected)
+    assert found == private_symbols
 
 
 def test_cli_intake_does_not_expose_authority_selector_options() -> None:
