@@ -179,34 +179,6 @@ class DecisionService:
         request_fingerprint: str,
     ) -> DecisionResult:
         self._validate_command(idempotency_key, request_fingerprint, raw_token)
-        return self.decide_verified_hash(
-            ref,
-            action=action,
-            actor_ref=actor_ref,
-            channel_ref=channel_ref,
-            credential_hash=self._token_hash(raw_token),
-            idempotency_key=idempotency_key,
-            request_fingerprint=request_fingerprint,
-        )
-
-    def decide_verified_hash(
-        self,
-        ref: ProposalRef,
-        *,
-        action: DecisionAction,
-        actor_ref: ActorRef,
-        channel_ref: ChannelRef,
-        credential_hash: str,
-        idempotency_key: str,
-        request_fingerprint: str,
-    ) -> DecisionResult:
-        """Execute from a verified ingress hash without reconstructing the raw Token."""
-
-        self._validate_verified_command(
-            idempotency_key,
-            request_fingerprint,
-            credential_hash,
-        )
         with self.store.connect() as connection, governance_transaction(connection):
             return self.decide_verified_hash_in_transaction(
                 connection,
@@ -214,7 +186,7 @@ class DecisionService:
                 action=action,
                 actor_ref=actor_ref,
                 channel_ref=channel_ref,
-                credential_hash=credential_hash,
+                credential_hash=self._token_hash(raw_token),
                 idempotency_key=idempotency_key,
                 request_fingerprint=request_fingerprint,
             )

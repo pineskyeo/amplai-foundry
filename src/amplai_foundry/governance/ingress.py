@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol, cast
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, SecretStr
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
 from amplai_foundry.governance.decisions import DecisionAction
 from amplai_foundry.governance.models import ChannelProvider, ChannelRef, Digest
@@ -64,7 +64,7 @@ class VerifiedProviderCommand(BaseModel):
     external_event_id: str = Field(min_length=1)
     external_actor_key: str = Field(min_length=1)
     channel_ref: ChannelRef
-    credential_id: str = Field(min_length=1)
+    credential_id: str = Field(pattern=r"^TOK-[A-F0-9]{16}$")
     raw_credential: SecretStr
     action: DecisionAction
 
@@ -118,7 +118,6 @@ class IngressCommandView(BaseModel):
     channel_ref: ChannelRef
     credential_kind: str
     credential_id: str
-    credential_hash: Digest
     action: DecisionAction
     received_at: AwareDatetime
     state: IngressState
@@ -153,12 +152,18 @@ class IngressService:
         if not envelope.provider_installation_ref.strip():
             raise IngressError("PROVIDER_INSTALLATION_INVALID")
 
-        verified = self.authenticator.verify(envelope)
+        try:
+            verified = self.authenticator.verify(envelope)
+        except ValidationError as error:
+            raise IngressError("PROVIDER_PAYLOAD_INVALID") from error
         if verified.channel_ref.provider is not envelope.provider:
             raise IngressError("PROVIDER_SCOPE_MISMATCH")
+        raw_credential = verified.raw_credential.get_secret_value()
+        if verified.credential_id == raw_credential:
+            raise IngressError("PROVIDER_PAYLOAD_INVALID")
         received_at = self._aware(self._clock())
         body_digest = self._digest(envelope.raw_body)
-        credential_hash = self._digest(verified.raw_credential.get_secret_value().encode("utf-8"))
+        credential_hash = self._digest(raw_credential.encode("utf-8"))
         fingerprint = self._fingerprint(
             envelope.provider,
             envelope.provider_installation_ref,
@@ -196,6 +201,19 @@ class IngressService:
                         state=IngressState(str(existing[2])),
                     )
                 else:
+                    token = connection.execute(
+                        """
+                        SELECT 1 FROM governance_action_tokens
+                        WHERE token_id = ? AND token_hash = ? AND allowed_action = ?
+                        """,
+                        (
+                            verified.credential_id,
+                            credential_hash,
+                            verified.action.value,
+                        ),
+                    ).fetchone()
+                    if token is None:
+                        raise IngressError("ACTION_TOKEN_INVALID")
                     connection.execute(
                         """
                         INSERT INTO governance_ingress_commands(
@@ -376,6 +394,8 @@ class IngressService:
                 view.state is not IngressState.LEASED
                 or view.lease_owner != worker_id
                 or view.claim_generation != generation
+                or view.lease_expires_at is None
+                or view.lease_expires_at <= now
             ):
                 raise IngressLeaseConflictError("INGRESS_LEASE_CONFLICT")
             retry_at = (
@@ -390,7 +410,7 @@ class IngressService:
                 SET state = ?, lease_owner = NULL, lease_expires_at = NULL,
                     retry_at = ?, completed_at = ?, last_error_code = ?
                 WHERE command_id = ? AND state = 'leased'
-                  AND lease_owner = ? AND claim_generation = ?
+                  AND lease_owner = ? AND claim_generation = ? AND lease_expires_at > ?
                 """,
                 (
                     next_state.value,
@@ -400,6 +420,7 @@ class IngressService:
                     command_id,
                     worker_id,
                     generation,
+                    self._timestamp(now),
                 ),
             )
             if updated.rowcount != 1:
@@ -423,7 +444,7 @@ class IngressService:
                 SELECT command_id, provider, provider_installation_ref,
                        provider_fingerprint, raw_body_digest, external_event_id,
                        external_actor_key, channel_json, credential_kind, credential_id,
-                       credential_hash, action, received_at, state, attempts,
+                       action, received_at, state, attempts,
                        claim_generation, lease_owner, lease_expires_at, retry_at,
                        completed_at, last_error_code
                 FROM governance_ingress_commands WHERE command_id = ?
@@ -446,17 +467,16 @@ class IngressService:
                 "channel_ref": json.loads(str(row[7])),
                 "credential_kind": row[8],
                 "credential_id": row[9],
-                "credential_hash": row[10],
-                "action": row[11],
-                "received_at": row[12],
-                "state": row[13],
-                "attempts": row[14],
-                "claim_generation": row[15],
-                "lease_owner": row[16],
-                "lease_expires_at": row[17],
-                "retry_at": row[18],
-                "completed_at": row[19],
-                "last_error_code": row[20],
+                "action": row[10],
+                "received_at": row[11],
+                "state": row[12],
+                "attempts": row[13],
+                "claim_generation": row[14],
+                "lease_owner": row[15],
+                "lease_expires_at": row[16],
+                "retry_at": row[17],
+                "completed_at": row[18],
+                "last_error_code": row[19],
             }
         )
 

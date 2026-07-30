@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import multiprocessing
 import sqlite3
 import time
@@ -45,8 +47,15 @@ class MutableClock:
 
 
 class FakeAuthenticator:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        credential_id: str = "TOK-0123456789ABCDEF",
+        raw_credential: str = RAW_TOKEN,
+    ) -> None:
         self.calls = 0
+        self.credential_id = credential_id
+        self.raw_credential = raw_credential
 
     def verify(self, envelope: ProviderEnvelope) -> VerifiedProviderCommand:
         self.calls += 1
@@ -56,8 +65,8 @@ class FakeAuthenticator:
             external_event_id="EVT-1",
             external_actor_key="U456",
             channel_ref=CHANNEL,
-            credential_id="TOK-0123456789ABCDEF",
-            raw_credential=RAW_TOKEN,
+            credential_id=self.credential_id,
+            raw_credential=self.raw_credential,
             action=DecisionAction.APPROVE,
         )
 
@@ -86,6 +95,37 @@ class UnavailableStore(GovernanceStore):
         del busy_timeout_ms
         raise GovernanceStoreError("injected unavailable")
         yield  # pragma: no cover
+
+
+class CommitAfterSuccessConnection:
+    def __init__(self, connection: sqlite3.Connection, store: CommitAfterSuccessStore) -> None:
+        self._connection = connection
+        self._store = store
+
+    @property
+    def in_transaction(self) -> bool:
+        return self._connection.in_transaction
+
+    def execute(self, statement: str, parameters: object = ()) -> sqlite3.Cursor:
+        if parameters == ():
+            cursor = self._connection.execute(statement)
+        else:
+            cursor = self._connection.execute(statement, parameters)  # type: ignore[arg-type]
+        if statement == "COMMIT" and self._store.fail_next_commit:
+            self._store.fail_next_commit = False
+            raise sqlite3.OperationalError("injected after durable commit")
+        return cursor
+
+
+class CommitAfterSuccessStore(GovernanceStore):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.fail_next_commit = True
+
+    @contextmanager
+    def connect(self, *, busy_timeout_ms: int | None = None) -> Iterator[sqlite3.Connection]:
+        with super().connect(busy_timeout_ms=busy_timeout_ms) as connection:
+            yield CommitAfterSuccessConnection(connection, self)  # type: ignore[misc]
 
 
 def _blocking_accept(database: str, marker: str) -> None:
@@ -120,6 +160,56 @@ def _envelope(*, body: bytes = RAW_BODY, valid: bool = True) -> ProviderEnvelope
     )
 
 
+def _seed_action_token(store: GovernanceStore) -> None:
+    digest = f"sha256:{'1' * 64}"
+    channel_json = json.dumps(
+        CHANNEL.model_dump(mode="json", exclude_none=True),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals(
+                project_namespace, project_id, proposal_id, active_definition_digest,
+                content_revision, state_revision, decision_epoch, status,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, 1, 2, 1, 'reviewed', ?, ?)
+            """,
+            (
+                "org/default/project/amplai",
+                "amplai",
+                "PROP-20260730-ABCDEF12",
+                digest,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_action_tokens(
+                token_id, token_hash, project_namespace, project_id, proposal_id,
+                active_definition_digest, content_revision, state_revision,
+                decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
+                bound_channel_json, issued_at, expires_at, state, resolved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 2, 1, 'approve', ?, 'human', ?, ?, ?, 'issued', NULL)
+            """,
+            (
+                "TOK-0123456789ABCDEF",
+                f"sha256:{hashlib.sha256(RAW_TOKEN.encode()).hexdigest()}",
+                "org/default/project/amplai",
+                "amplai",
+                "PROP-20260730-ABCDEF12",
+                digest,
+                "ACT-HUMAN-1",
+                channel_json,
+                NOW.isoformat(),
+                (NOW + timedelta(minutes=15)).isoformat(),
+            ),
+        )
+
+
 def _service(
     tmp_path: Path,
     *,
@@ -127,6 +217,7 @@ def _service(
 ) -> tuple[GovernanceStore, FakeAuthenticator, MutableClock, IngressService]:
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
+    _seed_action_token(store)
     authenticator = FakeAuthenticator()
     clock = MutableClock(NOW)
     return (
@@ -157,7 +248,6 @@ def test_accept_authenticates_then_commits_hash_only_command_and_replays(tmp_pat
     assert command.provider is ChannelProvider.SLACK
     assert command.external_event_id == "EVT-1"
     assert command.credential_id == "TOK-0123456789ABCDEF"
-    assert command.credential_hash.startswith("sha256:")
     assert command.raw_body_digest.startswith("sha256:")
     with store.connect() as connection:
         assert connection.execute(
@@ -188,6 +278,53 @@ def test_size_and_authenticity_fail_before_durable_write(tmp_path: Path) -> None
         assert connection.execute(
             "SELECT count(*) FROM governance_ingress_commands"
         ).fetchone() == (0,)
+
+
+def test_new_ingress_requires_matching_durable_action_token(tmp_path: Path) -> None:
+    store, _authenticator, clock, _service_value = _service(tmp_path)
+    unknown = IngressService(
+        store,
+        FakeAuthenticator(
+            credential_id="TOK-FEDCBA9876543210",
+            raw_credential="unknown-action-token",
+        ),
+        clock=clock,
+    )
+
+    with pytest.raises(IngressError, match="ACTION_TOKEN_INVALID"):
+        unknown.accept(_envelope())
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_ingress_commands"
+        ).fetchone() == (0,)
+
+
+def test_authenticator_cannot_persist_raw_credential_as_credential_id(tmp_path: Path) -> None:
+    store, _authenticator, clock, _service_value = _service(tmp_path)
+    secret_shaped_as_id = "TOK-AAAAAAAAAAAAAAAA"
+    unsafe = IngressService(
+        store,
+        FakeAuthenticator(
+            credential_id=secret_shaped_as_id,
+            raw_credential=secret_shaped_as_id,
+        ),
+        clock=clock,
+    )
+
+    with pytest.raises(IngressError, match="PROVIDER_PAYLOAD_INVALID"):
+        unsafe.accept(_envelope())
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_ingress_commands"
+        ).fetchone() == (0,)
+    durable_bytes = b"".join(
+        path.read_bytes()
+        for path in store.path.parent.glob(f"{store.path.name}*")
+        if path.is_file()
+    )
+    assert secret_shaped_as_id.encode() not in durable_bytes
 
 
 def test_same_external_scope_with_changed_body_is_replay_conflict(tmp_path: Path) -> None:
@@ -254,6 +391,25 @@ def test_hard_kill_before_accept_commit_leaves_no_command(tmp_path: Path) -> Non
         ).fetchone() == (0,)
 
 
+def test_commit_after_success_ambiguity_reconciles_on_provider_replay(tmp_path: Path) -> None:
+    store, authenticator, clock, service = _service(tmp_path)
+    ambiguous = IngressService(
+        CommitAfterSuccessStore(store.path),
+        authenticator,
+        clock=clock,
+    )
+
+    first = ambiguous.accept(_envelope())
+    replay = service.accept(_envelope())
+
+    assert not first.accepted and first.error_code == "GOVERNANCE_COMMIT_AMBIGUOUS"
+    assert replay.accepted and replay.duplicate
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_ingress_commands"
+        ).fetchone() == (1,)
+
+
 def test_unavailable_ingress_never_returns_accepted(tmp_path: Path) -> None:
     path = tmp_path / "governance.db"
     GovernanceStore(path).initialize()
@@ -300,6 +456,27 @@ def test_lease_expiry_reclaim_fences_stale_worker_and_completes_once(tmp_path: P
     )
     assert completed.state is IngressState.COMPLETED
     assert completed.completed_at == clock.value
+
+
+def test_expired_lease_owner_cannot_finalize_before_reclaim(tmp_path: Path) -> None:
+    _store, _authenticator, clock, service = _service(
+        tmp_path,
+        config=IngressConfig(lease_duration=timedelta(seconds=1)),
+    )
+    service.accept(_envelope())
+    claim = service.claim_next("worker")
+    assert claim is not None
+    clock.value = NOW + timedelta(seconds=2)
+
+    with pytest.raises(IngressLeaseConflictError):
+        service.complete(
+            claim.command_id,
+            worker_id="worker",
+            generation=claim.claim_generation,
+        )
+
+    current = service.get(claim.command_id)
+    assert current is not None and current.state is IngressState.LEASED
 
 
 def test_retry_backoff_is_bounded_and_exhaustion_dead_letters(tmp_path: Path) -> None:
