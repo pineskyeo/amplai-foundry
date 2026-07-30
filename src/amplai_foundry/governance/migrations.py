@@ -2081,6 +2081,7 @@ INITIAL_MIGRATIONS = (
                 status TEXT NOT NULL CHECK (status IN ('prepared', 'state_imported')),
                 prepared_at TEXT NOT NULL,
                 state_imported_at TEXT,
+                UNIQUE (migration_id, project_namespace, project_id),
                 CHECK (
                     length(migration_id) = 20
                     AND substr(migration_id, 1, 4) = 'MPL-'
@@ -2132,15 +2133,13 @@ INITIAL_MIGRATIONS = (
                 state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
                 decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
                 approval_disposition TEXT NOT NULL,
+                legacy_git_revision TEXT,
                 imported_at TEXT NOT NULL,
                 PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
                 UNIQUE (project_namespace, project_id, proposal_id),
-                FOREIGN KEY (migration_id)
-                    REFERENCES governance_legacy_migrations(migration_id)
-                    ON DELETE RESTRICT,
-                FOREIGN KEY (project_namespace, project_id, proposal_id)
-                    REFERENCES governance_active_proposals(
-                        project_namespace, project_id, proposal_id
+                FOREIGN KEY (migration_id, project_namespace, project_id)
+                    REFERENCES governance_legacy_migrations(
+                        migration_id, project_namespace, project_id
                     )
                     ON DELETE RESTRICT,
                 CHECK (
@@ -2170,8 +2169,79 @@ INITIAL_MIGRATIONS = (
                     length(proposal_artifact_digest) = 71
                     AND substr(proposal_artifact_digest, 1, 7) = 'sha256:'
                     AND substr(proposal_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    legacy_git_revision IS NULL
+                    OR (
+                        length(legacy_git_revision) BETWEEN 7 AND 40
+                        AND legacy_git_revision NOT GLOB '*[^0-9a-f]*'
+                    )
                 )
             ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_items_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_items
+            WHEN NOT EXISTS (
+                    SELECT 1 FROM governance_active_proposals p
+                    WHERE p.project_namespace = NEW.project_namespace
+                      AND p.project_id = NEW.project_id
+                      AND p.proposal_id = NEW.proposal_id
+                 )
+            BEGIN SELECT RAISE(ABORT, 'legacy migration item requires active proposal'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migrations_insert_guard
+            BEFORE INSERT ON governance_legacy_migrations
+            WHEN NEW.status != 'prepared' OR NEW.state_imported_at IS NOT NULL
+            BEGIN SELECT RAISE(ABORT, 'legacy migration root must start prepared'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migrations_transition_guard
+            BEFORE UPDATE ON governance_legacy_migrations
+            WHEN OLD.migration_id != NEW.migration_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.freeze_id != NEW.freeze_id
+              OR OLD.snapshot_id != NEW.snapshot_id
+              OR OLD.snapshot_digest != NEW.snapshot_digest
+              OR OLD.plan_digest != NEW.plan_digest
+              OR OLD.mapping_policy_version != NEW.mapping_policy_version
+              OR OLD.base_revision != NEW.base_revision
+              OR OLD.validation_policy_ref != NEW.validation_policy_ref
+              OR OLD.project_pack_backup_path != NEW.project_pack_backup_path
+              OR OLD.project_pack_backup_digest != NEW.project_pack_backup_digest
+              OR OLD.governance_backup_path != NEW.governance_backup_path
+              OR OLD.governance_backup_digest != NEW.governance_backup_digest
+              OR OLD.proposal_count != NEW.proposal_count
+              OR OLD.prepared_at != NEW.prepared_at
+              OR OLD.status != 'prepared'
+              OR NEW.status != 'state_imported'
+              OR OLD.state_imported_at IS NOT NULL
+              OR NEW.state_imported_at IS NULL
+              OR (
+                    SELECT COUNT(*)
+                    FROM governance_legacy_migration_items i
+                    WHERE i.migration_id = OLD.migration_id
+                      AND i.project_namespace = OLD.project_namespace
+                      AND i.project_id = OLD.project_id
+                 ) != OLD.proposal_count
+            BEGIN SELECT RAISE(ABORT, 'legacy migration root transition is invalid'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migrations_no_delete
+            BEFORE DELETE ON governance_legacy_migrations
+            BEGIN SELECT RAISE(ABORT, 'legacy migration root is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_items_no_update
+            BEFORE UPDATE ON governance_legacy_migration_items
+            BEGIN SELECT RAISE(ABORT, 'legacy migration item is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_items_no_delete
+            BEFORE DELETE ON governance_legacy_migration_items
+            BEGIN SELECT RAISE(ABORT, 'legacy migration item is durable'); END
             """,
         ),
     ),
@@ -2757,6 +2827,7 @@ class MigrationRunner:
                         ("state_revision", "INTEGER", 1, 0),
                         ("decision_epoch", "INTEGER", 1, 0),
                         ("approval_disposition", "TEXT", 1, 0),
+                        ("legacy_git_revision", "TEXT", 0, 0),
                         ("imported_at", "TEXT", 1, 0),
                     ),
                 }

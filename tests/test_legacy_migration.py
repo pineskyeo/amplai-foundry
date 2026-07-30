@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
 import os
 import sqlite3
 import stat
+import time
+from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,16 +26,23 @@ from amplai_foundry.governance import (
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
     LegacyMutationFreeze,
+    LegacyProjectPackBackupManifest,
     LegacyProposalDryRunService,
     LegacyProposalImportService,
+    LegacyProposalMigrationPlan,
     ProposalRef,
 )
 from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
     canonicalize_definition,
 )
+from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, MigrationRunner
 from amplai_foundry.governance.object_store import sha256_digest
-from amplai_foundry.governance.store import GovernanceStore, governance_transaction
+from amplai_foundry.governance.store import (
+    GovernanceCommitAmbiguousError,
+    GovernanceStore,
+    governance_transaction,
+)
 
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
 PROPOSAL_ID = "PROP-20260730-A1B2C3D4"
@@ -163,9 +175,17 @@ def _backup_evidence(
     backup_root = tmp_path / f"backups-{project.project_id}"
     backup_root.mkdir(parents=True)
     project_pack = backup_root / "project-pack.snapshot"
-    project_pack.write_bytes(
-        json.dumps(_tree_inventory(root), sort_keys=True, default=list).encode("utf-8")
+    snapshot = LegacyProposalDryRunService(root, project).create_snapshot(_freeze(root, project))
+    project_pack_manifest = LegacyProjectPackBackupManifest(
+        project_ref=project,
+        base_revision="a13d92f",
+        freeze_id="MFR-0000000000000001",
+        snapshot_id=snapshot.snapshot_id,
+        snapshot_digest=snapshot.snapshot_digest,
+        files=snapshot.files,
+        total_bytes=snapshot.total_bytes,
     )
+    project_pack.write_bytes(project_pack_manifest.canonical_bytes())
     governance = backup_root / "governance.db"
     with store.connect() as source, sqlite3.connect(governance) as destination:
         source.backup(destination)
@@ -212,6 +232,82 @@ class MutatingDefinitionObjectStore(ImmutableDefinitionObjectStore):
         if not self.mutated:
             self.mutated = True
             self.legacy_file.write_bytes(self.legacy_file.read_bytes() + b"mutated")
+
+
+class CorruptingBackupObjectStore(ImmutableDefinitionObjectStore):
+    def __init__(self, project_ref: ProjectRef, project_root: Path, backup: Path) -> None:
+        super().__init__(project_ref, project_root)
+        self.backup = backup
+        self.corrupted = False
+
+    def _after_publish(self, canonical: Path) -> None:
+        if not self.corrupted:
+            self.corrupted = True
+            self.backup.write_bytes(b"destroyed backup")
+
+
+class BlockingMigrationObjectStore(ImmutableDefinitionObjectStore):
+    def __init__(self, project_ref: ProjectRef, project_root: Path, marker: Path) -> None:
+        super().__init__(project_ref, project_root)
+        self.marker = marker
+
+    def _before_publish(self, temporary: Path, canonical: Path) -> None:
+        self.marker.write_text("ready", encoding="utf-8")
+        time.sleep(60)
+
+
+class AmbiguousCommitConnection:
+    def __init__(self, connection: sqlite3.Connection, store: AmbiguousCommitStore) -> None:
+        self._connection = connection
+        self._store = store
+
+    @property
+    def in_transaction(self) -> bool:
+        return self._connection.in_transaction
+
+    def execute(self, statement: str, parameters: object = ()) -> sqlite3.Cursor:
+        cursor = (
+            self._connection.execute(statement)
+            if parameters == ()
+            else self._connection.execute(statement, parameters)  # type: ignore[arg-type]
+        )
+        if statement == "COMMIT":
+            self._store.commit_count += 1
+            if self._store.commit_count == self._store.fail_commit_number:
+                raise sqlite3.OperationalError("injected after durable commit")
+        return cursor
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._connection, name)
+
+
+class AmbiguousCommitStore(GovernanceStore):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.commit_count = 0
+        self.fail_commit_number = -1
+
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        with super().connect() as connection:
+            yield AmbiguousCommitConnection(connection, self)  # type: ignore[misc]
+
+
+def _run_blocking_legacy_import(
+    project_root: str,
+    database: str,
+    plan_json: str,
+    backup_json: str,
+    marker: str,
+) -> None:
+    root = Path(project_root)
+    dry_run = LegacyProposalDryRunService(root, PROJECT)
+    objects = BlockingMigrationObjectStore(PROJECT, root, Path(marker))
+    service = LegacyProposalImportService(dry_run, GovernanceStore(Path(database)), objects)
+    service.import_state(
+        LegacyProposalMigrationPlan.model_validate_json(plan_json),
+        LegacyMigrationBackupEvidence.model_validate_json(backup_json),
+    )
 
 
 def test_dry_run_is_deterministic_and_write_free(tmp_path: Path) -> None:
@@ -664,6 +760,33 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
     )
     manifest = ProposalDefinitionManifest.model_validate_json(definition_bytes)
     assert len(manifest.apply_inputs) == 3
+    expected_inputs = {
+        path.relative_to(root / ".amplai" / "proposals" / PROPOSAL_ID).as_posix(): path.read_bytes()
+        for path in (root / ".amplai" / "proposals" / PROPOSAL_ID).rglob("*")
+        if path.is_file() and "definitions" not in path.parts and "inputs" not in path.parts
+    }
+    assert {item.logical_name for item in manifest.apply_inputs} == set(expected_inputs)
+    for descriptor in manifest.apply_inputs:
+        payload = objects.get_input_object(
+            plan.proposals[0].proposal_ref,
+            descriptor.object_digest,
+        )
+        assert payload == expected_inputs[descriptor.logical_name]
+        assert descriptor.object_digest == (f"sha256:{hashlib.sha256(payload).hexdigest()}")
+    definition_preimage = manifest.model_dump(mode="json", exclude={"definition_digest"})
+    independent_definition_digest = _canonical_digest(definition_preimage)
+    assert manifest.definition_digest == independent_definition_digest
+    expected_definition_bytes = (
+        json.dumps(
+            manifest.model_dump(mode="json"),
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+    assert definition_bytes == expected_definition_bytes
     proposal_input = next(
         item for item in manifest.apply_inputs if item.logical_name == "proposal.yaml"
     )
@@ -678,6 +801,9 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
 
     repeated = service.import_state(plan, backup)
     assert repeated == imported
+    Path(backup.project_pack_backup_path).unlink()
+    Path(backup.governance_backup_path).unlink()
+    assert service.import_state(plan, backup) == imported
     with store.connect() as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_active_proposals"
@@ -696,6 +822,106 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
         backup.governance_backup_digest,
         "state_imported",
     )
+
+
+def test_migration_root_and_items_are_database_enforced_durable_evidence(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.DatabaseError, match="root transition is invalid"):
+            connection.execute(
+                "UPDATE governance_legacy_migrations SET snapshot_digest = ?",
+                (f"sha256:{'f' * 64}",),
+            )
+        with pytest.raises(sqlite3.DatabaseError, match="root is durable"):
+            connection.execute("DELETE FROM governance_legacy_migrations")
+        with pytest.raises(sqlite3.DatabaseError, match="item is immutable"):
+            connection.execute("UPDATE governance_legacy_migration_items SET source_revision = 2")
+        with pytest.raises(sqlite3.DatabaseError, match="item is durable"):
+            connection.execute("DELETE FROM governance_legacy_migration_items")
+        assert connection.execute(
+            "SELECT status, snapshot_digest FROM governance_legacy_migrations"
+        ).fetchone() == ("state_imported", plan.snapshot_digest)
+
+
+def test_populated_v17_store_upgrades_to_v18_without_rewriting_active_state(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v17 = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:17]),
+    )
+    assert v17.initialize().schema_version == 17
+    objects = ImmutableDefinitionObjectStore(PROJECT, root)
+    ref = ProposalRef(project_ref=PROJECT, proposal_id=PROPOSAL_ID)
+    canonical = canonicalize_definition(
+        ProposalDefinitionManifest(
+            proposal_ref=ref,
+            operations=({"marker": "v17", "type": "CREATE"},),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/proposal-v3",
+        )
+    )
+    object_ref = objects.put_definition_object(
+        ref,
+        canonical.canonical_bytes,
+        canonical.digest,
+    )
+    before = ActiveProposalRepository(v17, objects).activate_definition_revision(
+        ref,
+        expected_active_digest=None,
+        expected_state_revision=0,
+        next_object_ref=object_ref,
+    )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    assert ActiveProposalRepository(latest, objects).get(ref) == before
+    with latest.connect() as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                """
+                SELECT name FROM sqlite_master
+                WHERE type = 'table' AND name LIKE 'governance_legacy_migration%'
+                """
+            ).fetchall()
+        }
+        triggers = {
+            str(row[0])
+            for row in connection.execute(
+                """
+                SELECT name FROM sqlite_master
+                WHERE type = 'trigger' AND name LIKE 'governance_legacy_migration%'
+                """
+            ).fetchall()
+        }
+    assert tables == {
+        "governance_legacy_migrations",
+        "governance_legacy_migration_items",
+    }
+    assert triggers == {
+        "governance_legacy_migrations_insert_guard",
+        "governance_legacy_migrations_transition_guard",
+        "governance_legacy_migrations_no_delete",
+        "governance_legacy_migration_items_insert_guard",
+        "governance_legacy_migration_items_no_update",
+        "governance_legacy_migration_items_no_delete",
+    }
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:
@@ -720,9 +946,185 @@ def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path)
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_migrations"
         ).fetchone() == (0,)
+        for table in (
+            "governance_active_proposals",
+            "governance_definition_revisions",
+            "governance_legacy_migration_items",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+
+
+def test_project_pack_backup_must_be_canonical_and_plan_bound(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    project_pack = Path(backup.project_pack_backup_path)
+    project_pack.write_bytes(b"arbitrary unrelated bytes")
+    unrelated = backup.model_copy(
+        update={
+            "project_pack_backup_digest": (
+                f"sha256:{hashlib.sha256(project_pack.read_bytes()).hexdigest()}"
+            )
+        }
+    )
+
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_PROJECT_PACK_BACKUP_INVALID",
+    ):
+        service.prepare(plan, unrelated)
+    with store.connect() as connection:
         assert connection.execute(
-            "SELECT COUNT(*) FROM governance_active_proposals"
+            "SELECT COUNT(*) FROM governance_legacy_migrations"
         ).fetchone() == (0,)
+
+
+def test_governance_backup_must_match_live_store_and_be_independent(tmp_path: Path) -> None:
+    stale_root = _legacy_tree(tmp_path / "stale-project")
+    stale_store, _objects, stale_dry, stale_service, stale_backup = _import_fixture(
+        tmp_path / "stale-fixture",
+        stale_root,
+    )
+    stale_plan = stale_dry.create_plan(
+        freeze=_freeze(stale_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    with stale_store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            "INSERT INTO governance_store_metadata(key, value) VALUES ('live-marker', '1')"
+        )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_GOVERNANCE_BACKUP_INVALID",
+    ):
+        stale_service.prepare(stale_plan, stale_backup)
+
+    linked_root = _legacy_tree(tmp_path / "linked-project")
+    linked_store, _objects, linked_dry, linked_service, linked_backup = _import_fixture(
+        tmp_path / "linked-fixture",
+        linked_root,
+    )
+    linked_plan = linked_dry.create_plan(
+        freeze=_freeze(linked_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    governance_backup = Path(linked_backup.governance_backup_path)
+    governance_backup.unlink()
+    os.link(linked_store.path, governance_backup)
+    hardlinked = linked_backup.model_copy(
+        update={
+            "governance_backup_digest": (
+                f"sha256:{hashlib.sha256(governance_backup.read_bytes()).hexdigest()}"
+            )
+        }
+    )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_GOVERNANCE_BACKUP_INVALID",
+    ):
+        linked_service.prepare(linked_plan, hardlinked)
+
+
+def test_backup_symlink_nonregular_size_and_schema_fail_closed(tmp_path: Path) -> None:
+    symlink_root = _legacy_tree(tmp_path / "symlink-project")
+    _store, _objects, symlink_dry, symlink_service, symlink_backup = _import_fixture(
+        tmp_path / "symlink-fixture",
+        symlink_root,
+    )
+    symlink_plan = symlink_dry.create_plan(
+        freeze=_freeze(symlink_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    project_pack = Path(symlink_backup.project_pack_backup_path)
+    actual_pack = project_pack.with_name("actual-pack.snapshot")
+    project_pack.rename(actual_pack)
+    os.symlink(actual_pack, project_pack)
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_PROJECT_PACK_BACKUP_INVALID",
+    ):
+        symlink_service.prepare(symlink_plan, symlink_backup)
+
+    fifo_root = _legacy_tree(tmp_path / "fifo-project")
+    _store, _objects, fifo_dry, fifo_service, fifo_backup = _import_fixture(
+        tmp_path / "fifo-fixture",
+        fifo_root,
+    )
+    fifo_plan = fifo_dry.create_plan(
+        freeze=_freeze(fifo_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    fifo_pack = Path(fifo_backup.project_pack_backup_path)
+    fifo_pack.unlink()
+    os.mkfifo(fifo_pack)
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_PROJECT_PACK_BACKUP_INVALID",
+    ):
+        fifo_service.prepare(fifo_plan, fifo_backup)
+
+    size_root = _legacy_tree(tmp_path / "size-project")
+    size_store = GovernanceStore(tmp_path / "size-runtime" / "governance.db")
+    size_store.initialize()
+    size_backup = _backup_evidence(tmp_path / "size-fixture", size_root, size_store)
+    size_dry = LegacyProposalDryRunService(
+        size_root,
+        PROJECT,
+        config=LegacyMigrationScanConfig(maximum_backup_bytes=1),
+    )
+    size_service = LegacyProposalImportService(
+        size_dry,
+        size_store,
+        ImmutableDefinitionObjectStore(PROJECT, size_root),
+    )
+    size_plan = size_dry.create_plan(
+        freeze=_freeze(size_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_PROJECT_PACK_BACKUP_INVALID",
+    ):
+        size_service.prepare(size_plan, size_backup)
+
+    schema_root = _legacy_tree(tmp_path / "schema-project")
+    _store, _objects, schema_dry, schema_service, schema_backup = _import_fixture(
+        tmp_path / "schema-fixture",
+        schema_root,
+    )
+    schema_plan = schema_dry.create_plan(
+        freeze=_freeze(schema_root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    governance_backup = Path(schema_backup.governance_backup_path)
+    governance_backup.unlink()
+    with sqlite3.connect(governance_backup) as invalid_database:
+        invalid_database.execute("CREATE TABLE unrelated(value TEXT)")
+    invalid_schema = schema_backup.model_copy(
+        update={
+            "governance_backup_digest": (
+                f"sha256:{hashlib.sha256(governance_backup.read_bytes()).hexdigest()}"
+            )
+        }
+    )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_GOVERNANCE_BACKUP_INVALID",
+    ):
+        schema_service.prepare(schema_plan, invalid_schema)
 
 
 def test_state_import_failure_rolls_back_all_active_rows_but_keeps_prepared_root(
@@ -739,6 +1141,17 @@ def test_state_import_failure_rolls_back_all_active_rows_but_keeps_prepared_root
         validation_policy_ref="policy/migration/v1",
     )
     service.prepare(plan, backup)
+    with (
+        store.connect() as connection,
+        pytest.raises(sqlite3.DatabaseError, match="root transition is invalid"),
+    ):
+        connection.execute(
+            """
+            UPDATE governance_legacy_migrations
+            SET status = 'state_imported', state_imported_at = ?
+            """,
+            (NOW.isoformat(),),
+        )
     with store.connect() as connection, governance_transaction(connection):
         connection.execute(
             """
@@ -791,6 +1204,125 @@ def test_legacy_mutation_during_object_materialization_prevents_state_commit(
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_active_proposals"
         ).fetchone() == (0,)
+
+
+def test_backup_corruption_during_object_materialization_prevents_state_commit(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = GovernanceStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    dry_run = LegacyProposalDryRunService(root, PROJECT)
+    backup = _backup_evidence(tmp_path / "fixture", root, store)
+    objects = CorruptingBackupObjectStore(
+        PROJECT,
+        root,
+        Path(backup.governance_backup_path),
+    )
+    service = LegacyProposalImportService(dry_run, store, objects)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_GOVERNANCE_BACKUP_INVALID",
+    ):
+        service.import_state(plan, backup)
+    with store.connect() as connection:
+        assert connection.execute("SELECT status FROM governance_legacy_migrations").fetchone() == (
+            "prepared",
+        )
+        for table in (
+            "governance_active_proposals",
+            "governance_definition_revisions",
+            "governance_legacy_migration_items",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+
+
+def test_process_kill_during_object_materialization_leaves_only_prepared_root(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    marker = tmp_path / "blocked.marker"
+    process = multiprocessing.get_context("spawn").Process(
+        target=_run_blocking_legacy_import,
+        args=(
+            str(root),
+            str(store.path),
+            plan.model_dump_json(),
+            backup.model_dump_json(),
+            str(marker),
+        ),
+    )
+    process.start()
+    for _attempt in range(200):
+        if marker.exists():
+            break
+        if not process.is_alive():
+            break
+        time.sleep(0.05)
+    assert marker.exists()
+    process.terminate()
+    process.join(timeout=10)
+    assert process.exitcode is not None
+
+    with store.connect() as connection:
+        assert connection.execute("SELECT status FROM governance_legacy_migrations").fetchone() == (
+            "prepared",
+        )
+        for table in (
+            "governance_active_proposals",
+            "governance_definition_revisions",
+            "governance_legacy_migration_items",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+
+    result = service.import_state(plan, backup)
+    assert result.status == "state_imported"
+    assert ActiveProposalRepository(store, objects).get(plan.proposals[0].proposal_ref) is not None
+
+
+def test_ambiguous_state_commit_reconciles_to_completed_replay(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    store.commit_count = 0
+    store.fail_commit_number = 2
+    objects = ImmutableDefinitionObjectStore(PROJECT, root)
+    dry_run = LegacyProposalDryRunService(root, PROJECT)
+    service = LegacyProposalImportService(dry_run, store, objects)
+    backup = _backup_evidence(tmp_path / "fixture", root, store)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+
+    with pytest.raises(GovernanceCommitAmbiguousError):
+        service.import_state(plan, backup)
+
+    result = service.import_state(plan, backup)
+    assert result.status == "state_imported"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_active_proposals"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_items"
+        ).fetchone() == (1,)
 
 
 def test_existing_qualified_proposal_conflict_preserves_original_state(tmp_path: Path) -> None:
@@ -856,24 +1388,23 @@ def test_same_local_proposal_imports_under_two_qualified_projects(tmp_path: Path
         amplai_root,
         store=shared_store,
     )
+    amplai_plan = amplai_dry.create_plan(
+        freeze=_freeze(amplai_root, PROJECT),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    amplai_service.import_state(amplai_plan, amplai_backup)
     _, cortex_objects, cortex_dry, cortex_service, cortex_backup = _import_fixture(
         tmp_path / "cortex-import",
         cortex_root,
         project=cortex,
         store=shared_store,
     )
-    amplai_plan = amplai_dry.create_plan(
-        freeze=_freeze(amplai_root, PROJECT),
-        base_revision="a13d92f",
-        validation_policy_ref="policy/migration/v1",
-    )
     cortex_plan = cortex_dry.create_plan(
         freeze=_freeze(cortex_root, cortex),
         base_revision="a13d92f",
         validation_policy_ref="policy/migration/v1",
     )
-
-    amplai_service.import_state(amplai_plan, amplai_backup)
     cortex_service.import_state(cortex_plan, cortex_backup)
 
     assert (
@@ -895,6 +1426,32 @@ def test_same_local_proposal_imports_under_two_qualified_projects(tmp_path: Path
         ).fetchone() == (2,)
 
 
+def test_concurrent_same_plan_import_converges_to_one_completed_result(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = tuple(pool.map(lambda _index: service.import_state(plan, backup), range(2)))
+
+    assert results[0] == results[1]
+    assert results[0].status == "state_imported"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_active_proposals"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_items"
+        ).fetchone() == (1,)
+
+
 @pytest.mark.parametrize("status", ("approved", "applied"))
 def test_synthetic_approval_target_imports_in_fail_closed_runtime_state(
     tmp_path: Path,
@@ -914,7 +1471,7 @@ def test_synthetic_approval_target_imports_in_fail_closed_runtime_state(
 
     view = ActiveProposalRepository(store, objects).get(plan.proposals[0].proposal_ref)
     assert view is not None
-    assert view.status == "changes_requested"
+    assert view.status == "draft"
     with store.connect() as connection:
         assert connection.execute(
             """
@@ -925,3 +1482,41 @@ def test_synthetic_approval_target_imports_in_fail_closed_runtime_state(
             "legacy_approval_review_required",
             "synthetic_required",
         )
+
+
+@pytest.mark.parametrize(
+    "status",
+    ("changes_requested", "approved", "applied", "rejected", "superseded"),
+)
+def test_terminal_legacy_state_is_staged_without_breaking_startup_roots(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status=status)
+    if status in {"approved", "applied"}:
+        audit = root / ".amplai" / "proposals" / PROPOSAL_ID / "approval-audit.json"
+        audit.write_text('{"event":"approved"}\n', encoding="utf-8")
+    store, objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+
+    service.import_state(plan, backup)
+
+    view = ActiveProposalRepository(store, objects).get(plan.proposals[0].proposal_ref)
+    assert view is not None
+    assert view.status == "draft"
+    assert store.check_startup().healthy
+    with store.connect() as connection:
+        item = connection.execute(
+            """
+            SELECT target_status, legacy_git_revision
+            FROM governance_legacy_migration_items
+            """
+        ).fetchone()
+    assert item == (status, "a13d92f" if status == "applied" else None)
