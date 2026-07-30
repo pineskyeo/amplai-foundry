@@ -146,6 +146,7 @@ class DecisionService:
         with self.store.connect() as connection, governance_transaction(connection):
             authority = self._authenticate(authority_request, connection=connection)
             self._require_decision_authority(authority, ref)
+            self._require_no_legacy_approval_hold(connection, ref)
             proposal = self._proposal_row(connection, ref)
             if proposal is None:
                 raise DecisionError("PROPOSAL_NOT_FOUND")
@@ -285,6 +286,7 @@ class DecisionService:
                 channel_json=channel_json,
                 request_fingerprint=request_fingerprint,
             )
+        self._require_no_legacy_approval_hold(connection, ref)
 
         token = connection.execute(
             """
@@ -427,6 +429,32 @@ class DecisionService:
             raise DecisionError("AUTHORITY_DENIED")
         if AuthorityPermission.PROPOSAL_DECIDE not in authority.permissions:
             raise DecisionError("AUTHORITY_DENIED")
+
+    @classmethod
+    def _require_no_legacy_approval_hold(
+        cls,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+    ) -> None:
+        if (
+            connection.execute(
+                """
+            SELECT 1 FROM sqlite_schema
+            WHERE type = 'table' AND name = 'governance_legacy_approval_holds'
+            """
+            ).fetchone()
+            is None
+        ):
+            return
+        held = connection.execute(
+            """
+            SELECT 1 FROM governance_legacy_approval_holds
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            cls._identity(ref),
+        ).fetchone()
+        if held is not None:
+            raise DecisionError("LEGACY_APPROVAL_REVIEW_REQUIRED")
 
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:

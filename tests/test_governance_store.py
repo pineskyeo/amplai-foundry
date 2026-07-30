@@ -236,6 +236,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (17, "legacy-publish-outbox-revision-repair"),
         (18, "legacy-proposal-migration-state"),
         (19, "legacy-migration-durability"),
+        (20, "legacy-migration-audit-projection"),
     ]
     assert metadata == ("amplai-governance",)
 

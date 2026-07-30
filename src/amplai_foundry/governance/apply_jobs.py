@@ -183,6 +183,7 @@ class ApplyGrantService:
         with self.store.connect() as connection, governance_transaction(connection):
             authority = self._authenticate(authority_request, connection)
             self._require_apply_authority(authority, ref)
+            self._require_no_legacy_approval_hold(connection, ref)
             current_source = self._approved_decision_row(connection, decision_result_key)
             if current_source is None or tuple(current_source) != tuple(source):
                 raise ApplyGovernanceError("APPROVED_SNAPSHOT_STALE")
@@ -366,6 +367,32 @@ class ApplyGrantService:
         ):
             raise ApplyGovernanceError("AUTHORITY_DENIED")
 
+    @classmethod
+    def _require_no_legacy_approval_hold(
+        cls,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+    ) -> None:
+        if (
+            connection.execute(
+                """
+            SELECT 1 FROM sqlite_schema
+            WHERE type = 'table' AND name = 'governance_legacy_approval_holds'
+            """
+            ).fetchone()
+            is None
+        ):
+            return
+        held = connection.execute(
+            """
+            SELECT 1 FROM governance_legacy_approval_holds
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            cls._identity(ref),
+        ).fetchone()
+        if held is not None:
+            raise ApplyGovernanceError("LEGACY_APPROVAL_REVIEW_REQUIRED")
+
     @staticmethod
     def _approved_decision_row(
         connection: sqlite3.Connection,
@@ -522,6 +549,7 @@ class ApplyRequestService:
             self._validate_grant_material(raw_grant, idempotency_key)
             authority = self._authenticate(authority_request, connection)
             self._require_apply_authority(authority, ref)
+            ApplyGrantService._require_no_legacy_approval_hold(connection, ref)
             channel_json = ApplyGrantService._channel_json(authority.source.channel)
             if self._contains_persisted_secret(connection, idempotency_key):
                 raise ApplyGovernanceError("IDEMPOTENCY_CONFLICT")

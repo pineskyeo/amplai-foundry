@@ -10,6 +10,7 @@ import sqlite3
 import stat
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 from typing import Literal
@@ -29,6 +30,11 @@ from amplai_foundry.governance.definitions import (
     ApplyInputDescriptor,
     ProposalDefinitionManifest,
     canonicalize_definition,
+)
+from amplai_foundry.governance.events import (
+    GovernanceEventError,
+    GovernanceEventService,
+    LegacyMigrationProjectionPayload,
 )
 from amplai_foundry.governance.models import Digest, ProposalRef
 from amplai_foundry.governance.object_store import (
@@ -60,6 +66,16 @@ def _canonical_json(value: object) -> bytes:
 
 def _digest(value: bytes) -> str:
     return f"sha256:{hashlib.sha256(value).hexdigest()}"
+
+
+def _compact_json(value: object) -> str:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
 
 
 class LegacyMigrationScanError(RuntimeError):
@@ -154,6 +170,29 @@ class LegacyApprovalDisposition(StrEnum):
     NOT_REQUIRED = "not_required"
     LEGACY_AUDIT_PRESENT = "legacy_audit_present"
     SYNTHETIC_REQUIRED = "synthetic_required"
+
+
+class LegacyApprovalAuditEvidence(BaseModel):
+    """Strict qualified approval evidence imported from a legacy artifact."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    event: Literal["approved"]
+    proposal_ref: ProposalRef
+    actor_id: str = Field(min_length=1, max_length=128)
+    actor_type: Literal["human"] = "human"
+    occurred_at: AwareDatetime
+    idempotency_key: str = Field(min_length=1, max_length=256)
+    request_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_fingerprint(self) -> LegacyApprovalAuditEvidence:
+        preimage = self.model_dump(mode="json", exclude={"request_fingerprint"})
+        expected = hashlib.sha256(_canonical_json(preimage)).hexdigest()
+        if self.request_fingerprint != expected:
+            raise ValueError("legacy approval audit fingerprint가 일치하지 않습니다.")
+        return self
 
 
 class LegacyTargetStatus(StrEnum):
@@ -309,6 +348,8 @@ class _PreparedLegacyDefinition:
     plan_item: LegacyProposalPlanItem
     proposal: Proposal
     object_ref: DefinitionObjectRef
+    approval_evidence: LegacyApprovalAuditEvidence | None
+    approval_artifact_digest: str
 
 
 class LegacyProposalDryRunService:
@@ -759,8 +800,11 @@ class LegacyProposalImportService:
                         raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
                 else:
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
+                GovernanceEventService.reconcile_connection(connection)
         except LegacyMigrationScanError:
             raise
+        except GovernanceEventError as error:
+            raise LegacyMigrationScanError(error.code) from error
         except sqlite3.Error as error:
             raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT") from error
         return self._result(plan)
@@ -991,7 +1035,36 @@ class LegacyProposalImportService:
                 != canonical.canonical_bytes
             ):
                 raise LegacyMigrationScanError("LEGACY_DEFINITION_INTEGRITY_FAILURE")
-            prepared.append(_PreparedLegacyDefinition(item, proposal, object_ref))
+            approval_evidence: LegacyApprovalAuditEvidence | None = None
+            approval_artifact_digest = item.proposal_artifact_digest
+            if item.approval_disposition is LegacyApprovalDisposition.LEGACY_AUDIT_PRESENT:
+                audit_path = f"{item.proposal_ref.proposal_id}/approval-audit.json"
+                audit_bytes = payloads.get(audit_path)
+                if audit_bytes is None:
+                    raise LegacyMigrationScanError("LEGACY_APPROVAL_AUDIT_INVALID")
+                try:
+                    approval_evidence = LegacyApprovalAuditEvidence.model_validate_json(audit_bytes)
+                except ValidationError as error:
+                    raise LegacyMigrationScanError("LEGACY_APPROVAL_AUDIT_INVALID") from error
+                if (
+                    approval_evidence.proposal_ref != item.proposal_ref
+                    or approval_evidence.actor_id != proposal.approved_by
+                    or proposal.approved_at is None
+                    or proposal.approved_at.tzinfo is None
+                    or proposal.approved_at.utcoffset() is None
+                    or approval_evidence.occurred_at != proposal.approved_at
+                ):
+                    raise LegacyMigrationScanError("LEGACY_APPROVAL_AUDIT_INVALID")
+                approval_artifact_digest = sha256_digest(audit_bytes)
+            prepared.append(
+                _PreparedLegacyDefinition(
+                    item,
+                    proposal,
+                    object_ref,
+                    approval_evidence,
+                    approval_artifact_digest,
+                )
+            )
         return tuple(prepared)
 
     @staticmethod
@@ -1091,6 +1164,173 @@ class LegacyProposalImportService:
                 timestamp,
             ),
         )
+        self._insert_migration_event(connection, plan, prepared)
+
+    def _insert_migration_event(
+        self,
+        connection: sqlite3.Connection,
+        plan: LegacyProposalMigrationPlan,
+        prepared: _PreparedLegacyDefinition,
+    ) -> None:
+        item = prepared.plan_item
+        evidence = prepared.approval_evidence
+        actor_type: str
+        occurred_at: datetime | None
+        if evidence is not None:
+            event_type = "migration.legacy_approval"
+            actor_id = evidence.actor_id
+            actor_type = evidence.actor_type
+            occurred_at = evidence.occurred_at
+            idempotency_key = evidence.idempotency_key
+            request_fingerprint = evidence.request_fingerprint
+            reason: str | None = None
+        elif item.approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED:
+            event_type = "migration.synthetic_approval"
+            actor_id = "ACT-SYSTEM-MIGRATION"
+            actor_type = "service"
+            occurred_at = prepared.proposal.approved_at
+            idempotency_key = (
+                f"legacy:{plan.plan_id}:{item.proposal_ref.proposal_id}:synthetic-approval"
+            )
+            reason = "legacy_approval_without_audit"
+            request_fingerprint = hashlib.sha256(
+                _compact_json(
+                    {
+                        "actor_id": actor_id,
+                        "event_type": event_type,
+                        "idempotency_key": idempotency_key,
+                        "proposal_ref": item.proposal_ref.model_dump(mode="json"),
+                        "source_artifact_digest": prepared.approval_artifact_digest,
+                    }
+                ).encode("utf-8")
+            ).hexdigest()
+        else:
+            event_type = "migration.state_imported"
+            actor_id = plan.freeze.actor_id
+            actor_type = "service"
+            occurred_at = plan.freeze.frozen_at
+            idempotency_key = (
+                f"legacy:{plan.plan_id}:{item.proposal_ref.proposal_id}:state-imported"
+            )
+            reason = None
+            request_fingerprint = hashlib.sha256(
+                _compact_json(
+                    {
+                        "actor_id": actor_id,
+                        "event_type": event_type,
+                        "idempotency_key": idempotency_key,
+                        "proposal_ref": item.proposal_ref.model_dump(mode="json"),
+                        "source_artifact_digest": prepared.approval_artifact_digest,
+                    }
+                ).encode("utf-8")
+            ).hexdigest()
+        if occurred_at is None or occurred_at.tzinfo is None or occurred_at.utcoffset() is None:
+            raise LegacyMigrationScanError("LEGACY_APPROVAL_AUDIT_INVALID")
+        payload = LegacyMigrationProjectionPayload(
+            aggregate_ref=item.proposal_ref,
+            approval_disposition=item.approval_disposition.value,
+            event_type=event_type,
+            idempotency_key=idempotency_key,
+            mapping_policy_version=plan.mapping_policy_version,
+            migration_id=plan.plan_id,
+            reason=reason,
+            source_artifact_digest=prepared.approval_artifact_digest,
+            source_revision=item.source_revision,
+            source_state_revision=item.state_revision,
+            source_status=item.source_status.value,
+            target_status=item.target_status.value,
+            validation_policy_ref=plan.validation_policy_ref,
+        )
+        payload_json = _compact_json(payload.model_dump(mode="json"))
+        payload_digest = sha256_digest(payload_json.encode("utf-8"))
+        existing_idempotency = connection.execute(
+            """
+            SELECT request_fingerprint FROM governance_legacy_import_commands
+            WHERE idempotency_key = ?
+            UNION ALL
+            SELECT request_fingerprint FROM governance_decision_results
+            WHERE idempotency_key = ?
+            UNION ALL
+            SELECT request_fingerprint FROM governance_apply_request_results
+            WHERE idempotency_key = ?
+            """,
+            (idempotency_key, idempotency_key, idempotency_key),
+        ).fetchall()
+        if existing_idempotency:
+            if any(str(row[0]) != request_fingerprint for row in existing_idempotency):
+                raise LegacyMigrationScanError("IDEMPOTENCY_CONFLICT")
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+        command_digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+        command_id = f"MCM-{command_digest[-16:].upper()}"
+        occurred_text = GovernanceEventService._timestamp(occurred_at)
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_import_commands(
+                command_id, migration_id, project_namespace, project_id, proposal_id,
+                idempotency_key, request_fingerprint, event_type, actor_id, actor_type,
+                occurred_at, source_artifact_digest, reason, definition_digest,
+                source_state_revision, payload_digest, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                command_id,
+                plan.plan_id,
+                item.proposal_ref.project_ref.namespace,
+                item.proposal_ref.project_ref.project_id,
+                item.proposal_ref.proposal_id,
+                idempotency_key,
+                request_fingerprint,
+                event_type,
+                actor_id,
+                actor_type,
+                occurred_text,
+                prepared.approval_artifact_digest,
+                reason,
+                prepared.object_ref.digest,
+                item.state_revision,
+                payload_digest,
+                payload_json,
+            ),
+        )
+        if item.approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED:
+            connection.execute(
+                """
+                INSERT INTO governance_legacy_approval_holds(
+                    migration_id, project_namespace, project_id, proposal_id,
+                    reason_code, source_artifact_digest, created_at
+                ) VALUES (?, ?, ?, ?, 'legacy_approval_without_audit', ?, ?)
+                """,
+                (
+                    plan.plan_id,
+                    item.proposal_ref.project_ref.namespace,
+                    item.proposal_ref.project_ref.project_id,
+                    item.proposal_ref.proposal_id,
+                    prepared.approval_artifact_digest,
+                    occurred_text,
+                ),
+            )
+        GovernanceEventService(
+            self.store,
+            clock=lambda: occurred_at,
+        )._append_legacy_import_in_transaction(
+            connection,
+            item.proposal_ref,
+            command_id=command_id,
+            payload=payload,
+        )
+        connection.execute(
+            """
+            DELETE FROM governance_legacy_event_backfill_pending
+            WHERE migration_id = ? AND project_namespace = ?
+              AND project_id = ? AND proposal_id = ?
+            """,
+            (
+                plan.plan_id,
+                item.proposal_ref.project_ref.namespace,
+                item.proposal_ref.project_ref.project_id,
+                item.proposal_ref.proposal_id,
+            ),
+        )
 
     def _verify_imported_rows(
         self,
@@ -1165,7 +1405,7 @@ class LegacyProposalImportService:
         backup: LegacyMigrationBackupEvidence,
     ) -> LegacyMigrationImportResult | None:
         values = self._root_values(plan, backup)
-        with self.store.connect() as connection:
+        with self.store.connect() as connection, governance_transaction(connection):
             root = self._select_root(connection, plan.plan_id)
             if root is None or str(root[15]) != "state_imported":
                 return None
@@ -1284,6 +1524,7 @@ class LegacyProposalImportService:
                     ):
                         raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
                     proposal_payload: bytes | None = None
+                    approval_payload: bytes | None = None
                     for descriptor in manifest.apply_inputs:
                         input_payload = self.objects.get_input_object(
                             item.proposal_ref,
@@ -1291,14 +1532,148 @@ class LegacyProposalImportService:
                         )
                         if descriptor.logical_name == "proposal.yaml":
                             proposal_payload = input_payload
-                    if external_provenance_required:
-                        if proposal_payload is None:
+                        elif descriptor.logical_name == "approval-audit.json":
+                            approval_payload = input_payload
+                    if proposal_payload is None:
+                        raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                    legacy_proposal = Proposal.model_validate(yaml.safe_load(proposal_payload))
+                    if (
+                        external_provenance_required
+                        and legacy_proposal.git_commit_sha != item.legacy_git_revision
+                    ):
+                        raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                    evidence: LegacyApprovalAuditEvidence | None = None
+                    expected_source_digest = item.proposal_artifact_digest
+                    expected_command: tuple[str, str, str, str, str, str, str]
+                    if item.approval_disposition is LegacyApprovalDisposition.LEGACY_AUDIT_PRESENT:
+                        if approval_payload is None:
                             raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
-                        legacy_proposal = Proposal.model_validate(yaml.safe_load(proposal_payload))
-                        if legacy_proposal.git_commit_sha != item.legacy_git_revision:
+                        evidence = LegacyApprovalAuditEvidence.model_validate_json(approval_payload)
+                        if (
+                            evidence.proposal_ref != item.proposal_ref
+                            or evidence.actor_id != legacy_proposal.approved_by
+                            or legacy_proposal.approved_at is None
+                            or evidence.occurred_at != legacy_proposal.approved_at
+                        ):
                             raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                        expected_source_digest = sha256_digest(approval_payload)
+                        expected_command = (
+                            evidence.idempotency_key,
+                            evidence.request_fingerprint,
+                            "migration.legacy_approval",
+                            evidence.actor_id,
+                            evidence.actor_type,
+                            GovernanceEventService._timestamp(evidence.occurred_at),
+                            expected_source_digest,
+                        )
+                    elif item.approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED:
+                        if legacy_proposal.approved_at is None:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                        expected_idempotency_key = (
+                            f"legacy:{plan.plan_id}:{item.proposal_ref.proposal_id}:"
+                            "synthetic-approval"
+                        )
+                        expected_fingerprint = hashlib.sha256(
+                            _compact_json(
+                                {
+                                    "actor_id": "ACT-SYSTEM-MIGRATION",
+                                    "event_type": "migration.synthetic_approval",
+                                    "idempotency_key": expected_idempotency_key,
+                                    "proposal_ref": item.proposal_ref.model_dump(mode="json"),
+                                    "source_artifact_digest": expected_source_digest,
+                                }
+                            ).encode("utf-8")
+                        ).hexdigest()
+                        expected_command = (
+                            expected_idempotency_key,
+                            expected_fingerprint,
+                            "migration.synthetic_approval",
+                            "ACT-SYSTEM-MIGRATION",
+                            "service",
+                            GovernanceEventService._timestamp(legacy_proposal.approved_at),
+                            expected_source_digest,
+                        )
+                    else:
+                        expected_idempotency_key = (
+                            f"legacy:{plan.plan_id}:{item.proposal_ref.proposal_id}:state-imported"
+                        )
+                        expected_fingerprint = hashlib.sha256(
+                            _compact_json(
+                                {
+                                    "actor_id": plan.freeze.actor_id,
+                                    "event_type": "migration.state_imported",
+                                    "idempotency_key": expected_idempotency_key,
+                                    "proposal_ref": item.proposal_ref.model_dump(mode="json"),
+                                    "source_artifact_digest": expected_source_digest,
+                                }
+                            ).encode("utf-8")
+                        ).hexdigest()
+                        expected_command = (
+                            expected_idempotency_key,
+                            expected_fingerprint,
+                            "migration.state_imported",
+                            plan.freeze.actor_id,
+                            "service",
+                            GovernanceEventService._timestamp(plan.freeze.frozen_at),
+                            expected_source_digest,
+                        )
+                    command = connection.execute(
+                        """
+                        SELECT idempotency_key, request_fingerprint, event_type,
+                               actor_id, actor_type, occurred_at, source_artifact_digest
+                        FROM governance_legacy_import_commands
+                        WHERE migration_id = ? AND project_namespace = ?
+                          AND project_id = ? AND proposal_id = ?
+                        """,
+                        (
+                            plan.plan_id,
+                            plan.project_ref.namespace,
+                            plan.project_ref.project_id,
+                            item.proposal_ref.proposal_id,
+                        ),
+                    ).fetchone()
+                    pending = connection.execute(
+                        """
+                        SELECT 1 FROM governance_legacy_event_backfill_pending
+                        WHERE migration_id = ? AND project_namespace = ?
+                          AND project_id = ? AND proposal_id = ?
+                        """,
+                        (
+                            plan.plan_id,
+                            plan.project_ref.namespace,
+                            plan.project_ref.project_id,
+                            item.proposal_ref.proposal_id,
+                        ),
+                    ).fetchone()
+                    if pending is None:
+                        if command is None:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                        actual_command = tuple(command)
+                        if actual_command != expected_command:
+                            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                    if pending is not None:
+                        self._insert_migration_event(
+                            connection,
+                            plan,
+                            _PreparedLegacyDefinition(
+                                item,
+                                legacy_proposal,
+                                DefinitionObjectRef(
+                                    proposal_ref=item.proposal_ref,
+                                    object_kind="definition",
+                                    digest=definition_digest,
+                                    path=Path("."),
+                                ),
+                                evidence,
+                                expected_source_digest,
+                            ),
+                        )
                 except (DefinitionObjectStoreError, ValidationError, yaml.YAMLError) as error:
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
+            try:
+                GovernanceEventService.reconcile_connection(connection)
+            except GovernanceEventError as error:
+                raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
         return self._result(plan)
 
     @staticmethod

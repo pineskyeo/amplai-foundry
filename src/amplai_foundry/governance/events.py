@@ -66,6 +66,30 @@ class DecisionProjectionPayload(BaseModel):
     state_revision: int = Field(ge=2)
 
 
+class LegacyMigrationProjectionPayload(BaseModel):
+    """Secret-free authoritative projection for one imported legacy Proposal."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    aggregate_ref: ProposalRef
+    approval_disposition: str = Field(
+        pattern=r"^(not_required|legacy_audit_present|synthetic_required)$"
+    )
+    event_type: str = Field(
+        pattern=r"^migration\.(legacy_approval|synthetic_approval|state_imported)$"
+    )
+    idempotency_key: str = Field(min_length=1)
+    mapping_policy_version: int = Field(ge=1)
+    migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    reason: str | None = None
+    source_artifact_digest: Digest
+    source_revision: int = Field(ge=1)
+    source_state_revision: int = Field(ge=1)
+    source_status: str
+    target_status: str
+    validation_policy_ref: str = Field(min_length=1)
+
+
 class ApplyProjectionPayload(BaseModel):
     """Secret-free projection payload derived from a persisted Apply request."""
 
@@ -296,6 +320,72 @@ class GovernanceEventService:
             source_state_revision=payload.state_revision,
             payload=payload,
         )
+
+    def _append_legacy_import_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        command_id: str,
+        payload: LegacyMigrationProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
+        payload_digest = self._digest(payload_json.encode("utf-8"))
+        row = connection.execute(
+            """
+            SELECT migration_id, project_namespace, project_id, proposal_id,
+                   idempotency_key, event_type, actor_id, actor_type, occurred_at,
+                   source_artifact_digest, reason, definition_digest,
+                   source_state_revision, payload_digest, payload_json
+            FROM governance_legacy_import_commands
+            WHERE command_id = ?
+            """,
+            (command_id,),
+        ).fetchone()
+        if row is None or tuple(row[:6]) != (
+            payload.migration_id,
+            *self._identity(ref),
+            payload.idempotency_key,
+            payload.event_type,
+        ):
+            raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_SOURCE_MISMATCH")
+        if (
+            str(row[9]) != payload.source_artifact_digest
+            or row[10] != payload.reason
+            or int(row[12]) != payload.source_state_revision
+            or str(row[13]) != payload_digest
+            or str(row[14]) != payload_json
+        ):
+            raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_SOURCE_MISMATCH")
+        result = self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=command_id,
+            event_type=payload.event_type,
+            actor_id=str(row[6]),
+            actor_type=str(row[7]),
+            policy_snapshot_id=self._digest(
+                f"{payload.mapping_policy_version}:{payload.validation_policy_ref}".encode()
+            ),
+            destinations=(
+                OutboxDestination(
+                    destination_ref=(
+                        f"yaml:{ref.project_ref.namespace}:"
+                        f"{ref.project_ref.project_id}:{ref.proposal_id}"
+                    )
+                ),
+            ),
+            before_state=payload.source_status,
+            after_state=payload.target_status,
+            definition_digest=str(row[11]),
+            source_state_revision=payload.source_state_revision,
+            payload=payload,
+        )
+        if self._timestamp(result[0].occurred_at) != str(row[8]):
+            raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_SOURCE_MISMATCH")
+        return result
 
     def _append_apply_job_in_transaction(
         self,
@@ -758,6 +848,161 @@ class GovernanceEventService:
         if active_apply_mismatch is not None:
             raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
         decision_commands: dict[str, tuple[str, int, str, int]] = {}
+        has_legacy_import_commands = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                "AND name = 'governance_legacy_import_commands'"
+            ).fetchone()
+            is not None
+        )
+        legacy_rows = (
+            connection.execute(
+                """
+                SELECT c.command_id, c.migration_id, c.project_namespace,
+                       c.project_id, c.proposal_id, c.idempotency_key,
+                       c.request_fingerprint, c.event_type, c.actor_id,
+                       c.actor_type, c.occurred_at, c.source_artifact_digest,
+                       c.reason, c.definition_digest, c.source_state_revision,
+                       c.payload_digest, c.payload_json,
+                       i.source_status, i.source_revision, i.target_status,
+                       i.state_revision, i.approval_disposition
+                FROM governance_legacy_import_commands c
+                JOIN governance_legacy_migration_items i
+                  ON i.migration_id = c.migration_id
+                 AND i.project_namespace = c.project_namespace
+                 AND i.project_id = c.project_id
+                 AND i.proposal_id = c.proposal_id
+                ORDER BY c.migration_id, c.proposal_id
+                """
+            ).fetchall()
+            if has_legacy_import_commands
+            else ()
+        )
+        for legacy in legacy_rows:
+            try:
+                legacy_payload = LegacyMigrationProjectionPayload.model_validate_json(
+                    str(legacy[16])
+                )
+            except ValueError as error:
+                raise GovernanceEventError("LEGACY_MIGRATION_EVENT_ROOT_MISMATCH") from error
+            ref = cls._proposal_ref(legacy[2], legacy[3], legacy[4])
+            expected_destination = OutboxDestination(
+                destination_ref=f"yaml:{legacy[2]}:{legacy[3]}:{legacy[4]}"
+            )
+            expected_payload_digest = cls._digest(str(legacy[16]).encode("utf-8"))
+            if (
+                str(legacy[15]) != expected_payload_digest
+                or legacy_payload.aggregate_ref != ref
+                or legacy_payload.migration_id != str(legacy[1])
+                or legacy_payload.idempotency_key != str(legacy[5])
+                or legacy_payload.event_type != str(legacy[7])
+                or legacy_payload.source_artifact_digest != str(legacy[11])
+                or legacy_payload.reason != legacy[12]
+                or legacy_payload.source_state_revision != int(legacy[14])
+                or legacy_payload.source_status != str(legacy[17])
+                or legacy_payload.source_revision != int(legacy[18])
+                or legacy_payload.target_status != str(legacy[19])
+                or legacy_payload.source_state_revision != int(legacy[20])
+                or legacy_payload.approval_disposition != str(legacy[21])
+            ):
+                raise GovernanceEventError("LEGACY_MIGRATION_EVENT_ROOT_MISMATCH")
+            command_id = str(legacy[0])
+            destinations = (expected_destination,)
+            decision_commands[command_id] = (
+                expected_payload_digest,
+                int(legacy[14]),
+                cls._destination_manifest_digest(destinations),
+                1,
+            )
+            audits = connection.execute(
+                "SELECT * FROM governance_audit_events WHERE command_id = ?",
+                (command_id,),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            expected_policy = cls._digest(
+                (
+                    f"{legacy_payload.mapping_policy_version}:"
+                    f"{legacy_payload.validation_policy_ref}"
+                ).encode()
+            )
+            if (
+                audit.event_type != str(legacy[7])
+                or audit.actor_id != str(legacy[8])
+                or audit.actor_type != str(legacy[9])
+                or audit.policy_snapshot_id != expected_policy
+                or audit.before_state != str(legacy[17])
+                or audit.after_state != str(legacy[19])
+                or audit.definition_digest != str(legacy[13])
+                or cls._timestamp(audit.occurred_at) != str(legacy[10])
+                or audit.destination_manifest_digest != decision_commands[command_id][2]
+                or audit.destination_count != 1
+            ):
+                raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_MISMATCH")
+            hold = connection.execute(
+                """
+                SELECT reason_code, source_artifact_digest
+                FROM governance_legacy_approval_holds
+                WHERE migration_id = ? AND project_namespace = ?
+                  AND project_id = ? AND proposal_id = ?
+                """,
+                (legacy[1], legacy[2], legacy[3], legacy[4]),
+            ).fetchone()
+            if str(legacy[7]) == "migration.synthetic_approval":
+                if hold is None or tuple(hold) != (
+                    "legacy_approval_without_audit",
+                    str(legacy[11]),
+                ):
+                    raise GovernanceEventError("LEGACY_APPROVAL_HOLD_MISMATCH")
+            elif hold is not None:
+                raise GovernanceEventError("LEGACY_APPROVAL_HOLD_MISMATCH")
+        if has_legacy_import_commands:
+            uncovered_item = connection.execute(
+                """
+                SELECT 1
+                FROM governance_legacy_migration_items i
+                LEFT JOIN governance_legacy_import_commands c
+                  ON c.migration_id = i.migration_id
+                 AND c.project_namespace = i.project_namespace
+                 AND c.project_id = i.project_id AND c.proposal_id = i.proposal_id
+                LEFT JOIN governance_legacy_event_backfill_pending p
+                  ON p.migration_id = i.migration_id
+                 AND p.project_namespace = i.project_namespace
+                 AND p.project_id = i.project_id AND p.proposal_id = i.proposal_id
+                WHERE (c.command_id IS NULL) = (p.migration_id IS NULL)
+                LIMIT 1
+                """
+            ).fetchone()
+            if uncovered_item is not None:
+                raise GovernanceEventError("LEGACY_MIGRATION_EVENT_ROOT_MISMATCH")
+            orphan_hold = connection.execute(
+                """
+                SELECT 1 FROM governance_legacy_approval_holds h
+                LEFT JOIN governance_legacy_import_commands c
+                  ON c.migration_id = h.migration_id
+                 AND c.project_namespace = h.project_namespace
+                 AND c.project_id = h.project_id
+                 AND c.proposal_id = h.proposal_id
+                 AND c.event_type = 'migration.synthetic_approval'
+                WHERE c.command_id IS NULL LIMIT 1
+                """
+            ).fetchone()
+            if orphan_hold is not None:
+                raise GovernanceEventError("LEGACY_APPROVAL_HOLD_MISMATCH")
+            idempotency_collision = connection.execute(
+                """
+                SELECT idempotency_key FROM (
+                    SELECT idempotency_key FROM governance_legacy_import_commands
+                    UNION ALL
+                    SELECT idempotency_key FROM governance_decision_results
+                    UNION ALL
+                    SELECT idempotency_key FROM governance_apply_request_results
+                ) GROUP BY idempotency_key HAVING COUNT(*) != 1 LIMIT 1
+                """
+            ).fetchone()
+            if idempotency_collision is not None:
+                raise GovernanceEventError("IDEMPOTENCY_CONFLICT")
         decision_rows = connection.execute(
             """
             SELECT idempotency_key, project_namespace, project_id, proposal_id,

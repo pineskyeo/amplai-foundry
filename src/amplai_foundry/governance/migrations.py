@@ -2371,6 +2371,145 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=20,
+        name="legacy-migration-audit-projection",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_import_commands (
+                command_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                request_fingerprint TEXT NOT NULL,
+                event_type TEXT NOT NULL CHECK (
+                    event_type IN (
+                        'migration.legacy_approval',
+                        'migration.synthetic_approval',
+                        'migration.state_imported'
+                    )
+                ),
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type IN ('human', 'service')),
+                occurred_at TEXT NOT NULL,
+                source_artifact_digest TEXT NOT NULL,
+                reason TEXT,
+                definition_digest TEXT NOT NULL,
+                source_state_revision INTEGER NOT NULL CHECK (source_state_revision >= 1),
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                UNIQUE (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_migration_items(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(command_id) = 20
+                    AND substr(command_id, 1, 4) = 'MCM-'
+                    AND substr(command_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(source_artifact_digest) = 71
+                    AND substr(source_artifact_digest, 1, 7) = 'sha256:'
+                    AND substr(source_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(payload_digest) = 71
+                    AND substr(payload_digest, 1, 7) = 'sha256:'
+                    AND substr(payload_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (event_type = 'migration.synthetic_approval'
+                     AND actor_type = 'service'
+                     AND reason = 'legacy_approval_without_audit')
+                    OR (event_type != 'migration.synthetic_approval' AND reason IS NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_approval_holds (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                reason_code TEXT NOT NULL CHECK (
+                    reason_code = 'legacy_approval_without_audit'
+                ),
+                source_artifact_digest TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (project_namespace, project_id, proposal_id),
+                UNIQUE (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_migration_items(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(source_artifact_digest) = 71
+                    AND substr(source_artifact_digest, 1, 7) = 'sha256:'
+                    AND substr(source_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_event_backfill_pending (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_migration_items(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            INSERT INTO governance_legacy_event_backfill_pending(
+                migration_id, project_namespace, project_id, proposal_id, created_at
+            )
+            SELECT migration_id, project_namespace, project_id, proposal_id,
+                   strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            FROM governance_legacy_migration_items
+            """,
+            """
+            CREATE TRIGGER governance_legacy_import_commands_no_update
+            BEFORE UPDATE ON governance_legacy_import_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy import command is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_import_commands_no_delete
+            BEFORE DELETE ON governance_legacy_import_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy import command is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_approval_holds_no_update
+            BEFORE UPDATE ON governance_legacy_approval_holds
+            BEGIN SELECT RAISE(ABORT, 'legacy approval hold is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_approval_holds_no_delete
+            BEFORE DELETE ON governance_legacy_approval_holds
+            BEGIN SELECT RAISE(ABORT, 'legacy approval hold is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_event_backfill_pending_no_update
+            BEFORE UPDATE ON governance_legacy_event_backfill_pending
+            BEGIN SELECT RAISE(ABORT, 'legacy event backfill marker is immutable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -2963,6 +3102,46 @@ class MigrationRunner:
                 *items[:-1],
                 ("legacy_git_revision", "TEXT", 0, 0),
                 items[-1],
+            )
+        if schema_version >= 20:
+            expected_columns.update(
+                {
+                    "governance_legacy_import_commands": (
+                        ("command_id", "TEXT", 1, 1),
+                        ("migration_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("idempotency_key", "TEXT", 1, 0),
+                        ("request_fingerprint", "TEXT", 1, 0),
+                        ("event_type", "TEXT", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("occurred_at", "TEXT", 1, 0),
+                        ("source_artifact_digest", "TEXT", 1, 0),
+                        ("reason", "TEXT", 0, 0),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("source_state_revision", "INTEGER", 1, 0),
+                        ("payload_digest", "TEXT", 1, 0),
+                        ("payload_json", "TEXT", 1, 0),
+                    ),
+                    "governance_legacy_approval_holds": (
+                        ("migration_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 1),
+                        ("project_id", "TEXT", 1, 2),
+                        ("proposal_id", "TEXT", 1, 3),
+                        ("reason_code", "TEXT", 1, 0),
+                        ("source_artifact_digest", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_legacy_event_backfill_pending": (
+                        ("migration_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 2),
+                        ("project_id", "TEXT", 1, 3),
+                        ("proposal_id", "TEXT", 1, 4),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                }
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
