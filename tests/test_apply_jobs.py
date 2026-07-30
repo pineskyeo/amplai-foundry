@@ -356,3 +356,104 @@ def test_grant_insert_failure_rolls_back_new_snapshot(tmp_path: Path) -> None:
             "SELECT COUNT(*) FROM governance_approved_snapshots"
         ).fetchone() == (0,)
         assert connection.execute("SELECT COUNT(*) FROM governance_apply_grants").fetchone() == (0,)
+
+
+def test_elapsed_grant_is_expired_before_reissue(tmp_path: Path) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    clock = [NOW]
+    issuer = ApplyGrantService(
+        store,
+        grants.authority_service,
+        grants.definitions,
+        clock=lambda: clock[0],
+    )
+    first = issuer._issue_from_approved_decision(
+        decision_key,
+        authority_request=_request(),
+        ttl=timedelta(seconds=1),
+    )
+    clock[0] += timedelta(seconds=2)
+    second = issuer._issue_from_approved_decision(
+        decision_key,
+        authority_request=_request(),
+        ttl=timedelta(seconds=1),
+    )
+
+    assert first.record.grant_id != second.record.grant_id
+    assert issuer.get_grant(first.record.grant_id).state.value == "expired"
+    assert issuer.get_grant(second.record.grant_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_grants WHERE state = 'issued'"
+        ).fetchone() == (1,)
+
+
+def test_snapshot_job_and_result_root_constraints_reject_malformed_identity(
+    tmp_path: Path,
+) -> None:
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    snapshot = grants.get_snapshot(issued.record.snapshot_id)
+    identity = (
+        PROPOSAL.project_ref.namespace,
+        PROPOSAL.project_ref.project_id,
+        PROPOSAL.proposal_id,
+    )
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_approved_snapshots VALUES (
+                    'APS-EVIL', ?, ?, ?, 'bad-definition', 'bad-snapshot',
+                    1, 2, 1, 'NOTHEX', ?
+                )
+                """,
+                (*identity, NOW.isoformat()),
+            )
+        connection.execute(
+            """
+            INSERT INTO governance_apply_jobs(
+                job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                approved_snapshot_digest, expected_base_revision, status,
+                attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
+                staged_artifact_digest, publish_request_digest, last_error_code,
+                created_at, updated_at
+            ) VALUES (
+                'JOB-VALID', ?, ?, ?, ?, ?, ?, 'queued', 0, 0,
+                NULL, NULL, NULL, NULL, NULL, NULL, ?, ?
+            )
+            """,
+            (
+                snapshot.snapshot_id,
+                *identity,
+                snapshot.snapshot_digest,
+                snapshot.expected_base_revision,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_apply_request_results VALUES (
+                    'apply-result-evil', ?, 'wrong/ns', 'wrong-project', ?,
+                    ?, 'JOB-VALID', 'ACT-APPLIER-1', 'human', ?,
+                    'apply_requested', ?
+                )
+                """,
+                (
+                    hashlib.sha256(b"apply-result-evil").hexdigest(),
+                    PROPOSAL.proposal_id,
+                    snapshot.snapshot_id,
+                    CHANNEL.model_dump_json(exclude_none=True),
+                    NOW.isoformat(),
+                ),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET staged_artifact_digest = 'bad-digest'
+                WHERE job_id = 'JOB-VALID'
+                """
+            )

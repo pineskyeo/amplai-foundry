@@ -234,6 +234,23 @@ class ApplyGrantService:
                 manifest.base_revision,
             ):
                 raise ApplyGovernanceError("APPROVED_SNAPSHOT_CONFLICT")
+            channel_json = self._channel_json(authority.source.channel)
+            connection.execute(
+                """
+                UPDATE governance_apply_grants
+                SET state = 'expired', resolved_at = ?
+                WHERE snapshot_id = ? AND allowed_action = 'request_apply'
+                  AND allowed_actor_id = ? AND bound_channel_json = ?
+                  AND state = 'issued' AND expires_at <= ?
+                """,
+                (
+                    self._timestamp(issued_at),
+                    snapshot[0],
+                    authority.actor_ref.actor_id,
+                    channel_json,
+                    self._timestamp(issued_at),
+                ),
+            )
             already_issued = connection.execute(
                 """
                 SELECT 1 FROM governance_apply_grants
@@ -244,7 +261,7 @@ class ApplyGrantService:
                 (
                     snapshot[0],
                     authority.actor_ref.actor_id,
-                    self._channel_json(authority.source.channel),
+                    channel_json,
                 ),
             ).fetchone()
             if already_issued is not None:
@@ -272,7 +289,7 @@ class ApplyGrantService:
                     int(str(source[5])),
                     int(str(source[6])),
                     authority.actor_ref.actor_id,
-                    self._channel_json(authority.source.channel),
+                    channel_json,
                     self._timestamp(issued_at),
                     self._timestamp(expires_at),
                 ),

@@ -769,10 +769,25 @@ INITIAL_MIGRATIONS = (
                     snapshot_id, project_namespace, project_id, proposal_id,
                     snapshot_digest, expected_base_revision
                 ),
+                UNIQUE (snapshot_id, project_namespace, project_id, proposal_id),
                 FOREIGN KEY (project_namespace, project_id, proposal_id)
                     REFERENCES governance_active_proposals(
                         project_namespace, project_id, proposal_id
-                    ) ON DELETE RESTRICT
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(snapshot_digest) = 71
+                    AND substr(snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(expected_base_revision) BETWEEN 7 AND 64
+                    AND expected_base_revision NOT GLOB '*[^0-9a-f]*'
+                )
             ) WITHOUT ROWID
             """,
             """
@@ -912,6 +927,20 @@ INITIAL_MIGRATIONS = (
                     AND expected_base_revision NOT GLOB '*[^0-9a-f]*'
                 ),
                 CHECK (
+                    staged_artifact_digest IS NULL OR (
+                        length(staged_artifact_digest) = 71
+                        AND substr(staged_artifact_digest, 1, 7) = 'sha256:'
+                        AND substr(staged_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (
+                    publish_request_digest IS NULL OR (
+                        length(publish_request_digest) = 71
+                        AND substr(publish_request_digest, 1, 7) = 'sha256:'
+                        AND substr(publish_request_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (
                     (status IN ('leased', 'running')
                      AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
                     OR (status NOT IN ('leased', 'running')
@@ -929,6 +958,12 @@ INITIAL_MIGRATIONS = (
             WHERE status IN (
                 'queued', 'leased', 'running', 'retry_wait', 'staged',
                 'publish_pending', 'recovery_hold'
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX governance_apply_job_result_identity
+            ON governance_apply_jobs(
+                job_id, snapshot_id, project_namespace, project_id, proposal_id
             )
             """,
             """
@@ -967,10 +1002,15 @@ INITIAL_MIGRATIONS = (
                 channel_json TEXT NOT NULL,
                 proposal_status TEXT NOT NULL CHECK (proposal_status = 'apply_requested'),
                 processed_at TEXT NOT NULL,
-                FOREIGN KEY (snapshot_id)
-                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
-                FOREIGN KEY (job_id)
-                    REFERENCES governance_apply_jobs(job_id) ON DELETE RESTRICT,
+                FOREIGN KEY (snapshot_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_approved_snapshots(
+                        snapshot_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) REFERENCES governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id
+                ) ON DELETE RESTRICT,
                 CHECK (
                     length(request_fingerprint) = 64
                     AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
