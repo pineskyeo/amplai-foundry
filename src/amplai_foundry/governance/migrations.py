@@ -1973,6 +1973,90 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=17,
+        name="legacy-publish-outbox-revision-repair",
+        statements=(
+            """
+            DROP TRIGGER governance_publish_resolution_roots_no_update
+            """,
+            """
+            DROP TRIGGER governance_publish_resolution_roots_no_delete
+            """,
+            """
+            DROP TRIGGER governance_outbox_payload_immutable
+            """,
+            """
+            UPDATE governance_publish_resolution_roots
+            SET stream_revision = (
+                SELECT COALESCE(MAX(j.event_sequence), 0) + e.resolution_sequence
+                FROM governance_publish_resolution_events e
+                LEFT JOIN governance_apply_job_events j ON j.job_id = e.job_id
+                WHERE e.resolution_event_id =
+                      governance_publish_resolution_roots.resolution_event_id
+            )
+            WHERE EXISTS (
+                SELECT 1 FROM governance_publish_resolution_events e
+                WHERE e.resolution_event_id =
+                      governance_publish_resolution_roots.resolution_event_id
+                  AND instr(e.payload_json, '\"stream_revision\"') = 0
+            )
+            """,
+            """
+            UPDATE governance_outbox_events
+            SET source_state_revision = (
+                SELECT COALESCE(MAX(j.event_sequence), 0) + e.resolution_sequence
+                FROM governance_audit_events a
+                JOIN governance_publish_resolution_events e
+                  ON e.command_id = a.command_id
+                LEFT JOIN governance_apply_job_events j ON j.job_id = e.job_id
+                WHERE a.project_namespace = governance_outbox_events.project_namespace
+                  AND a.project_id = governance_outbox_events.project_id
+                  AND a.proposal_id = governance_outbox_events.proposal_id
+                  AND a.aggregate_sequence = governance_outbox_events.aggregate_sequence
+            )
+            WHERE EXISTS (
+                SELECT 1
+                FROM governance_audit_events a
+                JOIN governance_publish_resolution_events e
+                  ON e.command_id = a.command_id
+                WHERE a.project_namespace = governance_outbox_events.project_namespace
+                  AND a.project_id = governance_outbox_events.project_id
+                  AND a.proposal_id = governance_outbox_events.proposal_id
+                  AND a.aggregate_sequence = governance_outbox_events.aggregate_sequence
+                  AND instr(e.payload_json, '\"stream_revision\"') = 0
+            )
+            """,
+            """
+            CREATE TRIGGER governance_outbox_payload_immutable
+            BEFORE UPDATE ON governance_outbox_events
+            WHEN OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.aggregate_sequence != NEW.aggregate_sequence
+              OR OLD.destination_ref != NEW.destination_ref
+              OR OLD.destination_sequence != NEW.destination_sequence
+              OR OLD.source_state_revision != NEW.source_state_revision
+              OR OLD.supersession_key IS NOT NEW.supersession_key
+              OR OLD.payload_digest != NEW.payload_digest
+              OR OLD.payload_json != NEW.payload_json
+              OR OLD.created_at != NEW.created_at
+            BEGIN
+                SELECT RAISE(ABORT, 'outbox payload is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_update
+            BEFORE UPDATE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_delete
+            BEFORE DELETE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is durable'); END
+            """,
+        ),
+    ),
 )
 
 
