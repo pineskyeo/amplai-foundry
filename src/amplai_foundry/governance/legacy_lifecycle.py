@@ -9,6 +9,7 @@ import sqlite3
 from collections.abc import Callable
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
@@ -67,7 +68,9 @@ class LegacyMigrationActivationResult(BaseModel):
     event_id: str = Field(pattern=r"^LME-[A-F0-9]{16}$")
     migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
     project_ref: ProjectRef
-    state: LegacyMigrationLifecycleState = LegacyMigrationLifecycleState.ACTIVATED
+    state: Literal[LegacyMigrationLifecycleState.ACTIVATED] = (
+        LegacyMigrationLifecycleState.ACTIVATED
+    )
     lifecycle_revision: int = Field(ge=2)
     verification_id: str = Field(pattern=r"^MVF-[A-F0-9]{16}$")
     report_digest: Digest
@@ -129,6 +132,9 @@ class LegacyMigrationActivationService:
                 ):
                     raise LegacyMigrationLifecycleError("AUTHORITY_DENIED")
                 channel_json = _canonical_json(context.source.channel.model_dump(mode="json"))
+                GovernanceEventService.reconcile_connection(connection)
+                LegacyProposalImportService.reconcile_verification_roots(connection)
+                self.reconcile_roots(connection)
                 replay = self._replay(
                     connection,
                     migration_id,
@@ -143,8 +149,6 @@ class LegacyMigrationActivationService:
                 )
                 if replay is not None:
                     return replay
-                GovernanceEventService.reconcile_connection(connection)
-                LegacyProposalImportService.reconcile_verification_roots(connection)
                 head = connection.execute(
                     """
                     SELECT project_namespace, project_id, verification_id, report_digest,
@@ -429,6 +433,7 @@ class LegacyMigrationActivationService:
                 or result.project_ref.project_id != str(head[2])
                 or result.actor_ref.actor_id != str(row[3])
                 or result.actor_ref.actor_type.value != str(row[4])
+                or LegacyMigrationActivationService._timestamp(result.activated_at) != str(row[5])
                 or result.lifecycle_revision != int(head[6])
                 or result.verification_id != str(head[3])
                 or result.report_digest != str(head[4])
@@ -449,6 +454,9 @@ class LegacyMigrationActivationService:
         reason: str,
     ) -> LegacyMigrationActivationResult | None:
         with self.store.connect() as connection:
+            GovernanceEventService.reconcile_connection(connection)
+            LegacyProposalImportService.reconcile_verification_roots(connection)
+            self.reconcile_roots(connection)
             return self._replay(
                 connection,
                 migration_id,

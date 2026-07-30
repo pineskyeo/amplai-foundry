@@ -38,7 +38,27 @@ def legacy_mutation_block(connection: sqlite3.Connection, ref: ProposalRef) -> s
         """,
         identity,
     ).fetchone()
-    return "LEGACY_APPROVAL_REVIEW_REQUIRED" if unresolved is not None else None
+    if unresolved is not None:
+        return "LEGACY_APPROVAL_REVIEW_REQUIRED"
+    if not _table_exists(connection, "governance_legacy_migration_lifecycle_heads"):
+        return None
+    lifecycle = connection.execute(
+        """
+        SELECT h.state
+        FROM governance_legacy_migration_items i
+        JOIN governance_legacy_migration_lifecycle_heads h
+          ON h.migration_id = i.migration_id
+        WHERE i.project_namespace = ? AND i.project_id = ? AND i.proposal_id = ?
+        """,
+        identity,
+    ).fetchone()
+    if lifecycle is None or str(lifecycle[0]) == "activated":
+        return None
+    if str(lifecycle[0]) == "rolled_back":
+        return "LEGACY_MIGRATION_ROLLED_BACK"
+    if str(lifecycle[0]) == "recovery_hold":
+        return "LEGACY_MIGRATION_RECOVERY_REQUIRED"
+    return "LEGACY_MIGRATION_NOT_ACTIVATED"
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:

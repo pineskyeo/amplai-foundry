@@ -1602,6 +1602,33 @@ def test_verified_migration_activation_releases_outbox_and_replays(tmp_path: Pat
         AuthorityService(store, clock=lambda: NOW),
         clock=lambda: NOW,
     )
+    with store.connect() as connection:
+        before_roots = (
+            connection.execute("SELECT COUNT(*) FROM governance_audit_events").fetchone(),
+            connection.execute("SELECT COUNT(*) FROM governance_outbox_events").fetchone(),
+            connection.execute("SELECT COUNT(*) FROM governance_action_tokens").fetchone(),
+        )
+    with pytest.raises(ActiveProposalError, match="LEGACY_MIGRATION_NOT_ACTIVATED"):
+        ProposalSubmissionService(
+            store,
+            ActiveProposalRepository(store, _objects),
+            AuthorityService(store, clock=lambda: NOW),
+        ).submit_for_review(
+            plan.proposals[0].proposal_ref,
+            authority_request=authority_request,
+            expected_state_revision=plan.proposals[0].state_revision,
+        )
+    with pytest.raises(DecisionError, match="LEGACY_MIGRATION_NOT_ACTIVATED"):
+        DecisionService(store, AuthorityService(store, clock=lambda: NOW)).issue_tokens(
+            plan.proposals[0].proposal_ref,
+            authority_request=authority_request,
+        )
+    with store.connect() as connection:
+        assert before_roots == (
+            connection.execute("SELECT COUNT(*) FROM governance_audit_events").fetchone(),
+            connection.execute("SELECT COUNT(*) FROM governance_outbox_events").fetchone(),
+            connection.execute("SELECT COUNT(*) FROM governance_action_tokens").fetchone(),
+        )
 
     result = activation.activate(
         plan.plan_id,
@@ -1633,6 +1660,16 @@ def test_verified_migration_activation_releases_outbox_and_replays(tmp_path: Pat
             idempotency_key="legacy-activation:verified:1",
             request_fingerprint="f" * 64,
         )
+    reviewed = ProposalSubmissionService(
+        store,
+        ActiveProposalRepository(store, _objects),
+        AuthorityService(store, clock=lambda: NOW),
+    ).submit_for_review(
+        plan.proposals[0].proposal_ref,
+        authority_request=authority_request,
+        expected_state_revision=plan.proposals[0].state_revision,
+    )
+    assert reviewed.status.value == "reviewed"
     assert dispatcher.claim_next("after-activation") is not None
     with store.connect() as connection:
         head = connection.execute(
@@ -1773,6 +1810,61 @@ def test_concurrent_identical_activation_converges_to_one_result(tmp_path: Path)
         ).fetchone() == (1,)
 
 
+def test_dispatch_claim_race_cannot_cross_uncommitted_activation(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    service = LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+    dispatcher = OutboxDispatcher(store, clock=lambda: NOW)
+    barrier = threading.Barrier(2)
+
+    def activate() -> LegacyMigrationActivationResult:
+        barrier.wait()
+        return service.activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+            reason="race activation against dispatcher claim",
+            idempotency_key="legacy-activation:dispatch-race:1",
+            request_fingerprint="3" * 64,
+        )
+
+    def claim() -> object:
+        barrier.wait()
+        return dispatcher.claim_next("racing-dispatcher")
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        activation_future = executor.submit(activate)
+        claim_future = executor.submit(claim)
+        activation = activation_future.result()
+        raced_claim = claim_future.result()
+
+    assert activation.state.value == "activated"
+    if raced_claim is None:
+        assert dispatcher.claim_next("post-activation-dispatcher") is not None
+    else:
+        assert raced_claim.lease_owner == "racing-dispatcher"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state FROM governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone() == ("activated",)
+
+
 def test_activation_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
@@ -1809,6 +1901,97 @@ def test_activation_reconciles_after_durable_ambiguous_commit(tmp_path: Path) ->
     assert result.replayed
     assert result.state.value == "activated"
     assert OutboxDispatcher(store, clock=lambda: NOW).claim_next("after-ambiguous") is not None
+
+
+@pytest.mark.parametrize(
+    ("timing", "trigger_sql"),
+    [
+        (
+            "command",
+            """
+            CREATE TRIGGER fail_lifecycle_command
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_commands
+            BEGIN SELECT RAISE(ABORT, 'forced lifecycle command failure'); END
+            """,
+        ),
+        (
+            "event",
+            """
+            CREATE TRIGGER fail_lifecycle_event
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_events
+            BEGIN SELECT RAISE(ABORT, 'forced lifecycle event failure'); END
+            """,
+        ),
+        (
+            "result",
+            """
+            CREATE TRIGGER fail_lifecycle_result
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_results
+            BEGIN SELECT RAISE(ABORT, 'forced lifecycle result failure'); END
+            """,
+        ),
+        (
+            "head",
+            """
+            CREATE TRIGGER fail_lifecycle_head
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_heads
+            WHEN NEW.state = 'activated'
+            BEGIN SELECT RAISE(ABORT, 'forced lifecycle head failure'); END
+            """,
+        ),
+    ],
+)
+def test_activation_failure_rolls_back_every_lifecycle_boundary(
+    tmp_path: Path,
+    timing: str,
+    trigger_sql: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    with store.connect() as connection:
+        connection.execute(trigger_sql)
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_ACTIVATION_CONFLICT",
+    ):
+        LegacyMigrationActivationService(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+            reason=f"inject activation failure after {timing}",
+            idempotency_key=f"legacy-activation:failure:{timing}",
+            request_fingerprint="7" * 64,
+        )
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state, lifecycle_revision, last_event_digest "
+            "FROM governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone() == ("staged_verified", 2, None)
+        for table in (
+            "governance_legacy_migration_lifecycle_commands",
+            "governance_legacy_migration_lifecycle_events",
+            "governance_legacy_migration_lifecycle_results",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+    assert OutboxDispatcher(store, clock=lambda: NOW).claim_next(timing) is None
 
 
 def test_startup_rejects_incomplete_lifecycle_command_root(tmp_path: Path) -> None:
@@ -1851,6 +2034,180 @@ def test_startup_rejects_incomplete_lifecycle_command_root(tmp_path: Path) -> No
         match="LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH",
     ):
         GovernanceStore(store.path).initialize()
+
+
+@pytest.mark.parametrize("forgery", ["state", "time"])
+def test_lifecycle_result_guard_rejects_forged_state_or_time(
+    tmp_path: Path,
+    forgery: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    command_id = "LMC-0000000000000002"
+    event_id = "LME-0000000000000002"
+    occurred_at = NOW.isoformat()
+    forged_at = (NOW.replace(day=NOW.day + 1)).isoformat() if forgery == "time" else occurred_at
+    result_digest = f"sha256:{'6' * 64}"
+    with store.connect() as connection:
+        head = connection.execute(
+            "SELECT verification_id, report_digest FROM "
+            "governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone()
+        assert head is not None
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_commands(
+                command_id, migration_id, project_namespace, project_id, action,
+                expected_lifecycle_revision, idempotency_key, request_fingerprint,
+                actor_id, actor_type, request_id, channel_json, reason, occurred_at
+            ) VALUES (?, ?, ?, ?, 'activate', 2, ?, ?, ?, 'human', ?, ?, ?, ?)
+            """,
+            (
+                command_id,
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                f"forged-result:{forgery}",
+                "5" * 64,
+                REVIEWER.actor_id,
+                "REQ-FORGED-RESULT",
+                json.dumps(CHANNEL.model_dump(mode="json"), sort_keys=True),
+                "forged lifecycle result evidence",
+                occurred_at,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_events(
+                event_id, command_id, migration_id, lifecycle_sequence,
+                before_state, after_state, verification_id, report_digest,
+                previous_event_digest, event_digest, occurred_at
+            ) VALUES (?, ?, ?, 2, 'staged_verified', 'activated', ?, ?, NULL, ?, ?)
+            """,
+            (
+                event_id,
+                command_id,
+                plan.plan_id,
+                head[0],
+                head[1],
+                f"sha256:{'4' * 64}",
+                occurred_at,
+            ),
+        )
+        result_payload = {
+            "command_id": command_id,
+            "event_id": event_id,
+            "migration_id": plan.plan_id,
+            "project_ref": PROJECT.model_dump(mode="json"),
+            "state": "rolled_back" if forgery == "state" else "activated",
+            "lifecycle_revision": 3,
+            "verification_id": head[0],
+            "report_digest": head[1],
+            "actor_ref": REVIEWER.model_dump(mode="json"),
+            "activated_at": forged_at,
+            "result_digest": result_digest,
+            "replayed": False,
+        }
+        with pytest.raises(sqlite3.DatabaseError, match="lifecycle result root mismatch"):
+            connection.execute(
+                """
+                INSERT INTO governance_legacy_migration_lifecycle_results(
+                    command_id, migration_id, result_json, result_digest, created_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    command_id,
+                    plan.plan_id,
+                    json.dumps(result_payload, separators=(",", ":"), sort_keys=True),
+                    result_digest,
+                    occurred_at,
+                ),
+            )
+
+
+@pytest.mark.parametrize(
+    ("verified", "progressed", "non_pending", "expected_state"),
+    [
+        (False, False, False, "imported"),
+        (False, True, False, "activated"),
+        (True, False, False, "staged_verified"),
+        (True, True, False, "recovery_hold"),
+        (True, False, True, "recovery_hold"),
+    ],
+)
+def test_v24_upgrade_classifies_legacy_lifecycle_conservatively(
+    tmp_path: Path,
+    verified: bool,
+    progressed: bool,
+    non_pending: bool,
+    expected_state: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v23 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:23]))
+    v23.initialize()
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v23,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    report = import_service.verify_import(plan, backup) if verified else None
+    if progressed:
+        ProposalSubmissionService(
+            store,
+            ActiveProposalRepository(store, objects),
+            AuthorityService(store, clock=lambda: NOW),
+        ).submit_for_review(
+            plan.proposals[0].proposal_ref,
+            authority_request=_migration_authority(store),
+            expected_state_revision=plan.proposals[0].state_revision,
+        )
+    if non_pending:
+        with store.connect() as connection:
+            connection.execute(
+                """
+                UPDATE governance_outbox_events
+                SET state = 'retry_wait', attempts = 1, retry_at = ?,
+                    last_error_code = 'TRANSIENT_PROVIDER_FAILURE'
+                """,
+                ((NOW.replace(minute=NOW.minute + 1)).isoformat(),),
+            )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with latest.connect() as connection:
+        head = connection.execute(
+            """
+            SELECT verification_id, report_digest, state, lifecycle_revision
+            FROM governance_legacy_migration_lifecycle_heads
+            WHERE migration_id = ?
+            """,
+            (plan.plan_id,),
+        ).fetchone()
+    assert head is not None
+    assert head[2:] == (expected_state, 1)
+    if verified:
+        assert report is not None
+        assert head[:2] == (report.verification_id, report.report_digest)
+    else:
+        assert head[:2] == (None, None)
 
 
 def test_concurrent_verification_converges_to_one_exact_report(tmp_path: Path) -> None:
@@ -2042,6 +2399,7 @@ def test_synthetic_approval_import_creates_audit_outbox_hold_and_enforcement(
         with pytest.raises(sqlite3.DatabaseError, match="approval hold is durable"):
             connection.execute("DELETE FROM governance_legacy_approval_holds")
     GovernanceEventService(store).reconcile()
+    service.verify_import(plan, backup)
 
     authority_request = _migration_authority(store)
     authority = AuthorityService(store, clock=lambda: NOW)
@@ -2147,6 +2505,18 @@ def test_synthetic_approval_import_creates_audit_outbox_hold_and_enforcement(
     )
     assert replay.model_copy(update={"replayed": False}) == review
     assert replay.replayed is True
+    LegacyMigrationActivationService(
+        store,
+        authority,
+        clock=lambda: NOW,
+    ).activate(
+        plan.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate after internal legacy approval review",
+        idempotency_key="legacy-activation:synthetic-reviewed:1",
+        request_fingerprint="8" * 64,
+    )
 
     active = ActiveProposalRepository(store, _objects)
     reviewed = ProposalSubmissionService(store, active, authority).submit_for_review(
