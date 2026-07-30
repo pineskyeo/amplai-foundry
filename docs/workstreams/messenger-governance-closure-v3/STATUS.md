@@ -15,9 +15,10 @@
 
 - Planning: PASS
 - Implementation: MGC-001–010 PASS / MGC-011 ACTIVE
-- Subagent Review: MGC-010 PASS at `9f3215f` — P0/P1/Blocking-P2 0
+- Subagent Review: MGC-011 Slice 2 PASS at `91dab70` — P0/P1/Blocking-P2 0
 - Repository Verification: PASS — all seven verify stages
 
 ## Next
 
-`MGC-011 — V2 Migration`의 deterministic snapshot과 write-free dry-run plan을 구현한다.
+`MGC-011 — V2 Migration` Slice 3의 Audit/idempotency import, synthetic approval
+hold와 ordered projection을 구현한다.

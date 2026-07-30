@@ -37,10 +37,13 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
 ## Slice Status
 
 - Slice 1: `PASS` at `9b195d3`
-- Focused tests: `20/20 PASS`
+- Slice 2: `PASS` at `91dab70`
+- Full tests: `501/501 PASS`
 - Full verification: `7/7 PASS`
-- Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`, `Advisory=0`
-- Next: Slice 2 — atomic qualified definition and Proposal state import
+- Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`
+- Retained advisory: `OPS-S2-06` — interrupted immutable object cleanup/accounting,
+  owner `MGC-011 Slice 4`
+- Next: Slice 3 — Audit/idempotency import, synthetic approval hold, ordered projection
 
 ## Out Of Scope
 
