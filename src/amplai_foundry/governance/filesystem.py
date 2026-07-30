@@ -95,29 +95,10 @@ class PlatformFilesystemProbe:
     def _inspect_linux(path: Path) -> FilesystemStatus:
         mount_info = Path("/proc/self/mountinfo")
         try:
-            lines = mount_info.read_text(encoding="utf-8").splitlines()
+            payload = mount_info.read_text(encoding="utf-8")
         except OSError as error:
             raise GovernanceFilesystemError("Linux mount 정보를 읽을 수 없습니다.") from error
-
-        matches: list[tuple[Path, str]] = []
-        for line in lines:
-            fields = line.split()
-            try:
-                separator = fields.index("-")
-                mount_point = _decode_mount_path(fields[4])
-                filesystem_kind = fields[separator + 1].lower()
-            except (IndexError, ValueError):
-                continue
-            if _is_under(path, mount_point):
-                matches.append((mount_point, filesystem_kind))
-        if not matches:
-            raise GovernanceFilesystemError(f"mount 정보를 확인할 수 없습니다: {path}")
-        mount_point, filesystem_kind = max(matches, key=lambda item: len(item[0].parts))
-        return FilesystemStatus(
-            kind=filesystem_kind,
-            mount_point=mount_point,
-            local=filesystem_kind in _LOCAL_LINUX_FILESYSTEMS,
-        )
+        return _parse_linux_mountinfo(payload, path)
 
     @staticmethod
     def _inspect_darwin(path: Path) -> FilesystemStatus:
@@ -127,28 +108,54 @@ class PlatformFilesystemProbe:
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=2,
             )
-        except (OSError, subprocess.CalledProcessError) as error:
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
             raise GovernanceFilesystemError("macOS mount 정보를 읽을 수 없습니다.") from error
+        return _parse_darwin_mounts(completed.stdout, path)
 
-        matches: list[tuple[Path, str, frozenset[str]]] = []
-        for line in completed.stdout.splitlines():
-            match = _DARWIN_MOUNT_PATTERN.match(line)
-            if match is None:
-                continue
-            mount_point = _decode_mount_path(match.group("mount"))
-            details = tuple(part.strip().lower() for part in match.group("details").split(","))
-            if not details or not _is_under(path, mount_point):
-                continue
-            matches.append((mount_point, details[0], frozenset(details[1:])))
-        if not matches:
-            raise GovernanceFilesystemError(f"mount 정보를 확인할 수 없습니다: {path}")
-        mount_point, filesystem_kind, flags = max(matches, key=lambda item: len(item[0].parts))
-        return FilesystemStatus(
-            kind=filesystem_kind,
-            mount_point=mount_point,
-            local="local" in flags and filesystem_kind not in _REMOTE_FILESYSTEMS,
-        )
+
+def _parse_linux_mountinfo(payload: str, path: Path) -> FilesystemStatus:
+    matches: list[tuple[Path, str]] = []
+    for line in payload.splitlines():
+        fields = line.split()
+        try:
+            separator = fields.index("-")
+            mount_point = _decode_mount_path(fields[4])
+            filesystem_kind = fields[separator + 1].lower()
+        except (IndexError, ValueError):
+            continue
+        if _is_under(path, mount_point):
+            matches.append((mount_point, filesystem_kind))
+    if not matches:
+        raise GovernanceFilesystemError(f"mount 정보를 확인할 수 없습니다: {path}")
+    mount_point, filesystem_kind = max(matches, key=lambda item: len(item[0].parts))
+    return FilesystemStatus(
+        kind=filesystem_kind,
+        mount_point=mount_point,
+        local=filesystem_kind in _LOCAL_LINUX_FILESYSTEMS,
+    )
+
+
+def _parse_darwin_mounts(payload: str, path: Path) -> FilesystemStatus:
+    matches: list[tuple[Path, str, frozenset[str]]] = []
+    for line in payload.splitlines():
+        match = _DARWIN_MOUNT_PATTERN.match(line)
+        if match is None:
+            continue
+        mount_point = _decode_mount_path(match.group("mount"))
+        details = tuple(part.strip().lower() for part in match.group("details").split(","))
+        if not details or not _is_under(path, mount_point):
+            continue
+        matches.append((mount_point, details[0], frozenset(details[1:])))
+    if not matches:
+        raise GovernanceFilesystemError(f"mount 정보를 확인할 수 없습니다: {path}")
+    mount_point, filesystem_kind, flags = max(matches, key=lambda item: len(item[0].parts))
+    return FilesystemStatus(
+        kind=filesystem_kind,
+        mount_point=mount_point,
+        local="local" in flags and filesystem_kind not in _REMOTE_FILESYSTEMS,
+    )
 
 
 class LocalFilesystemGuard:

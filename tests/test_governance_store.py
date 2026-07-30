@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import multiprocessing
 import sqlite3
+import time
 from pathlib import Path
 
 import pytest
@@ -9,9 +11,17 @@ from amplai_foundry.governance.filesystem import (
     FilesystemStatus,
     GovernanceFilesystemError,
     LocalFilesystemGuard,
+    _parse_darwin_mounts,
+    _parse_linux_mountinfo,
 )
-from amplai_foundry.governance.migrations import GovernanceMigrationError
+from amplai_foundry.governance.migrations import (
+    INITIAL_MIGRATIONS,
+    GovernanceMigrationError,
+    Migration,
+    MigrationRunner,
+)
 from amplai_foundry.governance.store import (
+    GovernanceCommitAmbiguousError,
     GovernanceStore,
     GovernanceStoreError,
     GovernanceTransactionError,
@@ -26,6 +36,44 @@ class FixedFilesystemProbe:
 
     def inspect(self, path: Path) -> FilesystemStatus:
         return FilesystemStatus(kind=self.kind, mount_point=path.parent, local=self.local)
+
+
+class CommitFailingConnection:
+    def __init__(self) -> None:
+        self.in_transaction = False
+
+    def execute(self, statement: str) -> None:
+        if statement == "BEGIN IMMEDIATE":
+            self.in_transaction = True
+            return
+        if statement == "COMMIT":
+            raise sqlite3.OperationalError("ambiguous commit")
+        if statement == "ROLLBACK":
+            self.in_transaction = False
+
+
+def _run_blocking_migration(database: str, marker: str) -> None:
+    checkpoint = Path(marker)
+    migration = Migration(
+        version=2,
+        name="hard-kill-fixture",
+        statements=(
+            "CREATE TABLE hard_kill_partial (id INTEGER PRIMARY KEY)",
+            "SELECT migration_checkpoint()",
+        ),
+    )
+    runner = MigrationRunner((*INITIAL_MIGRATIONS, migration))
+    store = GovernanceStore(Path(database), migration_runner=runner)
+    with store.connect() as connection:
+
+        def block_until_killed() -> int:
+            checkpoint.write_text("ready", encoding="utf-8")
+            time.sleep(60)
+            return 0
+
+        connection.create_function("migration_checkpoint", 0, block_until_killed)
+        with governance_transaction(connection):
+            runner.apply_pending(connection)
 
 
 def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_path: Path) -> None:
@@ -63,6 +111,39 @@ def test_network_filesystem_is_rejected_before_database_creation(tmp_path: Path)
     assert not path.exists()
 
 
+def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
+    payload = "\n".join(
+        (
+            "1 0 8:1 / / rw,relatime - ext4 /dev/root rw",
+            "2 1 0:42 / /workspace rw,relatime - nfs server:/workspace rw",
+            "malformed",
+        )
+    )
+
+    root = _parse_linux_mountinfo(payload, Path("/var/lib/amplai/governance.db"))
+    nested = _parse_linux_mountinfo(payload, Path("/workspace/amplai/governance.db"))
+
+    assert root.local and root.kind == "ext4"
+    assert not nested.local and nested.kind == "nfs"
+    with pytest.raises(GovernanceFilesystemError, match="mount 정보를"):
+        _parse_linux_mountinfo("malformed", Path("/workspace/governance.db"))
+
+
+def test_darwin_mount_parser_requires_local_flag_and_rejects_remote_mount() -> None:
+    payload = "\n".join(
+        (
+            "/dev/disk3s1 on / (apfs, sealed, local, journaled)",
+            "server:/team on /Volumes/team (nfs, nodev, nosuid)",
+        )
+    )
+
+    root = _parse_darwin_mounts(payload, Path("/Users/pinesky/governance.db"))
+    remote = _parse_darwin_mounts(payload, Path("/Volumes/team/governance.db"))
+
+    assert root.local and root.kind == "apfs"
+    assert not remote.local and remote.kind == "nfs"
+
+
 def test_transaction_commits_and_rolls_back_without_nested_boundaries(tmp_path: Path) -> None:
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
@@ -94,6 +175,83 @@ def test_transaction_commits_and_rolls_back_without_nested_boundaries(tmp_path: 
     assert ("rollback", "no") not in rows
 
 
+def test_commit_failure_uses_typed_ambiguous_result() -> None:
+    connection = CommitFailingConnection()
+
+    with (
+        pytest.raises(GovernanceCommitAmbiguousError, match="결과가 불명확"),
+        governance_transaction(connection),  # type: ignore[arg-type]
+    ):
+        pass
+
+    assert not connection.in_transaction
+
+
+def test_migration_entrypoint_requires_active_transaction(tmp_path: Path) -> None:
+    store = GovernanceStore(tmp_path / "governance.db")
+    store.initialize()
+
+    with (
+        store.connect() as connection,
+        pytest.raises(GovernanceMigrationError, match="active transaction"),
+    ):
+        store.migration_runner.apply_pending(connection)
+
+
+def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    failing = Migration(
+        version=2,
+        name="failing-fixture",
+        statements=(
+            "CREATE TABLE migration_partial (id INTEGER PRIMARY KEY)",
+            "INSERT INTO missing_table(id) VALUES (1)",
+        ),
+    )
+    upgrade = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner((*INITIAL_MIGRATIONS, failing)),
+    )
+
+    with pytest.raises(GovernanceStoreError, match="초기화할 수 없습니다"):
+        upgrade.initialize()
+
+    with sqlite3.connect(path) as connection:
+        partial = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'migration_partial'"
+        ).fetchone()
+        versions = connection.execute(
+            "SELECT version FROM governance_schema_migrations ORDER BY version"
+        ).fetchall()
+    assert partial is None
+    assert versions == [(1,)]
+
+
+def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    marker = tmp_path / "migration-ready"
+    GovernanceStore(path).initialize()
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(target=_run_blocking_migration, args=(str(path), str(marker)))
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), "migration subprocess가 checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    assert GovernanceStore(path).check_startup().schema_version == 1
+    with sqlite3.connect(path) as connection:
+        partial = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hard_kill_partial'"
+        ).fetchone()
+    assert partial is None
+
+
 def test_migration_history_tampering_fails_closed(tmp_path: Path) -> None:
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
@@ -103,6 +261,16 @@ def test_migration_history_tampering_fails_closed(tmp_path: Path) -> None:
         )
 
     with pytest.raises(GovernanceMigrationError, match="contract와 다릅니다"):
+        store.check_startup()
+
+
+def test_required_schema_drift_fails_startup_check(tmp_path: Path) -> None:
+    store = GovernanceStore(tmp_path / "governance.db")
+    store.initialize()
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute("DROP TABLE governance_store_metadata")
+
+    with pytest.raises(GovernanceMigrationError, match="schema shape"):
         store.check_startup()
 
 

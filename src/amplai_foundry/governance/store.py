@@ -23,6 +23,10 @@ class GovernanceTransactionError(GovernanceStoreError):
     """A Governance Store transaction could not complete safely."""
 
 
+class GovernanceCommitAmbiguousError(GovernanceTransactionError):
+    """A failed COMMIT requires command-level result reconciliation."""
+
+
 @dataclass(frozen=True, slots=True)
 class GovernanceStoreConfig:
     busy_timeout_ms: int = 5_000
@@ -62,12 +66,36 @@ def governance_transaction(connection: sqlite3.Connection) -> Iterator[sqlite3.C
         raise GovernanceTransactionError("nested Governance transaction은 금지합니다.")
     try:
         connection.execute("BEGIN IMMEDIATE")
+    except sqlite3.Error as error:
+        raise GovernanceTransactionError("Governance transaction을 시작할 수 없습니다.") from error
+    try:
         yield connection
-        connection.execute("COMMIT")
-    except BaseException:
+    except BaseException as original_error:
         if connection.in_transaction:
-            connection.execute("ROLLBACK")
+            try:
+                connection.execute("ROLLBACK")
+            except sqlite3.Error as rollback_failure:
+                transaction_error = GovernanceTransactionError(
+                    "Governance transaction rollback에 실패했습니다."
+                )
+                transaction_error.add_note(f"original error: {original_error!r}")
+                raise transaction_error from rollback_failure
         raise
+    try:
+        connection.execute("COMMIT")
+    except sqlite3.Error as commit_error:
+        rollback_error: sqlite3.Error | None = None
+        if connection.in_transaction:
+            try:
+                connection.execute("ROLLBACK")
+            except sqlite3.Error as error:
+                rollback_error = error
+        ambiguous = GovernanceCommitAmbiguousError(
+            "Governance COMMIT 결과가 불명확합니다. command result를 조회해야 합니다."
+        )
+        if rollback_error is not None:
+            ambiguous.add_note(f"rollback error: {rollback_error!r}")
+        raise ambiguous from commit_error
 
 
 class GovernanceStore:
@@ -87,8 +115,14 @@ class GovernanceStore:
     def initialize(self) -> GovernanceStoreHealth:
         filesystem = self.filesystem_guard.validate(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        existing_store = self.path.is_file() and self.path.stat().st_size > 0
         try:
-            with self.connect() as connection:
+            with self._raw_connection() as connection:
+                if existing_store:
+                    self._verify_integrity(connection)
+                    self.migration_runner.verify(connection)
+                    self.migration_runner.verify_foundation_schema(connection)
+                self._configure(connection)
                 with governance_transaction(connection):
                     self.migration_runner.apply_pending(connection)
                 return self._health(connection, filesystem)
@@ -99,20 +133,39 @@ class GovernanceStore:
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
-        filesystem = self.filesystem_guard.validate(self.path)
-        if not filesystem.local:
-            raise GovernanceStoreError("local filesystem 검증에 실패했습니다.")
+        before = self.filesystem_guard.validate(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self._raw_connection() as connection:
+            self._configure(connection)
+            after = self.filesystem_guard.validate(self.path)
+            if before != after:
+                raise GovernanceStoreError(
+                    f"filesystem identity가 connection open 중 변경됐습니다: {before} -> {after}"
+                )
+            database_row = connection.execute("PRAGMA database_list").fetchone()
+            database_path = (
+                Path(str(database_row[2])).resolve(strict=False)
+                if database_row is not None
+                else None
+            )
+            if database_path != self.path:
+                raise GovernanceStoreError(
+                    f"opened database path가 요청과 다릅니다: {database_path} != {self.path}"
+                )
+            yield connection
+
+    @contextmanager
+    def _raw_connection(self) -> Iterator[sqlite3.Connection]:
         try:
             connection = sqlite3.connect(
                 self.path,
                 isolation_level=None,
-                timeout=0,
+                timeout=self.config.busy_timeout_ms / 1_000,
             )
         except sqlite3.Error as error:
             raise GovernanceStoreError(f"Governance Store에 연결할 수 없습니다: {error}") from error
         try:
-            self._configure(connection)
+            connection.execute(f"PRAGMA busy_timeout = {self.config.busy_timeout_ms}")
             yield connection
         finally:
             connection.close()
@@ -128,14 +181,14 @@ class GovernanceStore:
             raise GovernanceStoreError(f"Governance Store startup check 실패: {error}") from error
 
     def _configure(self, connection: sqlite3.Connection) -> None:
+        connection.execute(f"PRAGMA busy_timeout = {self.config.busy_timeout_ms}")
+        connection.execute("PRAGMA trusted_schema = OFF")
+        connection.execute("PRAGMA foreign_keys = ON")
         journal_row = connection.execute("PRAGMA journal_mode = WAL").fetchone()
         journal_mode = str(journal_row[0]).lower() if journal_row is not None else ""
         if journal_mode != "wal":
             raise GovernanceStoreError(f"journal_mode=WAL을 활성화할 수 없습니다: {journal_mode}")
         connection.execute("PRAGMA synchronous = FULL")
-        connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute("PRAGMA trusted_schema = OFF")
-        connection.execute(f"PRAGMA busy_timeout = {self.config.busy_timeout_ms}")
         self._verify_pragmas(connection)
 
     @staticmethod
@@ -173,21 +226,20 @@ class GovernanceStore:
         connection: sqlite3.Connection,
         filesystem: FilesystemStatus,
     ) -> GovernanceStoreHealth:
-        integrity_rows = connection.execute("PRAGMA integrity_check").fetchall()
-        integrity_ok = integrity_rows == [("ok",)]
-        if not integrity_ok:
-            raise GovernanceStoreError(f"SQLite integrity check 실패: {integrity_rows}")
+        self._verify_integrity(connection)
         schema_version = self.migration_runner.verify(connection)
         if schema_version != self.migration_runner.latest_version:
             raise GovernanceStoreError(
                 "Governance schema version 불일치: "
                 f"expected={self.migration_runner.latest_version} actual={schema_version}"
             )
+        self.migration_runner.verify_foundation_schema(connection)
+        self._probe_wal_write(connection)
         health = GovernanceStoreHealth(
             path=self.path,
             filesystem=filesystem,
             schema_version=schema_version,
-            integrity_ok=integrity_ok,
+            integrity_ok=True,
             journal_mode=str(self._pragma_value(connection, "journal_mode")).lower(),
             synchronous=int(self._pragma_value(connection, "synchronous")),
             foreign_keys=bool(self._pragma_value(connection, "foreign_keys")),
@@ -196,3 +248,28 @@ class GovernanceStore:
         if not health.healthy:
             raise GovernanceStoreError(f"Governance Store runtime profile 불일치: {health}")
         return health
+
+    @staticmethod
+    def _verify_integrity(connection: sqlite3.Connection) -> None:
+        integrity_rows = connection.execute("PRAGMA integrity_check").fetchall()
+        if integrity_rows != [("ok",)]:
+            raise GovernanceStoreError(f"SQLite integrity check 실패: {integrity_rows}")
+
+    @staticmethod
+    def _probe_wal_write(connection: sqlite3.Connection) -> None:
+        if connection.in_transaction:
+            raise GovernanceStoreError("WAL write probe는 active transaction 밖에서 실행합니다.")
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """
+                UPDATE governance_store_metadata
+                SET value = value
+                WHERE key = 'store_kind'
+                """
+            )
+            connection.execute("ROLLBACK")
+        except sqlite3.Error as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise GovernanceStoreError("WAL/SHM write probe 실패") from error

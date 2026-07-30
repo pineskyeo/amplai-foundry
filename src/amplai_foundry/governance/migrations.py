@@ -68,15 +68,23 @@ class MigrationRunner:
             """
         )
 
-    def current_version(self, connection: sqlite3.Connection) -> int:
-        self._ensure_history_table(connection)
+    @staticmethod
+    def _history_table_exists(connection: sqlite3.Connection) -> bool:
         row = connection.execute(
-            "SELECT COALESCE(MAX(version), 0) FROM governance_schema_migrations"
+            """
+            SELECT 1
+            FROM sqlite_master
+            WHERE type = 'table' AND name = 'governance_schema_migrations'
+            """
         ).fetchone()
-        return int(row[0]) if row is not None else 0
+        return row is not None
+
+    def current_version(self, connection: sqlite3.Connection) -> int:
+        return self.verify(connection)
 
     def _applied_rows(self, connection: sqlite3.Connection) -> list[tuple[int, str, str]]:
-        self._ensure_history_table(connection)
+        if not self._history_table_exists(connection):
+            raise GovernanceMigrationError("migration history table이 없습니다.")
         return cast(
             list[tuple[int, str, str]],
             connection.execute(
@@ -112,7 +120,42 @@ class MigrationRunner:
     def verify(self, connection: sqlite3.Connection) -> int:
         return self._verify_rows(self._applied_rows(connection))
 
+    @staticmethod
+    def verify_foundation_schema(connection: sqlite3.Connection) -> None:
+        expected_columns = {
+            "governance_schema_migrations": (
+                ("version", "INTEGER", 0, 1),
+                ("name", "TEXT", 1, 0),
+                ("checksum", "TEXT", 1, 0),
+                ("applied_at", "TEXT", 1, 0),
+            ),
+            "governance_store_metadata": (
+                ("key", "TEXT", 1, 1),
+                ("value", "TEXT", 1, 0),
+            ),
+        }
+        for table, expected in expected_columns.items():
+            rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
+            actual = tuple(
+                (str(row[1]), str(row[2]).upper(), int(row[3]), int(row[5])) for row in rows
+            )
+            if actual != expected:
+                raise GovernanceMigrationError(
+                    "required schema shape 불일치: "
+                    f"table={table} expected={expected} actual={actual}"
+                )
+        metadata = connection.execute(
+            "SELECT value FROM governance_store_metadata WHERE key = 'store_kind'"
+        ).fetchone()
+        if metadata != ("amplai-governance",):
+            raise GovernanceMigrationError("Governance Store metadata가 올바르지 않습니다.")
+
     def apply_pending(self, connection: sqlite3.Connection) -> int:
+        if not connection.in_transaction:
+            raise GovernanceMigrationError(
+                "migration entrypoint는 active transaction이 필요합니다."
+            )
+        self._ensure_history_table(connection)
         current = self._verify_rows(self._applied_rows(connection))
         for migration in self.migrations:
             if migration.version <= current:
