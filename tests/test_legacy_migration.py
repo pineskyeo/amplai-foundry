@@ -70,11 +70,12 @@ from amplai_foundry.governance.definitions import (
     canonicalize_definition,
 )
 from amplai_foundry.governance.events import GovernanceEventError, GovernanceEventService
-from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, MigrationRunner
+from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, Migration, MigrationRunner
 from amplai_foundry.governance.object_store import sha256_digest
 from amplai_foundry.governance.store import (
     GovernanceCommitAmbiguousError,
     GovernanceStore,
+    GovernanceStoreError,
     governance_transaction,
 )
 
@@ -1810,6 +1811,55 @@ def test_concurrent_identical_activation_converges_to_one_result(tmp_path: Path)
         ).fetchone() == (1,)
 
 
+def test_concurrent_distinct_activation_has_one_complete_winner(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    service = LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+    barrier = threading.Barrier(2)
+
+    def activate(index: int) -> str:
+        barrier.wait()
+        try:
+            service.activate(
+                plan.plan_id,
+                authority_request=authority_request,
+                expected_lifecycle_revision=2,
+                reason=f"distinct concurrent activation {index}",
+                idempotency_key=f"legacy-activation:distinct:{index}",
+                request_fingerprint=str(index) * 64,
+            )
+        except LegacyMigrationLifecycleError as error:
+            return error.code
+        return "activated"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(activate, (1, 2)))
+
+    assert sorted(outcomes) == ["LEGACY_MIGRATION_ALREADY_ACTIVATED", "activated"]
+    with store.connect() as connection:
+        for table in (
+            "governance_legacy_migration_lifecycle_commands",
+            "governance_legacy_migration_lifecycle_events",
+            "governance_legacy_migration_lifecycle_results",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (1,)
+
+
 def test_dispatch_claim_race_cannot_cross_uncommitted_activation(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store, _objects, dry_run, import_service, backup = _import_fixture(
@@ -2137,13 +2187,14 @@ def test_lifecycle_result_guard_rejects_forged_state_or_time(
 
 
 @pytest.mark.parametrize(
-    ("verified", "progressed", "non_pending", "expected_state"),
+    ("verified", "progressed", "non_pending", "expected_state", "expected_revision"),
     [
-        (False, False, False, "imported"),
-        (False, True, False, "activated"),
-        (True, False, False, "staged_verified"),
-        (True, True, False, "recovery_hold"),
-        (True, False, True, "recovery_hold"),
+        (False, False, False, "imported", 1),
+        (False, True, False, "activated", 1),
+        (False, False, True, "activated", 1),
+        (True, False, False, "staged_verified", 1),
+        (True, True, False, "recovery_hold", 2),
+        (True, False, True, "recovery_hold", 1),
     ],
 )
 def test_v24_upgrade_classifies_legacy_lifecycle_conservatively(
@@ -2152,6 +2203,7 @@ def test_v24_upgrade_classifies_legacy_lifecycle_conservatively(
     progressed: bool,
     non_pending: bool,
     expected_state: str,
+    expected_revision: int,
 ) -> None:
     root = _legacy_tree(tmp_path / "project")
     path = tmp_path / "runtime" / "governance.db"
@@ -2187,7 +2239,7 @@ def test_v24_upgrade_classifies_legacy_lifecycle_conservatively(
                 SET state = 'retry_wait', attempts = 1, retry_at = ?,
                     last_error_code = 'TRANSIENT_PROVIDER_FAILURE'
                 """,
-                ((NOW.replace(minute=NOW.minute + 1)).isoformat(),),
+                (NOW.isoformat(),),
             )
 
     latest = GovernanceStore(path)
@@ -2202,12 +2254,117 @@ def test_v24_upgrade_classifies_legacy_lifecycle_conservatively(
             (plan.plan_id,),
         ).fetchone()
     assert head is not None
-    assert head[2:] == (expected_state, 1)
+    assert head[2:] == (expected_state, expected_revision)
     if verified:
         assert report is not None
         assert head[:2] == (report.verification_id, report.report_digest)
     else:
         assert head[:2] == (None, None)
+    claimed = OutboxDispatcher(latest, clock=lambda: NOW).claim_next(f"upgrade-{expected_state}")
+    assert (claimed is not None) is (expected_state == "activated")
+
+
+def test_exact_predecessor_v24_store_upgrades_and_reclassifies_progression(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v24 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:24]))
+    v24.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v24,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT checksum FROM governance_schema_migrations WHERE version = 24"
+        ).fetchone() == ("2d20398c33d55d62af0f480ddff0fc59fb864941d5d54bdf199ada364d54cac1",)
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET status = 'reviewed', state_revision = state_revision + 1
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with latest.connect() as connection:
+        assert connection.execute(
+            "SELECT state, lifecycle_revision FROM "
+            "governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone() == ("recovery_hold", 3)
+        assert connection.execute(
+            "SELECT checksum FROM governance_schema_migrations WHERE version = 24"
+        ).fetchone() == ("2d20398c33d55d62af0f480ddff0fc59fb864941d5d54bdf199ada364d54cac1",)
+
+
+def test_v25_hardening_migration_failure_rolls_back_atomically(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v24 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:24]))
+    v24.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v24,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET status = 'reviewed', state_revision = state_revision + 1
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+    failed_v25 = Migration(
+        version=25,
+        name="legacy-lifecycle-compatibility-hardening",
+        statements=(
+            *INITIAL_MIGRATIONS[24].statements,
+            "INSERT INTO governance_missing_failure_target(value) VALUES (1)",
+        ),
+    )
+
+    with pytest.raises(GovernanceStoreError):
+        GovernanceStore(
+            path,
+            migration_runner=MigrationRunner((*INITIAL_MIGRATIONS[:24], failed_v25)),
+        ).initialize()
+
+    with v24.connect() as connection:
+        assert connection.execute(
+            "SELECT MAX(version) FROM governance_schema_migrations"
+        ).fetchone() == (24,)
+        assert connection.execute(
+            "SELECT state, lifecycle_revision FROM "
+            "governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone() == ("staged_verified", 2)
+        trigger_sql = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'trigger' "
+            "AND name = 'governance_legacy_lifecycle_results_insert_guard'"
+        ).fetchone()
+    assert trigger_sql is not None
+    assert "json_valid" not in str(trigger_sql[0])
 
 
 def test_concurrent_verification_converges_to_one_exact_report(tmp_path: Path) -> None:

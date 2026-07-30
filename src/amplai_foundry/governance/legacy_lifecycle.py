@@ -388,7 +388,17 @@ class LegacyMigrationActivationService:
                 (head[0],),
             ).fetchall()
             if not rows:
-                if head[7] is not None or int(head[6]) not in {1, 2}:
+                if (
+                    head[7] is not None
+                    or (
+                        state is not LegacyMigrationLifecycleState.RECOVERY_HOLD
+                        and int(head[6]) not in {1, 2}
+                    )
+                    or (
+                        state is LegacyMigrationLifecycleState.RECOVERY_HOLD
+                        and int(head[6]) not in {1, 2, 3}
+                    )
+                ):
                     raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
                 continue
             if len(rows) != 1 or state is not LegacyMigrationLifecycleState.ACTIVATED:

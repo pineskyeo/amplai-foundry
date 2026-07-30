@@ -2775,64 +2775,6 @@ INITIAL_MIGRATIONS = (
                        WHEN EXISTS (
                            SELECT 1
                            FROM governance_legacy_migration_items i
-                           JOIN governance_active_proposals p
-                             ON p.project_namespace = i.project_namespace
-                            AND p.project_id = i.project_id
-                            AND p.proposal_id = i.proposal_id
-                           WHERE i.migration_id = m.migration_id
-                             AND NOT (
-                                 (
-                                     p.active_definition_digest = i.definition_digest
-                                     AND p.content_revision = i.content_revision
-                                     AND p.state_revision = i.state_revision
-                                     AND p.decision_epoch = i.decision_epoch
-                                     AND p.status = CASE i.target_status
-                                         WHEN 'reviewed' THEN 'reviewed'
-                                         ELSE 'draft'
-                                     END
-                                 )
-                                 OR EXISTS (
-                                     SELECT 1
-                                     FROM governance_legacy_approval_reviews r
-                                     WHERE r.migration_id = i.migration_id
-                                       AND r.project_namespace = i.project_namespace
-                                       AND r.project_id = i.project_id
-                                       AND r.proposal_id = i.proposal_id
-                                       AND p.active_definition_digest = i.definition_digest
-                                       AND p.content_revision = i.content_revision
-                                       AND p.state_revision = r.source_state_revision
-                                       AND p.decision_epoch = i.decision_epoch + 1
-                                       AND p.status = 'draft'
-                                 )
-                             )
-                       ) THEN 'recovery_hold'
-                       WHEN EXISTS (
-                           SELECT 1
-                           FROM governance_legacy_migration_items i
-                           JOIN governance_legacy_import_commands c
-                             ON c.migration_id = i.migration_id
-                            AND c.project_namespace = i.project_namespace
-                            AND c.project_id = i.project_id
-                            AND c.proposal_id = i.proposal_id
-                           JOIN governance_audit_events a
-                             ON a.project_namespace = i.project_namespace
-                            AND a.project_id = i.project_id
-                            AND a.proposal_id = i.proposal_id
-                           WHERE i.migration_id = m.migration_id
-                             AND a.command_id != c.command_id
-                             AND NOT EXISTS (
-                                 SELECT 1
-                                 FROM governance_legacy_approval_reviews r
-                                 WHERE r.migration_id = i.migration_id
-                                   AND r.project_namespace = i.project_namespace
-                                   AND r.project_id = i.project_id
-                                   AND r.proposal_id = i.proposal_id
-                                   AND r.review_id = a.command_id
-                             )
-                       ) THEN 'recovery_hold'
-                       WHEN EXISTS (
-                           SELECT 1
-                           FROM governance_legacy_migration_items i
                            JOIN governance_audit_events a
                              ON a.project_namespace = i.project_namespace
                             AND a.project_id = i.project_id
@@ -3027,15 +2969,7 @@ INITIAL_MIGRATIONS = (
             """
             CREATE TRIGGER governance_legacy_lifecycle_results_insert_guard
             BEFORE INSERT ON governance_legacy_migration_lifecycle_results
-            WHEN json_valid(NEW.result_json) != 1
-              OR json_extract(NEW.result_json, '$.command_id') IS NOT NEW.command_id
-              OR json_extract(NEW.result_json, '$.migration_id') IS NOT NEW.migration_id
-              OR json_extract(NEW.result_json, '$.state') IS NOT 'activated'
-              OR json_extract(NEW.result_json, '$.result_digest') IS NOT NEW.result_digest
-              OR julianday(json_extract(NEW.result_json, '$.activated_at'))
-                    IS NOT julianday(NEW.created_at)
-              OR json_extract(NEW.result_json, '$.replayed') != 0
-              OR NOT EXISTS (
+            WHEN NOT EXISTS (
                 SELECT 1
                 FROM governance_legacy_migration_lifecycle_commands c
                 JOIN governance_legacy_migration_lifecycle_events e
@@ -3043,16 +2977,6 @@ INITIAL_MIGRATIONS = (
                 WHERE c.command_id = NEW.command_id
                   AND c.migration_id = NEW.migration_id
                   AND NEW.created_at = c.occurred_at
-                  AND json_extract(NEW.result_json, '$.event_id') = e.event_id
-                  AND json_extract(NEW.result_json, '$.project_ref.namespace') =
-                      c.project_namespace
-                  AND json_extract(NEW.result_json, '$.project_ref.project_id') = c.project_id
-                  AND json_extract(NEW.result_json, '$.lifecycle_revision') =
-                      c.expected_lifecycle_revision + 1
-                  AND json_extract(NEW.result_json, '$.verification_id') = e.verification_id
-                  AND json_extract(NEW.result_json, '$.report_digest') = e.report_digest
-                  AND json_extract(NEW.result_json, '$.actor_ref.actor_id') = c.actor_id
-                  AND json_extract(NEW.result_json, '$.actor_ref.actor_type') = c.actor_type
             )
             BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result root mismatch'); END
             """,
@@ -3110,6 +3034,135 @@ INITIAL_MIGRATIONS = (
             CREATE TRIGGER governance_legacy_lifecycle_results_no_delete
             BEFORE DELETE ON governance_legacy_migration_lifecycle_results
             BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result is durable'); END
+            """,
+        ),
+    ),
+    Migration(
+        version=25,
+        name="legacy-lifecycle-compatibility-hardening",
+        statements=(
+            "DROP TRIGGER governance_legacy_lifecycle_results_insert_guard",
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_results_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_results
+            WHEN json_valid(NEW.result_json) != 1
+              OR json_extract(NEW.result_json, '$.command_id') IS NOT NEW.command_id
+              OR json_extract(NEW.result_json, '$.migration_id') IS NOT NEW.migration_id
+              OR json_extract(NEW.result_json, '$.state') IS NOT 'activated'
+              OR json_extract(NEW.result_json, '$.result_digest') IS NOT NEW.result_digest
+              OR julianday(json_extract(NEW.result_json, '$.activated_at'))
+                    IS NOT julianday(NEW.created_at)
+              OR json_extract(NEW.result_json, '$.replayed') != 0
+              OR NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_commands c
+                JOIN governance_legacy_migration_lifecycle_events e
+                  ON e.command_id = c.command_id
+                WHERE c.command_id = NEW.command_id
+                  AND c.migration_id = NEW.migration_id
+                  AND NEW.created_at = c.occurred_at
+                  AND json_extract(NEW.result_json, '$.event_id') = e.event_id
+                  AND json_extract(NEW.result_json, '$.project_ref.namespace') =
+                      c.project_namespace
+                  AND json_extract(NEW.result_json, '$.project_ref.project_id') = c.project_id
+                  AND json_extract(NEW.result_json, '$.lifecycle_revision') =
+                      c.expected_lifecycle_revision + 1
+                  AND json_extract(NEW.result_json, '$.verification_id') = e.verification_id
+                  AND json_extract(NEW.result_json, '$.report_digest') = e.report_digest
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_id') = c.actor_id
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_type') = c.actor_type
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result root mismatch'); END
+            """,
+            "DROP TRIGGER governance_legacy_migration_lifecycle_heads_update_guard",
+            """
+            UPDATE governance_legacy_migration_lifecycle_heads AS h
+            SET state = 'recovery_hold',
+                lifecycle_revision = lifecycle_revision + 1,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            WHERE h.state = 'staged_verified'
+              AND (
+                EXISTS (
+                    SELECT 1
+                    FROM governance_legacy_migration_items i
+                    JOIN governance_active_proposals p
+                      ON p.project_namespace = i.project_namespace
+                     AND p.project_id = i.project_id
+                     AND p.proposal_id = i.proposal_id
+                    WHERE i.migration_id = h.migration_id
+                      AND NOT (
+                          (
+                              p.active_definition_digest = i.definition_digest
+                              AND p.content_revision = i.content_revision
+                              AND p.state_revision = i.state_revision
+                              AND p.decision_epoch = i.decision_epoch
+                              AND p.status = CASE i.target_status
+                                  WHEN 'reviewed' THEN 'reviewed'
+                                  ELSE 'draft'
+                              END
+                          )
+                          OR EXISTS (
+                              SELECT 1
+                              FROM governance_legacy_approval_reviews r
+                              WHERE r.migration_id = i.migration_id
+                                AND r.project_namespace = i.project_namespace
+                                AND r.project_id = i.project_id
+                                AND r.proposal_id = i.proposal_id
+                                AND p.active_definition_digest = i.definition_digest
+                                AND p.content_revision = i.content_revision
+                                AND p.state_revision = r.source_state_revision
+                                AND p.decision_epoch = i.decision_epoch + 1
+                                AND p.status = 'draft'
+                          )
+                      )
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM governance_legacy_migration_items i
+                    JOIN governance_legacy_import_commands c
+                      ON c.migration_id = i.migration_id
+                     AND c.project_namespace = i.project_namespace
+                     AND c.project_id = i.project_id
+                     AND c.proposal_id = i.proposal_id
+                    JOIN governance_audit_events a
+                      ON a.project_namespace = i.project_namespace
+                     AND a.project_id = i.project_id
+                     AND a.proposal_id = i.proposal_id
+                    WHERE i.migration_id = h.migration_id
+                      AND a.command_id != c.command_id
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM governance_legacy_approval_reviews r
+                          WHERE r.migration_id = i.migration_id
+                            AND r.project_namespace = i.project_namespace
+                            AND r.project_id = i.project_id
+                            AND r.proposal_id = i.proposal_id
+                            AND r.review_id = a.command_id
+                      )
+                )
+              )
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_lifecycle_heads_update_guard
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_heads
+            WHEN OLD.migration_id != NEW.migration_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR NEW.lifecycle_revision != OLD.lifecycle_revision + 1
+              OR OLD.state IN ('activated', 'rolled_back', 'recovery_hold')
+              OR NOT (
+                    (OLD.state = 'imported' AND NEW.state = 'staged_verified'
+                     AND OLD.verification_id IS NULL AND NEW.verification_id IS NOT NULL
+                     AND OLD.report_digest IS NULL AND NEW.report_digest IS NOT NULL
+                     AND NEW.last_event_digest IS NULL)
+                    OR
+                    (OLD.state = 'staged_verified'
+                     AND NEW.state IN ('activated', 'rolled_back')
+                     AND OLD.verification_id IS NEW.verification_id
+                     AND OLD.report_digest IS NEW.report_digest
+                     AND NEW.last_event_digest IS NOT NULL)
+                )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle transition is invalid'); END
             """,
         ),
     ),
