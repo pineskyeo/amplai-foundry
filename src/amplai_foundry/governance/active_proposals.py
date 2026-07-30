@@ -323,6 +323,16 @@ class ActiveProposalRepository:
         if updated.rowcount != 1:
             raise DefinitionCASConflictError("DEFINITION_CAS_CONFLICT")
         next_content_revision = current.content_revision + 1
+        connection.execute(
+            """
+            UPDATE governance_action_tokens
+            SET state = 'revoked',
+                resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+              AND decision_epoch <= ? AND state = 'issued'
+            """,
+            (*self._identity(current.proposal_ref), current.decision_epoch),
+        )
         self._insert_revision(
             connection,
             current.proposal_ref,

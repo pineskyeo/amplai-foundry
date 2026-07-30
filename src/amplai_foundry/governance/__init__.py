@@ -18,6 +18,15 @@ from amplai_foundry.governance.authority import (
     FileExternalActorBindingRepository,
     ProjectPermissionPolicy,
 )
+from amplai_foundry.governance.decisions import (
+    ActionTokenState,
+    ActionTokenView,
+    DecisionAction,
+    DecisionError,
+    DecisionResult,
+    DecisionService,
+    IssuedActionToken,
+)
 from amplai_foundry.governance.definitions import (
     ApplyInputDescriptor,
     CanonicalDefinition,
@@ -58,7 +67,9 @@ from amplai_foundry.governance.service import (
 )
 
 __all__ = [
+    "ActionTokenState",
     "ActionTokenVerifier",
+    "ActionTokenView",
     "ActiveProposalError",
     "ActiveProposalNotFoundError",
     "ActiveProposalRepository",
@@ -76,6 +87,10 @@ __all__ = [
     "CanonicalDefinition",
     "ChannelProvider",
     "ChannelRef",
+    "DecisionAction",
+    "DecisionError",
+    "DecisionResult",
+    "DecisionService",
     "DefinitionCASConflictError",
     "DefinitionEvidence",
     "DefinitionObjectCollisionError",
@@ -89,6 +104,7 @@ __all__ = [
     "FileProposalActionLedger",
     "ImmutableDefinitionObjectStore",
     "InvalidProposalTransitionError",
+    "IssuedActionToken",
     "ProjectPermissionPolicy",
     "ProposalAction",
     "ProposalActionAuditEvent",

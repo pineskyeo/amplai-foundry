@@ -78,7 +78,7 @@ def _run_blocking_v2_migration(database: str, marker: str) -> None:
 def _run_blocking_migration(database: str, marker: str) -> None:
     checkpoint = Path(marker)
     migration = Migration(
-        version=3,
+        version=len(INITIAL_MIGRATIONS) + 1,
         name="hard-kill-fixture",
         statements=(
             "CREATE TABLE hard_kill_partial (id INTEGER PRIMARY KEY)",
@@ -106,7 +106,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     repeated = store.initialize()
 
     assert health.healthy
-    assert health.schema_version == 2
+    assert health.schema_version == 3
     assert health.journal_mode == "wal"
     assert health.synchronous == 2
     assert health.foreign_keys
@@ -122,6 +122,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     assert migrations == [
         (1, "governance-store-foundation"),
         (2, "active-proposal-cas"),
+        (3, "decision-token-replay"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -146,7 +147,7 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
     assert version_one.initialize().schema_version == 1
 
     upgraded = GovernanceStore(path)
-    assert upgraded.initialize().schema_version == 2
+    assert upgraded.initialize().schema_version == 3
     with upgraded.connect() as connection:
         tables = {
             str(row[0])
@@ -196,7 +197,7 @@ def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
     assert "governance_definition_revisions" not in tables
     assert versions == [(1,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 2
+    assert GovernanceStore(path).initialize().schema_version == 3
 
 
 def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
@@ -290,7 +291,7 @@ def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
     path = tmp_path / "governance.db"
     GovernanceStore(path).initialize()
     failing = Migration(
-        version=3,
+        version=len(INITIAL_MIGRATIONS) + 1,
         name="failing-fixture",
         statements=(
             "CREATE TABLE migration_partial (id INTEGER PRIMARY KEY)",
@@ -313,7 +314,7 @@ def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
             "SELECT version FROM governance_schema_migrations ORDER BY version"
         ).fetchall()
     assert partial is None
-    assert versions == [(1,), (2,)]
+    assert versions == [(1,), (2,), (3,)]
 
 
 def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -> None:
@@ -332,7 +333,7 @@ def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -
     process.join(timeout=5)
     assert not process.is_alive()
 
-    assert GovernanceStore(path).check_startup().schema_version == 2
+    assert GovernanceStore(path).check_startup().schema_version == 3
     with sqlite3.connect(path) as connection:
         partial = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hard_kill_partial'"

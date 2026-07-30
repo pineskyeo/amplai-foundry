@@ -132,6 +132,100 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=3,
+        name="decision-token-replay",
+        statements=(
+            """
+            CREATE TABLE governance_action_tokens (
+                token_id TEXT PRIMARY KEY,
+                token_hash TEXT NOT NULL UNIQUE,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                active_definition_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                allowed_action TEXT NOT NULL CHECK (
+                    allowed_action IN ('approve', 'reject', 'request_changes')
+                ),
+                allowed_actor_id TEXT NOT NULL,
+                allowed_actor_type TEXT NOT NULL CHECK (allowed_actor_type = 'human'),
+                bound_channel_json TEXT NOT NULL,
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN ('issued', 'consumed', 'expired', 'revoked')),
+                resolved_at TEXT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace,
+                        project_id,
+                        proposal_id
+                    )
+                    ON DELETE RESTRICT,
+                CHECK (token_id GLOB 'TOK-[A-F0-9]*' AND length(token_id) = 20),
+                CHECK (
+                    length(token_hash) = 71
+                    AND substr(token_hash, 1, 7) = 'sha256:'
+                    AND substr(token_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(active_definition_digest) = 71
+                    AND substr(active_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(active_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (state = 'issued' AND resolved_at IS NULL)
+                    OR (state != 'issued' AND resolved_at IS NOT NULL)
+                )
+            )
+            """,
+            """
+            CREATE TABLE governance_decision_results (
+                idempotency_key TEXT PRIMARY KEY,
+                request_fingerprint TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                action TEXT NOT NULL CHECK (
+                    action IN ('approve', 'reject', 'request_changes')
+                ),
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                channel_json TEXT NOT NULL,
+                proposal_status TEXT NOT NULL CHECK (
+                    proposal_status IN ('approved', 'rejected', 'changes_requested')
+                ),
+                active_definition_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 2),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                token_id TEXT NOT NULL,
+                processed_at TEXT NOT NULL,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace,
+                        project_id,
+                        proposal_id
+                    )
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (token_id)
+                    REFERENCES governance_action_tokens(token_id)
+                    ON DELETE RESTRICT,
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(active_definition_digest) = 71
+                    AND substr(active_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(active_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
 )
 
 
@@ -248,6 +342,48 @@ class MigrationRunner:
                         ("previous_definition_digest", "TEXT", 0, 0),
                         ("activated_from_status", "TEXT", 0, 0),
                         ("activated_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
+        if schema_version >= 3:
+            expected_columns.update(
+                {
+                    "governance_action_tokens": (
+                        ("token_id", "TEXT", 0, 1),
+                        ("token_hash", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("active_definition_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("allowed_action", "TEXT", 1, 0),
+                        ("allowed_actor_id", "TEXT", 1, 0),
+                        ("allowed_actor_type", "TEXT", 1, 0),
+                        ("bound_channel_json", "TEXT", 1, 0),
+                        ("issued_at", "TEXT", 1, 0),
+                        ("expires_at", "TEXT", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("resolved_at", "TEXT", 0, 0),
+                    ),
+                    "governance_decision_results": (
+                        ("idempotency_key", "TEXT", 1, 1),
+                        ("request_fingerprint", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("action", "TEXT", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("channel_json", "TEXT", 1, 0),
+                        ("proposal_status", "TEXT", 1, 0),
+                        ("active_definition_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("token_id", "TEXT", 1, 0),
+                        ("processed_at", "TEXT", 1, 0),
                     ),
                 }
             )
