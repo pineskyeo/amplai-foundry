@@ -1,62 +1,49 @@
-# Current Item — MGC-010
-
-## Status
-
-PASS at `9f3215ff9549f89749bdd805eea5fd783f6b5cb1`.
-
-- A1–A17 satisfied
-- Full `amplai-foundry verify`: 7/7 PASS
-- Subagent review: Contract PASS, Evidence PASS, Ops PASS
-- Final blocking counts: P0 0, P1 0, Blocking-P2 0
-- Advisory: Git ref observation currently holds the SQLite writer transaction; a narrower
-  per-project serialization boundary and a permanent populated-v14 strict-dispatch fixture are
-  follow-up hardening items.
+# Current Item — MGC-011
 
 ## Goal
 
-`publish_pending` ApplyJob의 immutable staging 결과를 durable `PublishIntent`로 준비하고,
-Publish Coordinator만 canonical Git ref를 compare-and-swap한 뒤 authoritative state를
-원자적으로 finalize하거나 명시적인 recovery hold로 전환하도록 한다.
+Legacy v2 Proposal artifact와 audit evidence를 변경하지 않고 deterministic snapshot으로
+고정한 뒤, qualified v3 Proposal definition·state·Audit·Outbox로 import한다. Approval
+evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
+`legacy_approval_review_required` hold를 생성하며 human review 전 ApplyGrant를 금지한다.
 
 ## Frozen Acceptance
 
-- A1: `PublishIntent`, Publish result, Project publish gate와 required index·constraint·immutable trigger가 새 migration과 schema verification에 고정됨
-- A2: Publish Coordinator가 canonical Git ref와 canonical working tree의 유일한 writer이며 Worker·일반 Governance service에 canonical write API가 노출되지 않음
-- A3: candidate commit은 isolated staging input에서 생성되고 approved snapshot, expected base revision, staged artifact bytes/digest, publish-input bytes/digest와 tree digest를 서버가 다시 검증함
-- A4: prepare transaction이 current `publish_pending` Job과 fencing token, immutable roots, approved snapshot/base revision, candidate commit/tree, 현재 canonical ref와 Project active-publish 부재를 검증함
-- A5: prepare가 qualified Project·Proposal·Job과 `expected_old_ref`, `candidate_commit`, tree/input digests를 결합한 immutable `prepared` intent를 생성하고 Project publish gate를 같은 transaction에서 잠금
-- A6: `prepared` intent는 TTL 또는 Worker lease 만료로 reclaim·overwrite·cancel되지 않으며 오직 Publish/Recovery Coordinator의 명시적인 상태 전이로 해제됨
-- A7: canonical publication은 durable `prepared` intent를 먼저 다시 읽고 candidate commit/tree digest를 검증한 뒤 exact `Git ref CAS(expected_old_ref, candidate_commit)`만 수행하며 force update를 사용하지 않음
-- A8: Git CAS가 `expected_old_ref` 불일치로 실패하면 canonical ref를 변경하지 않고 durable `publish_conflict`와 Job `recovery_hold`를 기록함
-- A9: CAS 성공 후 finalize transaction이 actual Git ref를 다시 읽고 Publish result, Job `succeeded`, Proposal `apply_requested → applied`, applied revision, Audit·Outbox와 publish gate release를 원자적으로 commit함
-- A10: finalize 전 오류는 성공으로 추정하지 않으며 recovery가 actual ref를 읽어 `expected_old_ref`면 retry/cancel, `candidate_commit`이면 finalize, 다른 ref면 `publish_conflict`와 `recovery_hold`로 결정함
-- A11: Git CAS 후 process hard-kill과 commit ambiguity에서도 recovery가 같은 candidate를 중복 publish하지 않고 최초 결과를 확정하거나 명시적인 hold를 생성함
-- A12: competing Coordinator와 stale Worker/fencing token은 하나의 active prepared intent·하나의 canonical ref transition·하나의 terminal result만 만들 수 있음
-- A13: non-retryable publish failure는 Proposal을 `apply_failed`로 전환하고, ambiguous outcome은 Proposal `apply_requested`와 Job `recovery_hold`를 유지함
-- A14: prepare/finalize/recovery의 DB failure 또는 late Audit·Outbox failure가 authoritative state, result, aggregate sequence, destination cursor와 gate를 부분 commit하지 않음
-- A15: prepared-kill, pre-CAS kill, post-CAS/pre-finalize kill, base-ref conflict, ambiguous-ref recovery, competing Coordinator와 stale Worker integration test가 통과함
-- A16: 전체 regression과 `amplai-foundry verify`가 통과함
-- A17: Subagent review P0/P1/Blocking-P2 0건
+- A1: import는 operator가 legacy mutation freeze를 명시적으로 증명한 경우에만 시작하며 source root, Project identity와 canonical path를 검증함
+- A2: snapshot은 모든 imported file의 relative path, byte length, SHA-256과 deterministic aggregate digest를 보존하고 symlink, non-regular file, path escape와 scan 중 mutation을 거부함
+- A3: import 전 Project Pack snapshot과 Governance DB backup identity·digest를 durable migration root에 기록하고 backup 검증 실패 시 import하지 않음
+- A4: dry-run은 legacy Proposal을 strict schema로 읽고 qualified ProjectRef·ProposalRef, source status/revision, target status와 evidence disposition을 deterministic plan으로 만들며 authoritative DB/object store/legacy files를 수정하지 않음
+- A5: import는 legacy bytes와 mapping policy를 결합한 canonical v3 definition/input object를 생성하고 exact digest를 immutable object store에서 재검증함
+- A6: qualified Proposal row, definition revision, source revision과 lifecycle mapping이 하나의 migration transaction에서 생성되며 다른 Project의 같은 local Proposal ID와 충돌하지 않음
+- A7: legacy approval Audit가 존재하면 actor/time/action/idempotency evidence를 검증해 import하고, 없으면 `migration.synthetic_approval` event와 reason/source artifact digest를 생성함
+- A8: synthetic approval 대상은 `legacy_approval_review_required`로 import되고 human re-review 전 ActionToken decision과 ApplyGrant 발급이 모두 거부됨
+- A9: imported Audit는 append-only hash chain에 연결되고 imported idempotency identity는 replay와 payload conflict를 구분함
+- A10: imported authoritative state에 대응하는 ordered Outbox projection을 생성하고 source revision·destination sequence가 기존 stream과 단조 증가함
+- A11: 동일 snapshot/plan 재실행은 같은 완료 결과를 반환하고 다른 bytes 또는 mapping으로 같은 migration identity를 재사용하면 conflict로 실패함
+- A12: import transaction 또는 late Audit·Outbox 실패는 Proposal row, object activation, migration counters와 activation state를 부분 commit하지 않음
+- A13: verification은 source/import count, per-file hash, aggregate snapshot/plan digest, Proposal state/revision, Audit/idempotency와 projection roots를 양방향 검증함
+- A14: rollback은 activation 전 완료된 migration만 exact imported root 집합으로 되돌리고 legacy artifact와 기존 v3 row를 변경하지 않음
+- A15: activation 후 rollback은 거부되며 correction은 forward-recovery migration으로만 수행함
+- A16: dry-run, import interruption, duplicate replay, hash/count mismatch, cross-project same local ID, synthetic approval hold, rollback 전후와 activation 후 rollback 거부 integration test가 통과함
+- A17: 전체 regression과 `amplai-foundry verify`가 통과하고 Contract·Evidence·Ops subagent review의 P0/P1/Blocking-P2가 0건임
 
-## In Scope
+## Slices
 
-- Immutable PublishIntent·Publish result와 Project-scoped publish gate
-- Isolated candidate commit/tree verification
-- Publish Coordinator 전용 Git ref CAS
-- Publish finalize transaction과 ordered Audit·Outbox
-- Prepared-intent startup/runtime recovery
-- Hard-kill, CAS conflict, ambiguity와 competing Coordinator tests
+1. Deterministic legacy snapshot and dry-run plan
+2. Atomic qualified definition and Proposal state import
+3. Audit/idempotency import, synthetic approval hold, and ordered projection
+4. Verification, pre-activation rollback, activation boundary, and recovery tests
 
 ## Out Of Scope
 
-- legacy v2 Proposal import → `MGC-011`
-- Slack·Telegram Provider adapter → `MGC-012`, `MGC-013`
-- Hermes Skill → `MGC-014`
-- runtime activation UI와 kill switch → `MGC-015`
-- Git 이외 canonical publish backend
+- legacy files의 rewrite 또는 삭제
+- migration 중 canonical Git/Vault publish
+- synthetic approval의 자동 human 승인
+- Slack·Telegram Provider adapter
+- activation UI와 production kill switch
 
 ## Review Team
 
-- Publish intent, Git CAS, and sole-writer boundary reviewer subagent
-- Crash recovery, ambiguity, concurrency, and fencing reviewer subagent
-- Migration, rollback, Audit/Outbox, and acceptance-evidence reviewer subagent
+- Legacy mapping, qualified identity, authority and lifecycle contract reviewer
+- Snapshot, hash/count, migration evidence and regression reviewer
+- Transaction interruption, replay, rollback, activation and operational safety reviewer

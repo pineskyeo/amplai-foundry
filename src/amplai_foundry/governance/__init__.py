@@ -72,6 +72,17 @@ from amplai_foundry.governance.ingress import (
     VerifiedProviderCommand,
 )
 from amplai_foundry.governance.ledger import FileProposalActionLedger
+from amplai_foundry.governance.legacy_migration import (
+    LegacyApprovalDisposition,
+    LegacyMigrationScanConfig,
+    LegacyMigrationScanError,
+    LegacyMutationFreeze,
+    LegacyProposalDryRunService,
+    LegacyProposalMigrationPlan,
+    LegacyProposalPlanItem,
+    LegacyProposalSnapshot,
+    LegacySnapshotFile,
+)
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
     ActorRef,
@@ -177,6 +188,15 @@ __all__ = [
     "IngressState",
     "InvalidProposalTransitionError",
     "IssuedActionToken",
+    "LegacyApprovalDisposition",
+    "LegacyMigrationScanConfig",
+    "LegacyMigrationScanError",
+    "LegacyMutationFreeze",
+    "LegacyProposalDryRunService",
+    "LegacyProposalMigrationPlan",
+    "LegacyProposalPlanItem",
+    "LegacyProposalSnapshot",
+    "LegacySnapshotFile",
     "OutboxConfig",
     "OutboxDestination",
     "OutboxDispatcher",

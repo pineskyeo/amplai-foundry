@@ -34,11 +34,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-009 — ApplyGrant And Apply Job
   class: code
   gate: PASS at `5b413b8`
-- [~] MGC-010 — Fenced Publish Coordinator
+- [x] MGC-010 — Fenced Publish Coordinator
+  class: code
+  gate: PASS at `9f3215f`
+- [~] MGC-011 — V2 Migration
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-011 — V2 Migration
-  class: code
 - [ ] MGC-012 — Slack Reference Adapter
   class: code
 - [ ] MGC-013 — Telegram Reference Adapter
