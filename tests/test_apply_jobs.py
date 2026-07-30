@@ -1015,6 +1015,23 @@ def test_startup_rejects_apply_job_counter_regression(tmp_path: Path) -> None:
         store.initialize()
 
 
+def test_startup_rejects_unrooted_queued_job_lifecycle_fields(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            UPDATE governance_apply_jobs
+            SET attempts = 3, fencing_token = 3,
+                staged_artifact_digest = ?, last_error_code = 'TAMPERED'
+            WHERE job_id = ?
+            """,
+            (f"sha256:{'a' * 64}", job_id),
+        )
+
+    with pytest.raises(GovernanceEventError, match="APPLY_JOB_EVENT_ROOT_MISMATCH"):
+        store.initialize()
+
+
 def test_retry_attempt_cap_converges_to_dead_letter(tmp_path: Path) -> None:
     store, job_id = _queued_job_fixture(tmp_path)
     jobs = ApplyJobService(store, clock=lambda: NOW, max_attempts=1)

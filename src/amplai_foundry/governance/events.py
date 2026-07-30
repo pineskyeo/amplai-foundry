@@ -901,7 +901,17 @@ class GovernanceEventService:
                     (job[0],),
                 ).fetchall()
                 if not events:
-                    if str(job[1]) != "queued":
+                    if tuple(job[1:]) != (
+                        "queued",
+                        0,
+                        0,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ):
                         raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
                     continue
                 latest = events[0]
