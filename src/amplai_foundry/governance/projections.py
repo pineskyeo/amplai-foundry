@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import yaml
@@ -36,17 +38,18 @@ class YamlProjectionDestination:
         self.destination_ref = destination_ref
 
     def reconcile(self, event: OutboxEventView) -> str | None:
-        current = self._read()
-        if current is None:
+        with self._locked():
+            current = self._read()
+            if current is None:
+                return None
+            if (
+                current.aggregate_sequence == event.aggregate_sequence
+                and current.payload_digest == event.payload_digest
+            ):
+                return self._receipt(current)
+            if current.aggregate_sequence >= event.aggregate_sequence:
+                raise OutboxReconcileError("YAML_PROJECTION_DIVERGED")
             return None
-        if (
-            current.aggregate_sequence == event.aggregate_sequence
-            and current.payload_digest == event.payload_digest
-        ):
-            return self._receipt(current)
-        if current.aggregate_sequence >= event.aggregate_sequence:
-            raise OutboxReconcileError("YAML_PROJECTION_DIVERGED")
-        return None
 
     def send(self, event: OutboxEventView) -> str:
         if event.destination_ref != self.destination_ref:
@@ -54,24 +57,64 @@ class YamlProjectionDestination:
         actual_digest = self._payload_digest(event.payload)
         if actual_digest != event.payload_digest:
             raise GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
-        current = self._read()
-        if current is None:
-            if event.aggregate_sequence != 1:
+        with self._locked():
+            current = self._read()
+            if current is not None and (
+                current.aggregate_sequence == event.aggregate_sequence
+                and current.payload_digest == event.payload_digest
+            ):
+                return self._receipt(current)
+            if current is None:
+                if event.aggregate_sequence != 1:
+                    raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
+            elif (
+                event.aggregate_sequence != current.aggregate_sequence + 1
+                or event.source_state_revision <= current.source_state_revision
+            ):
                 raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
-        elif (
-            event.aggregate_sequence != current.aggregate_sequence + 1
-            or event.source_state_revision <= current.source_state_revision
-        ):
-            raise GovernanceEventError("YAML_SEQUENCE_CAS_CONFLICT")
-        record = YamlProjectionRecord(
-            proposal_ref=event.proposal_ref,
-            source_state_revision=event.source_state_revision,
-            aggregate_sequence=event.aggregate_sequence,
-            payload_digest=event.payload_digest,
-            payload=event.payload,
-        )
-        self._write(record)
-        return self._receipt(record)
+            record = YamlProjectionRecord(
+                proposal_ref=event.proposal_ref,
+                source_state_revision=event.source_state_revision,
+                aggregate_sequence=event.aggregate_sequence,
+                payload_digest=event.payload_digest,
+                payload=event.payload,
+            )
+            self._write(record)
+            return self._receipt(record)
+
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        lock_path = self.path.with_suffix(self.path.suffix + ".lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with lock_path.open("a+b") as handle:
+                if os.name == "nt":
+                    import msvcrt
+
+                    handle.seek(0)
+                    if handle.read(1) == b"":
+                        handle.write(b"0")
+                        handle.flush()
+                    handle.seek(0)
+                    locking = vars(msvcrt)["locking"]
+                    lock_mode = vars(msvcrt)["LK_LOCK"]
+                    unlock_mode = vars(msvcrt)["LK_UNLCK"]
+                    locking(handle.fileno(), lock_mode, 1)
+                    try:
+                        yield
+                    finally:
+                        handle.seek(0)
+                        locking(handle.fileno(), unlock_mode, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                    try:
+                        yield
+                    finally:
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        except OSError as error:
+            raise GovernanceEventError("YAML_PROJECTION_LOCK_FAILED") from error
 
     def _read(self) -> YamlProjectionRecord | None:
         if not self.path.exists():

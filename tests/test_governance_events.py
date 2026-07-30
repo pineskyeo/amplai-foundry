@@ -629,3 +629,25 @@ def test_yaml_projection_rejects_reverse_order_and_applies_sequence_cas(tmp_path
     assert projection.reconcile(first[0]) == first_receipt
     second_receipt = projection.send(second[0])
     assert projection.reconcile(second[0]) == second_receipt
+
+
+def test_yaml_projection_concurrent_duplicate_is_idempotent(tmp_path: Path) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    destination_ref = "yaml:proposal"
+    _audit, outbox = _append(
+        events,
+        store,
+        command_id="command-1",
+        state_revision=2,
+        destinations=(OutboxDestination(destination_ref=destination_ref),),
+    )
+    projection = YamlProjectionDestination(
+        tmp_path / "projection/proposal.yaml",
+        destination_ref=destination_ref,
+    )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        receipts = tuple(executor.map(projection.send, (outbox[0], outbox[0])))
+    assert receipts[0] == receipts[1]
+    assert projection.reconcile(outbox[0]) == receipts[0]
