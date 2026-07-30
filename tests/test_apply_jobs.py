@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 import subprocess
 import threading
@@ -28,6 +29,7 @@ from amplai_foundry.governance import (
     DecisionError,
     DecisionService,
     DirectAuthorityRequest,
+    FencedGitPublishCoordinator,
     ImmutableDefinitionObjectStore,
     OutboxDispatcher,
     OutboxState,
@@ -36,6 +38,7 @@ from amplai_foundry.governance import (
     ProposalSubmissionService,
     PublishGovernanceError,
     PublishPreparationService,
+    SubprocessGitCandidateInspector,
     canonicalize_definition,
 )
 from amplai_foundry.governance.apply_jobs import (
@@ -87,6 +90,7 @@ def _fixture(
     *,
     grant_apply_permission: bool = True,
     include_action_token: bool = False,
+    base_revision: str = "a13d92f",
 ):
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
@@ -95,7 +99,7 @@ def _fixture(
         ProposalDefinitionManifest(
             proposal_ref=PROPOSAL,
             operations=({"marker": "apply", "type": "CREATE"},),
-            base_revision="a13d92f",
+            base_revision=base_revision,
             validation_policy_ref="policy/proposal-v3",
         )
     )
@@ -160,8 +164,8 @@ def _fixture(
     return (*result, approve.raw_token) if include_action_token else result
 
 
-def _queued_job_fixture(tmp_path: Path):
-    store, _active, grants, decision_key = _fixture(tmp_path)
+def _queued_job_fixture(tmp_path: Path, *, base_revision: str = "a13d92f"):
+    store, _active, grants, decision_key = _fixture(tmp_path, base_revision=base_revision)
     issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
     request = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
     result = request.request_apply(
@@ -174,8 +178,14 @@ def _queued_job_fixture(tmp_path: Path):
     return store, result.job_id
 
 
-def _publish_pending_job_fixture(tmp_path: Path):
-    store, job_id = _queued_job_fixture(tmp_path)
+def _publish_pending_job_fixture(
+    tmp_path: Path,
+    *,
+    artifact_bytes: bytes = b"immutable staged tree",
+    publish_request_bytes: bytes = b'{"canonical_ref":"refs/heads/main"}',
+    base_revision: str = "a13d92f",
+):
+    store, job_id = _queued_job_fixture(tmp_path, base_revision=base_revision)
     jobs = ApplyJobService(store, clock=lambda: NOW)
     leased = jobs.claim_next("worker-publish-fixture")
     assert leased is not None
@@ -188,8 +198,8 @@ def _publish_pending_job_fixture(tmp_path: Path):
         job_id,
         worker_id="worker-publish-fixture",
         fencing_token=leased.fencing_token,
-        artifact_bytes=b"immutable staged tree",
-        publish_request_bytes=b'{"canonical_ref":"refs/heads/main"}',
+        artifact_bytes=artifact_bytes,
+        publish_request_bytes=publish_request_bytes,
     )
     return store, published
 
@@ -1872,3 +1882,73 @@ def test_competing_publish_prepare_creates_one_locked_intent(tmp_path: Path) -> 
             WHERE state = 'locked' AND active_intent_id IS NOT NULL
             """
         ).fetchone() == (1,)
+
+
+def test_fenced_git_coordinator_requires_durable_prepared_intent(tmp_path: Path) -> None:
+    repository = tmp_path / "canonical"
+    repository.mkdir()
+
+    def git(*arguments: str, text: bool = True):
+        return subprocess.run(
+            ("git", "-C", str(repository), *arguments),
+            check=True,
+            capture_output=True,
+            text=text,
+        )
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.name", "AMPLAI Test")
+    git("config", "user.email", "test@example.invalid")
+    tracked = repository / "artifact.txt"
+    tracked.write_text("base\n", encoding="utf-8")
+    git("add", "artifact.txt")
+    git("commit", "-q", "-m", "base")
+    base = git("rev-parse", "refs/heads/main").stdout.strip()
+    tracked.write_text("candidate\n", encoding="utf-8")
+    git("add", "artifact.txt")
+    tree = git("write-tree").stdout.strip()
+    candidate = git("commit-tree", tree, "-p", base, "-m", "candidate").stdout.strip()
+    artifact = git(
+        "ls-tree",
+        "-r",
+        "-z",
+        "--full-tree",
+        f"{candidate}^{{tree}}",
+        text=False,
+    ).stdout
+    request = json.dumps(
+        {"candidate_commit": candidate, "canonical_ref": "refs/heads/main"},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+    store, job = _publish_pending_job_fixture(
+        tmp_path,
+        artifact_bytes=artifact,
+        publish_request_bytes=request,
+        base_revision=base[:7],
+    )
+    inspector = SubprocessGitCandidateInspector(repository)
+    prepared = PublishPreparationService(store, inspector, clock=lambda: NOW).prepare(
+        job.job_id,
+        fencing_token=job.fencing_token,
+        canonical_ref="refs/heads/main",
+        candidate_commit=candidate,
+    )
+    coordinator = FencedGitPublishCoordinator(store, repository)
+
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_INTENT_NOT_FOUND"):
+        coordinator.publish_prepared_ref("PBI-FFFFFFFFFFFFFFFF")
+
+    first = coordinator.publish_prepared_ref(prepared.intent_id)
+    replay = coordinator.publish_prepared_ref(prepared.intent_id)
+
+    assert first.value == "updated"
+    assert replay.value == "updated"
+    assert git("rev-parse", "refs/heads/main").stdout.strip() == candidate
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT status FROM governance_publish_intents WHERE intent_id = ?",
+            (prepared.intent_id,),
+        ).fetchone() == ("prepared",)
+    assert store.check_startup().healthy

@@ -1,11 +1,18 @@
-"""Git plumbing adapter for verified candidate inspection and exact ref CAS."""
+"""Git plumbing boundaries for verified candidates and durable-intent ref CAS."""
 
 from __future__ import annotations
 
 import hashlib
+import os
+import select
+import signal
 import subprocess
+import time
+from collections.abc import Callable, Mapping
+from contextlib import suppress
 from enum import StrEnum
 from pathlib import Path
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
 
@@ -14,10 +21,18 @@ from amplai_foundry.governance.publish import (
     CanonicalBranchRef,
     GitObjectId,
     PublishGovernanceError,
+    PublishIntentState,
+    PublishIntentView,
+    PublishPreparationService,
 )
+from amplai_foundry.governance.store import GovernanceStore
 
 _CANONICAL_REF_ADAPTER = TypeAdapter(CanonicalBranchRef)
 _GIT_OBJECT_ID_ADAPTER = TypeAdapter(GitObjectId)
+_CommandRunner = Callable[
+    [tuple[str, ...], bool, float, Mapping[str, str]],
+    subprocess.CompletedProcess[Any],
+]
 
 
 class GitCASOutcome(StrEnum):
@@ -38,17 +53,48 @@ class _PublishRequest(BaseModel):
     candidate_commit: GitObjectId
 
 
-class SubprocessGitPublishBackend:
-    """Use Git plumbing only; never mutate canonical working-tree files."""
+def _subprocess_runner(
+    arguments: tuple[str, ...],
+    text: bool,
+    timeout: float,
+    environment: Mapping[str, str],
+) -> subprocess.CompletedProcess[Any]:
+    return subprocess.run(
+        arguments,
+        check=False,
+        capture_output=True,
+        text=text,
+        timeout=timeout,
+        env=environment,
+    )
 
-    def __init__(self, repository: Path, *, timeout_seconds: float = 10.0) -> None:
+
+class _SubprocessGitBackend:
+    """Private Git command boundary; mutating CAS is coordinator-only."""
+
+    def __init__(
+        self,
+        repository: Path,
+        *,
+        timeout_seconds: float = 10.0,
+        runner: _CommandRunner = _subprocess_runner,
+    ) -> None:
         if timeout_seconds <= 0:
             raise ValueError("Git timeout은 0보다 커야 합니다.")
         self.repository = repository.expanduser().resolve(strict=True)
-        self.timeout_seconds = timeout_seconds
-        git_dir = self._run("rev-parse", "--git-dir")
-        if not git_dir.stdout.strip():
+        if not self.repository.is_dir():
             raise PublishGovernanceError("PUBLISH_GIT_REPOSITORY_INVALID")
+        self.timeout_seconds = timeout_seconds
+        self._runner = runner
+        self._environment = self._sanitized_environment()
+        git_dir_result = self._bootstrap("rev-parse", "--absolute-git-dir")
+        top_level_result = self._bootstrap("rev-parse", "--show-toplevel")
+        self.git_dir = Path(git_dir_result.stdout.strip()).resolve(strict=True)
+        top_level = Path(top_level_result.stdout.strip()).resolve(strict=True)
+        if top_level != self.repository or not self.git_dir.is_dir():
+            raise PublishGovernanceError("PUBLISH_GIT_REPOSITORY_INVALID")
+        self._repository_identity = self._path_identity(self.repository)
+        self._git_dir_identity = self._path_identity(self.git_dir)
 
     def read_ref(self, canonical_ref: str) -> str:
         checked_ref = _CANONICAL_REF_ADAPTER.validate_python(canonical_ref)
@@ -86,6 +132,7 @@ class SubprocessGitPublishBackend:
             "-z",
             "--full-tree",
             f"{checked_candidate}^{{tree}}",
+            max_output_bytes=len(artifact_bytes),
         )
         if tree_listing != artifact_bytes:
             raise PublishGovernanceError("PUBLISH_CANDIDATE_TREE_MISMATCH")
@@ -96,7 +143,7 @@ class SubprocessGitPublishBackend:
             canonical_ref=request.canonical_ref,
         )
 
-    def compare_and_swap_ref(
+    def _compare_and_swap_ref(
         self,
         canonical_ref: str,
         *,
@@ -108,53 +155,262 @@ class SubprocessGitPublishBackend:
         candidate = _GIT_OBJECT_ID_ADAPTER.validate_python(candidate_commit)
         if len(expected) != len(candidate) or expected == candidate:
             raise ValueError("CAS object identity가 유효하지 않습니다.")
-        completed = self._run_unchecked(
-            "update-ref",
-            "--no-deref",
-            checked_ref,
-            candidate,
-            expected,
-        )
+        try:
+            completed = self._execute(
+                (
+                    "update-ref",
+                    "--no-deref",
+                    checked_ref,
+                    candidate,
+                    expected,
+                ),
+                text=True,
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise GitPublishAmbiguousError() from error
         try:
             actual = self.read_ref(checked_ref)
         except PublishGovernanceError as error:
             raise GitPublishAmbiguousError() from error
         if actual == candidate:
             return GitCASOutcome.UPDATED
-        if actual == expected:
+        if completed.returncode != 0 and actual == expected:
             return GitCASOutcome.EXPECTED_UNCHANGED
         if completed.returncode != 0:
             return GitCASOutcome.CONFLICT
         raise GitPublishAmbiguousError()
 
-    def _run(self, *arguments: str) -> subprocess.CompletedProcess[str]:
-        completed = self._run_unchecked(*arguments)
-        if completed.returncode != 0:
-            raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
-        return completed
-
-    def _run_unchecked(self, *arguments: str) -> subprocess.CompletedProcess[str]:
+    def _bootstrap(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         try:
-            return subprocess.run(
+            completed = self._runner(
                 ("git", "-C", str(self.repository), *arguments),
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_seconds,
-            )
-        except (OSError, subprocess.TimeoutExpired) as error:
-            raise GitPublishAmbiguousError() from error
-
-    def _run_bytes(self, *arguments: str) -> bytes:
-        try:
-            completed = subprocess.run(
-                ("git", "-C", str(self.repository), *arguments),
-                check=False,
-                capture_output=True,
-                timeout=self.timeout_seconds,
+                True,
+                self.timeout_seconds,
+                self._environment,
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED") from error
         if completed.returncode != 0:
+            raise PublishGovernanceError("PUBLISH_GIT_REPOSITORY_INVALID")
+        return cast(subprocess.CompletedProcess[str], completed)
+
+    def _run(self, *arguments: str) -> subprocess.CompletedProcess[str]:
+        try:
+            completed = self._execute(arguments, text=True)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED") from error
+        if completed.returncode != 0:
             raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
-        return completed.stdout
+        return cast(subprocess.CompletedProcess[str], completed)
+
+    def _run_bytes(self, *arguments: str, max_output_bytes: int) -> bytes:
+        if max_output_bytes < 1:
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_TREE_MISMATCH")
+        self._verify_repository_identity()
+        command = (
+            "git",
+            f"--git-dir={self.git_dir}",
+            f"--work-tree={self.repository}",
+            "-c",
+            "core.hooksPath=/dev/null",
+            *arguments,
+        )
+        try:
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=self._environment,
+                start_new_session=True,
+            )
+        except OSError as error:
+            raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED") from error
+        assert process.stdout is not None
+        output = bytearray()
+        deadline = time.monotonic() + self.timeout_seconds
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, self.timeout_seconds)
+                readable, _, _ = select.select((process.stdout,), (), (), remaining)
+                if not readable:
+                    raise subprocess.TimeoutExpired(command, self.timeout_seconds)
+                chunk = os.read(process.stdout.fileno(), min(65_536, max_output_bytes + 1))
+                if not chunk:
+                    break
+                output.extend(chunk)
+                if len(output) > max_output_bytes:
+                    raise PublishGovernanceError("PUBLISH_CANDIDATE_TREE_TOO_LARGE")
+            return_code = process.wait(timeout=max(deadline - time.monotonic(), 0.001))
+        except subprocess.TimeoutExpired as error:
+            self._terminate_process_group(process)
+            raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED") from error
+        except PublishGovernanceError:
+            self._terminate_process_group(process)
+            raise
+        finally:
+            process.stdout.close()
+        if return_code != 0:
+            raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
+        return bytes(output)
+
+    def _execute(
+        self,
+        arguments: tuple[str, ...],
+        *,
+        text: bool,
+    ) -> subprocess.CompletedProcess[Any]:
+        self._verify_repository_identity()
+        return self._runner(
+            (
+                "git",
+                f"--git-dir={self.git_dir}",
+                f"--work-tree={self.repository}",
+                "-c",
+                "core.hooksPath=/dev/null",
+                *arguments,
+            ),
+            text,
+            self.timeout_seconds,
+            self._environment,
+        )
+
+    def _verify_repository_identity(self) -> None:
+        if (
+            self._path_identity(self.repository) != self._repository_identity
+            or self._path_identity(self.git_dir) != self._git_dir_identity
+        ):
+            raise PublishGovernanceError("PUBLISH_GIT_REPOSITORY_CHANGED")
+
+    @staticmethod
+    def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
+        with suppress(OSError):
+            os.killpg(process.pid, signal.SIGKILL)
+        with suppress(ProcessLookupError):
+            process.kill()
+        process.wait()
+
+    @staticmethod
+    def _path_identity(path: Path) -> tuple[int, int]:
+        try:
+            status = path.stat()
+        except OSError as error:
+            raise PublishGovernanceError("PUBLISH_GIT_REPOSITORY_CHANGED") from error
+        return status.st_dev, status.st_ino
+
+    @staticmethod
+    def _sanitized_environment() -> dict[str, str]:
+        return {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LC_ALL": "C",
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        }
+
+
+class SubprocessGitCandidateInspector:
+    """Public read-only inspector used by publish preparation."""
+
+    def __init__(self, repository: Path, *, timeout_seconds: float = 10.0) -> None:
+        self._backend = _SubprocessGitBackend(
+            repository,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def read_ref(self, canonical_ref: str) -> str:
+        return self._backend.read_ref(canonical_ref)
+
+    def inspect_candidate(
+        self,
+        candidate_commit: str,
+        *,
+        artifact_bytes: bytes,
+        publish_request_bytes: bytes,
+    ) -> CandidateCommitEvidence:
+        return self._backend.inspect_candidate(
+            candidate_commit,
+            artifact_bytes=artifact_bytes,
+            publish_request_bytes=publish_request_bytes,
+        )
+
+
+class FencedGitPublishCoordinator:
+    """The only public production path that may invoke canonical Git ref CAS."""
+
+    def __init__(
+        self,
+        store: GovernanceStore,
+        repository: Path,
+        *,
+        timeout_seconds: float = 10.0,
+    ) -> None:
+        self.store = store
+        self._backend = _SubprocessGitBackend(
+            repository,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def publish_prepared_ref(self, intent_id: str) -> GitCASOutcome:
+        with self.store.connect() as connection:
+            intent = PublishPreparationService._intent_view(connection, intent_id)
+            roots = connection.execute(
+                """
+                SELECT a.artifact_bytes, p.publish_request_bytes, g.state,
+                       g.active_intent_id, g.canonical_ref
+                FROM governance_publish_intents i
+                JOIN governance_staging_artifacts a
+                  ON a.job_id = i.job_id AND a.fencing_token = i.fencing_token
+                 AND a.artifact_digest = i.staged_artifact_digest
+                JOIN governance_publish_inputs p
+                  ON p.job_id = i.job_id AND p.fencing_token = i.fencing_token
+                 AND p.publish_request_digest = i.publish_request_digest
+                JOIN governance_project_publish_gates g
+                  ON g.project_namespace = i.project_namespace
+                 AND g.project_id = i.project_id
+                WHERE i.intent_id = ?
+                """,
+                (intent_id,),
+            ).fetchone()
+        self._verify_prepared_roots(intent, roots)
+        artifact_bytes = cast(bytes, roots[0])
+        publish_request_bytes = cast(bytes, roots[1])
+        evidence = self._backend.inspect_candidate(
+            intent.candidate_commit,
+            artifact_bytes=artifact_bytes,
+            publish_request_bytes=publish_request_bytes,
+        )
+        if (
+            evidence.candidate_commit != intent.candidate_commit
+            or evidence.parent_commit != intent.expected_old_ref
+            or evidence.candidate_tree_digest != intent.candidate_tree_digest
+            or evidence.canonical_ref != intent.canonical_ref
+        ):
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_MISMATCH")
+        actual = self._backend.read_ref(intent.canonical_ref)
+        if actual == intent.candidate_commit:
+            return GitCASOutcome.UPDATED
+        if actual != intent.expected_old_ref:
+            return GitCASOutcome.CONFLICT
+        return self._backend._compare_and_swap_ref(
+            intent.canonical_ref,
+            expected_old_ref=intent.expected_old_ref,
+            candidate_commit=intent.candidate_commit,
+        )
+
+    @staticmethod
+    def _verify_prepared_roots(
+        intent: PublishIntentView,
+        roots: tuple[object, ...] | None,
+    ) -> None:
+        if (
+            intent.status is not PublishIntentState.PREPARED
+            or roots is None
+            or str(roots[2]) != "locked"
+            or str(roots[3]) != intent.intent_id
+            or str(roots[4]) != intent.canonical_ref
+        ):
+            raise PublishGovernanceError("PUBLISH_INTENT_NOT_PREPARED")
