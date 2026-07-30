@@ -1,5 +1,16 @@
 """Channel-independent authority and Proposal action contracts."""
 
+from amplai_foundry.governance.active_proposals import (
+    ActiveProposalError,
+    ActiveProposalNotFoundError,
+    ActiveProposalRepository,
+    ActiveProposalStatus,
+    ActiveProposalView,
+    DefinitionCASConflictError,
+    DefinitionRevision,
+    InvalidProposalTransitionError,
+    state_transition_allowed,
+)
 from amplai_foundry.governance.authority import (
     AuthorityResolutionError,
     AuthorityService,
@@ -48,6 +59,11 @@ from amplai_foundry.governance.service import (
 
 __all__ = [
     "ActionTokenVerifier",
+    "ActiveProposalError",
+    "ActiveProposalNotFoundError",
+    "ActiveProposalRepository",
+    "ActiveProposalStatus",
+    "ActiveProposalView",
     "ActorBindingStatus",
     "ActorRef",
     "ActorType",
@@ -60,16 +76,19 @@ __all__ = [
     "CanonicalDefinition",
     "ChannelProvider",
     "ChannelRef",
+    "DefinitionCASConflictError",
     "DefinitionEvidence",
     "DefinitionObjectCollisionError",
     "DefinitionObjectIntegrityError",
     "DefinitionObjectRef",
     "DefinitionObjectStoreError",
+    "DefinitionRevision",
     "ExternalActorBinding",
     "ExternalActorBindingRepository",
     "FileExternalActorBindingRepository",
     "FileProposalActionLedger",
     "ImmutableDefinitionObjectStore",
+    "InvalidProposalTransitionError",
     "ProjectPermissionPolicy",
     "ProposalAction",
     "ProposalActionAuditEvent",
@@ -82,4 +101,5 @@ __all__ = [
     "canonicalize_definition",
     "proposal_digest",
     "sha256_digest",
+    "state_transition_allowed",
 ]

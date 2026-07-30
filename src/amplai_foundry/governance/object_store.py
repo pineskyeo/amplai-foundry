@@ -274,6 +274,8 @@ class ImmutableDefinitionObjectStore:
             current_fd = -1
             return result_fd
         except OSError as error:
+            if not create and isinstance(error, FileNotFoundError):
+                raise
             raise DefinitionObjectStoreError(
                 "project-local object directory를 안전하게 열 수 없습니다."
             ) from error

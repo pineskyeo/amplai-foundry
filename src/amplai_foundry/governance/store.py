@@ -120,8 +120,8 @@ class GovernanceStore:
             with self._raw_connection() as connection:
                 if existing_store:
                     self._verify_integrity(connection)
-                    self.migration_runner.verify(connection)
-                    self.migration_runner.verify_foundation_schema(connection)
+                    current_version = self.migration_runner.verify(connection)
+                    self.migration_runner.verify_schema(connection, current_version)
                 self._configure(connection)
                 with governance_transaction(connection):
                     self.migration_runner.apply_pending(connection)
@@ -233,7 +233,7 @@ class GovernanceStore:
                 "Governance schema version 불일치: "
                 f"expected={self.migration_runner.latest_version} actual={schema_version}"
             )
-        self.migration_runner.verify_foundation_schema(connection)
+        self.migration_runner.verify_schema(connection, schema_version)
         self._probe_wal_write(connection)
         health = GovernanceStoreHealth(
             path=self.path,

@@ -41,6 +41,97 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=2,
+        name="active-proposal-cas",
+        statements=(
+            """
+            CREATE TABLE governance_active_proposals (
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                active_definition_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                status TEXT NOT NULL CHECK (
+                    status IN (
+                        'draft',
+                        'reviewed',
+                        'changes_requested',
+                        'approved',
+                        'apply_requested',
+                        'apply_failed',
+                        'applied',
+                        'rejected',
+                        'superseded'
+                    )
+                ),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (project_namespace, project_id, proposal_id),
+                CHECK (
+                    length(active_definition_digest) = 71
+                    AND substr(active_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(active_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_definition_revisions (
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                definition_digest TEXT NOT NULL,
+                previous_definition_digest TEXT,
+                activated_from_status TEXT,
+                activated_at TEXT NOT NULL,
+                PRIMARY KEY (
+                    project_namespace,
+                    project_id,
+                    proposal_id,
+                    content_revision
+                ),
+                UNIQUE (
+                    project_namespace,
+                    project_id,
+                    proposal_id,
+                    definition_digest
+                ),
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace,
+                        project_id,
+                        proposal_id
+                    )
+                    ON DELETE RESTRICT,
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    previous_definition_digest IS NULL
+                    OR (
+                        length(previous_definition_digest) = 71
+                        AND substr(previous_definition_digest, 1, 7) = 'sha256:'
+                        AND substr(previous_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (
+                    activated_from_status IS NULL
+                    OR activated_from_status IN ('draft', 'changes_requested')
+                ),
+                CHECK (
+                    (content_revision = 1 AND previous_definition_digest IS NULL)
+                    OR
+                    (content_revision > 1 AND previous_definition_digest IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
 )
 
 
@@ -120,8 +211,7 @@ class MigrationRunner:
     def verify(self, connection: sqlite3.Connection) -> int:
         return self._verify_rows(self._applied_rows(connection))
 
-    @staticmethod
-    def verify_foundation_schema(connection: sqlite3.Connection) -> None:
+    def verify_schema(self, connection: sqlite3.Connection, schema_version: int) -> None:
         expected_columns = {
             "governance_schema_migrations": (
                 ("version", "INTEGER", 0, 1),
@@ -134,6 +224,33 @@ class MigrationRunner:
                 ("value", "TEXT", 1, 0),
             ),
         }
+        if schema_version >= 2:
+            expected_columns.update(
+                {
+                    "governance_active_proposals": (
+                        ("project_namespace", "TEXT", 1, 1),
+                        ("project_id", "TEXT", 1, 2),
+                        ("proposal_id", "TEXT", 1, 3),
+                        ("active_definition_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                        ("updated_at", "TEXT", 1, 0),
+                    ),
+                    "governance_definition_revisions": (
+                        ("project_namespace", "TEXT", 1, 1),
+                        ("project_id", "TEXT", 1, 2),
+                        ("proposal_id", "TEXT", 1, 3),
+                        ("content_revision", "INTEGER", 1, 4),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("previous_definition_digest", "TEXT", 0, 0),
+                        ("activated_from_status", "TEXT", 0, 0),
+                        ("activated_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
             actual = tuple(
@@ -144,11 +261,36 @@ class MigrationRunner:
                     "required schema shape 불일치: "
                     f"table={table} expected={expected} actual={actual}"
                 )
+        expected_create_sql = {
+            statement.split("CREATE TABLE ", 1)[1].split(maxsplit=1)[0]: " ".join(statement.split())
+            for migration in self.migrations
+            if migration.version <= schema_version
+            for statement in migration.statements
+            if "CREATE TABLE " in statement
+        }
+        for table, expected_sql in expected_create_sql.items():
+            row = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+                (table,),
+            ).fetchone()
+            actual_sql = " ".join(str(row[0]).split()) if row is not None else ""
+            if actual_sql != expected_sql:
+                raise GovernanceMigrationError(f"required schema SQL 불일치: table={table}")
         metadata = connection.execute(
             "SELECT value FROM governance_store_metadata WHERE key = 'store_kind'"
         ).fetchone()
         if metadata != ("amplai-governance",):
             raise GovernanceMigrationError("Governance Store metadata가 올바르지 않습니다.")
+        if schema_version >= 2:
+            foreign_keys = connection.execute(
+                "PRAGMA foreign_key_list(governance_definition_revisions)"
+            ).fetchall()
+            if len(foreign_keys) != 3 or any(
+                str(row[2]) != "governance_active_proposals" for row in foreign_keys
+            ):
+                raise GovernanceMigrationError(
+                    "definition revision foreign key가 올바르지 않습니다."
+                )
 
     def apply_pending(self, connection: sqlite3.Connection) -> int:
         if not connection.in_transaction:
