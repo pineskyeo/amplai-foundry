@@ -16,11 +16,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-003 — Active Definition CAS And State Machine
   class: code
   gate: PASS at `9f8d89c`
-- [~] MGC-004 — ActionToken And Decision Replay
+- [x] MGC-004 — ActionToken And Decision Replay
+  class: code
+  gate: PASS at `ec17ce3`
+- [~] MGC-005 — Durable Provider Ingress
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-005 — Durable Provider Ingress
-  class: code
 - [ ] MGC-006 — Authority And Actor Binding
   class: code
 - [ ] MGC-007 — Direct Mutation Closure
