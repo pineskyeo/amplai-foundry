@@ -348,6 +348,10 @@ def test_exported_plan_and_snapshot_reject_derived_identity_tamper(tmp_path: Pat
     plan_payload["plan_digest"] = f"sha256:{'f' * 64}"
     with pytest.raises(ValidationError):
         type(plan).model_validate(plan_payload)
+    snapshot_ref_payload = plan.model_dump(mode="json")
+    snapshot_ref_payload["snapshot_id"] = "MPS-0000000000000000"
+    with pytest.raises(ValidationError):
+        type(plan).model_validate(snapshot_ref_payload)
 
 
 def test_same_local_proposal_id_in_different_projects_has_distinct_plan_identity(

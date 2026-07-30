@@ -181,6 +181,8 @@ class LegacyProposalMigrationPlan(BaseModel):
             raise ValueError("migration plan freeze Project scope가 일치하지 않습니다.")
         if self.freeze.base_revision != self.base_revision:
             raise ValueError("migration plan freeze base revision이 일치하지 않습니다.")
+        if self.snapshot_id != f"MPS-{self.snapshot_digest[-16:].upper()}":
+            raise ValueError("migration plan snapshot identity가 일치하지 않습니다.")
         preimage = {
             "base_revision": self.base_revision,
             "freeze": self.freeze.model_dump(mode="json"),
