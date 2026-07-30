@@ -230,6 +230,79 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=4,
+        name="durable-provider-ingress",
+        statements=(
+            """
+            CREATE TABLE governance_ingress_commands (
+                command_id TEXT PRIMARY KEY NOT NULL,
+                provider TEXT NOT NULL CHECK (
+                    provider IN ('slack', 'telegram', 'hermes', 'web', 'cli')
+                ),
+                provider_installation_ref TEXT NOT NULL,
+                provider_fingerprint TEXT NOT NULL,
+                raw_body_digest TEXT NOT NULL,
+                external_event_id TEXT NOT NULL,
+                external_actor_key TEXT NOT NULL,
+                channel_json TEXT NOT NULL,
+                credential_kind TEXT NOT NULL CHECK (credential_kind = 'action_token'),
+                credential_id TEXT NOT NULL,
+                credential_hash TEXT NOT NULL,
+                action TEXT NOT NULL CHECK (
+                    action IN ('approve', 'reject', 'request_changes')
+                ),
+                received_at TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (
+                    state IN (
+                        'pending', 'leased', 'completed', 'retry_wait',
+                        'recovery_hold', 'dead_letter'
+                    )
+                ),
+                attempts INTEGER NOT NULL CHECK (attempts >= 0),
+                claim_generation INTEGER NOT NULL CHECK (claim_generation >= 0),
+                lease_owner TEXT,
+                lease_expires_at TEXT,
+                retry_at TEXT,
+                completed_at TEXT,
+                last_error_code TEXT,
+                UNIQUE (provider, provider_installation_ref, provider_fingerprint),
+                UNIQUE (provider, provider_installation_ref, external_event_id),
+                CHECK (
+                    length(command_id) = 20
+                    AND substr(command_id, 1, 4) = 'CMD-'
+                    AND substr(command_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(provider_fingerprint) = 64
+                    AND provider_fingerprint NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(raw_body_digest) = 71
+                    AND substr(raw_body_digest, 1, 7) = 'sha256:'
+                    AND substr(raw_body_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(credential_hash) = 71
+                    AND substr(credential_hash, 1, 7) = 'sha256:'
+                    AND substr(credential_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (state = 'leased' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+                    OR (state != 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)
+                ),
+                CHECK (
+                    (state = 'retry_wait' AND retry_at IS NOT NULL)
+                    OR (state != 'retry_wait' AND retry_at IS NULL)
+                ),
+                CHECK (
+                    (state = 'completed' AND completed_at IS NOT NULL)
+                    OR (state != 'completed' AND completed_at IS NULL)
+                )
+            )
+            """,
+        ),
+    ),
 )
 
 
@@ -388,6 +461,34 @@ class MigrationRunner:
                         ("decision_epoch", "INTEGER", 1, 0),
                         ("token_id", "TEXT", 1, 0),
                         ("processed_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
+        if schema_version >= 4:
+            expected_columns.update(
+                {
+                    "governance_ingress_commands": (
+                        ("command_id", "TEXT", 1, 1),
+                        ("provider", "TEXT", 1, 0),
+                        ("provider_installation_ref", "TEXT", 1, 0),
+                        ("provider_fingerprint", "TEXT", 1, 0),
+                        ("raw_body_digest", "TEXT", 1, 0),
+                        ("external_event_id", "TEXT", 1, 0),
+                        ("external_actor_key", "TEXT", 1, 0),
+                        ("channel_json", "TEXT", 1, 0),
+                        ("credential_kind", "TEXT", 1, 0),
+                        ("credential_id", "TEXT", 1, 0),
+                        ("credential_hash", "TEXT", 1, 0),
+                        ("action", "TEXT", 1, 0),
+                        ("received_at", "TEXT", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("attempts", "INTEGER", 1, 0),
+                        ("claim_generation", "INTEGER", 1, 0),
+                        ("lease_owner", "TEXT", 0, 0),
+                        ("lease_expires_at", "TEXT", 0, 0),
+                        ("retry_at", "TEXT", 0, 0),
+                        ("completed_at", "TEXT", 0, 0),
+                        ("last_error_code", "TEXT", 0, 0),
                     ),
                 }
             )

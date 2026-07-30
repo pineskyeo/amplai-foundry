@@ -179,125 +179,185 @@ class DecisionService:
         request_fingerprint: str,
     ) -> DecisionResult:
         self._validate_command(idempotency_key, request_fingerprint, raw_token)
+        return self.decide_verified_hash(
+            ref,
+            action=action,
+            actor_ref=actor_ref,
+            channel_ref=channel_ref,
+            credential_hash=self._token_hash(raw_token),
+            idempotency_key=idempotency_key,
+            request_fingerprint=request_fingerprint,
+        )
+
+    def decide_verified_hash(
+        self,
+        ref: ProposalRef,
+        *,
+        action: DecisionAction,
+        actor_ref: ActorRef,
+        channel_ref: ChannelRef,
+        credential_hash: str,
+        idempotency_key: str,
+        request_fingerprint: str,
+    ) -> DecisionResult:
+        """Execute from a verified ingress hash without reconstructing the raw Token."""
+
+        self._validate_verified_command(
+            idempotency_key,
+            request_fingerprint,
+            credential_hash,
+        )
+        with self.store.connect() as connection, governance_transaction(connection):
+            return self.decide_verified_hash_in_transaction(
+                connection,
+                ref,
+                action=action,
+                actor_ref=actor_ref,
+                channel_ref=channel_ref,
+                credential_hash=credential_hash,
+                idempotency_key=idempotency_key,
+                request_fingerprint=request_fingerprint,
+            )
+
+    def decide_verified_hash_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        action: DecisionAction,
+        actor_ref: ActorRef,
+        channel_ref: ChannelRef,
+        credential_hash: str,
+        idempotency_key: str,
+        request_fingerprint: str,
+    ) -> DecisionResult:
+        """Connection-bound decision primitive for ingress/audit atomic composition."""
+
+        if not connection.in_transaction:
+            raise DecisionError("GOVERNANCE_TRANSACTION_REQUIRED")
+        self._validate_verified_command(
+            idempotency_key,
+            request_fingerprint,
+            credential_hash,
+        )
         processed_at = self._aware(self._clock())
         channel_json = self._channel_json(channel_ref)
-        with self.store.connect() as connection, governance_transaction(connection):
-            replay = self._result_row(connection, idempotency_key)
-            if replay is not None:
-                return self._replay_result(
-                    replay,
-                    ref=ref,
-                    action=action,
-                    actor_ref=actor_ref,
-                    channel_json=channel_json,
-                    request_fingerprint=request_fingerprint,
-                )
+        replay = self._result_row(connection, idempotency_key)
+        if replay is not None:
+            return self._replay_result(
+                replay,
+                ref=ref,
+                action=action,
+                actor_ref=actor_ref,
+                channel_json=channel_json,
+                request_fingerprint=request_fingerprint,
+            )
 
-            token = connection.execute(
-                """
-                SELECT token_id, project_namespace, project_id, proposal_id,
-                       active_definition_digest, content_revision, state_revision,
-                       decision_epoch, allowed_action, allowed_actor_id,
-                       allowed_actor_type, bound_channel_json, issued_at, expires_at,
-                       state, resolved_at
-                FROM governance_action_tokens
-                WHERE token_hash = ?
-                """,
-                (self._token_hash(raw_token),),
-            ).fetchone()
-            if token is None:
-                raise DecisionError("ACTION_TOKEN_INVALID")
-            if tuple(str(value) for value in token[1:4]) != self._identity(ref):
-                raise DecisionError("ACTION_TOKEN_INVALID")
-            if str(token[14]) != ActionTokenState.ISSUED.value:
-                raise DecisionError("ACTION_TOKEN_CONSUMED")
-            if processed_at >= self._parse_timestamp(str(token[13])):
-                raise DecisionError("ACTION_TOKEN_EXPIRED")
-            if str(token[8]) != action.value:
-                raise DecisionError("ACTION_TOKEN_INVALID")
-            if (str(token[9]), str(token[10])) != (
+        token = connection.execute(
+            """
+            SELECT token_id, project_namespace, project_id, proposal_id,
+                   active_definition_digest, content_revision, state_revision,
+                   decision_epoch, allowed_action, allowed_actor_id,
+                   allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                   state, resolved_at
+            FROM governance_action_tokens
+            WHERE token_hash = ?
+            """,
+            (credential_hash,),
+        ).fetchone()
+        if token is None:
+            raise DecisionError("ACTION_TOKEN_INVALID")
+        if tuple(str(value) for value in token[1:4]) != self._identity(ref):
+            raise DecisionError("ACTION_TOKEN_INVALID")
+        if str(token[14]) != ActionTokenState.ISSUED.value:
+            raise DecisionError("ACTION_TOKEN_CONSUMED")
+        if processed_at >= self._parse_timestamp(str(token[13])):
+            raise DecisionError("ACTION_TOKEN_EXPIRED")
+        if str(token[8]) != action.value:
+            raise DecisionError("ACTION_TOKEN_INVALID")
+        if (str(token[9]), str(token[10])) != (
+            actor_ref.actor_id,
+            actor_ref.actor_type.value,
+        ):
+            raise DecisionError("ACTION_ACTOR_MISMATCH")
+        if str(token[11]) != channel_json:
+            raise DecisionError("ACTION_CHANNEL_MISMATCH")
+
+        proposal = self._proposal_row(connection, ref)
+        if proposal is None:
+            raise DecisionError("PROPOSAL_NOT_FOUND")
+        if ActiveProposalStatus(str(proposal[4])) is not ActiveProposalStatus.REVIEWED:
+            raise DecisionError("INVALID_PROPOSAL_STATE")
+        if tuple(proposal[:4]) != tuple(token[4:8]):
+            raise DecisionError("PROPOSAL_STALE")
+
+        next_status = _DECISION_STATUS[action]
+        updated = connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET status = ?, state_revision = state_revision + 1,
+                updated_at = ?
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+              AND status = 'reviewed' AND active_definition_digest = ?
+              AND content_revision = ? AND state_revision = ? AND decision_epoch = ?
+            """,
+            (
+                next_status.value,
+                self._timestamp(processed_at),
+                *self._identity(ref),
+                *token[4:8],
+            ),
+        )
+        if updated.rowcount != 1:
+            raise DecisionError("PROPOSAL_STALE")
+        consumed = connection.execute(
+            """
+            UPDATE governance_action_tokens
+            SET state = 'consumed', resolved_at = ?
+            WHERE token_id = ? AND state = 'issued'
+            """,
+            (self._timestamp(processed_at), token[0]),
+        )
+        if consumed.rowcount != 1:
+            raise DecisionError("ACTION_TOKEN_CONSUMED")
+        next_state_revision = int(token[6]) + 1
+        connection.execute(
+            """
+            INSERT INTO governance_decision_results(
+                idempotency_key, request_fingerprint, project_namespace, project_id,
+                proposal_id, action, actor_id, actor_type, channel_json,
+                proposal_status, active_definition_digest, content_revision,
+                state_revision, decision_epoch, token_id, processed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                idempotency_key,
+                request_fingerprint,
+                *self._identity(ref),
+                action.value,
                 actor_ref.actor_id,
                 actor_ref.actor_type.value,
-            ):
-                raise DecisionError("ACTION_ACTOR_MISMATCH")
-            if str(token[11]) != channel_json:
-                raise DecisionError("ACTION_CHANNEL_MISMATCH")
-
-            proposal = self._proposal_row(connection, ref)
-            if proposal is None:
-                raise DecisionError("PROPOSAL_NOT_FOUND")
-            if ActiveProposalStatus(str(proposal[4])) is not ActiveProposalStatus.REVIEWED:
-                raise DecisionError("INVALID_PROPOSAL_STATE")
-            if tuple(proposal[:4]) != tuple(token[4:8]):
-                raise DecisionError("PROPOSAL_STALE")
-
-            next_status = _DECISION_STATUS[action]
-            updated = connection.execute(
-                """
-                UPDATE governance_active_proposals
-                SET status = ?, state_revision = state_revision + 1,
-                    updated_at = ?
-                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
-                  AND status = 'reviewed' AND active_definition_digest = ?
-                  AND content_revision = ? AND state_revision = ? AND decision_epoch = ?
-                """,
-                (
-                    next_status.value,
-                    self._timestamp(processed_at),
-                    *self._identity(ref),
-                    *token[4:8],
-                ),
-            )
-            if updated.rowcount != 1:
-                raise DecisionError("PROPOSAL_STALE")
-            consumed = connection.execute(
-                """
-                UPDATE governance_action_tokens
-                SET state = 'consumed', resolved_at = ?
-                WHERE token_id = ? AND state = 'issued'
-                """,
-                (self._timestamp(processed_at), token[0]),
-            )
-            if consumed.rowcount != 1:
-                raise DecisionError("ACTION_TOKEN_CONSUMED")
-            next_state_revision = int(token[6]) + 1
-            connection.execute(
-                """
-                INSERT INTO governance_decision_results(
-                    idempotency_key, request_fingerprint, project_namespace, project_id,
-                    proposal_id, action, actor_id, actor_type, channel_json,
-                    proposal_status, active_definition_digest, content_revision,
-                    state_revision, decision_epoch, token_id, processed_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    idempotency_key,
-                    request_fingerprint,
-                    *self._identity(ref),
-                    action.value,
-                    actor_ref.actor_id,
-                    actor_ref.actor_type.value,
-                    channel_json,
-                    next_status.value,
-                    token[4],
-                    token[5],
-                    next_state_revision,
-                    token[7],
-                    token[0],
-                    self._timestamp(processed_at),
-                ),
-            )
-            return DecisionResult(
-                proposal_ref=ref,
-                action=action,
-                proposal_status=next_status,
-                active_definition_digest=str(token[4]),
-                content_revision=int(token[5]),
-                state_revision=next_state_revision,
-                decision_epoch=int(token[7]),
-                token_id=str(token[0]),
-                processed_at=processed_at,
-            )
+                channel_json,
+                next_status.value,
+                token[4],
+                token[5],
+                next_state_revision,
+                token[7],
+                token[0],
+                self._timestamp(processed_at),
+            ),
+        )
+        return DecisionResult(
+            proposal_ref=ref,
+            action=action,
+            proposal_status=next_status,
+            active_definition_digest=str(token[4]),
+            content_revision=int(token[5]),
+            state_revision=next_state_revision,
+            decision_epoch=int(token[7]),
+            token_id=str(token[0]),
+            processed_at=processed_at,
+        )
 
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:
@@ -422,14 +482,32 @@ class DecisionService:
 
     @staticmethod
     def _validate_command(idempotency_key: str, fingerprint: str, raw_token: str) -> None:
+        DecisionService._validate_replay_key(idempotency_key, fingerprint)
+        if not raw_token or len(raw_token.encode("utf-8")) > 64:
+            raise DecisionError("ACTION_TOKEN_INVALID")
+
+    @staticmethod
+    def _validate_verified_command(
+        idempotency_key: str,
+        fingerprint: str,
+        credential_hash: str,
+    ) -> None:
+        DecisionService._validate_replay_key(idempotency_key, fingerprint)
+        if (
+            len(credential_hash) != 71
+            or not credential_hash.startswith("sha256:")
+            or any(character not in "0123456789abcdef" for character in credential_hash[7:])
+        ):
+            raise DecisionError("ACTION_TOKEN_INVALID")
+
+    @staticmethod
+    def _validate_replay_key(idempotency_key: str, fingerprint: str) -> None:
         if not idempotency_key.strip():
             raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
         if len(fingerprint) != 64 or any(
             character not in "0123456789abcdef" for character in fingerprint
         ):
             raise ValueError("request_fingerprint는 lowercase SHA-256 hex여야 합니다.")
-        if not raw_token or len(raw_token.encode("utf-8")) > 64:
-            raise DecisionError("ACTION_TOKEN_INVALID")
 
     @staticmethod
     def _identity(ref: ProposalRef) -> tuple[str, str, str]:

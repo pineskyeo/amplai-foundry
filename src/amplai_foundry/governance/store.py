@@ -132,11 +132,16 @@ class GovernanceStore:
             ) from error
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self, *, busy_timeout_ms: int | None = None) -> Iterator[sqlite3.Connection]:
+        effective_timeout = (
+            self.config.busy_timeout_ms if busy_timeout_ms is None else busy_timeout_ms
+        )
+        if effective_timeout < 0:
+            raise ValueError("busy_timeout_ms는 0 이상이어야 합니다.")
         before = self.filesystem_guard.validate(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self._raw_connection() as connection:
-            self._configure(connection)
+        with self._raw_connection(busy_timeout_ms=effective_timeout) as connection:
+            self._configure(connection, busy_timeout_ms=effective_timeout)
             after = self.filesystem_guard.validate(self.path)
             if before != after:
                 raise GovernanceStoreError(
@@ -155,17 +160,22 @@ class GovernanceStore:
             yield connection
 
     @contextmanager
-    def _raw_connection(self) -> Iterator[sqlite3.Connection]:
+    def _raw_connection(
+        self, *, busy_timeout_ms: int | None = None
+    ) -> Iterator[sqlite3.Connection]:
+        effective_timeout = (
+            self.config.busy_timeout_ms if busy_timeout_ms is None else busy_timeout_ms
+        )
         try:
             connection = sqlite3.connect(
                 self.path,
                 isolation_level=None,
-                timeout=self.config.busy_timeout_ms / 1_000,
+                timeout=effective_timeout / 1_000,
             )
         except sqlite3.Error as error:
             raise GovernanceStoreError(f"Governance Store에 연결할 수 없습니다: {error}") from error
         try:
-            connection.execute(f"PRAGMA busy_timeout = {self.config.busy_timeout_ms}")
+            connection.execute(f"PRAGMA busy_timeout = {effective_timeout}")
             yield connection
         finally:
             connection.close()
@@ -180,8 +190,16 @@ class GovernanceStore:
         except sqlite3.Error as error:
             raise GovernanceStoreError(f"Governance Store startup check 실패: {error}") from error
 
-    def _configure(self, connection: sqlite3.Connection) -> None:
-        connection.execute(f"PRAGMA busy_timeout = {self.config.busy_timeout_ms}")
+    def _configure(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        busy_timeout_ms: int | None = None,
+    ) -> None:
+        effective_timeout = (
+            self.config.busy_timeout_ms if busy_timeout_ms is None else busy_timeout_ms
+        )
+        connection.execute(f"PRAGMA busy_timeout = {effective_timeout}")
         connection.execute("PRAGMA trusted_schema = OFF")
         connection.execute("PRAGMA foreign_keys = ON")
         journal_row = connection.execute("PRAGMA journal_mode = WAL").fetchone()
@@ -189,7 +207,7 @@ class GovernanceStore:
         if journal_mode != "wal":
             raise GovernanceStoreError(f"journal_mode=WAL을 활성화할 수 없습니다: {journal_mode}")
         connection.execute("PRAGMA synchronous = FULL")
-        self._verify_pragmas(connection)
+        self._verify_pragmas(connection, busy_timeout_ms=effective_timeout)
 
     @staticmethod
     def _pragma_value(connection: sqlite3.Connection, name: str) -> str | int:
@@ -201,13 +219,21 @@ class GovernanceStore:
             raise GovernanceStoreError(f"PRAGMA 값의 type이 올바르지 않습니다: {name}")
         return value
 
-    def _verify_pragmas(self, connection: sqlite3.Connection) -> None:
+    def _verify_pragmas(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        busy_timeout_ms: int | None = None,
+    ) -> None:
+        effective_timeout = (
+            self.config.busy_timeout_ms if busy_timeout_ms is None else busy_timeout_ms
+        )
         expected = {
             "journal_mode": "wal",
             "synchronous": 2,
             "foreign_keys": 1,
             "trusted_schema": 0,
-            "busy_timeout": self.config.busy_timeout_ms,
+            "busy_timeout": effective_timeout,
         }
         actual = {
             "journal_mode": str(self._pragma_value(connection, "journal_mode")).lower(),

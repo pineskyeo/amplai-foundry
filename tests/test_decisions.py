@@ -28,7 +28,11 @@ from amplai_foundry.governance import (
     canonicalize_definition,
 )
 from amplai_foundry.governance.object_store import DefinitionObjectRef
-from amplai_foundry.governance.store import GovernanceCommitAmbiguousError, GovernanceStore
+from amplai_foundry.governance.store import (
+    GovernanceCommitAmbiguousError,
+    GovernanceStore,
+    governance_transaction,
+)
 
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
 PROPOSAL = ProposalRef(project_ref=PROJECT, proposal_id="PROP-20260730-ABCDEF12")
@@ -244,12 +248,48 @@ def test_idempotency_conflict_precedes_consumed_token_and_changes_nothing(tmp_pa
             idempotency_key="decision-1",
             request_fingerprint=hashlib.sha256(b"different").hexdigest(),
         )
-
     assert active.get(PROPOSAL) == before
     with store.connect() as connection:
         assert connection.execute(
             "SELECT count(*) FROM governance_decision_results"
         ).fetchone() == (1,)
+
+
+def test_verified_hash_decision_seam_requires_and_uses_outer_transaction(tmp_path: Path) -> None:
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
+    approve = next(
+        token
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    credential_hash = f"sha256:{hashlib.sha256(approve.raw_token.encode()).hexdigest()}"
+    with store.connect() as connection:
+        with pytest.raises(DecisionError, match="GOVERNANCE_TRANSACTION_REQUIRED"):
+            service.decide_verified_hash_in_transaction(
+                connection,
+                PROPOSAL,
+                action=DecisionAction.APPROVE,
+                actor_ref=ACTOR,
+                channel_ref=CHANNEL,
+                credential_hash=credential_hash,
+                idempotency_key="hash-decision",
+                request_fingerprint=FINGERPRINT,
+            )
+        with governance_transaction(connection):
+            result = service.decide_verified_hash_in_transaction(
+                connection,
+                PROPOSAL,
+                action=DecisionAction.APPROVE,
+                actor_ref=ACTOR,
+                channel_ref=CHANNEL,
+                credential_hash=credential_hash,
+                idempotency_key="hash-decision",
+                request_fingerprint=FINGERPRINT,
+            )
+
+    assert result.proposal_status is ActiveProposalStatus.APPROVED
+    current = active.get(PROPOSAL)
+    assert current is not None and current.status is ActiveProposalStatus.APPROVED
 
 
 @pytest.mark.parametrize(

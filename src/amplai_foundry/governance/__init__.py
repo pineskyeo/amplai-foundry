@@ -34,6 +34,18 @@ from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
     canonicalize_definition,
 )
+from amplai_foundry.governance.ingress import (
+    IngressAck,
+    IngressCommandView,
+    IngressConfig,
+    IngressError,
+    IngressLeaseConflictError,
+    IngressService,
+    IngressState,
+    ProviderAuthenticator,
+    ProviderEnvelope,
+    VerifiedProviderCommand,
+)
 from amplai_foundry.governance.ledger import FileProposalActionLedger
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
@@ -103,6 +115,13 @@ __all__ = [
     "FileExternalActorBindingRepository",
     "FileProposalActionLedger",
     "ImmutableDefinitionObjectStore",
+    "IngressAck",
+    "IngressCommandView",
+    "IngressConfig",
+    "IngressError",
+    "IngressLeaseConflictError",
+    "IngressService",
+    "IngressState",
     "InvalidProposalTransitionError",
     "IssuedActionToken",
     "ProjectPermissionPolicy",
@@ -114,6 +133,9 @@ __all__ = [
     "ProposalActionType",
     "ProposalDefinitionManifest",
     "ProposalRef",
+    "ProviderAuthenticator",
+    "ProviderEnvelope",
+    "VerifiedProviderCommand",
     "canonicalize_definition",
     "proposal_digest",
     "sha256_digest",
