@@ -41,6 +41,19 @@ from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
     canonicalize_definition,
 )
+from amplai_foundry.governance.events import (
+    AuditEventView,
+    GovernanceEventError,
+    GovernanceEventService,
+    OutboxConfig,
+    OutboxDestination,
+    OutboxDispatcher,
+    OutboxEventView,
+    OutboxLeaseConflictError,
+    OutboxReconcileError,
+    OutboxState,
+    ProjectionDestination,
+)
 from amplai_foundry.governance.ingress import (
     IngressAck,
     IngressCommandView,
@@ -78,6 +91,10 @@ from amplai_foundry.governance.object_store import (
     ImmutableDefinitionObjectStore,
     sha256_digest,
 )
+from amplai_foundry.governance.projections import (
+    YamlProjectionDestination,
+    YamlProjectionRecord,
+)
 
 __all__ = [
     "ActionTokenState",
@@ -93,6 +110,7 @@ __all__ = [
     "ActorRef",
     "ActorType",
     "ApplyInputDescriptor",
+    "AuditEventView",
     "AuthorityContext",
     "AuthorityPermission",
     "AuthorityResolutionError",
@@ -120,6 +138,8 @@ __all__ = [
     "ExternalActorBinding",
     "ExternalActorIdentity",
     "FileProposalActionLedger",
+    "GovernanceEventError",
+    "GovernanceEventService",
     "ImmutableDefinitionObjectStore",
     "IngressAck",
     "IngressAuthorityRequest",
@@ -131,6 +151,14 @@ __all__ = [
     "IngressState",
     "InvalidProposalTransitionError",
     "IssuedActionToken",
+    "OutboxConfig",
+    "OutboxDestination",
+    "OutboxDispatcher",
+    "OutboxEventView",
+    "OutboxLeaseConflictError",
+    "OutboxReconcileError",
+    "OutboxState",
+    "ProjectionDestination",
     "ProposalAction",
     "ProposalActionAuditEvent",
     "ProposalActionResult",
@@ -141,6 +169,8 @@ __all__ = [
     "ProviderAuthenticator",
     "ProviderEnvelope",
     "VerifiedProviderCommand",
+    "YamlProjectionDestination",
+    "YamlProjectionRecord",
     "canonicalize_definition",
     "sha256_digest",
     "state_transition_allowed",

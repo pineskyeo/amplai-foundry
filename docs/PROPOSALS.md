@@ -49,6 +49,19 @@ code이며 production entrypoint가 아니다.
 
 Git publish 계약은 `MGC-010`이 소유한다.
 
+## Audit And Projection
+
+Accepted Decision은 Proposal state, ActionToken consumption, idempotency result,
+hash-chained Audit와 Outbox event를 하나의 SQLite transaction에 기록한다. Audit row는
+update/delete할 수 없다. Outbox payload도 immutable이다.
+
+Projection은 authority가 아니다. YAML과 Provider message는 destination sequence대로
+Outbox에서 전달한다. Dispatcher는 lease와 fencing generation을 사용한다. Retry 한도 초과나
+remote reconcile 불가는 DLQ와 operator hold를 만든다.
+
+YAML projection은 `source_state_revision`과 `aggregate_sequence` CAS를 통과해야 한다.
+SQLite authoritative state보다 앞서거나 reverse-order인 projection write는 거부한다.
+
 ## Messenger Decision Action
 
 Slack, Telegram, Hermes와 다른 UI는 [Messenger Proposal Control](MESSENGER-PROPOSAL-CONTROL.md)의 channel-independent `ProposalAction`을 사용한다.

@@ -125,7 +125,9 @@ class GovernanceStore:
                 self._configure(connection)
                 with governance_transaction(connection):
                     self.migration_runner.apply_pending(connection)
-                return self._health(connection, filesystem)
+                health = self._health(connection, filesystem)
+                self._reconcile_events(connection, health)
+                return health
         except sqlite3.Error as error:
             raise GovernanceStoreError(
                 f"Governance Store를 초기화할 수 없습니다: {error}"
@@ -186,9 +188,22 @@ class GovernanceStore:
         filesystem = self.filesystem_guard.validate(self.path)
         try:
             with self.connect() as connection:
-                return self._health(connection, filesystem)
+                health = self._health(connection, filesystem)
+                self._reconcile_events(connection, health)
+                return health
         except sqlite3.Error as error:
             raise GovernanceStoreError(f"Governance Store startup check 실패: {error}") from error
+
+    @staticmethod
+    def _reconcile_events(
+        connection: sqlite3.Connection,
+        health: GovernanceStoreHealth,
+    ) -> None:
+        if health.schema_version < 6:
+            return
+        from amplai_foundry.governance.events import GovernanceEventService
+
+        GovernanceEventService.reconcile_connection(connection)
 
     def _configure(
         self,

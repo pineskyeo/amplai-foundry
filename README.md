@@ -107,6 +107,10 @@ Decision은 server-created `AuthorityContext`와 `ActionToken`을 사용하는
 `DecisionService`가 소유한다. Apply는 `MGC-009`의 `ApplyGrant` 전까지
 `APPLY_ACTION_DEFERRED`를 반환한다.
 
+Accepted Decision은 append-only hash Audit와 ordered Outbox를 같은 transaction에
+기록한다. YAML과 Provider message는 authority가 아닌 projection이며 destination sequence,
+lease, fencing, retry/DLQ 규칙으로 전달한다.
+
 `lint` exit code는 다음과 같다.
 
 - `0`: ERROR 없음

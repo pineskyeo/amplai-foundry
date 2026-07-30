@@ -115,6 +115,21 @@ class BlockingV5MigrationRunner(MigrationRunner):
         return super().apply_pending(connection)
 
 
+class BlockingV6MigrationRunner(MigrationRunner):
+    def __init__(self, marker: Path) -> None:
+        super().__init__()
+        self.marker = marker
+
+    def apply_pending(self, connection: sqlite3.Connection) -> int:
+        def trace(statement: str) -> None:
+            if "CREATE TABLE governance_outbox_events" in statement:
+                self.marker.write_text("ready", encoding="utf-8")
+                time.sleep(60)
+
+        connection.set_trace_callback(trace)
+        return super().apply_pending(connection)
+
+
 def _run_blocking_v2_migration(database: str, marker: str) -> None:
     store = GovernanceStore(
         Path(database),
@@ -143,6 +158,14 @@ def _run_blocking_v5_migration(database: str, marker: str) -> None:
     store = GovernanceStore(
         Path(database),
         migration_runner=BlockingV5MigrationRunner(Path(marker)),
+    )
+    store.initialize()
+
+
+def _run_blocking_v6_migration(database: str, marker: str) -> None:
+    store = GovernanceStore(
+        Path(database),
+        migration_runner=BlockingV6MigrationRunner(Path(marker)),
     )
     store.initialize()
 
@@ -178,7 +201,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     repeated = store.initialize()
 
     assert health.healthy
-    assert health.schema_version == 5
+    assert health.schema_version == 6
     assert health.journal_mode == "wal"
     assert health.synchronous == 2
     assert health.foreign_keys
@@ -197,6 +220,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (3, "decision-token-replay"),
         (4, "durable-provider-ingress"),
         (5, "authority-actor-binding"),
+        (6, "ordered-transactional-outbox"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -221,7 +245,7 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
     assert version_one.initialize().schema_version == 1
 
     upgraded = GovernanceStore(path)
-    assert upgraded.initialize().schema_version == 5
+    assert upgraded.initialize().schema_version == 6
     with upgraded.connect() as connection:
         tables = {
             str(row[0])
@@ -271,7 +295,7 @@ def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
     assert "governance_definition_revisions" not in tables
     assert versions == [(1,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 5
+    assert GovernanceStore(path).initialize().schema_version == 6
 
 
 def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
@@ -312,7 +336,7 @@ def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
     assert "governance_decision_results" not in tables
     assert versions == [(1,), (2,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 5
+    assert GovernanceStore(path).initialize().schema_version == 6
 
 
 def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrades(
@@ -352,7 +376,7 @@ def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrade
     assert ingress_table is None
     assert versions == [(1,), (2,), (3,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 5
+    assert GovernanceStore(path).initialize().schema_version == 6
 
 
 def test_hard_kill_between_actual_v5_ddl_reopens_at_v4_then_upgrades(
@@ -394,7 +418,47 @@ def test_hard_kill_between_actual_v5_ddl_reopens_at_v4_then_upgrades(
     assert objects == []
     assert versions == [(1,), (2,), (3,), (4,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 5
+    assert GovernanceStore(path).initialize().schema_version == 6
+
+
+def test_hard_kill_between_actual_v6_ddl_reopens_at_v5_then_upgrades(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    marker = tmp_path / "v6-outbox-ddl-ready"
+    version_five_runner = MigrationRunner(INITIAL_MIGRATIONS[:5])
+    GovernanceStore(path, migration_runner=version_five_runner).initialize()
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(
+        target=_run_blocking_v6_migration,
+        args=(str(path), str(marker)),
+    )
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), "v6 migration이 outbox DDL checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    version_five = GovernanceStore(path, migration_runner=version_five_runner)
+    assert version_five.check_startup().schema_version == 5
+    with version_five.connect() as connection:
+        outbox = connection.execute(
+            """
+            SELECT 1 FROM sqlite_master
+            WHERE type = 'table' AND name = 'governance_outbox_events'
+            """
+        ).fetchone()
+        versions = connection.execute(
+            "SELECT version FROM governance_schema_migrations ORDER BY version"
+        ).fetchall()
+    assert outbox is None
+    assert versions == [(1,), (2,), (3,), (4,), (5,)]
+
+    assert GovernanceStore(path).initialize().schema_version == 6
 
 
 def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
@@ -511,7 +575,7 @@ def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
             "SELECT version FROM governance_schema_migrations ORDER BY version"
         ).fetchall()
     assert partial is None
-    assert versions == [(1,), (2,), (3,), (4,), (5,)]
+    assert versions == [(1,), (2,), (3,), (4,), (5,), (6,)]
 
 
 def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -> None:
@@ -530,7 +594,7 @@ def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -
     process.join(timeout=5)
     assert not process.is_alive()
 
-    assert GovernanceStore(path).check_startup().schema_version == 5
+    assert GovernanceStore(path).check_startup().schema_version == 6
     with sqlite3.connect(path) as connection:
         partial = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hard_kill_partial'"

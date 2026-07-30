@@ -429,6 +429,209 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=6,
+        name="ordered-transactional-outbox",
+        statements=(
+            """
+            CREATE TABLE governance_aggregate_sequences (
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence >= 0),
+                last_event_hash TEXT,
+                PRIMARY KEY (project_namespace, project_id, proposal_id),
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    last_event_hash IS NULL OR (
+                        length(last_event_hash) = 71
+                        AND substr(last_event_hash, 1, 7) = 'sha256:'
+                        AND substr(last_event_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                    )
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_audit_events (
+                event_id TEXT PRIMARY KEY NOT NULL,
+                command_id TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence >= 1),
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type IN ('human', 'service', 'agent')),
+                policy_snapshot_id TEXT NOT NULL,
+                before_state TEXT NOT NULL,
+                after_state TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                previous_event_hash TEXT,
+                event_hash TEXT NOT NULL,
+                occurred_at TEXT NOT NULL,
+                UNIQUE (project_namespace, project_id, proposal_id, aggregate_sequence),
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    previous_event_hash IS NULL OR (
+                        length(previous_event_hash) = 71
+                        AND substr(previous_event_hash, 1, 7) = 'sha256:'
+                        AND substr(previous_event_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                    )
+                ),
+                CHECK (
+                    length(event_hash) = 71
+                    AND substr(event_hash, 1, 7) = 'sha256:'
+                    AND substr(event_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            )
+            """,
+            """
+            CREATE TRIGGER governance_audit_events_no_update
+            BEFORE UPDATE ON governance_audit_events
+            BEGIN
+                SELECT RAISE(ABORT, 'governance audit is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_audit_events_no_delete
+            BEFORE DELETE ON governance_audit_events
+            BEGIN
+                SELECT RAISE(ABORT, 'governance audit is append-only');
+            END
+            """,
+            """
+            CREATE TABLE governance_outbox_destinations (
+                destination_ref TEXT PRIMARY KEY NOT NULL,
+                next_sequence INTEGER NOT NULL CHECK (next_sequence >= 1),
+                delivered_sequence INTEGER NOT NULL CHECK (delivered_sequence >= 0),
+                operator_hold INTEGER NOT NULL CHECK (operator_hold IN (0, 1)),
+                updated_at TEXT NOT NULL,
+                CHECK (delivered_sequence < next_sequence)
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_outbox_events (
+                event_id TEXT PRIMARY KEY NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence >= 1),
+                destination_ref TEXT NOT NULL,
+                destination_sequence INTEGER NOT NULL CHECK (destination_sequence >= 1),
+                source_state_revision INTEGER NOT NULL CHECK (source_state_revision >= 1),
+                supersession_key TEXT,
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (
+                    state IN (
+                        'pending', 'leased', 'retry_wait', 'delivered',
+                        'superseded', 'dead_letter', 'recovery_hold'
+                    )
+                ),
+                attempts INTEGER NOT NULL CHECK (attempts >= 0),
+                claim_generation INTEGER NOT NULL CHECK (claim_generation >= 0),
+                lease_owner TEXT,
+                lease_expires_at TEXT,
+                retry_at TEXT,
+                delivered_at TEXT,
+                remote_receipt TEXT,
+                last_error_code TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE (destination_ref, destination_sequence),
+                UNIQUE (
+                    project_namespace, project_id, proposal_id,
+                    aggregate_sequence, destination_ref
+                ),
+                FOREIGN KEY (project_namespace, project_id, proposal_id, aggregate_sequence)
+                    REFERENCES governance_audit_events(
+                        project_namespace, project_id, proposal_id, aggregate_sequence
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (destination_ref)
+                    REFERENCES governance_outbox_destinations(destination_ref) ON DELETE RESTRICT,
+                CHECK (
+                    length(payload_digest) = 71
+                    AND substr(payload_digest, 1, 7) = 'sha256:'
+                    AND substr(payload_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (state = 'leased' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+                    OR (state != 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)
+                ),
+                CHECK (
+                    (state = 'retry_wait' AND retry_at IS NOT NULL)
+                    OR (state != 'retry_wait' AND retry_at IS NULL)
+                ),
+                CHECK (
+                    (state = 'delivered' AND delivered_at IS NOT NULL)
+                    OR (state != 'delivered' AND delivered_at IS NULL)
+                )
+            )
+            """,
+            """
+            CREATE TRIGGER governance_outbox_payload_immutable
+            BEFORE UPDATE ON governance_outbox_events
+            WHEN OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.aggregate_sequence != NEW.aggregate_sequence
+              OR OLD.destination_ref != NEW.destination_ref
+              OR OLD.destination_sequence != NEW.destination_sequence
+              OR OLD.source_state_revision != NEW.source_state_revision
+              OR OLD.supersession_key IS NOT NEW.supersession_key
+              OR OLD.payload_digest != NEW.payload_digest
+              OR OLD.payload_json != NEW.payload_json
+              OR OLD.created_at != NEW.created_at
+            BEGIN
+                SELECT RAISE(ABORT, 'outbox payload is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_outbox_events_no_delete
+            BEFORE DELETE ON governance_outbox_events
+            BEGIN
+                SELECT RAISE(ABORT, 'governance outbox is durable');
+            END
+            """,
+            """
+            CREATE TABLE governance_outbox_dead_letters (
+                dead_letter_id TEXT PRIMARY KEY NOT NULL,
+                event_id TEXT NOT NULL UNIQUE,
+                destination_ref TEXT NOT NULL,
+                destination_sequence INTEGER NOT NULL CHECK (destination_sequence >= 1),
+                attempts INTEGER NOT NULL CHECK (attempts >= 1),
+                error_code TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (event_id) REFERENCES governance_outbox_events(event_id)
+                    ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_operator_holds (
+                hold_id TEXT PRIMARY KEY NOT NULL,
+                scope_kind TEXT NOT NULL CHECK (scope_kind = 'outbox_destination'),
+                scope_ref TEXT NOT NULL,
+                reason_code TEXT NOT NULL,
+                source_event_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                resolved_at TEXT,
+                FOREIGN KEY (source_event_id) REFERENCES governance_outbox_events(event_id)
+                    ON DELETE RESTRICT,
+                CHECK (resolved_at IS NULL)
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
 )
 
 
@@ -662,6 +865,84 @@ class MigrationRunner:
                         ("approved_by", "TEXT", 1, 0),
                         ("reason", "TEXT", 1, 0),
                         ("occurred_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
+        if schema_version >= 6:
+            expected_columns.update(
+                {
+                    "governance_aggregate_sequences": (
+                        ("project_namespace", "TEXT", 1, 1),
+                        ("project_id", "TEXT", 1, 2),
+                        ("proposal_id", "TEXT", 1, 3),
+                        ("aggregate_sequence", "INTEGER", 1, 0),
+                        ("last_event_hash", "TEXT", 0, 0),
+                    ),
+                    "governance_audit_events": (
+                        ("event_id", "TEXT", 1, 1),
+                        ("command_id", "TEXT", 1, 0),
+                        ("event_type", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("aggregate_sequence", "INTEGER", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("policy_snapshot_id", "TEXT", 1, 0),
+                        ("before_state", "TEXT", 1, 0),
+                        ("after_state", "TEXT", 1, 0),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("previous_event_hash", "TEXT", 0, 0),
+                        ("event_hash", "TEXT", 1, 0),
+                        ("occurred_at", "TEXT", 1, 0),
+                    ),
+                    "governance_outbox_destinations": (
+                        ("destination_ref", "TEXT", 1, 1),
+                        ("next_sequence", "INTEGER", 1, 0),
+                        ("delivered_sequence", "INTEGER", 1, 0),
+                        ("operator_hold", "INTEGER", 1, 0),
+                        ("updated_at", "TEXT", 1, 0),
+                    ),
+                    "governance_outbox_events": (
+                        ("event_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("aggregate_sequence", "INTEGER", 1, 0),
+                        ("destination_ref", "TEXT", 1, 0),
+                        ("destination_sequence", "INTEGER", 1, 0),
+                        ("source_state_revision", "INTEGER", 1, 0),
+                        ("supersession_key", "TEXT", 0, 0),
+                        ("payload_digest", "TEXT", 1, 0),
+                        ("payload_json", "TEXT", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("attempts", "INTEGER", 1, 0),
+                        ("claim_generation", "INTEGER", 1, 0),
+                        ("lease_owner", "TEXT", 0, 0),
+                        ("lease_expires_at", "TEXT", 0, 0),
+                        ("retry_at", "TEXT", 0, 0),
+                        ("delivered_at", "TEXT", 0, 0),
+                        ("remote_receipt", "TEXT", 0, 0),
+                        ("last_error_code", "TEXT", 0, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_outbox_dead_letters": (
+                        ("dead_letter_id", "TEXT", 1, 1),
+                        ("event_id", "TEXT", 1, 0),
+                        ("destination_ref", "TEXT", 1, 0),
+                        ("destination_sequence", "INTEGER", 1, 0),
+                        ("attempts", "INTEGER", 1, 0),
+                        ("error_code", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_operator_holds": (
+                        ("hold_id", "TEXT", 1, 1),
+                        ("scope_kind", "TEXT", 1, 0),
+                        ("scope_ref", "TEXT", 1, 0),
+                        ("reason_code", "TEXT", 1, 0),
+                        ("source_event_id", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                        ("resolved_at", "TEXT", 0, 0),
                     ),
                 }
             )
