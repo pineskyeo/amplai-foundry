@@ -200,12 +200,16 @@ class FakePublishGit:
         *,
         current_ref: str = "a13d92f" + "a" * 33,
         candidate_commit: str = "b" * 40,
+        parent_commit: str | None = None,
     ) -> None:
         self.current_ref = current_ref
         self.candidate_commit = candidate_commit
+        self.parent_commit = parent_commit or current_ref
         self.inspected: tuple[bytes, bytes] | None = None
+        self.read_count = 0
 
     def read_ref(self, canonical_ref: str) -> str:
+        self.read_count += 1
         assert canonical_ref == "refs/heads/main"
         return self.current_ref
 
@@ -220,6 +224,7 @@ class FakePublishGit:
         self.inspected = (artifact_bytes, publish_request_bytes)
         return CandidateCommitEvidence(
             candidate_commit=candidate_commit,
+            parent_commit=self.parent_commit,
             candidate_tree_digest=f"sha256:{hashlib.sha256(artifact_bytes).hexdigest()}",
         )
 
@@ -1609,6 +1614,8 @@ def test_publish_gate_model_rejects_unsafe_canonical_ref() -> None:
         "refs/heads/.hidden",
         "refs/heads/release.lock",
         "refs/heads/group/.hidden",
+        "refs/heads/a/\x01b",
+        "refs/heads/a/\x7fb",
     ),
 )
 def test_publish_persistence_rejects_git_invalid_canonical_refs(
@@ -1790,3 +1797,77 @@ def test_publish_prepare_rejects_stale_fence_and_base_revision(tmp_path: Path) -
             canonical_ref="refs/heads/main",
             candidate_commit="b" * 40,
         )
+
+
+def test_publish_prepare_rejects_candidate_with_wrong_parent(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    service = PublishPreparationService(
+        store,
+        FakePublishGit(parent_commit="d" * 40),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(PublishGovernanceError, match="PUBLISH_CANDIDATE_BASE_MISMATCH"):
+        service.prepare(
+            job.job_id,
+            fencing_token=job.fencing_token,
+            canonical_ref="refs/heads/main",
+            candidate_commit="b" * 40,
+        )
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_intents").fetchone() == (
+            0,
+        )
+
+
+@pytest.mark.parametrize("control", ("\x01", "\x7f"))
+def test_publish_prepare_rejects_control_ref_before_git_call(
+    tmp_path: Path,
+    control: str,
+) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    git = FakePublishGit()
+    service = PublishPreparationService(store, git, clock=lambda: NOW)
+
+    with pytest.raises(ValueError, match="canonical ref"):
+        service.prepare(
+            job.job_id,
+            fencing_token=job.fencing_token,
+            canonical_ref=f"refs/heads/a/{control}b",
+            candidate_commit="b" * 40,
+        )
+    assert git.inspected is None
+    assert git.read_count == 0
+
+
+def test_competing_publish_prepare_creates_one_locked_intent(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    barrier = threading.Barrier(2)
+
+    def prepare() -> str:
+        service = PublishPreparationService(store, FakePublishGit(), clock=lambda: NOW)
+        barrier.wait()
+        try:
+            return service.prepare(
+                job.job_id,
+                fencing_token=job.fencing_token,
+                canonical_ref="refs/heads/main",
+                candidate_commit="b" * 40,
+            ).status.value
+        except PublishGovernanceError as error:
+            return error.code
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(lambda _index: prepare(), range(2)))
+
+    assert sorted(outcomes) == ["PUBLISH_GATE_LOCKED", "prepared"]
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_intents").fetchone() == (
+            1,
+        )
+        assert connection.execute(
+            """
+            SELECT COUNT(*) FROM governance_project_publish_gates
+            WHERE state = 'locked' AND active_intent_id IS NOT NULL
+            """
+        ).fetchone() == (1,)

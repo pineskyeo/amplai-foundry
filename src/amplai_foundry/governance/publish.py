@@ -34,7 +34,10 @@ def _validate_canonical_branch_ref(value: str) -> str:
     components = suffix.split("/")
     if (
         not suffix
-        or any(character.isspace() or character in forbidden for character in value)
+        or any(
+            ord(character) <= 0x20 or ord(character) == 0x7F or character in forbidden
+            for character in value
+        )
         or ".." in value
         or "//" in value
         or "@{" in value
@@ -139,6 +142,7 @@ class CandidateCommitEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     candidate_commit: GitObjectId
+    parent_commit: GitObjectId
     candidate_tree_digest: Digest
 
 
@@ -203,6 +207,8 @@ class PublishPreparationService:
             raise PublishGovernanceError("PUBLISH_CANDIDATE_INVALID")
         if not current_ref.startswith(str(root[6])):
             raise PublishGovernanceError("PUBLISH_BASE_REVISION_CONFLICT")
+        if evidence.parent_commit != current_ref:
+            raise PublishGovernanceError("PUBLISH_CANDIDATE_BASE_MISMATCH")
 
         with self.store.connect() as connection, governance_transaction(connection):
             current = self._preparation_root(connection, job_id)
