@@ -1344,6 +1344,88 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
         ).fetchone() == (21,)
 
 
+def test_v21_verification_without_command_idempotency_key_upgrades_and_replays(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v21 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:21]))
+    v21.initialize()
+    store, _objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v21,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    snapshot = dry_run.create_snapshot(plan.freeze)
+    with store.connect() as connection:
+        current_proposals = service._verification_proposals(connection, plan)
+    predecessor_proposals = tuple(
+        item.model_copy(update={"idempotency_key": None}) for item in current_proposals
+    )
+    verification_id, report_digest = service._verification_identity(
+        plan,
+        snapshot,
+        predecessor_proposals,
+    )
+    predecessor = LegacyMigrationVerificationReport(
+        verification_id=verification_id,
+        migration_id=plan.plan_id,
+        project_ref=plan.project_ref,
+        snapshot_id=snapshot.snapshot_id,
+        snapshot_digest=snapshot.snapshot_digest,
+        plan_digest=plan.plan_digest,
+        source_files=snapshot.files,
+        source_total_bytes=snapshot.total_bytes,
+        proposals=predecessor_proposals,
+        report_digest=report_digest,
+        verified_by=plan.freeze.actor_id,
+        verified_at=NOW,
+    )
+    predecessor_payload = predecessor.model_dump(mode="json", exclude_none=True)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_verifications(
+                verification_id, migration_id, project_namespace, project_id,
+                snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                source_file_count, report_digest, report_json, verified_by,
+                verified_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                predecessor.verification_id,
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                snapshot.snapshot_id,
+                snapshot.snapshot_digest,
+                plan.plan_digest,
+                len(predecessor.proposals),
+                len(snapshot.files),
+                predecessor.report_digest,
+                json.dumps(
+                    predecessor_payload,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                predecessor.verified_by,
+                str(predecessor_payload["verified_at"]),
+            ),
+        )
+
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
+    replay = service.verify_import(plan, backup)
+    assert replay.replayed
+    assert replay.proposals[0].idempotency_key is None
+
+
 def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
@@ -1368,6 +1450,32 @@ def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) 
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_migration_verifications"
         ).fetchone() == (1,)
+
+
+def test_verified_legacy_approval_can_progress_and_restart(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project", status="approved")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    LegacyApprovalReviewService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).resolve(
+        plan.proposals[0].proposal_ref,
+        authority_request=authority_request,
+        reason="human reviewed verified legacy approval",
+        idempotency_key="legacy-review:verified:1",
+        request_fingerprint="c" * 64,
+    )
+
+    assert GovernanceStore(store.path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_concurrent_verification_converges_to_one_exact_report(tmp_path: Path) -> None:

@@ -368,7 +368,7 @@ class LegacyVerifiedProposal(BaseModel):
     decision_epoch: int = Field(ge=1)
     runtime_status: str
     command_id: str = Field(pattern=r"^MCM-[A-F0-9]{16}$")
-    idempotency_key: str = Field(min_length=1)
+    idempotency_key: str | None = Field(default=None, min_length=1)
     audit_event_id: str = Field(pattern=r"^EVT-[A-F0-9]{16}$")
     outbox_event_id: str = Field(pattern=r"^OBX-[A-F0-9]{16}$")
     projection_destination_ref: str = Field(min_length=1)
@@ -387,7 +387,11 @@ class LegacyMigrationVerificationReport(BaseModel):
     source_total_bytes: int = Field(ge=0)
     proposals: tuple[LegacyVerifiedProposal, ...]
     report_digest: Digest
-    verified_by: str = Field(min_length=1, max_length=128)
+    verified_by: str = Field(
+        min_length=1,
+        max_length=128,
+        description="Package 4.1 system verification attribution copied from the freeze actor.",
+    )
     verified_at: AwareDatetime
     replayed: bool = False
 
@@ -396,6 +400,7 @@ class LegacyMigrationVerificationReport(BaseModel):
         preimage = self.model_dump(
             mode="json",
             exclude={"verification_id", "report_digest", "verified_at", "replayed"},
+            exclude_none=True,
         )
         digest = _digest(_canonical_json(preimage))
         if self.report_digest != digest or self.verification_id != f"MVF-{digest[-16:].upper()}":
@@ -1245,7 +1250,7 @@ class LegacyProposalImportService:
             "migration_id": plan.plan_id,
             "plan_digest": plan.plan_digest,
             "project_ref": plan.project_ref.model_dump(mode="json"),
-            "proposals": [item.model_dump(mode="json") for item in proposals],
+            "proposals": [item.model_dump(mode="json", exclude_none=True) for item in proposals],
             "snapshot_digest": snapshot.snapshot_digest,
             "snapshot_id": snapshot.snapshot_id,
             "source_files": [item.model_dump(mode="json") for item in snapshot.files],
@@ -1293,10 +1298,20 @@ class LegacyProposalImportService:
         try:
             persisted = LegacyMigrationVerificationReport.model_validate_json(str(row[10]))
             verified_at = datetime.fromisoformat(str(row[12]).replace("Z", "+00:00"))
+            comparison_proposals = proposals
+            if any(item.idempotency_key is None for item in persisted.proposals):
+                comparison_proposals = tuple(
+                    item.model_copy(update={"idempotency_key": None}) for item in proposals
+                )
+                verification_id, report_digest = self._verification_identity(
+                    plan,
+                    snapshot,
+                    comparison_proposals,
+                )
             expected = self._build_verification_report(
                 plan,
                 snapshot,
-                proposals,
+                comparison_proposals,
                 verification_id=verification_id,
                 report_digest=report_digest,
                 verified_at=verified_at,
@@ -1311,7 +1326,7 @@ class LegacyProposalImportService:
             snapshot.snapshot_id,
             snapshot.snapshot_digest,
             plan.plan_digest,
-            len(proposals),
+            len(comparison_proposals),
             len(snapshot.files),
             report_digest,
             str(row[10]),
@@ -1401,7 +1416,7 @@ class LegacyProposalImportService:
                 len(report.proposals),
                 len(report.source_files),
                 report.report_digest,
-                _compact_json(report.model_dump(mode="json")),
+                _compact_json(report.model_dump(mode="json", exclude_none=True)),
                 report.verified_by,
                 str(row[12]),
                 report.snapshot_id,
@@ -1428,13 +1443,9 @@ class LegacyProposalImportService:
                 """
                 SELECT i.proposal_id, i.definition_digest, i.content_revision,
                        i.state_revision, i.decision_epoch, i.target_status,
-                       a.active_definition_digest, a.content_revision, a.state_revision,
-                       a.decision_epoch, a.status, c.command_id, c.idempotency_key,
-                       e.event_id, o.event_id, o.destination_ref
+                       c.command_id, c.idempotency_key, e.event_id, o.event_id,
+                       o.destination_ref
                 FROM governance_legacy_migration_items i
-                JOIN governance_active_proposals a
-                  ON a.project_namespace = i.project_namespace
-                 AND a.project_id = i.project_id AND a.proposal_id = i.proposal_id
                 JOIN governance_definition_revisions d
                   ON d.project_namespace = i.project_namespace
                  AND d.project_id = i.project_id AND d.proposal_id = i.proposal_id
@@ -1462,14 +1473,6 @@ class LegacyProposalImportService:
             for graph_row in graph_rows:
                 target = LegacyTargetStatus(str(graph_row[5]))
                 runtime_status = LegacyProposalImportService._runtime_status(target)
-                if (
-                    str(graph_row[1]) != str(graph_row[6])
-                    or int(graph_row[2]) != int(graph_row[7])
-                    or int(graph_row[3]) != int(graph_row[8])
-                    or int(graph_row[4]) != int(graph_row[9])
-                    or runtime_status != str(graph_row[10])
-                ):
-                    raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
                 graph.append(
                     LegacyVerifiedProposal(
                         proposal_ref=ProposalRef(
@@ -1481,14 +1484,19 @@ class LegacyProposalImportService:
                         state_revision=int(graph_row[3]),
                         decision_epoch=int(graph_row[4]),
                         runtime_status=runtime_status,
-                        command_id=str(graph_row[11]),
-                        idempotency_key=str(graph_row[12]),
-                        audit_event_id=str(graph_row[13]),
-                        outbox_event_id=str(graph_row[14]),
-                        projection_destination_ref=str(graph_row[15]),
+                        command_id=str(graph_row[6]),
+                        idempotency_key=str(graph_row[7]),
+                        audit_event_id=str(graph_row[8]),
+                        outbox_event_id=str(graph_row[9]),
+                        projection_destination_ref=str(graph_row[10]),
                     )
                 )
-            if tuple(graph) != report.proposals:
+            comparison_graph = tuple(graph)
+            if any(item.idempotency_key is None for item in report.proposals):
+                comparison_graph = tuple(
+                    item.model_copy(update={"idempotency_key": None}) for item in comparison_graph
+                )
+            if comparison_graph != report.proposals:
                 raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
 
     def _verification_proposals(
