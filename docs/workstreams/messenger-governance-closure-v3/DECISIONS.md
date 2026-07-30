@@ -44,3 +44,12 @@
   `scope_version=2`로만 생성한다. v1 synthetic hold는 삭제하지 않고 exact migration
   evidence로 검증하며 terminal rolled-back gate가 mutation을 차단한다.
 - Source: MGC-011 Slice 4 Package 4.2b2 compatibility review
+
+## D-008 — Forward Recovery Eligibility And Evidence
+
+- Status: accepted
+- Decision: activation 이후 `v3_definition_revision` recovery plan은 `draft` 또는
+  `changes_requested` Proposal만 허용한다. applied/dependent root와 unresolved synthetic
+  approval hold는 차단하며, activated migration의 immutable definition/import command/Audit/Outbox
+  graph는 계속 reconciliation한다.
+- Source: MGC-011 Slice 4 Package 4.2c1 Contract·Evidence·Ops review

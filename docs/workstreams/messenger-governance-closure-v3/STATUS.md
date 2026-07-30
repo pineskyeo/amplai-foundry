@@ -15,11 +15,11 @@
 
 - Planning: PASS
 - Implementation: MGC-001–010 PASS / MGC-011 ACTIVE
-- Subagent Review: MGC-011 Slice 4 Package 4.2b2 PASS at `d5c32ab` — P0/P1/Blocking-P2 0
+- Subagent Review: MGC-011 Slice 4 Package 4.2c1 PASS at `eb1334a` — P0/P1/Blocking-P2 0
 - Repository Verification: PASS — all seven verify stages
 
 ## Next
 
-`MGC-011 — V2 Migration` Slice 4 Package 4.2c의 activation 이후
-forward-recovery migration contract를 구현한다. Pre-activation exact-root rollback은
-`d5c32ab`에서 완료되었다.
+`MGC-011 — V2 Migration` Slice 4 Package 4.2c2의 authenticated atomic
+forward-recovery executor를 구현한다. Package 4.2c1의 deterministic recovery plan,
+safe-state policy와 activated import evidence reconciliation은 `eb1334a`에서 완료되었다.
