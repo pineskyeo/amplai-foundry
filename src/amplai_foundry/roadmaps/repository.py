@@ -29,7 +29,9 @@ class RoadmapRepository:
         except (OSError, yaml.YAMLError, ValidationError) as error:
             raise RoadmapRepositoryError(f"{self.path}: {error}") from error
 
-    def save(self, roadmap: RoadmapDefinition) -> Path:
+    def _save_legacy_fixture(self, roadmap: RoadmapDefinition) -> Path:
+        """Persist canonical roadmap only for migration and regression fixtures."""
+
         payload = yaml.safe_dump(
             roadmap.model_dump(mode="json", exclude_none=True),
             allow_unicode=True,

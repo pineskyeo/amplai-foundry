@@ -109,6 +109,28 @@ class DirectAuthorityRequest(BaseModel):
     channel: ChannelRef
 
 
+class ExternalActorIdentity(BaseModel):
+    """Untrusted identity facts accepted by public ingress and Intake requests."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    provider: ChannelProvider
+    provider_installation_ref: str = Field(min_length=1)
+    external_actor_id: str = Field(min_length=1)
+    request_id: str = Field(min_length=1)
+    channel: ChannelRef
+
+    def for_project(self, project_ref: ProjectRef) -> DirectAuthorityRequest:
+        return DirectAuthorityRequest(
+            provider=self.provider,
+            provider_installation_ref=self.provider_installation_ref,
+            external_actor_id=self.external_actor_id,
+            project_ref=project_ref,
+            request_id=self.request_id,
+            channel=self.channel,
+        )
+
+
 class IngressAuthorityRequest(BaseModel):
     """Worker lease identity. Project and Actor are derived from durable records."""
 

@@ -58,7 +58,7 @@ def _current() -> RoadmapDefinition:
 
 def _save(path: Path, roadmap: RoadmapDefinition) -> RoadmapRepository:
     repository = RoadmapRepository(path)
-    repository.save(roadmap)
+    repository._save_legacy_fixture(roadmap)
     return repository
 
 
@@ -95,9 +95,9 @@ def test_roadmap_diff_preserves_cancelled_items_and_rebuilds_next_plan(
     assert proposal.impact.requires_replan
     assert proposal.impact.current_focus_affected
 
-    approved = service.approve(proposal, approved_by="reviewer", approved_at=NOW)
+    approved = service._approve_legacy_proposal(proposal, approved_by="reviewer", approved_at=NOW)
     repository = _save(tmp_path / "roadmap.yaml", current)
-    updated = service.apply(repository, approved, applied_on=date(2026, 7, 28))
+    updated = service._apply_legacy_proposal(repository, approved, applied_on=date(2026, 7, 28))
 
     by_id = {phase.id: phase for phase in updated.phases}
     assert updated.version == 4
@@ -127,12 +127,12 @@ def test_roadmap_apply_requires_approval_and_rejects_stale_revision(tmp_path: Pa
     repository = _save(tmp_path / "roadmap.yaml", current)
 
     with pytest.raises(ValueError, match="approved"):
-        service.apply(repository, proposal, applied_on=date(2026, 7, 28))
+        service._apply_legacy_proposal(repository, proposal, applied_on=date(2026, 7, 28))
 
-    approved = service.approve(proposal, approved_by="reviewer", approved_at=NOW)
-    repository.save(current.model_copy(update={"version": 4}))
+    approved = service._approve_legacy_proposal(proposal, approved_by="reviewer", approved_at=NOW)
+    repository._save_legacy_fixture(current.model_copy(update={"version": 4}))
     with pytest.raises(ValueError, match="stale roadmap revision"):
-        service.apply(repository, approved, applied_on=date(2026, 7, 28))
+        service._apply_legacy_proposal(repository, approved, applied_on=date(2026, 7, 28))
 
 
 def test_concurrent_roadmap_apply_has_one_winner_and_one_stale_revision(
@@ -161,7 +161,7 @@ def test_concurrent_roadmap_apply_has_one_winner_and_one_stale_revision(
         }
     )
     proposals = [
-        service.approve(
+        service._approve_legacy_proposal(
             service.propose_change(current, desired, created_at=NOW, created_by="tester"),
             approved_by="reviewer",
             approved_at=NOW,
@@ -172,7 +172,7 @@ def test_concurrent_roadmap_apply_has_one_winner_and_one_stale_revision(
 
     def apply(proposal: RoadmapChangeProposal) -> str:
         try:
-            service.apply(repository, proposal, applied_on=NOW.date())
+            service._apply_legacy_proposal(repository, proposal, applied_on=NOW.date())
         except ValueError as error:
             return str(error)
         return "applied"
@@ -200,7 +200,7 @@ def test_roadmap_apply_rolls_back_if_proposal_audit_cannot_be_saved(
         }
     )
     service = RoadmapService()
-    approved = service.approve(
+    approved = service._approve_legacy_proposal(
         service.propose_change(current, desired, created_at=NOW, created_by="tester"),
         approved_by="reviewer",
         approved_at=NOW,
@@ -208,11 +208,11 @@ def test_roadmap_apply_rolls_back_if_proposal_audit_cannot_be_saved(
     roadmap_repository = _save(tmp_path / "roadmap.yaml", current)
 
     class FailingRepository(RoadmapProposalRepository):
-        def save(self, proposal: RoadmapChangeProposal) -> Path:
+        def _save_legacy_fixture(self, proposal: RoadmapChangeProposal) -> Path:
             raise RoadmapProposalRepositoryError("simulated audit failure")
 
     with pytest.raises(RoadmapProposalRepositoryError, match="simulated"):
-        service.apply(
+        service._apply_legacy_proposal(
             roadmap_repository,
             approved,
             applied_on=NOW.date(),
@@ -251,12 +251,12 @@ def test_roadmap_rejects_dependency_cycles_and_cross_roadmap_apply(
     )
     service = RoadmapService()
     proposal = service.propose_change(current, desired, created_at=NOW, created_by="tester")
-    approved = service.approve(proposal, approved_by="reviewer", approved_at=NOW)
+    approved = service._approve_legacy_proposal(proposal, approved_by="reviewer", approved_at=NOW)
     wrong_roadmap = approved.model_copy(update={"roadmap_id": "another-roadmap"})
     repository = _save(tmp_path / "roadmap.yaml", current)
 
     with pytest.raises(ValueError, match="identity mismatch"):
-        service.apply(repository, wrong_roadmap, applied_on=date(2026, 7, 28))
+        service._apply_legacy_proposal(repository, wrong_roadmap, applied_on=date(2026, 7, 28))
 
 
 def test_roadmap_rejects_unknown_phase_status() -> None:
@@ -295,10 +295,10 @@ def test_roadmap_supersede_is_versioned_and_reviewed(tmp_path: Path) -> None:
         ),
     )
     service = RoadmapService()
-    approved = service.approve(proposal, approved_by="reviewer", approved_at=NOW)
+    approved = service._approve_legacy_proposal(proposal, approved_by="reviewer", approved_at=NOW)
     repository = _save(tmp_path / "roadmap.yaml", current)
 
-    updated = service.apply(repository, approved, applied_on=date(2026, 7, 28))
+    updated = service._apply_legacy_proposal(repository, approved, applied_on=date(2026, 7, 28))
 
     assert next(item for item in updated.phases if item.id == "phase-1").status == "superseded"
     assert updated.current_focus is None
@@ -334,7 +334,7 @@ def test_empty_approvers_are_rejected() -> None:
     )
 
     with pytest.raises(ValueError):
-        RoadmapService.approve(proposal, approved_by="", approved_at=NOW)
+        RoadmapService._approve_legacy_proposal(proposal, approved_by="", approved_at=NOW)
 
 
 def test_roadmap_proposal_repository_rejects_path_traversal(tmp_path: Path) -> None:
@@ -342,6 +342,39 @@ def test_roadmap_proposal_repository_rejects_path_traversal(tmp_path: Path) -> N
 
     with pytest.raises(RoadmapProposalRepositoryError, match="ID 형식"):
         repository.get("../../outside")
+
+
+def test_roadmap_proposal_repository_rejects_direct_lifecycle_write(tmp_path: Path) -> None:
+    current = _current()
+    desired = current.model_copy(
+        update={
+            "version": current.version + 1,
+            "phases": [
+                current.phases[0],
+                current.phases[1].model_copy(update={"status": RoadmapPhaseStatus.COMPLETED}),
+                *current.phases[2:],
+            ],
+        }
+    )
+    proposal = RoadmapService().propose_change(
+        current,
+        desired,
+        created_at=NOW,
+        created_by="tester",
+    )
+    repository = RoadmapProposalRepository(tmp_path)
+    repository.save(proposal)
+    approved = RoadmapService._approve_legacy_proposal(
+        proposal,
+        approved_by="caller",
+        approved_at=NOW,
+    )
+
+    with pytest.raises(RoadmapProposalRepositoryError, match="DIRECT_MUTATION_DISABLED"):
+        repository.save(approved)
+
+    stored = repository.get(proposal.proposal_id)
+    assert stored is not None and stored.status is RoadmapProposalStatus.DRAFT
 
 
 def test_markdown_adapter_derives_explicit_changes_without_mutating_state() -> None:

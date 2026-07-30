@@ -88,44 +88,6 @@
       "title": "ArtifactRef",
       "type": "object"
     },
-    "AuthorityContext": {
-      "additionalProperties": false,
-      "properties": {
-        "actor": {
-          "minLength": 1,
-          "title": "Actor",
-          "type": "string"
-        },
-        "can_approve_authoritative": {
-          "default": false,
-          "title": "Can Approve Authoritative",
-          "type": "boolean"
-        },
-        "can_auto_apply_low_risk": {
-          "default": false,
-          "title": "Can Auto Apply Low Risk",
-          "type": "boolean"
-        },
-        "kind": {
-          "$ref": "#/$defs/AuthorityKind"
-        }
-      },
-      "required": [
-        "kind",
-        "actor"
-      ],
-      "title": "AuthorityContext",
-      "type": "object"
-    },
-    "AuthorityKind": {
-      "enum": [
-        "user",
-        "agent",
-        "system"
-      ],
-      "title": "AuthorityKind",
-      "type": "string"
-    },
     "CandidateEvidence": {
       "additionalProperties": false,
       "properties": {
@@ -149,6 +111,88 @@
         "end_line"
       ],
       "title": "CandidateEvidence",
+      "type": "object"
+    },
+    "ChannelProvider": {
+      "enum": [
+        "slack",
+        "telegram",
+        "hermes",
+        "web",
+        "cli"
+      ],
+      "title": "ChannelProvider",
+      "type": "string"
+    },
+    "ChannelRef": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel Id"
+        },
+        "chat_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chat Id"
+        },
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/ChannelProvider"
+        },
+        "thread_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thread Id"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        }
+      },
+      "required": [
+        "provider",
+        "message_id"
+      ],
+      "title": "ChannelRef",
       "type": "object"
     },
     "ClaimModality": {
@@ -282,6 +326,42 @@
       "title": "ComparisonSignals",
       "type": "object"
     },
+    "ExternalActorIdentity": {
+      "additionalProperties": false,
+      "description": "Untrusted identity facts accepted by public ingress and Intake requests.",
+      "properties": {
+        "channel": {
+          "$ref": "#/$defs/ChannelRef"
+        },
+        "external_actor_id": {
+          "minLength": 1,
+          "title": "External Actor Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/ChannelProvider"
+        },
+        "provider_installation_ref": {
+          "minLength": 1,
+          "title": "Provider Installation Ref",
+          "type": "string"
+        },
+        "request_id": {
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "provider_installation_ref",
+        "external_actor_id",
+        "request_id",
+        "channel"
+      ],
+      "title": "ExternalActorIdentity",
+      "type": "object"
+    },
     "IntentRequest": {
       "additionalProperties": false,
       "properties": {
@@ -292,9 +372,6 @@
           "minItems": 1,
           "title": "Artifacts",
           "type": "array"
-        },
-        "authority": {
-          "$ref": "#/$defs/AuthorityContext"
         },
         "expected_outcome": {
           "anyOf": [
@@ -308,6 +385,9 @@
           ],
           "default": null,
           "title": "Expected Outcome"
+        },
+        "identity": {
+          "$ref": "#/$defs/ExternalActorIdentity"
         },
         "instruction": {
           "minLength": 1,
@@ -336,7 +416,7 @@
       "required": [
         "instruction",
         "artifacts",
-        "authority"
+        "identity"
       ],
       "title": "IntentRequest",
       "type": "object"

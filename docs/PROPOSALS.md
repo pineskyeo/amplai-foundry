@@ -35,18 +35,19 @@ expected_target_sha256: 64자리-lowercase-sha256
 
 이미 `applied`인 v1 Proposal은 역사적 artifact다. Precondition이 없어도 계속 load와 validation이 가능하며 기존 artifact를 다시 쓰지 않는다.
 
-## Approval And Apply
+## Decision And Apply Boundary
 
-```bash
-amplai-foundry proposal approve PROP-... --approved-by user
-amplai-foundry proposal apply PROP-...
-```
+CLI direct decision과 apply는 미사용이다.
 
-Apply는 `approved` 상태만 허용한다. Apply lock 안에서 Source 불변성, concurrency precondition, lifecycle transition을 다시 확인한다. 변경 전 Vault와 staging Vault에서 lint ERROR 0을 요구한다. Staging 결과가 통과하면 같은 filesystem에서 Vault directory를 swap한다. Proposal 상태 저장이 실패하면 backup Vault를 복원한다.
+`approve`, `reject`, `request_changes`는 SQLite Governance Store의
+`DecisionService`만 수행한다. 이 service는 live Actor binding, Project permission,
+`ActionToken`, revision과 digest를 같은 transaction에서 다시 확인한다.
 
-Minimal apply는 draft 기반 `CREATE`, `UPDATE`, `LINK`, `SUPERSEDE`와 write가 없는 `IGNORE`를 처리한다. `CONFLICT`가 있으면 전체 apply를 거부한다. `MERGE`와 `SPLIT`은 현재 apply에서 거부하고 human이 새 Proposal shape를 결정한다.
+Direct apply는 `APPLY_ACTION_DEFERRED`를 반환한다. `MGC-009`가 `ApplyGrant`와
+Apply Job을 소유한다. Legacy apply engine은 migration regression fixture용 private
+code이며 production entrypoint가 아니다.
 
-Git commit SHA는 apply commit 뒤의 후속 Proposal report commit에 기록한다. Commit이 자기 hash를 같은 commit content에 기록할 수 없으므로 두 단계 기록을 사용한다.
+Git publish 계약은 `MGC-010`이 소유한다.
 
 ## Messenger Decision Action
 

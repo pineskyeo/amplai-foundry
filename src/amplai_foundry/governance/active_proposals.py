@@ -193,7 +193,20 @@ class ActiveProposalRepository:
                 next_object_ref.digest,
             )
 
-    def transition_state(
+    def submit_for_review(
+        self,
+        ref: ProposalRef,
+        *,
+        expected_state_revision: int,
+    ) -> ActiveProposalView:
+        return self._transition_state_legacy_fixture(
+            ref,
+            expected_status=ActiveProposalStatus.DRAFT,
+            expected_state_revision=expected_state_revision,
+            next_status=ActiveProposalStatus.REVIEWED,
+        )
+
+    def _transition_state_legacy_fixture(
         self,
         ref: ProposalRef,
         *,

@@ -14,8 +14,8 @@ from amplai_foundry.ingestion.service import SourceIngestionService
 from amplai_foundry.parsing.markdown import parse_markdown_file
 from amplai_foundry.proposals.apply import (
     ProposalApplyError,
-    ProposalApplyService,
-    approve_proposal,
+    _approve_legacy_proposal,
+    _LegacyProposalApplyEngine,
 )
 from amplai_foundry.proposals.diff import destination_for_create
 from amplai_foundry.proposals.models import Proposal
@@ -468,12 +468,12 @@ def test_apply_rejects_cross_project_change_when_validator_is_bypassed(
             expected_target_sha256=expected_hash,
         )
     )
-    repository.save(proposal)
+    repository._save_legacy_fixture(proposal)
     before = _vault_snapshot(vault)
     monkeypatch.setattr(ProposalValidator, "validate", lambda *_args, **_kwargs: [])
 
     with pytest.raises(ProposalApplyError, match=expected_code):
-        ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(proposal, proposal_path)
 
     assert _vault_snapshot(vault) == before
     stored = repository.get(proposal.proposal_id)
@@ -579,7 +579,7 @@ def test_source_create_cannot_hide_behind_mismatched_operation_kind(
     monkeypatch.setattr(ProposalValidator, "validate", lambda *_args, **_kwargs: [])
 
     with pytest.raises(ProposalApplyError, match="PROPOSAL_SOURCE_CREATE_FORBIDDEN"):
-        ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(proposal, proposal_path)
 
 
 @pytest.mark.parametrize("operation_type", ["CREATE", "UPDATE", "LINK", "SUPERSEDE"])
@@ -615,7 +615,7 @@ def test_apply_rejects_source_changes_even_if_validator_is_bypassed(
         "PROPOSAL_SOURCE_CREATE_FORBIDDEN" if is_create else "PROPOSAL_SOURCE_MUTATION_FORBIDDEN"
     )
     with pytest.raises(ProposalApplyError, match=expected_code):
-        ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(proposal, proposal_path)
 
     assert source_path.read_bytes() == before
 
@@ -633,13 +633,13 @@ def test_stale_revision_and_hash_leave_vault_and_proposal_unchanged(
         proposal_id="PROP-20260712-A1B2C3D4",
         body="새로운 변경 내용이다.",
     )
-    approved = approve_proposal(proposal, approved_by="reviewer", now=NOW)
-    repository.save(approved)
+    approved = _approve_legacy_proposal(proposal, approved_by="reviewer", now=NOW)
+    repository._save_legacy_fixture(approved)
     target.write_text(target.read_text(encoding="utf-8") + "\n외부 변경\n", encoding="utf-8")
     before = {path.relative_to(vault): path.read_bytes() for path in vault.rglob("*.md")}
 
     with pytest.raises(ProposalApplyError, match="PROPOSAL_STALE_TARGET_HASH"):
-        ProposalApplyService(vault, repository).apply(
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
             approved, repository.path_for(approved.proposal_id)
         )
 
@@ -666,18 +666,18 @@ def test_two_proposals_based_on_revision_one_cannot_lose_update(tmp_path: Path) 
         proposal_id="PROP-20260712-BBBBBBBB",
         body="Proposal B의 변경이다.",
     )
-    approved_a = approve_proposal(proposal_a, approved_by="reviewer", now=NOW)
-    approved_b = approve_proposal(proposal_b, approved_by="reviewer", now=NOW)
-    repository.save(approved_a)
-    repository.save(approved_b)
+    approved_a = _approve_legacy_proposal(proposal_a, approved_by="reviewer", now=NOW)
+    approved_b = _approve_legacy_proposal(proposal_b, approved_by="reviewer", now=NOW)
+    repository._save_legacy_fixture(approved_a)
+    repository._save_legacy_fixture(approved_b)
 
-    ProposalApplyService(vault, repository).apply(
+    _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
         approved_a, repository.path_for(approved_a.proposal_id)
     )
     revision_two = target.read_bytes()
 
     with pytest.raises(ProposalApplyError, match="PROPOSAL_STALE_REVISION"):
-        ProposalApplyService(vault, repository).apply(
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
             approved_b, repository.path_for(approved_b.proposal_id)
         )
 
@@ -846,7 +846,7 @@ def test_link_operation_applies_with_matching_preconditions(tmp_path: Path) -> N
         )
     )
 
-    ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+    _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(proposal, proposal_path)
 
     assert "LINK operation" in target.read_text(encoding="utf-8")
 
@@ -920,7 +920,7 @@ def test_supersede_operation_applies_with_reciprocal_create(tmp_path: Path) -> N
     )
     proposal = Proposal.model_validate(data)
 
-    ProposalApplyService(vault, repository).apply(proposal, proposal_path)
+    _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(proposal, proposal_path)
 
     assert "status: superseded" in target.read_text(encoding="utf-8")
     assert (vault / "projects/amplai/10-concepts/CON-9101-concurrency-target.md").exists()

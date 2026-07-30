@@ -153,7 +153,7 @@ class RoadmapService:
         )
 
     @staticmethod
-    def approve(
+    def _approve_legacy_proposal(
         proposal: RoadmapChangeProposal,
         *,
         approved_by: str,
@@ -170,7 +170,7 @@ class RoadmapService:
             }
         )
 
-    def apply(
+    def _apply_legacy_proposal(
         self,
         repository: RoadmapRepository,
         proposal: RoadmapChangeProposal,
@@ -260,15 +260,15 @@ class RoadmapService:
             }
         )
         updated = self.rebuild_plan(updated)
-        repository.save(updated)
+        repository._save_legacy_fixture(updated)
         original_status = proposal.status
         proposal.status = RoadmapProposalStatus.APPLIED
         if proposal_repository is not None:
             try:
-                proposal_repository.save(proposal)
+                proposal_repository._save_legacy_fixture(proposal)
             except Exception:
                 proposal.status = original_status
-                repository.save(current)
+                repository._save_legacy_fixture(current)
                 raise
         return updated
 

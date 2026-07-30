@@ -42,13 +42,13 @@
 
 “정리해줘”의 기본 결과는 Source, Proposal, validation report다. Canonical Vault는 수정하지 않는다.
 
-사용자가 “반영해”, “적용해”, “승인하고 적용해”, “proposal을 적용해”처럼 명시적으로 요청한 경우에만 다음 순서를 수행한다.
+사용자가 “반영해”, “적용해”, “승인하고 적용해”, “proposal을 적용해”처럼 명시적으로 요청해도 direct CLI mutation을 실행하지 않는다.
 
 1. Proposal diff 검토
-2. 사용자 요청을 승인 근거로 기록
-3. `proposal approve --approved-by user` 실행
-4. `proposal apply` 실행
-5. lint와 전체 test 실행
-6. commit 후 apply commit SHA를 후속 Proposal report에 기록
+2. 사용자 요청을 governed decision intent로 기록
+3. active Actor binding과 Project permission 확인
+4. `DecisionService`와 `ActionToken` 준비 여부 확인
+5. 미준비 상태면 `DIRECT_MUTATION_DISABLED` 또는 `APPLY_ACTION_DEFERRED` 보고
+6. `MGC-009` 이전에는 canonical Vault와 Git state 미수정
 
 `CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 Codex가 임의로 결정하지 않는다.

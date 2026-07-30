@@ -269,13 +269,13 @@ def test_definition_revisions_increment_all_counters_and_changes_requested_retur
     )
     assert (current.content_revision, current.state_revision, current.decision_epoch) == (2, 2, 2)
 
-    current = repository.transition_state(
+    current = repository._transition_state_legacy_fixture(
         PROPOSAL,
         expected_status=current.status,
         expected_state_revision=current.state_revision,
         next_status=ActiveProposalStatus.REVIEWED,
     )
-    current = repository.transition_state(
+    current = repository._transition_state_legacy_fixture(
         PROPOSAL,
         expected_status=current.status,
         expected_state_revision=current.state_revision,
@@ -283,7 +283,7 @@ def test_definition_revisions_increment_all_counters_and_changes_requested_retur
     )
     assert current.status is ActiveProposalStatus.CHANGES_REQUESTED
     with pytest.raises(InvalidProposalTransitionError):
-        repository.transition_state(
+        repository._transition_state_legacy_fixture(
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -346,7 +346,7 @@ def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters
         ActiveProposalStatus.APPLY_REQUESTED,
         ActiveProposalStatus.APPLIED,
     ):
-        current = repository.transition_state(
+        current = repository._transition_state_legacy_fixture(
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -357,7 +357,7 @@ def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters
     assert current.content_revision == initial.content_revision
     assert current.decision_epoch == initial.decision_epoch
     with pytest.raises(InvalidProposalTransitionError):
-        repository.transition_state(
+        repository._transition_state_legacy_fixture(
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -386,7 +386,7 @@ def test_stale_cas_and_invalid_transition_leave_aggregate_unchanged(tmp_path: Pa
     assert repository.get(PROPOSAL) == initial
 
     with pytest.raises(DefinitionCASConflictError, match="PROPOSAL_STATE_STALE"):
-        repository.transition_state(
+        repository._transition_state_legacy_fixture(
             PROPOSAL,
             expected_status=ActiveProposalStatus.DRAFT,
             expected_state_revision=99,
@@ -395,7 +395,7 @@ def test_stale_cas_and_invalid_transition_leave_aggregate_unchanged(tmp_path: Pa
     assert repository.get(PROPOSAL) == initial
 
     with pytest.raises(InvalidProposalTransitionError):
-        repository.transition_state(
+        repository._transition_state_legacy_fixture(
             PROPOSAL,
             expected_status=initial.status,
             expected_state_revision=initial.state_revision,
@@ -518,7 +518,7 @@ def test_concurrent_state_cas_has_exactly_one_winner_and_one_revision_increment(
 
     def transition(next_status: ActiveProposalStatus) -> str:
         try:
-            repository.transition_state(
+            repository._transition_state_legacy_fixture(
                 PROPOSAL,
                 expected_status=initial.status,
                 expected_state_revision=initial.state_revision,

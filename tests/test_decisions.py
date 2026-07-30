@@ -194,11 +194,9 @@ def _reviewed(
         expected_state_revision=0,
         next_object_ref=definition,
     )
-    active.transition_state(
+    active.submit_for_review(
         PROPOSAL,
-        expected_status=ActiveProposalStatus.DRAFT,
         expected_state_revision=initial.state_revision,
-        next_status=ActiveProposalStatus.REVIEWED,
     )
     authority = AuthorityService(store, clock=clock)
     return store, objects, active, DecisionService(store, authority, clock=clock), clock

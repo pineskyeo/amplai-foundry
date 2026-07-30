@@ -9,25 +9,11 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from amplai_foundry.domain.identity import MemoryRef, ProjectRef
+from amplai_foundry.governance.authority import ExternalActorIdentity
 from amplai_foundry.proposals.models import ProposalId
 from amplai_foundry.semantics.models import ComparisonResult, KnowledgeCandidate
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-
-
-class AuthorityKind(StrEnum):
-    USER = "user"
-    AGENT = "agent"
-    SYSTEM = "system"
-
-
-class AuthorityContext(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    kind: AuthorityKind
-    actor: NonEmptyString
-    can_approve_authoritative: bool = False
-    can_auto_apply_low_risk: bool = False
 
 
 class ArtifactRef(BaseModel):
@@ -47,7 +33,7 @@ class IntentRequest(BaseModel):
     artifacts: list[ArtifactRef] = Field(min_length=1)
     project_hint: str | None = None
     expected_outcome: NonEmptyString | None = None
-    authority: AuthorityContext
+    identity: ExternalActorIdentity
 
 
 class ArtifactKind(StrEnum):

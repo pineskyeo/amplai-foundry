@@ -46,7 +46,7 @@ class ApplyResult:
     diff: str
 
 
-def approve_proposal(
+def _approve_legacy_proposal(
     proposal: Proposal,
     *,
     approved_by: str,
@@ -65,12 +65,12 @@ def approve_proposal(
     )
 
 
-class ProposalApplyService:
+class _LegacyProposalApplyEngine:
     def __init__(self, vault: Path, repository: ProposalRepository) -> None:
         self.vault = vault.resolve()
         self.repository = repository
 
-    def apply(self, proposal: Proposal, proposal_path: Path) -> ApplyResult:
+    def _apply_legacy_fixture(self, proposal: Proposal, proposal_path: Path) -> ApplyResult:
         if proposal.status is not ProposalStatus.APPROVED:
             raise ProposalApplyError("approved Proposal만 apply할 수 있습니다.")
         if any(operation.type is OperationType.CONFLICT for operation in proposal.operations):
@@ -162,7 +162,7 @@ class ProposalApplyService:
                         "applied_by": proposal.approved_by,
                     }
                 )
-                self.repository.save(applied)
+                self.repository._save_legacy_fixture(applied)
             except Exception:
                 if self.vault.exists():
                     shutil.rmtree(self.vault)

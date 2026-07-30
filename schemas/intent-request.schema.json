@@ -40,43 +40,123 @@
       "title": "ArtifactRef",
       "type": "object"
     },
-    "AuthorityContext": {
+    "ChannelProvider": {
+      "enum": [
+        "slack",
+        "telegram",
+        "hermes",
+        "web",
+        "cli"
+      ],
+      "title": "ChannelProvider",
+      "type": "string"
+    },
+    "ChannelRef": {
       "additionalProperties": false,
       "properties": {
-        "actor": {
+        "channel_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel Id"
+        },
+        "chat_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chat Id"
+        },
+        "message_id": {
           "minLength": 1,
-          "title": "Actor",
+          "title": "Message Id",
           "type": "string"
         },
-        "can_approve_authoritative": {
-          "default": false,
-          "title": "Can Approve Authoritative",
-          "type": "boolean"
+        "provider": {
+          "$ref": "#/$defs/ChannelProvider"
         },
-        "can_auto_apply_low_risk": {
-          "default": false,
-          "title": "Can Auto Apply Low Risk",
-          "type": "boolean"
+        "thread_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thread Id"
         },
-        "kind": {
-          "$ref": "#/$defs/AuthorityKind"
+        "workspace_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
         }
       },
       "required": [
-        "kind",
-        "actor"
+        "provider",
+        "message_id"
       ],
-      "title": "AuthorityContext",
+      "title": "ChannelRef",
       "type": "object"
     },
-    "AuthorityKind": {
-      "enum": [
-        "user",
-        "agent",
-        "system"
+    "ExternalActorIdentity": {
+      "additionalProperties": false,
+      "description": "Untrusted identity facts accepted by public ingress and Intake requests.",
+      "properties": {
+        "channel": {
+          "$ref": "#/$defs/ChannelRef"
+        },
+        "external_actor_id": {
+          "minLength": 1,
+          "title": "External Actor Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/ChannelProvider"
+        },
+        "provider_installation_ref": {
+          "minLength": 1,
+          "title": "Provider Installation Ref",
+          "type": "string"
+        },
+        "request_id": {
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "provider_installation_ref",
+        "external_actor_id",
+        "request_id",
+        "channel"
       ],
-      "title": "AuthorityKind",
-      "type": "string"
+      "title": "ExternalActorIdentity",
+      "type": "object"
     }
   },
   "$id": "https://amplai.local/schemas/intent-request.schema.json",
@@ -91,9 +171,6 @@
       "title": "Artifacts",
       "type": "array"
     },
-    "authority": {
-      "$ref": "#/$defs/AuthorityContext"
-    },
     "expected_outcome": {
       "anyOf": [
         {
@@ -106,6 +183,9 @@
       ],
       "default": null,
       "title": "Expected Outcome"
+    },
+    "identity": {
+      "$ref": "#/$defs/ExternalActorIdentity"
     },
     "instruction": {
       "minLength": 1,
@@ -134,7 +214,7 @@
   "required": [
     "instruction",
     "artifacts",
-    "authority"
+    "identity"
   ],
   "title": "AMPLAI Intent Request",
   "type": "object"

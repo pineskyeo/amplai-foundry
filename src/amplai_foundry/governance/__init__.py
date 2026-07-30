@@ -21,6 +21,7 @@ from amplai_foundry.governance.authority import (
     BindingTransitionView,
     BindingView,
     DirectAuthorityRequest,
+    ExternalActorIdentity,
     IngressAuthorityRequest,
 )
 from amplai_foundry.governance.decisions import (
@@ -76,16 +77,9 @@ from amplai_foundry.governance.object_store import (
     ImmutableDefinitionObjectStore,
     sha256_digest,
 )
-from amplai_foundry.governance.service import (
-    ActionTokenVerifier,
-    ProposalActionError,
-    ProposalActionService,
-    proposal_digest,
-)
 
 __all__ = [
     "ActionTokenState",
-    "ActionTokenVerifier",
     "ActionTokenView",
     "ActiveProposalError",
     "ActiveProposalNotFoundError",
@@ -123,6 +117,7 @@ __all__ = [
     "DefinitionRevision",
     "DirectAuthorityRequest",
     "ExternalActorBinding",
+    "ExternalActorIdentity",
     "FileProposalActionLedger",
     "ImmutableDefinitionObjectStore",
     "IngressAck",
@@ -137,9 +132,7 @@ __all__ = [
     "IssuedActionToken",
     "ProposalAction",
     "ProposalActionAuditEvent",
-    "ProposalActionError",
     "ProposalActionResult",
-    "ProposalActionService",
     "ProposalActionType",
     "ProposalDefinitionManifest",
     "ProposalRef",
@@ -147,7 +140,6 @@ __all__ = [
     "ProviderEnvelope",
     "VerifiedProviderCommand",
     "canonicalize_definition",
-    "proposal_digest",
     "sha256_digest",
     "state_transition_allowed",
 ]

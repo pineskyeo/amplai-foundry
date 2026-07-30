@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -14,16 +15,26 @@ from amplai_foundry.domain.semantic import (
     SemanticDescriptor,
     semantic_signature,
 )
-from amplai_foundry.ingestion.service import SourceIngestionService
-from amplai_foundry.intake.models import (
-    ArtifactRef,
-    AuthorityContext,
-    AuthorityKind,
-    IntentRequest,
+from amplai_foundry.governance import (
+    ActorBindingService,
+    ActorProfile,
+    ActorRef,
+    ActorType,
+    AuthorityPermission,
+    AuthorityResolutionError,
+    AuthorityService,
+    BindingApproval,
+    BindingTarget,
+    ChannelProvider,
+    ChannelRef,
+    ExternalActorIdentity,
 )
-from amplai_foundry.intake.service import KnowledgeIntakeService
+from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.ingestion.service import SourceIngestionService
+from amplai_foundry.intake.models import ArtifactRef, IntentRequest
+from amplai_foundry.intake.service import KnowledgeIntakeError, KnowledgeIntakeService
 from amplai_foundry.projects.repository import ProjectPackRepository
-from amplai_foundry.proposals.apply import ProposalApplyService, approve_proposal
+from amplai_foundry.proposals.apply import _approve_legacy_proposal, _LegacyProposalApplyEngine
 from amplai_foundry.proposals.repository import ProposalRepository
 from amplai_foundry.proposals.validation import ProposalValidator
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository
@@ -35,6 +46,72 @@ from amplai_foundry.semantics.repository import SemanticAnchorRepository
 
 NOW = datetime(2026, 7, 28, 9, 30, tzinfo=ZoneInfo("Asia/Seoul"))
 RUNNER = CliRunner()
+AUTHORITY_PROJECT = ProjectRef(
+    project_id="governance",
+    namespace="org/default/project/governance",
+)
+MANAGER = ActorRef(actor_id="ACT-MANAGER-1", actor_type=ActorType.HUMAN)
+INTAKE_ACTOR = ActorRef(actor_id="ACT-INTAKE-1", actor_type=ActorType.AGENT)
+
+
+def _approval(index: int) -> BindingApproval:
+    return BindingApproval(
+        approval_id=f"APR-{index:016X}",
+        approved_by=MANAGER,
+        reason="approve intake authority fixture",
+    )
+
+
+def _identity() -> ExternalActorIdentity:
+    return ExternalActorIdentity(
+        provider=ChannelProvider.CLI,
+        provider_installation_ref="local:test",
+        external_actor_id="tester",
+        request_id="INTAKE-TEST-REQUEST",
+        channel=ChannelRef(provider=ChannelProvider.CLI, message_id="intake-test-message"),
+    )
+
+
+def _ensure_governance(root: Path) -> GovernanceStore:
+    store = GovernanceStore(root / ".amplai/runtime/governance.db")
+    if not store.path.exists():
+        store.initialize()
+        bindings = ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW)
+        bindings.bootstrap_manager(MANAGER)
+        bindings.register_actor(
+            INTAKE_ACTOR,
+            profile=ActorProfile.INTAKE_POLICY,
+            approval=_approval(1),
+        )
+        bindings.create_binding(
+            BindingTarget(
+                provider=ChannelProvider.CLI,
+                provider_installation_ref="local:test",
+                external_actor_id="tester",
+                actor_ref=INTAKE_ACTOR,
+            ),
+            approval=_approval(2),
+        )
+    bindings = ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW)
+    for pack in ProjectPackRepository(root).list():
+        for index, permission in enumerate(
+            (
+                AuthorityPermission.PROPOSAL_READ,
+                AuthorityPermission.PROPOSAL_SUBMIT_REVIEW,
+            ),
+            start=3,
+        ):
+            try:
+                bindings.grant_permission(
+                    INTAKE_ACTOR,
+                    pack.ref,
+                    permission,
+                    approval=_approval(index),
+                )
+            except AuthorityResolutionError as error:
+                if error.code != "PERMISSION_ALREADY_GRANTED":
+                    raise
+    return store
 
 
 def _pack(
@@ -66,6 +143,7 @@ def _pack(
         "schema_version: 1\nimports: []\n",
         encoding="utf-8",
     )
+    _ensure_governance(root)
 
 
 def _roadmap_state(root: Path) -> None:
@@ -118,17 +196,15 @@ def _request(
                 title=title,
             )
         ],
-        authority=AuthorityContext(
-            kind=AuthorityKind.USER,
-            actor="tester",
-            can_approve_authoritative=False,
-        ),
+        identity=_identity(),
     )
 
 
 def _service(root: Path) -> KnowledgeIntakeService:
+    store = _ensure_governance(root)
     return KnowledgeIntakeService(
         root,
+        AuthorityService(store, clock=lambda: NOW),
         now=lambda: NOW,
         monotonic_ns=lambda: 0,
     )
@@ -194,6 +270,78 @@ def test_concurrent_identical_intake_is_one_reproducible_run(tmp_path: Path) -> 
     assert len(list((tmp_path / "memory/00-sources").glob("*.md"))) == 1
     assert len(list((tmp_path / ".amplai/proposals").glob("*/proposal.yaml"))) == 1
     assert len(list((tmp_path / ".amplai/intake/runs").glob("*.yaml"))) == 1
+
+
+@pytest.mark.parametrize("authority_state", ("unmapped", "disabled", "unpermitted"))
+def test_intake_authority_failure_precedes_source_and_proposal_mutation(
+    tmp_path: Path,
+    authority_state: str,
+) -> None:
+    _pack(tmp_path)
+    artifact = tmp_path / "roadmap.md"
+    artifact.write_text(
+        "# Roadmap\n\n## Phase 1A\n\nRoadmap tracker add revision.\n",
+        encoding="utf-8",
+    )
+    store = _ensure_governance(tmp_path)
+    service = _service(tmp_path)
+    request = _request(artifact.name)
+    if authority_state == "unmapped":
+        request = request.model_copy(
+            update={
+                "identity": request.identity.model_copy(
+                    update={"external_actor_id": "unknown-user"}
+                )
+            }
+        )
+        expected = "ACTOR_UNMAPPED"
+    elif authority_state == "disabled":
+        ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW).disable_actor(
+            INTAKE_ACTOR,
+            approval=_approval(20),
+        )
+        expected = "ACTOR_DISABLED"
+    else:
+        with store.connect() as connection:
+            connection.execute(
+                "DELETE FROM governance_actor_permissions WHERE actor_id = ?",
+                (INTAKE_ACTOR.actor_id,),
+            )
+        expected = "PROJECT_ACCESS_DENIED"
+
+    with pytest.raises(KnowledgeIntakeError, match=expected):
+        service.process(request)
+
+    assert not list((tmp_path / "memory/00-sources").glob("*.md"))
+    assert not list((tmp_path / ".amplai/proposals").glob("*/proposal.yaml"))
+
+
+def test_cli_intake_governance_unavailable_fails_before_project_mutation(
+    tmp_path: Path,
+) -> None:
+    _pack(tmp_path)
+    artifact = tmp_path / "roadmap.md"
+    artifact.write_text("# Roadmap\n\nStatus: planned\n", encoding="utf-8")
+    missing = tmp_path / "missing-governance.db"
+
+    result = RUNNER.invoke(
+        app,
+        [
+            "intake",
+            "process",
+            str(artifact),
+            "--instruction",
+            "이 로드맵을 반영해줘",
+            "--workspace",
+            str(tmp_path),
+            "--governance-db",
+            str(missing),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert not list((tmp_path / "memory/00-sources").glob("*.md"))
+    assert not list((tmp_path / ".amplai/proposals").glob("*/proposal.yaml"))
 
 
 def test_normalized_duplicate_uses_stored_source_for_evidence_validation(
@@ -366,7 +514,7 @@ def test_non_roadmap_contradictory_statements_never_collapse_as_duplicates(
                     title="Storage Architecture Proposal",
                 )
             ],
-            authority=AuthorityContext(kind=AuthorityKind.USER, actor="tester"),
+            identity=_identity(),
         )
 
     service = _service(tmp_path)
@@ -430,15 +578,7 @@ def test_conflicting_semantic_candidate_is_held_by_policy(tmp_path: Path) -> Non
         ]
     )
 
-    request = _request(artifact.name).model_copy(
-        update={
-            "authority": AuthorityContext(
-                kind=AuthorityKind.USER,
-                actor="tester",
-                can_auto_apply_low_risk=True,
-            )
-        }
-    )
+    request = _request(artifact.name)
     result = service.process(request)
 
     assert result.status == "hold"
@@ -466,7 +606,7 @@ def test_nested_pack_proposal_remains_portable_and_applies_only_after_approval(
     request = IntentRequest(
         instruction="이 architecture proposal을 AMPLAI에 반영해줘",
         artifacts=[ArtifactRef(path=str(artifact), title="Architecture Proposal")],
-        authority=AuthorityContext(kind=AuthorityKind.USER, actor="tester"),
+        identity=_identity(),
     )
 
     result = _service(workspace).process(request)
@@ -482,9 +622,9 @@ def test_nested_pack_proposal_remains_portable_and_applies_only_after_approval(
     assert proposal.operations[0].draft_path.startswith("drafts/")
     assert not ProposalValidator(pack.memory_root).validate(proposal, proposal_path)
 
-    approved = approve_proposal(proposal, approved_by="reviewer", now=NOW)
-    proposals.save(approved)
-    applied = ProposalApplyService(pack.memory_root, proposals).apply(
+    approved = _approve_legacy_proposal(proposal, approved_by="reviewer", now=NOW)
+    proposals._save_legacy_fixture(approved)
+    applied = _LegacyProposalApplyEngine(pack.memory_root, proposals)._apply_legacy_fixture(
         approved,
         proposal_path,
     )
@@ -493,7 +633,7 @@ def test_nested_pack_proposal_remains_portable_and_applies_only_after_approval(
     assert len(list(pack.memory_root.glob("40-architecture/*.md"))) == 1
 
 
-def test_roadmap_intake_proposal_can_be_shown_approved_and_applied_by_cli(
+def test_roadmap_intake_proposal_is_readable_but_direct_mutations_are_disabled(
     tmp_path: Path,
 ) -> None:
     _pack(tmp_path)
@@ -533,18 +673,20 @@ def test_roadmap_intake_proposal_can_be_shown_approved_and_applied_by_cli(
     )
 
     assert shown.exit_code == 0
-    assert approved.exit_code == 0
-    assert applied.exit_code == 0
+    assert approved.exit_code == 1
+    assert applied.exit_code == 1
+    assert "DIRECT_MUTATION_DISABLED" in approved.stderr
+    assert "APPLY_ACTION_DEFERRED" in applied.stderr
     roadmap = RoadmapRepository(tmp_path / "plans/amplai-master-roadmap.yaml").load()
-    assert roadmap.version == 2
-    assert roadmap.applied_proposal_id == stored[0].proposal_id
-    assert roadmap.phases[0].status is RoadmapPhaseStatus.COMPLETED
+    assert roadmap.version == 1
+    assert roadmap.applied_proposal_id is None
+    assert roadmap.phases[0].status is RoadmapPhaseStatus.PLANNED
     applied_proposal = proposals.get(stored[0].proposal_id)
     assert applied_proposal is not None
-    assert applied_proposal.status is RoadmapProposalStatus.APPLIED
+    assert applied_proposal.status is RoadmapProposalStatus.DRAFT
 
 
-def test_policy_can_auto_apply_only_safe_tracker_status(tmp_path: Path) -> None:
+def test_safe_tracker_status_intake_remains_review_only(tmp_path: Path) -> None:
     _pack(tmp_path)
     _roadmap_state(tmp_path)
     artifact = tmp_path / "safe-status.md"
@@ -552,28 +694,20 @@ def test_policy_can_auto_apply_only_safe_tracker_status(tmp_path: Path) -> None:
         "# Roadmap\n\n## Phase 1A\n\n상태: 완료\n",
         encoding="utf-8",
     )
-    request = _request(artifact.name).model_copy(
-        update={
-            "authority": AuthorityContext(
-                kind=AuthorityKind.USER,
-                actor="tester",
-                can_auto_apply_low_risk=True,
-            )
-        }
-    )
+    request = _request(artifact.name)
 
     result = _service(tmp_path).process(request)
 
     assert result.status == "prepared"
-    assert result.validation.evaluation.safe_change_applied
+    assert not result.validation.evaluation.safe_change_applied
     roadmap = RoadmapRepository(tmp_path / "plans/amplai-master-roadmap.yaml").load()
-    assert roadmap.version == 2
+    assert roadmap.version == 1
     proposal = RoadmapProposalRepository(tmp_path / ".amplai/intake/roadmap-proposals").list()[0]
-    assert proposal.status is RoadmapProposalStatus.APPLIED
-    assert proposal.approved_by == "policy:safe-tracker:tester"
+    assert proposal.status is RoadmapProposalStatus.DRAFT
+    assert proposal.approved_by is None
 
 
-def test_policy_auto_links_independent_duplicate_evidence_without_meaning_change(
+def test_independent_duplicate_evidence_remains_review_only_without_meaning_change(
     tmp_path: Path,
 ) -> None:
     _pack(tmp_path)
@@ -656,33 +790,25 @@ def test_policy_auto_links_independent_duplicate_evidence_without_meaning_change
         "# Roadmap\n\n## Phase 1A\n\nTracker roadmap must add and preserve version history.\n",
         encoding="utf-8",
     )
-    request = _request(artifact.name).model_copy(
-        update={
-            "authority": AuthorityContext(
-                kind=AuthorityKind.USER,
-                actor="tester",
-                can_auto_apply_low_risk=True,
-            )
-        }
-    )
+    request = _request(artifact.name)
 
     result = service.process(request)
 
     assert result.status == "prepared"
     assert result.comparisons[0].relation is ComparisonRelation.EXACT_DUPLICATE
-    assert result.validation.evaluation.safe_change_applied
+    assert not result.validation.evaluation.safe_change_applied
     updated = MarkdownMemoryRepository(tmp_path / "memory").get(
         "ARC-0001",
         namespace=project.namespace,
     )
     assert updated is not None
-    assert updated.revision == 2
+    assert updated.revision == 1
     assert updated.semantic == candidate.descriptor()
-    assert len(updated.source_refs) == 2
+    assert len(updated.source_refs) == 1
     assert result.proposal_id is not None
     proposal = ProposalRepository(tmp_path / ".amplai/proposals").get(result.proposal_id)
     assert proposal is not None
-    assert proposal.status.value == "applied"
+    assert proposal.status.value == "draft"
 
 
 def test_phase_one_cli_exposes_project_intake_and_roadmap_commands(tmp_path: Path) -> None:
@@ -708,6 +834,10 @@ def test_phase_one_cli_exposes_project_intake_and_roadmap_commands(tmp_path: Pat
             "이 로드맵을 AMPLAI에 반영해줘",
             "--workspace",
             str(tmp_path),
+            "--provider-installation",
+            "local:test",
+            "--external-actor-id",
+            "tester",
             "--json",
         ],
     )

@@ -9,7 +9,7 @@ AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 �
 - `MemoryObject`, lifecycle, relation domain contract
 - 읽기 전용 `MarkdownMemoryRepository`와 deterministic lexical search
 - immutable Source ingestion과 SHA-256 duplicate detection
-- Proposal validation, diff, approval, safe apply
+- Proposal validation, diff와 governed decision foundation
 - `(namespace, local_id)` 기반 qualified project identity
 - fail-closed `ProjectResolver`와 이동 가능한 Project Pack
 - Source → Classification → Candidate → Semantic Compare → Proposal Intake
@@ -23,8 +23,7 @@ AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 �
 
 외부 LLM 연결, 범용 의미 변경 자동 승인, vector DB, embedding, MCP server, web UI,
 중앙 server와 실행 event 저장은 포함하지 않는다. 의미가 불명확한 입력은 생성으로
-추정하지 않고 `HOLD`한다. 자동 적용은 독립 duplicate evidence 연결과 Tracker
-status-only 변경처럼 정책에 명시된 비파괴 범위로 제한한다.
+추정하지 않고 `HOLD`한다. Intake는 canonical state를 자동 적용하지 않는다.
 
 ## Install
 
@@ -52,13 +51,15 @@ amplai-foundry project rebuild amplai
 ```bash
 amplai-foundry intake process roadmap.md \
   --instruction "이 로드맵을 AMPLAI에 반영해줘" \
-  --project amplai
+  --project amplai \
+  --provider-installation local:cli \
+  --external-actor-id ACTOR-BINDING-KEY
 ```
 
 이 명령은 Source 원문, 분류, Candidate, 의미 비교, review Proposal, Roadmap 분석과
-최소 평가 기록을 만든다. 공식 의미는 승인·apply 전까지 변경하지 않는다. 허용된
-low-risk 변경은 audit 가능한 policy approval로만 적용한다. 프로젝트나 문서 유형을
-안전하게 확정하지 못하면 exit code `1`과 `HOLD`를 반환한다.
+최소 평가 기록을 만든다. AMPLAI는 external identity를 active Actor binding과 Project
+permission으로 다시 확인한다. Intake Policy Actor는 review Proposal만 제출한다.
+프로젝트나 문서 유형을 안전하게 확정하지 못하면 exit code `1`과 `HOLD`를 반환한다.
 
 ### Project Pack And Roadmap
 
@@ -66,8 +67,7 @@ low-risk 변경은 audit 가능한 policy approval로만 적용한다. 프로젝
 amplai-foundry project list
 amplai-foundry project pack amplai --output dist/amplai-pack.zip
 amplai-foundry roadmap diff desired-roadmap.yaml
-amplai-foundry roadmap approve RMAP-... --approved-by reviewer
-amplai-foundry roadmap apply RMAP-...
+amplai-foundry roadmap show RMAP-...
 amplai-foundry roadmap next
 ```
 
@@ -96,18 +96,17 @@ amplai-foundry curate prepare SRC-... \
   --output .amplai/jobs/CURATE-SRC-....md
 ```
 
-### Review And Apply
+### Proposal Review
 
 ```bash
 amplai-foundry proposal validate .amplai/proposals/PROP-.../proposal.yaml
 amplai-foundry proposal diff PROP-...
-amplai-foundry proposal approve PROP-... --approved-by user
-amplai-foundry proposal apply PROP-...
 ```
 
-의미 변경의 `approve`와 `apply`는 human의 명시적 요청 뒤에만 실행한다. 정책상
-low-risk evidence/Tracker 변경만 authority opt-in으로 자동 적용할 수 있으며,
-`CONFLICT`가 있는 Proposal은 apply하지 않는다.
+CLI의 direct `proposal approve/apply`와 `roadmap approve/apply`는 fail-closed한다.
+Decision은 server-created `AuthorityContext`와 `ActionToken`을 사용하는
+`DecisionService`가 소유한다. Apply는 `MGC-009`의 `ApplyGrant` 전까지
+`APPLY_ACTION_DEFERRED`를 반환한다.
 
 `lint` exit code는 다음과 같다.
 

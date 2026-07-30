@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from amplai_foundry.roadmaps.models import RoadmapChangeProposal
+from amplai_foundry.roadmaps.models import RoadmapChangeProposal, RoadmapProposalStatus
 
 
 class RoadmapProposalRepositoryError(RuntimeError):
@@ -38,6 +38,23 @@ class RoadmapProposalRepository:
         return [self.load(path) for path in sorted(self.root.glob("RMAP-*.yaml"))]
 
     def save(self, proposal: RoadmapChangeProposal) -> Path:
+        if proposal.status is not RoadmapProposalStatus.DRAFT:
+            raise RoadmapProposalRepositoryError(
+                "DIRECT_MUTATION_DISABLED Roadmap Proposal repository는 draft만 허용합니다."
+            )
+        path = self.path_for(proposal.proposal_id)
+        if path.exists() and self.load(path).status is not RoadmapProposalStatus.DRAFT:
+            raise RoadmapProposalRepositoryError(
+                "DIRECT_MUTATION_DISABLED governed lifecycle state를 draft로 덮을 수 없습니다."
+            )
+        return self._write(proposal)
+
+    def _save_legacy_fixture(self, proposal: RoadmapChangeProposal) -> Path:
+        """Persist historical lifecycle fixtures outside production entrypoints."""
+
+        return self._write(proposal)
+
+    def _write(self, proposal: RoadmapChangeProposal) -> Path:
         path = self.path_for(proposal.proposal_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = yaml.safe_dump(

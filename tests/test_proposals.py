@@ -11,11 +11,11 @@ from amplai_foundry.ingestion.service import SourceIngestionService
 from amplai_foundry.lint.engine import KnowledgeLinter
 from amplai_foundry.proposals.apply import (
     ProposalApplyError,
-    ProposalApplyService,
-    approve_proposal,
+    _approve_legacy_proposal,
+    _LegacyProposalApplyEngine,
 )
 from amplai_foundry.proposals.models import Proposal
-from amplai_foundry.proposals.repository import ProposalRepository
+from amplai_foundry.proposals.repository import ProposalRepository, ProposalRepositoryError
 from amplai_foundry.proposals.validation import ProposalValidator
 
 runner = CliRunner()
@@ -163,12 +163,12 @@ def test_draft_cannot_apply_and_only_approved_can_apply(tmp_path: Path) -> None:
     vault, repository, proposal, _source_id = saved_proposal(tmp_path)
 
     with pytest.raises(ProposalApplyError, match="approved"):
-        ProposalApplyService(vault, repository).apply(
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
             proposal, repository.path_for(proposal.proposal_id)
         )
 
-    approved = approve_proposal(proposal, approved_by="test-user", now=NOW)
-    result = ProposalApplyService(vault, repository).apply(
+    approved = _approve_legacy_proposal(proposal, approved_by="test-user", now=NOW)
+    result = _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
         approved, repository.path_for(proposal.proposal_id)
     )
 
@@ -187,10 +187,10 @@ def test_draft_cannot_apply_and_only_approved_can_apply(tmp_path: Path) -> None:
 
 def test_apply_accepts_relative_vault_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     vault, repository, proposal, _source_id = saved_proposal(tmp_path)
-    approved = approve_proposal(proposal, approved_by="test-user", now=NOW)
+    approved = _approve_legacy_proposal(proposal, approved_by="test-user", now=NOW)
     monkeypatch.chdir(tmp_path)
 
-    result = ProposalApplyService(Path("vault"), repository).apply(
+    result = _LegacyProposalApplyEngine(Path("vault"), repository)._apply_legacy_fixture(
         approved, repository.path_for(proposal.proposal_id)
     )
 
@@ -224,10 +224,10 @@ tags: []
         encoding="utf-8",
     )
     before = {path.relative_to(vault): path.read_bytes() for path in vault.rglob("*.md")}
-    approved = approve_proposal(proposal, approved_by="test-user", now=NOW)
+    approved = _approve_legacy_proposal(proposal, approved_by="test-user", now=NOW)
 
     with pytest.raises(ProposalApplyError, match="변경 전"):
-        ProposalApplyService(vault, repository).apply(
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(
             approved, repository.path_for(proposal.proposal_id)
         )
 
@@ -244,10 +244,10 @@ def test_post_apply_lint_failure_rolls_back_without_vault_changes(tmp_path: Path
     proposal = Proposal.model_validate(proposal_data(source_id, draft))
     repository.save(proposal)
     before = {path.relative_to(vault): path.read_bytes() for path in vault.rglob("*.md")}
-    approved = approve_proposal(proposal, approved_by="test-user", now=NOW)
+    approved = _approve_legacy_proposal(proposal, approved_by="test-user", now=NOW)
 
     with pytest.raises(ProposalApplyError, match="임시 결과"):
-        ProposalApplyService(vault, repository).apply(approved, proposal_path)
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(approved, proposal_path)
 
     after = {path.relative_to(vault): path.read_bytes() for path in vault.rglob("*.md")}
     assert after == before
@@ -270,10 +270,10 @@ def test_conflict_operation_is_never_auto_applied(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ProposalApplyError, match="CONFLICT"):
-        ProposalApplyService(vault, repository).apply(conflict, proposal_path)
+        _LegacyProposalApplyEngine(vault, repository)._apply_legacy_fixture(conflict, proposal_path)
 
 
-def test_cli_validate_show_diff_approve_and_apply(tmp_path: Path) -> None:
+def test_cli_validate_show_diff_and_fail_closed_direct_mutations(tmp_path: Path) -> None:
     vault, repository, proposal, _source_id = saved_proposal(tmp_path)
     root = repository.root
     path = repository.path_for(proposal.proposal_id)
@@ -321,6 +321,21 @@ def test_cli_validate_show_diff_approve_and_apply(tmp_path: Path) -> None:
     )
 
     assert validated.exit_code == shown.exit_code == diffed.exit_code == 0
-    assert approved.exit_code == applied.exit_code == 0
+    assert approved.exit_code == applied.exit_code == 1
     assert "CON-9001" in diffed.stdout
-    assert "APPLIED" in applied.stdout
+    assert "DIRECT_MUTATION_DISABLED" in approved.stderr
+    assert "APPLY_ACTION_DEFERRED" in applied.stderr
+    stored = repository.get(proposal.proposal_id)
+    assert stored is not None and stored.status.value == "draft"
+    assert not list(vault.glob("10-concepts/*.md"))
+
+
+def test_proposal_repository_rejects_direct_lifecycle_state_write(tmp_path: Path) -> None:
+    _vault, repository, proposal, _source_id = saved_proposal(tmp_path)
+    approved = _approve_legacy_proposal(proposal, approved_by="caller", now=NOW)
+
+    with pytest.raises(ProposalRepositoryError, match="DIRECT_MUTATION_DISABLED"):
+        repository.save(approved)
+
+    stored = repository.get(proposal.proposal_id)
+    assert stored is not None and stored.status.value == "draft"

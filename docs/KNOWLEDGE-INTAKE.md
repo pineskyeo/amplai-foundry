@@ -23,9 +23,13 @@ IntentRequest
 - Candidate는 공식 지식이 아니다.
 - `UNCERTAIN`과 `CONFLICTS`는 항상 `HOLD` 또는 review다.
 - `NEW`와 `REFINES`는 Proposal만 만들며 canonical apply를 수행하지 않는다.
-- 독립된 exact/semantic duplicate evidence의 `source_refs` 연결과 명시적 Tracker
-  진행 상태는 authority가 허용한 경우에만 low-risk policy로 자동 적용한다.
-- 공식 변경은 기존 Proposal approve/apply gate를 통과해야 한다.
+- Public `IntentRequest`는 external identity fact만 받는다. Permission과
+  `AuthorityContext` 입력은 거부한다.
+- `AuthorityService`는 Source 등록 전에 active Actor binding과 Project permission을
+  다시 확인한다.
+- Intake Policy Actor는 `proposal.read`, `proposal.submit_review`만 가진다.
+- Duplicate evidence와 Tracker status도 Proposal로 남기며 자동 적용하지 않는다.
+- 공식 decision은 `DecisionService`를 통과한다. Apply는 `MGC-009` 전까지 deferred다.
 - 동일 project, instruction, source hash는 같은 IntakeRun ID와 Proposal을 재사용한다.
 - Intake 전후에 Project Pack, Vault lint, typed artifact와 Proposal 계약을 검증한다.
 
@@ -39,7 +43,10 @@ record로 남는다. Phase 8 Observatory는 이 기록을 replay baseline으로 
 ```bash
 amplai-foundry intake process roadmap.md \
   --instruction "이 로드맵을 AMPLAI에 반영해줘" \
-  --project amplai --json
+  --project amplai \
+  --provider-installation local:cli \
+  --external-actor-id ACTOR-BINDING-KEY \
+  --json
 ```
 
 여러 artifact는 한 요청에서 같은 Project resolution을 공유하지만 Source, Candidate, 비교, Proposal과 IntakeRun은 artifact별로 분리된다.

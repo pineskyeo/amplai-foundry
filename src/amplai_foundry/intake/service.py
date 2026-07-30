@@ -16,6 +16,8 @@ from zoneinfo import ZoneInfo
 import yaml
 
 from amplai_foundry.domain.identity import MemoryRef, ProjectRef
+from amplai_foundry.governance.authority import AuthorityResolutionError, AuthorityService
+from amplai_foundry.governance.models import AuthorityPermission
 from amplai_foundry.ingestion.hashing import content_sha256
 from amplai_foundry.ingestion.service import (
     IngestionError,
@@ -27,7 +29,6 @@ from amplai_foundry.intake.extractor import CandidateExtractor
 from amplai_foundry.intake.models import (
     ArtifactClassification,
     ArtifactKind,
-    AuthorityContext,
     IntakeResult,
     IntakeRun,
     IntentRequest,
@@ -45,21 +46,8 @@ from amplai_foundry.intake.store import IntakeRunStore, ResolutionHoldStore
 from amplai_foundry.projects.repository import ProjectPack, ProjectPackRepository
 from amplai_foundry.projects.resolver import ProjectResolutionStatus, ProjectResolver
 from amplai_foundry.projects.service import ProjectPackService
-from amplai_foundry.proposals.apply import (
-    ProposalApplyError,
-    ProposalApplyService,
-    approve_proposal,
-)
-from amplai_foundry.proposals.repository import ProposalRepository, ProposalRepositoryError
-from amplai_foundry.proposals.validation import (
-    ProposalValidationIssue,
-    ProposalValidator,
-)
+from amplai_foundry.proposals.validation import ProposalValidator
 from amplai_foundry.repositories.markdown import MarkdownMemoryRepository
-from amplai_foundry.roadmaps.models import (
-    RoadmapChangeProposal,
-    RoadmapChangeType,
-)
 from amplai_foundry.roadmaps.proposals import RoadmapProposalRepository
 from amplai_foundry.roadmaps.repository import RoadmapRepository
 from amplai_foundry.roadmaps.service import RoadmapService
@@ -80,11 +68,13 @@ class KnowledgeIntakeService:
     def __init__(
         self,
         workspace_root: Path,
+        authority_service: AuthorityService,
         *,
         now: Callable[[], datetime] | None = None,
         monotonic_ns: Callable[[], int] | None = None,
     ) -> None:
         self.workspace_root = workspace_root.resolve()
+        self.authority_service = authority_service
         self.pack_repository = ProjectPackRepository(self.workspace_root)
         self.now = now or (lambda: datetime.now(ZoneInfo("Asia/Seoul")))
         self.monotonic_ns = monotonic_ns or time.monotonic_ns
@@ -128,6 +118,12 @@ class KnowledgeIntakeService:
                 )
                 for artifact in request.artifacts
             ]
+        try:
+            authority = self.authority_service.authenticate(request.identity.for_project(pack.ref))
+        except AuthorityResolutionError as error:
+            raise KnowledgeIntakeError(error.code) from error
+        if AuthorityPermission.PROPOSAL_SUBMIT_REVIEW not in authority.permissions:
+            raise KnowledgeIntakeError("AUTHORITY_DENIED")
         results: list[IntakeResult] = []
         for artifact, path in zip(request.artifacts, artifact_paths, strict=True):
             single_request = request.model_copy(update={"artifacts": [artifact]})
@@ -137,6 +133,7 @@ class KnowledgeIntakeService:
                     pack=pack,
                     artifact_path=path,
                     resolution_reason=resolution.reason,
+                    actor_id=authority.actor_ref.actor_id,
                 )
             )
         return results
@@ -155,6 +152,7 @@ class KnowledgeIntakeService:
         pack: ProjectPack,
         artifact_path: Path,
         resolution_reason: str,
+        actor_id: str,
     ) -> IntakeResult:
         with self._intake_lock(pack):
             return self._process_one_locked(
@@ -162,6 +160,7 @@ class KnowledgeIntakeService:
                 pack=pack,
                 artifact_path=artifact_path,
                 resolution_reason=resolution_reason,
+                actor_id=actor_id,
             )
 
     def _process_one_locked(
@@ -171,6 +170,7 @@ class KnowledgeIntakeService:
         pack: ProjectPack,
         artifact_path: Path,
         resolution_reason: str,
+        actor_id: str,
     ) -> IntakeResult:
         started = self.monotonic_ns()
         artifact = request.artifacts[0]
@@ -188,7 +188,7 @@ class KnowledgeIntakeService:
             title=artifact.title or artifact_path.stem,
             original_filename=artifact_path.name,
             media_type=artifact.media_type,
-            created_by=request.authority.actor,
+            created_by=actor_id,
             now=timestamp,
         )
         source_path = Path(ingestion.path)
@@ -245,7 +245,7 @@ class KnowledgeIntakeService:
             self.policy.decide(
                 candidate,
                 comparison,
-                allow_auto_apply=request.authority.can_auto_apply_low_risk,
+                allow_auto_apply=False,
             )
             for candidate, comparison in zip(candidates, comparisons, strict=True)
         ]
@@ -254,7 +254,7 @@ class KnowledgeIntakeService:
             candidates=candidates,
             comparisons=comparisons,
             created_at=timestamp,
-            created_by=request.authority.actor,
+            created_by=actor_id,
         )
         proposal_issues = (
             ProposalValidator(pack.memory_root).validate(proposal, proposal_path)
@@ -262,51 +262,13 @@ class KnowledgeIntakeService:
             else []
         )
         semantic_safe_change_applied = False
-        if (
-            proposal is not None
-            and proposal_path is not None
-            and not proposal_issues
-            and decisions
-            and all(decision.disposition is PolicyDisposition.AUTO_APPLY for decision in decisions)
-        ):
-            proposal_repository = ProposalRepository(pack.proposal_root)
-            try:
-                approved = approve_proposal(
-                    proposal,
-                    approved_by=f"policy:safe-evidence-link:{request.authority.actor}",
-                    now=timestamp,
-                )
-                proposal_repository.save(approved)
-                ProposalApplyService(pack.memory_root, proposal_repository).apply(
-                    approved,
-                    proposal_path,
-                )
-                applied_proposal = proposal_repository.get(approved.proposal_id)
-                if applied_proposal is None:
-                    raise ProposalApplyError("applied Proposal audit를 다시 읽을 수 없습니다.")
-                proposal = applied_proposal
-                semantic_safe_change_applied = True
-            except (ProposalApplyError, ProposalRepositoryError) as error:
-                proposal_issues.append(
-                    ProposalValidationIssue(
-                        code="SAFE_AUTO_APPLY_FAILED",
-                        message=str(error),
-                    )
-                )
         roadmap_update_path, safe_change_applied = self._roadmap_report(
             pack=pack,
             run_id=run_id,
             classification=classification,
             content=content,
             created_at=timestamp,
-            authority=request.authority,
-            allow_auto_apply=(
-                not classification.held
-                and not proposal_issues
-                and not any(
-                    decision.disposition is PolicyDisposition.HOLD for decision in decisions
-                )
-            ),
+            actor_id=actor_id,
         )
         pack_issues = list(ProjectPackService(self.pack_repository).validate(pack).issues)
         latency_ms = max(0, (self.monotonic_ns() - started) // 1_000_000)
@@ -438,8 +400,7 @@ class KnowledgeIntakeService:
         classification: ArtifactClassification,
         content: str,
         created_at: datetime,
-        authority: AuthorityContext,
-        allow_auto_apply: bool,
+        actor_id: str,
     ) -> tuple[str | None, bool]:
         if classification.kind is not ArtifactKind.ROADMAP:
             return None, False
@@ -451,37 +412,11 @@ class KnowledgeIntakeService:
             roadmap,
             content,
             created_at=created_at,
-            created_by=authority.actor,
+            created_by=actor_id,
         )
         if report.change_proposal is not None:
             proposal_repository = RoadmapProposalRepository(pack.roadmap_proposal_root)
             proposal_repository.save(report.change_proposal)
-            if (
-                allow_auto_apply
-                and authority.can_auto_apply_low_risk
-                and self._safe_roadmap_auto_apply(report.change_proposal)
-            ):
-                service = RoadmapService()
-                applied = service.approve(
-                    report.change_proposal,
-                    approved_by=f"policy:safe-tracker:{authority.actor}",
-                    approved_at=created_at,
-                )
-                service.apply(
-                    RoadmapRepository(roadmap_path),
-                    applied,
-                    applied_on=created_at.date(),
-                    proposal_repository=proposal_repository,
-                )
-                report = report.model_copy(
-                    update={
-                        "reason_codes": [
-                            *report.reason_codes,
-                            "SAFE_TRACKER_AUTO_APPLIED",
-                        ],
-                        "change_proposal": applied,
-                    }
-                )
         path = pack.intake_root / "roadmap-updates" / f"{run_id}.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
@@ -496,27 +431,6 @@ class KnowledgeIntakeService:
             self._portable(pack, path),
             "SAFE_TRACKER_AUTO_APPLIED" in report.reason_codes,
         )
-
-    @staticmethod
-    def _safe_roadmap_auto_apply(proposal: RoadmapChangeProposal) -> bool:
-        if not proposal.changes:
-            return False
-        safe_statuses = {"in_progress", "blocked", "completed"}
-        for change in proposal.changes:
-            if (
-                change.type is not RoadmapChangeType.UPDATE
-                or change.before is None
-                or change.after is None
-            ):
-                return False
-            changed_fields = {
-                key
-                for key in change.before.keys() | change.after.keys()
-                if change.before.get(key) != change.after.get(key)
-            }
-            if changed_fields != {"status"} or change.after.get("status") not in safe_statuses:
-                return False
-        return True
 
     @staticmethod
     def _validation(

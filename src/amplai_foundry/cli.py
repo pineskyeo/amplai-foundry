@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import sys
 from dataclasses import asdict
 from datetime import datetime
@@ -15,24 +16,22 @@ import typer
 from amplai_foundry.curation.context_builder import ContextBuilderError, CurateContextBuilder
 from amplai_foundry.domain.models import MemoryObject
 from amplai_foundry.domain.project import ProjectPathError, validate_project_id
-from amplai_foundry.ingestion.service import IngestionError, SourceIngestionService
-from amplai_foundry.intake.models import (
-    ArtifactRef,
-    AuthorityContext,
-    AuthorityKind,
-    IntentRequest,
+from amplai_foundry.governance import (
+    AuthorityService,
+    ChannelProvider,
+    ChannelRef,
+    ExternalActorIdentity,
 )
+from amplai_foundry.governance.migrations import GovernanceMigrationError
+from amplai_foundry.governance.store import GovernanceStore, GovernanceStoreError
+from amplai_foundry.ingestion.service import IngestionError, SourceIngestionService
+from amplai_foundry.intake.models import ArtifactRef, IntentRequest
 from amplai_foundry.intake.service import KnowledgeIntakeError, KnowledgeIntakeService
 from amplai_foundry.lint.engine import KnowledgeLinter, LintExecutionError
 from amplai_foundry.parsing.markdown import parse_markdown_file
 from amplai_foundry.projects.domain_registry import DomainRegistryError
 from amplai_foundry.projects.repository import ProjectPackError, ProjectPackRepository
 from amplai_foundry.projects.service import ProjectPackService
-from amplai_foundry.proposals.apply import (
-    ProposalApplyError,
-    ProposalApplyService,
-    approve_proposal,
-)
 from amplai_foundry.proposals.diff import proposal_diff
 from amplai_foundry.proposals.repository import ProposalRepository, ProposalRepositoryError
 from amplai_foundry.proposals.validation import ProposalValidator
@@ -324,16 +323,11 @@ def proposal_approve_command(
     approved_by: Annotated[str, typer.Option("--approved-by")],
     proposal_root: Annotated[Path, typer.Option("--proposal-root")] = Path(".amplai/proposals"),
 ) -> None:
-    repository = ProposalRepository(proposal_root)
-    try:
-        proposal = repository.get(proposal_id)
-        if proposal is None:
-            _fatal(f"Proposal ID가 존재하지 않습니다: {proposal_id}", code=1)
-        approved = approve_proposal(proposal, approved_by=approved_by)
-        repository.save(approved)
-    except (ProposalRepositoryError, ProposalApplyError) as error:
-        _fatal(str(error), code=1)
-    typer.echo(f"APPROVED {proposal_id} by {approved_by}")
+    del proposal_id, approved_by, proposal_root
+    _fatal(
+        "DIRECT_MUTATION_DISABLED Proposal decision은 governed DecisionService를 사용해야 합니다.",
+        code=1,
+    )
 
 
 @proposal_app.command("apply")
@@ -342,19 +336,8 @@ def proposal_apply_command(
     vault: Annotated[Path, typer.Option("--vault")] = Path("vault"),
     proposal_root: Annotated[Path, typer.Option("--proposal-root")] = Path(".amplai/proposals"),
 ) -> None:
-    repository = ProposalRepository(proposal_root)
-    try:
-        proposal = repository.get(proposal_id)
-        if proposal is None:
-            _fatal(f"Proposal ID가 존재하지 않습니다: {proposal_id}", code=1)
-        result = ProposalApplyService(vault, repository).apply(
-            proposal, repository.path_for(proposal_id)
-        )
-    except (ProposalRepositoryError, ProposalApplyError, LintExecutionError) as error:
-        _fatal(str(error), code=1)
-    typer.echo(f"APPLIED {result.proposal_id}")
-    for path in result.touched_paths:
-        typer.echo(f"  {path}")
+    del proposal_id, vault, proposal_root
+    _fatal("APPLY_ACTION_DEFERRED ApplyGrant는 MGC-009에서 활성화됩니다.", code=1)
 
 
 @curate_app.command("prepare")
@@ -499,10 +482,22 @@ def intake_process_command(
     instruction: Annotated[str, typer.Option("--instruction")],
     project: Annotated[str | None, typer.Option("--project")] = None,
     source_type: Annotated[str, typer.Option("--source-type")] = "document",
-    actor: Annotated[str, typer.Option("--actor")] = "user",
+    provider_installation_ref: Annotated[
+        str,
+        typer.Option("--provider-installation"),
+    ] = "local:cli",
+    external_actor_id: Annotated[
+        str,
+        typer.Option("--external-actor-id"),
+    ] = "local-user",
+    governance_db: Annotated[
+        Path,
+        typer.Option("--governance-db"),
+    ] = Path(".amplai/runtime/governance.db"),
     workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
+    request_id = f"CMD-{secrets.token_hex(8).upper()}"
     request = IntentRequest(
         instruction=instruction,
         artifacts=[
@@ -515,19 +510,31 @@ def intake_process_command(
             for path in artifact_paths
         ],
         project_hint=project,
-        authority=AuthorityContext(
-            kind=AuthorityKind.USER,
-            actor=actor,
-            can_approve_authoritative=False,
-            can_auto_apply_low_risk=True,
+        identity=ExternalActorIdentity(
+            provider=ChannelProvider.CLI,
+            provider_installation_ref=provider_installation_ref,
+            external_actor_id=external_actor_id,
+            request_id=request_id,
+            channel=ChannelRef(
+                provider=ChannelProvider.CLI,
+                message_id=request_id,
+            ),
         ),
     )
     try:
-        results = KnowledgeIntakeService(workspace).process_batch(request)
+        store_path = governance_db if governance_db.is_absolute() else workspace / governance_db
+        governance_store = GovernanceStore(store_path)
+        governance_store.check_startup()
+        results = KnowledgeIntakeService(
+            workspace,
+            AuthorityService(governance_store),
+        ).process_batch(request)
     except (
         IngestionError,
         KnowledgeIntakeError,
         ProjectPackError,
+        GovernanceStoreError,
+        GovernanceMigrationError,
         OSError,
         ValueError,
     ) as error:
@@ -599,20 +606,11 @@ def roadmap_approve_command(
         typer.Option("--proposal-root"),
     ] = Path(".amplai/intake/roadmap-proposals"),
 ) -> None:
-    repository = RoadmapProposalRepository(proposal_root)
-    try:
-        proposal = repository.get(proposal_id)
-        if proposal is None:
-            _fatal(f"Roadmap Proposal ID가 존재하지 않습니다: {proposal_id}", code=1)
-        approved = RoadmapService.approve(
-            proposal,
-            approved_by=approved_by,
-            approved_at=datetime.now(ZoneInfo("Asia/Seoul")),
-        )
-        repository.save(approved)
-    except (RoadmapProposalRepositoryError, ValueError) as error:
-        _fatal(str(error), code=1)
-    typer.echo(f"APPROVED {proposal_id} by {approved_by}")
+    del proposal_id, approved_by, proposal_root
+    _fatal(
+        "DIRECT_MUTATION_DISABLED Roadmap decision은 governed DecisionService를 사용해야 합니다.",
+        code=1,
+    )
 
 
 @roadmap_app.command("apply")
@@ -627,24 +625,8 @@ def roadmap_apply_command(
         typer.Option("--proposal-root"),
     ] = Path(".amplai/intake/roadmap-proposals"),
 ) -> None:
-    proposals = RoadmapProposalRepository(proposal_root)
-    try:
-        proposal = proposals.get(proposal_id)
-        if proposal is None:
-            _fatal(f"Roadmap Proposal ID가 존재하지 않습니다: {proposal_id}", code=1)
-        updated = RoadmapService().apply(
-            RoadmapRepository(roadmap_path),
-            proposal,
-            applied_on=datetime.now(ZoneInfo("Asia/Seoul")).date(),
-            proposal_repository=proposals,
-        )
-    except (
-        RoadmapProposalRepositoryError,
-        RoadmapRepositoryError,
-        ValueError,
-    ) as error:
-        _fatal(str(error), code=1)
-    typer.echo(f"APPLIED {proposal_id} roadmap_version={updated.version}")
+    del proposal_id, roadmap_path, proposal_root
+    _fatal("APPLY_ACTION_DEFERRED ApplyGrant는 MGC-009에서 활성화됩니다.", code=1)
 
 
 @roadmap_app.command("next")
