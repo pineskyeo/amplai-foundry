@@ -34,6 +34,7 @@ from amplai_foundry.governance import (
 from amplai_foundry.governance.apply_jobs import (
     ApplyGovernanceError,
     ApplyGrantService,
+    ApplyJobService,
     ApplyRequestService,
 )
 from amplai_foundry.governance.events import GovernanceEventError
@@ -148,6 +149,20 @@ def _fixture(
         decision_key,
     )
     return (*result, approve.raw_token) if include_action_token else result
+
+
+def _queued_job_fixture(tmp_path: Path):
+    store, _active, grants, decision_key = _fixture(tmp_path)
+    issued = grants._issue_from_approved_decision(decision_key, authority_request=_request())
+    request = ApplyRequestService(store, grants.authority_service, clock=lambda: NOW)
+    result = request.request_apply(
+        PROPOSAL,
+        authority_request=_request(),
+        raw_grant=issued.raw_grant,
+        idempotency_key="queued-job-apply-1",
+        request_fingerprint=hashlib.sha256(b"queued-job-apply-1").hexdigest(),
+    )
+    return store, result.job_id
 
 
 def test_approved_decision_issues_snapshot_scoped_hash_only_grant(tmp_path: Path) -> None:
@@ -832,3 +847,98 @@ def test_startup_rejects_approved_snapshot_without_grant_root(tmp_path: Path) ->
 
     with pytest.raises(GovernanceEventError, match="APPLY_RESULT_ROOT_MISMATCH"):
         store.initialize()
+
+
+def test_apply_job_lease_reclaim_increments_fence_and_rejects_stale_worker(
+    tmp_path: Path,
+) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    clock = [NOW]
+    jobs = ApplyJobService(store, clock=lambda: clock[0])
+    first = jobs.claim_next("worker-1", lease_ttl=timedelta(seconds=2))
+    assert first is not None
+    assert first.job_id == job_id
+    assert first.attempts == 1
+    assert first.fencing_token == 1
+    running = jobs.start(job_id, worker_id="worker-1", fencing_token=1)
+    assert running.status.value == "running"
+
+    clock[0] += timedelta(seconds=3)
+    second = jobs.claim_next("worker-2", lease_ttl=timedelta(seconds=5))
+    assert second is not None
+    assert second.job_id == job_id
+    assert second.attempts == 2
+    assert second.fencing_token == 2
+    with pytest.raises(ApplyGovernanceError, match="APPLY_JOB_FENCE_STALE"):
+        jobs.heartbeat(job_id, worker_id="worker-1", fencing_token=1)
+    with pytest.raises(ApplyGovernanceError, match="APPLY_JOB_FENCE_STALE"):
+        jobs.stage(
+            job_id,
+            worker_id="worker-1",
+            fencing_token=1,
+            artifact_digest=f"sha256:{'a' * 64}",
+        )
+
+
+def test_apply_job_retry_wait_reclaims_only_after_due_time(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    clock = [NOW]
+    jobs = ApplyJobService(store, clock=lambda: clock[0])
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    retry = jobs.schedule_retry(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=claimed.fencing_token,
+        retry_delay=timedelta(seconds=10),
+        error_code="STAGING_TEMPORARY_FAILURE",
+    )
+    assert retry.status.value == "retry_wait"
+    assert jobs.claim_next("worker-2") is None
+
+    clock[0] += timedelta(seconds=10)
+    reclaimed = jobs.claim_next("worker-2")
+    assert reclaimed is not None
+    assert reclaimed.fencing_token == claimed.fencing_token + 1
+    assert reclaimed.attempts == 2
+
+
+def test_apply_job_stages_and_prepares_publish_without_canonical_write(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+    staged = jobs.stage(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=claimed.fencing_token,
+        artifact_digest=f"sha256:{'a' * 64}",
+    )
+    assert staged.status.value == "staged"
+    assert staged.lease_owner is None
+    publish = jobs.prepare_publish(
+        job_id,
+        fencing_token=claimed.fencing_token,
+        publish_request_digest=f"sha256:{'b' * 64}",
+    )
+    assert publish.status.value == "publish_pending"
+    assert publish.staged_artifact_digest == f"sha256:{'a' * 64}"
+    assert publish.publish_request_digest == f"sha256:{'b' * 64}"
+
+
+def test_concurrent_apply_job_claim_has_one_winner(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    barrier = threading.Barrier(2)
+
+    def claim(worker: str):
+        barrier.wait()
+        return jobs.claim_next(worker)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(claim, ("worker-1", "worker-2")))
+    winners = tuple(result for result in results if result is not None)
+    assert len(winners) == 1
+    assert winners[0].job_id == job_id
+    assert winners[0].fencing_token == 1

@@ -787,3 +787,291 @@ class ApplyRequestService:
     @staticmethod
     def _parse_timestamp(value: str) -> datetime:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+class ApplyJobView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    job_id: str
+    snapshot_id: str
+    proposal_ref: ProposalRef
+    approved_snapshot_digest: Digest
+    expected_base_revision: str = Field(pattern=r"^[0-9a-f]{7,64}$")
+    status: ApplyJobState
+    attempts: int = Field(ge=0)
+    fencing_token: int = Field(ge=0)
+    lease_owner: str | None = None
+    lease_expires_at: AwareDatetime | None = None
+    retry_at: AwareDatetime | None = None
+    staged_artifact_digest: Digest | None = None
+    publish_request_digest: Digest | None = None
+    last_error_code: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class ApplyJobService:
+    """Lease-bound ApplyJob runtime with monotonic fencing and staging-only writes."""
+
+    def __init__(
+        self,
+        store: GovernanceStore,
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        self.store = store
+        self._clock = clock or _system_now
+
+    def claim_next(
+        self,
+        worker_id: str,
+        *,
+        lease_ttl: timedelta = timedelta(minutes=5),
+    ) -> ApplyJobView | None:
+        self._validate_worker(worker_id)
+        if lease_ttl <= timedelta(0):
+            raise ValueError("lease TTL은 0보다 커야 합니다.")
+        now = ApplyGrantService._aware(self._clock())
+        timestamp = ApplyGrantService._timestamp(now)
+        lease_expires = ApplyGrantService._timestamp(now + lease_ttl)
+        with self.store.connect() as connection, governance_transaction(connection):
+            row = connection.execute(
+                """
+                SELECT job_id, status, fencing_token, lease_expires_at
+                FROM governance_apply_jobs
+                WHERE status = 'queued'
+                   OR (status = 'retry_wait' AND retry_at <= ?)
+                   OR (status IN ('leased', 'running') AND lease_expires_at <= ?)
+                ORDER BY created_at, job_id
+                LIMIT 1
+                """,
+                (timestamp, timestamp),
+            ).fetchone()
+            if row is None:
+                return None
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET status = 'leased', attempts = attempts + 1,
+                    fencing_token = fencing_token + 1, lease_owner = ?,
+                    lease_expires_at = ?, retry_at = NULL, updated_at = ?
+                WHERE job_id = ? AND status = ? AND fencing_token = ?
+                  AND (lease_expires_at IS ? OR lease_expires_at = ?)
+                """,
+                (
+                    worker_id,
+                    lease_expires,
+                    timestamp,
+                    row[0],
+                    row[1],
+                    row[2],
+                    row[3],
+                    row[3],
+                ),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_CLAIM_CONFLICT")
+            return self._job_view(connection, str(row[0]))
+
+    def start(self, job_id: str, *, worker_id: str, fencing_token: int) -> ApplyJobView:
+        return self._lease_update(
+            job_id,
+            worker_id=worker_id,
+            fencing_token=fencing_token,
+            expected_status=ApplyJobState.LEASED,
+            next_status=ApplyJobState.RUNNING,
+        )
+
+    def heartbeat(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        lease_ttl: timedelta = timedelta(minutes=5),
+    ) -> ApplyJobView:
+        self._validate_worker(worker_id)
+        if lease_ttl <= timedelta(0):
+            raise ValueError("lease TTL은 0보다 커야 합니다.")
+        now = ApplyGrantService._aware(self._clock())
+        timestamp = ApplyGrantService._timestamp(now)
+        expires = ApplyGrantService._timestamp(now + lease_ttl)
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET lease_expires_at = ?, updated_at = ?
+                WHERE job_id = ? AND status IN ('leased', 'running')
+                  AND lease_owner = ? AND fencing_token = ? AND lease_expires_at > ?
+                """,
+                (expires, timestamp, job_id, worker_id, fencing_token, timestamp),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
+            return self._job_view(connection, job_id)
+
+    def stage(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        artifact_digest: str,
+    ) -> ApplyJobView:
+        self._validate_digest(artifact_digest)
+        now = ApplyGrantService._aware(self._clock())
+        timestamp = ApplyGrantService._timestamp(now)
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET status = 'staged', staged_artifact_digest = ?,
+                    lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+                WHERE job_id = ? AND status = 'running' AND lease_owner = ?
+                  AND fencing_token = ? AND lease_expires_at > ?
+                """,
+                (artifact_digest, timestamp, job_id, worker_id, fencing_token, timestamp),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
+            return self._job_view(connection, job_id)
+
+    def schedule_retry(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        retry_delay: timedelta,
+        error_code: str,
+    ) -> ApplyJobView:
+        if retry_delay <= timedelta(0):
+            raise ValueError("retry delay는 0보다 커야 합니다.")
+        if not error_code.strip() or len(error_code) > 128:
+            raise ValueError("error_code가 유효하지 않습니다.")
+        now = ApplyGrantService._aware(self._clock())
+        timestamp = ApplyGrantService._timestamp(now)
+        retry_at = ApplyGrantService._timestamp(now + retry_delay)
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET status = 'retry_wait', lease_owner = NULL, lease_expires_at = NULL,
+                    retry_at = ?, last_error_code = ?, updated_at = ?
+                WHERE job_id = ? AND status IN ('leased', 'running')
+                  AND lease_owner = ? AND fencing_token = ? AND lease_expires_at > ?
+                """,
+                (
+                    retry_at,
+                    error_code,
+                    timestamp,
+                    job_id,
+                    worker_id,
+                    fencing_token,
+                    timestamp,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
+            return self._job_view(connection, job_id)
+
+    def prepare_publish(
+        self,
+        job_id: str,
+        *,
+        fencing_token: int,
+        publish_request_digest: str,
+    ) -> ApplyJobView:
+        self._validate_digest(publish_request_digest)
+        timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs
+                SET status = 'publish_pending', publish_request_digest = ?, updated_at = ?
+                WHERE job_id = ? AND status = 'staged' AND fencing_token = ?
+                  AND staged_artifact_digest IS NOT NULL
+                """,
+                (publish_request_digest, timestamp, job_id, fencing_token),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
+            return self._job_view(connection, job_id)
+
+    def get_job(self, job_id: str) -> ApplyJobView:
+        with self.store.connect() as connection:
+            return self._job_view(connection, job_id)
+
+    def _lease_update(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        expected_status: ApplyJobState,
+        next_status: ApplyJobState,
+    ) -> ApplyJobView:
+        self._validate_worker(worker_id)
+        timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
+        with self.store.connect() as connection, governance_transaction(connection):
+            updated = connection.execute(
+                """
+                UPDATE governance_apply_jobs SET status = ?, updated_at = ?
+                WHERE job_id = ? AND status = ? AND lease_owner = ?
+                  AND fencing_token = ? AND lease_expires_at > ?
+                """,
+                (
+                    next_status.value,
+                    timestamp,
+                    job_id,
+                    expected_status.value,
+                    worker_id,
+                    fencing_token,
+                    timestamp,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise ApplyGovernanceError("APPLY_JOB_FENCE_STALE")
+            return self._job_view(connection, job_id)
+
+    @staticmethod
+    def _job_view(connection: sqlite3.Connection, job_id: str) -> ApplyJobView:
+        row = connection.execute(
+            "SELECT * FROM governance_apply_jobs WHERE job_id = ?", (job_id,)
+        ).fetchone()
+        if row is None:
+            raise ApplyGovernanceError("APPLY_JOB_NOT_FOUND")
+        return ApplyJobView.model_validate(
+            {
+                "job_id": row[0],
+                "snapshot_id": row[1],
+                "proposal_ref": ApplyGrantService._proposal_ref(row[2], row[3], row[4]),
+                "approved_snapshot_digest": row[5],
+                "expected_base_revision": row[6],
+                "status": row[7],
+                "attempts": row[8],
+                "fencing_token": row[9],
+                "lease_owner": row[10],
+                "lease_expires_at": row[11],
+                "retry_at": row[12],
+                "staged_artifact_digest": row[13],
+                "publish_request_digest": row[14],
+                "last_error_code": row[15],
+                "created_at": row[16],
+                "updated_at": row[17],
+            }
+        )
+
+    @staticmethod
+    def _validate_worker(worker_id: str) -> None:
+        if not worker_id.strip() or len(worker_id) > 128:
+            raise ValueError("worker_id가 유효하지 않습니다.")
+
+    @staticmethod
+    def _validate_digest(value: str) -> None:
+        if (
+            len(value) != 71
+            or not value.startswith("sha256:")
+            or any(character not in "0123456789abcdef" for character in value[7:])
+        ):
+            raise ValueError("digest는 canonical SHA-256이어야 합니다.")
