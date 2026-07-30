@@ -2081,7 +2081,6 @@ INITIAL_MIGRATIONS = (
                 status TEXT NOT NULL CHECK (status IN ('prepared', 'state_imported')),
                 prepared_at TEXT NOT NULL,
                 state_imported_at TEXT,
-                UNIQUE (migration_id, project_namespace, project_id),
                 CHECK (
                     length(migration_id) = 20
                     AND substr(migration_id, 1, 4) = 'MPL-'
@@ -2117,6 +2116,76 @@ INITIAL_MIGRATIONS = (
                     OR (status = 'state_imported' AND state_imported_at IS NOT NULL)
                 )
             ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_migration_items (
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                source_status TEXT NOT NULL,
+                source_revision INTEGER NOT NULL CHECK (source_revision >= 1),
+                target_status TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                proposal_artifact_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                approval_disposition TEXT NOT NULL,
+                imported_at TEXT NOT NULL,
+                PRIMARY KEY (migration_id, project_namespace, project_id, proposal_id),
+                UNIQUE (project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migrations(migration_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    )
+                    ON DELETE RESTRICT,
+                CHECK (
+                    source_status IN (
+                        'draft', 'reviewed', 'changes_requested', 'approved',
+                        'applied', 'rejected', 'superseded'
+                    )
+                ),
+                CHECK (
+                    target_status IN (
+                        'draft', 'reviewed', 'changes_requested', 'approved',
+                        'applied', 'rejected', 'superseded',
+                        'legacy_approval_review_required'
+                    )
+                ),
+                CHECK (
+                    approval_disposition IN (
+                        'not_required', 'legacy_audit_present', 'synthetic_required'
+                    )
+                ),
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(proposal_artifact_digest) = 71
+                    AND substr(proposal_artifact_digest, 1, 7) = 'sha256:'
+                    AND substr(proposal_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
+    Migration(
+        version=19,
+        name="legacy-migration-durability",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_legacy_migrations_identity
+            ON governance_legacy_migrations(migration_id, project_namespace, project_id)
+            """,
+            """
+            ALTER TABLE governance_legacy_migration_items
+            RENAME TO governance_legacy_migration_items_v18
             """,
             """
             CREATE TABLE governance_legacy_migration_items (
@@ -2178,6 +2247,22 @@ INITIAL_MIGRATIONS = (
                     )
                 )
             ) WITHOUT ROWID
+            """,
+            """
+            INSERT INTO governance_legacy_migration_items(
+                migration_id, project_namespace, project_id, proposal_id,
+                source_status, source_revision, target_status, definition_digest,
+                proposal_artifact_digest, content_revision, state_revision,
+                decision_epoch, approval_disposition, legacy_git_revision, imported_at
+            )
+            SELECT migration_id, project_namespace, project_id, proposal_id,
+                   source_status, source_revision, target_status, definition_digest,
+                   proposal_artifact_digest, content_revision, state_revision,
+                   decision_epoch, approval_disposition, NULL, imported_at
+            FROM governance_legacy_migration_items_v18
+            """,
+            """
+            DROP TABLE governance_legacy_migration_items_v18
             """,
             """
             CREATE TRIGGER governance_legacy_migration_items_insert_guard
@@ -2827,10 +2912,16 @@ class MigrationRunner:
                         ("state_revision", "INTEGER", 1, 0),
                         ("decision_epoch", "INTEGER", 1, 0),
                         ("approval_disposition", "TEXT", 1, 0),
-                        ("legacy_git_revision", "TEXT", 0, 0),
                         ("imported_at", "TEXT", 1, 0),
                     ),
                 }
+            )
+        if schema_version >= 19:
+            items = expected_columns["governance_legacy_migration_items"]
+            expected_columns["governance_legacy_migration_items"] = (
+                *items[:-1],
+                ("legacy_git_revision", "TEXT", 0, 0),
+                items[-1],
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

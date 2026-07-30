@@ -773,12 +773,60 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
         )
         assert payload == expected_inputs[descriptor.logical_name]
         assert descriptor.object_digest == (f"sha256:{hashlib.sha256(payload).hexdigest()}")
-    definition_preimage = manifest.model_dump(mode="json", exclude={"definition_digest"})
+    source_payload = yaml.safe_load(expected_inputs["proposal.yaml"])
+    expected_descriptors = [
+        {
+            "logical_name": logical_name,
+            "object_digest": f"sha256:{hashlib.sha256(payload).hexdigest()}",
+            "media_type": ("text/markdown" if logical_name.endswith(".md") else "application/yaml"),
+        }
+        for logical_name, payload in sorted(
+            expected_inputs.items(), key=lambda entry: entry[0].encode("utf-8")
+        )
+    ]
+    definition_preimage = {
+        "schema_version": 3,
+        "proposal_ref": {
+            "project_ref": {
+                "project_id": "amplai",
+                "namespace": "org/default/project/amplai",
+            },
+            "proposal_id": PROPOSAL_ID,
+        },
+        "canonicalization_version": 1,
+        "operations": [
+            {
+                **source_payload["operations"][0],
+                "expected_revision": None,
+                "expected_target_sha256": None,
+                "target_id": None,
+            }
+        ],
+        "evidence": [],
+        "apply_inputs": expected_descriptors,
+        "preconditions": [
+            {
+                "legacy_migration": {
+                    "mapping_policy_version": 1,
+                    "proposal_artifact_digest": plan.proposals[0].proposal_artifact_digest,
+                    "snapshot_digest": plan.snapshot_digest,
+                    "source_revision": 7,
+                    "source_status": "draft",
+                }
+            }
+        ],
+        "base_revision": "a13d92f",
+        "validation_policy_ref": "policy/migration/v1",
+    }
     independent_definition_digest = _canonical_digest(definition_preimage)
     assert manifest.definition_digest == independent_definition_digest
+    expected_manifest = {
+        **definition_preimage,
+        "definition_digest": independent_definition_digest,
+    }
     expected_definition_bytes = (
         json.dumps(
-            manifest.model_dump(mode="json"),
+            expected_manifest,
             ensure_ascii=False,
             allow_nan=False,
             separators=(",", ":"),
@@ -803,6 +851,8 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
     assert repeated == imported
     Path(backup.project_pack_backup_path).unlink()
     Path(backup.governance_backup_path).unlink()
+    for legacy_source in expected_inputs:
+        (root / ".amplai" / "proposals" / PROPOSAL_ID / legacy_source).unlink()
     assert service.import_state(plan, backup) == imported
     with store.connect() as connection:
         assert connection.execute(
@@ -822,6 +872,19 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
         backup.governance_backup_digest,
         "state_imported",
     )
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            DELETE FROM governance_definition_revisions
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_MIGRATION_REPLAY_CONFLICT",
+    ):
+        service.import_state(plan, backup)
 
 
 def test_migration_root_and_items_are_database_enforced_durable_evidence(
@@ -856,7 +919,7 @@ def test_migration_root_and_items_are_database_enforced_durable_evidence(
         ).fetchone() == ("state_imported", plan.snapshot_digest)
 
 
-def test_populated_v17_store_upgrades_to_v18_without_rewriting_active_state(
+def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
     tmp_path: Path,
 ) -> None:
     root = _legacy_tree(tmp_path / "project")
@@ -922,6 +985,118 @@ def test_populated_v17_store_upgrades_to_v18_without_rewriting_active_state(
         "governance_legacy_migration_items_no_update",
         "governance_legacy_migration_items_no_delete",
     }
+
+
+def test_populated_v18_store_upgrades_to_v19_without_rewriting_migration_evidence(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v18 = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:18]),
+    )
+    assert v18.initialize().schema_version == 18
+    objects = ImmutableDefinitionObjectStore(PROJECT, root)
+    ref = ProposalRef(project_ref=PROJECT, proposal_id=PROPOSAL_ID)
+    canonical = canonicalize_definition(
+        ProposalDefinitionManifest(
+            proposal_ref=ref,
+            operations=({"marker": "v18", "type": "CREATE"},),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/proposal-v3",
+        )
+    )
+    object_ref = objects.put_definition_object(
+        ref,
+        canonical.canonical_bytes,
+        canonical.digest,
+    )
+    active = ActiveProposalRepository(v18, objects).activate_definition_revision(
+        ref,
+        expected_active_digest=None,
+        expected_state_revision=0,
+        next_object_ref=object_ref,
+    )
+    digest = f"sha256:{'1' * 64}"
+    migration_id = "MPL-0000000000000001"
+    with v18.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migrations(
+                migration_id, project_namespace, project_id, freeze_id,
+                snapshot_id, snapshot_digest, plan_digest, mapping_policy_version,
+                base_revision, validation_policy_ref, project_pack_backup_path,
+                project_pack_backup_digest, governance_backup_path,
+                governance_backup_digest, proposal_count, status, prepared_at,
+                state_imported_at
+            )
+            VALUES (?, ?, ?, 'MFR-0000000000000001', 'MPS-0000000000000001',
+                    ?, ?, 1, 'a13d92f', 'policy/migration/v1',
+                    '/backup/project-pack.snapshot', ?, '/backup/governance.db', ?,
+                    1, 'state_imported', ?, ?)
+            """,
+            (
+                migration_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                digest,
+                f"sha256:{'2' * 64}",
+                f"sha256:{'3' * 64}",
+                f"sha256:{'4' * 64}",
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_items(
+                migration_id, project_namespace, project_id, proposal_id,
+                source_status, source_revision, target_status, definition_digest,
+                proposal_artifact_digest, content_revision, state_revision,
+                decision_epoch, approval_disposition, imported_at
+            )
+            VALUES (?, ?, ?, ?, 'draft', 1, 'draft', ?, ?, ?, ?, ?,
+                    'not_required', ?)
+            """,
+            (
+                migration_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                PROPOSAL_ID,
+                active.active_definition_digest,
+                f"sha256:{'5' * 64}",
+                active.content_revision,
+                active.state_revision,
+                active.decision_epoch,
+                NOW.isoformat(),
+            ),
+        )
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == 19
+    with latest.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT migration_id, project_namespace, project_id, proposal_id,
+                   definition_digest, legacy_git_revision
+            FROM governance_legacy_migration_items
+            """
+        ).fetchone() == (
+            migration_id,
+            PROJECT.namespace,
+            PROJECT.project_id,
+            PROPOSAL_ID,
+            active.active_definition_digest,
+            None,
+        )
+        assert connection.execute(
+            "SELECT status, proposal_count FROM governance_legacy_migrations"
+        ).fetchone() == ("state_imported", 1)
+        with pytest.raises(sqlite3.DatabaseError, match="item is immutable"):
+            connection.execute("UPDATE governance_legacy_migration_items SET source_revision = 2")
+        with pytest.raises(sqlite3.DatabaseError, match="root is durable"):
+            connection.execute("DELETE FROM governance_legacy_migrations")
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

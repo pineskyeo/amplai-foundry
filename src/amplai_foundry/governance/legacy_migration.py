@@ -1234,6 +1234,27 @@ class LegacyProposalImportService:
                     None,
                 ):
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+                revision = connection.execute(
+                    """
+                    SELECT definition_digest, previous_definition_digest,
+                           activated_from_status
+                    FROM governance_definition_revisions
+                    WHERE project_namespace = ? AND project_id = ?
+                      AND proposal_id = ? AND content_revision = ?
+                    """,
+                    (
+                        plan.project_ref.namespace,
+                        plan.project_ref.project_id,
+                        item.proposal_ref.proposal_id,
+                        item.content_revision,
+                    ),
+                ).fetchone()
+                if revision is None or tuple(revision) != (
+                    definition_digest,
+                    None,
+                    None,
+                ):
+                    raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
                 try:
                     definition_bytes = self.objects.get_definition_object(
                         item.proposal_ref,
