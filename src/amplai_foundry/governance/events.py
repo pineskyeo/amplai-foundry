@@ -109,6 +109,29 @@ class LegacyApprovalReviewProjectionPayload(BaseModel):
     after_status: Literal["draft"] = "draft"
 
 
+class LegacyForwardRecoveryProjectionPayload(BaseModel):
+    """Secret-free projection for one post-activation definition correction."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    aggregate_ref: ProposalRef
+    event_type: Literal["migration.forward_recovered"] = "migration.forward_recovered"
+    migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    recovery_id: str = Field(pattern=r"^LFR-[A-F0-9]{16}$")
+    recovery_root_digest: Digest
+    reason: str = Field(min_length=3, max_length=512)
+    previous_definition_digest: Digest
+    previous_content_revision: int = Field(ge=1)
+    previous_state_revision: int = Field(ge=1)
+    previous_decision_epoch: int = Field(ge=1)
+    previous_status: str = Field(pattern=r"^(draft|changes_requested)$")
+    next_definition_digest: Digest
+    next_content_revision: int = Field(ge=2)
+    next_state_revision: int = Field(ge=2)
+    next_decision_epoch: int = Field(ge=2)
+    next_status: Literal["draft"] = "draft"
+
+
 class ApplyProjectionPayload(BaseModel):
     """Secret-free projection payload derived from a persisted Apply request."""
 
@@ -464,6 +487,87 @@ class GovernanceEventService:
         )
         if self._timestamp(result[0].occurred_at) != str(row[7]):
             raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_SOURCE_MISMATCH")
+        return result
+
+    def _append_legacy_forward_recovery_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        item_id: str,
+        payload: LegacyForwardRecoveryProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
+        payload_digest = self._digest(payload_json.encode("utf-8"))
+        row = connection.execute(
+            """
+            SELECT recovery_id, migration_id, project_namespace, project_id,
+                   proposal_id, previous_definition_digest,
+                   previous_content_revision, previous_state_revision,
+                   previous_decision_epoch, previous_status,
+                   next_definition_digest, next_content_revision,
+                   next_state_revision, next_decision_epoch, next_status,
+                   payload_digest, payload_json, created_at
+            FROM governance_legacy_forward_recovery_items
+            WHERE item_id = ?
+            """,
+            (item_id,),
+        ).fetchone()
+        expected = (
+            payload.recovery_id,
+            payload.migration_id,
+            *self._identity(ref),
+            payload.previous_definition_digest,
+            payload.previous_content_revision,
+            payload.previous_state_revision,
+            payload.previous_decision_epoch,
+            payload.previous_status,
+            payload.next_definition_digest,
+            payload.next_content_revision,
+            payload.next_state_revision,
+            payload.next_decision_epoch,
+            payload.next_status,
+            payload_digest,
+            payload_json,
+        )
+        if row is None or tuple(row[:17]) != expected:
+            raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_SOURCE_MISMATCH")
+        command = connection.execute(
+            """
+            SELECT actor_id, actor_type, occurred_at, recovery_root_digest, reason
+            FROM governance_legacy_forward_recovery_commands
+            WHERE recovery_id = ?
+            """,
+            (payload.recovery_id,),
+        ).fetchone()
+        if command is None or tuple(str(value) for value in command[3:5]) != (
+            payload.recovery_root_digest,
+            payload.reason,
+        ):
+            raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_SOURCE_MISMATCH")
+        destination = OutboxDestination(
+            destination_ref=f"yaml:{ref.project_ref.namespace}:"
+            f"{ref.project_ref.project_id}:{ref.proposal_id}"
+        )
+        result = self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=item_id,
+            event_type=payload.event_type,
+            actor_id=str(command[0]),
+            actor_type=str(command[1]),
+            policy_snapshot_id=self._digest(b"legacy-forward-recovery:v1"),
+            destinations=(destination,),
+            before_state=payload.previous_status,
+            after_state=payload.next_status,
+            definition_digest=payload.next_definition_digest,
+            source_state_revision=payload.next_state_revision,
+            payload=payload,
+        )
+        if self._timestamp(result[0].occurred_at) != str(row[17]):
+            raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_SOURCE_MISMATCH")
         return result
 
     def _append_apply_job_in_transaction(
@@ -1178,6 +1282,128 @@ class GovernanceEventService:
                     SELECT idempotency_key FROM governance_decision_results
                     UNION ALL
                     SELECT idempotency_key FROM governance_apply_request_results
+                ) GROUP BY idempotency_key HAVING COUNT(*) != 1 LIMIT 1
+                """
+            ).fetchone()
+            if idempotency_collision is not None:
+                raise GovernanceEventError("IDEMPOTENCY_CONFLICT")
+        has_forward_recovery = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_schema WHERE type = 'table' "
+                "AND name = 'governance_legacy_forward_recovery_items'"
+            ).fetchone()
+            is not None
+        )
+        recovery_rows = (
+            connection.execute(
+                """
+                SELECT i.item_id, i.recovery_id, i.migration_id,
+                       i.project_namespace, i.project_id, i.proposal_id,
+                       i.previous_definition_digest, i.previous_content_revision,
+                       i.previous_state_revision, i.previous_decision_epoch,
+                       i.previous_status, i.next_definition_digest,
+                       i.next_content_revision, i.next_state_revision,
+                       i.next_decision_epoch, i.next_status,
+                       i.payload_digest, i.payload_json, i.created_at,
+                       c.actor_id, c.actor_type, c.recovery_root_digest, c.reason
+                FROM governance_legacy_forward_recovery_items i
+                JOIN governance_legacy_forward_recovery_commands c
+                  ON c.recovery_id = i.recovery_id
+                 AND c.migration_id = i.migration_id
+                 AND c.project_namespace = i.project_namespace
+                 AND c.project_id = i.project_id
+                ORDER BY i.recovery_id, i.proposal_id
+                """
+            ).fetchall()
+            if has_forward_recovery
+            else ()
+        )
+        for recovery in recovery_rows:
+            try:
+                recovery_payload = LegacyForwardRecoveryProjectionPayload.model_validate_json(
+                    str(recovery[17])
+                )
+            except ValueError as error:
+                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_ROOT_MISMATCH") from error
+            ref = cls._proposal_ref(recovery[3], recovery[4], recovery[5])
+            destination = OutboxDestination(
+                destination_ref=f"yaml:{recovery[3]}:{recovery[4]}:{recovery[5]}"
+            )
+            payload_digest = cls._digest(str(recovery[17]).encode("utf-8"))
+            expected_payload = (
+                str(recovery[1]),
+                str(recovery[2]),
+                ref,
+                str(recovery[6]),
+                int(recovery[7]),
+                int(recovery[8]),
+                int(recovery[9]),
+                str(recovery[10]),
+                str(recovery[11]),
+                int(recovery[12]),
+                int(recovery[13]),
+                int(recovery[14]),
+                str(recovery[15]),
+                str(recovery[21]),
+                str(recovery[22]),
+            )
+            actual_payload = (
+                recovery_payload.recovery_id,
+                recovery_payload.migration_id,
+                recovery_payload.aggregate_ref,
+                recovery_payload.previous_definition_digest,
+                recovery_payload.previous_content_revision,
+                recovery_payload.previous_state_revision,
+                recovery_payload.previous_decision_epoch,
+                recovery_payload.previous_status,
+                recovery_payload.next_definition_digest,
+                recovery_payload.next_content_revision,
+                recovery_payload.next_state_revision,
+                recovery_payload.next_decision_epoch,
+                recovery_payload.next_status,
+                recovery_payload.recovery_root_digest,
+                recovery_payload.reason,
+            )
+            if str(recovery[16]) != payload_digest or actual_payload != expected_payload:
+                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_ROOT_MISMATCH")
+            item_id = str(recovery[0])
+            manifest_digest = cls._destination_manifest_digest((destination,))
+            decision_commands[item_id] = (
+                payload_digest,
+                recovery_payload.next_state_revision,
+                manifest_digest,
+                1,
+            )
+            audits = connection.execute(
+                "SELECT * FROM governance_audit_events WHERE command_id = ?",
+                (item_id,),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            if (
+                audit.event_type != recovery_payload.event_type
+                or audit.proposal_ref != ref
+                or audit.actor_id != str(recovery[19])
+                or audit.actor_type != str(recovery[20])
+                or audit.policy_snapshot_id != cls._digest(b"legacy-forward-recovery:v1")
+                or audit.before_state != recovery_payload.previous_status
+                or audit.after_state != recovery_payload.next_status
+                or audit.definition_digest != recovery_payload.next_definition_digest
+                or cls._timestamp(audit.occurred_at) != str(recovery[18])
+                or audit.destination_manifest_digest != manifest_digest
+                or audit.destination_count != 1
+            ):
+                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
+        if has_forward_recovery:
+            idempotency_collision = connection.execute(
+                """
+                SELECT idempotency_key FROM (
+                    SELECT idempotency_key FROM governance_legacy_forward_recovery_commands
+                    UNION ALL SELECT idempotency_key FROM governance_legacy_import_commands
+                    UNION ALL SELECT idempotency_key FROM governance_legacy_approval_reviews
+                    UNION ALL SELECT idempotency_key FROM governance_decision_results
+                    UNION ALL SELECT idempotency_key FROM governance_apply_request_results
                 ) GROUP BY idempotency_key HAVING COUNT(*) != 1 LIMIT 1
                 """
             ).fetchone()

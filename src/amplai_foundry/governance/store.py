@@ -226,6 +226,12 @@ class GovernanceStore:
             )
 
             LegacyMigrationActivationService.reconcile_roots(connection)
+        if health.schema_version >= 30:
+            from amplai_foundry.governance.legacy_recovery import (
+                LegacyMigrationForwardRecoveryExecutor,
+            )
+
+            LegacyMigrationForwardRecoveryExecutor.reconcile_roots(connection)
 
     def _configure(
         self,

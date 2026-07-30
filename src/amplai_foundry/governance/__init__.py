@@ -100,8 +100,11 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyVerifiedProposal,
 )
 from amplai_foundry.governance.legacy_recovery import (
+    LegacyForwardRecoveryExecutionRoot,
     LegacyForwardRecoveryPlan,
+    LegacyForwardRecoveryResult,
     LegacyForwardRecoveryRoot,
+    LegacyMigrationForwardRecoveryExecutor,
     LegacyMigrationForwardRecoveryPlanner,
 )
 from amplai_foundry.governance.legacy_rollback import (
@@ -218,11 +221,14 @@ __all__ = [
     "LegacyApprovalDisposition",
     "LegacyApprovalReviewResult",
     "LegacyApprovalReviewService",
+    "LegacyForwardRecoveryExecutionRoot",
     "LegacyForwardRecoveryPlan",
+    "LegacyForwardRecoveryResult",
     "LegacyForwardRecoveryRoot",
     "LegacyMigrationActivationResult",
     "LegacyMigrationActivationService",
     "LegacyMigrationBackupEvidence",
+    "LegacyMigrationForwardRecoveryExecutor",
     "LegacyMigrationForwardRecoveryPlanner",
     "LegacyMigrationImportResult",
     "LegacyMigrationLifecycleError",

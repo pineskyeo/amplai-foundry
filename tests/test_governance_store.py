@@ -246,6 +246,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (27, "legacy-rollback-provenance-attestation"),
         (28, "legacy-atomic-exact-root-rollback"),
         (29, "legacy-rollback-hold-provenance"),
+        (30, "legacy-forward-recovery-evidence"),
     ]
     assert INITIAL_MIGRATIONS[19].checksum == (
         "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"
@@ -348,6 +349,36 @@ def test_exact_v28_store_upgrades_additively_to_hold_provenance(tmp_path: Path) 
             "approval_hold_source_artifact_digest",
             "approval_hold_created_at",
         )
+
+
+def test_exact_v29_store_upgrades_additively_to_forward_recovery_evidence(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    predecessor = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:29]),
+    )
+    assert predecessor.initialize().schema_version == 29
+    with predecessor.connect() as connection:
+        assert connection.execute(
+            "SELECT checksum FROM governance_schema_migrations WHERE version = 29"
+        ).fetchone() == ("a7e7f7123190c26a0147d1f2d316b7d65ad081ffb8c71ac1b4a543868f970b9a",)
+
+    upgraded = GovernanceStore(path)
+    assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with upgraded.connect() as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_schema WHERE type = 'table'"
+            ).fetchall()
+        }
+    assert {
+        "governance_legacy_forward_recovery_commands",
+        "governance_legacy_forward_recovery_items",
+        "governance_legacy_forward_recovery_results",
+    } <= tables
 
 
 def test_version_six_store_with_decision_event_upgrades_and_backfills(tmp_path: Path) -> None:

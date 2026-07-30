@@ -3760,6 +3760,227 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=30,
+        name="legacy-forward-recovery-evidence",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_forward_recovery_commands (
+                recovery_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                request_fingerprint TEXT NOT NULL,
+                recovery_root_digest TEXT NOT NULL,
+                expected_lifecycle_revision INTEGER NOT NULL
+                    CHECK (expected_lifecycle_revision >= 1),
+                activation_event_digest TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                request_id TEXT NOT NULL,
+                channel_json TEXT NOT NULL CHECK (json_valid(channel_json) = 1),
+                reason TEXT NOT NULL CHECK (length(trim(reason)) BETWEEN 3 AND 512),
+                occurred_at TEXT NOT NULL,
+                UNIQUE (recovery_id, migration_id),
+                UNIQUE (recovery_id, migration_id, project_namespace, project_id),
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migration_lifecycle_heads(migration_id)
+                    ON DELETE RESTRICT,
+                CHECK (
+                    length(recovery_id) = 20
+                    AND substr(recovery_id, 1, 4) = 'LFR-'
+                    AND substr(recovery_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(recovery_root_digest) = 71
+                    AND substr(recovery_root_digest, 1, 7) = 'sha256:'
+                    AND substr(recovery_root_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    AND length(activation_event_digest) = 71
+                    AND substr(activation_event_digest, 1, 7) = 'sha256:'
+                    AND substr(activation_event_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_forward_recovery_items (
+                item_id TEXT PRIMARY KEY NOT NULL,
+                recovery_id TEXT NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                previous_definition_digest TEXT NOT NULL,
+                previous_content_revision INTEGER NOT NULL CHECK (previous_content_revision >= 1),
+                previous_state_revision INTEGER NOT NULL CHECK (previous_state_revision >= 1),
+                previous_decision_epoch INTEGER NOT NULL CHECK (previous_decision_epoch >= 1),
+                previous_status TEXT NOT NULL CHECK (
+                    previous_status IN ('draft', 'changes_requested')
+                ),
+                next_definition_digest TEXT NOT NULL,
+                next_content_revision INTEGER NOT NULL CHECK (next_content_revision >= 2),
+                next_state_revision INTEGER NOT NULL CHECK (next_state_revision >= 2),
+                next_decision_epoch INTEGER NOT NULL CHECK (next_decision_epoch >= 2),
+                next_status TEXT NOT NULL CHECK (next_status = 'draft'),
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL CHECK (json_valid(payload_json) = 1),
+                created_at TEXT NOT NULL,
+                UNIQUE (recovery_id, proposal_id),
+                FOREIGN KEY (recovery_id, migration_id, project_namespace, project_id)
+                    REFERENCES governance_legacy_forward_recovery_commands(
+                        recovery_id, migration_id, project_namespace, project_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(item_id) = 20
+                    AND substr(item_id, 1, 4) = 'LFI-'
+                    AND substr(item_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    previous_definition_digest != next_definition_digest
+                    AND next_content_revision = previous_content_revision + 1
+                    AND next_state_revision = previous_state_revision + 1
+                    AND next_decision_epoch = previous_decision_epoch + 1
+                ),
+                CHECK (
+                    length(previous_definition_digest) = 71
+                    AND substr(previous_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(previous_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    AND length(next_definition_digest) = 71
+                    AND substr(next_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(next_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    AND length(payload_digest) = 71
+                    AND substr(payload_digest, 1, 7) = 'sha256:'
+                    AND substr(payload_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_forward_recovery_results (
+                recovery_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                result_json TEXT NOT NULL CHECK (json_valid(result_json) = 1),
+                result_digest TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (recovery_id, migration_id)
+                    REFERENCES governance_legacy_forward_recovery_commands(
+                        recovery_id, migration_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(result_digest) = 71
+                    AND substr(result_digest, 1, 7) = 'sha256:'
+                    AND substr(result_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_commands_insert_guard
+            BEFORE INSERT ON governance_legacy_forward_recovery_commands
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_migration_lifecycle_heads h
+                WHERE h.migration_id = NEW.migration_id
+                  AND h.project_namespace = NEW.project_namespace
+                  AND h.project_id = NEW.project_id
+                  AND h.state = 'activated'
+                  AND h.lifecycle_revision = NEW.expected_lifecycle_revision
+                  AND h.last_event_digest = NEW.activation_event_digest
+              )
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery command root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_items_insert_guard
+            BEFORE INSERT ON governance_legacy_forward_recovery_items
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_forward_recovery_commands c
+                JOIN governance_active_proposals a
+                  ON a.project_namespace = c.project_namespace
+                 AND a.project_id = c.project_id AND a.proposal_id = NEW.proposal_id
+                JOIN governance_definition_revisions d
+                  ON d.project_namespace = a.project_namespace
+                 AND d.project_id = a.project_id AND d.proposal_id = a.proposal_id
+                 AND d.content_revision = NEW.next_content_revision
+                 AND d.definition_digest = NEW.next_definition_digest
+                WHERE c.recovery_id = NEW.recovery_id
+                  AND c.migration_id = NEW.migration_id
+                  AND c.project_namespace = NEW.project_namespace
+                  AND c.project_id = NEW.project_id
+                  AND a.active_definition_digest = NEW.next_definition_digest
+                  AND a.content_revision = NEW.next_content_revision
+                  AND a.state_revision = NEW.next_state_revision
+                  AND a.decision_epoch = NEW.next_decision_epoch
+                  AND a.status = NEW.next_status
+                  AND d.previous_definition_digest = NEW.previous_definition_digest
+                  AND d.activated_from_status = NEW.previous_status
+              )
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery item root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_results_insert_guard
+            BEFORE INSERT ON governance_legacy_forward_recovery_results
+            WHEN json_extract(NEW.result_json, '$.recovery_id') IS NOT NEW.recovery_id
+              OR json_extract(NEW.result_json, '$.migration_id') IS NOT NEW.migration_id
+              OR json_extract(NEW.result_json, '$.result_digest') IS NOT NEW.result_digest
+              OR json_extract(NEW.result_json, '$.replayed') != 0
+              OR NOT EXISTS (
+                SELECT 1 FROM governance_legacy_forward_recovery_commands c
+                WHERE c.recovery_id = NEW.recovery_id
+                  AND c.migration_id = NEW.migration_id
+                  AND c.occurred_at = NEW.created_at
+                  AND json_extract(NEW.result_json, '$.recovery_root_digest') =
+                      c.recovery_root_digest
+                  AND json_extract(NEW.result_json, '$.expected_lifecycle_revision') =
+                      c.expected_lifecycle_revision
+                  AND json_extract(NEW.result_json, '$.activation_event_digest') =
+                      c.activation_event_digest
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_id') = c.actor_id
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_type') = c.actor_type
+                  AND json_extract(NEW.result_json, '$.recovered_proposal_count') = (
+                      SELECT COUNT(*) FROM governance_legacy_forward_recovery_items i
+                      WHERE i.recovery_id = c.recovery_id
+                  )
+              )
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery result root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_commands_no_update
+            BEFORE UPDATE ON governance_legacy_forward_recovery_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery command is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_commands_no_delete
+            BEFORE DELETE ON governance_legacy_forward_recovery_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery command is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_items_no_update
+            BEFORE UPDATE ON governance_legacy_forward_recovery_items
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery item is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_items_no_delete
+            BEFORE DELETE ON governance_legacy_forward_recovery_items
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery item is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_results_no_update
+            BEFORE UPDATE ON governance_legacy_forward_recovery_results
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery result is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_forward_recovery_results_no_delete
+            BEFORE DELETE ON governance_legacy_forward_recovery_results
+            BEGIN SELECT RAISE(ABORT, 'legacy forward recovery result is durable'); END
+            """,
+        ),
+    ),
 )
 
 

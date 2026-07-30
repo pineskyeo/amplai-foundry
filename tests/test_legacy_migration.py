@@ -34,6 +34,7 @@ from amplai_foundry.governance import (
     ChannelProvider,
     ChannelRef,
     DecisionAction,
+    DefinitionObjectRef,
     DirectAuthorityRequest,
     ImmutableDefinitionObjectStore,
     LegacyApprovalDisposition,
@@ -42,6 +43,7 @@ from amplai_foundry.governance import (
     LegacyMigrationActivationResult,
     LegacyMigrationActivationService,
     LegacyMigrationBackupEvidence,
+    LegacyMigrationForwardRecoveryExecutor,
     LegacyMigrationForwardRecoveryPlanner,
     LegacyMigrationLifecycleError,
     LegacyMigrationLifecycleState,
@@ -236,6 +238,26 @@ def _add_legacy_proposal(
     )
     (proposal / "summary.md").write_text("# Legacy summary\n", encoding="utf-8")
     (drafts / "CON-0001.md").write_text("# Legacy draft\n", encoding="utf-8")
+
+
+def _put_recovery_definition(
+    objects: ImmutableDefinitionObjectStore,
+    ref: ProposalRef,
+    marker: str,
+) -> DefinitionObjectRef:
+    canonical = canonicalize_definition(
+        ProposalDefinitionManifest(
+            proposal_ref=ref,
+            operations=({"marker": marker, "type": "UPDATE"},),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/legacy-forward-recovery/v1",
+        )
+    )
+    return objects.put_definition_object(
+        ref,
+        canonical.canonical_bytes,
+        canonical.digest,
+    )
 
 
 def _tree_inventory(root: Path) -> dict[str, tuple[int, int, int, str | None]]:
@@ -3803,6 +3825,337 @@ def test_forward_recovery_reconciles_immutable_import_graph_after_activation(
             authority_request=authority_request,
             expected_lifecycle_revision=3,
         )
+
+
+def test_forward_recovery_executor_atomically_revises_and_replays(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    activation = LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate before atomic forward recovery",
+        idempotency_key="legacy-activation:forward-executor:1",
+        request_fingerprint="a" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    plan = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=activation.lifecycle_revision,
+    )
+    next_object = _put_recovery_definition(objects, ref, "forward-recovery-v2")
+    executor = LegacyMigrationForwardRecoveryExecutor(
+        store,
+        authority,
+        objects,
+        clock=lambda: NOW,
+    )
+
+    result = executor.execute(
+        plan,
+        (next_object,),
+        authority_request=authority_request,
+        reason="replace activated legacy definition with corrected v3 definition",
+        idempotency_key="legacy-forward-recovery:execute:1",
+    )
+    conflicting_object = _put_recovery_definition(objects, ref, "conflicting-replay")
+    with pytest.raises(LegacyMigrationLifecycleError, match="IDEMPOTENCY_CONFLICT"):
+        executor.execute(
+            plan,
+            (conflicting_object,),
+            authority_request=authority_request,
+            reason="replace activated legacy definition with corrected v3 definition",
+            idempotency_key="legacy-forward-recovery:execute:1",
+        )
+    replay = executor.execute(
+        plan,
+        (next_object,),
+        authority_request=authority_request,
+        reason="replace activated legacy definition with corrected v3 definition",
+        idempotency_key="legacy-forward-recovery:execute:1",
+    )
+
+    assert replay.model_copy(update={"replayed": False}) == result
+    assert replay.replayed
+    assert result.recovered_proposal_count == 1
+    assert result.recovery_root_digest == plan.recovery_root_digest
+    execution_root = result.roots[0]
+    assert execution_root.previous_definition_digest == plan.roots[0].active_definition_digest
+    assert execution_root.next_definition_digest == next_object.digest
+    assert execution_root.next_content_revision == plan.roots[0].content_revision + 1
+    assert execution_root.next_state_revision == plan.roots[0].state_revision + 1
+    assert execution_root.next_decision_epoch == plan.roots[0].decision_epoch + 1
+    current = ActiveProposalRepository(store, objects).get(ref)
+    assert current is not None
+    assert current.active_definition_digest == next_object.digest
+    assert current.status is ActiveProposalStatus.DRAFT
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_commands"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_items"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_results"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT event_type FROM governance_audit_events WHERE event_id = ?",
+            (execution_root.audit_event_id,),
+        ).fetchone() == ("migration.forward_recovered",)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_events WHERE event_id = ?",
+            (execution_root.outbox_event_ids[0],),
+        ).fetchone() == (1,)
+    assert store.check_startup().healthy
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_PLAN_STALE",
+    ):
+        executor.execute(
+            plan,
+            (next_object,),
+            authority_request=authority_request,
+            reason="reject reuse of a consumed recovery plan",
+            idempotency_key="legacy-forward-recovery:stale-plan:1",
+        )
+    second_plan = LegacyMigrationForwardRecoveryPlanner(
+        store,
+        authority,
+        clock=lambda: NOW + timedelta(minutes=1),
+    ).plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=activation.lifecycle_revision,
+    )
+    second_object = _put_recovery_definition(objects, ref, "forward-recovery-v3")
+    second_result = executor.execute(
+        second_plan,
+        (second_object,),
+        authority_request=authority_request,
+        reason="apply a later corrected v3 definition revision",
+        idempotency_key="legacy-forward-recovery:execute:2",
+    )
+    assert second_result.roots[0].previous_definition_digest == next_object.digest
+    assert second_result.roots[0].next_definition_digest == second_object.digest
+    assert store.check_startup().healthy
+
+
+def test_forward_recovery_executor_rolls_back_all_roots_on_late_conflict(
+    tmp_path: Path,
+) -> None:
+    second_id = "PROP-20260730-00112233"
+    root = _legacy_tree(tmp_path / "project")
+    _add_legacy_proposal(root, second_id)
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate multi-root executor conflict fixture",
+        idempotency_key="legacy-activation:forward-executor-conflict:1",
+        request_fingerprint="b" * 64,
+    )
+    refs = tuple(item.proposal_ref for item in migration.proposals)
+    plan = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+        migration.plan_id,
+        refs,
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+    valid = _put_recovery_definition(objects, plan.roots[0].proposal_ref, "valid-first-root")
+    stale_root = plan.roots[1]
+    unchanged = DefinitionObjectRef(
+        proposal_ref=stale_root.proposal_ref,
+        object_kind="definition",
+        digest=stale_root.active_definition_digest,
+        path=objects._path_for(
+            stale_root.proposal_ref,
+            stale_root.active_definition_digest,
+            "definition",
+        ),
+    )
+    before = _logical_store_snapshot(store)
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_CONFLICT",
+    ):
+        LegacyMigrationForwardRecoveryExecutor(
+            store,
+            authority,
+            objects,
+            clock=lambda: NOW,
+        ).execute(
+            plan,
+            (valid, unchanged),
+            authority_request=authority_request,
+            reason="inject unchanged late root to prove atomic rollback",
+            idempotency_key="legacy-forward-recovery:atomic-conflict:1",
+        )
+
+    assert _logical_store_snapshot(store) == before
+    assert store.check_startup().healthy
+
+
+def test_forward_recovery_executor_reconciles_durable_ambiguous_commit(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=store,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate ambiguous recovery fixture",
+        idempotency_key="legacy-activation:forward-ambiguous:1",
+        request_fingerprint="c" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    plan = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+    next_object = _put_recovery_definition(objects, ref, "ambiguous-forward-recovery")
+    store.commit_count = 0
+    store.fail_commit_number = 1
+
+    result = LegacyMigrationForwardRecoveryExecutor(
+        store,
+        authority,
+        objects,
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        (next_object,),
+        authority_request=authority_request,
+        reason="reconcile durable ambiguous forward recovery commit",
+        idempotency_key="legacy-forward-recovery:ambiguous:1",
+    )
+
+    assert result.replayed
+    assert result.roots[0].next_definition_digest == next_object.digest
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_commands"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type = "
+            "'migration.forward_recovered'"
+        ).fetchone() == (1,)
+    assert store.check_startup().healthy
+
+
+def test_concurrent_identical_forward_recovery_converges_to_one_result(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate concurrent forward recovery fixture",
+        idempotency_key="legacy-activation:forward-concurrent:1",
+        request_fingerprint="d" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    plan = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+    next_object = _put_recovery_definition(objects, ref, "concurrent-forward-recovery")
+    executor = LegacyMigrationForwardRecoveryExecutor(
+        store,
+        authority,
+        objects,
+        clock=lambda: NOW,
+    )
+    barrier = threading.Barrier(2)
+
+    def recover() -> object:
+        barrier.wait()
+        return executor.execute(
+            plan,
+            (next_object,),
+            authority_request=authority_request,
+            reason="converge concurrent identical forward recovery",
+            idempotency_key="legacy-forward-recovery:concurrent:1",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = tuple(pool.map(lambda _index: recover(), range(2)))
+
+    assert results[0].result_digest == results[1].result_digest
+    assert sorted(result.replayed for result in results) == [False, True]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_forward_recovery_commands"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type = "
+            "'migration.forward_recovered'"
+        ).fetchone() == (1,)
+    assert store.check_startup().healthy
 
 
 def test_forward_recovery_plan_requires_activated_terminal_boundary(tmp_path: Path) -> None:
