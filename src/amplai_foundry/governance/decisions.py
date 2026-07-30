@@ -6,6 +6,7 @@ import hashlib
 import json
 import secrets
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -44,6 +45,10 @@ _DECISION_STATUS = {
     DecisionAction.REJECT: ActiveProposalStatus.REJECTED,
     DecisionAction.REQUEST_CHANGES: ActiveProposalStatus.CHANGES_REQUESTED,
 }
+
+
+def _system_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class ActionTokenView(BaseModel):
@@ -95,8 +100,14 @@ class DecisionResult(BaseModel):
 class DecisionService:
     """Issue scoped credentials and atomically execute governed decisions."""
 
-    def __init__(self, store: GovernanceStore) -> None:
+    def __init__(
+        self,
+        store: GovernanceStore,
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         self.store = store
+        self._clock = clock or _system_now
 
     def issue_tokens(
         self,
@@ -104,12 +115,11 @@ class DecisionService:
         *,
         actor_ref: ActorRef,
         channel_ref: ChannelRef,
-        now: datetime | None = None,
         ttl: timedelta = timedelta(minutes=15),
     ) -> tuple[IssuedActionToken, ...]:
         if actor_ref.actor_type is not ActorType.HUMAN:
             raise DecisionError("AUTHORITY_DENIED")
-        issued_at = self._aware(now)
+        issued_at = self._aware(self._clock())
         if ttl <= timedelta(0):
             raise ValueError("Token TTL은 0보다 커야 합니다.")
         expires_at = issued_at + ttl
@@ -167,10 +177,9 @@ class DecisionService:
         raw_token: str,
         idempotency_key: str,
         request_fingerprint: str,
-        now: datetime | None = None,
     ) -> DecisionResult:
         self._validate_command(idempotency_key, request_fingerprint, raw_token)
-        processed_at = self._aware(now)
+        processed_at = self._aware(self._clock())
         channel_json = self._channel_json(channel_ref)
         with self.store.connect() as connection, governance_transaction(connection):
             replay = self._result_row(connection, idempotency_key)
@@ -327,10 +336,10 @@ class DecisionService:
             }
         )
 
-    def expire_tokens(self, *, now: datetime | None = None) -> int:
+    def expire_tokens(self) -> int:
         """Resolve elapsed issued tokens without touching Proposal state."""
 
-        expired_at = self._aware(now)
+        expired_at = self._aware(self._clock())
         with self.store.connect() as connection, governance_transaction(connection):
             result = connection.execute(
                 """
@@ -453,11 +462,10 @@ class DecisionService:
         return f"sha256:{hashlib.sha256(raw_token.encode('utf-8')).hexdigest()}"
 
     @staticmethod
-    def _aware(value: datetime | None) -> datetime:
-        result = value or datetime.now(UTC)
-        if result.tzinfo is None or result.utcoffset() is None:
+    def _aware(value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("timestamp는 timezone-aware여야 합니다.")
-        return result
+        return value
 
     @staticmethod
     def _timestamp(value: datetime) -> str:

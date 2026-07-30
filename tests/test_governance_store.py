@@ -67,10 +67,33 @@ class BlockingV2MigrationRunner(MigrationRunner):
         return super().apply_pending(connection)
 
 
+class BlockingV3MigrationRunner(MigrationRunner):
+    def __init__(self, marker: Path) -> None:
+        super().__init__()
+        self.marker = marker
+
+    def apply_pending(self, connection: sqlite3.Connection) -> int:
+        def trace(statement: str) -> None:
+            if "CREATE TABLE governance_decision_results" in statement:
+                self.marker.write_text("ready", encoding="utf-8")
+                time.sleep(60)
+
+        connection.set_trace_callback(trace)
+        return super().apply_pending(connection)
+
+
 def _run_blocking_v2_migration(database: str, marker: str) -> None:
     store = GovernanceStore(
         Path(database),
         migration_runner=BlockingV2MigrationRunner(Path(marker)),
+    )
+    store.initialize()
+
+
+def _run_blocking_v3_migration(database: str, marker: str) -> None:
+    store = GovernanceStore(
+        Path(database),
+        migration_runner=BlockingV3MigrationRunner(Path(marker)),
     )
     store.initialize()
 
@@ -196,6 +219,47 @@ def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
     assert "governance_active_proposals" not in tables
     assert "governance_definition_revisions" not in tables
     assert versions == [(1,)]
+
+    assert GovernanceStore(path).initialize().schema_version == 3
+
+
+def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    marker = tmp_path / "v3-second-ddl-ready"
+    version_two_runner = MigrationRunner(INITIAL_MIGRATIONS[:2])
+    GovernanceStore(path, migration_runner=version_two_runner).initialize()
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(
+        target=_run_blocking_v3_migration,
+        args=(str(path), str(marker)),
+    )
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), "v3 migration이 second DDL checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    version_two = GovernanceStore(path, migration_runner=version_two_runner)
+    assert version_two.check_startup().schema_version == 2
+    with version_two.connect() as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+        versions = connection.execute(
+            "SELECT version FROM governance_schema_migrations ORDER BY version"
+        ).fetchall()
+    assert "governance_action_tokens" not in tables
+    assert "governance_decision_results" not in tables
+    assert versions == [(1,), (2,)]
 
     assert GovernanceStore(path).initialize().schema_version == 3
 

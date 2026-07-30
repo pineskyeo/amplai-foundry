@@ -164,7 +164,11 @@ INITIAL_MIGRATIONS = (
                         proposal_id
                     )
                     ON DELETE RESTRICT,
-                CHECK (token_id GLOB 'TOK-[A-F0-9]*' AND length(token_id) = 20),
+                CHECK (
+                    length(token_id) = 20
+                    AND substr(token_id, 1, 4) = 'TOK-'
+                    AND substr(token_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
                 CHECK (
                     length(token_hash) = 71
                     AND substr(token_hash, 1, 7) = 'sha256:'

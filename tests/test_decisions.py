@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -26,7 +28,7 @@ from amplai_foundry.governance import (
     canonicalize_definition,
 )
 from amplai_foundry.governance.object_store import DefinitionObjectRef
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.store import GovernanceCommitAmbiguousError, GovernanceStore
 
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
 PROPOSAL = ProposalRef(project_ref=PROJECT, proposal_id="PROP-20260730-ABCDEF12")
@@ -41,6 +43,45 @@ CHANNEL = ChannelRef(
 OTHER_CHANNEL = CHANNEL.model_copy(update={"message_id": "1710000000.000201"})
 NOW = datetime(2026, 7, 30, 9, 0, tzinfo=UTC)
 FINGERPRINT = hashlib.sha256(b"provider-request-1").hexdigest()
+
+
+class MutableClock:
+    def __init__(self, value: datetime) -> None:
+        self.value = value
+
+    def __call__(self) -> datetime:
+        return self.value
+
+
+class CommitAfterSuccessConnection:
+    def __init__(self, connection: sqlite3.Connection, store: CommitAfterSuccessStore) -> None:
+        self._connection = connection
+        self._store = store
+
+    @property
+    def in_transaction(self) -> bool:
+        return self._connection.in_transaction
+
+    def execute(self, statement: str, parameters: object = ()) -> sqlite3.Cursor:
+        if parameters == ():
+            cursor = self._connection.execute(statement)
+        else:
+            cursor = self._connection.execute(statement, parameters)  # type: ignore[arg-type]
+        if statement == "COMMIT" and self._store.fail_next_commit:
+            self._store.fail_next_commit = False
+            raise sqlite3.OperationalError("injected after durable commit")
+        return cursor
+
+
+class CommitAfterSuccessStore(GovernanceStore):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.fail_next_commit = True
+
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        with super().connect() as connection:
+            yield CommitAfterSuccessConnection(connection, self)  # type: ignore[misc]
 
 
 def _definition(
@@ -65,6 +106,7 @@ def _reviewed(
     ImmutableDefinitionObjectStore,
     ActiveProposalRepository,
     DecisionService,
+    MutableClock,
 ]:
     store = GovernanceStore(tmp_path / "governance.db")
     store.initialize()
@@ -83,30 +125,18 @@ def _reviewed(
         expected_state_revision=initial.state_revision,
         next_status=ActiveProposalStatus.REVIEWED,
     )
-    return store, objects, active, DecisionService(store)
-
-
-def _tokens_by_action(service: DecisionService) -> dict[DecisionAction, object]:
-    return {
-        token.record.allowed_action: token
-        for token in service.issue_tokens(
-            PROPOSAL,
-            actor_ref=ACTOR,
-            channel_ref=CHANNEL,
-            now=NOW,
-        )
-    }
+    clock = MutableClock(NOW)
+    return store, objects, active, DecisionService(store, clock=clock), clock
 
 
 def test_issues_three_separate_hash_only_tokens_bound_to_reviewed_snapshot(
     tmp_path: Path,
 ) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
     issued = service.issue_tokens(
         PROPOSAL,
         actor_ref=ACTOR,
         channel_ref=CHANNEL,
-        now=NOW,
     )
     current = active.get(PROPOSAL)
     assert current is not None
@@ -136,17 +166,21 @@ def test_issues_three_separate_hash_only_tokens_bound_to_reviewed_snapshot(
     assert stored_hashes == {
         f"sha256:{hashlib.sha256(token.raw_token.encode()).hexdigest()}" for token in issued
     }
+    with store.connect() as connection, pytest.raises(sqlite3.IntegrityError):
+        connection.execute(
+            "UPDATE governance_action_tokens SET token_id = ? WHERE token_id = ?",
+            ("TOK-A!!!!!!!!!!!!!!!", issued[0].record.token_id),
+        )
 
 
 def test_success_consumes_token_and_replay_returns_first_result_before_live_validation(
     tmp_path: Path,
 ) -> None:
-    _store, _objects, active, service = _reviewed(tmp_path)
+    _store, _objects, active, service, clock = _reviewed(tmp_path)
     issued = service.issue_tokens(
         PROPOSAL,
         actor_ref=ACTOR,
         channel_ref=CHANNEL,
-        now=NOW,
     )
     approve = next(
         token for token in issued if token.record.allowed_action is DecisionAction.APPROVE
@@ -160,8 +194,8 @@ def test_success_consumes_token_and_replay_returns_first_result_before_live_vali
         raw_token=approve.raw_token,
         idempotency_key="decision-1",
         request_fingerprint=FINGERPRINT,
-        now=NOW + timedelta(seconds=1),
     )
+    clock.value = NOW + timedelta(days=1)
     replay = service.decide(
         PROPOSAL,
         action=DecisionAction.APPROVE,
@@ -170,7 +204,6 @@ def test_success_consumes_token_and_replay_returns_first_result_before_live_vali
         raw_token=approve.raw_token,
         idempotency_key="decision-1",
         request_fingerprint=FINGERPRINT,
-        now=NOW + timedelta(days=1),
     )
 
     assert first.proposal_status is ActiveProposalStatus.APPROVED
@@ -184,10 +217,10 @@ def test_success_consumes_token_and_replay_returns_first_result_before_live_vali
 
 
 def test_idempotency_conflict_precedes_consumed_token_and_changes_nothing(tmp_path: Path) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
     service.decide(
@@ -198,7 +231,6 @@ def test_idempotency_conflict_precedes_consumed_token_and_changes_nothing(tmp_pa
         raw_token=approve.raw_token,
         idempotency_key="decision-1",
         request_fingerprint=FINGERPRINT,
-        now=NOW,
     )
     before = active.get(PROPOSAL)
 
@@ -211,7 +243,6 @@ def test_idempotency_conflict_precedes_consumed_token_and_changes_nothing(tmp_pa
             raw_token=approve.raw_token,
             idempotency_key="decision-1",
             request_fingerprint=hashlib.sha256(b"different").hexdigest(),
-            now=NOW,
         )
 
     assert active.get(PROPOSAL) == before
@@ -235,10 +266,10 @@ def test_failed_decision_does_not_mutate_proposal_or_token(
     mutation: str,
     code: str,
 ) -> None:
-    _store, _objects, active, service = _reviewed(tmp_path)
+    _store, _objects, active, service, clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
     before = active.get(PROPOSAL)
@@ -246,7 +277,6 @@ def test_failed_decision_does_not_mutate_proposal_or_token(
         "action": DecisionAction.APPROVE,
         "actor_ref": ACTOR,
         "channel_ref": CHANNEL,
-        "now": NOW,
     }
     if mutation == "actor":
         kwargs["actor_ref"] = OTHER_ACTOR
@@ -255,7 +285,7 @@ def test_failed_decision_does_not_mutate_proposal_or_token(
     elif mutation == "action":
         kwargs["action"] = DecisionAction.REJECT
     elif mutation == "expired":
-        kwargs["now"] = NOW + timedelta(minutes=16)
+        clock.value = NOW + timedelta(minutes=16)
 
     with pytest.raises(DecisionError, match=code):
         service.decide(
@@ -270,11 +300,51 @@ def test_failed_decision_does_not_mutate_proposal_or_token(
     assert service.get_token(approve.record.token_id).state is ActionTokenState.ISSUED
 
 
-def test_result_insert_failure_rolls_back_proposal_and_token(tmp_path: Path) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+def test_after_commit_ambiguity_reconciles_by_durable_result_replay(tmp_path: Path) -> None:
+    store, _objects, active, service, clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    ambiguous = DecisionService(CommitAfterSuccessStore(store.path), clock=clock)
+
+    with pytest.raises(GovernanceCommitAmbiguousError):
+        ambiguous.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            actor_ref=ACTOR,
+            channel_ref=CHANNEL,
+            raw_token=approve.raw_token,
+            idempotency_key="commit-ambiguous",
+            request_fingerprint=FINGERPRINT,
+        )
+
+    replay = service.decide(
+        PROPOSAL,
+        action=DecisionAction.APPROVE,
+        actor_ref=ACTOR,
+        channel_ref=CHANNEL,
+        raw_token=approve.raw_token,
+        idempotency_key="commit-ambiguous",
+        request_fingerprint=FINGERPRINT,
+    )
+    assert replay.replayed
+    current = active.get(PROPOSAL)
+    assert current is not None
+    assert current.status is ActiveProposalStatus.APPROVED
+    assert current.state_revision == approve.record.state_revision + 1
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone() == (1,)
+
+
+def test_result_insert_failure_rolls_back_proposal_and_token(tmp_path: Path) -> None:
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
+    approve = next(
+        token
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
     before = active.get(PROPOSAL)
@@ -298,7 +368,6 @@ def test_result_insert_failure_rolls_back_proposal_and_token(tmp_path: Path) -> 
             raw_token=approve.raw_token,
             idempotency_key="rollback",
             request_fingerprint=FINGERPRINT,
-            now=NOW,
         )
 
     assert active.get(PROPOSAL) == before
@@ -306,10 +375,10 @@ def test_result_insert_failure_rolls_back_proposal_and_token(tmp_path: Path) -> 
 
 
 def test_stale_reviewed_snapshot_fails_without_mutation(tmp_path: Path) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
     with store.connect() as connection:
@@ -332,7 +401,6 @@ def test_stale_reviewed_snapshot_fails_without_mutation(tmp_path: Path) -> None:
             raw_token=approve.raw_token,
             idempotency_key="stale",
             request_fingerprint=FINGERPRINT,
-            now=NOW,
         )
 
     assert active.get(PROPOSAL) == before
@@ -340,18 +408,20 @@ def test_stale_reviewed_snapshot_fails_without_mutation(tmp_path: Path) -> None:
 
 
 def test_expiration_sweeper_changes_only_elapsed_issued_tokens(tmp_path: Path) -> None:
-    _store, _objects, active, service = _reviewed(tmp_path)
+    _store, _objects, active, service, clock = _reviewed(tmp_path)
     issued = service.issue_tokens(
         PROPOSAL,
         actor_ref=ACTOR,
         channel_ref=CHANNEL,
-        now=NOW,
     )
     before = active.get(PROPOSAL)
 
-    assert service.expire_tokens(now=NOW + timedelta(minutes=14)) == 0
-    assert service.expire_tokens(now=NOW + timedelta(minutes=15)) == 3
-    assert service.expire_tokens(now=NOW + timedelta(minutes=16)) == 0
+    clock.value = NOW + timedelta(minutes=14)
+    assert service.expire_tokens() == 0
+    clock.value = NOW + timedelta(minutes=15)
+    assert service.expire_tokens() == 3
+    clock.value = NOW + timedelta(minutes=16)
+    assert service.expire_tokens() == 0
     assert active.get(PROPOSAL) == before
     assert {service.get_token(token.record.token_id).state for token in issued} == {
         ActionTokenState.EXPIRED
@@ -361,10 +431,10 @@ def test_expiration_sweeper_changes_only_elapsed_issued_tokens(tmp_path: Path) -
 def test_concurrent_use_of_one_token_has_one_winner_and_one_state_increment(
     tmp_path: Path,
 ) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
 
@@ -378,7 +448,6 @@ def test_concurrent_use_of_one_token_has_one_winner_and_one_state_increment(
                 raw_token=approve.raw_token,
                 idempotency_key=key,
                 request_fingerprint=hashlib.sha256(key.encode()).hexdigest(),
-                now=NOW,
             )
         except DecisionError as error:
             return error.code
@@ -398,10 +467,10 @@ def test_concurrent_use_of_one_token_has_one_winner_and_one_state_increment(
 
 
 def test_concurrent_same_command_returns_one_result_and_one_replay(tmp_path: Path) -> None:
-    store, _objects, active, service = _reviewed(tmp_path)
+    store, _objects, active, service, _clock = _reviewed(tmp_path)
     approve = next(
         token
-        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL, now=NOW)
+        for token in service.issue_tokens(PROPOSAL, actor_ref=ACTOR, channel_ref=CHANNEL)
         if token.record.allowed_action is DecisionAction.APPROVE
     )
 
@@ -414,7 +483,6 @@ def test_concurrent_same_command_returns_one_result_and_one_replay(tmp_path: Pat
             raw_token=approve.raw_token,
             idempotency_key="same-command",
             request_fingerprint=FINGERPRINT,
-            now=NOW,
         ).replayed
 
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -433,12 +501,11 @@ def test_concurrent_same_command_returns_one_result_and_one_replay(tmp_path: Pat
 def test_definition_revision_revokes_remaining_tokens_from_previous_epoch(
     tmp_path: Path,
 ) -> None:
-    _store, objects, active, service = _reviewed(tmp_path)
+    _store, objects, active, service, _clock = _reviewed(tmp_path)
     issued = service.issue_tokens(
         PROPOSAL,
         actor_ref=ACTOR,
         channel_ref=CHANNEL,
-        now=NOW,
     )
     request_changes = next(
         token for token in issued if token.record.allowed_action is DecisionAction.REQUEST_CHANGES
@@ -451,7 +518,6 @@ def test_definition_revision_revokes_remaining_tokens_from_previous_epoch(
         raw_token=request_changes.raw_token,
         idempotency_key="request-changes",
         request_fingerprint=FINGERPRINT,
-        now=NOW,
     )
     before_revision = active.get(PROPOSAL)
     assert before_revision is not None
@@ -475,12 +541,11 @@ def test_definition_revision_revokes_remaining_tokens_from_previous_epoch(
 
 
 def test_definition_revision_failure_rolls_back_token_revocation(tmp_path: Path) -> None:
-    store, objects, active, service = _reviewed(tmp_path)
+    store, objects, active, service, _clock = _reviewed(tmp_path)
     issued = service.issue_tokens(
         PROPOSAL,
         actor_ref=ACTOR,
         channel_ref=CHANNEL,
-        now=NOW,
     )
     request_changes = next(
         token for token in issued if token.record.allowed_action is DecisionAction.REQUEST_CHANGES
@@ -493,7 +558,6 @@ def test_definition_revision_failure_rolls_back_token_revocation(tmp_path: Path)
         raw_token=request_changes.raw_token,
         idempotency_key="request-changes",
         request_fingerprint=FINGERPRINT,
-        now=NOW,
     )
     before = active.get(PROPOSAL)
     assert before is not None
