@@ -368,6 +368,7 @@ class LegacyVerifiedProposal(BaseModel):
     decision_epoch: int = Field(ge=1)
     runtime_status: str
     command_id: str = Field(pattern=r"^MCM-[A-F0-9]{16}$")
+    idempotency_key: str = Field(min_length=1)
     audit_event_id: str = Field(pattern=r"^EVT-[A-F0-9]{16}$")
     outbox_event_id: str = Field(pattern=r"^OBX-[A-F0-9]{16}$")
     projection_destination_ref: str = Field(min_length=1)
@@ -1411,6 +1412,84 @@ class LegacyProposalImportService:
             )
             if tuple(row) != expected or column_verified_at != report.verified_at:
                 raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
+            snapshot_preimage = {
+                "files": [item.model_dump(mode="json") for item in report.source_files],
+                "project_ref": report.project_ref.model_dump(mode="json"),
+            }
+            snapshot_digest = _digest(_canonical_json(snapshot_preimage))
+            if (
+                snapshot_digest != report.snapshot_digest
+                or report.snapshot_id != f"MPS-{snapshot_digest[-16:].upper()}"
+                or report.source_total_bytes
+                != sum(item.byte_length for item in report.source_files)
+            ):
+                raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
+            graph_rows = connection.execute(
+                """
+                SELECT i.proposal_id, i.definition_digest, i.content_revision,
+                       i.state_revision, i.decision_epoch, i.target_status,
+                       a.active_definition_digest, a.content_revision, a.state_revision,
+                       a.decision_epoch, a.status, c.command_id, c.idempotency_key,
+                       e.event_id, o.event_id, o.destination_ref
+                FROM governance_legacy_migration_items i
+                JOIN governance_active_proposals a
+                  ON a.project_namespace = i.project_namespace
+                 AND a.project_id = i.project_id AND a.proposal_id = i.proposal_id
+                JOIN governance_definition_revisions d
+                  ON d.project_namespace = i.project_namespace
+                 AND d.project_id = i.project_id AND d.proposal_id = i.proposal_id
+                 AND d.content_revision = i.content_revision
+                 AND d.definition_digest = i.definition_digest
+                JOIN governance_legacy_import_commands c
+                  ON c.migration_id = i.migration_id
+                 AND c.project_namespace = i.project_namespace
+                 AND c.project_id = i.project_id AND c.proposal_id = i.proposal_id
+                JOIN governance_audit_events e ON e.command_id = c.command_id
+                JOIN governance_outbox_events o
+                  ON o.project_namespace = e.project_namespace
+                 AND o.project_id = e.project_id AND o.proposal_id = e.proposal_id
+                 AND o.aggregate_sequence = e.aggregate_sequence
+                WHERE i.migration_id = ? AND i.project_namespace = ? AND i.project_id = ?
+                ORDER BY i.proposal_id, o.destination_ref
+                """,
+                (
+                    report.migration_id,
+                    report.project_ref.namespace,
+                    report.project_ref.project_id,
+                ),
+            ).fetchall()
+            graph: list[LegacyVerifiedProposal] = []
+            for graph_row in graph_rows:
+                target = LegacyTargetStatus(str(graph_row[5]))
+                runtime_status = LegacyProposalImportService._runtime_status(target)
+                if (
+                    str(graph_row[1]) != str(graph_row[6])
+                    or int(graph_row[2]) != int(graph_row[7])
+                    or int(graph_row[3]) != int(graph_row[8])
+                    or int(graph_row[4]) != int(graph_row[9])
+                    or runtime_status != str(graph_row[10])
+                ):
+                    raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
+                graph.append(
+                    LegacyVerifiedProposal(
+                        proposal_ref=ProposalRef(
+                            project_ref=report.project_ref,
+                            proposal_id=str(graph_row[0]),
+                        ),
+                        definition_digest=str(graph_row[1]),
+                        content_revision=int(graph_row[2]),
+                        state_revision=int(graph_row[3]),
+                        decision_epoch=int(graph_row[4]),
+                        runtime_status=runtime_status,
+                        command_id=str(graph_row[11]),
+                        idempotency_key=str(graph_row[12]),
+                        audit_event_id=str(graph_row[13]),
+                        outbox_event_id=str(graph_row[14]),
+                        projection_destination_ref=str(graph_row[15]),
+                    )
+                )
+            if tuple(graph) != report.proposals:
+                raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
 
     def _verification_proposals(
         self,
@@ -1422,8 +1501,8 @@ class LegacyProposalImportService:
             SELECT i.proposal_id, i.definition_digest, i.content_revision,
                    i.state_revision, i.decision_epoch, i.target_status,
                    a.active_definition_digest, a.content_revision, a.state_revision,
-                   a.decision_epoch, a.status, c.command_id, e.event_id,
-                   o.event_id, o.destination_ref
+                   a.decision_epoch, a.status, c.command_id, c.idempotency_key,
+                   e.event_id, o.event_id, o.destination_ref
             FROM governance_legacy_migration_items i
             JOIN governance_active_proposals a
               ON a.project_namespace = i.project_namespace
@@ -1475,9 +1554,10 @@ class LegacyProposalImportService:
                     decision_epoch=int(row[4]),
                     runtime_status=expected_runtime,
                     command_id=str(row[11]),
-                    audit_event_id=str(row[12]),
-                    outbox_event_id=str(row[13]),
-                    projection_destination_ref=str(row[14]),
+                    idempotency_key=str(row[12]),
+                    audit_event_id=str(row[13]),
+                    outbox_event_id=str(row[14]),
+                    projection_destination_ref=str(row[15]),
                 )
             )
         return tuple(verified)

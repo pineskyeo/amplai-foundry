@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import sqlite3
 import stat
+import threading
 import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -1230,8 +1231,10 @@ def test_verification_insert_guard_rejects_prepared_or_unbound_root(tmp_path: Pa
         )
 
 
+@pytest.mark.parametrize("forgery", ["scalar_json", "source_hash", "command"])
 def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
     tmp_path: Path,
+    forgery: str,
 ) -> None:
     root = _legacy_tree(tmp_path / "project")
     path = tmp_path / "runtime" / "governance.db"
@@ -1252,16 +1255,31 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
     with store.connect() as connection:
         proposals = service._verification_proposals(connection, plan)
     verification_id, report_digest = service._verification_identity(plan, snapshot, proposals)
+    source_files = snapshot.files
+    forged_proposals = proposals
+    verified_by = plan.freeze.actor_id
+    if forgery == "source_hash":
+        source_files = (
+            source_files[0].model_copy(update={"content_digest": f"sha256:{'f' * 64}"}),
+            *source_files[1:],
+        )
+    elif forgery == "command":
+        forged_proposals = (
+            forged_proposals[0].model_copy(update={"command_id": "MCM-0000000000000001"}),
+            *forged_proposals[1:],
+        )
+    else:
+        verified_by = "different-actor"
     foreign_preimage = {
         "migration_id": plan.plan_id,
         "plan_digest": plan.plan_digest,
         "project_ref": plan.project_ref.model_dump(mode="json"),
-        "proposals": [item.model_dump(mode="json") for item in proposals],
+        "proposals": [item.model_dump(mode="json") for item in forged_proposals],
         "snapshot_digest": snapshot.snapshot_digest,
         "snapshot_id": snapshot.snapshot_id,
-        "source_files": [item.model_dump(mode="json") for item in snapshot.files],
+        "source_files": [item.model_dump(mode="json") for item in source_files],
         "source_total_bytes": snapshot.total_bytes,
-        "verified_by": "different-actor",
+        "verified_by": verified_by,
     }
     foreign_digest = _canonical_digest(foreign_preimage)
     foreign = LegacyMigrationVerificationReport(
@@ -1271,13 +1289,16 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
         snapshot_id=plan.snapshot_id,
         snapshot_digest=plan.snapshot_digest,
         plan_digest=plan.plan_digest,
-        source_files=snapshot.files,
+        source_files=source_files,
         source_total_bytes=snapshot.total_bytes,
-        proposals=proposals,
+        proposals=forged_proposals,
         report_digest=foreign_digest,
-        verified_by="different-actor",
+        verified_by=verified_by,
         verified_at=NOW,
     )
+    row_verification_id = verification_id if forgery == "scalar_json" else foreign.verification_id
+    row_report_digest = report_digest if forgery == "scalar_json" else foreign.report_digest
+    foreign_payload = foreign.model_dump(mode="json")
     with store.connect() as connection:
         connection.execute(
             """
@@ -1289,7 +1310,7 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                verification_id,
+                row_verification_id,
                 plan.plan_id,
                 PROJECT.namespace,
                 PROJECT.project_id,
@@ -1298,10 +1319,15 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
                 plan.plan_digest,
                 len(proposals),
                 len(snapshot.files),
-                report_digest,
-                json.dumps(foreign.model_dump(mode="json"), separators=(",", ":")),
+                row_report_digest,
+                json.dumps(
+                    foreign_payload,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
                 foreign.verified_by,
-                NOW.isoformat(),
+                str(foreign_payload["verified_at"]),
             ),
         )
 
@@ -1312,6 +1338,10 @@ def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
         service.verify_import(plan, backup)
     with pytest.raises(GovernanceEventError, match="LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH"):
         GovernanceStore(path).initialize()
+    with v21.connect() as connection:
+        assert connection.execute(
+            "SELECT MAX(version) FROM governance_schema_migrations"
+        ).fetchone() == (21,)
 
 
 def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
@@ -1334,6 +1364,32 @@ def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) 
     report = service.verify_import(plan, backup)
 
     assert report.replayed
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_verifications"
+        ).fetchone() == (1,)
+
+
+def test_concurrent_verification_converges_to_one_exact_report(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    barrier = threading.Barrier(2)
+
+    def verify() -> LegacyMigrationVerificationReport:
+        barrier.wait()
+        return service.verify_import(plan, backup)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        reports = tuple(executor.map(lambda _index: verify(), range(2)))
+
+    assert reports[0].report_digest == reports[1].report_digest
+    assert sorted(report.replayed for report in reports) == [False, True]
     with store.connect() as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_migration_verifications"
