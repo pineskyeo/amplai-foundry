@@ -19,12 +19,17 @@ from amplai_foundry.governance.authority import (
     DirectAuthorityRequest,
 )
 from amplai_foundry.governance.events import GovernanceEventError, GovernanceEventService
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.legacy_lifecycle import (
     LegacyMigrationActivationService,
     LegacyMigrationLifecycleError,
     LegacyMigrationLifecycleState,
 )
-from amplai_foundry.governance.legacy_migration import LegacyProposalImportService
+from amplai_foundry.governance.legacy_migration import (
+    LegacyApprovalDisposition,
+    LegacyProposalImportService,
+    LegacyTargetStatus,
+)
 from amplai_foundry.governance.models import (
     ActorRef,
     ActorType,
@@ -63,6 +68,8 @@ class LegacyForwardRecoveryRoot(BaseModel):
     imported_content_revision: int = Field(ge=1)
     imported_state_revision: int = Field(ge=1)
     imported_decision_epoch: int = Field(ge=1)
+    imported_status: ActiveProposalStatus
+    approval_disposition: LegacyApprovalDisposition
     active_definition_digest: Digest
     content_revision: int = Field(ge=1)
     state_revision: int = Field(ge=1)
@@ -216,7 +223,8 @@ class LegacyMigrationForwardRecoveryPlanner:
         rows = connection.execute(
             f"""
             SELECT i.proposal_id, i.definition_digest, i.content_revision,
-                   i.state_revision, i.decision_epoch,
+                   i.state_revision, i.decision_epoch, i.target_status,
+                   i.approval_disposition,
                    a.active_definition_digest, a.content_revision, a.state_revision,
                    a.decision_epoch, a.status, a.applied_revision
             FROM governance_legacy_migration_items i
@@ -231,22 +239,69 @@ class LegacyMigrationForwardRecoveryPlanner:
         ).fetchall()
         if len(rows) != len(proposal_ids) or tuple(str(row[0]) for row in rows) != proposal_ids:
             raise LegacyMigrationLifecycleError("LEGACY_FORWARD_RECOVERY_SCOPE_MISMATCH")
-        return tuple(
-            LegacyForwardRecoveryRoot(
-                proposal_ref=ProposalRef(project_ref=project_ref, proposal_id=str(row[0])),
-                imported_definition_digest=str(row[1]),
-                imported_content_revision=int(row[2]),
-                imported_state_revision=int(row[3]),
-                imported_decision_epoch=int(row[4]),
-                active_definition_digest=str(row[5]),
-                content_revision=int(row[6]),
-                state_revision=int(row[7]),
-                decision_epoch=int(row[8]),
-                status=ActiveProposalStatus(str(row[9])),
-                applied_revision=str(row[10]) if row[10] is not None else None,
+        roots: list[LegacyForwardRecoveryRoot] = []
+        for row in rows:
+            ref = ProposalRef(project_ref=project_ref, proposal_id=str(row[0]))
+            blocked = legacy_mutation_block(connection, ref)
+            if blocked == "LEGACY_APPROVAL_REVIEW_REQUIRED":
+                raise LegacyMigrationLifecycleError(blocked)
+            status = ActiveProposalStatus(str(row[11]))
+            LegacyMigrationForwardRecoveryPlanner._require_eligible_status(
+                connection,
+                ref,
+                status=status,
+                applied_revision=str(row[12]) if row[12] is not None else None,
             )
-            for row in rows
-        )
+            roots.append(
+                LegacyForwardRecoveryRoot(
+                    proposal_ref=ref,
+                    imported_definition_digest=str(row[1]),
+                    imported_content_revision=int(row[2]),
+                    imported_state_revision=int(row[3]),
+                    imported_decision_epoch=int(row[4]),
+                    imported_status=ActiveProposalStatus(
+                        LegacyProposalImportService._runtime_status(LegacyTargetStatus(str(row[5])))
+                    ),
+                    approval_disposition=LegacyApprovalDisposition(str(row[6])),
+                    active_definition_digest=str(row[7]),
+                    content_revision=int(row[8]),
+                    state_revision=int(row[9]),
+                    decision_epoch=int(row[10]),
+                    status=status,
+                    applied_revision=str(row[12]) if row[12] is not None else None,
+                )
+            )
+        return tuple(roots)
+
+    @staticmethod
+    def _require_eligible_status(
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        status: ActiveProposalStatus,
+        applied_revision: str | None,
+    ) -> None:
+        if status not in {ActiveProposalStatus.DRAFT, ActiveProposalStatus.CHANGES_REQUESTED}:
+            raise LegacyMigrationLifecycleError("LEGACY_FORWARD_RECOVERY_STATE_NOT_ELIGIBLE")
+        if applied_revision is not None:
+            raise LegacyMigrationLifecycleError("LEGACY_FORWARD_RECOVERY_DEPENDENT_STATE")
+        identity = (ref.project_ref.namespace, ref.project_ref.project_id, ref.proposal_id)
+        for table in (
+            "governance_approved_snapshots",
+            "governance_apply_grants",
+            "governance_apply_jobs",
+            "governance_publish_intents",
+        ):
+            if (
+                connection.execute(
+                    f"""SELECT 1 FROM {table}
+                    WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                    LIMIT 1""",
+                    identity,
+                ).fetchone()
+                is not None
+            ):
+                raise LegacyMigrationLifecycleError("LEGACY_FORWARD_RECOVERY_DEPENDENT_STATE")
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

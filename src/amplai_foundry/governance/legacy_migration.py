@@ -1456,7 +1456,11 @@ class LegacyProposalImportService:
                     """,
                     (report.migration_id,),
                 ).fetchone()
-            if lifecycle is not None and str(lifecycle[0]) == "rolled_back":
+            # Once activation has sealed the imported verification graph, normal v3
+            # state/definition progress must not be compared with that historical
+            # live graph. Lifecycle reconciliation independently authenticates the
+            # immutable activation command, event, and result roots.
+            if lifecycle is not None and str(lifecycle[0]) in {"activated", "rolled_back"}:
                 continue
             graph_rows = connection.execute(
                 """

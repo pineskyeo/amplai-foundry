@@ -22,6 +22,7 @@ from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import (
     ActiveProposalError,
     ActiveProposalRepository,
+    ActiveProposalStatus,
     ActorBindingService,
     ActorRef,
     ActorType,
@@ -3396,6 +3397,11 @@ def test_forward_recovery_plan_is_deterministic_authenticated_and_write_free(
         AuthorityService(store, clock=lambda: NOW),
         clock=lambda: NOW,
     )
+    later_planner = LegacyMigrationForwardRecoveryPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW + timedelta(minutes=5)),
+        clock=lambda: NOW + timedelta(minutes=5),
+    )
 
     first = planner.plan(
         migration.plan_id,
@@ -3403,14 +3409,16 @@ def test_forward_recovery_plan_is_deterministic_authenticated_and_write_free(
         authority_request=authority_request,
         expected_lifecycle_revision=3,
     )
-    second = planner.plan(
+    second = later_planner.plan(
         migration.plan_id,
         (migration.proposals[0].proposal_ref,),
         authority_request=authority_request,
         expected_lifecycle_revision=3,
     )
 
-    assert first == second
+    assert first.roots == second.roots
+    assert first.recovery_root_digest == second.recovery_root_digest
+    assert first.planned_at != second.planned_at
     assert first.strategy == "v3_definition_revision"
     assert first.activation_event_digest
     assert first.planned_by == REVIEWER
@@ -3418,10 +3426,19 @@ def test_forward_recovery_plan_is_deterministic_authenticated_and_write_free(
     recovery_root = first.roots[0]
     assert recovery_root.proposal_ref == migration.proposals[0].proposal_ref
     assert recovery_root.imported_definition_digest == imported.definition_digests[0]
+    assert recovery_root.imported_status is ActiveProposalStatus.DRAFT
+    assert recovery_root.approval_disposition is LegacyApprovalDisposition.NOT_REQUIRED
     assert recovery_root.active_definition_digest == imported.definition_digests[0]
     assert recovery_root.content_revision == migration.proposals[0].content_revision
     assert first.expected_lifecycle_revision == activation.lifecycle_revision
     assert report.report_digest == activation.report_digest
+    with store.connect() as connection:
+        activation_event_digest = connection.execute(
+            "SELECT event_digest FROM governance_legacy_migration_lifecycle_events "
+            "WHERE event_id = ?",
+            (activation.event_id,),
+        ).fetchone()
+    assert activation_event_digest == (first.activation_event_digest,)
     assert _logical_store_snapshot(store) == before
     assert store.check_startup().healthy
 
@@ -3429,6 +3446,246 @@ def test_forward_recovery_plan_is_deterministic_authenticated_and_write_free(
     forged["recovery_root_digest"] = f"sha256:{'f' * 64}"
     with pytest.raises(ValidationError, match="forward recovery root digest"):
         LegacyForwardRecoveryPlan.model_validate(forged)
+
+    forged_root = first.model_dump(mode="json")
+    forged_root["roots"][0]["status"] = ActiveProposalStatus.CHANGES_REQUESTED.value
+    with pytest.raises(ValidationError, match="forward recovery root digest"):
+        LegacyForwardRecoveryPlan.model_validate(forged_root)
+
+    forged_activation = first.model_dump(mode="json")
+    forged_activation["activation_event_digest"] = f"sha256:{'e' * 64}"
+    with pytest.raises(ValidationError, match="forward recovery root digest"):
+        LegacyForwardRecoveryPlan.model_validate(forged_activation)
+
+
+def test_forward_recovery_plan_orders_multiple_roots_independently_of_request(
+    tmp_path: Path,
+) -> None:
+    second_proposal_id = "PROP-20260730-00112233"
+    root = _legacy_tree(tmp_path / "project")
+    _add_legacy_proposal(root, second_proposal_id)
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate multi-root recovery fixture",
+        idempotency_key="legacy-activation:forward-multi:1",
+        request_fingerprint="2" * 64,
+    )
+    planner = LegacyMigrationForwardRecoveryPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+    refs = tuple(item.proposal_ref for item in migration.proposals)
+
+    ordered = planner.plan(
+        migration.plan_id,
+        refs,
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+    reversed_request = planner.plan(
+        migration.plan_id,
+        tuple(reversed(refs)),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+
+    assert tuple(root.proposal_ref.proposal_id for root in ordered.roots) == tuple(
+        sorted(ref.proposal_id for ref in refs)
+    )
+    assert reversed_request.roots == ordered.roots
+    assert reversed_request.recovery_root_digest == ordered.recovery_root_digest
+
+
+def test_forward_recovery_requires_safe_state_and_tracks_post_activation_progress(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate before normal v3 progress",
+        idempotency_key="legacy-activation:forward-progress:1",
+        request_fingerprint="3" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    planner = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW)
+    initial = planner.plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+
+    reviewed = ProposalSubmissionService(
+        store,
+        ActiveProposalRepository(store, objects),
+        authority,
+    ).submit_for_review(
+        ref,
+        authority_request=authority_request,
+        expected_state_revision=initial.roots[0].state_revision,
+    )
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_STATE_NOT_ELIGIBLE",
+    ):
+        planner.plan(
+            migration.plan_id,
+            (ref,),
+            authority_request=authority_request,
+            expected_lifecycle_revision=3,
+        )
+
+    decisions = DecisionService(store, authority, clock=lambda: NOW)
+    token = next(
+        issued
+        for issued in decisions.issue_tokens(ref, authority_request=authority_request)
+        if issued.record.allowed_action is DecisionAction.REQUEST_CHANGES
+    )
+    changed = decisions.decide(
+        ref,
+        action=DecisionAction.REQUEST_CHANGES,
+        authority_request=authority_request,
+        raw_token=token.raw_token,
+        idempotency_key="legacy-forward-progress:request-changes:1",
+        request_fingerprint="4" * 64,
+    )
+    progressed = planner.plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+
+    assert reviewed.status is ActiveProposalStatus.REVIEWED
+    assert changed.proposal_status is ActiveProposalStatus.CHANGES_REQUESTED
+    assert progressed.roots[0].status is ActiveProposalStatus.CHANGES_REQUESTED
+    assert progressed.roots[0].state_revision == changed.state_revision
+    assert progressed.roots[0].decision_epoch == changed.decision_epoch
+    assert progressed.recovery_root_digest != initial.recovery_root_digest
+    assert store.check_startup().healthy
+
+
+@pytest.mark.parametrize("status", tuple(ActiveProposalStatus))
+def test_forward_recovery_state_policy_covers_every_active_status(
+    tmp_path: Path,
+    status: ActiveProposalStatus,
+) -> None:
+    store = GovernanceStore(tmp_path / "governance.db")
+    store.initialize()
+    ref = ProposalRef(project_ref=PROJECT, proposal_id=PROPOSAL_ID)
+    eligible = {ActiveProposalStatus.DRAFT, ActiveProposalStatus.CHANGES_REQUESTED}
+
+    with store.connect() as connection:
+        if status in eligible:
+            LegacyMigrationForwardRecoveryPlanner._require_eligible_status(
+                connection,
+                ref,
+                status=status,
+                applied_revision=None,
+            )
+        else:
+            with pytest.raises(
+                LegacyMigrationLifecycleError,
+                match="LEGACY_FORWARD_RECOVERY_STATE_NOT_ELIGIBLE",
+            ):
+                LegacyMigrationForwardRecoveryPlanner._require_eligible_status(
+                    connection,
+                    ref,
+                    status=status,
+                    applied_revision="revision" if status is ActiveProposalStatus.APPLIED else None,
+                )
+
+
+def test_forward_recovery_requires_resolution_of_synthetic_legacy_approval(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status="approved")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate synthetic legacy approval fixture",
+        idempotency_key="legacy-activation:forward-synthetic:1",
+        request_fingerprint="5" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    planner = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW)
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_APPROVAL_REVIEW_REQUIRED",
+    ):
+        planner.plan(
+            migration.plan_id,
+            (ref,),
+            authority_request=authority_request,
+            expected_lifecycle_revision=3,
+        )
+
+    review = LegacyApprovalReviewService(store, authority, clock=lambda: NOW).resolve(
+        ref,
+        authority_request=authority_request,
+        reason="human resolved synthetic approval before forward recovery",
+        idempotency_key="legacy-review:forward-synthetic:1",
+        request_fingerprint="6" * 64,
+    )
+    plan = planner.plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+
+    assert plan.roots[0].approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED
+    assert plan.roots[0].status is ActiveProposalStatus.DRAFT
+    assert plan.roots[0].state_revision == review.state_revision
 
 
 def test_forward_recovery_plan_requires_activated_terminal_boundary(tmp_path: Path) -> None:
@@ -3493,6 +3750,54 @@ def test_forward_recovery_plan_requires_activated_terminal_boundary(tmp_path: Pa
         )
 
 
+def test_forward_recovery_rejects_implicit_activation_without_event_evidence(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v23 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:23]))
+    v23.initialize()
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v23,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    authority_request = _migration_authority(store)
+    ProposalSubmissionService(
+        store,
+        ActiveProposalRepository(store, objects),
+        AuthorityService(store, clock=lambda: NOW),
+    ).submit_for_review(
+        migration.proposals[0].proposal_ref,
+        authority_request=authority_request,
+        expected_state_revision=migration.proposals[0].state_revision,
+    )
+    latest = GovernanceStore(path)
+    latest.initialize()
+    planner = LegacyMigrationForwardRecoveryPlanner(
+        latest,
+        AuthorityService(latest, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_FORWARD_RECOVERY_ACTIVATION_EVIDENCE_MISSING",
+    ):
+        planner.plan(
+            migration.plan_id,
+            (migration.proposals[0].proposal_ref,),
+            authority_request=authority_request,
+            expected_lifecycle_revision=1,
+        )
+
+
 def test_forward_recovery_plan_rejects_stale_or_unqualified_scope(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store, _objects, dry_run, import_service, backup = _import_fixture(
@@ -3539,6 +3844,64 @@ def test_forward_recovery_plan_rejects_stale_or_unqualified_scope(tmp_path: Path
         planner.plan(
             migration.plan_id,
             (ProposalRef(project_ref=OTHER_PROJECT, proposal_id=PROPOSAL_ID),),
+            authority_request=authority_request,
+            expected_lifecycle_revision=3,
+        )
+    other_actor = ActorRef(actor_id="ACT-OTHER-RECOVERY", actor_type=ActorType.HUMAN)
+    bindings = ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW)
+    bindings.register_actor(
+        other_actor,
+        approval=BindingApproval(
+            approval_id="APR-00000000000000A1",
+            approved_by=MANAGER,
+            reason="register cross-project recovery reviewer",
+        ),
+    )
+    bindings.grant_permission(
+        other_actor,
+        OTHER_PROJECT,
+        AuthorityPermission.ACTIVATION_MANAGE,
+        approval=BindingApproval(
+            approval_id="APR-00000000000000A2",
+            approved_by=MANAGER,
+            reason="grant cross-project recovery authority",
+        ),
+    )
+    bindings.create_binding(
+        BindingTarget(
+            provider=ChannelProvider.SLACK,
+            provider_installation_ref="T999:APP9",
+            external_actor_id="U999",
+            actor_ref=other_actor,
+        ),
+        approval=BindingApproval(
+            approval_id="APR-00000000000000A3",
+            approved_by=MANAGER,
+            reason="bind cross-project recovery reviewer",
+        ),
+    )
+    other_request = DirectAuthorityRequest(
+        provider=ChannelProvider.SLACK,
+        provider_installation_ref="T999:APP9",
+        external_actor_id="U999",
+        project_ref=OTHER_PROJECT,
+        request_id="REQ-OTHER-RECOVERY",
+        channel=CHANNEL.model_copy(update={"workspace_id": "T999"}),
+    )
+    with pytest.raises(LegacyMigrationLifecycleError, match="PROJECT_SCOPE_MISMATCH"):
+        planner.plan(
+            migration.plan_id,
+            (ProposalRef(project_ref=OTHER_PROJECT, proposal_id=PROPOSAL_ID),),
+            authority_request=other_request,
+            expected_lifecycle_revision=3,
+        )
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_NOT_IMPORTED",
+    ):
+        planner.plan(
+            "MPL-FFFFFFFFFFFFFFFF",
+            (migration.proposals[0].proposal_ref,),
             authority_request=authority_request,
             expected_lifecycle_revision=3,
         )
