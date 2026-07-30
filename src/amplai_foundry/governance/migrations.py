@@ -1935,6 +1935,44 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=16,
+        name="legacy-publish-resolution-compatibility",
+        statements=(
+            """
+            DROP TRIGGER governance_publish_resolution_roots_no_update
+            """,
+            """
+            DROP TRIGGER governance_publish_resolution_roots_no_delete
+            """,
+            """
+            UPDATE governance_publish_resolution_roots
+            SET before_job_status = 'publish_pending',
+                stream_revision = (
+                    SELECT e.resolution_sequence
+                    FROM governance_publish_resolution_events e
+                    WHERE e.resolution_event_id =
+                          governance_publish_resolution_roots.resolution_event_id
+                )
+            WHERE EXISTS (
+                SELECT 1 FROM governance_publish_resolution_events e
+                WHERE e.resolution_event_id =
+                      governance_publish_resolution_roots.resolution_event_id
+                  AND instr(e.payload_json, '\"stream_revision\"') = 0
+            )
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_update
+            BEFORE UPDATE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_resolution_roots_no_delete
+            BEFORE DELETE ON governance_publish_resolution_roots
+            BEGIN SELECT RAISE(ABORT, 'publish resolution root is durable'); END
+            """,
+        ),
+    ),
 )
 
 

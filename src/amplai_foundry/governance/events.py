@@ -109,7 +109,7 @@ class PublishResolutionProjectionPayload(BaseModel):
     aggregate_ref: ProposalRef
     applied_revision: str | None = Field(default=None, pattern=r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
     actual_ref: str | None = Field(default=None, pattern=r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
-    before_job_status: str
+    before_job_status: str | None = None
     error_code: str | None = None
     intent_id: str = Field(pattern=r"^PBI-[A-F0-9]{16}$")
     intent_status: str
@@ -119,7 +119,7 @@ class PublishResolutionProjectionPayload(BaseModel):
     proposal_status: str
     resolution_sequence: int = Field(ge=1)
     resolution_type: str
-    stream_revision: int = Field(ge=1)
+    stream_revision: int | None = Field(default=None, ge=1)
 
 
 class AuditEventView(BaseModel):
@@ -399,7 +399,9 @@ class GovernanceEventService:
             or str(row[8]) != payload_digest
             or str(row[9]) != payload_json
             or str(row[11]) != coordinator_id
+            or payload.before_job_status is None
             or str(row[12]) != payload.before_job_status
+            or payload.stream_revision is None
             or int(row[13]) != payload.stream_revision
         ):
             raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_SOURCE_MISMATCH")
@@ -987,6 +989,21 @@ class GovernanceEventService:
                 """
                 SELECT 1 FROM governance_active_proposals
                 WHERE (status = 'applied') != (applied_revision IS NOT NULL)
+                   OR (
+                       status = 'applied' AND (
+                           SELECT COUNT(*)
+                           FROM governance_publish_resolution_events e
+                           JOIN governance_publish_results r
+                             ON r.intent_id = e.intent_id
+                           WHERE e.project_namespace = governance_active_proposals.project_namespace
+                             AND e.project_id = governance_active_proposals.project_id
+                             AND e.proposal_id = governance_active_proposals.proposal_id
+                             AND e.resolution_type = 'published'
+                             AND e.applied_revision = governance_active_proposals.applied_revision
+                             AND r.outcome = 'published'
+                             AND r.actual_ref = governance_active_proposals.applied_revision
+                       ) != 1
+                   )
                 LIMIT 1
                 """
             ).fetchone()
@@ -1070,8 +1087,14 @@ class GovernanceEventService:
                 or resolution_payload.actual_ref != resolution[13]
                 or resolution_payload.applied_revision != resolution[14]
                 or resolution_payload.error_code != resolution[15]
-                or resolution_payload.before_job_status != str(resolution[19])
-                or resolution_payload.stream_revision != int(resolution[20])
+                or (
+                    resolution_payload.before_job_status is not None
+                    and resolution_payload.before_job_status != str(resolution[19])
+                )
+                or (
+                    resolution_payload.stream_revision is not None
+                    and resolution_payload.stream_revision != int(resolution[20])
+                )
             ):
                 raise GovernanceEventError("PUBLISH_RESOLUTION_ROOT_MISMATCH")
             resolution_destinations = (
@@ -1086,7 +1109,7 @@ class GovernanceEventService:
             command_id = str(resolution[0])
             decision_commands[command_id] = (
                 str(resolution[8]),
-                resolution_payload.stream_revision,
+                int(resolution[20]),
                 cls._destination_manifest_digest(resolution_destinations),
                 2,
             )

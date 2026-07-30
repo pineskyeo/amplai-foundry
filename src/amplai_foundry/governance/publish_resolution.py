@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 import sqlite3
 from collections.abc import Callable
-from contextlib import suppress
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import cast
@@ -81,32 +80,12 @@ class PublishResolutionService:
         existing = self._existing_terminal_resolution(intent_id)
         if existing is not None:
             return existing
-        intent, claim_id = self._ensure_claim(intent_id)
-        try:
-            actual_ref = self.git.read_ref(intent.canonical_ref)
-        except PublishGovernanceError as error:
-            return self._commit_resolution(
-                intent_id,
-                claim_id=claim_id,
-                resolution_type=PublishResolutionType.RECOVERY_HOLD,
-                actual_ref=None,
-                error_code=error.code,
-            )
-        if actual_ref == intent.candidate_commit:
-            resolution_type = PublishResolutionType.PUBLISHED
-            error_code = None
-        elif actual_ref == intent.expected_old_ref:
-            resolution_type = PublishResolutionType.RETRY_RELEASED
-            error_code = None
-        else:
-            resolution_type = PublishResolutionType.PUBLISH_CONFLICT
-            error_code = "PUBLISH_BASE_REF_CONFLICT"
+        _intent, claim_id = self._ensure_claim(intent_id)
         return self._commit_resolution(
             intent_id,
             claim_id=claim_id,
-            resolution_type=resolution_type,
-            actual_ref=actual_ref,
-            error_code=error_code,
+            resolution_type=PublishResolutionType.RETRY_RELEASED,
+            error_code=None,
         )
 
     def fail_if_unchanged(self, intent_id: str, *, error_code: str) -> PublishResolutionView:
@@ -114,29 +93,11 @@ class PublishResolutionService:
         existing = self._existing_terminal_resolution(intent_id)
         if existing is not None:
             return existing
-        intent, claim_id = self._ensure_claim(intent_id)
-        actual_ref = self.git.read_ref(intent.canonical_ref)
-        if actual_ref == intent.candidate_commit:
-            return self._commit_resolution(
-                intent_id,
-                claim_id=claim_id,
-                resolution_type=PublishResolutionType.PUBLISHED,
-                actual_ref=actual_ref,
-                error_code=None,
-            )
-        if actual_ref != intent.expected_old_ref:
-            return self._commit_resolution(
-                intent_id,
-                claim_id=claim_id,
-                resolution_type=PublishResolutionType.PUBLISH_CONFLICT,
-                actual_ref=actual_ref,
-                error_code="PUBLISH_BASE_REF_CONFLICT",
-            )
+        _intent, claim_id = self._ensure_claim(intent_id)
         return self._commit_resolution(
             intent_id,
             claim_id=claim_id,
             resolution_type=PublishResolutionType.FAILED,
-            actual_ref=actual_ref,
             error_code=error_code,
         )
 
@@ -144,29 +105,11 @@ class PublishResolutionService:
         existing = self._existing_terminal_resolution(intent_id)
         if existing is not None:
             return existing
-        intent, claim_id = self._ensure_claim(intent_id)
-        actual_ref = self.git.read_ref(intent.canonical_ref)
-        if actual_ref == intent.candidate_commit:
-            return self._commit_resolution(
-                intent_id,
-                claim_id=claim_id,
-                resolution_type=PublishResolutionType.PUBLISHED,
-                actual_ref=actual_ref,
-                error_code=None,
-            )
-        if actual_ref != intent.expected_old_ref:
-            return self._commit_resolution(
-                intent_id,
-                claim_id=claim_id,
-                resolution_type=PublishResolutionType.PUBLISH_CONFLICT,
-                actual_ref=actual_ref,
-                error_code="PUBLISH_BASE_REF_CONFLICT",
-            )
+        _intent, claim_id = self._ensure_claim(intent_id)
         return self._commit_resolution(
             intent_id,
             claim_id=claim_id,
             resolution_type=PublishResolutionType.CANCELLED,
-            actual_ref=actual_ref,
             error_code="PUBLISH_CANCELLED",
         )
 
@@ -219,7 +162,6 @@ class PublishResolutionService:
         *,
         claim_id: str,
         resolution_type: PublishResolutionType,
-        actual_ref: str | None,
         error_code: str | None,
     ) -> PublishResolutionView:
         created_at = self._clock()
@@ -229,6 +171,19 @@ class PublishResolutionService:
             root = self._root(connection, intent_id)
             if root is None or str(root[18]) != claim_id or str(root[19]) != "active":
                 raise PublishGovernanceError("PUBLISH_CLAIM_STALE")
+            try:
+                actual_ref: str | None = self.git.read_ref(intent.canonical_ref)
+            except PublishGovernanceError as error:
+                actual_ref = None
+                resolution_type = PublishResolutionType.RECOVERY_HOLD
+                error_code = error.code
+            else:
+                if actual_ref == intent.candidate_commit:
+                    resolution_type = PublishResolutionType.PUBLISHED
+                    error_code = None
+                elif actual_ref != intent.expected_old_ref:
+                    resolution_type = PublishResolutionType.PUBLISH_CONFLICT
+                    error_code = "PUBLISH_BASE_REF_CONFLICT"
             if actual_ref is not None and len(actual_ref) != len(intent.candidate_commit):
                 raise PublishGovernanceError("PUBLISH_GIT_REF_INVALID")
             current_proposal_status = str(root[13])
@@ -631,6 +586,14 @@ class FencedGitPublishWorkflow:
         self.resolution = resolution
 
     def publish(self, intent_id: str) -> PublishResolutionView:
-        with suppress(GitPublishAmbiguousError):
+        existing = self.resolution._existing_terminal_resolution(intent_id)
+        if existing is not None:
+            return existing
+        try:
             self.coordinator.publish_prepared_ref(intent_id)
+        except GitPublishAmbiguousError:
+            pass
+        except PublishGovernanceError as error:
+            if error.code != "PUBLISH_GIT_COMMAND_FAILED":
+                raise
         return self.resolution.recover(intent_id)

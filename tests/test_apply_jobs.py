@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -59,6 +60,7 @@ from amplai_foundry.governance.events import GovernanceEventError
 from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, MigrationRunner
 from amplai_foundry.governance.publish import ProjectPublishGateView, PublishGateState
 from amplai_foundry.governance.store import (
+    GovernanceCommitAmbiguousError,
     GovernanceStore,
     GovernanceStoreError,
     governance_transaction,
@@ -2678,11 +2680,43 @@ def test_public_publish_workflow_finalizes_and_terminal_retry_is_idempotent(
     )
 
     first = workflow.publish(prepared.intent_id)
-    replay = workflow.resolution.recover(prepared.intent_id)
+    replay = workflow.publish(prepared.intent_id)
 
     assert first.resolution_type is PublishResolutionType.PUBLISHED
     assert first.applied_revision == candidate
     assert replay.resolution_event_id == first.resolution_event_id
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (1,)
+    assert store.check_startup().healthy
+
+
+def test_public_publish_workflow_routes_operational_git_failure_to_resolution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    coordinator = FencedGitPublishCoordinator(
+        store, repository, coordinator_id="failing-workflow-publisher", clock=lambda: NOW
+    )
+
+    def fail_ref(_canonical_ref: str) -> str:
+        raise PublishGovernanceError("PUBLISH_GIT_COMMAND_FAILED")
+
+    monkeypatch.setattr(coordinator._backend, "read_ref", fail_ref)
+    workflow = FencedGitPublishWorkflow(
+        coordinator,
+        PublishResolutionService(
+            store,
+            SubprocessGitCandidateInspector(repository),
+            coordinator_id="workflow-recovery",
+            clock=lambda: NOW,
+        ),
+    )
+
+    resolved = workflow.publish(prepared.intent_id)
+    assert resolved.resolution_type is PublishResolutionType.RETRY_RELEASED
     with store.connect() as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_publish_resolution_events"
@@ -2726,6 +2760,104 @@ def test_live_publisher_and_cancel_serialize_before_cas(
 
     assert resolved.resolution_type is PublishResolutionType.PUBLISHED
     assert git("rev-parse", prepared.canonical_ref).stdout.strip() == candidate
+    assert store.check_startup().healthy
+
+
+def test_cancel_observation_blocks_late_publisher_cas(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, git, prepared, base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    inspector = SubprocessGitCandidateInspector(repository)
+    observation_started = threading.Event()
+    release_observation = threading.Event()
+    original_read = inspector.read_ref
+
+    def blocked_read(canonical_ref: str) -> str:
+        observation_started.set()
+        assert release_observation.wait(timeout=5)
+        return original_read(canonical_ref)
+
+    monkeypatch.setattr(inspector, "read_ref", blocked_read)
+    resolver = PublishResolutionService(
+        store, inspector, coordinator_id="cancel-first", clock=lambda: NOW
+    )
+    publisher = FencedGitPublishCoordinator(
+        store, repository, coordinator_id="publisher-second", clock=lambda: NOW
+    )
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        cancelling = executor.submit(resolver.cancel_if_unchanged, prepared.intent_id)
+        assert observation_started.wait(timeout=5)
+        publishing = executor.submit(publisher.publish_prepared_ref, prepared.intent_id)
+        release_observation.set()
+        resolved = cancelling.result(timeout=5)
+        with pytest.raises(PublishGovernanceError, match="PUBLISH_INTENT_NOT_PREPARED"):
+            publishing.result(timeout=5)
+
+    assert resolved.resolution_type is PublishResolutionType.CANCELLED
+    assert git("rev-parse", prepared.canonical_ref).stdout.strip() == base
+    assert store.check_startup().healthy
+
+
+def test_publish_resolution_commit_ambiguity_replays_terminal_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = _real_prepared_publish_fixture(tmp_path)
+    FencedGitPublishCoordinator(
+        store, repository, coordinator_id="ambiguity-publisher", clock=lambda: NOW
+    ).publish_prepared_ref(prepared.intent_id)
+    service = PublishResolutionService(
+        store,
+        SubprocessGitCandidateInspector(repository),
+        coordinator_id="ambiguity-resolver",
+        clock=lambda: NOW,
+    )
+    original_connect = store.connect
+    commits = 0
+
+    class CommitAmbiguousAfterSuccess:
+        def __init__(self, connection):
+            self.connection = connection
+
+        @property
+        def in_transaction(self):
+            return self.connection.in_transaction
+
+        def execute(self, statement, parameters=()):
+            nonlocal commits
+            result = self.connection.execute(statement, parameters)
+            if statement == "COMMIT":
+                commits += 1
+                if commits == 2:
+                    raise sqlite3.OperationalError("response lost after commit")
+            return result
+
+        def __getattr__(self, name):
+            return getattr(self.connection, name)
+
+    @contextmanager
+    def ambiguous_connect():
+        with original_connect() as connection:
+            yield CommitAmbiguousAfterSuccess(connection)
+
+    monkeypatch.setattr(store, "connect", ambiguous_connect)
+    with pytest.raises(GovernanceCommitAmbiguousError):
+        service.recover(prepared.intent_id)
+    monkeypatch.setattr(store, "connect", original_connect)
+
+    replay = service.recover(prepared.intent_id)
+    assert replay.resolution_type is PublishResolutionType.PUBLISHED
+    with store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_results").fetchone() == (
+            1,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_publish_resolution_events"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type = 'publish.published'"
+        ).fetchone() == (1,)
     assert store.check_startup().healthy
 
 
@@ -2910,6 +3042,23 @@ def test_startup_rejects_publish_resolution_state_tamper(tmp_path: Path) -> None
             connection.execute("DELETE FROM governance_publish_resolution_events")
         connection.execute(
             "UPDATE governance_active_proposals SET applied_revision = ?",
+            ("f" * 40,),
+        )
+
+    with pytest.raises(GovernanceEventError, match="PUBLISH_RESOLUTION_ROOT_MISMATCH"):
+        store.initialize()
+
+
+def test_startup_rejects_unrooted_applied_revision(tmp_path: Path) -> None:
+    store, _repository, _git, _prepared, _base, _candidate = _real_prepared_publish_fixture(
+        tmp_path
+    )
+    with store.connect() as connection:
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET status = 'applied', applied_revision = ?, state_revision = state_revision + 1
+            """,
             ("f" * 40,),
         )
 
