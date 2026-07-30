@@ -1,50 +1,50 @@
-# Current Item — MGC-009
+# Current Item — MGC-010
 
 ## Goal
 
-Approved Proposal snapshot에만 유효한 one-time `ApplyGrant`를 발급하고,
-Apply request가 Proposal state·Grant·idempotency result·Audit·Outbox·`ApplyJob`을
-하나의 SQLite transaction으로 생성하도록 한다.
+`publish_pending` ApplyJob의 immutable staging 결과를 durable `PublishIntent`로 준비하고,
+Publish Coordinator만 canonical Git ref를 compare-and-swap한 뒤 authoritative state를
+원자적으로 finalize하거나 명시적인 recovery hold로 전환하도록 한다.
 
 ## Frozen Acceptance
 
-- A1: `ApprovedSnapshot`, `ApplyGrant`, Apply request result, `ApplyJob` schema와 required index·constraint·trigger가 새 migration과 schema verification에 고정됨
-- A2: `ApplyGrant` 발급은 verified approved-card request 또는 accepted approved Decision result에서만 시작하며 `ProposalRef`만 받는 public issuance API가 없음
-- A3: raw Grant는 caller에게 한 번만 반환하고 DB·Audit·Outbox·log에는 `grant_hash`만 저장됨
-- A4: Grant가 qualified ProposalRef, approved snapshot digest, content/state revision, decision epoch, human Actor, Channel, TTL과 허용 action에 결합됨
-- A5: Grant 발급과 Apply request 모두 server-created Authority와 `proposal.request_apply` permission을 요구함
-- A6: Apply request는 replay result를 mutation validation보다 먼저 조회하고 같은 key·fingerprint에는 최초 Job 결과를 반환하며 다른 fingerprint에는 `IDEMPOTENCY_CONFLICT`를 반환함
-- A7: Apply request transaction이 approved state·snapshot·Grant hash/Actor/Channel/TTL·active Job 부재를 검증하고 `approved → apply_requested`, Grant consume, queued Job, result, Audit·Outbox를 원자적으로 commit함
-- A8: Apply request가 실패하면 Proposal, Grant, Job, result, Audit, aggregate sequence와 Outbox가 모두 rollback됨
-- A9: 같은 Proposal snapshot에 대한 동시 Apply request에서 active ApplyJob은 정확히 하나만 생성되고 loser는 replay 또는 conflict로 종료됨
-- A10: stale digest/revision/epoch, expired·consumed·wrong-Actor·wrong-Channel Grant는 상태 변경 없이 거부됨
-- A11: Decision용 `ActionToken`은 Apply request credential로 사용할 수 없고 Apply용 `ApplyGrant`는 Decision credential로 사용할 수 없음
-- A12: ApplyJob은 qualified ProposalRef, approved snapshot digest, expected base revision, state, attempts, lease owner/expiry, fencing token과 staging fields를 보유함
-- A13: Job claim은 lease와 monotonic fencing token을 사용하고 stale heartbeat·finalize·staging update를 거부함
-- A14: Worker는 canonical branch/ref 또는 canonical working tree를 변경할 authority를 갖지 않으며 MGC-009는 staging artifact와 publish request 입력까지만 생성함
-- A15: token/grant secret scan, replay, rollback injection, concurrent request/claim, lease expiry와 stale fencing integration test가 통과함
+- A1: `PublishIntent`, Publish result, Project publish gate와 required index·constraint·immutable trigger가 새 migration과 schema verification에 고정됨
+- A2: Publish Coordinator가 canonical Git ref와 canonical working tree의 유일한 writer이며 Worker·일반 Governance service에 canonical write API가 노출되지 않음
+- A3: candidate commit은 isolated staging input에서 생성되고 approved snapshot, expected base revision, staged artifact bytes/digest, publish-input bytes/digest와 tree digest를 서버가 다시 검증함
+- A4: prepare transaction이 current `publish_pending` Job과 fencing token, immutable roots, approved snapshot/base revision, candidate commit/tree, 현재 canonical ref와 Project active-publish 부재를 검증함
+- A5: prepare가 qualified Project·Proposal·Job과 `expected_old_ref`, `candidate_commit`, tree/input digests를 결합한 immutable `prepared` intent를 생성하고 Project publish gate를 같은 transaction에서 잠금
+- A6: `prepared` intent는 TTL 또는 Worker lease 만료로 reclaim·overwrite·cancel되지 않으며 오직 Publish/Recovery Coordinator의 명시적인 상태 전이로 해제됨
+- A7: canonical publication은 durable `prepared` intent를 먼저 다시 읽고 candidate commit/tree digest를 검증한 뒤 exact `Git ref CAS(expected_old_ref, candidate_commit)`만 수행하며 force update를 사용하지 않음
+- A8: Git CAS가 `expected_old_ref` 불일치로 실패하면 canonical ref를 변경하지 않고 durable `publish_conflict`와 Job `recovery_hold`를 기록함
+- A9: CAS 성공 후 finalize transaction이 actual Git ref를 다시 읽고 Publish result, Job `succeeded`, Proposal `apply_requested → applied`, applied revision, Audit·Outbox와 publish gate release를 원자적으로 commit함
+- A10: finalize 전 오류는 성공으로 추정하지 않으며 recovery가 actual ref를 읽어 `expected_old_ref`면 retry/cancel, `candidate_commit`이면 finalize, 다른 ref면 `publish_conflict`와 `recovery_hold`로 결정함
+- A11: Git CAS 후 process hard-kill과 commit ambiguity에서도 recovery가 같은 candidate를 중복 publish하지 않고 최초 결과를 확정하거나 명시적인 hold를 생성함
+- A12: competing Coordinator와 stale Worker/fencing token은 하나의 active prepared intent·하나의 canonical ref transition·하나의 terminal result만 만들 수 있음
+- A13: non-retryable publish failure는 Proposal을 `apply_failed`로 전환하고, ambiguous outcome은 Proposal `apply_requested`와 Job `recovery_hold`를 유지함
+- A14: prepare/finalize/recovery의 DB failure 또는 late Audit·Outbox failure가 authoritative state, result, aggregate sequence, destination cursor와 gate를 부분 commit하지 않음
+- A15: prepared-kill, pre-CAS kill, post-CAS/pre-finalize kill, base-ref conflict, ambiguous-ref recovery, competing Coordinator와 stale Worker integration test가 통과함
 - A16: 전체 regression과 `amplai-foundry verify`가 통과함
 - A17: Subagent review P0/P1/Blocking-P2 0건
 
 ## In Scope
 
-- Approved snapshot의 durable identity와 digest binding
-- ApplyGrant issue·hash-only persistence·TTL·consume·replay
-- Atomic Apply request와 active-job uniqueness
-- ApplyJob queue, lease, heartbeat, retry-ready staging state
-- Apply request와 Job lifecycle Audit·Outbox 연결
-- Failure injection, concurrency와 fencing tests
+- Immutable PublishIntent·Publish result와 Project-scoped publish gate
+- Isolated candidate commit/tree verification
+- Publish Coordinator 전용 Git ref CAS
+- Publish finalize transaction과 ordered Audit·Outbox
+- Prepared-intent startup/runtime recovery
+- Hard-kill, CAS conflict, ambiguity와 competing Coordinator tests
 
 ## Out Of Scope
 
-- canonical Git ref CAS와 publish intent/finalize → `MGC-010`
 - legacy v2 Proposal import → `MGC-011`
-- Slack·Telegram Apply button renderer → `MGC-012`, `MGC-013`
+- Slack·Telegram Provider adapter → `MGC-012`, `MGC-013`
 - Hermes Skill → `MGC-014`
 - runtime activation UI와 kill switch → `MGC-015`
+- Git 이외 canonical publish backend
 
 ## Review Team
 
-- Apply authority, Grant separation, and replay reviewer subagent
-- ApplyJob transaction, concurrency, lease, and fencing reviewer subagent
-- Migration, rollback, secret non-persistence, and acceptance-evidence reviewer subagent
+- Publish intent, Git CAS, and sole-writer boundary reviewer subagent
+- Crash recovery, ambiguity, concurrency, and fencing reviewer subagent
+- Migration, rollback, Audit/Outbox, and acceptance-evidence reviewer subagent

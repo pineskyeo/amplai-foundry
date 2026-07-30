@@ -31,11 +31,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-008 — Ordered Transactional Outbox
   class: code
   gate: PASS at `e989566`
-- [~] MGC-009 — ApplyGrant And Apply Job
+- [x] MGC-009 — ApplyGrant And Apply Job
+  class: code
+  gate: PASS at `5b413b8`
+- [~] MGC-010 — Fenced Publish Coordinator
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-010 — Fenced Publish Coordinator
-  class: code
 - [ ] MGC-011 — V2 Migration
   class: code
 - [ ] MGC-012 — Slack Reference Adapter
