@@ -9,7 +9,6 @@ import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from itertools import pairwise
 from typing import Protocol, cast
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
@@ -90,10 +89,13 @@ class ApplyJobProjectionPayload(BaseModel):
 
     aggregate_ref: ProposalRef
     attempts: int = Field(ge=1)
+    event_sequence: int = Field(ge=1)
     event_type: str
     fencing_token: int = Field(ge=1)
     job_id: str
+    last_error_code: str | None = None
     lease_expires_at: AwareDatetime | None = None
+    lease_owner: str | None = None
     publish_request_digest: Digest | None = None
     retry_at: AwareDatetime | None = None
     staged_artifact_digest: Digest | None = None
@@ -311,14 +313,11 @@ class GovernanceEventService:
             raise GovernanceEventError("APPLY_JOB_AUDIT_SOURCE_MISMATCH")
         destinations = (
             OutboxDestination(
-                destination_ref=(
-                    f"yaml:{ref.project_ref.namespace}:"
-                    f"{ref.project_ref.project_id}:{ref.proposal_id}"
-                )
+                destination_ref=f"apply-job:{payload.job_id}:state",
+                supersession_key=f"apply-job-state:{payload.job_id}",
             ),
             OutboxDestination(
-                destination_ref=f"apply-job:{payload.job_id}",
-                supersession_key=f"apply-job:{payload.job_id}",
+                destination_ref=f"apply-job:{payload.job_id}:observer",
             ),
         )
         return self._append_verified_event_in_transaction(
@@ -341,7 +340,7 @@ class GovernanceEventService:
             before_state=str(row[6]),
             after_state=payload.status,
             definition_digest=str(row[10]),
-            source_state_revision=payload.fencing_token,
+            source_state_revision=payload.event_sequence,
             payload=payload,
         )
 
@@ -807,8 +806,10 @@ class GovernanceEventService:
                 """
             SELECT e.command_id, e.project_namespace, e.project_id, e.proposal_id,
                    e.event_type, e.worker_id, e.before_status, e.status,
-                   e.attempts, e.fencing_token, e.payload_digest, e.payload_json,
-                   e.job_id, s.definition_digest
+                   e.attempts, e.fencing_token, e.lease_owner, e.lease_expires_at,
+                   e.retry_at, e.staged_artifact_digest, e.publish_request_digest,
+                   e.last_error_code, e.payload_digest, e.payload_json,
+                   e.job_id, e.event_sequence, s.definition_digest
             FROM governance_apply_job_events e
             JOIN governance_approved_snapshots s ON s.snapshot_id = e.snapshot_id
             ORDER BY e.created_at, e.job_event_id
@@ -818,7 +819,7 @@ class GovernanceEventService:
             else ()
         )
         for job_event in job_event_rows:
-            payload_json = str(job_event[11])
+            payload_json = str(job_event[17])
             payload_digest = cls._digest(payload_json.encode("utf-8"))
             try:
                 job_payload = ApplyJobProjectionPayload.model_validate_json(payload_json)
@@ -826,29 +827,36 @@ class GovernanceEventService:
                 raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH") from error
             ref = cls._proposal_ref(job_event[1], job_event[2], job_event[3])
             if (
-                str(job_event[10]) != payload_digest
+                str(job_event[16]) != payload_digest
                 or job_payload.aggregate_ref != ref
                 or job_payload.event_type != str(job_event[4])
                 or job_payload.worker_id != str(job_event[5])
                 or job_payload.status != str(job_event[7])
                 or job_payload.attempts != int(job_event[8])
                 or job_payload.fencing_token != int(job_event[9])
-                or job_payload.job_id != str(job_event[12])
+                or job_payload.lease_owner != job_event[10]
+                or cls._optional_timestamp(job_payload.lease_expires_at) != job_event[11]
+                or cls._optional_timestamp(job_payload.retry_at) != job_event[12]
+                or job_payload.staged_artifact_digest != job_event[13]
+                or job_payload.publish_request_digest != job_event[14]
+                or job_payload.last_error_code != job_event[15]
+                or job_payload.job_id != str(job_event[18])
+                or job_payload.event_sequence != int(job_event[19])
             ):
                 raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
             job_destinations = (
                 OutboxDestination(
-                    destination_ref=f"yaml:{job_event[1]}:{job_event[2]}:{job_event[3]}"
+                    destination_ref=f"apply-job:{job_event[18]}:state",
+                    supersession_key=f"apply-job-state:{job_event[18]}",
                 ),
                 OutboxDestination(
-                    destination_ref=f"apply-job:{job_event[12]}",
-                    supersession_key=f"apply-job:{job_event[12]}",
+                    destination_ref=f"apply-job:{job_event[18]}:observer",
                 ),
             )
             command_id = str(job_event[0])
             decision_commands[command_id] = (
                 payload_digest,
-                job_payload.fencing_token,
+                job_payload.event_sequence,
                 cls._destination_manifest_digest(job_destinations),
                 2,
             )
@@ -865,7 +873,7 @@ class GovernanceEventService:
                 or audit.actor_type != "service"
                 or audit.before_state != str(job_event[6])
                 or audit.after_state != str(job_event[7])
-                or audit.definition_digest != str(job_event[13])
+                or audit.definition_digest != str(job_event[20])
                 or audit.destination_manifest_digest != decision_commands[command_id][2]
                 or audit.destination_count != 2
             ):
@@ -873,20 +881,22 @@ class GovernanceEventService:
         if has_job_events:
             jobs = connection.execute(
                 """
-                SELECT job_id, status, attempts, fencing_token, lease_expires_at,
-                       retry_at, staged_artifact_digest, publish_request_digest
+                SELECT job_id, status, attempts, fencing_token, lease_owner,
+                       lease_expires_at, retry_at, staged_artifact_digest,
+                       publish_request_digest, last_error_code
                 FROM governance_apply_jobs
                 """
             ).fetchall()
             for job in jobs:
                 events = connection.execute(
                     """
-                    SELECT e.status, e.attempts, e.fencing_token, e.lease_expires_at,
-                           e.retry_at, e.staged_artifact_digest, e.publish_request_digest
+                    SELECT e.status, e.attempts, e.fencing_token, e.lease_owner,
+                           e.lease_expires_at, e.retry_at, e.staged_artifact_digest,
+                           e.publish_request_digest, e.last_error_code,
+                           e.before_status, e.event_type, e.event_sequence
                     FROM governance_apply_job_events e
-                    JOIN governance_audit_events a ON a.command_id = e.command_id
                     WHERE e.job_id = ?
-                    ORDER BY a.aggregate_sequence DESC
+                    ORDER BY e.event_sequence DESC
                     """,
                     (job[0],),
                 ).fetchall()
@@ -895,7 +905,7 @@ class GovernanceEventService:
                         raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
                     continue
                 latest = events[0]
-                if tuple(job[1:]) != tuple(latest):
+                if tuple(job[1:]) != tuple(latest[:9]):
                     raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
                 if str(job[1]) == "publish_pending":
                     artifact_count = connection.execute(
@@ -903,7 +913,7 @@ class GovernanceEventService:
                         SELECT COUNT(*) FROM governance_staging_artifacts
                         WHERE job_id = ? AND fencing_token = ? AND artifact_digest = ?
                         """,
-                        (job[0], job[3], job[6]),
+                        (job[0], job[3], job[7]),
                     ).fetchone()[0]
                     publish_count = connection.execute(
                         """
@@ -911,14 +921,49 @@ class GovernanceEventService:
                         WHERE job_id = ? AND fencing_token = ?
                           AND publish_request_digest = ?
                         """,
-                        (job[0], job[3], job[7]),
+                        (job[0], job[3], job[8]),
                     ).fetchone()[0]
                     if artifact_count != 1 or publish_count != 1:
                         raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
                 chronological = tuple(reversed(events))
-                for previous, current in pairwise(chronological):
-                    if int(current[1]) < int(previous[1]) or int(current[2]) < int(previous[2]):
+                previous_status = "queued"
+                previous_attempts = 0
+                previous_fence = 0
+                for expected_sequence, current in enumerate(chronological, start=1):
+                    status = str(current[0])
+                    attempts = int(current[1])
+                    fence = int(current[2])
+                    before_status = str(current[9])
+                    event_type = str(current[10])
+                    if int(current[11]) != expected_sequence or before_status != previous_status:
                         raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+                    if event_type == "claimed":
+                        valid = (
+                            status == "leased"
+                            and attempts == previous_attempts + 1
+                            and fence == previous_fence + 1
+                        )
+                    elif event_type == "started":
+                        valid = before_status == "leased" and status == "running"
+                    elif event_type == "heartbeat":
+                        valid = before_status == status and status in {"leased", "running"}
+                    elif event_type == "retry_scheduled":
+                        valid = before_status in {"leased", "running"} and status == "retry_wait"
+                    elif event_type == "publish_prepared":
+                        valid = before_status == "running" and status == "publish_pending"
+                    elif event_type == "dead_lettered":
+                        valid = status == "dead_letter"
+                    else:
+                        valid = False
+                    if event_type != "claimed" and (
+                        attempts != previous_attempts or fence != previous_fence
+                    ):
+                        valid = False
+                    if not valid:
+                        raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
+                    previous_status = status
+                    previous_attempts = attempts
+                    previous_fence = fence
             for table, digest_column, bytes_column in (
                 ("governance_staging_artifacts", "artifact_digest", "artifact_bytes"),
                 (
@@ -1343,6 +1388,10 @@ class GovernanceEventService:
     @staticmethod
     def _timestamp(value: datetime) -> str:
         return value.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+    @staticmethod
+    def _optional_timestamp(value: datetime | None) -> str | None:
+        return GovernanceEventService._timestamp(value) if value is not None else None
 
 
 class OutboxConfig(BaseModel):

@@ -1136,6 +1136,7 @@ INITIAL_MIGRATIONS = (
                 job_event_id TEXT PRIMARY KEY NOT NULL,
                 command_id TEXT NOT NULL UNIQUE,
                 job_id TEXT NOT NULL,
+                event_sequence INTEGER NOT NULL CHECK (event_sequence >= 1),
                 snapshot_id TEXT NOT NULL,
                 project_namespace TEXT NOT NULL,
                 project_id TEXT NOT NULL,
@@ -1149,6 +1150,7 @@ INITIAL_MIGRATIONS = (
                 status TEXT NOT NULL,
                 attempts INTEGER NOT NULL CHECK (attempts >= 1),
                 fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+                lease_owner TEXT,
                 lease_expires_at TEXT,
                 retry_at TEXT,
                 staged_artifact_digest TEXT,
@@ -1157,6 +1159,7 @@ INITIAL_MIGRATIONS = (
                 payload_digest TEXT NOT NULL,
                 payload_json TEXT NOT NULL,
                 created_at TEXT NOT NULL,
+                UNIQUE (job_id, event_sequence),
                 FOREIGN KEY (
                     job_id, snapshot_id, project_namespace, project_id, proposal_id
                 ) REFERENCES governance_apply_jobs(
@@ -1632,6 +1635,7 @@ class MigrationRunner:
                         ("job_event_id", "TEXT", 1, 1),
                         ("command_id", "TEXT", 1, 0),
                         ("job_id", "TEXT", 1, 0),
+                        ("event_sequence", "INTEGER", 1, 0),
                         ("snapshot_id", "TEXT", 1, 0),
                         ("project_namespace", "TEXT", 1, 0),
                         ("project_id", "TEXT", 1, 0),
@@ -1642,6 +1646,7 @@ class MigrationRunner:
                         ("status", "TEXT", 1, 0),
                         ("attempts", "INTEGER", 1, 0),
                         ("fencing_token", "INTEGER", 1, 0),
+                        ("lease_owner", "TEXT", 0, 0),
                         ("lease_expires_at", "TEXT", 0, 0),
                         ("retry_at", "TEXT", 0, 0),
                         ("staged_artifact_digest", "TEXT", 0, 0),

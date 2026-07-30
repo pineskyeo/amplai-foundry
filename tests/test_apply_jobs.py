@@ -26,6 +26,8 @@ from amplai_foundry.governance import (
     DecisionService,
     DirectAuthorityRequest,
     ImmutableDefinitionObjectStore,
+    OutboxDispatcher,
+    OutboxState,
     ProposalDefinitionManifest,
     ProposalRef,
     ProposalSubmissionService,
@@ -1075,3 +1077,161 @@ def test_claim_samples_clock_after_waiting_for_database_write_lock(tmp_path: Pat
         claimed = future.result(timeout=5)
     assert claimed is not None
     assert claimed.lease_expires_at == NOW + timedelta(seconds=15)
+
+
+def test_expired_lease_at_attempt_cap_dead_letters_without_reclaim(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    clock = [NOW]
+    jobs = ApplyJobService(store, clock=lambda: clock[0], max_attempts=1)
+    claimed = jobs.claim_next("worker-1", lease_ttl=timedelta(seconds=1))
+    assert claimed is not None
+    clock[0] += timedelta(seconds=1)
+
+    assert jobs.claim_next("worker-2") is None
+    dead = jobs.get_job(job_id)
+    assert dead.status.value == "dead_letter"
+    assert dead.attempts == 1
+    assert dead.fencing_token == 1
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT event_type, worker_id FROM governance_apply_job_events "
+            "ORDER BY event_sequence DESC LIMIT 1"
+        ).fetchone() == ("dead_lettered", "system-recovery")
+
+
+def test_apply_job_outbox_dispatches_on_monotonic_job_sequence(tmp_path: Path) -> None:
+    class StrictRemote:
+        def __init__(self, destination_ref: str) -> None:
+            self.destination_ref = destination_ref
+            self.last_revision = 0
+
+        def reconcile(self, _event):
+            return None
+
+        def send(self, event):
+            assert event.source_state_revision > self.last_revision
+            self.last_revision = event.source_state_revision
+            return f"remote:{event.event_id}"
+
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+    jobs.heartbeat(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+    jobs.stage_for_publish(
+        job_id,
+        worker_id="worker-1",
+        fencing_token=claimed.fencing_token,
+        artifact_bytes=b"dispatch artifact",
+        publish_request_bytes=b"dispatch publish input",
+    )
+    with store.connect() as connection:
+        destinations = tuple(
+            str(row[0])
+            for row in connection.execute(
+                "SELECT destination_ref FROM governance_outbox_destinations "
+                "WHERE destination_ref LIKE ? ORDER BY destination_ref",
+                (f"apply-job:{job_id}:%",),
+            ).fetchall()
+        )
+    assert len(destinations) == 2
+    dispatcher = OutboxDispatcher(store, clock=lambda: NOW)
+    for destination_ref in destinations:
+        remote = StrictRemote(destination_ref)
+        while True:
+            delivered = dispatcher.deliver_next("dispatcher-1", remote)
+            if delivered is None:
+                break
+            assert delivered.state is OutboxState.DELIVERED
+        assert remote.last_revision >= 1
+
+
+def test_stage_second_outbox_failure_rolls_back_artifacts_and_lifecycle(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER inject_stage_observer_outbox_failure
+            BEFORE INSERT ON governance_outbox_events
+            WHEN NEW.destination_ref LIKE 'apply-job:%:observer'
+              AND NEW.source_state_revision = 3
+            BEGIN SELECT RAISE(ABORT, 'injected stage observer failure'); END
+            """
+        )
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected stage observer failure"):
+        jobs.stage_for_publish(
+            job_id,
+            worker_id="worker-1",
+            fencing_token=claimed.fencing_token,
+            artifact_bytes=b"rollback artifact",
+            publish_request_bytes=b"rollback publish input",
+        )
+    current = jobs.get_job(job_id)
+    assert current.status.value == "running"
+    assert current.staged_artifact_digest is None
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_staging_artifacts"
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_publish_inputs").fetchone() == (
+            0,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_apply_job_events"
+        ).fetchone() == (2,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_audit_events WHERE event_type LIKE 'apply_job.%'"
+        ).fetchone() == (2,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_events WHERE destination_ref LIKE 'apply-job:%'"
+        ).fetchone() == (4,)
+
+
+def test_stage_rejects_oversized_artifact_before_persistence(tmp_path: Path) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    claimed = jobs.claim_next("worker-1")
+    assert claimed is not None
+    jobs.start(job_id, worker_id="worker-1", fencing_token=claimed.fencing_token)
+
+    with pytest.raises(ValueError, match="4 MiB"):
+        jobs.stage_for_publish(
+            job_id,
+            worker_id="worker-1",
+            fencing_token=claimed.fencing_token,
+            artifact_bytes=b"x" * (ApplyJobService.MAX_ROOT_BYTES + 1),
+            publish_request_bytes=b"publish",
+        )
+    assert jobs.get_job(job_id).status.value == "running"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_staging_artifacts"
+        ).fetchone() == (0,)
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    (("lease_owner", "evil-worker"), ("last_error_code", "EVIL_ERROR")),
+)
+def test_startup_rejects_unrooted_job_field_tamper(
+    tmp_path: Path,
+    column: str,
+    value: str,
+) -> None:
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    assert jobs.claim_next("worker-1") is not None
+    with store.connect() as connection:
+        connection.execute(
+            f"UPDATE governance_apply_jobs SET {column} = ? WHERE job_id = ?",
+            (value, job_id),
+        )
+
+    with pytest.raises(GovernanceEventError, match="APPLY_JOB_EVENT_ROOT_MISMATCH"):
+        store.initialize()

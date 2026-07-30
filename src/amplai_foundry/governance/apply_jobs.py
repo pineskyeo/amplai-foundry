@@ -817,6 +817,8 @@ class ApplyJobView(BaseModel):
 class ApplyJobService:
     """Lease-bound ApplyJob runtime with monotonic fencing and staging-only writes."""
 
+    MAX_ROOT_BYTES = 4 * 1024 * 1024
+
     def __init__(
         self,
         store: GovernanceStore,
@@ -845,7 +847,7 @@ class ApplyJobService:
             lease_expires = ApplyGrantService._timestamp(now + lease_ttl)
             row = connection.execute(
                 """
-                SELECT job_id, status, fencing_token, lease_expires_at
+                SELECT job_id, status, fencing_token, lease_expires_at, attempts
                 FROM governance_apply_jobs
                 WHERE status = 'queued'
                    OR (status = 'retry_wait' AND retry_at <= ?)
@@ -856,6 +858,39 @@ class ApplyJobService:
                 (timestamp, timestamp),
             ).fetchone()
             if row is None:
+                return None
+            if int(row[4]) >= self._max_attempts:
+                dead_lettered = connection.execute(
+                    """
+                    UPDATE governance_apply_jobs
+                    SET status = 'dead_letter', lease_owner = NULL,
+                        lease_expires_at = NULL, retry_at = NULL,
+                        last_error_code = 'APPLY_ATTEMPTS_EXHAUSTED', updated_at = ?
+                    WHERE job_id = ? AND status = ? AND attempts = ?
+                      AND fencing_token = ?
+                      AND (lease_expires_at IS ? OR lease_expires_at = ?)
+                    """,
+                    (
+                        timestamp,
+                        row[0],
+                        row[1],
+                        row[4],
+                        row[2],
+                        row[3],
+                        row[3],
+                    ),
+                )
+                if dead_lettered.rowcount != 1:
+                    raise ApplyGovernanceError("APPLY_JOB_CLAIM_CONFLICT")
+                view = self._job_view(connection, str(row[0]))
+                self._record_event(
+                    connection,
+                    view,
+                    event_type="dead_lettered",
+                    worker_id="system-recovery",
+                    before_status=str(row[1]),
+                    created_at=timestamp,
+                )
                 return None
             updated = connection.execute(
                 """
@@ -949,6 +984,11 @@ class ApplyJobService:
     ) -> ApplyJobView:
         if not artifact_bytes or not publish_request_bytes:
             raise ValueError("staging artifact와 publish input은 비어 있을 수 없습니다.")
+        if (
+            len(artifact_bytes) > self.MAX_ROOT_BYTES
+            or len(publish_request_bytes) > self.MAX_ROOT_BYTES
+        ):
+            raise ValueError("staging artifact와 publish input은 4 MiB를 초과할 수 없습니다.")
         artifact_digest = self._content_digest(artifact_bytes)
         publish_request_digest = self._content_digest(publish_request_bytes)
         with self.store.connect() as connection, governance_transaction(connection):
@@ -1119,13 +1159,22 @@ class ApplyJobService:
         before_status: str,
         created_at: str,
     ) -> None:
+        sequence_row = connection.execute(
+            "SELECT COALESCE(MAX(event_sequence), 0) + 1 "
+            "FROM governance_apply_job_events WHERE job_id = ?",
+            (view.job_id,),
+        ).fetchone()
+        event_sequence = int(sequence_row[0])
         payload = ApplyJobProjectionPayload(
             aggregate_ref=view.proposal_ref,
             attempts=view.attempts,
+            event_sequence=event_sequence,
             event_type=event_type,
             fencing_token=view.fencing_token,
             job_id=view.job_id,
+            last_error_code=view.last_error_code,
             lease_expires_at=view.lease_expires_at,
+            lease_owner=view.lease_owner,
             publish_request_digest=view.publish_request_digest,
             retry_at=view.retry_at,
             staged_artifact_digest=view.staged_artifact_digest,
@@ -1139,17 +1188,18 @@ class ApplyJobService:
         connection.execute(
             """
             INSERT INTO governance_apply_job_events(
-                job_event_id, command_id, job_id, snapshot_id, project_namespace,
+                job_event_id, command_id, job_id, event_sequence, snapshot_id, project_namespace,
                 project_id, proposal_id, event_type, worker_id, before_status,
-                status, attempts, fencing_token, lease_expires_at, retry_at,
+                status, attempts, fencing_token, lease_owner, lease_expires_at, retry_at,
                 staged_artifact_digest, publish_request_digest, last_error_code,
                 payload_digest, payload_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 job_event_id,
                 command_id,
                 view.job_id,
+                event_sequence,
                 view.snapshot_id,
                 *ApplyGrantService._identity(view.proposal_ref),
                 event_type,
@@ -1158,6 +1208,7 @@ class ApplyJobService:
                 view.status.value,
                 view.attempts,
                 view.fencing_token,
+                view.lease_owner,
                 (
                     ApplyGrantService._timestamp(view.lease_expires_at)
                     if view.lease_expires_at is not None
