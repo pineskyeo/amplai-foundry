@@ -53,3 +53,13 @@
   approval hold는 차단하며, activated migration의 immutable definition/import command/Audit/Outbox
   graph는 계속 reconciliation한다.
 - Source: MGC-011 Slice 4 Package 4.2c1 Contract·Evidence·Ops review
+
+## D-009 — Atomic Forward Recovery Execution
+
+- Status: accepted
+- Decision: activation 후 definition correction은 authenticated recovery plan과 exact
+  activation/lifecycle root를 검증한 뒤 하나의 transaction에서 Proposal CAS, immutable
+  definition revision, Audit, Outbox와 digest-bound recovery result를 함께 commit한다.
+  Recovery evidence는 exact definition revision에 결합하며 startup reconciliation이
+  command, item, result, Audit, Outbox와 historical definition provenance 변조를 차단한다.
+- Source: MGC-011 Slice 4 Package 4.2c2 Contract·Evidence·Ops review

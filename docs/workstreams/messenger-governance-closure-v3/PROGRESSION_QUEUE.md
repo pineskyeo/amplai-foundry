@@ -40,7 +40,7 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [~] MGC-011 — V2 Migration
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-  progress: Slice 4 Package 4.2c1 forward-recovery planner PASS at `eb1334a`; Package 4.2c2 atomic executor next
+  progress: Slice 4 Package 4.2c2 atomic forward-recovery executor PASS at `f6f2449`; A1–A17 final acceptance audit next
 - [ ] MGC-012 — Slack Reference Adapter
   class: code
 - [ ] MGC-013 — Telegram Reference Adapter

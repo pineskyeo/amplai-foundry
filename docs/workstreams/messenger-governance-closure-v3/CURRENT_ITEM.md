@@ -48,7 +48,10 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
 - Slice 4 Package 4.2c1 — authenticated deterministic forward-recovery planner,
   safe-state/dependent-root policy and activated import evidence reconciliation:
   `PASS` at `eb1334a`
-- Full tests: `601/601 PASS`
+- Slice 4 Package 4.2c2 — authenticated atomic forward-recovery executor,
+  exact definition-revision evidence and corruption reconciliation:
+  `PASS` at `f6f2449`
+- Full tests: `611/611 PASS`
 - Full verification: `7/7 PASS`
 - Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`
 - Retained advisory: `OPS-S2-06` — interrupted immutable object cleanup/accounting,
@@ -57,7 +60,7 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
   direct Apply/Publish gate와 predecessor trigger 복구 evidence를 Package 4.2 closure에서 보강함
 - Retained advisory: attestation failure injection, indirect dependent registry와 immutable
   object accounting을 Package 4.2 closure에서 보강함
-- Next: Slice 4 Package 4.2c2 — A15 atomic forward-recovery executor
+- Next: MGC-011 A1–A17 final acceptance audit and closure decision
 
 ## Out Of Scope
 
