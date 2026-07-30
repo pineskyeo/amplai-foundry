@@ -336,6 +336,7 @@ class GovernanceEventService:
                OR t.allowed_action != r.action
                OR t.allowed_actor_id != r.actor_id
                OR t.allowed_actor_type != r.actor_type
+               OR t.bound_channel_json != r.channel_json
                OR t.active_definition_digest != r.active_definition_digest
                OR t.content_revision != r.content_revision
                OR t.state_revision + 1 != r.state_revision
@@ -771,11 +772,11 @@ class GovernanceEventService:
                 "before_state": row[10],
                 "after_state": row[11],
                 "definition_digest": row[12],
-                "destination_manifest_digest": row[13],
-                "destination_count": row[14],
-                "previous_event_hash": row[15],
-                "event_hash": row[16],
-                "occurred_at": row[17],
+                "previous_event_hash": row[13],
+                "event_hash": row[14],
+                "occurred_at": row[15],
+                "destination_manifest_digest": row[16],
+                "destination_count": row[17],
             }
         )
 
@@ -896,6 +897,7 @@ class OutboxDispatcher:
                     OR (
                       e.attempts = ?
                       AND e.last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                      AND e.claim_generation = e.attempts
                     )
                   )
                   AND NOT EXISTS (
@@ -931,6 +933,7 @@ class OutboxDispatcher:
                     OR (
                       attempts = ?
                       AND last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                      AND claim_generation = attempts
                     )
                   )
                 """,
@@ -1135,7 +1138,10 @@ class OutboxDispatcher:
             """
             SELECT event_id FROM governance_outbox_events
             WHERE state = 'retry_wait' AND attempts >= ? AND retry_at <= ?
-              AND last_error_code != 'OUTBOX_LEASE_EXPIRED'
+              AND NOT (
+                last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                AND claim_generation = attempts
+              )
             """,
             (self.config.max_attempts, now),
         ).fetchall()

@@ -559,6 +559,47 @@ def test_consumed_token_requires_immutable_decision_result_root(tmp_path: Path) 
         GovernanceEventService(store).reconcile()
 
 
+def test_action_token_issuance_is_immutable_and_channel_tamper_fails_startup(
+    tmp_path: Path,
+) -> None:
+    store, _active, decisions = _decision_fixture(tmp_path)
+    approve = next(
+        item
+        for item in decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+        if item.record.allowed_action is DecisionAction.APPROVE
+    )
+    decisions.decide(
+        PROPOSAL,
+        action=DecisionAction.APPROVE,
+        authority_request=_authority_request(),
+        raw_token=approve.raw_token,
+        idempotency_key="decision-token-immutable",
+        request_fingerprint=hashlib.sha256(b"decision-token-immutable").hexdigest(),
+    )
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="issuance is immutable"):
+            connection.execute(
+                "UPDATE governance_action_tokens SET token_hash = ? WHERE token_id = ?",
+                (f"sha256:{'f' * 64}", approve.record.token_id),
+            )
+        trigger_sql = connection.execute(
+            """
+            SELECT sql FROM sqlite_master
+            WHERE type = 'trigger' AND name = 'governance_action_tokens_immutable_issuance'
+            """
+        ).fetchone()
+        assert trigger_sql is not None
+        connection.execute("DROP TRIGGER governance_action_tokens_immutable_issuance")
+        connection.execute(
+            "UPDATE governance_action_tokens SET bound_channel_json = '{}' WHERE token_id = ?",
+            (approve.record.token_id,),
+        )
+        connection.execute(str(trigger_sql[0]))
+
+    with pytest.raises(GovernanceEventError, match="DECISION_RESULT_ROOT_MISMATCH"):
+        store.check_startup()
+
+
 def test_startup_reconciliation_rejects_destination_sequence_gap(tmp_path: Path) -> None:
     store, _active, _draft = _active_proposal(tmp_path)
     events = GovernanceEventService(store, clock=lambda: NOW)
@@ -896,6 +937,50 @@ def test_final_attempt_post_send_crash_reconciles_before_dlq(tmp_path: Path) -> 
     assert delivered.attempts == 1
     assert remote.sends == 1
     assert remote.reconciles == 1
+
+
+def test_repeated_final_recovery_crash_is_bounded_to_dlq(tmp_path: Path) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    clock = MutableClock()
+    _audit, outbox = _append(
+        GovernanceEventService(store, clock=clock),
+        store,
+        command_id="command-recovery-crash",
+        state_revision=2,
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    dispatcher = OutboxDispatcher(
+        store,
+        config=OutboxConfig(
+            lease_seconds=1,
+            max_attempts=1,
+            retry_base_seconds=1,
+            retry_cap_seconds=1,
+        ),
+        clock=clock,
+    )
+    first = dispatcher.claim_next("initial", destination_ref=provider.destination_ref)
+    assert first is not None and first.claim_generation == 1
+    clock.advance(timedelta(seconds=2))
+    assert dispatcher.claim_next("recovery", destination_ref=provider.destination_ref) is None
+    clock.advance(timedelta(seconds=1))
+    recovery = dispatcher.claim_next("recovery", destination_ref=provider.destination_ref)
+    assert recovery is not None and recovery.claim_generation == 2
+    assert recovery.attempts == 1
+    clock.advance(timedelta(seconds=2))
+    assert dispatcher.claim_next("recovery-2", destination_ref=provider.destination_ref) is None
+    clock.advance(timedelta(seconds=1))
+    assert dispatcher.claim_next("recovery-2", destination_ref=provider.destination_ref) is None
+
+    dead = dispatcher.get(provider.event_id)
+    assert dead.state is OutboxState.DEAD_LETTER
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_dead_letters"
+        ).fetchone() == (1,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_operator_holds").fetchone() == (
+            1,
+        )
 
 
 def test_unreconcilable_remote_state_moves_to_dlq_and_operator_hold(tmp_path: Path) -> None:

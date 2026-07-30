@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import multiprocessing
 import sqlite3
 import time
@@ -201,7 +203,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     repeated = store.initialize()
 
     assert health.healthy
-    assert health.schema_version == 6
+    assert health.schema_version == len(INITIAL_MIGRATIONS)
     assert health.journal_mode == "wal"
     assert health.synchronous == 2
     assert health.foreign_keys
@@ -221,6 +223,8 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (4, "durable-provider-ingress"),
         (5, "authority-actor-binding"),
         (6, "ordered-transactional-outbox"),
+        (7, "decision-outbox-integrity-roots"),
+        (8, "audit-manifest-integrity-finalize"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -245,7 +249,151 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
     assert version_one.initialize().schema_version == 1
 
     upgraded = GovernanceStore(path)
-    assert upgraded.initialize().schema_version == 6
+    assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
+
+
+def test_version_six_store_with_decision_event_upgrades_and_backfills(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    legacy_runner = MigrationRunner(INITIAL_MIGRATIONS[:6])
+    legacy = GovernanceStore(path, migration_runner=legacy_runner)
+    assert legacy.initialize().schema_version == 6
+    assert INITIAL_MIGRATIONS[2].checksum.startswith("7fe6ff72")
+    assert INITIAL_MIGRATIONS[5].checksum.startswith("05cd2ed1")
+
+    namespace = "org/default/project/amplai"
+    project_id = "amplai"
+    proposal_id = "PROP-20260730-ABCDEF12"
+    digest = f"sha256:{'a' * 64}"
+    timestamp = "2026-07-30T12:00:00.000000Z"
+    channel = {
+        "provider": "slack",
+        "workspace_id": "T123",
+        "channel_id": "C456",
+        "message_id": "1710000000.000200",
+    }
+    channel_json = json.dumps(channel, separators=(",", ":"), sort_keys=True)
+    channel_digest = hashlib.sha256(channel_json.encode()).hexdigest()
+    destinations = (
+        f"yaml:{namespace}:{project_id}:{proposal_id}",
+        f"provider:slack:{channel_digest}",
+    )
+    payload_json = json.dumps(
+        {
+            "action": "approve",
+            "active_definition_digest": digest,
+            "aggregate_ref": {
+                "project_ref": {"namespace": namespace, "project_id": project_id},
+                "proposal_id": proposal_id,
+            },
+            "content_revision": 1,
+            "decision_epoch": 1,
+            "proposal_status": "approved",
+            "state_revision": 2,
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    payload_digest = f"sha256:{hashlib.sha256(payload_json.encode()).hexdigest()}"
+    token_hash = f"sha256:{hashlib.sha256(b'legacy-token').hexdigest()}"
+    with legacy.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals VALUES (
+                ?, ?, ?, ?, 1, 2, 1, 'approved', ?, ?
+            )
+            """,
+            (namespace, project_id, proposal_id, digest, timestamp, timestamp),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_action_tokens VALUES (
+                'TOK-AAAAAAAAAAAAAAAA', ?, ?, ?, ?, ?, 1, 1, 1, 'approve',
+                'ACT-1', 'human', ?, ?, '2026-07-30T12:15:00.000000Z',
+                'consumed', ?
+            )
+            """,
+            (
+                token_hash,
+                namespace,
+                project_id,
+                proposal_id,
+                digest,
+                channel_json,
+                timestamp,
+                timestamp,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_decision_results VALUES (
+                'legacy-command', ?, ?, ?, ?, 'approve', 'ACT-1', 'human', ?,
+                'approved', ?, 1, 2, 1, 'TOK-AAAAAAAAAAAAAAAA', ?
+            )
+            """,
+            (
+                hashlib.sha256(b"legacy-command").hexdigest(),
+                namespace,
+                project_id,
+                proposal_id,
+                channel_json,
+                digest,
+                timestamp,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO governance_aggregate_sequences VALUES (?, ?, ?, 1, ?)",
+            (namespace, project_id, proposal_id, f"sha256:{'b' * 64}"),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_audit_events VALUES (
+                'EVT-LEGACY', 'legacy-command', 'proposal.approved', ?, ?, ?, 1,
+                'ACT-1', 'human', 'policy', 'reviewed', 'approved', ?, NULL, ?, ?
+            )
+            """,
+            (namespace, project_id, proposal_id, digest, f"sha256:{'b' * 64}", timestamp),
+        )
+        for sequence, destination in enumerate(sorted(destinations), start=1):
+            connection.execute(
+                "INSERT INTO governance_outbox_destinations VALUES (?, 2, 0, 0, ?)",
+                (destination, timestamp),
+            )
+            supersession = (
+                f"proposal-card:{proposal_id}" if destination.startswith("provider:") else None
+            )
+            connection.execute(
+                """
+                INSERT INTO governance_outbox_events VALUES (
+                    ?, ?, ?, ?, 1, ?, 1, 2, ?, ?, ?, 'pending', 0, 0,
+                    NULL, NULL, NULL, NULL, NULL, NULL, ?
+                )
+                """,
+                (
+                    f"OBX-LEGACY-{sequence}",
+                    namespace,
+                    project_id,
+                    proposal_id,
+                    destination,
+                    supersession,
+                    payload_digest,
+                    payload_json,
+                    timestamp,
+                ),
+            )
+
+    upgraded = GovernanceStore(path)
+    assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with upgraded.connect() as connection:
+        audit = connection.execute(
+            """
+            SELECT command_id, destination_manifest_digest, destination_count
+            FROM governance_audit_events
+            """
+        ).fetchone()
+    assert audit is not None
+    assert str(audit[0]).startswith("decision:sha256:")
+    assert str(audit[1]).startswith("sha256:")
+    assert audit[2] == 2
     with upgraded.connect() as connection:
         tables = {
             str(row[0])
@@ -295,7 +443,7 @@ def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
     assert "governance_definition_revisions" not in tables
     assert versions == [(1,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 6
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
@@ -336,7 +484,7 @@ def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
     assert "governance_decision_results" not in tables
     assert versions == [(1,), (2,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 6
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrades(
@@ -376,7 +524,7 @@ def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrade
     assert ingress_table is None
     assert versions == [(1,), (2,), (3,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 6
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_hard_kill_between_actual_v5_ddl_reopens_at_v4_then_upgrades(
@@ -418,7 +566,7 @@ def test_hard_kill_between_actual_v5_ddl_reopens_at_v4_then_upgrades(
     assert objects == []
     assert versions == [(1,), (2,), (3,), (4,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 6
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_hard_kill_between_actual_v6_ddl_reopens_at_v5_then_upgrades(
@@ -458,7 +606,7 @@ def test_hard_kill_between_actual_v6_ddl_reopens_at_v5_then_upgrades(
     assert outbox is None
     assert versions == [(1,), (2,), (3,), (4,), (5,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 6
+    assert GovernanceStore(path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
 def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
@@ -575,7 +723,7 @@ def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
             "SELECT version FROM governance_schema_migrations ORDER BY version"
         ).fetchall()
     assert partial is None
-    assert versions == [(1,), (2,), (3,), (4,), (5,), (6,)]
+    assert versions == [(version,) for version in range(1, len(INITIAL_MIGRATIONS) + 1)]
 
 
 def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -> None:
@@ -594,7 +742,7 @@ def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -
     process.join(timeout=5)
     assert not process.is_alive()
 
-    assert GovernanceStore(path).check_startup().schema_version == 6
+    assert GovernanceStore(path).check_startup().schema_version == len(INITIAL_MIGRATIONS)
     with sqlite3.connect(path) as connection:
         partial = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hard_kill_partial'"

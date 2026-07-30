@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 from dataclasses import dataclass
 from typing import cast
@@ -227,27 +228,6 @@ INITIAL_MIGRATIONS = (
                     AND substr(active_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
                 )
             ) WITHOUT ROWID
-            """,
-            """
-            CREATE TRIGGER governance_action_tokens_no_delete
-            BEFORE DELETE ON governance_action_tokens
-            BEGIN
-                SELECT RAISE(ABORT, 'governance action token is durable');
-            END
-            """,
-            """
-            CREATE TRIGGER governance_decision_results_no_update
-            BEFORE UPDATE ON governance_decision_results
-            BEGIN
-                SELECT RAISE(ABORT, 'governance decision result is append-only');
-            END
-            """,
-            """
-            CREATE TRIGGER governance_decision_results_no_delete
-            BEFORE DELETE ON governance_decision_results
-            BEGIN
-                SELECT RAISE(ABORT, 'governance decision result is append-only');
-            END
             """,
         ),
     ),
@@ -490,8 +470,6 @@ INITIAL_MIGRATIONS = (
                 before_state TEXT NOT NULL,
                 after_state TEXT NOT NULL,
                 definition_digest TEXT NOT NULL,
-                destination_manifest_digest TEXT NOT NULL,
-                destination_count INTEGER NOT NULL CHECK (destination_count >= 1),
                 previous_event_hash TEXT,
                 event_hash TEXT NOT NULL,
                 occurred_at TEXT NOT NULL,
@@ -504,11 +482,6 @@ INITIAL_MIGRATIONS = (
                     length(definition_digest) = 71
                     AND substr(definition_digest, 1, 7) = 'sha256:'
                     AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
-                ),
-                CHECK (
-                    length(destination_manifest_digest) = 71
-                    AND substr(destination_manifest_digest, 1, 7) = 'sha256:'
-                    AND substr(destination_manifest_digest, 8) NOT GLOB '*[^0-9a-f]*'
                 ),
                 CHECK (
                     previous_event_hash IS NULL OR (
@@ -645,6 +618,72 @@ INITIAL_MIGRATIONS = (
             ) WITHOUT ROWID
             """,
             """
+            CREATE TABLE governance_operator_holds (
+                hold_id TEXT PRIMARY KEY NOT NULL,
+                scope_kind TEXT NOT NULL CHECK (scope_kind = 'outbox_destination'),
+                scope_ref TEXT NOT NULL,
+                reason_code TEXT NOT NULL,
+                source_event_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                resolved_at TEXT,
+                FOREIGN KEY (source_event_id) REFERENCES governance_outbox_events(event_id)
+                    ON DELETE RESTRICT,
+                CHECK (resolved_at IS NULL)
+            ) WITHOUT ROWID
+            """,
+        ),
+    ),
+    Migration(
+        version=7,
+        name="decision-outbox-integrity-roots",
+        statements=(
+            "DROP TRIGGER governance_audit_events_no_update",
+            "ALTER TABLE governance_audit_events ADD COLUMN destination_manifest_digest TEXT",
+            "ALTER TABLE governance_audit_events ADD COLUMN destination_count INTEGER",
+            """
+            CREATE TRIGGER governance_action_tokens_no_delete
+            BEFORE DELETE ON governance_action_tokens
+            BEGIN
+                SELECT RAISE(ABORT, 'governance action token is durable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_action_tokens_immutable_issuance
+            BEFORE UPDATE ON governance_action_tokens
+            WHEN OLD.token_id != NEW.token_id
+              OR OLD.token_hash != NEW.token_hash
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.active_definition_digest != NEW.active_definition_digest
+              OR OLD.content_revision != NEW.content_revision
+              OR OLD.state_revision != NEW.state_revision
+              OR OLD.decision_epoch != NEW.decision_epoch
+              OR OLD.allowed_action != NEW.allowed_action
+              OR OLD.allowed_actor_id != NEW.allowed_actor_id
+              OR OLD.allowed_actor_type != NEW.allowed_actor_type
+              OR OLD.bound_channel_json != NEW.bound_channel_json
+              OR OLD.issued_at != NEW.issued_at
+              OR OLD.expires_at != NEW.expires_at
+            BEGIN
+                SELECT RAISE(ABORT, 'governance action token issuance is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_decision_results_no_update
+            BEFORE UPDATE ON governance_decision_results
+            BEGIN
+                SELECT RAISE(ABORT, 'governance decision result is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_decision_results_no_delete
+            BEFORE DELETE ON governance_decision_results
+            BEGIN
+                SELECT RAISE(ABORT, 'governance decision result is append-only');
+            END
+            """,
+            """
             CREATE TRIGGER governance_outbox_dead_letters_no_update
             BEFORE UPDATE ON governance_outbox_dead_letters
             BEGIN
@@ -659,20 +698,6 @@ INITIAL_MIGRATIONS = (
             END
             """,
             """
-            CREATE TABLE governance_operator_holds (
-                hold_id TEXT PRIMARY KEY NOT NULL,
-                scope_kind TEXT NOT NULL CHECK (scope_kind = 'outbox_destination'),
-                scope_ref TEXT NOT NULL,
-                reason_code TEXT NOT NULL,
-                source_event_id TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                resolved_at TEXT,
-                FOREIGN KEY (source_event_id) REFERENCES governance_outbox_events(event_id)
-                    ON DELETE RESTRICT,
-                CHECK (resolved_at IS NULL)
-            ) WITHOUT ROWID
-            """,
-            """
             CREATE TRIGGER governance_operator_holds_no_update
             BEFORE UPDATE ON governance_operator_holds
             BEGIN
@@ -684,6 +709,32 @@ INITIAL_MIGRATIONS = (
             BEFORE DELETE ON governance_operator_holds
             BEGIN
                 SELECT RAISE(ABORT, 'governance operator hold is append-only');
+            END
+            """,
+        ),
+    ),
+    Migration(
+        version=8,
+        name="audit-manifest-integrity-finalize",
+        statements=(
+            """
+            CREATE TRIGGER governance_audit_manifest_required
+            BEFORE INSERT ON governance_audit_events
+            WHEN NEW.destination_manifest_digest IS NULL
+              OR length(NEW.destination_manifest_digest) != 71
+              OR substr(NEW.destination_manifest_digest, 1, 7) != 'sha256:'
+              OR substr(NEW.destination_manifest_digest, 8) GLOB '*[^0-9a-f]*'
+              OR NEW.destination_count IS NULL
+              OR NEW.destination_count < 1
+            BEGIN
+                SELECT RAISE(ABORT, 'governance audit manifest is required');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_audit_events_no_update
+            BEFORE UPDATE ON governance_audit_events
+            BEGIN
+                SELECT RAISE(ABORT, 'governance audit is append-only');
             END
             """,
         ),
@@ -948,8 +999,6 @@ class MigrationRunner:
                         ("before_state", "TEXT", 1, 0),
                         ("after_state", "TEXT", 1, 0),
                         ("definition_digest", "TEXT", 1, 0),
-                        ("destination_manifest_digest", "TEXT", 1, 0),
-                        ("destination_count", "INTEGER", 1, 0),
                         ("previous_event_hash", "TEXT", 0, 0),
                         ("event_hash", "TEXT", 1, 0),
                         ("occurred_at", "TEXT", 1, 0),
@@ -1004,6 +1053,12 @@ class MigrationRunner:
                     ),
                 }
             )
+        if schema_version >= 7:
+            expected_columns["governance_audit_events"] = (
+                *expected_columns["governance_audit_events"],
+                ("destination_manifest_digest", "TEXT", 0, 0),
+                ("destination_count", "INTEGER", 0, 0),
+            )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
             actual = tuple(
@@ -1022,6 +1077,8 @@ class MigrationRunner:
             if "CREATE TABLE " in statement
         }
         for table, expected_sql in expected_create_sql.items():
+            if schema_version >= 7 and table == "governance_audit_events":
+                continue
             row = connection.execute(
                 "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
                 (table,),
@@ -1082,6 +1139,8 @@ class MigrationRunner:
                 continue
             for statement in migration.statements:
                 connection.execute(statement)
+            if migration.version == 7:
+                self._backfill_audit_manifests(connection)
             connection.execute(
                 """
                 INSERT INTO governance_schema_migrations(version, name, checksum, applied_at)
@@ -1090,3 +1149,127 @@ class MigrationRunner:
                 (migration.version, migration.name, migration.checksum),
             )
         return self.latest_version
+
+    @staticmethod
+    def _backfill_audit_manifests(connection: sqlite3.Connection) -> None:
+        """Upgrade v6 audit rows to the manifest-bound v7 hash contract."""
+
+        aggregates = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id
+            FROM governance_aggregate_sequences
+            ORDER BY project_namespace, project_id, proposal_id
+            """
+        ).fetchall()
+        for namespace, project_id, proposal_id in aggregates:
+            previous_hash: str | None = None
+            rows = connection.execute(
+                """
+                SELECT event_id, command_id, event_type, aggregate_sequence,
+                       actor_id, actor_type, policy_snapshot_id, before_state,
+                       after_state, definition_digest, occurred_at
+                FROM governance_audit_events
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                ORDER BY aggregate_sequence
+                """,
+                (namespace, project_id, proposal_id),
+            ).fetchall()
+            for row in rows:
+                decision = connection.execute(
+                    """
+                    SELECT idempotency_key FROM governance_decision_results
+                    WHERE idempotency_key = ?
+                      AND project_namespace = ? AND project_id = ? AND proposal_id = ?
+                    """,
+                    (row[1], namespace, project_id, proposal_id),
+                ).fetchone()
+                if decision is None:
+                    raise GovernanceMigrationError(
+                        "v6 Audit에 대응하는 Decision result가 없습니다."
+                    )
+                command_id = (
+                    "decision:sha256:"
+                    + hashlib.sha256(str(decision[0]).encode("utf-8")).hexdigest()
+                )
+                destinations = connection.execute(
+                    """
+                    SELECT destination_ref, supersession_key
+                    FROM governance_outbox_events
+                    WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                      AND aggregate_sequence = ?
+                    ORDER BY destination_ref
+                    """,
+                    (namespace, project_id, proposal_id, row[3]),
+                ).fetchall()
+                if not destinations:
+                    raise GovernanceMigrationError("v6 Audit Outbox manifest가 비어 있습니다.")
+                manifest = {
+                    "destinations": [
+                        {
+                            "destination_ref": str(destination[0]),
+                            "supersession_key": (
+                                str(destination[1]) if destination[1] is not None else None
+                            ),
+                        }
+                        for destination in destinations
+                    ]
+                }
+                manifest_digest = MigrationRunner._digest_json(manifest)
+                event_payload = {
+                    "actor_id": str(row[4]),
+                    "actor_type": str(row[5]),
+                    "after_state": str(row[8]),
+                    "aggregate_sequence": int(row[3]),
+                    "before_state": str(row[7]),
+                    "command_id": command_id,
+                    "definition_digest": str(row[9]),
+                    "destination_count": len(destinations),
+                    "destination_manifest_digest": manifest_digest,
+                    "event_id": str(row[0]),
+                    "event_type": str(row[2]),
+                    "occurred_at": str(row[10]),
+                    "policy_snapshot_id": str(row[6]),
+                    "previous_event_hash": previous_hash,
+                    "proposal_ref": {
+                        "project_ref": {
+                            "namespace": str(namespace),
+                            "project_id": str(project_id),
+                        },
+                        "proposal_id": str(proposal_id),
+                    },
+                }
+                event_hash = MigrationRunner._digest_json(event_payload)
+                connection.execute(
+                    """
+                    UPDATE governance_audit_events
+                    SET command_id = ?, destination_manifest_digest = ?,
+                        destination_count = ?, previous_event_hash = ?, event_hash = ?
+                    WHERE event_id = ?
+                    """,
+                    (
+                        command_id,
+                        manifest_digest,
+                        len(destinations),
+                        previous_hash,
+                        event_hash,
+                        row[0],
+                    ),
+                )
+                previous_hash = event_hash
+            connection.execute(
+                """
+                UPDATE governance_aggregate_sequences SET last_event_hash = ?
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                """,
+                (previous_hash, namespace, project_id, proposal_id),
+            )
+
+    @staticmethod
+    def _digest_json(payload: object) -> str:
+        canonical = json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
