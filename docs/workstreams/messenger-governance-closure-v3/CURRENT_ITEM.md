@@ -1,49 +1,45 @@
-# Current Item — MGC-006
+# Current Item — MGC-007
 
 ## Goal
 
-외부 Provider identity를 governed Actor binding으로 해석하고, production mutation에 사용할
-`AuthorityContext`를 서버가 단일 경로에서 생성한다.
+CLI와 Intake를 포함한 production mutation entrypoint가 governed Decision·Authority 경계를
+우회하지 못하게 하고, Apply 구현 전까지 직접 적용 경로를 fail-closed한다.
 
 ## Frozen Acceptance
 
-- A1: Production `AuthorityContext` 생성 경로가 `AuthorityService.authenticate()` 하나로 제한됨
-- A2: Public request가 permission 또는 AuthorityContext를 주입할 수 없음
-- A3: 외부 identity가 Provider, installation/workspace와 immutable external actor ID의 composite key로 저장됨
-- A4: active external identity binding이 유일하며 silent overwrite를 거부함
-- A5: binding create/rebind/disable이 explicit approval, reason과 before/after diff를 요구함
-- A6: rebind가 기존 active binding disable과 새 binding activation을 한 SQLite transaction으로 수행함
-- A7: binding transition record가 append-only이며 승인자, 사유, 이전·이후 Actor를 보존함
-- A8: unmapped·disabled Actor와 Project permission 부재가 fail-closed함
-- A9: decision permission은 human Actor에게만 부여하고 Service/Agent decision을 거부함
-- A10: Intake Policy Actor 권한이 `proposal.read`, `proposal.submit_review`로 제한됨
-- A11: pending ingress 처리 시 binding과 Project permission을 다시 조회해 Authority를 생성함
-- A12: Actor/Authority 실패가 Proposal, Token과 ingress decision result를 변경하지 않음
-- A13: binding race, rebind rollback, disabled/unmapped, cross-Project permission과 human-only test가 통과함
-- A14: existing test와 `amplai-foundry verify` 통과
-- A15: Subagent review P0/P1/Blocking-P2 0건
+- A1: Proposal decision·status·apply를 변경하는 production call site inventory가 코드와 test 기준으로 고정됨
+- A2: CLI·Intake·public request가 governance `AuthorityContext` 또는 permission을 직접 생성·주입하지 못함
+- A3: `approve`, `reject`, `request_changes` mutation이 live `AuthorityService`를 사용하는 `DecisionService`로만 수행됨
+- A4: unregistered·disabled·Project permission 없는 Actor의 CLI·Intake mutation이 fail-closed함
+- A5: Intake Policy Actor는 `proposal.submit_review`까지만 수행하고 decision·apply를 실행하지 못함
+- A6: production code에서 `approve_proposal()` 직접 호출이 decision boundary 밖에 존재하지 않음
+- A7: `ProposalApplyService` 또는 동등한 direct apply entrypoint가 CLI·Intake·public API에 노출되지 않음
+- A8: Apply 요청은 MGC-009 ApplyGrant 경계가 준비될 때까지 명시적 deferred/denied 결과를 반환함
+- A9: Governance Store unavailable·Authority resolution failure 시 legacy YAML·Proposal·Token·Git state가 변경되지 않음
+- A10: architecture test가 forbidden import/call과 caller-created governance AuthorityContext의 재도입을 탐지함
+- A11: 기존 CLI·Intake read/submit flow의 호환 가능한 부분과 전체 regression test가 통과함
+- A12: `amplai-foundry verify`가 통과함
+- A13: Subagent review P0/P1/Blocking-P2 0건
 
 ## In Scope
 
-- Schema v5 Actor, external binding, permission policy와 transition record
-- Server-created AuthorityService
-- Approved binding create/rebind/disable commands
-- Active identity uniqueness와 atomic rebind
-- Project-scoped permission resolution
-- Human decision와 Intake Actor policy
-- Ingress execution 시 Authority 재평가 seam
-- Failure, rollback, race와 cross-Project test
+- CLI와 Intake production mutation inventory
+- Legacy `ProposalActionService` caller-created AuthorityContext 경로 폐쇄
+- Decision mutation의 `AuthorityService` + `DecisionService` routing
+- Intake Policy Actor submit-only enforcement
+- Direct `approve_proposal`와 direct apply exposure 제거
+- Fail-closed compatibility error와 architecture regression test
 
 ## Out Of Scope
 
 - Audit hash chain과 projection outbox → `MGC-008`
-- Direct CLI/Intake mutation closure → `MGC-007`
-- Slack/Telegram Provider verification → `MGC-012`, `MGC-013`
-- ApplyGrant permission execution → `MGC-009`
-- Activation administration UI → `MGC-015`
+- ApplyGrant와 Apply Job 구현 → `MGC-009`
+- Fenced canonical publish → `MGC-010`
+- Slack·Telegram Provider adapter → `MGC-012`, `MGC-013`
+- Runtime activation UI와 kill switch → `MGC-015`
 
 ## Review Team
 
-- Authority injection and human-decision reviewer subagent
-- Binding transition and race reviewer subagent
-- Permission/failure evidence reviewer subagent
+- Direct mutation and Authority injection reviewer subagent
+- CLI/Intake boundary reviewer subagent
+- Failure and architecture-test evidence reviewer subagent
