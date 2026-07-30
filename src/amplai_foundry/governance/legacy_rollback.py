@@ -782,6 +782,7 @@ class LegacyMigrationRollbackExecutor:
             """
             INSERT INTO governance_legacy_rollback_scopes(
                 command_id, migration_id, project_namespace, project_id, proposal_id,
+                scope_version,
                 rollback_root_digest, definition_digest, content_revision,
                 state_revision, decision_epoch, audit_event_id, aggregate_sequence,
                 event_hash, outbox_event_id, destination_ref, destination_sequence,
@@ -790,7 +791,7 @@ class LegacyMigrationRollbackExecutor:
                 previous_destination_operator_hold, previous_destination_updated_at,
                 approval_hold_reason_code, approval_hold_source_artifact_digest,
                 approval_hold_created_at, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 command_id,
@@ -798,6 +799,7 @@ class LegacyMigrationRollbackExecutor:
                 root.proposal_ref.project_ref.namespace,
                 root.proposal_ref.project_ref.project_id,
                 root.proposal_ref.proposal_id,
+                2,
                 rollback_root_digest,
                 root.definition_digest,
                 root.content_revision,

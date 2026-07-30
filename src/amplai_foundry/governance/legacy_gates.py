@@ -22,6 +22,20 @@ def legacy_mutation_block(connection: sqlite3.Connection, ref: ProposalRef) -> s
     ).fetchone()
     if pending is not None:
         return "LEGACY_MIGRATION_EVENT_BACKFILL_PENDING"
+    lifecycle = None
+    if _table_exists(connection, "governance_legacy_migration_lifecycle_heads"):
+        lifecycle = connection.execute(
+            """
+            SELECT h.state
+            FROM governance_legacy_migration_items i
+            JOIN governance_legacy_migration_lifecycle_heads h
+              ON h.migration_id = i.migration_id
+            WHERE i.project_namespace = ? AND i.project_id = ? AND i.proposal_id = ?
+            """,
+            identity,
+        ).fetchone()
+        if lifecycle is not None and str(lifecycle[0]) == "rolled_back":
+            return "LEGACY_MIGRATION_ROLLED_BACK"
     if not _table_exists(connection, "governance_legacy_approval_holds"):
         return None
     unresolved = connection.execute(
@@ -40,22 +54,10 @@ def legacy_mutation_block(connection: sqlite3.Connection, ref: ProposalRef) -> s
     ).fetchone()
     if unresolved is not None:
         return "LEGACY_APPROVAL_REVIEW_REQUIRED"
-    if not _table_exists(connection, "governance_legacy_migration_lifecycle_heads"):
+    if lifecycle is None:
         return None
-    lifecycle = connection.execute(
-        """
-        SELECT h.state
-        FROM governance_legacy_migration_items i
-        JOIN governance_legacy_migration_lifecycle_heads h
-          ON h.migration_id = i.migration_id
-        WHERE i.project_namespace = ? AND i.project_id = ? AND i.proposal_id = ?
-        """,
-        identity,
-    ).fetchone()
-    if lifecycle is None or str(lifecycle[0]) == "activated":
+    if str(lifecycle[0]) == "activated":
         return None
-    if str(lifecycle[0]) == "rolled_back":
-        return "LEGACY_MIGRATION_ROLLED_BACK"
     if str(lifecycle[0]) == "recovery_hold":
         return "LEGACY_MIGRATION_RECOVERY_REQUIRED"
     return "LEGACY_MIGRATION_NOT_ACTIVATED"

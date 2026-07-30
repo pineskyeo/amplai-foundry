@@ -519,7 +519,13 @@ class LegacyMigrationActivationService:
         *,
         request_fingerprint: str,
     ) -> None:
-        scopes = connection.execute(
+        has_scope_version = any(
+            str(row[1]) == "scope_version"
+            for row in connection.execute(
+                "PRAGMA table_info(governance_legacy_rollback_scopes)"
+            ).fetchall()
+        )
+        scope_query = (
             """
             SELECT project_namespace, project_id, proposal_id, rollback_root_digest,
                    definition_digest, content_revision, state_revision, decision_epoch,
@@ -529,12 +535,25 @@ class LegacyMigrationActivationService:
                    previous_destination_delivered_sequence,
                    previous_destination_operator_hold, previous_destination_updated_at,
                    approval_hold_reason_code, approval_hold_source_artifact_digest,
-                   approval_hold_created_at
+                   approval_hold_created_at, scope_version
             FROM governance_legacy_rollback_scopes
             WHERE command_id = ? ORDER BY proposal_id
-            """,
-            (result.command_id,),
-        ).fetchall()
+            """
+            if has_scope_version
+            else """
+            SELECT project_namespace, project_id, proposal_id, rollback_root_digest,
+                   definition_digest, content_revision, state_revision, decision_epoch,
+                   audit_event_id, aggregate_sequence, event_hash, outbox_event_id,
+                   destination_ref, destination_sequence, destination_existed_before,
+                   previous_destination_next_sequence,
+                   previous_destination_delivered_sequence,
+                   previous_destination_operator_hold, previous_destination_updated_at,
+                   NULL, NULL, NULL, 1
+            FROM governance_legacy_rollback_scopes
+            WHERE command_id = ? ORDER BY proposal_id
+            """
+        )
+        scopes = connection.execute(scope_query, (result.command_id,)).fetchall()
         proposal_count = connection.execute(
             """
             SELECT proposal_count FROM governance_legacy_migrations
@@ -576,6 +595,14 @@ class LegacyMigrationActivationService:
             }
             for scope in scopes
         ]
+        scope_versions = {int(scope[22]) for scope in scopes}
+        if scope_versions == {1}:
+            for root in roots:
+                root.pop("approval_hold_reason_code")
+                root.pop("approval_hold_source_artifact_digest")
+                root.pop("approval_hold_created_at")
+        elif scope_versions != {2}:
+            raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
         canonical_preimage = {
             "expected_lifecycle_revision": result.lifecycle_revision - 1,
             "migration_id": result.migration_id,
@@ -605,7 +632,6 @@ class LegacyMigrationActivationService:
                 "governance_definition_revisions",
                 "governance_aggregate_sequences",
                 "governance_audit_events",
-                "governance_legacy_approval_holds",
                 "governance_outbox_events",
             ):
                 if (
@@ -617,6 +643,44 @@ class LegacyMigrationActivationService:
                     ).fetchone()
                     is not None
                 ):
+                    raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            if scope_versions == {2}:
+                if (
+                    connection.execute(
+                        """
+                        SELECT 1 FROM governance_legacy_approval_holds
+                        WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                        """,
+                        identity,
+                    ).fetchone()
+                    is not None
+                ):
+                    raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            else:
+                legacy_hold_mismatch = connection.execute(
+                    """
+                    SELECT 1
+                    FROM governance_legacy_migration_items i
+                    LEFT JOIN governance_legacy_approval_holds h
+                      ON h.migration_id = i.migration_id
+                     AND h.project_namespace = i.project_namespace
+                     AND h.project_id = i.project_id AND h.proposal_id = i.proposal_id
+                    WHERE i.migration_id = ? AND i.project_namespace = ?
+                      AND i.project_id = ? AND i.proposal_id = ?
+                      AND NOT (
+                          (
+                              i.approval_disposition = 'synthetic_required'
+                              AND h.reason_code = 'legacy_approval_without_audit'
+                              AND h.source_artifact_digest = i.proposal_artifact_digest
+                          ) OR (
+                              i.approval_disposition != 'synthetic_required'
+                              AND h.migration_id IS NULL
+                          )
+                      )
+                    """,
+                    (result.migration_id, *identity),
+                ).fetchone()
+                if legacy_hold_mismatch is not None:
                     raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
             destination = connection.execute(
                 """

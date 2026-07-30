@@ -41,9 +41,11 @@ from amplai_foundry.governance import (
     LegacyMigrationActivationService,
     LegacyMigrationBackupEvidence,
     LegacyMigrationLifecycleError,
+    LegacyMigrationLifecycleState,
     LegacyMigrationRollbackExecutor,
     LegacyMigrationRollbackPlan,
     LegacyMigrationRollbackPlanner,
+    LegacyMigrationRollbackResult,
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
     LegacyMigrationVerificationReport,
@@ -74,6 +76,7 @@ from amplai_foundry.governance.definitions import (
     canonicalize_definition,
 )
 from amplai_foundry.governance.events import GovernanceEventError, GovernanceEventService
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, Migration, MigrationRunner
 from amplai_foundry.governance.object_store import sha256_digest
 from amplai_foundry.governance.store import (
@@ -351,6 +354,237 @@ def _logical_store_snapshot(store: GovernanceStore) -> dict[str, tuple[tuple[obj
             )
             for table in tables
         }
+
+
+def _complete_v28_rollback(
+    store: GovernanceStore,
+    migration: LegacyProposalMigrationPlan,
+) -> LegacyMigrationRollbackResult:
+    """Create the exact rollback graph emitted by commit d8abd86 schema v28."""
+
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    old_roots: list[dict[str, object]] = []
+    for root in plan.roots:
+        payload = root.model_dump(mode="json")
+        payload.pop("approval_hold_reason_code")
+        payload.pop("approval_hold_source_artifact_digest")
+        payload.pop("approval_hold_created_at")
+        old_roots.append(payload)
+    old_preimage = {
+        "expected_lifecycle_revision": 2,
+        "migration_id": migration.plan_id,
+        "project_ref": PROJECT.model_dump(mode="json"),
+        "report_digest": plan.report_digest,
+        "roots": old_roots,
+        "verification_id": plan.verification_id,
+    }
+    rollback_digest = _runtime_digest(old_preimage)
+    command_id = "LMC-0000000000000028"
+    event_id = "LME-0000000000000028"
+    timestamp = "2026-07-30T12:00:00.000000Z"
+    event_preimage = {
+        "command_id": command_id,
+        "event_id": event_id,
+        "migration_id": migration.plan_id,
+        "lifecycle_sequence": 2,
+        "before_state": "staged_verified",
+        "after_state": "rolled_back",
+        "verification_id": plan.verification_id,
+        "report_digest": plan.report_digest,
+        "previous_event_digest": None,
+        "occurred_at": timestamp,
+    }
+    event_digest = _runtime_digest(event_preimage)
+    provisional = LegacyMigrationRollbackResult.model_construct(
+        command_id=command_id,
+        event_id=event_id,
+        migration_id=migration.plan_id,
+        project_ref=PROJECT,
+        state=LegacyMigrationLifecycleState.ROLLED_BACK,
+        lifecycle_revision=3,
+        verification_id=plan.verification_id,
+        report_digest=plan.report_digest,
+        rollback_root_digest=rollback_digest,
+        removed_proposal_count=len(plan.roots),
+        actor_ref=REVIEWER,
+        rolled_back_at=NOW,
+        result_digest=f"sha256:{'0' * 64}",
+        replayed=False,
+    )
+    result_preimage = provisional.model_dump(mode="json", exclude={"result_digest", "replayed"})
+    result = LegacyMigrationRollbackResult(
+        **result_preimage,
+        result_digest=_runtime_digest(result_preimage),
+    )
+    channel_json = json.dumps(
+        CHANNEL.model_dump(mode="json"),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_commands(
+                command_id, migration_id, project_namespace, project_id, action,
+                expected_lifecycle_revision, idempotency_key, request_fingerprint,
+                actor_id, actor_type, request_id, channel_json, reason, occurred_at
+            ) VALUES (?, ?, ?, ?, 'rollback', 2, ?, ?, ?, 'human', ?, ?, ?, ?)
+            """,
+            (
+                command_id,
+                migration.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                f"legacy-rollback:v28:{migration.plan_id}",
+                rollback_digest.removeprefix("sha256:"),
+                REVIEWER.actor_id,
+                "REQ-V28-ROLLBACK",
+                channel_json,
+                "complete exact v28 rollback fixture",
+                timestamp,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_events(
+                event_id, command_id, migration_id, lifecycle_sequence, before_state,
+                after_state, verification_id, report_digest, previous_event_digest,
+                event_digest, occurred_at
+            ) VALUES (?, ?, ?, 2, 'staged_verified', 'rolled_back', ?, ?, NULL, ?, ?)
+            """,
+            (
+                event_id,
+                command_id,
+                migration.plan_id,
+                plan.verification_id,
+                plan.report_digest,
+                event_digest,
+                timestamp,
+            ),
+        )
+        for root in plan.roots:
+            connection.execute(
+                """
+                INSERT INTO governance_legacy_rollback_scopes(
+                    command_id, migration_id, project_namespace, project_id, proposal_id,
+                    rollback_root_digest, definition_digest, content_revision,
+                    state_revision, decision_epoch, audit_event_id, aggregate_sequence,
+                    event_hash, outbox_event_id, destination_ref, destination_sequence,
+                    destination_existed_before, previous_destination_next_sequence,
+                    previous_destination_delivered_sequence,
+                    previous_destination_operator_hold, previous_destination_updated_at,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    command_id,
+                    migration.plan_id,
+                    PROJECT.namespace,
+                    PROJECT.project_id,
+                    root.proposal_ref.proposal_id,
+                    rollback_digest,
+                    root.definition_digest,
+                    root.content_revision,
+                    root.state_revision,
+                    root.decision_epoch,
+                    root.audit_event_id,
+                    root.aggregate_sequence,
+                    root.event_hash,
+                    root.outbox_event_id,
+                    root.destination_ref,
+                    root.destination_sequence,
+                    int(root.destination_existed_before),
+                    root.previous_destination_next_sequence,
+                    root.previous_destination_delivered_sequence,
+                    root.previous_destination_operator_hold,
+                    root.previous_destination_updated_at,
+                    timestamp,
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_results(
+                command_id, migration_id, result_json, result_digest, created_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                command_id,
+                migration.plan_id,
+                json.dumps(
+                    result.model_dump(mode="json"),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                result.result_digest,
+                timestamp,
+            ),
+        )
+        for root in plan.roots:
+            identity = (PROJECT.namespace, PROJECT.project_id, root.proposal_ref.proposal_id)
+            connection.execute(
+                "DELETE FROM governance_outbox_events WHERE event_id = ?",
+                (root.outbox_event_id,),
+            )
+            connection.execute(
+                "DELETE FROM governance_audit_events WHERE event_id = ?",
+                (root.audit_event_id,),
+            )
+            connection.execute(
+                "DELETE FROM governance_aggregate_sequences WHERE project_namespace = ? "
+                "AND project_id = ? AND proposal_id = ?",
+                identity,
+            )
+            connection.execute(
+                "DELETE FROM governance_definition_revisions WHERE project_namespace = ? "
+                "AND project_id = ? AND proposal_id = ? AND content_revision = ?",
+                (*identity, root.content_revision),
+            )
+            connection.execute(
+                "DELETE FROM governance_active_proposals WHERE project_namespace = ? "
+                "AND project_id = ? AND proposal_id = ?",
+                identity,
+            )
+            if root.destination_existed_before:
+                connection.execute(
+                    """
+                    UPDATE governance_outbox_destinations
+                    SET next_sequence = ?, delivered_sequence = ?, operator_hold = ?, updated_at = ?
+                    WHERE destination_ref = ?
+                    """,
+                    (
+                        root.previous_destination_next_sequence,
+                        root.previous_destination_delivered_sequence,
+                        root.previous_destination_operator_hold,
+                        root.previous_destination_updated_at,
+                        root.destination_ref,
+                    ),
+                )
+            else:
+                connection.execute(
+                    "DELETE FROM governance_outbox_destinations WHERE destination_ref = ?",
+                    (root.destination_ref,),
+                )
+        connection.execute(
+            """
+            UPDATE governance_legacy_migration_lifecycle_heads
+            SET state = 'rolled_back', lifecycle_revision = 3,
+                last_event_digest = ?, updated_at = ?
+            WHERE migration_id = ? AND state = 'staged_verified' AND lifecycle_revision = 2
+            """,
+            (event_digest, timestamp, migration.plan_id),
+        )
+    return result
 
 
 def _migration_authority(
@@ -2901,6 +3135,108 @@ def test_atomic_rollback_reconciliation_rejects_post_rollback_audit_residue(
         GovernanceEventService(store).reconcile()
     with pytest.raises(GovernanceStoreError, match="foreign key integrity check"):
         store.check_startup()
+
+
+def test_exact_v28_staged_migration_upgrades_then_rolls_back_with_v2_scope(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status="approved")
+    path = tmp_path / "runtime" / "governance.db"
+    predecessor = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:28]),
+    )
+    predecessor.initialize()
+    predecessor, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=predecessor,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    assert predecessor.check_startup().schema_version == 28
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    authority_request = _migration_authority(latest)
+    plan = LegacyMigrationRollbackPlanner(
+        latest,
+        AuthorityService(latest, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    LegacyMigrationRollbackExecutor(
+        latest,
+        AuthorityService(latest, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        authority_request=authority_request,
+        reason="rollback staged migration after v28 upgrade",
+        idempotency_key="legacy-rollback:v28-staged-upgrade:1",
+    )
+    with latest.connect() as connection:
+        assert connection.execute(
+            "SELECT scope_version, approval_hold_reason_code FROM governance_legacy_rollback_scopes"
+        ).fetchone() == (2, "legacy_approval_without_audit")
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_approval_holds"
+        ).fetchone() == (0,)
+    assert latest.check_startup().healthy
+
+
+@pytest.mark.parametrize("status", ["draft", "approved"])
+def test_exact_v28_completed_rollback_upgrades_with_legacy_scope_policy(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project", status=status)
+    path = tmp_path / "runtime" / "governance.db"
+    predecessor = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:28]),
+    )
+    predecessor.initialize()
+    predecessor, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=predecessor,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    _complete_v28_rollback(predecessor, migration)
+    with predecessor.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_approval_holds"
+        ).fetchone() == ((1,) if status == "approved" else (0,))
+    assert predecessor.check_startup().healthy
+
+    latest = GovernanceStore(path)
+    assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with latest.connect() as connection:
+        assert connection.execute(
+            "SELECT scope_version, approval_hold_reason_code FROM governance_legacy_rollback_scopes"
+        ).fetchone() == (1, None)
+        assert legacy_mutation_block(connection, migration.proposals[0].proposal_ref) == (
+            "LEGACY_MIGRATION_ROLLED_BACK"
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_approval_holds"
+        ).fetchone() == ((1,) if status == "approved" else (0,))
+    assert latest.check_startup().healthy
 
 
 def test_atomic_rollback_restores_preexisting_destination_exactly(tmp_path: Path) -> None:

@@ -245,6 +245,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (26, "legacy-rollback-destination-provenance"),
         (27, "legacy-rollback-provenance-attestation"),
         (28, "legacy-atomic-exact-root-rollback"),
+        (29, "legacy-rollback-hold-provenance"),
     ]
     assert INITIAL_MIGRATIONS[19].checksum == (
         "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"
@@ -271,7 +272,10 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         "8d016673e8b0ba25242d7eed0d934a0a86ac52b06b28d61e196b27c2710e9ea1"
     )
     assert INITIAL_MIGRATIONS[27].checksum == (
-        "7f2a355f4516e1607b2f140907cf384fd4db36743cd80816ea4ea6e0ac045ee9"
+        "9775fdd23e20aa09140c02a38e9bf660b8320ceb241997d078797ff5afbfdcbc"
+    )
+    assert INITIAL_MIGRATIONS[28].checksum == (
+        "a7e7f7123190c26a0147d1f2d316b7d65ad081ffb8c71ac1b4a543868f970b9a"
     )
     assert metadata == ("amplai-governance",)
 
@@ -317,6 +321,33 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
 
     upgraded = GovernanceStore(path)
     assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
+
+
+def test_exact_v28_store_upgrades_additively_to_hold_provenance(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    predecessor = GovernanceStore(
+        path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:28]),
+    )
+    assert predecessor.initialize().schema_version == 28
+    with predecessor.connect() as connection:
+        assert connection.execute(
+            "SELECT checksum FROM governance_schema_migrations WHERE version = 28"
+        ).fetchone() == ("9775fdd23e20aa09140c02a38e9bf660b8320ceb241997d078797ff5afbfdcbc",)
+
+    upgraded = GovernanceStore(path)
+    assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    with upgraded.connect() as connection:
+        columns = tuple(
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(governance_legacy_rollback_scopes)")
+        )
+        assert columns[-4:] == (
+            "scope_version",
+            "approval_hold_reason_code",
+            "approval_hold_source_artifact_digest",
+            "approval_hold_created_at",
+        )
 
 
 def test_version_six_store_with_decision_event_upgrades_and_backfills(tmp_path: Path) -> None:
