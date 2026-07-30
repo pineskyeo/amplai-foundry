@@ -228,6 +228,27 @@ INITIAL_MIGRATIONS = (
                 )
             ) WITHOUT ROWID
             """,
+            """
+            CREATE TRIGGER governance_action_tokens_no_delete
+            BEFORE DELETE ON governance_action_tokens
+            BEGIN
+                SELECT RAISE(ABORT, 'governance action token is durable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_decision_results_no_update
+            BEFORE UPDATE ON governance_decision_results
+            BEGIN
+                SELECT RAISE(ABORT, 'governance decision result is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_decision_results_no_delete
+            BEFORE DELETE ON governance_decision_results
+            BEGIN
+                SELECT RAISE(ABORT, 'governance decision result is append-only');
+            END
+            """,
         ),
     ),
     Migration(

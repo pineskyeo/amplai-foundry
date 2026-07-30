@@ -270,13 +270,7 @@ class DecisionService:
             request_fingerprint,
             credential_hash,
         )
-        if (
-            connection.execute(
-                "SELECT 1 FROM governance_action_tokens WHERE token_hash = ?",
-                (self._token_hash(idempotency_key),),
-            ).fetchone()
-            is not None
-        ):
+        if self._contains_issued_token(connection, idempotency_key):
             raise DecisionError("IDEMPOTENCY_CONFLICT")
         processed_at = self._aware(self._clock())
         channel_json = self._channel_json(authority.source.channel)
@@ -581,6 +575,8 @@ class DecisionService:
     def _validate_replay_key(idempotency_key: str, fingerprint: str) -> None:
         if not idempotency_key.strip():
             raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
+        if len(idempotency_key) > 512:
+            raise ValueError("idempotency_key는 512자를 초과할 수 없습니다.")
         if len(fingerprint) != 64 or any(
             character not in "0123456789abcdef" for character in fingerprint
         ):
@@ -615,6 +611,34 @@ class DecisionService:
     @staticmethod
     def _token_hash(raw_token: str) -> str:
         return f"sha256:{hashlib.sha256(raw_token.encode('utf-8')).hexdigest()}"
+
+    @staticmethod
+    def _contains_issued_token(connection: sqlite3.Connection, value: str) -> bool:
+        """Match every token-shaped substring without persisting raw credentials."""
+
+        token_length = 32  # secrets.token_hex(16)
+        candidates = {
+            value[index : index + token_length]
+            for index in range(max(len(value) - token_length + 1, 0))
+            if all(
+                character in "0123456789abcdef" for character in value[index : index + token_length]
+            )
+        }
+        if not candidates:
+            return False
+        hashes = tuple(DecisionService._token_hash(candidate) for candidate in candidates)
+        placeholders = ",".join("?" for _ in hashes)
+        return (
+            connection.execute(
+                f"""
+                SELECT 1 FROM governance_action_tokens
+                WHERE token_hash IN ({placeholders})
+                LIMIT 1
+                """,
+                hashes,
+            ).fetchone()
+            is not None
+        )
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

@@ -28,6 +28,7 @@ from amplai_foundry.governance import (
     ChannelProvider,
     ChannelRef,
     DecisionAction,
+    DecisionError,
     DecisionService,
     DirectAuthorityRequest,
     GovernanceEventError,
@@ -365,7 +366,13 @@ def test_audit_or_outbox_failure_rolls_back_decision(tmp_path: Path) -> None:
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_decision_results"
         ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_aggregate_sequences"
+        ).fetchone() == (0,)
         assert connection.execute("SELECT COUNT(*) FROM governance_audit_events").fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_outbox_events").fetchone() == (
+            0,
+        )
 
 
 def test_audit_insert_failure_rolls_back_decision_and_token(tmp_path: Path) -> None:
@@ -402,7 +409,13 @@ def test_audit_insert_failure_rolls_back_decision_and_token(tmp_path: Path) -> N
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_decision_results"
         ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_aggregate_sequences"
+        ).fetchone() == (0,)
         assert connection.execute("SELECT COUNT(*) FROM governance_audit_events").fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_outbox_events").fetchone() == (
+            0,
+        )
 
 
 def test_any_raw_action_token_is_rejected_as_idempotency_key(tmp_path: Path) -> None:
@@ -411,13 +424,13 @@ def test_any_raw_action_token_is_rejected_as_idempotency_key(tmp_path: Path) -> 
     approve = next(item for item in tokens if item.record.allowed_action is DecisionAction.APPROVE)
     sibling = next(item for item in tokens if item.record.allowed_action is DecisionAction.REJECT)
 
-    with pytest.raises(Exception, match="IDEMPOTENCY_CONFLICT"):
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
         decisions.decide(
             PROPOSAL,
             action=DecisionAction.APPROVE,
             authority_request=_authority_request(),
             raw_token=approve.raw_token,
-            idempotency_key=sibling.raw_token,
+            idempotency_key=f"prefix-{sibling.raw_token}-suffix",
             request_fingerprint=hashlib.sha256(b"raw-token-key").hexdigest(),
         )
 
@@ -521,6 +534,31 @@ def test_startup_reconciliation_rejects_complete_decision_event_removal(tmp_path
         events.reconcile()
 
 
+def test_consumed_token_requires_immutable_decision_result_root(tmp_path: Path) -> None:
+    store, _active, decisions = _decision_fixture(tmp_path)
+    approve = next(
+        item
+        for item in decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+        if item.record.allowed_action is DecisionAction.APPROVE
+    )
+    decisions.decide(
+        PROPOSAL,
+        action=DecisionAction.APPROVE,
+        authority_request=_authority_request(),
+        raw_token=approve.raw_token,
+        idempotency_key="decision-root-removal",
+        request_fingerprint=hashlib.sha256(b"decision-root-removal").hexdigest(),
+    )
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute("DELETE FROM governance_decision_results")
+        connection.execute("DROP TRIGGER governance_decision_results_no_delete")
+        connection.execute("DELETE FROM governance_decision_results")
+
+    with pytest.raises(GovernanceEventError, match="DECISION_RESULT_ROOT_MISMATCH"):
+        GovernanceEventService(store).reconcile()
+
+
 def test_startup_reconciliation_rejects_destination_sequence_gap(tmp_path: Path) -> None:
     store, _active, _draft = _active_proposal(tmp_path)
     events = GovernanceEventService(store, clock=lambda: NOW)
@@ -562,6 +600,8 @@ def test_destination_ordering_and_fencing_reject_stale_dispatcher(tmp_path: Path
     assert first is not None and first.destination_sequence == 1
     assert dispatcher.claim_next("worker-b", destination_ref=provider_ref) is None
     clock.advance(timedelta(seconds=6))
+    assert dispatcher.claim_next("worker-b", destination_ref=provider_ref) is None
+    clock.advance(timedelta(seconds=5))
     reclaimed = dispatcher.claim_next("worker-b", destination_ref=provider_ref)
     assert reclaimed is not None and reclaimed.event_id == first.event_id
     assert reclaimed.claim_generation == first.claim_generation + 1
@@ -804,9 +844,58 @@ def test_post_send_crash_reconciles_without_duplicate_delivery(tmp_path: Path) -
     remote.send(claimed)
     clock.advance(timedelta(seconds=6))
 
+    assert dispatcher.deliver_next("recovery", remote) is None
+    clock.advance(timedelta(seconds=5))
     delivered = dispatcher.deliver_next("recovery", remote)
     assert delivered is not None and delivered.state is OutboxState.DELIVERED
     assert remote.sends == 1
+
+
+def test_final_attempt_post_send_crash_reconciles_before_dlq(tmp_path: Path) -> None:
+    class Remote:
+        def __init__(self, destination_ref: str) -> None:
+            self.destination_ref = destination_ref
+            self.receipts: dict[str, str] = {}
+            self.sends = 0
+            self.reconciles = 0
+
+        def reconcile(self, event):
+            self.reconciles += 1
+            return self.receipts.get(event.event_id)
+
+        def send(self, event):
+            self.sends += 1
+            receipt = f"remote:{event.event_id}"
+            self.receipts[event.event_id] = receipt
+            return receipt
+
+    store, _active, _draft = _active_proposal(tmp_path)
+    clock = MutableClock()
+    _audit, outbox = _append(
+        GovernanceEventService(store, clock=clock),
+        store,
+        command_id="command-final-crash",
+        state_revision=2,
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    dispatcher = OutboxDispatcher(
+        store,
+        config=OutboxConfig(lease_seconds=5, max_attempts=1, retry_base_seconds=10),
+        clock=clock,
+    )
+    remote = Remote(provider.destination_ref)
+    claimed = dispatcher.claim_next("crashed", destination_ref=provider.destination_ref)
+    assert claimed is not None
+    remote.send(claimed)
+    clock.advance(timedelta(seconds=6))
+    assert dispatcher.deliver_next("recovery", remote) is None
+    clock.advance(timedelta(seconds=10))
+
+    delivered = dispatcher.deliver_next("recovery", remote)
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+    assert delivered.attempts == 1
+    assert remote.sends == 1
+    assert remote.reconciles == 1
 
 
 def test_unreconcilable_remote_state_moves_to_dlq_and_operator_hold(tmp_path: Path) -> None:

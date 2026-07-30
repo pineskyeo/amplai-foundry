@@ -311,6 +311,61 @@ class GovernanceEventService:
 
     @classmethod
     def reconcile_connection(cls, connection: sqlite3.Connection) -> None:
+        consumed_token_mismatch = connection.execute(
+            """
+            SELECT 1
+            FROM governance_action_tokens t
+            LEFT JOIN governance_decision_results r ON r.token_id = t.token_id
+            WHERE t.state = 'consumed'
+            GROUP BY t.token_id
+            HAVING COUNT(r.idempotency_key) != 1
+            LIMIT 1
+            """
+        ).fetchone()
+        if consumed_token_mismatch is not None:
+            raise GovernanceEventError("DECISION_RESULT_ROOT_MISMATCH")
+        result_token_mismatch = connection.execute(
+            """
+            SELECT 1
+            FROM governance_decision_results r
+            LEFT JOIN governance_action_tokens t ON t.token_id = r.token_id
+            WHERE t.token_id IS NULL OR t.state != 'consumed'
+               OR t.project_namespace != r.project_namespace
+               OR t.project_id != r.project_id
+               OR t.proposal_id != r.proposal_id
+               OR t.allowed_action != r.action
+               OR t.allowed_actor_id != r.actor_id
+               OR t.allowed_actor_type != r.actor_type
+               OR t.active_definition_digest != r.active_definition_digest
+               OR t.content_revision != r.content_revision
+               OR t.state_revision + 1 != r.state_revision
+               OR t.decision_epoch != r.decision_epoch
+            LIMIT 1
+            """
+        ).fetchone()
+        if result_token_mismatch is not None:
+            raise GovernanceEventError("DECISION_RESULT_ROOT_MISMATCH")
+        active_decision_mismatch = connection.execute(
+            """
+            SELECT 1
+            FROM governance_active_proposals p
+            WHERE p.status IN ('approved', 'rejected', 'changes_requested')
+              AND (
+                SELECT COUNT(*) FROM governance_decision_results r
+                WHERE r.project_namespace = p.project_namespace
+                  AND r.project_id = p.project_id
+                  AND r.proposal_id = p.proposal_id
+                  AND r.proposal_status = p.status
+                  AND r.active_definition_digest = p.active_definition_digest
+                  AND r.content_revision = p.content_revision
+                  AND r.state_revision = p.state_revision
+                  AND r.decision_epoch = p.decision_epoch
+              ) != 1
+            LIMIT 1
+            """
+        ).fetchone()
+        if active_decision_mismatch is not None:
+            raise GovernanceEventError("DECISION_RESULT_ROOT_MISMATCH")
         decision_commands: dict[str, tuple[str, int, str, int]] = {}
         decision_rows = connection.execute(
             """
@@ -802,15 +857,27 @@ class OutboxDispatcher:
             now + timedelta(seconds=self.config.lease_seconds)
         )
         with self.store.connect() as connection, governance_transaction(connection):
-            connection.execute(
+            expired = connection.execute(
                 """
-                UPDATE governance_outbox_events
-                SET state = 'retry_wait', lease_owner = NULL, lease_expires_at = NULL,
-                    retry_at = ?, last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                SELECT event_id, attempts FROM governance_outbox_events
                 WHERE state = 'leased' AND lease_expires_at <= ?
                 """,
-                (now_text, now_text),
-            )
+                (now_text,),
+            ).fetchall()
+            for event_id, attempts in expired:
+                retry_at = GovernanceEventService._timestamp(
+                    now + timedelta(seconds=self._backoff_seconds(int(attempts)))
+                )
+                connection.execute(
+                    """
+                    UPDATE governance_outbox_events
+                    SET state = 'retry_wait', lease_owner = NULL,
+                        lease_expires_at = NULL, retry_at = ?,
+                        last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                    WHERE event_id = ? AND state = 'leased' AND lease_expires_at <= ?
+                    """,
+                    (retry_at, event_id, now_text),
+                )
             self._move_exhausted(connection, now_text)
             row = connection.execute(
                 """
@@ -824,7 +891,13 @@ class OutboxDispatcher:
                     e.state = 'pending'
                     OR (e.state = 'retry_wait' AND e.retry_at <= ?)
                   )
-                  AND e.attempts < ?
+                  AND (
+                    e.attempts < ?
+                    OR (
+                      e.attempts = ?
+                      AND e.last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                    )
+                  )
                   AND NOT EXISTS (
                     SELECT 1 FROM governance_outbox_events prior
                     WHERE prior.destination_ref = e.destination_ref
@@ -834,20 +907,42 @@ class OutboxDispatcher:
                 ORDER BY e.created_at, e.destination_ref, e.destination_sequence
                 LIMIT 1
                 """,
-                (destination_ref, destination_ref, now_text, self.config.max_attempts),
+                (
+                    destination_ref,
+                    destination_ref,
+                    now_text,
+                    self.config.max_attempts,
+                    self.config.max_attempts,
+                ),
             ).fetchone()
             if row is None:
                 return None
             updated = connection.execute(
                 """
                 UPDATE governance_outbox_events
-                SET state = 'leased', attempts = attempts + 1,
+                SET state = 'leased',
+                    attempts = attempts + CASE WHEN attempts < ? THEN 1 ELSE 0 END,
                     claim_generation = claim_generation + 1,
                     lease_owner = ?, lease_expires_at = ?, retry_at = NULL
                 WHERE event_id = ? AND claim_generation = ?
-                  AND state IN ('pending', 'retry_wait') AND attempts < ?
+                  AND state IN ('pending', 'retry_wait')
+                  AND (
+                    attempts < ?
+                    OR (
+                      attempts = ?
+                      AND last_error_code = 'OUTBOX_LEASE_EXPIRED'
+                    )
+                  )
                 """,
-                (dispatcher_id, lease_expires, row[0], row[1], self.config.max_attempts),
+                (
+                    self.config.max_attempts,
+                    dispatcher_id,
+                    lease_expires,
+                    row[0],
+                    row[1],
+                    self.config.max_attempts,
+                    self.config.max_attempts,
+                ),
             )
             if updated.rowcount != 1:
                 raise OutboxLeaseConflictError("OUTBOX_LEASE_CONFLICT")
@@ -997,6 +1092,17 @@ class OutboxDispatcher:
         try:
             receipt = destination.reconcile(event)
             if receipt is None:
+                if (
+                    event.last_error_code == "OUTBOX_LEASE_EXPIRED"
+                    and event.attempts >= self.config.max_attempts
+                ):
+                    return self.fail(
+                        event.event_id,
+                        dispatcher_id=dispatcher_id,
+                        generation=event.claim_generation,
+                        error_code="OUTBOX_POST_SEND_RECONCILE_REQUIRED",
+                        unreconcilable=True,
+                    )
                 receipt = destination.send(event)
         except OutboxReconcileError as error:
             return self.fail(
@@ -1029,6 +1135,7 @@ class OutboxDispatcher:
             """
             SELECT event_id FROM governance_outbox_events
             WHERE state = 'retry_wait' AND attempts >= ? AND retry_at <= ?
+              AND last_error_code != 'OUTBOX_LEASE_EXPIRED'
             """,
             (self.config.max_attempts, now),
         ).fetchall()
