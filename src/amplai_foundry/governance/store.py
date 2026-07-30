@@ -130,6 +130,12 @@ class GovernanceStore:
                         )
 
                         LegacyProposalImportService.reconcile_verification_roots(connection)
+                    if existing_store and current_version >= 24:
+                        from amplai_foundry.governance.legacy_lifecycle import (
+                            LegacyMigrationActivationService,
+                        )
+
+                        LegacyMigrationActivationService.reconcile_roots(connection)
                     self.migration_runner.apply_pending(connection)
                 health = self._health(connection, filesystem)
                 self._reconcile_events(connection, health)
@@ -214,6 +220,12 @@ class GovernanceStore:
             from amplai_foundry.governance.legacy_migration import LegacyProposalImportService
 
             LegacyProposalImportService.reconcile_verification_roots(connection)
+        if health.schema_version >= 24:
+            from amplai_foundry.governance.legacy_lifecycle import (
+                LegacyMigrationActivationService,
+            )
+
+            LegacyMigrationActivationService.reconcile_roots(connection)
 
     def _configure(
         self,

@@ -2684,6 +2684,359 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=24,
+        name="legacy-migration-lifecycle-gate",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_migration_lifecycle_heads (
+                migration_id TEXT PRIMARY KEY NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                verification_id TEXT,
+                report_digest TEXT,
+                state TEXT NOT NULL CHECK (
+                    state IN (
+                        'imported', 'staged_verified', 'activated',
+                        'rolled_back', 'recovery_hold'
+                    )
+                ),
+                lifecycle_revision INTEGER NOT NULL CHECK (lifecycle_revision >= 1),
+                last_event_digest TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (migration_id, project_namespace, project_id)
+                    REFERENCES governance_legacy_migrations(
+                        migration_id, project_namespace, project_id
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (verification_id)
+                    REFERENCES governance_legacy_migration_verifications(verification_id)
+                    ON DELETE RESTRICT,
+                CHECK (
+                    (state = 'imported' AND verification_id IS NULL AND report_digest IS NULL)
+                    OR (state = 'activated' AND verification_id IS NULL AND report_digest IS NULL)
+                    OR (
+                        state NOT IN ('imported', 'activated')
+                        AND verification_id IS NOT NULL
+                        AND report_digest IS NOT NULL
+                    )
+                    OR (
+                        state = 'activated'
+                        AND verification_id IS NOT NULL
+                        AND report_digest IS NOT NULL
+                    )
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_heads(
+                migration_id, project_namespace, project_id, verification_id,
+                report_digest, state, lifecycle_revision, last_event_digest,
+                created_at, updated_at
+            )
+            SELECT m.migration_id, m.project_namespace, m.project_id,
+                   v.verification_id, v.report_digest,
+                   CASE
+                       WHEN v.verification_id IS NULL AND EXISTS (
+                           SELECT 1
+                           FROM governance_legacy_migration_items i
+                           JOIN governance_active_proposals p
+                             ON p.project_namespace = i.project_namespace
+                            AND p.project_id = i.project_id
+                            AND p.proposal_id = i.proposal_id
+                           WHERE i.migration_id = m.migration_id
+                             AND (
+                                 p.active_definition_digest != i.definition_digest
+                                 OR p.content_revision != i.content_revision
+                                 OR p.state_revision != i.state_revision
+                                 OR p.decision_epoch != i.decision_epoch
+                                 OR p.status != CASE i.target_status
+                                     WHEN 'reviewed' THEN 'reviewed'
+                                     ELSE 'draft'
+                                 END
+                             )
+                       ) THEN 'activated'
+                       WHEN v.verification_id IS NULL AND EXISTS (
+                           SELECT 1
+                           FROM governance_legacy_migration_items i
+                           JOIN governance_audit_events a
+                             ON a.project_namespace = i.project_namespace
+                            AND a.project_id = i.project_id
+                            AND a.proposal_id = i.proposal_id
+                           JOIN governance_outbox_events o
+                             ON o.project_namespace = a.project_namespace
+                            AND o.project_id = a.project_id
+                            AND o.proposal_id = a.proposal_id
+                            AND o.aggregate_sequence = a.aggregate_sequence
+                           WHERE i.migration_id = m.migration_id
+                             AND o.state != 'pending'
+                       ) THEN 'activated'
+                       WHEN v.verification_id IS NULL THEN 'imported'
+                       WHEN EXISTS (
+                           SELECT 1
+                           FROM governance_legacy_migration_items i
+                           JOIN governance_audit_events a
+                             ON a.project_namespace = i.project_namespace
+                            AND a.project_id = i.project_id
+                            AND a.proposal_id = i.proposal_id
+                           JOIN governance_outbox_events o
+                             ON o.project_namespace = a.project_namespace
+                            AND o.project_id = a.project_id
+                            AND o.proposal_id = a.proposal_id
+                            AND o.aggregate_sequence = a.aggregate_sequence
+                           WHERE i.migration_id = m.migration_id
+                             AND o.state != 'pending'
+                       ) THEN 'recovery_hold'
+                       ELSE 'staged_verified'
+                   END,
+                   1, NULL, m.prepared_at,
+                   COALESCE(v.verified_at, m.state_imported_at, m.prepared_at)
+            FROM governance_legacy_migrations m
+            LEFT JOIN governance_legacy_migration_verifications v
+              ON v.migration_id = m.migration_id
+            WHERE m.status = 'state_imported'
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_lifecycle_heads_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_heads
+            WHEN NEW.state != 'imported'
+              OR NEW.verification_id IS NOT NULL
+              OR NEW.report_digest IS NOT NULL
+              OR NEW.lifecycle_revision != 1
+              OR NEW.last_event_digest IS NOT NULL
+              OR NOT EXISTS (
+                    SELECT 1 FROM governance_legacy_migrations m
+                    WHERE m.migration_id = NEW.migration_id
+                      AND m.project_namespace = NEW.project_namespace
+                      AND m.project_id = NEW.project_id
+                      AND m.status = 'state_imported'
+                )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle head must start imported'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_lifecycle_heads_update_guard
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_heads
+            WHEN OLD.migration_id != NEW.migration_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR NEW.lifecycle_revision != OLD.lifecycle_revision + 1
+              OR OLD.state IN ('activated', 'rolled_back', 'recovery_hold')
+              OR NOT (
+                    (OLD.state = 'imported' AND NEW.state = 'staged_verified'
+                     AND OLD.verification_id IS NULL AND NEW.verification_id IS NOT NULL
+                     AND OLD.report_digest IS NULL AND NEW.report_digest IS NOT NULL
+                     AND NEW.last_event_digest IS NULL)
+                    OR
+                    (OLD.state = 'staged_verified'
+                     AND NEW.state IN ('activated', 'rolled_back')
+                     AND OLD.verification_id IS NEW.verification_id
+                     AND OLD.report_digest IS NEW.report_digest
+                     AND NEW.last_event_digest IS NOT NULL)
+                )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle transition is invalid'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_lifecycle_heads_no_delete
+            BEFORE DELETE ON governance_legacy_migration_lifecycle_heads
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle head is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_import_creates_lifecycle_head
+            AFTER UPDATE OF status ON governance_legacy_migrations
+            WHEN OLD.status = 'prepared' AND NEW.status = 'state_imported'
+            BEGIN
+                INSERT INTO governance_legacy_migration_lifecycle_heads(
+                    migration_id, project_namespace, project_id, verification_id,
+                    report_digest, state, lifecycle_revision, last_event_digest,
+                    created_at, updated_at
+                ) VALUES (
+                    NEW.migration_id, NEW.project_namespace, NEW.project_id,
+                    NULL, NULL, 'imported', 1, NULL, NEW.prepared_at, NEW.state_imported_at
+                );
+            END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_verification_advances_lifecycle
+            AFTER INSERT ON governance_legacy_migration_verifications
+            BEGIN
+                UPDATE governance_legacy_migration_lifecycle_heads
+                SET verification_id = NEW.verification_id,
+                    report_digest = NEW.report_digest,
+                    state = 'staged_verified',
+                    lifecycle_revision = lifecycle_revision + 1,
+                    updated_at = NEW.verified_at
+                WHERE migration_id = NEW.migration_id AND state = 'imported';
+            END
+            """,
+            """
+            CREATE TABLE governance_legacy_migration_lifecycle_commands (
+                command_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                action TEXT NOT NULL CHECK (action IN ('activate', 'rollback')),
+                expected_lifecycle_revision INTEGER NOT NULL CHECK (
+                    expected_lifecycle_revision >= 1
+                ),
+                idempotency_key TEXT NOT NULL UNIQUE,
+                request_fingerprint TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                request_id TEXT NOT NULL,
+                channel_json TEXT NOT NULL,
+                reason TEXT NOT NULL CHECK (length(trim(reason)) >= 3),
+                occurred_at TEXT NOT NULL,
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migration_lifecycle_heads(migration_id)
+                    ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_migration_lifecycle_events (
+                event_id TEXT PRIMARY KEY NOT NULL,
+                command_id TEXT NOT NULL UNIQUE,
+                migration_id TEXT NOT NULL,
+                lifecycle_sequence INTEGER NOT NULL CHECK (lifecycle_sequence >= 1),
+                before_state TEXT NOT NULL,
+                after_state TEXT NOT NULL,
+                verification_id TEXT NOT NULL,
+                report_digest TEXT NOT NULL,
+                previous_event_digest TEXT,
+                event_digest TEXT NOT NULL UNIQUE,
+                occurred_at TEXT NOT NULL,
+                UNIQUE (migration_id, lifecycle_sequence),
+                FOREIGN KEY (command_id)
+                    REFERENCES governance_legacy_migration_lifecycle_commands(command_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migration_lifecycle_heads(migration_id)
+                    ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_legacy_migration_lifecycle_results (
+                command_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                result_json TEXT NOT NULL,
+                result_digest TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (command_id)
+                    REFERENCES governance_legacy_migration_lifecycle_commands(command_id)
+                    ON DELETE RESTRICT,
+                FOREIGN KEY (migration_id)
+                    REFERENCES governance_legacy_migration_lifecycle_heads(migration_id)
+                    ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_commands_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_commands
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_migration_lifecycle_heads h
+                WHERE h.migration_id = NEW.migration_id
+                  AND h.project_namespace = NEW.project_namespace
+                  AND h.project_id = NEW.project_id
+                  AND h.state = 'staged_verified'
+                  AND h.lifecycle_revision = NEW.expected_lifecycle_revision
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle command root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_events_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_events
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_commands c
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = c.migration_id
+                WHERE c.command_id = NEW.command_id
+                  AND c.migration_id = NEW.migration_id
+                  AND c.expected_lifecycle_revision = NEW.lifecycle_sequence
+                  AND h.state = 'staged_verified'
+                  AND h.lifecycle_revision = NEW.lifecycle_sequence
+                  AND h.verification_id = NEW.verification_id
+                  AND h.report_digest = NEW.report_digest
+                  AND h.last_event_digest IS NEW.previous_event_digest
+                  AND NEW.before_state = h.state
+                  AND NEW.after_state = CASE c.action
+                      WHEN 'activate' THEN 'activated'
+                      WHEN 'rollback' THEN 'rolled_back'
+                  END
+                  AND NEW.occurred_at = c.occurred_at
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle event root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_results_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_results
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_commands c
+                JOIN governance_legacy_migration_lifecycle_events e
+                  ON e.command_id = c.command_id
+                WHERE c.command_id = NEW.command_id
+                  AND c.migration_id = NEW.migration_id
+                  AND NEW.created_at = c.occurred_at
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_head_commit_guard
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_heads
+            WHEN NEW.state IN ('activated', 'rolled_back')
+              AND NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_events e
+                JOIN governance_legacy_migration_lifecycle_commands c
+                  ON c.command_id = e.command_id
+                JOIN governance_legacy_migration_lifecycle_results r
+                  ON r.command_id = c.command_id
+                WHERE e.migration_id = NEW.migration_id
+                  AND e.lifecycle_sequence = OLD.lifecycle_revision
+                  AND e.before_state = OLD.state
+                  AND e.after_state = NEW.state
+                  AND e.verification_id = OLD.verification_id
+                  AND e.report_digest = OLD.report_digest
+                  AND e.event_digest = NEW.last_event_digest
+                  AND c.action = CASE NEW.state
+                      WHEN 'activated' THEN 'activate'
+                      WHEN 'rolled_back' THEN 'rollback'
+                  END
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle commit root mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_commands_no_update
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle command is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_commands_no_delete
+            BEFORE DELETE ON governance_legacy_migration_lifecycle_commands
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle command is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_events_no_update
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_events
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle event is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_events_no_delete
+            BEFORE DELETE ON governance_legacy_migration_lifecycle_events
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle event is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_results_no_update
+            BEFORE UPDATE ON governance_legacy_migration_lifecycle_results
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_results_no_delete
+            BEFORE DELETE ON governance_legacy_migration_lifecycle_results
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result is durable'); END
+            """,
+        ),
+    ),
 )
 
 

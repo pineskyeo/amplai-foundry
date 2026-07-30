@@ -72,6 +72,12 @@ from amplai_foundry.governance.ingress import (
     VerifiedProviderCommand,
 )
 from amplai_foundry.governance.ledger import FileProposalActionLedger
+from amplai_foundry.governance.legacy_lifecycle import (
+    LegacyMigrationActivationResult,
+    LegacyMigrationActivationService,
+    LegacyMigrationLifecycleError,
+    LegacyMigrationLifecycleState,
+)
 from amplai_foundry.governance.legacy_migration import (
     LegacyApprovalDisposition,
     LegacyApprovalReviewResult,
@@ -200,8 +206,12 @@ __all__ = [
     "LegacyApprovalDisposition",
     "LegacyApprovalReviewResult",
     "LegacyApprovalReviewService",
+    "LegacyMigrationActivationResult",
+    "LegacyMigrationActivationService",
     "LegacyMigrationBackupEvidence",
     "LegacyMigrationImportResult",
+    "LegacyMigrationLifecycleError",
+    "LegacyMigrationLifecycleState",
     "LegacyMigrationScanConfig",
     "LegacyMigrationScanError",
     "LegacyMigrationVerificationReport",

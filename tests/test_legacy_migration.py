@@ -37,7 +37,10 @@ from amplai_foundry.governance import (
     ImmutableDefinitionObjectStore,
     LegacyApprovalDisposition,
     LegacyApprovalReviewService,
+    LegacyMigrationActivationResult,
+    LegacyMigrationActivationService,
     LegacyMigrationBackupEvidence,
+    LegacyMigrationLifecycleError,
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
     LegacyMigrationVerificationReport,
@@ -295,7 +298,11 @@ def _import_fixture(
     return governance, objects, dry_run, service, backup
 
 
-def _migration_authority(store: GovernanceStore) -> DirectAuthorityRequest:
+def _migration_authority(
+    store: GovernanceStore,
+    *,
+    grant_activation: bool = True,
+) -> DirectAuthorityRequest:
     bindings = ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW)
     bindings.bootstrap_manager(MANAGER)
 
@@ -325,6 +332,13 @@ def _migration_authority(store: GovernanceStore) -> DirectAuthorityRequest:
         AuthorityPermission.PROPOSAL_REQUEST_APPLY,
         approval=approval(4),
     )
+    if grant_activation:
+        bindings.grant_permission(
+            REVIEWER,
+            PROJECT,
+            AuthorityPermission.ACTIVATION_MANAGE,
+            approval=approval(5),
+        )
     bindings.create_binding(
         BindingTarget(
             provider=ChannelProvider.SLACK,
@@ -332,7 +346,7 @@ def _migration_authority(store: GovernanceStore) -> DirectAuthorityRequest:
             external_actor_id="U456",
             actor_ref=REVIEWER,
         ),
-        approval=approval(5),
+        approval=approval(6 if grant_activation else 5),
     )
     return DirectAuthorityRequest(
         provider=ChannelProvider.SLACK,
@@ -1553,6 +1567,292 @@ def test_verified_legacy_approval_can_progress_and_restart(tmp_path: Path) -> No
     assert GovernanceStore(store.path).initialize().schema_version == len(INITIAL_MIGRATIONS)
 
 
+def test_verified_migration_activation_releases_outbox_and_replays(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    report = import_service.verify_import(plan, backup)
+    with store.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT verification_id, report_digest, state, lifecycle_revision
+            FROM governance_legacy_migration_lifecycle_heads
+            WHERE migration_id = ?
+            """,
+            (plan.plan_id,),
+        ).fetchone() == (
+            report.verification_id,
+            report.report_digest,
+            "staged_verified",
+            2,
+        )
+    dispatcher = OutboxDispatcher(store, clock=lambda: NOW)
+    assert dispatcher.claim_next("before-activation") is None
+    authority_request = _migration_authority(store)
+    activation = LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+
+    result = activation.activate(
+        plan.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="release verified migration projections",
+        idempotency_key="legacy-activation:verified:1",
+        request_fingerprint="a" * 64,
+    )
+    replay = activation.activate(
+        plan.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="release verified migration projections",
+        idempotency_key="legacy-activation:verified:1",
+        request_fingerprint="a" * 64,
+    )
+
+    assert result.state.value == "activated"
+    assert result.lifecycle_revision == 3
+    assert replay.model_copy(update={"replayed": False}) == result
+    assert replay.replayed
+    with pytest.raises(LegacyMigrationLifecycleError, match="IDEMPOTENCY_CONFLICT"):
+        activation.activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+            reason="release verified migration projections",
+            idempotency_key="legacy-activation:verified:1",
+            request_fingerprint="f" * 64,
+        )
+    assert dispatcher.claim_next("after-activation") is not None
+    with store.connect() as connection:
+        head = connection.execute(
+            "SELECT state, lifecycle_revision, last_event_digest "
+            "FROM governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone()
+        event_digest = connection.execute(
+            "SELECT event_digest FROM governance_legacy_migration_lifecycle_events "
+            "WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone()
+    assert event_digest is not None
+    assert head == ("activated", 3, event_digest[0])
+
+
+def test_activation_requires_verification_and_does_not_release_outbox(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    authority_request = _migration_authority(store)
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_NOT_VERIFIED",
+    ):
+        LegacyMigrationActivationService(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=1,
+            reason="activation must require verification",
+            idempotency_key="legacy-activation:unverified:1",
+            request_fingerprint="b" * 64,
+        )
+
+    assert OutboxDispatcher(store, clock=lambda: NOW).claim_next("still-staged") is None
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state, lifecycle_revision FROM "
+            "governance_legacy_migration_lifecycle_heads WHERE migration_id = ?",
+            (plan.plan_id,),
+        ).fetchone() == ("imported", 1)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_lifecycle_commands"
+        ).fetchone() == (0,)
+
+
+def test_activation_requires_human_activation_permission(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store, grant_activation=False)
+
+    with pytest.raises(LegacyMigrationLifecycleError, match="AUTHORITY_DENIED"):
+        LegacyMigrationActivationService(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+            reason="unauthorized migration activation",
+            idempotency_key="legacy-activation:unauthorized:1",
+            request_fingerprint="c" * 64,
+        )
+
+    assert OutboxDispatcher(store, clock=lambda: NOW).claim_next("unauthorized") is None
+
+
+def test_concurrent_identical_activation_converges_to_one_result(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    service = LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    )
+    barrier = threading.Barrier(2)
+
+    def activate() -> LegacyMigrationActivationResult:
+        barrier.wait()
+        return service.activate(
+            plan.plan_id,
+            authority_request=authority_request,
+            expected_lifecycle_revision=2,
+            reason="concurrent exact activation",
+            idempotency_key="legacy-activation:concurrent:1",
+            request_fingerprint="d" * 64,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(lambda _index: activate(), range(2)))
+
+    assert results[0].result_digest == results[1].result_digest
+    assert sorted(result.replayed for result in results) == [False, True]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_lifecycle_commands"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_lifecycle_events"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_lifecycle_results"
+        ).fetchone() == (1,)
+
+
+def test_activation_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=store,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    authority_request = _migration_authority(store)
+    store.commit_count = 0
+    store.fail_commit_number = 1
+
+    result = LegacyMigrationActivationService(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).activate(
+        plan.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="recover durable activation commit",
+        idempotency_key="legacy-activation:ambiguous:1",
+        request_fingerprint="9" * 64,
+    )
+
+    assert result.replayed
+    assert result.state.value == "activated"
+    assert OutboxDispatcher(store, clock=lambda: NOW).claim_next("after-ambiguous") is not None
+
+
+def test_startup_rejects_incomplete_lifecycle_command_root(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(plan, backup)
+    import_service.verify_import(plan, backup)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_lifecycle_commands(
+                command_id, migration_id, project_namespace, project_id, action,
+                expected_lifecycle_revision, idempotency_key, request_fingerprint,
+                actor_id, actor_type, request_id, channel_json, reason, occurred_at
+            ) VALUES (
+                'LMC-0000000000000001', ?, ?, ?, 'activate', 2,
+                'forged-lifecycle-command', ?, 'ACT-FORGED', 'human',
+                'REQ-FORGED', '{}', 'forged incomplete activation', ?
+            )
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                "e" * 64,
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(
+        GovernanceEventError,
+        match="LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH",
+    ):
+        GovernanceStore(store.path).initialize()
+
+
 def test_concurrent_verification_converges_to_one_exact_report(tmp_path: Path) -> None:
     root = _legacy_tree(tmp_path / "project")
     store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
@@ -2206,6 +2506,10 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migrations",
         "governance_legacy_migration_items",
         "governance_legacy_migration_verifications",
+        "governance_legacy_migration_lifecycle_heads",
+        "governance_legacy_migration_lifecycle_commands",
+        "governance_legacy_migration_lifecycle_events",
+        "governance_legacy_migration_lifecycle_results",
     }
     assert triggers == {
         "governance_legacy_migrations_insert_guard",
@@ -2218,6 +2522,9 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migration_verifications_no_delete",
         "governance_legacy_migration_verifications_insert_guard",
         "governance_legacy_migration_verifications_idempotency_guard",
+        "governance_legacy_migration_lifecycle_heads_insert_guard",
+        "governance_legacy_migration_lifecycle_heads_update_guard",
+        "governance_legacy_migration_lifecycle_heads_no_delete",
     }
 
 

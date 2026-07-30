@@ -2341,8 +2341,28 @@ class OutboxDispatcher:
                     (retry_at, event_id, now_text),
                 )
             self._move_exhausted(connection, now_text)
-            row = connection.execute(
+            lifecycle_gate = ""
+            if (
+                connection.execute(
+                    "SELECT 1 FROM sqlite_schema WHERE type = 'table' "
+                    "AND name = 'governance_legacy_migration_lifecycle_heads'"
+                ).fetchone()
+                is not None
+            ):
+                lifecycle_gate = """
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM governance_legacy_migration_items migration_item
+                    LEFT JOIN governance_legacy_migration_lifecycle_heads lifecycle
+                      ON lifecycle.migration_id = migration_item.migration_id
+                    WHERE migration_item.project_namespace = e.project_namespace
+                      AND migration_item.project_id = e.project_id
+                      AND migration_item.proposal_id = e.proposal_id
+                      AND (lifecycle.state IS NULL OR lifecycle.state != 'activated')
+                  )
                 """
+            row = connection.execute(
+                f"""
                 SELECT e.event_id, e.claim_generation
                 FROM governance_outbox_events e
                 JOIN governance_outbox_destinations d
@@ -2367,6 +2387,7 @@ class OutboxDispatcher:
                       AND prior.destination_sequence < e.destination_sequence
                       AND prior.state NOT IN ('delivered', 'superseded')
                   )
+                  {lifecycle_gate}
                 ORDER BY e.created_at, e.destination_ref, e.destination_sequence
                 LIMIT 1
                 """,
