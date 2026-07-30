@@ -158,6 +158,10 @@ from amplai_foundry.governance.publish_resolution import (
     PublishResolutionType,
     PublishResolutionView,
 )
+from amplai_foundry.governance.slack import (
+    SlackBlockActionAuthenticator,
+    SlackInstallationPolicy,
+)
 
 __all__ = [
     "ActionTokenState",
@@ -279,6 +283,8 @@ __all__ = [
     "PublishResolutionType",
     "PublishResolutionView",
     "PublishResultView",
+    "SlackBlockActionAuthenticator",
+    "SlackInstallationPolicy",
     "SubprocessGitCandidateInspector",
     "VerifiedProviderCommand",
     "YamlProjectionDestination",
