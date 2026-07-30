@@ -6,8 +6,10 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import stat
 from collections.abc import Callable
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
@@ -22,7 +24,19 @@ from yaml.events import (
 )
 
 from amplai_foundry.domain.identity import ProjectRef
+from amplai_foundry.governance.definitions import (
+    ApplyInputDescriptor,
+    ProposalDefinitionManifest,
+    canonicalize_definition,
+)
 from amplai_foundry.governance.models import Digest, ProposalRef
+from amplai_foundry.governance.object_store import (
+    DefinitionObjectRef,
+    DefinitionObjectStoreError,
+    ImmutableDefinitionObjectStore,
+    sha256_digest,
+)
+from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 from amplai_foundry.proposals.models import Proposal, ProposalStatus
 
 _PROPOSAL_ID = re.compile(r"^PROP-[0-9]{8}-[A-F0-9]{8}$")
@@ -65,6 +79,7 @@ class LegacyMigrationScanConfig(BaseModel):
     maximum_yaml_depth: int = Field(default=64, ge=1, le=1_024)
     maximum_yaml_events: int = Field(default=100_000, ge=1)
     maximum_yaml_aliases: int = Field(default=100, ge=0)
+    maximum_backup_bytes: int = Field(default=2 * 1024 * 1024 * 1024, ge=1)
 
 
 class LegacyMutationFreeze(BaseModel):
@@ -208,6 +223,51 @@ class LegacyProposalMigrationPlan(BaseModel):
         if self.plan_digest != digest or self.plan_id != f"MPL-{digest[-16:].upper()}":
             raise ValueError("migration plan derived identity가 일치하지 않습니다.")
         return self
+
+
+class LegacyMigrationBackupEvidence(BaseModel):
+    """Operator-created Project Pack and Governance DB backup evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    project_ref: ProjectRef
+    project_pack_backup_path: str = Field(min_length=1)
+    project_pack_backup_digest: Digest
+    governance_backup_path: str = Field(min_length=1)
+    governance_backup_digest: Digest
+    actor_id: str = Field(min_length=1, max_length=128)
+    captured_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def validate_paths(self) -> LegacyMigrationBackupEvidence:
+        paths = (
+            Path(self.project_pack_backup_path),
+            Path(self.governance_backup_path),
+        )
+        if any(not path.is_absolute() or str(path) != str(path.absolute()) for path in paths):
+            raise ValueError("backup path는 normalized absolute path여야 합니다.")
+        if paths[0] == paths[1]:
+            raise ValueError("Project Pack과 Governance backup path는 달라야 합니다.")
+        return self
+
+
+class LegacyMigrationImportResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    project_ref: ProjectRef
+    snapshot_id: str = Field(pattern=r"^MPS-[A-F0-9]{16}$")
+    plan_digest: Digest
+    status: str = Field(pattern=r"^(prepared|state_imported)$")
+    proposal_count: int = Field(ge=1)
+    definition_digests: tuple[Digest, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedLegacyDefinition:
+    plan_item: LegacyProposalPlanItem
+    proposal: Proposal
+    object_ref: DefinitionObjectRef
 
 
 class LegacyProposalDryRunService:
@@ -360,7 +420,7 @@ class LegacyProposalDryRunService:
             source_status=proposal.status,
             source_revision=proposal.revision,
             target_status=target_status,
-            content_revision=proposal.revision,
+            content_revision=1,
             state_revision=self._state_revision(proposal.status, target_status),
             decision_epoch=1,
             proposal_artifact_digest=_digest(payload),
@@ -562,3 +622,503 @@ class LegacyProposalDryRunService:
             raise
         except (yaml.YAMLError, RecursionError) as error:
             raise LegacyMigrationScanError("LEGACY_PROPOSAL_INVALID") from error
+
+
+class LegacyProposalImportService:
+    """Prepare durable backup evidence and atomically import qualified Proposal state."""
+
+    def __init__(
+        self,
+        dry_run: LegacyProposalDryRunService,
+        store: GovernanceStore,
+        objects: ImmutableDefinitionObjectStore,
+    ) -> None:
+        if objects.project_ref != dry_run.project_ref:
+            raise ValueError("legacy import object store Project scope가 일치하지 않습니다.")
+        self.dry_run = dry_run
+        self.store = store
+        self.objects = objects
+
+    def prepare(
+        self,
+        plan: LegacyProposalMigrationPlan,
+        backup: LegacyMigrationBackupEvidence,
+    ) -> LegacyMigrationImportResult:
+        self._validate_scope(plan, backup)
+        self._verify_backup_evidence(backup)
+        self._read_plan_payloads(plan)
+        values = self._root_values(plan, backup)
+        try:
+            with self.store.connect() as connection, governance_transaction(connection):
+                row = self._select_root(connection, plan.plan_id)
+                if row is None:
+                    connection.execute(
+                        """
+                        INSERT INTO governance_legacy_migrations(
+                            migration_id, project_namespace, project_id, freeze_id,
+                            snapshot_id, snapshot_digest, plan_digest,
+                            mapping_policy_version, base_revision, validation_policy_ref,
+                            project_pack_backup_path, project_pack_backup_digest,
+                            governance_backup_path, governance_backup_digest,
+                            proposal_count, status, prepared_at, state_imported_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                                  'prepared', ?, NULL)
+                        """,
+                        (*values, backup.captured_at.isoformat()),
+                    )
+                elif tuple(
+                    str(value) if value is not None else None for value in row[:15]
+                ) != tuple(str(value) for value in values):
+                    raise LegacyMigrationScanError("LEGACY_MIGRATION_IDENTITY_CONFLICT")
+        except LegacyMigrationScanError:
+            raise
+        except sqlite3.Error as error:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PREPARE_FAILED") from error
+        return self._result(plan)
+
+    def import_state(
+        self,
+        plan: LegacyProposalMigrationPlan,
+        backup: LegacyMigrationBackupEvidence,
+    ) -> LegacyMigrationImportResult:
+        self.prepare(plan, backup)
+        payloads = self._read_plan_payloads(plan)
+        try:
+            definitions = self._prepare_definition_objects(plan, payloads)
+        except DefinitionObjectStoreError as error:
+            raise LegacyMigrationScanError("LEGACY_DEFINITION_INTEGRITY_FAILURE") from error
+        self._read_plan_payloads(plan)
+        try:
+            with self.store.connect() as connection, governance_transaction(connection):
+                root = self._select_root(connection, plan.plan_id)
+                if root is None:
+                    raise LegacyMigrationScanError("LEGACY_MIGRATION_NOT_PREPARED")
+                if str(root[15]) == "state_imported":
+                    self._verify_imported_rows(connection, plan, definitions)
+                elif str(root[15]) == "prepared":
+                    for prepared in definitions:
+                        self._insert_proposal_state(connection, plan, prepared)
+                    updated = connection.execute(
+                        """
+                        UPDATE governance_legacy_migrations
+                        SET status = 'state_imported',
+                            state_imported_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                        WHERE migration_id = ? AND status = 'prepared'
+                        """,
+                        (plan.plan_id,),
+                    )
+                    if updated.rowcount != 1:
+                        raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
+                else:
+                    raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT")
+        except LegacyMigrationScanError:
+            raise
+        except sqlite3.Error as error:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_STATE_CONFLICT") from error
+        return self._result(plan)
+
+    def _validate_scope(
+        self,
+        plan: LegacyProposalMigrationPlan,
+        backup: LegacyMigrationBackupEvidence,
+    ) -> None:
+        if plan.project_ref != self.dry_run.project_ref or backup.project_ref != plan.project_ref:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PROJECT_MISMATCH")
+        if plan.freeze.project_ref != plan.project_ref:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PROJECT_MISMATCH")
+
+    def _verify_backup_evidence(self, backup: LegacyMigrationBackupEvidence) -> None:
+        project_pack = Path(backup.project_pack_backup_path)
+        governance = Path(backup.governance_backup_path)
+        if governance.resolve(strict=False) == self.store.path:
+            raise LegacyMigrationScanError("LEGACY_GOVERNANCE_BACKUP_INVALID")
+        self._verify_backup_file(
+            project_pack,
+            backup.project_pack_backup_digest,
+            "LEGACY_PROJECT_PACK_BACKUP_INVALID",
+        )
+        self._verify_backup_file(
+            governance,
+            backup.governance_backup_digest,
+            "LEGACY_GOVERNANCE_BACKUP_INVALID",
+        )
+        try:
+            with sqlite3.connect(
+                f"{governance.as_uri()}?mode=ro&immutable=1", uri=True
+            ) as connection:
+                integrity = connection.execute("PRAGMA integrity_check").fetchone()
+                if integrity != ("ok",):
+                    raise LegacyMigrationScanError("LEGACY_GOVERNANCE_BACKUP_INVALID")
+                version = self.store.migration_runner.verify(connection)
+                self.store.migration_runner.verify_schema(connection, version)
+            with self.store.connect() as live_connection:
+                live_version = self.store.migration_runner.verify(live_connection)
+            if version != live_version:
+                raise LegacyMigrationScanError("LEGACY_GOVERNANCE_BACKUP_INVALID")
+        except LegacyMigrationScanError:
+            raise
+        except (OSError, sqlite3.Error) as error:
+            raise LegacyMigrationScanError("LEGACY_GOVERNANCE_BACKUP_INVALID") from error
+
+    def _verify_backup_file(self, path: Path, expected_digest: str, error_code: str) -> None:
+        descriptor = -1
+        try:
+            if path.resolve(strict=True) != path:
+                raise LegacyMigrationScanError(error_code)
+            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            before = os.fstat(descriptor)
+            if not stat.S_ISREG(before.st_mode):
+                raise LegacyMigrationScanError(error_code)
+            if before.st_size > self.dry_run.config.maximum_backup_bytes:
+                raise LegacyMigrationScanError(error_code)
+            digest = hashlib.sha256()
+            remaining = self.dry_run.config.maximum_backup_bytes + 1
+            while remaining:
+                chunk = os.read(descriptor, min(1024 * 1024, remaining))
+                if not chunk:
+                    break
+                digest.update(chunk)
+                remaining -= len(chunk)
+            after = os.fstat(descriptor)
+            identity_before = (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+                before.st_ctime_ns,
+            )
+            identity_after = (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+                after.st_ctime_ns,
+            )
+            actual_digest = f"sha256:{digest.hexdigest()}"
+            if (
+                identity_before != identity_after
+                or before.st_size > self.dry_run.config.maximum_backup_bytes
+                or actual_digest != expected_digest
+            ):
+                raise LegacyMigrationScanError(error_code)
+        except LegacyMigrationScanError:
+            raise
+        except (OSError, RuntimeError) as error:
+            raise LegacyMigrationScanError(error_code) from error
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+
+    def _read_plan_payloads(self, plan: LegacyProposalMigrationPlan) -> dict[str, bytes]:
+        expected = self.dry_run.create_plan(
+            freeze=plan.freeze,
+            base_revision=plan.base_revision,
+            validation_policy_ref=plan.validation_policy_ref,
+        )
+        if expected != plan:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PLAN_STALE")
+        snapshot, payloads = self.dry_run._snapshot(plan.freeze)
+        if (
+            snapshot.snapshot_id != plan.snapshot_id
+            or snapshot.snapshot_digest != plan.snapshot_digest
+        ):
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PLAN_STALE")
+        return payloads
+
+    def _prepare_definition_objects(
+        self,
+        plan: LegacyProposalMigrationPlan,
+        payloads: dict[str, bytes],
+    ) -> tuple[_PreparedLegacyDefinition, ...]:
+        prepared: list[_PreparedLegacyDefinition] = []
+        for item in plan.proposals:
+            proposal_path = f"{item.proposal_ref.proposal_id}/proposal.yaml"
+            proposal = Proposal.model_validate(yaml.safe_load(payloads[proposal_path]))
+            if proposal.created_at.tzinfo is None or proposal.created_at.utcoffset() is None:
+                raise LegacyMigrationScanError("LEGACY_PROPOSAL_TIMESTAMP_INVALID")
+            descriptors: list[ApplyInputDescriptor] = []
+            prefix = f"{item.proposal_ref.proposal_id}/"
+            for relative_path in sorted(payloads, key=lambda value: value.encode("utf-8")):
+                if not relative_path.startswith(prefix):
+                    continue
+                object_bytes = payloads[relative_path]
+                object_digest = sha256_digest(object_bytes)
+                object_ref = self.objects.put_input_object(
+                    item.proposal_ref,
+                    object_bytes,
+                    object_digest,
+                )
+                if self.objects.get_input_object(item.proposal_ref, object_digest) != object_bytes:
+                    raise LegacyMigrationScanError("LEGACY_INPUT_INTEGRITY_FAILURE")
+                descriptors.append(
+                    ApplyInputDescriptor(
+                        logical_name=relative_path.removeprefix(prefix),
+                        object_digest=object_ref.digest,
+                        media_type=self._media_type(relative_path),
+                    )
+                )
+            manifest = ProposalDefinitionManifest(
+                proposal_ref=item.proposal_ref,
+                operations=tuple(
+                    operation.model_dump(mode="json") for operation in proposal.operations
+                ),
+                apply_inputs=tuple(descriptors),
+                preconditions=(
+                    {
+                        "legacy_migration": {
+                            "mapping_policy_version": plan.mapping_policy_version,
+                            "proposal_artifact_digest": item.proposal_artifact_digest,
+                            "snapshot_digest": plan.snapshot_digest,
+                            "source_revision": item.source_revision,
+                            "source_status": item.source_status.value,
+                        }
+                    },
+                ),
+                base_revision=plan.base_revision,
+                validation_policy_ref=plan.validation_policy_ref,
+            )
+            canonical = canonicalize_definition(manifest)
+            object_ref = self.objects.put_definition_object(
+                item.proposal_ref,
+                canonical.canonical_bytes,
+                canonical.digest,
+            )
+            if (
+                self.objects.get_definition_object(item.proposal_ref, canonical.digest)
+                != canonical.canonical_bytes
+            ):
+                raise LegacyMigrationScanError("LEGACY_DEFINITION_INTEGRITY_FAILURE")
+            prepared.append(_PreparedLegacyDefinition(item, proposal, object_ref))
+        return tuple(prepared)
+
+    @staticmethod
+    def _media_type(relative_path: str) -> str:
+        suffix = Path(relative_path).suffix.lower()
+        return {
+            ".json": "application/json",
+            ".md": "text/markdown",
+            ".yaml": "application/yaml",
+            ".yml": "application/yaml",
+        }.get(suffix, "application/octet-stream")
+
+    @staticmethod
+    def _runtime_status(target: LegacyTargetStatus) -> str:
+        if target is LegacyTargetStatus.LEGACY_APPROVAL_REVIEW_REQUIRED:
+            return "changes_requested"
+        return target.value
+
+    def _insert_proposal_state(
+        self,
+        connection: sqlite3.Connection,
+        plan: LegacyProposalMigrationPlan,
+        prepared: _PreparedLegacyDefinition,
+    ) -> None:
+        item = prepared.plan_item
+        proposal = prepared.proposal
+        identity = (
+            item.proposal_ref.project_ref.namespace,
+            item.proposal_ref.project_ref.project_id,
+            item.proposal_ref.proposal_id,
+        )
+        if (
+            connection.execute(
+                """
+            SELECT 1 FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+                identity,
+            ).fetchone()
+            is not None
+        ):
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_PROPOSAL_CONFLICT")
+        timestamp = proposal.created_at.isoformat()
+        runtime_status = self._runtime_status(item.target_status)
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals(
+                project_namespace, project_id, proposal_id, active_definition_digest,
+                content_revision, state_revision, decision_epoch, status,
+                created_at, updated_at, applied_revision
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                *identity,
+                prepared.object_ref.digest,
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                runtime_status,
+                timestamp,
+                timestamp,
+                item.legacy_git_revision if runtime_status == "applied" else None,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_definition_revisions(
+                project_namespace, project_id, proposal_id, content_revision,
+                definition_digest, previous_definition_digest, activated_from_status,
+                activated_at
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)
+            """,
+            (*identity, item.content_revision, prepared.object_ref.digest, timestamp),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_items(
+                migration_id, project_namespace, project_id, proposal_id,
+                source_status, source_revision, target_status, definition_digest,
+                proposal_artifact_digest, content_revision, state_revision,
+                decision_epoch, approval_disposition, imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                plan.plan_id,
+                *identity,
+                item.source_status.value,
+                item.source_revision,
+                item.target_status.value,
+                prepared.object_ref.digest,
+                item.proposal_artifact_digest,
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                item.approval_disposition.value,
+                timestamp,
+            ),
+        )
+
+    def _verify_imported_rows(
+        self,
+        connection: sqlite3.Connection,
+        plan: LegacyProposalMigrationPlan,
+        definitions: tuple[_PreparedLegacyDefinition, ...],
+    ) -> None:
+        rows = connection.execute(
+            """
+            SELECT proposal_id, source_status, source_revision, target_status,
+                   definition_digest, proposal_artifact_digest, content_revision,
+                   state_revision, decision_epoch, approval_disposition
+            FROM governance_legacy_migration_items
+            WHERE migration_id = ?
+            ORDER BY proposal_id
+            """,
+            (plan.plan_id,),
+        ).fetchall()
+        expected = tuple(
+            (
+                prepared.plan_item.proposal_ref.proposal_id,
+                prepared.plan_item.source_status.value,
+                prepared.plan_item.source_revision,
+                prepared.plan_item.target_status.value,
+                prepared.object_ref.digest,
+                prepared.plan_item.proposal_artifact_digest,
+                prepared.plan_item.content_revision,
+                prepared.plan_item.state_revision,
+                prepared.plan_item.decision_epoch,
+                prepared.plan_item.approval_disposition.value,
+            )
+            for prepared in definitions
+        )
+        actual = tuple(tuple(row) for row in rows)
+        if actual != expected:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+        for prepared in definitions:
+            item = prepared.plan_item
+            active = connection.execute(
+                """
+                SELECT active_definition_digest, content_revision, state_revision,
+                       decision_epoch, status, applied_revision
+                FROM governance_active_proposals
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                """,
+                (
+                    item.proposal_ref.project_ref.namespace,
+                    item.proposal_ref.project_ref.project_id,
+                    item.proposal_ref.proposal_id,
+                ),
+            ).fetchone()
+            expected_active = (
+                prepared.object_ref.digest,
+                item.content_revision,
+                item.state_revision,
+                item.decision_epoch,
+                self._runtime_status(item.target_status),
+                (
+                    item.legacy_git_revision
+                    if self._runtime_status(item.target_status) == "applied"
+                    else None
+                ),
+            )
+            if active is None or tuple(active) != expected_active:
+                raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
+
+    @staticmethod
+    def _select_root(
+        connection: sqlite3.Connection,
+        migration_id: str,
+    ) -> tuple[object, ...] | None:
+        row = connection.execute(
+            """
+            SELECT migration_id, project_namespace, project_id, freeze_id,
+                   snapshot_id, snapshot_digest, plan_digest, mapping_policy_version,
+                   base_revision, validation_policy_ref, project_pack_backup_path,
+                   project_pack_backup_digest, governance_backup_path,
+                   governance_backup_digest, proposal_count, status,
+                   prepared_at, state_imported_at
+            FROM governance_legacy_migrations
+            WHERE migration_id = ?
+            """,
+            (migration_id,),
+        ).fetchone()
+        return tuple(row) if row is not None else None
+
+    @staticmethod
+    def _root_values(
+        plan: LegacyProposalMigrationPlan,
+        backup: LegacyMigrationBackupEvidence,
+    ) -> tuple[object, ...]:
+        return (
+            plan.plan_id,
+            plan.project_ref.namespace,
+            plan.project_ref.project_id,
+            plan.freeze.freeze_id,
+            plan.snapshot_id,
+            plan.snapshot_digest,
+            plan.plan_digest,
+            plan.mapping_policy_version,
+            plan.base_revision,
+            plan.validation_policy_ref,
+            backup.project_pack_backup_path,
+            backup.project_pack_backup_digest,
+            backup.governance_backup_path,
+            backup.governance_backup_digest,
+            len(plan.proposals),
+        )
+
+    def _result(self, plan: LegacyProposalMigrationPlan) -> LegacyMigrationImportResult:
+        with self.store.connect() as connection:
+            root = self._select_root(connection, plan.plan_id)
+            if root is None:
+                raise LegacyMigrationScanError("LEGACY_MIGRATION_NOT_PREPARED")
+            digests = tuple(
+                str(row[0])
+                for row in connection.execute(
+                    """
+                    SELECT definition_digest
+                    FROM governance_legacy_migration_items
+                    WHERE migration_id = ?
+                    ORDER BY proposal_id
+                    """,
+                    (plan.plan_id,),
+                ).fetchall()
+            )
+        return LegacyMigrationImportResult(
+            migration_id=plan.plan_id,
+            project_ref=plan.project_ref,
+            snapshot_id=plan.snapshot_id,
+            plan_digest=plan.plan_digest,
+            status=str(root[15]),
+            proposal_count=len(plan.proposals),
+            definition_digests=digests,
+        )
