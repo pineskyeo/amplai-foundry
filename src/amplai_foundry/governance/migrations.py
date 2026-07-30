@@ -3299,6 +3299,323 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=28,
+        name="legacy-atomic-exact-root-rollback",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_rollback_scopes (
+                command_id TEXT NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                rollback_root_digest TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL,
+                state_revision INTEGER NOT NULL,
+                decision_epoch INTEGER NOT NULL,
+                audit_event_id TEXT NOT NULL UNIQUE,
+                aggregate_sequence INTEGER NOT NULL,
+                event_hash TEXT NOT NULL,
+                outbox_event_id TEXT NOT NULL UNIQUE,
+                destination_ref TEXT NOT NULL,
+                destination_sequence INTEGER NOT NULL,
+                destination_existed_before INTEGER NOT NULL CHECK (
+                    destination_existed_before IN (0, 1)
+                ),
+                previous_destination_next_sequence INTEGER,
+                previous_destination_delivered_sequence INTEGER,
+                previous_destination_operator_hold INTEGER,
+                previous_destination_updated_at TEXT,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (command_id, proposal_id),
+                FOREIGN KEY (command_id)
+                    REFERENCES governance_legacy_migration_lifecycle_commands(command_id)
+                    ON DELETE RESTRICT,
+                CHECK (content_revision >= 1),
+                CHECK (state_revision >= 1),
+                CHECK (decision_epoch >= 1),
+                CHECK (aggregate_sequence >= 1),
+                CHECK (destination_sequence >= 1),
+                CHECK (
+                    length(rollback_root_digest) = 71
+                    AND substr(rollback_root_digest, 1, 7) = 'sha256:'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_scopes_insert_guard
+            BEFORE INSERT ON governance_legacy_rollback_scopes
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_commands c
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = c.migration_id
+                JOIN governance_legacy_migration_items i
+                  ON i.migration_id = c.migration_id
+                 AND i.project_namespace = c.project_namespace
+                 AND i.project_id = c.project_id AND i.proposal_id = NEW.proposal_id
+                JOIN governance_active_proposals a
+                  ON a.project_namespace = i.project_namespace
+                 AND a.project_id = i.project_id AND a.proposal_id = i.proposal_id
+                JOIN governance_definition_revisions d
+                  ON d.project_namespace = i.project_namespace
+                 AND d.project_id = i.project_id AND d.proposal_id = i.proposal_id
+                 AND d.content_revision = i.content_revision
+                JOIN governance_audit_events e
+                  ON e.event_id = NEW.audit_event_id
+                 AND e.project_namespace = i.project_namespace
+                 AND e.project_id = i.project_id AND e.proposal_id = i.proposal_id
+                JOIN governance_outbox_events o
+                  ON o.event_id = NEW.outbox_event_id
+                 AND o.project_namespace = i.project_namespace
+                 AND o.project_id = i.project_id AND o.proposal_id = i.proposal_id
+                 AND o.aggregate_sequence = e.aggregate_sequence
+                JOIN governance_aggregate_sequences s
+                  ON s.project_namespace = i.project_namespace
+                 AND s.project_id = i.project_id AND s.proposal_id = i.proposal_id
+                JOIN governance_legacy_import_destination_roots p
+                  ON p.migration_id = i.migration_id
+                 AND p.project_namespace = i.project_namespace
+                 AND p.project_id = i.project_id AND p.proposal_id = i.proposal_id
+                JOIN governance_legacy_import_destination_attestations t
+                  ON t.migration_id = p.migration_id
+                 AND t.project_namespace = p.project_namespace
+                 AND t.project_id = p.project_id AND t.proposal_id = p.proposal_id
+                WHERE c.command_id = NEW.command_id
+                  AND c.migration_id = NEW.migration_id
+                  AND c.project_namespace = NEW.project_namespace
+                  AND c.project_id = NEW.project_id
+                  AND c.action = 'rollback'
+                  AND h.state = 'staged_verified'
+                  AND NEW.rollback_root_digest = 'sha256:' || c.request_fingerprint
+                  AND i.definition_digest = NEW.definition_digest
+                  AND i.content_revision = NEW.content_revision
+                  AND i.state_revision = NEW.state_revision
+                  AND i.decision_epoch = NEW.decision_epoch
+                  AND a.active_definition_digest = NEW.definition_digest
+                  AND a.content_revision = NEW.content_revision
+                  AND a.state_revision = NEW.state_revision
+                  AND a.decision_epoch = NEW.decision_epoch
+                  AND d.definition_digest = NEW.definition_digest
+                  AND e.aggregate_sequence = NEW.aggregate_sequence
+                  AND e.event_hash = NEW.event_hash
+                  AND o.destination_ref = NEW.destination_ref
+                  AND o.destination_sequence = NEW.destination_sequence
+                  AND p.destination_ref = NEW.destination_ref
+                  AND t.destination_ref = NEW.destination_ref
+                  AND t.captured_at = p.captured_at
+                  AND t.attestation_version = 1
+                  AND p.existed_before = NEW.destination_existed_before
+                  AND p.previous_next_sequence IS NEW.previous_destination_next_sequence
+                  AND p.previous_delivered_sequence IS
+                      NEW.previous_destination_delivered_sequence
+                  AND p.previous_operator_hold IS NEW.previous_destination_operator_hold
+                  AND p.previous_updated_at IS NEW.previous_destination_updated_at
+                  AND s.aggregate_sequence = NEW.aggregate_sequence
+                  AND s.last_event_hash = NEW.event_hash
+                  AND o.state = 'pending' AND o.attempts = 0
+                  AND o.claim_generation = 0 AND o.lease_owner IS NULL
+                  AND o.lease_expires_at IS NULL AND o.retry_at IS NULL
+                  AND o.delivered_at IS NULL AND o.remote_receipt IS NULL
+                  AND o.last_error_code IS NULL
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy rollback scope mismatch'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_scopes_no_update
+            BEFORE UPDATE ON governance_legacy_rollback_scopes
+            BEGIN SELECT RAISE(ABORT, 'legacy rollback scope is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_scopes_no_delete
+            BEFORE DELETE ON governance_legacy_rollback_scopes
+            BEGIN SELECT RAISE(ABORT, 'legacy rollback scope is durable'); END
+            """,
+            "DROP TRIGGER governance_outbox_events_no_delete",
+            """
+            CREATE TRIGGER governance_outbox_events_no_delete
+            BEFORE DELETE ON governance_outbox_events
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.outbox_event_id = OLD.event_id
+                  AND s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id
+                  AND s.proposal_id = OLD.proposal_id
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'governance outbox is durable'); END
+            """,
+            "DROP TRIGGER governance_audit_events_no_delete",
+            """
+            CREATE TRIGGER governance_audit_events_no_delete
+            BEFORE DELETE ON governance_audit_events
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.audit_event_id = OLD.event_id
+                  AND s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id
+                  AND s.proposal_id = OLD.proposal_id
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'governance audit is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_active_delete_guard
+            BEFORE DELETE ON governance_active_proposals
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id AND s.proposal_id = OLD.proposal_id
+                  AND s.definition_digest = OLD.active_definition_digest
+                  AND s.content_revision = OLD.content_revision
+                  AND s.state_revision = OLD.state_revision
+                  AND s.decision_epoch = OLD.decision_epoch
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'active proposal delete requires rollback scope'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_definition_delete_guard
+            BEFORE DELETE ON governance_definition_revisions
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id AND s.proposal_id = OLD.proposal_id
+                  AND s.definition_digest = OLD.definition_digest
+                  AND s.content_revision = OLD.content_revision
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'definition delete requires rollback scope'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_sequence_delete_guard
+            BEFORE DELETE ON governance_aggregate_sequences
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id AND s.proposal_id = OLD.proposal_id
+                  AND s.aggregate_sequence = OLD.aggregate_sequence
+                  AND s.event_hash = OLD.last_event_hash
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'aggregate delete requires rollback scope'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_destination_delete_guard
+            BEFORE DELETE ON governance_outbox_destinations
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.destination_ref = OLD.destination_ref
+                  AND s.destination_existed_before = 0
+                  AND OLD.next_sequence = s.destination_sequence + 1
+                  AND OLD.delivered_sequence = 0 AND OLD.operator_hold = 0
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'destination delete requires rollback scope'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_rollback_destination_restore_guard
+            BEFORE UPDATE ON governance_outbox_destinations
+            WHEN NEW.next_sequence < OLD.next_sequence
+              AND NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.destination_ref = OLD.destination_ref
+                  AND s.destination_existed_before = 1
+                  AND OLD.next_sequence = s.destination_sequence + 1
+                  AND NEW.next_sequence = s.previous_destination_next_sequence
+                  AND NEW.delivered_sequence = s.previous_destination_delivered_sequence
+                  AND NEW.operator_hold = s.previous_destination_operator_hold
+                  AND NEW.updated_at = s.previous_destination_updated_at
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'destination rollback restore mismatch'); END
+            """,
+            "DROP TRIGGER governance_legacy_lifecycle_commands_insert_guard",
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_commands_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_commands
+            WHEN length(NEW.idempotency_key) = 0
+              OR length(NEW.request_fingerprint) != 64
+              OR NEW.request_fingerprint GLOB '*[^0-9a-f]*'
+              OR NOT EXISTS (
+                SELECT 1 FROM governance_legacy_migration_lifecycle_heads h
+                WHERE h.migration_id = NEW.migration_id
+                  AND h.project_namespace = NEW.project_namespace
+                  AND h.project_id = NEW.project_id
+                  AND h.state = 'staged_verified'
+                  AND h.lifecycle_revision = NEW.expected_lifecycle_revision
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle command root mismatch'); END
+            """,
+            "DROP TRIGGER governance_legacy_lifecycle_results_insert_guard",
+            """
+            CREATE TRIGGER governance_legacy_lifecycle_results_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_lifecycle_results
+            WHEN json_valid(NEW.result_json) != 1
+              OR json_extract(NEW.result_json, '$.command_id') IS NOT NEW.command_id
+              OR json_extract(NEW.result_json, '$.migration_id') IS NOT NEW.migration_id
+              OR json_extract(NEW.result_json, '$.result_digest') IS NOT NEW.result_digest
+              OR json_extract(NEW.result_json, '$.replayed') != 0
+              OR NOT EXISTS (
+                SELECT 1
+                FROM governance_legacy_migration_lifecycle_commands c
+                JOIN governance_legacy_migration_lifecycle_events e
+                  ON e.command_id = c.command_id
+                WHERE c.command_id = NEW.command_id
+                  AND c.migration_id = NEW.migration_id
+                  AND NEW.created_at = c.occurred_at
+                  AND json_extract(NEW.result_json, '$.event_id') = e.event_id
+                  AND json_extract(NEW.result_json, '$.project_ref.namespace') =
+                      c.project_namespace
+                  AND json_extract(NEW.result_json, '$.project_ref.project_id') = c.project_id
+                  AND json_extract(NEW.result_json, '$.lifecycle_revision') =
+                      c.expected_lifecycle_revision + 1
+                  AND json_extract(NEW.result_json, '$.verification_id') = e.verification_id
+                  AND json_extract(NEW.result_json, '$.report_digest') = e.report_digest
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_id') = c.actor_id
+                  AND json_extract(NEW.result_json, '$.actor_ref.actor_type') = c.actor_type
+                  AND (
+                      (
+                          c.action = 'activate'
+                          AND json_extract(NEW.result_json, '$.state') = 'activated'
+                          AND julianday(json_extract(NEW.result_json, '$.activated_at')) =
+                              julianday(NEW.created_at)
+                      )
+                      OR
+                      (
+                          c.action = 'rollback'
+                          AND json_extract(NEW.result_json, '$.state') = 'rolled_back'
+                          AND julianday(json_extract(NEW.result_json, '$.rolled_back_at')) =
+                              julianday(NEW.created_at)
+                          AND json_extract(NEW.result_json, '$.rollback_root_digest') =
+                              'sha256:' || c.request_fingerprint
+                          AND json_extract(NEW.result_json, '$.removed_proposal_count') = (
+                              SELECT COUNT(*) FROM governance_legacy_rollback_scopes s
+                              WHERE s.command_id = c.command_id
+                          )
+                      )
+                  )
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy lifecycle result root mismatch'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -3990,6 +4307,31 @@ class MigrationRunner:
                 ("destination_ref", "TEXT", 1, 0),
                 ("captured_at", "TEXT", 1, 0),
                 ("attestation_version", "INTEGER", 1, 0),
+            )
+        if schema_version >= 28:
+            expected_columns["governance_legacy_rollback_scopes"] = (
+                ("command_id", "TEXT", 1, 1),
+                ("migration_id", "TEXT", 1, 0),
+                ("project_namespace", "TEXT", 1, 0),
+                ("project_id", "TEXT", 1, 0),
+                ("proposal_id", "TEXT", 1, 2),
+                ("rollback_root_digest", "TEXT", 1, 0),
+                ("definition_digest", "TEXT", 1, 0),
+                ("content_revision", "INTEGER", 1, 0),
+                ("state_revision", "INTEGER", 1, 0),
+                ("decision_epoch", "INTEGER", 1, 0),
+                ("audit_event_id", "TEXT", 1, 0),
+                ("aggregate_sequence", "INTEGER", 1, 0),
+                ("event_hash", "TEXT", 1, 0),
+                ("outbox_event_id", "TEXT", 1, 0),
+                ("destination_ref", "TEXT", 1, 0),
+                ("destination_sequence", "INTEGER", 1, 0),
+                ("destination_existed_before", "INTEGER", 1, 0),
+                ("previous_destination_next_sequence", "INTEGER", 0, 0),
+                ("previous_destination_delivered_sequence", "INTEGER", 0, 0),
+                ("previous_destination_operator_hold", "INTEGER", 0, 0),
+                ("previous_destination_updated_at", "TEXT", 0, 0),
+                ("created_at", "TEXT", 1, 0),
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

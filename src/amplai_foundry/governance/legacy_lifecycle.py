@@ -90,6 +90,37 @@ class LegacyMigrationActivationResult(BaseModel):
         return self
 
 
+class LegacyMigrationRollbackResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    command_id: str = Field(pattern=r"^LMC-[A-F0-9]{16}$")
+    event_id: str = Field(pattern=r"^LME-[A-F0-9]{16}$")
+    migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    project_ref: ProjectRef
+    state: Literal[LegacyMigrationLifecycleState.ROLLED_BACK] = (
+        LegacyMigrationLifecycleState.ROLLED_BACK
+    )
+    lifecycle_revision: int = Field(ge=2)
+    verification_id: str = Field(pattern=r"^MVF-[A-F0-9]{16}$")
+    report_digest: Digest
+    rollback_root_digest: Digest
+    removed_proposal_count: int = Field(ge=1)
+    actor_ref: ActorRef
+    rolled_back_at: AwareDatetime
+    result_digest: Digest
+    replayed: bool = False
+
+    @model_validator(mode="after")
+    def validate_result_digest(self) -> LegacyMigrationRollbackResult:
+        preimage = self.model_dump(
+            mode="json",
+            exclude={"result_digest", "replayed"},
+        )
+        if self.result_digest != _digest(preimage):
+            raise ValueError("legacy rollback result digest가 일치하지 않습니다.")
+        return self
+
+
 class LegacyMigrationActivationService:
     """Authenticate and atomically commit the irreversible migration activation cutoff."""
 
@@ -376,7 +407,8 @@ class LegacyMigrationActivationService:
                        e.event_id, e.lifecycle_sequence, e.before_state,
                        e.after_state, e.verification_id, e.report_digest,
                        e.previous_event_digest, e.event_digest, e.occurred_at,
-                       r.result_json, r.result_digest, r.created_at
+                       r.result_json, r.result_digest, r.created_at,
+                       c.request_fingerprint
                 FROM governance_legacy_migration_lifecycle_commands c
                 LEFT JOIN governance_legacy_migration_lifecycle_events e
                   ON e.command_id = c.command_id
@@ -401,16 +433,15 @@ class LegacyMigrationActivationService:
                 ):
                     raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
                 continue
-            if len(rows) != 1 or state is not LegacyMigrationLifecycleState.ACTIVATED:
+            if len(rows) != 1 or state not in {
+                LegacyMigrationLifecycleState.ACTIVATED,
+                LegacyMigrationLifecycleState.ROLLED_BACK,
+            }:
                 raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
             row = rows[0]
-            required_indices = (*range(6, 12), *range(13, 18))
+            required_indices = (*range(6, 12), *range(13, 19))
             if any(row[index] is None for index in required_indices):
                 raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
-            try:
-                result = LegacyMigrationActivationResult.model_validate_json(str(row[15]))
-            except ValueError as error:
-                raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH") from error
             event_preimage = {
                 "command_id": str(row[0]),
                 "event_id": str(row[6]),
@@ -423,19 +454,42 @@ class LegacyMigrationActivationService:
                 "previous_event_digest": row[12],
                 "occurred_at": str(row[14]),
             }
+            action = str(row[1])
+            expected_state = {
+                "activate": LegacyMigrationLifecycleState.ACTIVATED,
+                "rollback": LegacyMigrationLifecycleState.ROLLED_BACK,
+            }.get(action)
             if (
-                str(row[1]) != "activate"
+                expected_state is None
+                or state is not expected_state
                 or int(row[2]) != int(row[7])
                 or str(row[8]) != LegacyMigrationLifecycleState.STAGED_VERIFIED.value
-                or str(row[9]) != LegacyMigrationLifecycleState.ACTIVATED.value
+                or str(row[9]) != expected_state.value
                 or str(row[10]) != str(head[3])
                 or str(row[11]) != str(head[4])
                 or _digest(event_preimage) != str(row[13])
                 or str(head[7]) != str(row[13])
                 or int(head[6]) != int(row[7]) + 1
                 or str(row[5]) != str(row[14])
-                or str(row[16]) != result.result_digest
                 or str(row[17]) != str(row[5])
+            ):
+                raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            result: LegacyMigrationActivationResult | LegacyMigrationRollbackResult
+            try:
+                if action == "activate":
+                    result = LegacyMigrationActivationResult.model_validate_json(str(row[15]))
+                    result_timestamp = LegacyMigrationActivationService._timestamp(
+                        result.activated_at
+                    )
+                else:
+                    result = LegacyMigrationRollbackResult.model_validate_json(str(row[15]))
+                    result_timestamp = LegacyMigrationActivationService._timestamp(
+                        result.rolled_back_at
+                    )
+            except ValueError as error:
+                raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH") from error
+            if (
+                str(row[16]) != result.result_digest
                 or result.command_id != str(row[0])
                 or result.event_id != str(row[6])
                 or result.migration_id != str(head[0])
@@ -443,11 +497,77 @@ class LegacyMigrationActivationService:
                 or result.project_ref.project_id != str(head[2])
                 or result.actor_ref.actor_id != str(row[3])
                 or result.actor_ref.actor_type.value != str(row[4])
-                or LegacyMigrationActivationService._timestamp(result.activated_at) != str(row[5])
+                or result_timestamp != str(row[5])
                 or result.lifecycle_revision != int(head[6])
                 or result.verification_id != str(head[3])
                 or result.report_digest != str(head[4])
             ):
+                raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            if action == "rollback":
+                if not isinstance(result, LegacyMigrationRollbackResult):
+                    raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+                LegacyMigrationActivationService._reconcile_rollback_scopes(
+                    connection,
+                    result,
+                    request_fingerprint=str(row[18]),
+                )
+
+    @staticmethod
+    def _reconcile_rollback_scopes(
+        connection: sqlite3.Connection,
+        result: LegacyMigrationRollbackResult,
+        *,
+        request_fingerprint: str,
+    ) -> None:
+        scopes = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id, rollback_root_digest,
+                   destination_ref, destination_sequence, destination_existed_before,
+                   previous_destination_next_sequence,
+                   previous_destination_delivered_sequence,
+                   previous_destination_operator_hold, previous_destination_updated_at
+            FROM governance_legacy_rollback_scopes
+            WHERE command_id = ? ORDER BY proposal_id
+            """,
+            (result.command_id,),
+        ).fetchall()
+        if (
+            len(scopes) != result.removed_proposal_count
+            or result.rollback_root_digest != f"sha256:{request_fingerprint}"
+            or any(str(scope[3]) != result.rollback_root_digest for scope in scopes)
+        ):
+            raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+        for scope in scopes:
+            identity = (str(scope[0]), str(scope[1]), str(scope[2]))
+            for table in (
+                "governance_active_proposals",
+                "governance_definition_revisions",
+                "governance_aggregate_sequences",
+                "governance_audit_events",
+                "governance_outbox_events",
+            ):
+                if (
+                    connection.execute(
+                        f"""SELECT 1 FROM {table}
+                    WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                    LIMIT 1""",
+                        identity,
+                    ).fetchone()
+                    is not None
+                ):
+                    raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            destination = connection.execute(
+                """
+                SELECT next_sequence, delivered_sequence, operator_hold, updated_at
+                FROM governance_outbox_destinations WHERE destination_ref = ?
+                """,
+                (scope[4],),
+            ).fetchone()
+            if bool(scope[6]):
+                expected = tuple(scope[7:11])
+                if destination is None or tuple(destination) != expected:
+                    raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
+            elif destination is not None:
                 raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
 
     def _reconcile_ambiguous(

@@ -500,20 +500,18 @@ def test_startup_reconciliation_rejects_audit_outbox_mismatch(tmp_path: Path) ->
         destinations=(OutboxDestination(destination_ref="yaml:proposal"),),
     )
     with store.connect() as connection:
+        trigger_sql = str(
+            connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'trigger' "
+                "AND name = 'governance_outbox_events_no_delete'"
+            ).fetchone()[0]
+        )
         connection.execute("DROP TRIGGER governance_outbox_events_no_delete")
         connection.execute(
             "DELETE FROM governance_outbox_events WHERE event_id = ?",
             (outbox[0].event_id,),
         )
-        connection.execute(
-            """
-            CREATE TRIGGER governance_outbox_events_no_delete
-            BEFORE DELETE ON governance_outbox_events
-            BEGIN
-                SELECT RAISE(ABORT, 'governance outbox is durable');
-            END
-            """
-        )
+        connection.execute(trigger_sql)
 
     with pytest.raises(GovernanceEventError, match="AUDIT_OUTBOX_MISMATCH"):
         store.check_startup()
@@ -526,6 +524,7 @@ def test_startup_reconciliation_rejects_complete_decision_event_removal(tmp_path
     with store.connect() as connection:
         connection.execute("DROP TRIGGER governance_outbox_events_no_delete")
         connection.execute("DROP TRIGGER governance_audit_events_no_delete")
+        connection.execute("DROP TRIGGER governance_legacy_rollback_sequence_delete_guard")
         connection.execute("DELETE FROM governance_outbox_events")
         connection.execute("DELETE FROM governance_audit_events")
         connection.execute("DELETE FROM governance_aggregate_sequences")

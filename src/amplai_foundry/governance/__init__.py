@@ -77,6 +77,7 @@ from amplai_foundry.governance.legacy_lifecycle import (
     LegacyMigrationActivationService,
     LegacyMigrationLifecycleError,
     LegacyMigrationLifecycleState,
+    LegacyMigrationRollbackResult,
 )
 from amplai_foundry.governance.legacy_migration import (
     LegacyApprovalDisposition,
@@ -99,6 +100,7 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyVerifiedProposal,
 )
 from amplai_foundry.governance.legacy_rollback import (
+    LegacyMigrationRollbackExecutor,
     LegacyMigrationRollbackPlan,
     LegacyMigrationRollbackPlanner,
     LegacyRollbackRoot,
@@ -217,8 +219,10 @@ __all__ = [
     "LegacyMigrationImportResult",
     "LegacyMigrationLifecycleError",
     "LegacyMigrationLifecycleState",
+    "LegacyMigrationRollbackExecutor",
     "LegacyMigrationRollbackPlan",
     "LegacyMigrationRollbackPlanner",
+    "LegacyMigrationRollbackResult",
     "LegacyMigrationScanConfig",
     "LegacyMigrationScanError",
     "LegacyMigrationVerificationReport",

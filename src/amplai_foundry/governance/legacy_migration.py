@@ -1439,6 +1439,25 @@ class LegacyProposalImportService:
                 != sum(item.byte_length for item in report.source_files)
             ):
                 raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
+            lifecycle = None
+            if (
+                connection.execute(
+                    """
+                SELECT 1 FROM sqlite_schema WHERE type = 'table'
+                  AND name = 'governance_legacy_migration_lifecycle_heads'
+                """
+                ).fetchone()
+                is not None
+            ):
+                lifecycle = connection.execute(
+                    """
+                    SELECT state FROM governance_legacy_migration_lifecycle_heads
+                    WHERE migration_id = ?
+                    """,
+                    (report.migration_id,),
+                ).fetchone()
+            if lifecycle is not None and str(lifecycle[0]) == "rolled_back":
+                continue
             graph_rows = connection.execute(
                 """
                 SELECT i.proposal_id, i.definition_digest, i.content_revision,

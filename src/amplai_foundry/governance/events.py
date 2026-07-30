@@ -958,6 +958,44 @@ class GovernanceEventService:
             else ()
         )
         for legacy in legacy_rows:
+            rolled_back = (
+                connection.execute(
+                    """
+                    SELECT 1 FROM governance_legacy_migration_lifecycle_heads
+                    WHERE migration_id = ? AND state = 'rolled_back'
+                    """,
+                    (legacy[1],),
+                ).fetchone()
+                is not None
+                if connection.execute(
+                    """
+                    SELECT 1 FROM sqlite_schema WHERE type = 'table'
+                      AND name = 'governance_legacy_migration_lifecycle_heads'
+                    """
+                ).fetchone()
+                is not None
+                else False
+            )
+            if rolled_back:
+                residue = connection.execute(
+                    """
+                    SELECT 1
+                    WHERE EXISTS (
+                        SELECT 1 FROM governance_audit_events
+                        WHERE command_id = ?
+                    ) OR EXISTS (
+                        SELECT 1
+                        FROM governance_outbox_events o
+                        JOIN governance_legacy_rollback_scopes s
+                          ON s.outbox_event_id = o.event_id
+                        WHERE s.migration_id = ? AND s.proposal_id = ?
+                    )
+                    """,
+                    (legacy[0], legacy[1], legacy[4]),
+                ).fetchone()
+                if residue is not None:
+                    raise GovernanceEventError("LEGACY_MIGRATION_ROLLBACK_RESIDUE")
+                continue
             try:
                 legacy_payload = LegacyMigrationProjectionPayload.model_validate_json(
                     str(legacy[16])
