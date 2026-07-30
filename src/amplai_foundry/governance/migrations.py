@@ -2565,6 +2565,63 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=21,
+        name="legacy-migration-verification",
+        statements=(
+            """
+            CREATE TABLE governance_legacy_migration_verifications (
+                verification_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL UNIQUE,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL,
+                snapshot_digest TEXT NOT NULL,
+                plan_digest TEXT NOT NULL,
+                proposal_count INTEGER NOT NULL CHECK (proposal_count >= 1),
+                source_file_count INTEGER NOT NULL CHECK (source_file_count >= 1),
+                report_digest TEXT NOT NULL UNIQUE,
+                report_json TEXT NOT NULL,
+                verified_by TEXT NOT NULL,
+                verified_at TEXT NOT NULL,
+                FOREIGN KEY (migration_id, project_namespace, project_id)
+                    REFERENCES governance_legacy_migrations(
+                        migration_id, project_namespace, project_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(verification_id) = 20
+                    AND substr(verification_id, 1, 4) = 'MVF-'
+                    AND substr(verification_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(snapshot_digest) = 71
+                    AND substr(snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(plan_digest) = 71
+                    AND substr(plan_digest, 1, 7) = 'sha256:'
+                    AND substr(plan_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(report_digest) = 71
+                    AND substr(report_digest, 1, 7) = 'sha256:'
+                    AND substr(report_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_verifications_no_update
+            BEFORE UPDATE ON governance_legacy_migration_verifications
+            BEGIN SELECT RAISE(ABORT, 'legacy verification is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_migration_verifications_no_delete
+            BEFORE DELETE ON governance_legacy_migration_verifications
+            BEGIN SELECT RAISE(ABORT, 'legacy verification is durable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -3216,6 +3273,22 @@ class MigrationRunner:
                         ("payload_json", "TEXT", 1, 0),
                     ),
                 }
+            )
+        if schema_version >= 21:
+            expected_columns["governance_legacy_migration_verifications"] = (
+                ("verification_id", "TEXT", 1, 1),
+                ("migration_id", "TEXT", 1, 0),
+                ("project_namespace", "TEXT", 1, 0),
+                ("project_id", "TEXT", 1, 0),
+                ("snapshot_id", "TEXT", 1, 0),
+                ("snapshot_digest", "TEXT", 1, 0),
+                ("plan_digest", "TEXT", 1, 0),
+                ("proposal_count", "INTEGER", 1, 0),
+                ("source_file_count", "INTEGER", 1, 0),
+                ("report_digest", "TEXT", 1, 0),
+                ("report_json", "TEXT", 1, 0),
+                ("verified_by", "TEXT", 1, 0),
+                ("verified_at", "TEXT", 1, 0),
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

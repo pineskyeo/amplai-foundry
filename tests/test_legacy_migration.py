@@ -1141,6 +1141,89 @@ def test_import_requires_durable_backups_and_atomically_creates_qualified_state(
         service.import_state(plan, backup)
 
 
+def test_verification_rescans_source_and_persists_bidirectional_report(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    imported = service.import_state(plan, backup)
+
+    report = service.verify_import(plan, backup)
+    replay = service.verify_import(plan, backup)
+
+    assert report.migration_id == imported.migration_id
+    assert report.snapshot_digest == plan.snapshot_digest
+    assert report.plan_digest == plan.plan_digest
+    assert len(report.source_files) == 3
+    assert len(report.proposals) == 1
+    assert report.proposals[0].definition_digest == imported.definition_digests[0]
+    assert report.proposals[0].runtime_status == "draft"
+    assert not report.replayed
+    assert replay.model_copy(update={"replayed": False}) == report
+    assert replay.replayed
+    with store.connect() as connection:
+        persisted = connection.execute(
+            """
+            SELECT verification_id, report_digest, proposal_count, source_file_count,
+                   verified_by
+            FROM governance_legacy_migration_verifications
+            """
+        ).fetchone()
+        assert persisted == (
+            report.verification_id,
+            report.report_digest,
+            1,
+            3,
+            plan.freeze.actor_id,
+        )
+        with pytest.raises(sqlite3.DatabaseError, match="verification is immutable"):
+            connection.execute(
+                "UPDATE governance_legacy_migration_verifications SET verified_by = 'other'"
+            )
+
+
+@pytest.mark.parametrize("tamper", ["source", "active"])
+def test_verification_rejects_source_or_import_root_mismatch(
+    tmp_path: Path,
+    tamper: str,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    if tamper == "source":
+        summary = root / ".amplai" / "proposals" / PROPOSAL_ID / "summary.md"
+        summary.write_bytes(summary.read_bytes() + b"tampered")
+        expected = "LEGACY_MIGRATION_VERIFICATION_SOURCE_MISMATCH"
+    else:
+        with store.connect() as connection:
+            connection.execute(
+                """
+                UPDATE governance_active_proposals
+                SET status = 'reviewed', state_revision = state_revision + 1
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                """,
+                (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+            )
+        expected = "LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH"
+
+    with pytest.raises(LegacyMigrationScanError, match=expected):
+        service.verify_import(plan, backup)
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_verifications"
+        ).fetchone() == (0,)
+
+
 def test_migration_root_and_items_are_database_enforced_durable_evidence(
     tmp_path: Path,
 ) -> None:
@@ -1720,6 +1803,7 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
     assert tables == {
         "governance_legacy_migrations",
         "governance_legacy_migration_items",
+        "governance_legacy_migration_verifications",
     }
     assert triggers == {
         "governance_legacy_migrations_insert_guard",
@@ -1728,6 +1812,8 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migration_items_insert_guard",
         "governance_legacy_migration_items_no_update",
         "governance_legacy_migration_items_no_delete",
+        "governance_legacy_migration_verifications_no_update",
+        "governance_legacy_migration_verifications_no_delete",
     }
 
 

@@ -80,6 +80,7 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyMigrationImportResult,
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
+    LegacyMigrationVerificationReport,
     LegacyMutationFreeze,
     LegacyProjectPackBackupManifest,
     LegacyProposalDryRunService,
@@ -89,6 +90,7 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyProposalSnapshot,
     LegacySnapshotFile,
     LegacyTargetStatus,
+    LegacyVerifiedProposal,
 )
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
@@ -202,6 +204,7 @@ __all__ = [
     "LegacyMigrationImportResult",
     "LegacyMigrationScanConfig",
     "LegacyMigrationScanError",
+    "LegacyMigrationVerificationReport",
     "LegacyMutationFreeze",
     "LegacyProjectPackBackupManifest",
     "LegacyProposalDryRunService",
@@ -211,6 +214,7 @@ __all__ = [
     "LegacyProposalSnapshot",
     "LegacySnapshotFile",
     "LegacyTargetStatus",
+    "LegacyVerifiedProposal",
     "OutboxConfig",
     "OutboxDestination",
     "OutboxDispatcher",
