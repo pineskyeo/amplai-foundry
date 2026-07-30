@@ -41,14 +41,18 @@ evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
 - Slice 3: `PASS` at `53d2223`
 - Slice 4 Package 4.1 — A13 verification: `PASS` at `ef6ef06`
 - Slice 4 Package 4.2a — lifecycle activation and Outbox gate: `PASS` at `bebb28e`
-- Full tests: `556/556 PASS`
+- Slice 4 Package 4.2b1 — exact-root rollback plan and attested destination provenance:
+  `PASS` at `c24724c`
+- Full tests: `564/564 PASS`
 - Full verification: `7/7 PASS`
 - Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`
 - Retained advisory: `OPS-S2-06` — interrupted immutable object cleanup/accounting,
   owner `MGC-011 Slice 4`
 - Retained advisory: activation fingerprint 형식, mixed multi-Proposal classification,
   direct Apply/Publish gate와 predecessor trigger 복구 evidence를 Package 4.2 closure에서 보강함
-- Next: Slice 4 Package 4.2b — A14 exact-root pre-activation rollback
+- Retained advisory: attestation failure injection, indirect dependent registry와 immutable
+  object accounting을 Package 4.2 closure에서 보강함
+- Next: Slice 4 Package 4.2b2 — A14 atomic exact-root rollback executor
 
 ## Out Of Scope
 
