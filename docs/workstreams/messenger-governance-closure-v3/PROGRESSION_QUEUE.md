@@ -10,11 +10,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-001 — Governance Store Foundation
   class: code
   gate: PASS at `19698b8`
-- [~] MGC-002 — Immutable Definition Store
+- [x] MGC-002 — Immutable Definition Store
+  class: code
+  gate: PASS at `83ee7b2`
+- [~] MGC-003 — Active Definition CAS And State Machine
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-003 — Active Definition CAS And State Machine
-  class: code
 - [ ] MGC-004 — ActionToken And Decision Replay
   class: code
 - [ ] MGC-005 — Durable Provider Ingress

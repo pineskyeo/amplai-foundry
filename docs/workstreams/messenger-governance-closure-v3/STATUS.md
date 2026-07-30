@@ -6,18 +6,18 @@
 |---|---|
 | Workstream | `messenger-governance-closure-v3` |
 | Status | in-progress |
-| Current Item | `MGC-002` |
-| Completed | `1/16` |
+| Current Item | `MGC-003` |
+| Completed | `2/16` |
 | Baseline | `e78858cba73c70307385458ad37fe2c41e34173b` |
 | Spec | `AMP-SPEC-MGC-003` |
 
 ## Gate
 
 - Planning: PASS
-- Implementation: MGC-001 PASS / MGC-002 READY
-- Subagent Review: MGC-001 PASS — blockers 0
-- Repository Verification: PASS — 213 tests and all verify stages
+- Implementation: MGC-001–002 PASS / MGC-003 READY
+- Subagent Review: MGC-002 PASS — blockers 0
+- Repository Verification: PASS — 230 tests and all verify stages
 
 ## Next
 
-`MGC-002 — Immutable Definition Store`를 구현한다.
+`MGC-003 — Active Definition CAS And State Machine`을 구현한다.
