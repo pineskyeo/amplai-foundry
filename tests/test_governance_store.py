@@ -52,6 +52,29 @@ class CommitFailingConnection:
             self.in_transaction = False
 
 
+class BlockingV2MigrationRunner(MigrationRunner):
+    def __init__(self, marker: Path) -> None:
+        super().__init__()
+        self.marker = marker
+
+    def apply_pending(self, connection: sqlite3.Connection) -> int:
+        def trace(statement: str) -> None:
+            if "CREATE TABLE governance_definition_revisions" in statement:
+                self.marker.write_text("ready", encoding="utf-8")
+                time.sleep(60)
+
+        connection.set_trace_callback(trace)
+        return super().apply_pending(connection)
+
+
+def _run_blocking_v2_migration(database: str, marker: str) -> None:
+    store = GovernanceStore(
+        Path(database),
+        migration_runner=BlockingV2MigrationRunner(Path(marker)),
+    )
+    store.initialize()
+
+
 def _run_blocking_migration(database: str, marker: str) -> None:
     checkpoint = Path(marker)
     migration = Migration(
@@ -133,6 +156,47 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
         }
     assert "governance_active_proposals" in tables
     assert "governance_definition_revisions" in tables
+
+
+def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    marker = tmp_path / "v2-second-ddl-ready"
+    version_one_runner = MigrationRunner((INITIAL_MIGRATIONS[0],))
+    GovernanceStore(path, migration_runner=version_one_runner).initialize()
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(
+        target=_run_blocking_v2_migration,
+        args=(str(path), str(marker)),
+    )
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), "v2 migration이 second DDL checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    version_one = GovernanceStore(path, migration_runner=version_one_runner)
+    assert version_one.check_startup().schema_version == 1
+    with version_one.connect() as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+        versions = connection.execute(
+            "SELECT version FROM governance_schema_migrations ORDER BY version"
+        ).fetchall()
+    assert "governance_active_proposals" not in tables
+    assert "governance_definition_revisions" not in tables
+    assert versions == [(1,)]
+
+    assert GovernanceStore(path).initialize().schema_version == 2
 
 
 def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
@@ -319,6 +383,32 @@ def test_required_schema_constraint_drift_fails_startup_check(tmp_path: Path) ->
         connection.execute("PRAGMA writable_schema = OFF")
 
     with pytest.raises(GovernanceMigrationError, match="schema SQL"):
+        store.check_startup()
+
+
+def test_orphan_definition_revision_fails_startup_foreign_key_check(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    store = GovernanceStore(path)
+    store.initialize()
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_definition_revisions(
+                project_namespace, project_id, proposal_id, content_revision,
+                definition_digest, previous_definition_digest, activated_from_status,
+                activated_at
+            )
+            VALUES (?, ?, ?, 1, ?, NULL, NULL, '2026-07-30T00:00:00Z')
+            """,
+            (
+                "org/default/project/missing",
+                "missing",
+                "PROP-20260730-ABCDEF12",
+                f"sha256:{'1' * 64}",
+            ),
+        )
+
+    with pytest.raises(GovernanceStoreError, match="foreign key integrity"):
         store.check_startup()
 
 

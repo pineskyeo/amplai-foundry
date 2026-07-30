@@ -200,6 +200,53 @@ def test_missing_or_corrupt_definition_fails_before_initial_state_mutation(tmp_p
     assert repository.get(PROPOSAL) is None
 
 
+def test_initial_revision_insert_failure_rolls_back_new_active_row(tmp_path: Path) -> None:
+    store, objects, repository = _repository(tmp_path)
+    definition = _definition(objects, PROPOSAL, "initial-failure")
+    failing = FailingRevisionRepository(store, objects)
+
+    with pytest.raises(RuntimeError, match="injected"):
+        failing.activate_definition_revision(
+            PROPOSAL,
+            expected_active_digest=None,
+            expected_state_revision=0,
+            next_object_ref=definition,
+        )
+
+    assert repository.get(PROPOSAL) is None
+    assert repository.list_definition_revisions(PROPOSAL) == ()
+
+
+def test_concurrent_initial_activation_has_exactly_one_winner(tmp_path: Path) -> None:
+    _store, objects, repository = _repository(tmp_path)
+    candidates = (
+        _definition(objects, PROPOSAL, "initial-a"),
+        _definition(objects, PROPOSAL, "initial-b"),
+    )
+
+    def activate(candidate: DefinitionObjectRef) -> str:
+        try:
+            repository.activate_definition_revision(
+                PROPOSAL,
+                expected_active_digest=None,
+                expected_state_revision=0,
+                next_object_ref=candidate,
+            )
+        except DefinitionCASConflictError:
+            return "conflict"
+        return "accepted"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(activate, candidates))
+
+    assert sorted(results) == ["accepted", "conflict"]
+    current = repository.get(PROPOSAL)
+    assert current is not None
+    assert current.active_definition_digest in {candidate.digest for candidate in candidates}
+    assert (current.content_revision, current.state_revision, current.decision_epoch) == (1, 1, 1)
+    assert len(repository.list_definition_revisions(PROPOSAL)) == 1
+
+
 def test_definition_revisions_increment_all_counters_and_changes_requested_returns_to_draft(
     tmp_path: Path,
 ) -> None:

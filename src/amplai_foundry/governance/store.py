@@ -254,6 +254,11 @@ class GovernanceStore:
         integrity_rows = connection.execute("PRAGMA integrity_check").fetchall()
         if integrity_rows != [("ok",)]:
             raise GovernanceStoreError(f"SQLite integrity check 실패: {integrity_rows}")
+        foreign_key_rows = connection.execute("PRAGMA foreign_key_check").fetchall()
+        if foreign_key_rows:
+            raise GovernanceStoreError(
+                f"SQLite foreign key integrity check 실패: {foreign_key_rows}"
+            )
 
     @staticmethod
     def _probe_wal_write(connection: sqlite3.Connection) -> None:
