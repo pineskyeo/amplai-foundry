@@ -2015,9 +2015,14 @@ class LegacyProposalImportService:
             """,
             (destination_ref,),
         ).fetchone()
-        current_revision = int(str(active[2]))
-        if latest is None:
-            return destination_ref, max(item.state_revision, current_revision)
+        active_matches_import = (
+            int(str(active[1])) == item.content_revision
+            and int(str(active[2])) == item.state_revision
+            and int(str(active[3])) == item.decision_epoch
+            and str(active[4]) == item.target_status.value
+        )
+        if latest is None and active_matches_import:
+            return destination_ref, item.state_revision
         historical_destination_ref = (
             f"migration-history:{plan.plan_id}:"
             f"{item.proposal_ref.project_ref.namespace}:"
