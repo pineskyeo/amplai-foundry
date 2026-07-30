@@ -15,11 +15,11 @@
 
 - Planning: PASS
 - Implementation: MGC-001–010 PASS / MGC-011 ACTIVE
-- Subagent Review: MGC-011 Slice 4 Package 4.1 PASS at `ef6ef06` — P0/P1/Blocking-P2 0
+- Subagent Review: MGC-011 Slice 4 Package 4.2a PASS at `bebb28e` — P0/P1/Blocking-P2 0
 - Repository Verification: PASS — all seven verify stages
 
 ## Next
 
-`MGC-011 — V2 Migration` Slice 4 Package 4.2의 pre-activation rollback,
-activation boundary와 forward-recovery tests를 구현한다. A13 verification은
-`ef6ef06`에서 완료되었다.
+`MGC-011 — V2 Migration` Slice 4 Package 4.2b의 exact-root pre-activation
+rollback을 구현한다. Lifecycle activation과 Outbox gate foundation은 `bebb28e`에서
+완료되었다.

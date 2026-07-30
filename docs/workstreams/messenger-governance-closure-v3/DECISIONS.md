@@ -23,3 +23,9 @@
 - Status: accepted
 - Decision: 각 implementation item은 subagent code/contract/operations review를 통과한다.
 - Source: 사용자 요청
+
+## D-005 — Reachable Migration Immutability
+
+- Status: accepted
+- Decision: 이미 도달 가능한 schema migration body와 checksum은 변경하지 않고 보강은 새 additive migration으로 적용한다.
+- Source: MGC-011 Slice 4 Package 4.2a compatibility review

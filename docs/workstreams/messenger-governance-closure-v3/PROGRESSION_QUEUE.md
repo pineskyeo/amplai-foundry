@@ -40,7 +40,7 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [~] MGC-011 — V2 Migration
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-  progress: Slice 4 Package 4.1 A13 verification PASS at `ef6ef06`; Package 4.2 A14/A15 next
+  progress: Slice 4 Package 4.2a lifecycle activation/Outbox gate PASS at `bebb28e`; Package 4.2b A14 exact-root rollback next
 - [ ] MGC-012 — Slack Reference Adapter
   class: code
 - [ ] MGC-013 — Telegram Reference Adapter
