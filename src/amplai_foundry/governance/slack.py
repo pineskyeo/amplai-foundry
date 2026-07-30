@@ -47,6 +47,10 @@ class SlackInstallationPolicy:
     workspace_ids: frozenset[str]
     enterprise_ids: frozenset[str] = frozenset()
     max_clock_skew: timedelta = timedelta(minutes=5)
+    max_raw_body_bytes: int = 1_048_576
+    max_json_depth: int = 32
+    max_json_nodes: int = 2_048
+    max_json_string_bytes: int = 65_536
     action_ids: Mapping[str, DecisionAction] = field(
         default_factory=lambda: _DEFAULT_ACTIONS,
         repr=False,
@@ -66,8 +70,21 @@ class SlackInstallationPolicy:
             raise ValueError("Slack installation policy 필수 값이 비어 있습니다.")
         if self.max_clock_skew <= timedelta(0):
             raise ValueError("Slack max_clock_skew는 0보다 커야 합니다.")
+        if (
+            not 1 <= self.max_raw_body_bytes <= 1_048_576
+            or self.max_json_depth < 1
+            or self.max_json_nodes < 1
+            or self.max_json_string_bytes < 1
+        ):
+            raise ValueError("Slack parser budget이 올바르지 않습니다.")
         if not action_ids:
             raise ValueError("Slack action ID mapping이 필요합니다.")
+        if len(workspace_ids) != 1:
+            raise ValueError("Slack installation policy는 하나의 workspace에 결합해야 합니다.")
+        workspace_id = next(iter(workspace_ids))
+        expected_installation_ref = f"{workspace_id}:{self.api_app_id}"
+        if self.provider_installation_ref != expected_installation_ref:
+            raise ValueError("Slack installation은 workspace_id:api_app_id 형식이어야 합니다.")
         object.__setattr__(self, "workspace_ids", workspace_ids)
         object.__setattr__(self, "enterprise_ids", enterprise_ids)
         object.__setattr__(self, "action_ids", action_ids)
@@ -90,6 +107,8 @@ class SlackBlockActionAuthenticator:
             raise IngressError("SLACK_PROVIDER_MISMATCH")
         if envelope.provider_installation_ref != self.policy.provider_installation_ref:
             raise IngressError("SLACK_INSTALLATION_DENIED")
+        if len(envelope.raw_body) > self.policy.max_raw_body_bytes:
+            raise IngressError("SLACK_PAYLOAD_TOO_LARGE")
         headers = self._headers(envelope.headers)
         self._verify_signature(headers, envelope.raw_body)
         payload = self._payload(envelope.raw_body)
@@ -132,6 +151,7 @@ class SlackBlockActionAuthenticator:
     ) -> VerifiedProviderCommand:
         if payload.get("type") != "block_actions":
             raise IngressError("SLACK_PAYLOAD_UNSUPPORTED")
+        self._text(payload.get("trigger_id"))
         api_app_id = self._text(payload.get("api_app_id"))
         if api_app_id != self.policy.api_app_id:
             raise IngressError("SLACK_APP_DENIED")
@@ -156,6 +176,7 @@ class SlackBlockActionAuthenticator:
         if action.get("type") != "button":
             raise IngressError("SLACK_PAYLOAD_UNSUPPORTED")
         action_id = self._text(action.get("action_id"))
+        self._text(action.get("block_id"))
         decision = self.policy.action_ids.get(action_id)
         if decision is None:
             raise IngressError("SLACK_ACTION_UNSUPPORTED")
@@ -201,8 +222,7 @@ class SlackBlockActionAuthenticator:
             normalized[key] = value.strip()
         return MappingProxyType(normalized)
 
-    @classmethod
-    def _payload(cls, raw_body: bytes) -> Mapping[str, object]:
+    def _payload(self, raw_body: bytes) -> Mapping[str, object]:
         try:
             text = raw_body.decode("utf-8", errors="strict")
             fields = parse_qsl(
@@ -218,13 +238,14 @@ class SlackBlockActionAuthenticator:
         try:
             payload = json.loads(
                 fields[0][1],
-                object_pairs_hook=cls._unique_object,
-                parse_constant=cls._reject_json_constant,
+                object_pairs_hook=self._unique_object,
+                parse_constant=self._reject_json_constant,
             )
-        except (json.JSONDecodeError, ValueError) as error:
+        except (json.JSONDecodeError, RecursionError, ValueError) as error:
             raise IngressError("SLACK_PAYLOAD_INVALID") from error
         if not isinstance(payload, dict):
             raise IngressError("SLACK_PAYLOAD_INVALID")
+        self._validate_json_budget(payload)
         return payload
 
     @staticmethod
@@ -239,6 +260,24 @@ class SlackBlockActionAuthenticator:
     @staticmethod
     def _reject_json_constant(value: str) -> object:
         raise ValueError(f"non-finite Slack JSON value: {value}")
+
+    def _validate_json_budget(self, payload: object) -> None:
+        nodes = 0
+        stack: list[tuple[object, int]] = [(payload, 1)]
+        while stack:
+            value, depth = stack.pop()
+            nodes += 1
+            if nodes > self.policy.max_json_nodes or depth > self.policy.max_json_depth:
+                raise IngressError("SLACK_PAYLOAD_INVALID")
+            if isinstance(value, dict):
+                stack.extend((key, depth + 1) for key in value)
+                stack.extend((item, depth + 1) for item in value.values())
+            elif isinstance(value, list):
+                stack.extend((item, depth + 1) for item in value)
+            elif isinstance(value, str) and (
+                len(value.encode("utf-8")) > self.policy.max_json_string_bytes
+            ):
+                raise IngressError("SLACK_PAYLOAD_INVALID")
 
     @staticmethod
     def _mapping(value: object) -> Mapping[str, object]:
