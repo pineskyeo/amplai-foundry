@@ -739,6 +739,217 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=9,
+        name="apply-grant-job-foundation",
+        statements=(
+            """
+            CREATE TABLE governance_approved_snapshots (
+                snapshot_id TEXT PRIMARY KEY NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                snapshot_digest TEXT NOT NULL UNIQUE,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 2),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                expected_base_revision TEXT NOT NULL,
+                approved_at TEXT NOT NULL,
+                UNIQUE (
+                    project_namespace, project_id, proposal_id,
+                    definition_digest, content_revision, decision_epoch
+                ),
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_approved_snapshots_no_update
+            BEFORE UPDATE ON governance_approved_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'approved snapshot is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_approved_snapshots_no_delete
+            BEFORE DELETE ON governance_approved_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'approved snapshot is durable');
+            END
+            """,
+            """
+            CREATE TABLE governance_apply_grants (
+                grant_id TEXT PRIMARY KEY NOT NULL,
+                grant_hash TEXT NOT NULL UNIQUE,
+                snapshot_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                approved_snapshot_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 2),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                allowed_actor_id TEXT NOT NULL,
+                allowed_actor_type TEXT NOT NULL CHECK (allowed_actor_type = 'human'),
+                bound_channel_json TEXT NOT NULL,
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN ('issued', 'consumed', 'expired', 'revoked')),
+                resolved_at TEXT,
+                FOREIGN KEY (snapshot_id)
+                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
+                CHECK (
+                    length(grant_hash) = 71
+                    AND substr(grant_hash, 1, 7) = 'sha256:'
+                    AND substr(grant_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (state = 'issued' AND resolved_at IS NULL)
+                    OR (state != 'issued' AND resolved_at IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_apply_grants_immutable_issuance
+            BEFORE UPDATE ON governance_apply_grants
+            WHEN OLD.grant_id != NEW.grant_id
+              OR OLD.grant_hash != NEW.grant_hash
+              OR OLD.snapshot_id != NEW.snapshot_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.approved_snapshot_digest != NEW.approved_snapshot_digest
+              OR OLD.content_revision != NEW.content_revision
+              OR OLD.state_revision != NEW.state_revision
+              OR OLD.decision_epoch != NEW.decision_epoch
+              OR OLD.allowed_actor_id != NEW.allowed_actor_id
+              OR OLD.allowed_actor_type != NEW.allowed_actor_type
+              OR OLD.bound_channel_json != NEW.bound_channel_json
+              OR OLD.issued_at != NEW.issued_at
+              OR OLD.expires_at != NEW.expires_at
+            BEGIN
+                SELECT RAISE(ABORT, 'apply grant issuance is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_apply_grants_no_delete
+            BEFORE DELETE ON governance_apply_grants
+            BEGIN
+                SELECT RAISE(ABORT, 'apply grant is durable');
+            END
+            """,
+            """
+            CREATE TABLE governance_apply_jobs (
+                job_id TEXT PRIMARY KEY NOT NULL,
+                snapshot_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                approved_snapshot_digest TEXT NOT NULL,
+                expected_base_revision TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (
+                    status IN (
+                        'queued', 'leased', 'running', 'retry_wait', 'staged',
+                        'publish_pending', 'succeeded', 'dead_letter', 'recovery_hold'
+                    )
+                ),
+                attempts INTEGER NOT NULL CHECK (attempts >= 0),
+                fencing_token INTEGER NOT NULL CHECK (fencing_token >= 0),
+                lease_owner TEXT,
+                lease_expires_at TEXT,
+                retry_at TEXT,
+                staged_artifact_digest TEXT,
+                publish_request_digest TEXT,
+                last_error_code TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (snapshot_id)
+                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
+                CHECK (
+                    (status IN ('leased', 'running')
+                     AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+                    OR (status NOT IN ('leased', 'running')
+                     AND lease_owner IS NULL AND lease_expires_at IS NULL)
+                ),
+                CHECK (
+                    (status = 'retry_wait' AND retry_at IS NOT NULL)
+                    OR (status != 'retry_wait' AND retry_at IS NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_active_apply_job
+            ON governance_apply_jobs(project_namespace, project_id, proposal_id)
+            WHERE status IN (
+                'queued', 'leased', 'running', 'retry_wait', 'staged',
+                'publish_pending', 'recovery_hold'
+            )
+            """,
+            """
+            CREATE TRIGGER governance_apply_job_identity_immutable
+            BEFORE UPDATE ON governance_apply_jobs
+            WHEN OLD.job_id != NEW.job_id
+              OR OLD.snapshot_id != NEW.snapshot_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.approved_snapshot_digest != NEW.approved_snapshot_digest
+              OR OLD.expected_base_revision != NEW.expected_base_revision
+              OR OLD.created_at != NEW.created_at
+            BEGIN
+                SELECT RAISE(ABORT, 'apply job identity is immutable');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_apply_jobs_no_delete
+            BEFORE DELETE ON governance_apply_jobs
+            BEGIN
+                SELECT RAISE(ABORT, 'apply job is durable');
+            END
+            """,
+            """
+            CREATE TABLE governance_apply_request_results (
+                idempotency_key TEXT PRIMARY KEY NOT NULL,
+                request_fingerprint TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL,
+                job_id TEXT NOT NULL UNIQUE,
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                channel_json TEXT NOT NULL,
+                proposal_status TEXT NOT NULL CHECK (proposal_status = 'apply_requested'),
+                processed_at TEXT NOT NULL,
+                FOREIGN KEY (snapshot_id)
+                    REFERENCES governance_approved_snapshots(snapshot_id) ON DELETE RESTRICT,
+                FOREIGN KEY (job_id)
+                    REFERENCES governance_apply_jobs(job_id) ON DELETE RESTRICT,
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_apply_request_results_no_update
+            BEFORE UPDATE ON governance_apply_request_results
+            BEGIN
+                SELECT RAISE(ABORT, 'apply request result is append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_apply_request_results_no_delete
+            BEFORE DELETE ON governance_apply_request_results
+            BEGIN
+                SELECT RAISE(ABORT, 'apply request result is durable');
+            END
+            """,
+        ),
+    ),
 )
 
 
@@ -1058,6 +1269,77 @@ class MigrationRunner:
                 *expected_columns["governance_audit_events"],
                 ("destination_manifest_digest", "TEXT", 0, 0),
                 ("destination_count", "INTEGER", 0, 0),
+            )
+        if schema_version >= 9:
+            expected_columns.update(
+                {
+                    "governance_approved_snapshots": (
+                        ("snapshot_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("snapshot_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("expected_base_revision", "TEXT", 1, 0),
+                        ("approved_at", "TEXT", 1, 0),
+                    ),
+                    "governance_apply_grants": (
+                        ("grant_id", "TEXT", 1, 1),
+                        ("grant_hash", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("approved_snapshot_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("allowed_actor_id", "TEXT", 1, 0),
+                        ("allowed_actor_type", "TEXT", 1, 0),
+                        ("bound_channel_json", "TEXT", 1, 0),
+                        ("issued_at", "TEXT", 1, 0),
+                        ("expires_at", "TEXT", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("resolved_at", "TEXT", 0, 0),
+                    ),
+                    "governance_apply_jobs": (
+                        ("job_id", "TEXT", 1, 1),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("approved_snapshot_digest", "TEXT", 1, 0),
+                        ("expected_base_revision", "TEXT", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("attempts", "INTEGER", 1, 0),
+                        ("fencing_token", "INTEGER", 1, 0),
+                        ("lease_owner", "TEXT", 0, 0),
+                        ("lease_expires_at", "TEXT", 0, 0),
+                        ("retry_at", "TEXT", 0, 0),
+                        ("staged_artifact_digest", "TEXT", 0, 0),
+                        ("publish_request_digest", "TEXT", 0, 0),
+                        ("last_error_code", "TEXT", 0, 0),
+                        ("created_at", "TEXT", 1, 0),
+                        ("updated_at", "TEXT", 1, 0),
+                    ),
+                    "governance_apply_request_results": (
+                        ("idempotency_key", "TEXT", 1, 1),
+                        ("request_fingerprint", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("job_id", "TEXT", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("channel_json", "TEXT", 1, 0),
+                        ("proposal_status", "TEXT", 1, 0),
+                        ("processed_at", "TEXT", 1, 0),
+                    ),
+                }
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

@@ -225,6 +225,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (6, "ordered-transactional-outbox"),
         (7, "decision-outbox-integrity-roots"),
         (8, "audit-manifest-integrity-finalize"),
+        (9, "apply-grant-job-foundation"),
     ]
     assert metadata == ("amplai-governance",)
 
