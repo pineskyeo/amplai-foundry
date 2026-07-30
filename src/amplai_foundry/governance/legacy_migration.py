@@ -9,10 +9,10 @@ import re
 import stat
 from collections.abc import Callable
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.models import Digest, ProposalRef
@@ -21,6 +21,23 @@ from amplai_foundry.proposals.models import Proposal, ProposalStatus
 _PROPOSAL_ID = re.compile(r"^PROP-[0-9]{8}-[A-F0-9]{8}$")
 _FREEZE_ID = re.compile(r"^MFR-[A-F0-9]{16}$")
 _GIT_REVISION = re.compile(r"^[0-9a-f]{7,64}$")
+
+
+def _canonical_json(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _digest(value: bytes) -> str:
+    return f"sha256:{hashlib.sha256(value).hexdigest()}"
 
 
 class LegacyMigrationScanError(RuntimeError):
@@ -45,6 +62,9 @@ class LegacyMutationFreeze(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     freeze_id: str
+    project_ref: ProjectRef
+    source_root: str = Field(min_length=1)
+    base_revision: str
     actor_id: str = Field(min_length=1, max_length=128)
     frozen_at: AwareDatetime
     reason: str = Field(min_length=1, max_length=512)
@@ -52,6 +72,11 @@ class LegacyMutationFreeze(BaseModel):
     def model_post_init(self, __context: object) -> None:
         if _FREEZE_ID.fullmatch(self.freeze_id) is None:
             raise ValueError("freeze_id 형식이 올바르지 않습니다.")
+        source_root = Path(self.source_root)
+        if not source_root.is_absolute() or str(source_root) != self.source_root:
+            raise ValueError("source_root는 normalized absolute path여야 합니다.")
+        if _GIT_REVISION.fullmatch(self.base_revision) is None:
+            raise ValueError("base_revision 형식이 올바르지 않습니다.")
 
 
 class LegacySnapshotFile(BaseModel):
@@ -60,6 +85,13 @@ class LegacySnapshotFile(BaseModel):
     relative_path: str = Field(min_length=1)
     byte_length: int = Field(ge=0)
     content_digest: Digest
+
+    @model_validator(mode="after")
+    def validate_relative_path(self) -> LegacySnapshotFile:
+        path = PurePosixPath(self.relative_path)
+        if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+            raise ValueError("relative_path가 canonical relative path가 아닙니다.")
+        return self
 
 
 class LegacyProposalSnapshot(BaseModel):
@@ -72,11 +104,40 @@ class LegacyProposalSnapshot(BaseModel):
     total_bytes: int = Field(ge=0)
     snapshot_digest: Digest
 
+    @model_validator(mode="after")
+    def validate_derived_identity(self) -> LegacyProposalSnapshot:
+        paths = tuple(item.relative_path for item in self.files)
+        if paths != tuple(sorted(paths, key=lambda value: value.encode("utf-8"))):
+            raise ValueError("snapshot file order가 canonical하지 않습니다.")
+        if len(paths) != len(set(paths)) or self.total_bytes != sum(
+            item.byte_length for item in self.files
+        ):
+            raise ValueError("snapshot file identity 또는 byte count가 일치하지 않습니다.")
+        preimage = {
+            "files": [entry.model_dump(mode="json") for entry in self.files],
+            "project_ref": self.project_ref.model_dump(mode="json"),
+        }
+        digest = _digest(_canonical_json(preimage))
+        if self.snapshot_digest != digest or self.snapshot_id != f"MPS-{digest[-16:].upper()}":
+            raise ValueError("snapshot derived identity가 일치하지 않습니다.")
+        return self
+
 
 class LegacyApprovalDisposition(StrEnum):
     NOT_REQUIRED = "not_required"
     LEGACY_AUDIT_PRESENT = "legacy_audit_present"
     SYNTHETIC_REQUIRED = "synthetic_required"
+
+
+class LegacyTargetStatus(StrEnum):
+    DRAFT = "draft"
+    REVIEWED = "reviewed"
+    CHANGES_REQUESTED = "changes_requested"
+    APPROVED = "approved"
+    APPLIED = "applied"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+    LEGACY_APPROVAL_REVIEW_REQUIRED = "legacy_approval_review_required"
 
 
 class LegacyProposalPlanItem(BaseModel):
@@ -85,7 +146,7 @@ class LegacyProposalPlanItem(BaseModel):
     proposal_ref: ProposalRef
     source_status: ProposalStatus
     source_revision: int = Field(ge=1)
-    target_status: str
+    target_status: LegacyTargetStatus
     content_revision: int = Field(ge=1)
     state_revision: int = Field(ge=1)
     decision_epoch: int = Field(ge=1)
@@ -108,6 +169,32 @@ class LegacyProposalMigrationPlan(BaseModel):
     validation_policy_ref: str = Field(min_length=1, max_length=256)
     proposals: tuple[LegacyProposalPlanItem, ...]
     plan_digest: Digest
+
+    @model_validator(mode="after")
+    def validate_derived_identity(self) -> LegacyProposalMigrationPlan:
+        refs = tuple(item.proposal_ref for item in self.proposals)
+        if len(refs) != len(set(refs)):
+            raise ValueError("migration plan ProposalRef는 고유해야 합니다.")
+        if any(ref.project_ref != self.project_ref for ref in refs):
+            raise ValueError("migration plan Project scope가 일치하지 않습니다.")
+        if self.freeze.project_ref != self.project_ref:
+            raise ValueError("migration plan freeze Project scope가 일치하지 않습니다.")
+        if self.freeze.base_revision != self.base_revision:
+            raise ValueError("migration plan freeze base revision이 일치하지 않습니다.")
+        preimage = {
+            "base_revision": self.base_revision,
+            "freeze": self.freeze.model_dump(mode="json"),
+            "mapping_policy_version": self.mapping_policy_version,
+            "project_ref": self.project_ref.model_dump(mode="json"),
+            "proposals": [item.model_dump(mode="json") for item in self.proposals],
+            "snapshot_digest": self.snapshot_digest,
+            "snapshot_id": self.snapshot_id,
+            "validation_policy_ref": self.validation_policy_ref,
+        }
+        digest = _digest(_canonical_json(preimage))
+        if self.plan_digest != digest or self.plan_id != f"MPL-{digest[-16:].upper()}":
+            raise ValueError("migration plan derived identity가 일치하지 않습니다.")
+        return self
 
 
 class LegacyProposalDryRunService:
@@ -138,6 +225,7 @@ class LegacyProposalDryRunService:
             raise LegacyMigrationScanError("LEGACY_BASE_REVISION_INVALID")
         if not validation_policy_ref.strip():
             raise LegacyMigrationScanError("LEGACY_VALIDATION_POLICY_INVALID")
+        self._validate_freeze(freeze, base_revision=base_revision)
         snapshot, payloads = self._snapshot(freeze)
         items = tuple(
             self._plan_item(relative_path, payloads[relative_path], snapshot)
@@ -156,7 +244,7 @@ class LegacyProposalDryRunService:
             "snapshot_id": snapshot.snapshot_id,
             "validation_policy_ref": validation_policy_ref,
         }
-        plan_digest = self._digest(self._canonical_json(preimage))
+        plan_digest = _digest(_canonical_json(preimage))
         return LegacyProposalMigrationPlan(
             plan_id=f"MPL-{plan_digest[-16:].upper()}",
             project_ref=self.project_ref,
@@ -177,6 +265,7 @@ class LegacyProposalDryRunService:
         self,
         freeze: LegacyMutationFreeze,
     ) -> tuple[LegacyProposalSnapshot, dict[str, bytes]]:
+        self._validate_freeze(freeze)
         root_identities = self._validate_roots()
         before = self._enumerate_files()
         if len(before) > self.config.maximum_files:
@@ -196,7 +285,7 @@ class LegacyProposalDryRunService:
                 LegacySnapshotFile(
                     relative_path=relative_path,
                     byte_length=len(payload),
-                    content_digest=self._digest(payload),
+                    content_digest=_digest(payload),
                 )
             )
         after = self._enumerate_files()
@@ -206,7 +295,7 @@ class LegacyProposalDryRunService:
             "files": [entry.model_dump(mode="json") for entry in entries],
             "project_ref": self.project_ref.model_dump(mode="json"),
         }
-        digest = self._digest(self._canonical_json(preimage))
+        digest = _digest(_canonical_json(preimage))
         return (
             LegacyProposalSnapshot(
                 snapshot_id=f"MPS-{digest[-16:].upper()}",
@@ -226,7 +315,10 @@ class LegacyProposalDryRunService:
         snapshot: LegacyProposalSnapshot,
     ) -> LegacyProposalPlanItem:
         proposal_id = Path(relative_path).parent.name
-        if _PROPOSAL_ID.fullmatch(proposal_id) is None:
+        if (
+            _PROPOSAL_ID.fullmatch(proposal_id) is None
+            or relative_path != f"{proposal_id}/proposal.yaml"
+        ):
             raise LegacyMigrationScanError("LEGACY_PROPOSAL_PATH_INVALID")
         try:
             raw = yaml.safe_load(payload)
@@ -242,7 +334,7 @@ class LegacyProposalDryRunService:
             raise LegacyMigrationScanError("LEGACY_PROJECT_SCOPE_MISMATCH")
         audit_path = f"{proposal_id}/approval-audit.json"
         approval = self._approval_disposition(proposal.status, audit_path, snapshot)
-        target_status = (
+        target_status = LegacyTargetStatus(
             "legacy_approval_review_required"
             if approval is LegacyApprovalDisposition.SYNTHETIC_REQUIRED
             else proposal.status.value
@@ -255,7 +347,7 @@ class LegacyProposalDryRunService:
             content_revision=proposal.revision,
             state_revision=self._state_revision(proposal.status, target_status),
             decision_epoch=1,
-            proposal_artifact_digest=self._digest(payload),
+            proposal_artifact_digest=_digest(payload),
             approval_disposition=approval,
             legacy_git_revision=proposal.git_commit_sha,
             source_ids=tuple(proposal.source_ids),
@@ -300,6 +392,19 @@ class LegacyProposalDryRunService:
         if self.legacy_root.resolve(strict=True).parent.parent != self.project_root:
             raise LegacyMigrationScanError("LEGACY_SOURCE_ROOT_ESCAPE")
         return self._root_identities()
+
+    def _validate_freeze(
+        self,
+        freeze: LegacyMutationFreeze,
+        *,
+        base_revision: str | None = None,
+    ) -> None:
+        if freeze.project_ref != self.project_ref:
+            raise LegacyMigrationScanError("LEGACY_FREEZE_PROJECT_MISMATCH")
+        if freeze.source_root != str(self.legacy_root):
+            raise LegacyMigrationScanError("LEGACY_FREEZE_SOURCE_ROOT_MISMATCH")
+        if base_revision is not None and freeze.base_revision != base_revision:
+            raise LegacyMigrationScanError("LEGACY_FREEZE_BASE_REVISION_MISMATCH")
 
     def _root_identities(self) -> tuple[tuple[int, int], tuple[int, int]]:
         try:
@@ -393,20 +498,3 @@ class LegacyProposalDryRunService:
         finally:
             if descriptor >= 0:
                 os.close(descriptor)
-
-    @staticmethod
-    def _canonical_json(value: object) -> bytes:
-        return (
-            json.dumps(
-                value,
-                ensure_ascii=False,
-                allow_nan=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            )
-            + "\n"
-        ).encode("utf-8")
-
-    @staticmethod
-    def _digest(value: bytes) -> str:
-        return f"sha256:{hashlib.sha256(value).hexdigest()}"

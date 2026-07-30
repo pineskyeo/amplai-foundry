@@ -82,6 +82,7 @@ from amplai_foundry.governance.legacy_migration import (
     LegacyProposalPlanItem,
     LegacyProposalSnapshot,
     LegacySnapshotFile,
+    LegacyTargetStatus,
 )
 from amplai_foundry.governance.models import (
     ActorBindingStatus,
@@ -197,6 +198,7 @@ __all__ = [
     "LegacyProposalPlanItem",
     "LegacyProposalSnapshot",
     "LegacySnapshotFile",
+    "LegacyTargetStatus",
     "OutboxConfig",
     "OutboxDestination",
     "OutboxDispatcher",
