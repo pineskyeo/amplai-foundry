@@ -31,7 +31,12 @@
     "AuthorityPermission": {
       "enum": [
         "proposal.read",
+        "proposal.submit_review",
         "proposal.decide",
+        "proposal.request_apply",
+        "proposal.apply.execute",
+        "authority.binding.manage",
+        "activation.manage",
         "proposal.apply"
       ],
       "title": "AuthorityPermission",

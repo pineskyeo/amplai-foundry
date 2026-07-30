@@ -303,6 +303,132 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=5,
+        name="authority-actor-binding",
+        statements=(
+            """
+            CREATE TABLE governance_actors (
+                actor_id TEXT PRIMARY KEY NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type IN ('human', 'service', 'agent')),
+                actor_profile TEXT NOT NULL CHECK (
+                    actor_profile IN ('standard', 'intake_policy')
+                ),
+                status TEXT NOT NULL CHECK (status IN ('active', 'disabled')),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                CHECK (
+                    substr(actor_id, 1, 4) = 'ACT-'
+                    AND length(actor_id) > 4
+                    AND substr(actor_id, 5) NOT GLOB '*[^A-Z0-9-]*'
+                )
+            )
+            """,
+            """
+            CREATE TABLE governance_external_actor_bindings (
+                binding_id TEXT PRIMARY KEY NOT NULL,
+                provider TEXT NOT NULL CHECK (
+                    provider IN ('slack', 'telegram', 'hermes', 'web', 'cli')
+                ),
+                provider_installation_ref TEXT NOT NULL,
+                external_actor_id TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                binding_version INTEGER NOT NULL CHECK (binding_version >= 1),
+                status TEXT NOT NULL CHECK (status IN ('active', 'disabled')),
+                created_at TEXT NOT NULL,
+                disabled_at TEXT,
+                UNIQUE (
+                    provider, provider_installation_ref, external_actor_id, binding_version
+                ),
+                FOREIGN KEY (actor_id) REFERENCES governance_actors(actor_id) ON DELETE RESTRICT,
+                CHECK (
+                    (status = 'active' AND disabled_at IS NULL)
+                    OR (status = 'disabled' AND disabled_at IS NOT NULL)
+                )
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_active_external_binding
+            ON governance_external_actor_bindings(
+                provider, provider_installation_ref, external_actor_id
+            )
+            WHERE status = 'active'
+            """,
+            """
+            CREATE TABLE governance_actor_permissions (
+                actor_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                permission TEXT NOT NULL CHECK (
+                    permission IN (
+                        'proposal.read', 'proposal.submit_review', 'proposal.decide',
+                        'proposal.request_apply', 'proposal.apply.execute',
+                        'authority.binding.manage', 'activation.manage'
+                    )
+                ),
+                granted_at TEXT NOT NULL,
+                granted_by TEXT NOT NULL,
+                PRIMARY KEY (actor_id, project_namespace, project_id, permission),
+                FOREIGN KEY (actor_id) REFERENCES governance_actors(actor_id) ON DELETE RESTRICT,
+                FOREIGN KEY (granted_by) REFERENCES governance_actors(actor_id) ON DELETE RESTRICT
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TABLE governance_binding_transitions (
+                transition_id TEXT PRIMARY KEY NOT NULL,
+                transition_type TEXT NOT NULL CHECK (
+                    transition_type IN ('create', 'rebind', 'disable')
+                ),
+                provider TEXT NOT NULL,
+                provider_installation_ref TEXT NOT NULL,
+                external_actor_id TEXT NOT NULL,
+                before_binding_id TEXT,
+                after_binding_id TEXT,
+                before_actor_id TEXT,
+                after_actor_id TEXT,
+                approval_id TEXT NOT NULL UNIQUE,
+                approved_by TEXT NOT NULL,
+                reason TEXT NOT NULL CHECK (length(trim(reason)) >= 3),
+                occurred_at TEXT NOT NULL,
+                FOREIGN KEY (before_binding_id)
+                    REFERENCES governance_external_actor_bindings(binding_id) ON DELETE RESTRICT,
+                FOREIGN KEY (after_binding_id)
+                    REFERENCES governance_external_actor_bindings(binding_id) ON DELETE RESTRICT,
+                FOREIGN KEY (before_actor_id)
+                    REFERENCES governance_actors(actor_id) ON DELETE RESTRICT,
+                FOREIGN KEY (after_actor_id)
+                    REFERENCES governance_actors(actor_id) ON DELETE RESTRICT,
+                FOREIGN KEY (approved_by)
+                    REFERENCES governance_actors(actor_id) ON DELETE RESTRICT,
+                CHECK (
+                    (transition_type = 'create' AND before_binding_id IS NULL
+                        AND after_binding_id IS NOT NULL AND before_actor_id IS NULL
+                        AND after_actor_id IS NOT NULL)
+                    OR (transition_type = 'rebind' AND before_binding_id IS NOT NULL
+                        AND after_binding_id IS NOT NULL AND before_actor_id IS NOT NULL
+                        AND after_actor_id IS NOT NULL)
+                    OR (transition_type = 'disable' AND before_binding_id IS NOT NULL
+                        AND after_binding_id IS NULL AND before_actor_id IS NOT NULL
+                        AND after_actor_id IS NULL)
+                )
+            )
+            """,
+            """
+            CREATE TRIGGER governance_binding_transitions_no_update
+            BEFORE UPDATE ON governance_binding_transitions
+            BEGIN
+                SELECT RAISE(ABORT, 'binding transitions are append-only');
+            END
+            """,
+            """
+            CREATE TRIGGER governance_binding_transitions_no_delete
+            BEFORE DELETE ON governance_binding_transitions
+            BEGIN
+                SELECT RAISE(ABORT, 'binding transitions are append-only');
+            END
+            """,
+        ),
+    ),
 )
 
 
@@ -492,6 +618,53 @@ class MigrationRunner:
                     ),
                 }
             )
+        if schema_version >= 5:
+            expected_columns.update(
+                {
+                    "governance_actors": (
+                        ("actor_id", "TEXT", 1, 1),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("actor_profile", "TEXT", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                        ("updated_at", "TEXT", 1, 0),
+                    ),
+                    "governance_external_actor_bindings": (
+                        ("binding_id", "TEXT", 1, 1),
+                        ("provider", "TEXT", 1, 0),
+                        ("provider_installation_ref", "TEXT", 1, 0),
+                        ("external_actor_id", "TEXT", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("binding_version", "INTEGER", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("created_at", "TEXT", 1, 0),
+                        ("disabled_at", "TEXT", 0, 0),
+                    ),
+                    "governance_actor_permissions": (
+                        ("actor_id", "TEXT", 1, 1),
+                        ("project_namespace", "TEXT", 1, 2),
+                        ("project_id", "TEXT", 1, 3),
+                        ("permission", "TEXT", 1, 4),
+                        ("granted_at", "TEXT", 1, 0),
+                        ("granted_by", "TEXT", 1, 0),
+                    ),
+                    "governance_binding_transitions": (
+                        ("transition_id", "TEXT", 1, 1),
+                        ("transition_type", "TEXT", 1, 0),
+                        ("provider", "TEXT", 1, 0),
+                        ("provider_installation_ref", "TEXT", 1, 0),
+                        ("external_actor_id", "TEXT", 1, 0),
+                        ("before_binding_id", "TEXT", 0, 0),
+                        ("after_binding_id", "TEXT", 0, 0),
+                        ("before_actor_id", "TEXT", 0, 0),
+                        ("after_actor_id", "TEXT", 0, 0),
+                        ("approval_id", "TEXT", 1, 0),
+                        ("approved_by", "TEXT", 1, 0),
+                        ("reason", "TEXT", 1, 0),
+                        ("occurred_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
             actual = tuple(
@@ -517,6 +690,31 @@ class MigrationRunner:
             actual_sql = " ".join(str(row[0]).split()) if row is not None else ""
             if actual_sql != expected_sql:
                 raise GovernanceMigrationError(f"required schema SQL 불일치: table={table}")
+        expected_schema_objects = {
+            (
+                "index" if "CREATE UNIQUE INDEX " in statement else "trigger",
+                statement.split(
+                    "CREATE UNIQUE INDEX "
+                    if "CREATE UNIQUE INDEX " in statement
+                    else "CREATE TRIGGER ",
+                    1,
+                )[1].split(maxsplit=1)[0],
+            ): " ".join(statement.split())
+            for migration in self.migrations
+            if migration.version <= schema_version
+            for statement in migration.statements
+            if "CREATE UNIQUE INDEX " in statement or "CREATE TRIGGER " in statement
+        }
+        for (object_type, object_name), expected_sql in expected_schema_objects.items():
+            row = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = ? AND name = ?",
+                (object_type, object_name),
+            ).fetchone()
+            actual_sql = " ".join(str(row[0]).split()) if row is not None else ""
+            if actual_sql != expected_sql:
+                raise GovernanceMigrationError(
+                    f"required schema SQL 불일치: {object_type}={object_name}"
+                )
         metadata = connection.execute(
             "SELECT value FROM governance_store_metadata WHERE key = 'store_kind'"
         ).fetchone()

@@ -87,7 +87,13 @@ class ChannelRef(BaseModel):
 
 class AuthorityPermission(StrEnum):
     PROPOSAL_READ = "proposal.read"
+    PROPOSAL_SUBMIT_REVIEW = "proposal.submit_review"
     PROPOSAL_DECIDE = "proposal.decide"
+    PROPOSAL_REQUEST_APPLY = "proposal.request_apply"
+    PROPOSAL_APPLY_EXECUTE = "proposal.apply.execute"
+    AUTHORITY_BINDING_MANAGE = "authority.binding.manage"
+    ACTIVATION_MANAGE = "activation.manage"
+    # Legacy v1 permission kept until MGC-007 closes old action paths.
     PROPOSAL_APPLY = "proposal.apply"
 
 

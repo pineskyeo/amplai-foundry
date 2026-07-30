@@ -100,6 +100,21 @@ class BlockingV4MigrationRunner(MigrationRunner):
         return super().apply_pending(connection)
 
 
+class BlockingV5MigrationRunner(MigrationRunner):
+    def __init__(self, marker: Path) -> None:
+        super().__init__()
+        self.marker = marker
+
+    def apply_pending(self, connection: sqlite3.Connection) -> int:
+        def trace(statement: str) -> None:
+            if "CREATE TABLE governance_external_actor_bindings" in statement:
+                self.marker.write_text("ready", encoding="utf-8")
+                time.sleep(60)
+
+        connection.set_trace_callback(trace)
+        return super().apply_pending(connection)
+
+
 def _run_blocking_v2_migration(database: str, marker: str) -> None:
     store = GovernanceStore(
         Path(database),
@@ -120,6 +135,14 @@ def _run_blocking_v4_migration(database: str, marker: str) -> None:
     store = GovernanceStore(
         Path(database),
         migration_runner=BlockingV4MigrationRunner(Path(marker)),
+    )
+    store.initialize()
+
+
+def _run_blocking_v5_migration(database: str, marker: str) -> None:
+    store = GovernanceStore(
+        Path(database),
+        migration_runner=BlockingV5MigrationRunner(Path(marker)),
     )
     store.initialize()
 
@@ -155,7 +178,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     repeated = store.initialize()
 
     assert health.healthy
-    assert health.schema_version == 4
+    assert health.schema_version == 5
     assert health.journal_mode == "wal"
     assert health.synchronous == 2
     assert health.foreign_keys
@@ -173,6 +196,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (2, "active-proposal-cas"),
         (3, "decision-token-replay"),
         (4, "durable-provider-ingress"),
+        (5, "authority-actor-binding"),
     ]
     assert metadata == ("amplai-governance",)
 
@@ -197,7 +221,7 @@ def test_version_one_store_upgrades_after_preflight_schema_verification(tmp_path
     assert version_one.initialize().schema_version == 1
 
     upgraded = GovernanceStore(path)
-    assert upgraded.initialize().schema_version == 4
+    assert upgraded.initialize().schema_version == 5
     with upgraded.connect() as connection:
         tables = {
             str(row[0])
@@ -247,7 +271,7 @@ def test_hard_kill_between_actual_v2_ddl_statements_reopens_at_v1_then_upgrades(
     assert "governance_definition_revisions" not in tables
     assert versions == [(1,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 4
+    assert GovernanceStore(path).initialize().schema_version == 5
 
 
 def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
@@ -288,7 +312,7 @@ def test_hard_kill_between_actual_v3_ddl_statements_reopens_at_v2_then_upgrades(
     assert "governance_decision_results" not in tables
     assert versions == [(1,), (2,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 4
+    assert GovernanceStore(path).initialize().schema_version == 5
 
 
 def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrades(
@@ -328,7 +352,49 @@ def test_hard_kill_after_actual_v4_ddl_before_history_reopens_at_v3_then_upgrade
     assert ingress_table is None
     assert versions == [(1,), (2,), (3,)]
 
-    assert GovernanceStore(path).initialize().schema_version == 4
+    assert GovernanceStore(path).initialize().schema_version == 5
+
+
+def test_hard_kill_between_actual_v5_ddl_reopens_at_v4_then_upgrades(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "governance.db"
+    marker = tmp_path / "v5-second-ddl-ready"
+    version_four_runner = MigrationRunner(INITIAL_MIGRATIONS[:4])
+    GovernanceStore(path, migration_runner=version_four_runner).initialize()
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(
+        target=_run_blocking_v5_migration,
+        args=(str(path), str(marker)),
+    )
+    process.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists() and process.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert marker.exists(), "v5 migration이 second DDL checkpoint에 도달하지 못했습니다."
+
+    process.kill()
+    process.join(timeout=5)
+    assert not process.is_alive()
+
+    version_four = GovernanceStore(path, migration_runner=version_four_runner)
+    assert version_four.check_startup().schema_version == 4
+    with version_four.connect() as connection:
+        objects = connection.execute(
+            """
+            SELECT type, name FROM sqlite_master
+            WHERE name LIKE 'governance_%actor%'
+               OR name LIKE 'governance_%binding%'
+            ORDER BY type, name
+            """
+        ).fetchall()
+        versions = connection.execute(
+            "SELECT version FROM governance_schema_migrations ORDER BY version"
+        ).fetchall()
+    assert objects == []
+    assert versions == [(1,), (2,), (3,), (4,)]
+
+    assert GovernanceStore(path).initialize().schema_version == 5
 
 
 def test_linux_mount_parser_uses_longest_mount_and_fails_closed() -> None:
@@ -445,7 +511,7 @@ def test_failed_migration_rolls_back_schema_and_history(tmp_path: Path) -> None:
             "SELECT version FROM governance_schema_migrations ORDER BY version"
         ).fetchall()
     assert partial is None
-    assert versions == [(1,), (2,), (3,), (4,)]
+    assert versions == [(1,), (2,), (3,), (4,), (5,)]
 
 
 def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -> None:
@@ -464,7 +530,7 @@ def test_hard_kill_during_migration_reopens_at_previous_schema(tmp_path: Path) -
     process.join(timeout=5)
     assert not process.is_alive()
 
-    assert GovernanceStore(path).check_startup().schema_version == 4
+    assert GovernanceStore(path).check_startup().schema_version == 5
     with sqlite3.connect(path) as connection:
         partial = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hard_kill_partial'"
@@ -515,6 +581,28 @@ def test_required_schema_constraint_drift_fails_startup_check(tmp_path: Path) ->
         connection.execute("PRAGMA writable_schema = OFF")
 
     with pytest.raises(GovernanceMigrationError, match="schema SQL"):
+        store.check_startup()
+
+
+@pytest.mark.parametrize(
+    ("object_type", "object_name"),
+    (
+        ("index", "governance_one_active_external_binding"),
+        ("trigger", "governance_binding_transitions_no_update"),
+        ("trigger", "governance_binding_transitions_no_delete"),
+    ),
+)
+def test_required_authority_schema_object_drift_fails_startup_check(
+    tmp_path: Path,
+    object_type: str,
+    object_name: str,
+) -> None:
+    store = GovernanceStore(tmp_path / "governance.db")
+    store.initialize()
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(f"DROP {object_type.upper()} {object_name}")
+
+    with pytest.raises(GovernanceMigrationError, match=object_name):
         store.check_startup()
 
 
