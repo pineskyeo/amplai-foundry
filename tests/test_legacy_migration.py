@@ -416,13 +416,32 @@ def test_nonregular_file_count_total_limit_and_root_symlink_fail_closed(
             config=LegacyMigrationScanConfig(maximum_files=2),
         ).create_snapshot(_freeze(count_root))
 
+    inclusive_count_root = _legacy_tree(tmp_path / "inclusive-count")
+    snapshot = LegacyProposalDryRunService(
+        inclusive_count_root,
+        PROJECT,
+        config=LegacyMigrationScanConfig(maximum_files=3),
+    ).create_snapshot(_freeze(inclusive_count_root))
+    assert len(snapshot.files) == 3
+
+    entry_root = _legacy_tree(tmp_path / "entries")
+    with pytest.raises(LegacyMigrationScanError, match="LEGACY_SNAPSHOT_ENTRY_LIMIT"):
+        LegacyProposalDryRunService(
+            entry_root,
+            PROJECT,
+            config=LegacyMigrationScanConfig(maximum_entries=2),
+        ).create_snapshot(_freeze(entry_root))
+
     total_root = _legacy_tree(tmp_path / "total")
+    total_read_paths: list[Path] = []
     with pytest.raises(LegacyMigrationScanError, match="LEGACY_SNAPSHOT_TOTAL_LIMIT"):
         LegacyProposalDryRunService(
             total_root,
             PROJECT,
             config=LegacyMigrationScanConfig(maximum_total_bytes=1),
+            after_file_read=total_read_paths.append,
         ).create_snapshot(_freeze(total_root))
+    assert total_read_paths == []
 
     actual_root = _legacy_tree(tmp_path / "actual")
     linked_root = tmp_path / "linked-project"

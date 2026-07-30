@@ -59,6 +59,7 @@ class LegacyMigrationScanConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     maximum_files: int = Field(default=10_000, ge=1, le=1_000_000)
+    maximum_entries: int = Field(default=100_000, ge=1, le=10_000_000)
     maximum_file_bytes: int = Field(default=16 * 1024 * 1024, ge=1)
     maximum_total_bytes: int = Field(default=512 * 1024 * 1024, ge=1)
     maximum_yaml_depth: int = Field(default=64, ge=1, le=1_024)
@@ -286,6 +287,8 @@ class LegacyProposalDryRunService:
         entries: list[LegacySnapshotFile] = []
         total_bytes = 0
         for relative_path, expected_identity in before:
+            if total_bytes + expected_identity[2] > self.config.maximum_total_bytes:
+                raise LegacyMigrationScanError("LEGACY_SNAPSHOT_TOTAL_LIMIT")
             path = self.legacy_root / relative_path
             payload = self._read_stable(path, expected_identity)
             self._after_file_read(path)
@@ -437,14 +440,15 @@ class LegacyProposalDryRunService:
         entries: list[tuple[str, tuple[int, int, int, int, int]]] = []
         pending = [self.legacy_root]
         discovered_entries = 0
+        discovered_files = 0
         try:
             while pending:
                 directory_path = pending.pop()
                 with os.scandir(directory_path) as iterator:
                     for child in iterator:
                         discovered_entries += 1
-                        if discovered_entries > self.config.maximum_files:
-                            raise LegacyMigrationScanError("LEGACY_SNAPSHOT_FILE_LIMIT")
+                        if discovered_entries > self.config.maximum_entries:
+                            raise LegacyMigrationScanError("LEGACY_SNAPSHOT_ENTRY_LIMIT")
                         candidate = directory_path / child.name
                         metadata = child.stat(follow_symlinks=False)
                         if stat.S_ISLNK(metadata.st_mode):
@@ -459,6 +463,9 @@ class LegacyProposalDryRunService:
                             continue
                         if not stat.S_ISREG(metadata.st_mode):
                             raise LegacyMigrationScanError("LEGACY_SOURCE_NOT_REGULAR")
+                        discovered_files += 1
+                        if discovered_files > self.config.maximum_files:
+                            raise LegacyMigrationScanError("LEGACY_SNAPSHOT_FILE_LIMIT")
                         relative = candidate.relative_to(self.legacy_root).as_posix()
                         entries.append(
                             (
