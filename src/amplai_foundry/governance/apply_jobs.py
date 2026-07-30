@@ -873,6 +873,7 @@ class ApplyJobService:
             ).fetchone()
             if row is None:
                 return None
+            self._require_legacy_ready(connection, str(row[0]))
             if int(row[4]) >= self._max_attempts:
                 dead_lettered = connection.execute(
                     """
@@ -1006,6 +1007,7 @@ class ApplyJobService:
         artifact_digest = self._content_digest(artifact_bytes)
         publish_request_digest = self._content_digest(publish_request_bytes)
         with self.store.connect() as connection, governance_transaction(connection):
+            self._require_legacy_ready(connection, job_id)
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
             connection.execute(
@@ -1077,6 +1079,7 @@ class ApplyJobService:
         if not error_code.strip() or len(error_code) > 128:
             raise ValueError("error_code가 유효하지 않습니다.")
         with self.store.connect() as connection, governance_transaction(connection):
+            self._require_legacy_ready(connection, job_id)
             now = ApplyGrantService._aware(self._clock())
             timestamp = ApplyGrantService._timestamp(now)
             retry_at = ApplyGrantService._timestamp(now + retry_delay)
@@ -1133,6 +1136,7 @@ class ApplyJobService:
     ) -> ApplyJobView:
         self._validate_worker(worker_id)
         with self.store.connect() as connection, governance_transaction(connection):
+            self._require_legacy_ready(connection, job_id)
             timestamp = ApplyGrantService._timestamp(ApplyGrantService._aware(self._clock()))
             updated = connection.execute(
                 """
@@ -1162,6 +1166,22 @@ class ApplyJobService:
                 created_at=timestamp,
             )
             return view
+
+    @staticmethod
+    def _require_legacy_ready(connection: sqlite3.Connection, job_id: str) -> None:
+        row = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id
+            FROM governance_apply_jobs WHERE job_id = ?
+            """,
+            (job_id,),
+        ).fetchone()
+        if row is None:
+            raise ApplyGovernanceError("APPLY_JOB_NOT_FOUND")
+        ref = ApplyGrantService._proposal_ref(row[0], row[1], row[2])
+        block = legacy_mutation_block(connection, ref)
+        if block is not None:
+            raise ApplyGovernanceError(block)
 
     def _record_event(
         self,

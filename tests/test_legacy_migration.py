@@ -28,6 +28,7 @@ from amplai_foundry.governance import (
     AuthorityService,
     BindingApproval,
     BindingTarget,
+    CandidateCommitEvidence,
     ChannelProvider,
     ChannelRef,
     DecisionAction,
@@ -45,10 +46,14 @@ from amplai_foundry.governance import (
     LegacyProposalMigrationPlan,
     ProposalRef,
     ProposalSubmissionService,
+    PublishGovernanceError,
+    PublishPreparationService,
+    PublishResolutionService,
 )
 from amplai_foundry.governance.apply_jobs import (
     ApplyGovernanceError,
     ApplyGrantService,
+    ApplyJobService,
     ApplyRequestService,
 )
 from amplai_foundry.governance.decisions import DecisionError, DecisionService
@@ -366,6 +371,31 @@ class BlockingMigrationObjectStore(ImmutableDefinitionObjectStore):
     def _before_publish(self, temporary: Path, canonical: Path) -> None:
         self.marker.write_text("ready", encoding="utf-8")
         time.sleep(60)
+
+
+class LegacyMigrationPublishGit:
+    current_ref = "a13d92f" + "a" * 33
+    candidate_commit = "b" * 40
+
+    def read_ref(self, canonical_ref: str) -> str:
+        assert canonical_ref == "refs/heads/main"
+        return self.current_ref
+
+    def inspect_candidate(
+        self,
+        candidate_commit: str,
+        *,
+        artifact_bytes: bytes,
+        publish_request_bytes: bytes,
+    ) -> CandidateCommitEvidence:
+        assert candidate_commit == self.candidate_commit
+        assert publish_request_bytes
+        return CandidateCommitEvidence(
+            candidate_commit=candidate_commit,
+            parent_commit=self.current_ref,
+            candidate_tree_digest=sha256_digest(artifact_bytes),
+            canonical_ref="refs/heads/main",
+        )
 
 
 class AmbiguousCommitConnection:
@@ -1739,7 +1769,7 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
                 project_namespace, project_id, proposal_id, active_definition_digest,
                 content_revision, state_revision, decision_epoch, status,
                 created_at, updated_at, applied_revision
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'changes_requested', ?, ?, NULL)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, NULL)
             """,
             (
                 PROJECT.namespace,
@@ -1832,18 +1862,82 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
     progressed_path.parent.mkdir(parents=True)
     with v18.connect() as source, sqlite3.connect(progressed_path) as destination:
         source.backup(destination)
-    with sqlite3.connect(progressed_path) as connection:
-        connection.execute(
-            """
-            UPDATE governance_active_proposals
-            SET state_revision = state_revision + 1,
-                decision_epoch = decision_epoch + 1,
-                status = 'reviewed',
-                applied_revision = NULL
-            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
-            """,
-            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+    progressed_v18 = GovernanceStore(
+        progressed_path,
+        migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:18]),
+    )
+    progressed_v18.initialize()
+    v18_authority_request = _migration_authority(progressed_v18)
+    v18_authority = AuthorityService(progressed_v18, clock=lambda: NOW)
+    v18_active = ActiveProposalRepository(progressed_v18, objects)
+    ProposalSubmissionService(progressed_v18, v18_active, v18_authority).submit_for_review(
+        item.proposal_ref,
+        authority_request=v18_authority_request,
+        expected_state_revision=item.state_revision,
+    )
+    v18_decisions = DecisionService(progressed_v18, v18_authority, clock=lambda: NOW)
+    v18_approve = next(
+        token
+        for token in v18_decisions.issue_tokens(
+            item.proposal_ref,
+            authority_request=v18_authority_request,
         )
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    v18_decisions.decide(
+        item.proposal_ref,
+        action=DecisionAction.APPROVE,
+        authority_request=v18_authority_request,
+        raw_token=v18_approve.raw_token,
+        idempotency_key="v18-progressed-approved-decision",
+        request_fingerprint="f" * 64,
+    )
+    v18_grant = ApplyGrantService(
+        progressed_v18,
+        v18_authority,
+        objects,
+        clock=lambda: NOW,
+    )._issue_from_approved_decision(
+        "v18-progressed-approved-decision",
+        authority_request=v18_authority_request,
+    )
+    v18_apply = ApplyRequestService(
+        progressed_v18,
+        v18_authority,
+        clock=lambda: NOW,
+    ).request_apply(
+        item.proposal_ref,
+        authority_request=v18_authority_request,
+        raw_grant=v18_grant.raw_grant,
+        idempotency_key="v18-progressed-apply-request",
+        request_fingerprint="a" * 64,
+    )
+    v18_jobs = ApplyJobService(progressed_v18, clock=lambda: NOW)
+    v18_leased = v18_jobs.claim_next("worker-v18-migration")
+    assert v18_leased is not None
+    v18_jobs.start(
+        v18_apply.job_id,
+        worker_id="worker-v18-migration",
+        fencing_token=v18_leased.fencing_token,
+    )
+    v18_jobs.stage_for_publish(
+        v18_apply.job_id,
+        worker_id="worker-v18-migration",
+        fencing_token=v18_leased.fencing_token,
+        artifact_bytes=b"legacy staged artifact",
+        publish_request_bytes=b"legacy publish request",
+    )
+    publish_git = LegacyMigrationPublishGit()
+    v18_intent = PublishPreparationService(
+        progressed_v18,
+        publish_git,
+        clock=lambda: NOW,
+    ).prepare(
+        v18_apply.job_id,
+        fencing_token=v18_leased.fencing_token,
+        canonical_ref="refs/heads/main",
+        candidate_commit=publish_git.candidate_commit,
+    )
 
     latest = GovernanceStore(path)
     assert latest.initialize().schema_version == len(INITIAL_MIGRATIONS)
@@ -1923,7 +2017,7 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
 
     progressed = GovernanceStore(progressed_path)
     assert progressed.initialize().schema_version == len(INITIAL_MIGRATIONS)
-    progressed_authority = _migration_authority(progressed)
+    progressed_authority = v18_authority_request
     with progressed.connect() as connection:
         assert connection.execute(
             """
@@ -1933,9 +2027,9 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
             """,
             (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
         ).fetchone() == (
-            item.state_revision + 1,
-            item.decision_epoch + 1,
-            "reviewed",
+            item.state_revision + 3,
+            item.decision_epoch,
+            "apply_requested",
             None,
         )
         assert connection.execute(
@@ -1944,6 +2038,27 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_event_backfill_pending"
         ).fetchone() == (1,)
+    with pytest.raises(
+        ApplyGovernanceError,
+        match="LEGACY_MIGRATION_EVENT_BACKFILL_PENDING",
+    ):
+        ApplyJobService(progressed, clock=lambda: NOW).stage_for_publish(
+            v18_apply.job_id,
+            worker_id="worker-v18-migration",
+            fencing_token=v18_leased.fencing_token,
+            artifact_bytes=b"blocked artifact",
+            publish_request_bytes=b"blocked publish request",
+        )
+    with pytest.raises(
+        PublishGovernanceError,
+        match="LEGACY_MIGRATION_EVENT_BACKFILL_PENDING",
+    ):
+        PublishResolutionService(
+            progressed,
+            publish_git,
+            coordinator_id="migration-publish-gate",
+            clock=lambda: NOW,
+        ).recover(v18_intent.intent_id)
     with pytest.raises(ActiveProposalError, match="LEGACY_MIGRATION_EVENT_BACKFILL_PENDING"):
         ProposalSubmissionService(
             progressed,
@@ -1952,7 +2067,7 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
         ).submit_for_review(
             item.proposal_ref,
             authority_request=progressed_authority,
-            expected_state_revision=item.state_revision + 1,
+            expected_state_revision=item.state_revision + 3,
         )
 
     assert (
@@ -1968,19 +2083,64 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
             """,
             (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
         ).fetchone() == (
-            item.state_revision + 1,
-            item.decision_epoch + 1,
-            "reviewed",
+            item.state_revision + 3,
+            item.decision_epoch,
+            "apply_requested",
         )
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_event_backfill_pending"
         ).fetchone() == (0,)
-        assert connection.execute("SELECT event_type FROM governance_audit_events").fetchone() == (
-            "migration.synthetic_approval",
-        )
         assert connection.execute(
-            "SELECT destination_sequence FROM governance_outbox_events"
-        ).fetchone() == (1,)
+            "SELECT event_type FROM governance_audit_events ORDER BY aggregate_sequence"
+        ).fetchall()[-1] == ("migration.synthetic_approval",)
+        yaml_rows = connection.execute(
+            """
+            SELECT destination_sequence, source_state_revision
+            FROM governance_outbox_events
+            WHERE destination_ref = ? ORDER BY destination_sequence
+            """,
+            (f"yaml:{PROJECT.namespace}:{PROJECT.project_id}:{PROPOSAL_ID}",),
+        ).fetchall()
+        assert yaml_rows == [
+            (1, item.state_revision + 2),
+            (2, item.state_revision + 3),
+            (3, item.state_revision + 4),
+        ]
+        assert connection.execute(
+            "SELECT status FROM governance_apply_jobs WHERE job_id = ?",
+            (v18_apply.job_id,),
+        ).fetchone() == ("publish_pending",)
+    GovernanceEventService(progressed).reconcile()
+    with pytest.raises(ApplyGovernanceError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
+        ApplyJobService(progressed, clock=lambda: NOW).stage_for_publish(
+            v18_apply.job_id,
+            worker_id="worker-v18-migration",
+            fencing_token=v18_leased.fencing_token,
+            artifact_bytes=b"blocked artifact",
+            publish_request_bytes=b"blocked publish request",
+        )
+    with pytest.raises(PublishGovernanceError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
+        PublishResolutionService(
+            progressed,
+            publish_git,
+            coordinator_id="migration-publish-gate",
+            clock=lambda: NOW,
+        ).recover(v18_intent.intent_id)
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_APPROVAL_REVIEW_FORWARD_RECOVERY_REQUIRED",
+    ):
+        LegacyApprovalReviewService(
+            progressed,
+            AuthorityService(progressed, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).resolve(
+            item.proposal_ref,
+            authority_request=progressed_authority,
+            reason="review in-flight legacy apply",
+            idempotency_key="v18-progressed-review",
+            request_fingerprint="b" * 64,
+        )
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

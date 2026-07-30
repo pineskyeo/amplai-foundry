@@ -853,7 +853,21 @@ class LegacyApprovalReviewService:
                     raise LegacyMigrationScanError(
                         "LEGACY_APPROVAL_REVIEW_FORWARD_RECOVERY_REQUIRED"
                     )
-                next_state_revision = int(active[1]) + 1
+                destination_ref = (
+                    f"yaml:{ref.project_ref.namespace}:"
+                    f"{ref.project_ref.project_id}:{ref.proposal_id}"
+                )
+                latest_projection = connection.execute(
+                    """
+                    SELECT source_state_revision FROM governance_outbox_events
+                    WHERE destination_ref = ? ORDER BY destination_sequence DESC LIMIT 1
+                    """,
+                    (destination_ref,),
+                ).fetchone()
+                next_state_revision = max(
+                    int(active[1]) + 1,
+                    (int(latest_projection[0]) + 1 if latest_projection is not None else 1),
+                )
                 next_decision_epoch = int(active[2]) + 1
                 payload = LegacyApprovalReviewProjectionPayload(
                     aggregate_ref=ref,
@@ -1436,6 +1450,8 @@ class LegacyProposalImportService:
         connection: sqlite3.Connection,
         plan: LegacyProposalMigrationPlan,
         prepared: _PreparedLegacyDefinition,
+        *,
+        projection_state_revision: int | None = None,
     ) -> None:
         item = prepared.plan_item
         evidence = prepared.approval_evidence
@@ -1499,9 +1515,10 @@ class LegacyProposalImportService:
             mapping_policy_version=plan.mapping_policy_version,
             migration_id=plan.plan_id,
             reason=reason,
+            imported_state_revision=item.state_revision,
             source_artifact_digest=prepared.approval_artifact_digest,
             source_revision=item.source_revision,
-            source_state_revision=item.state_revision,
+            source_state_revision=projection_state_revision or item.state_revision,
             source_status=item.source_status.value,
             target_status=item.target_status.value,
             validation_policy_ref=plan.validation_policy_ref,
@@ -1555,7 +1572,7 @@ class LegacyProposalImportService:
                 prepared.approval_artifact_digest,
                 reason,
                 prepared.object_ref.digest,
-                item.state_revision,
+                payload.source_state_revision,
                 payload_digest,
                 payload_json,
             ),
@@ -1938,6 +1955,11 @@ class LegacyProposalImportService:
                         if actual_command != expected_command:
                             raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT")
                     if pending is not None:
+                        projection_state_revision = self._backfill_projection_revision(
+                            connection,
+                            item,
+                            active,
+                        )
                         self._insert_migration_event(
                             connection,
                             plan,
@@ -1953,6 +1975,7 @@ class LegacyProposalImportService:
                                 evidence,
                                 expected_source_digest,
                             ),
+                            projection_state_revision=projection_state_revision,
                         )
                 except (DefinitionObjectStoreError, ValidationError, yaml.YAMLError) as error:
                     raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
@@ -1961,6 +1984,27 @@ class LegacyProposalImportService:
             except GovernanceEventError as error:
                 raise LegacyMigrationScanError("LEGACY_MIGRATION_REPLAY_CONFLICT") from error
         return self._result(plan)
+
+    @staticmethod
+    def _backfill_projection_revision(
+        connection: sqlite3.Connection,
+        item: LegacyProposalPlanItem,
+        active: sqlite3.Row | tuple[object, ...],
+    ) -> int:
+        destination_ref = (
+            f"yaml:{item.proposal_ref.project_ref.namespace}:"
+            f"{item.proposal_ref.project_ref.project_id}:{item.proposal_ref.proposal_id}"
+        )
+        latest = connection.execute(
+            """
+            SELECT source_state_revision FROM governance_outbox_events
+            WHERE destination_ref = ? ORDER BY destination_sequence DESC LIMIT 1
+            """,
+            (destination_ref,),
+        ).fetchone()
+        current_revision = int(str(active[2]))
+        latest_revision = int(latest[0]) if latest is not None else 0
+        return max(item.state_revision, current_revision, latest_revision + 1)
 
     @staticmethod
     def _require_root_identity(

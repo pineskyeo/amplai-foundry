@@ -22,6 +22,7 @@ from pydantic import (
 )
 
 from amplai_foundry.domain.identity import ProjectRef
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.models import Digest, ProposalRef
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
@@ -193,6 +194,7 @@ class PublishPreparationService:
 
         with self.store.connect() as connection:
             root = self._preparation_root(connection, job_id)
+            self._require_legacy_ready(connection, root)
         self._verify_root(root, fencing_token=fencing_token)
         artifact_bytes = cast(bytes, root[10])
         publish_request_bytes = cast(bytes, root[12])
@@ -215,6 +217,7 @@ class PublishPreparationService:
 
         with self.store.connect() as connection, governance_transaction(connection):
             current = self._preparation_root(connection, job_id)
+            self._require_legacy_ready(connection, current)
             self._verify_root(current, fencing_token=fencing_token)
             if current != root:
                 raise PublishGovernanceError("PUBLISH_PREPARATION_STALE")
@@ -310,6 +313,19 @@ class PublishPreparationService:
                 if updated.rowcount != 1:
                     raise PublishGovernanceError("PUBLISH_GATE_LOCKED")
             return self._intent_view(connection, intent_id)
+
+    @staticmethod
+    def _require_legacy_ready(
+        connection: sqlite3.Connection,
+        root: tuple[object, ...],
+    ) -> None:
+        ref = ProposalRef(
+            project_ref=ProjectRef(project_id=str(root[2]), namespace=str(root[1])),
+            proposal_id=str(root[3]),
+        )
+        block = legacy_mutation_block(connection, ref)
+        if block is not None:
+            raise PublishGovernanceError(block)
 
     @staticmethod
     def _preparation_root(connection: sqlite3.Connection, job_id: str) -> tuple[object, ...]:

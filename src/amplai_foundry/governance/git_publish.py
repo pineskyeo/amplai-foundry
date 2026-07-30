@@ -18,6 +18,7 @@ from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
 
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.publish import (
     CandidateCommitEvidence,
     CanonicalBranchRef,
@@ -414,6 +415,9 @@ class FencedGitPublishCoordinator:
         claim_fence: int,
     ) -> GitCASOutcome:
         with self.store.connect() as connection, governance_transaction(connection):
+            block = legacy_mutation_block(connection, intent.proposal_ref)
+            if block is not None:
+                raise PublishGovernanceError(block)
             rooted = connection.execute(
                 """
                 SELECT 1
@@ -448,6 +452,9 @@ class FencedGitPublishCoordinator:
     ) -> tuple[PublishIntentView, tuple[object, ...], str, int]:
         with self.store.connect() as connection, governance_transaction(connection):
             intent = PublishPreparationService._intent_view(connection, intent_id)
+            block = legacy_mutation_block(connection, intent.proposal_ref)
+            if block is not None:
+                raise PublishGovernanceError(block)
             roots = connection.execute(
                 """
                 SELECT a.artifact_bytes, p.publish_request_bytes, g.state,

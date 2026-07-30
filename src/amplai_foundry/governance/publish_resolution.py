@@ -19,6 +19,7 @@ from amplai_foundry.governance.git_publish import (
     FencedGitPublishCoordinator,
     GitPublishAmbiguousError,
 )
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.publish import (
     PublishGitInspector,
     PublishGovernanceError,
@@ -116,6 +117,7 @@ class PublishResolutionService:
     def _ensure_claim(self, intent_id: str) -> tuple[PublishIntentView, str]:
         with self.store.connect() as connection, governance_transaction(connection):
             intent = PublishPreparationService._intent_view(connection, intent_id)
+            self._require_legacy_ready(connection, intent)
             root = self._root(connection, intent_id)
             if (
                 intent.status not in {PublishIntentState.PREPARED, PublishIntentState.RECOVERY_HOLD}
@@ -168,6 +170,7 @@ class PublishResolutionService:
         timestamp = self._timestamp(created_at)
         with self.store.connect() as connection, governance_transaction(connection):
             intent = PublishPreparationService._intent_view(connection, intent_id)
+            self._require_legacy_ready(connection, intent)
             root = self._root(connection, intent_id)
             if root is None or str(root[18]) != claim_id or str(root[19]) != "active":
                 raise PublishGovernanceError("PUBLISH_CLAIM_STALE")
@@ -416,6 +419,15 @@ class PublishResolutionService:
                 error_code=error_code,
                 created_at=created_at,
             )
+
+    @staticmethod
+    def _require_legacy_ready(
+        connection: sqlite3.Connection,
+        intent: PublishIntentView,
+    ) -> None:
+        block = legacy_mutation_block(connection, intent.proposal_ref)
+        if block is not None:
+            raise PublishGovernanceError(block)
 
     @staticmethod
     def _targets(

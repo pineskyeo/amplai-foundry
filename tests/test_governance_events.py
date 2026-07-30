@@ -559,6 +559,30 @@ def test_consumed_token_requires_immutable_decision_result_root(tmp_path: Path) 
         GovernanceEventService(store).reconcile()
 
 
+def test_outbox_rejects_descending_source_revision_for_same_destination(
+    tmp_path: Path,
+) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="source-revision-3", state_revision=3)
+
+    with pytest.raises(GovernanceEventError, match="OUTBOX_SOURCE_REVISION_CONFLICT"):
+        _append(events, store, command_id="source-revision-2", state_revision=2)
+
+    with store.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT destination_sequence, source_state_revision
+            FROM governance_outbox_events
+            WHERE destination_ref = ? ORDER BY destination_sequence
+            """,
+            (f"yaml:{PROJECT.namespace}:{PROJECT.project_id}:{PROPOSAL.proposal_id}",),
+        ).fetchall() == [(1, 3)]
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_decision_results"
+        ).fetchone() == (1,)
+
+
 def test_action_token_issuance_is_immutable_and_channel_tamper_fails_startup(
     tmp_path: Path,
 ) -> None:

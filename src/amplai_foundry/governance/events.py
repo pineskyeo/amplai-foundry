@@ -82,6 +82,7 @@ class LegacyMigrationProjectionPayload(BaseModel):
     mapping_policy_version: int = Field(ge=1)
     migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
     reason: str | None = None
+    imported_state_revision: int = Field(ge=1)
     source_artifact_digest: Digest
     source_revision: int = Field(ge=1)
     source_state_revision: int = Field(ge=1)
@@ -980,7 +981,7 @@ class GovernanceEventService:
                 or legacy_payload.source_status != str(legacy[17])
                 or legacy_payload.source_revision != int(legacy[18])
                 or legacy_payload.target_status != str(legacy[19])
-                or legacy_payload.source_state_revision != int(legacy[20])
+                or legacy_payload.imported_state_revision != int(legacy[20])
                 or legacy_payload.approval_disposition != str(legacy[21])
             ):
                 raise GovernanceEventError("LEGACY_MIGRATION_EVENT_ROOT_MISMATCH")
@@ -1959,16 +1960,21 @@ class GovernanceEventService:
         for destination_ref, next_sequence, delivered_sequence, operator_hold in destination_rows:
             rows = connection.execute(
                 """
-                SELECT destination_sequence, payload_digest, payload_json, state
+                SELECT destination_sequence, payload_digest, payload_json, state,
+                       source_state_revision
                 FROM governance_outbox_events
                 WHERE destination_ref = ? ORDER BY destination_sequence
                 """,
                 (destination_ref,),
             ).fetchall()
             sequences = tuple(int(row[0]) for row in rows)
+            previous_source_revision = 0
             for row in rows:
                 if cls._digest(str(row[2]).encode("utf-8")) != str(row[1]):
                     raise GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
+                if int(row[4]) <= previous_source_revision:
+                    raise GovernanceEventError("OUTBOX_SOURCE_REVISION_CONFLICT")
+                previous_source_revision = int(row[4])
                 if int(row[0]) <= int(delivered_sequence) and str(row[3]) not in {
                     OutboxState.DELIVERED.value,
                     OutboxState.SUPERSEDED.value,
@@ -1987,7 +1993,7 @@ class GovernanceEventService:
             ).fetchone()
             if (has_blocking_hold is not None) != bool(operator_hold):
                 raise GovernanceEventError("OUTBOX_OPERATOR_HOLD_MISMATCH")
-            for sequence, _digest, _payload, state in rows:
+            for sequence, _digest, _payload, state, _source_revision in rows:
                 event_id_row = connection.execute(
                     """
                     SELECT event_id FROM governance_outbox_events
@@ -2054,6 +2060,15 @@ class GovernanceEventService:
         if row is None:
             raise GovernanceEventError("OUTBOX_DESTINATION_NOT_FOUND")
         destination_sequence = int(row[0])
+        previous = connection.execute(
+            """
+            SELECT source_state_revision FROM governance_outbox_events
+            WHERE destination_ref = ? ORDER BY destination_sequence DESC LIMIT 1
+            """,
+            (destination.destination_ref,),
+        ).fetchone()
+        if previous is not None and source_state_revision <= int(previous[0]):
+            raise GovernanceEventError("OUTBOX_SOURCE_REVISION_CONFLICT")
         updated = connection.execute(
             """
             UPDATE governance_outbox_destinations
