@@ -25,6 +25,7 @@ from amplai_foundry.governance.legacy_lifecycle import (
     LegacyMigrationRollbackResult,
 )
 from amplai_foundry.governance.legacy_migration import (
+    LegacyApprovalDisposition,
     LegacyProposalImportService,
     LegacyTargetStatus,
 )
@@ -82,6 +83,9 @@ class LegacyRollbackRoot(BaseModel):
     previous_destination_delivered_sequence: int | None = Field(default=None, ge=0)
     previous_destination_operator_hold: int | None = Field(default=None, ge=0, le=1)
     previous_destination_updated_at: str | None = None
+    approval_hold_reason_code: str | None = None
+    approval_hold_source_artifact_digest: Digest | None = None
+    approval_hold_created_at: str | None = None
 
     @model_validator(mode="after")
     def validate_destination_provenance(self) -> LegacyRollbackRoot:
@@ -105,6 +109,17 @@ class LegacyRollbackRoot(BaseModel):
                 raise ValueError("existing destination rollback cursor가 유효하지 않습니다.")
         elif any(value is not None for value in previous):
             raise ValueError("new destination에는 previous provenance가 없어야 합니다.")
+        approval_hold = (
+            self.approval_hold_reason_code,
+            self.approval_hold_source_artifact_digest,
+            self.approval_hold_created_at,
+        )
+        if any(value is not None for value in approval_hold) and not all(
+            value is not None for value in approval_hold
+        ):
+            raise ValueError("legacy approval hold rollback provenance가 불완전합니다.")
+        if self.approval_hold_reason_code not in {None, "legacy_approval_without_audit"}:
+            raise ValueError("legacy approval hold reason이 유효하지 않습니다.")
         return self
 
 
@@ -272,7 +287,9 @@ class LegacyMigrationRollbackPlanner:
                    p.destination_ref, p.existed_before, p.previous_next_sequence,
                    p.previous_delivered_sequence, p.previous_operator_hold,
                    p.previous_updated_at, p.captured_at,
-                   t.destination_ref, t.captured_at, t.attestation_version
+                   t.destination_ref, t.captured_at, t.attestation_version,
+                   i.approval_disposition, i.proposal_artifact_digest,
+                   h.reason_code, h.source_artifact_digest, h.created_at
             FROM governance_legacy_migration_items i
             JOIN governance_active_proposals a
               ON a.project_namespace = i.project_namespace
@@ -302,6 +319,10 @@ class LegacyMigrationRollbackPlanner:
               ON t.migration_id = p.migration_id
              AND t.project_namespace = p.project_namespace
              AND t.project_id = p.project_id AND t.proposal_id = p.proposal_id
+            LEFT JOIN governance_legacy_approval_holds h
+              ON h.migration_id = i.migration_id
+             AND h.project_namespace = i.project_namespace
+             AND h.project_id = i.project_id AND h.proposal_id = i.proposal_id
             WHERE i.migration_id = ? AND i.project_namespace = ? AND i.project_id = ?
             ORDER BY i.proposal_id
             """,
@@ -322,6 +343,9 @@ class LegacyMigrationRollbackPlanner:
             runtime_status = LegacyProposalImportService._runtime_status(
                 LegacyTargetStatus(str(row[35]))
             )
+            approval_disposition = LegacyApprovalDisposition(str(row[46]))
+            expected_hold = ("legacy_approval_without_audit", str(row[47]))
+            actual_hold = (row[48], row[49])
             expected_active = (str(row[1]), int(row[2]), int(row[3]), int(row[4]), runtime_status)
             if (
                 tuple(row[5:10]) != expected_active
@@ -342,6 +366,14 @@ class LegacyMigrationRollbackPlanner:
                 or str(row[43]) != str(row[18])
                 or str(row[42]) != str(row[44])
                 or int(row[45]) != 1
+                or (
+                    approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED
+                    and (tuple(actual_hold) != expected_hold or row[50] is None)
+                )
+                or (
+                    approval_disposition is not LegacyApprovalDisposition.SYNTHETIC_REQUIRED
+                    and any(row[index] is not None for index in range(48, 51))
+                )
                 or (bool(row[37]) and int(row[38]) != int(row[19]))
                 or (not bool(row[37]) and int(row[19]) != 1)
                 or LegacyMigrationRollbackPlanner._proposal_root_counts(
@@ -384,6 +416,11 @@ class LegacyMigrationRollbackPlanner:
                         int(row[40]) if row[40] is not None else None
                     ),
                     previous_destination_updated_at=(str(row[41]) if row[41] is not None else None),
+                    approval_hold_reason_code=(str(row[48]) if row[48] is not None else None),
+                    approval_hold_source_artifact_digest=(
+                        str(row[49]) if row[49] is not None else None
+                    ),
+                    approval_hold_created_at=(str(row[50]) if row[50] is not None else None),
                 )
             )
         return tuple(roots)
@@ -651,7 +688,7 @@ class LegacyMigrationRollbackExecutor:
                 )
                 self._before_root_removal(plan)
                 for root in roots:
-                    self._remove_root(connection, root)
+                    self._remove_root(connection, root, migration_id=plan.migration_id)
                     self._after_root_removed(root)
                 updated = connection.execute(
                     """
@@ -679,12 +716,21 @@ class LegacyMigrationRollbackExecutor:
         except AuthorityResolutionError as error:
             raise LegacyMigrationLifecycleError(error.code) from error
         except GovernanceCommitAmbiguousError:
-            return self._reconcile_ambiguous(
-                plan,
-                authority_request=authority_request,
-                reason=reason.strip(),
-                idempotency_key=idempotency_key,
-            )
+            try:
+                return self._reconcile_ambiguous(
+                    plan,
+                    authority_request=authority_request,
+                    reason=reason.strip(),
+                    idempotency_key=idempotency_key,
+                )
+            except LegacyMigrationLifecycleError:
+                raise
+            except AuthorityResolutionError as error:
+                raise LegacyMigrationLifecycleError(error.code) from error
+            except (GovernanceEventError, sqlite3.Error, ValueError) as error:
+                raise LegacyMigrationLifecycleError(
+                    "LEGACY_MIGRATION_ROLLBACK_AMBIGUOUS"
+                ) from error
         except (GovernanceEventError, sqlite3.Error, ValueError) as error:
             raise LegacyMigrationLifecycleError("LEGACY_MIGRATION_ROLLBACK_CONFLICT") from error
 
@@ -742,8 +788,9 @@ class LegacyMigrationRollbackExecutor:
                 destination_existed_before, previous_destination_next_sequence,
                 previous_destination_delivered_sequence,
                 previous_destination_operator_hold, previous_destination_updated_at,
-                created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                approval_hold_reason_code, approval_hold_source_artifact_digest,
+                approval_hold_created_at, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 command_id,
@@ -767,12 +814,20 @@ class LegacyMigrationRollbackExecutor:
                 root.previous_destination_delivered_sequence,
                 root.previous_destination_operator_hold,
                 root.previous_destination_updated_at,
+                root.approval_hold_reason_code,
+                root.approval_hold_source_artifact_digest,
+                root.approval_hold_created_at,
                 created_at,
             ),
         )
 
     @staticmethod
-    def _remove_root(connection: sqlite3.Connection, root: LegacyRollbackRoot) -> None:
+    def _remove_root(
+        connection: sqlite3.Connection,
+        root: LegacyRollbackRoot,
+        *,
+        migration_id: str,
+    ) -> None:
         identity = (
             root.proposal_ref.project_ref.namespace,
             root.proposal_ref.project_ref.project_id,
@@ -799,6 +854,26 @@ class LegacyMigrationRollbackExecutor:
         )
         for sql, values in statements:
             if connection.execute(sql, values).rowcount != 1:
+                raise LegacyMigrationLifecycleError("LEGACY_MIGRATION_ROLLBACK_ROOT_MISMATCH")
+        if root.approval_hold_reason_code is not None:
+            deleted_hold = connection.execute(
+                """
+                DELETE FROM governance_legacy_approval_holds
+                WHERE migration_id = ? AND project_namespace = ? AND project_id = ?
+                  AND proposal_id = ? AND reason_code = ?
+                  AND source_artifact_digest = ? AND created_at = ?
+                """,
+                (
+                    migration_id,
+                    root.proposal_ref.project_ref.namespace,
+                    root.proposal_ref.project_ref.project_id,
+                    root.proposal_ref.proposal_id,
+                    root.approval_hold_reason_code,
+                    root.approval_hold_source_artifact_digest,
+                    root.approval_hold_created_at,
+                ),
+            )
+            if deleted_hold.rowcount != 1:
                 raise LegacyMigrationLifecycleError("LEGACY_MIGRATION_ROLLBACK_ROOT_MISMATCH")
         if root.destination_existed_before:
             restored = connection.execute(

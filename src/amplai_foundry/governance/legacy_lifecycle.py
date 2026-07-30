@@ -522,19 +522,80 @@ class LegacyMigrationActivationService:
         scopes = connection.execute(
             """
             SELECT project_namespace, project_id, proposal_id, rollback_root_digest,
+                   definition_digest, content_revision, state_revision, decision_epoch,
+                   audit_event_id, aggregate_sequence, event_hash, outbox_event_id,
                    destination_ref, destination_sequence, destination_existed_before,
                    previous_destination_next_sequence,
                    previous_destination_delivered_sequence,
-                   previous_destination_operator_hold, previous_destination_updated_at
+                   previous_destination_operator_hold, previous_destination_updated_at,
+                   approval_hold_reason_code, approval_hold_source_artifact_digest,
+                   approval_hold_created_at
             FROM governance_legacy_rollback_scopes
             WHERE command_id = ? ORDER BY proposal_id
             """,
             (result.command_id,),
         ).fetchall()
+        proposal_count = connection.execute(
+            """
+            SELECT proposal_count FROM governance_legacy_migrations
+            WHERE migration_id = ? AND project_namespace = ? AND project_id = ?
+            """,
+            (
+                result.migration_id,
+                result.project_ref.namespace,
+                result.project_ref.project_id,
+            ),
+        ).fetchone()
+        roots = [
+            {
+                "proposal_ref": {
+                    "project_ref": {
+                        "project_id": str(scope[1]),
+                        "namespace": str(scope[0]),
+                    },
+                    "proposal_id": str(scope[2]),
+                },
+                "definition_digest": str(scope[4]),
+                "content_revision": int(scope[5]),
+                "state_revision": int(scope[6]),
+                "decision_epoch": int(scope[7]),
+                "audit_event_id": str(scope[8]),
+                "aggregate_sequence": int(scope[9]),
+                "event_hash": str(scope[10]),
+                "outbox_event_id": str(scope[11]),
+                "destination_ref": str(scope[12]),
+                "destination_sequence": int(scope[13]),
+                "destination_existed_before": bool(scope[14]),
+                "previous_destination_next_sequence": scope[15],
+                "previous_destination_delivered_sequence": scope[16],
+                "previous_destination_operator_hold": scope[17],
+                "previous_destination_updated_at": scope[18],
+                "approval_hold_reason_code": scope[19],
+                "approval_hold_source_artifact_digest": scope[20],
+                "approval_hold_created_at": scope[21],
+            }
+            for scope in scopes
+        ]
+        canonical_preimage = {
+            "expected_lifecycle_revision": result.lifecycle_revision - 1,
+            "migration_id": result.migration_id,
+            "project_ref": result.project_ref.model_dump(mode="json"),
+            "report_digest": result.report_digest,
+            "roots": roots,
+            "verification_id": result.verification_id,
+        }
         if (
             len(scopes) != result.removed_proposal_count
+            or proposal_count is None
+            or len(scopes) != int(proposal_count[0])
             or result.rollback_root_digest != f"sha256:{request_fingerprint}"
             or any(str(scope[3]) != result.rollback_root_digest for scope in scopes)
+            or _digest(canonical_preimage) != result.rollback_root_digest
+            or any(
+                (str(scope[0]), str(scope[1]))
+                != (result.project_ref.namespace, result.project_ref.project_id)
+                for scope in scopes
+            )
         ):
             raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
         for scope in scopes:
@@ -544,6 +605,7 @@ class LegacyMigrationActivationService:
                 "governance_definition_revisions",
                 "governance_aggregate_sequences",
                 "governance_audit_events",
+                "governance_legacy_approval_holds",
                 "governance_outbox_events",
             ):
                 if (
@@ -561,10 +623,10 @@ class LegacyMigrationActivationService:
                 SELECT next_sequence, delivered_sequence, operator_hold, updated_at
                 FROM governance_outbox_destinations WHERE destination_ref = ?
                 """,
-                (scope[4],),
+                (scope[12],),
             ).fetchone()
-            if bool(scope[6]):
-                expected = tuple(scope[7:11])
+            if bool(scope[14]):
+                expected = tuple(scope[15:19])
                 if destination is None or tuple(destination) != expected:
                     raise GovernanceEventError("LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH")
             elif destination is not None:

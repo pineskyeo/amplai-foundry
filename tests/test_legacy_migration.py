@@ -67,6 +67,7 @@ from amplai_foundry.governance.apply_jobs import (
     ApplyJobService,
     ApplyRequestService,
 )
+from amplai_foundry.governance.authority import AuthorityResolutionError
 from amplai_foundry.governance.decisions import DecisionError, DecisionService
 from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
@@ -115,13 +116,14 @@ def _freeze(root: Path, project: ProjectRef = PROJECT) -> LegacyMutationFreeze:
 def _proposal_payload(
     project: ProjectRef = PROJECT,
     *,
+    proposal_id: str = PROPOSAL_ID,
     status: str = "draft",
     revision: int = 1,
 ) -> bytes:
     payload: dict[str, object] = {
         "proposal_version": 1,
         "revision": revision,
-        "proposal_id": PROPOSAL_ID,
+        "proposal_id": proposal_id,
         "project": project.project_id,
         "namespace": project.namespace,
         "status": status,
@@ -142,7 +144,7 @@ def _proposal_payload(
                     }
                 ],
                 "confidence": "high",
-                "draft_path": (f".amplai/proposals/{PROPOSAL_ID}/drafts/CON-0001.md"),
+                "draft_path": (f".amplai/proposals/{proposal_id}/drafts/CON-0001.md"),
             }
         ],
     }
@@ -213,6 +215,23 @@ def _legacy_tree(
     return root
 
 
+def _add_legacy_proposal(
+    root: Path,
+    proposal_id: str,
+    *,
+    project: ProjectRef = PROJECT,
+    status: str = "draft",
+) -> None:
+    proposal = root / ".amplai" / "proposals" / proposal_id
+    drafts = proposal / "drafts"
+    drafts.mkdir(parents=True)
+    (proposal / "proposal.yaml").write_bytes(
+        _proposal_payload(project, proposal_id=proposal_id, status=status)
+    )
+    (proposal / "summary.md").write_text("# Legacy summary\n", encoding="utf-8")
+    (drafts / "CON-0001.md").write_text("# Legacy draft\n", encoding="utf-8")
+
+
 def _tree_inventory(root: Path) -> dict[str, tuple[int, int, int, str | None]]:
     inventory: dict[str, tuple[int, int, int, str | None]] = {}
     for path in (root, *sorted(root.rglob("*"))):
@@ -242,6 +261,17 @@ def _canonical_digest(value: object) -> str:
             sort_keys=True,
         )
         + "\n"
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def _runtime_digest(value: object) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
     ).encode("utf-8")
     return f"sha256:{hashlib.sha256(payload).hexdigest()}"
 
@@ -586,6 +616,27 @@ class AmbiguousCommitStore(GovernanceStore):
     def connect(self) -> Iterator[sqlite3.Connection]:
         with super().connect() as connection:
             yield AmbiguousCommitConnection(connection, self)  # type: ignore[misc]
+
+
+class NonDurableAmbiguousCommitConnection(AmbiguousCommitConnection):
+    def execute(self, statement: str, parameters: object = ()) -> sqlite3.Cursor:
+        if statement == "COMMIT":
+            self._store.commit_count += 1
+            if self._store.commit_count == self._store.fail_commit_number:
+                self._connection.execute("ROLLBACK")
+                raise sqlite3.OperationalError("injected before commit became durable")
+        return (
+            self._connection.execute(statement)
+            if parameters == ()
+            else self._connection.execute(statement, parameters)  # type: ignore[arg-type]
+        )
+
+
+class NonDurableAmbiguousCommitStore(AmbiguousCommitStore):
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        with GovernanceStore.connect(self) as connection:
+            yield NonDurableAmbiguousCommitConnection(connection, self)  # type: ignore[misc]
 
 
 def _run_blocking_legacy_import(
@@ -2340,6 +2391,12 @@ def test_atomic_rollback_removes_exact_roots_and_replays_durably(tmp_path: Path)
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_migration_items"
         ).fetchone() == (1,)
+        with pytest.raises(sqlite3.DatabaseError, match="rollback scope is immutable"):
+            connection.execute(
+                "UPDATE governance_legacy_rollback_scopes SET proposal_id = proposal_id"
+            )
+        with pytest.raises(sqlite3.DatabaseError, match="rollback scope is durable"):
+            connection.execute("DELETE FROM governance_legacy_rollback_scopes")
     assert store.initialize().healthy
     assert store.check_startup().healthy
 
@@ -2451,6 +2508,399 @@ def test_atomic_rollback_reconciles_after_durable_ambiguous_commit(tmp_path: Pat
     assert result.state.value == "rolled_back"
     assert result.removed_proposal_count == 1
     assert store.check_startup().healthy
+
+
+def test_atomic_rollback_reports_non_durable_ambiguous_commit(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = NonDurableAmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=store,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    before = _logical_store_snapshot(store)
+    store.commit_count = 0
+    store.fail_commit_number = 1
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_ROLLBACK_AMBIGUOUS",
+    ):
+        LegacyMigrationRollbackExecutor(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).execute(
+            plan,
+            authority_request=authority_request,
+            reason="report a rollback that did not commit",
+            idempotency_key="legacy-rollback:non-durable:1",
+        )
+    assert _logical_store_snapshot(store) == before
+    assert store.check_startup().healthy
+
+
+def test_atomic_rollback_maps_ambiguous_reauthentication_failure(tmp_path: Path) -> None:
+    class FailSecondAuthentication:
+        def __init__(self, delegate: AuthorityService) -> None:
+            self.delegate = delegate
+            self.calls = 0
+
+        def authenticate(self, *args: object, **kwargs: object) -> object:
+            self.calls += 1
+            if self.calls == 2:
+                raise AuthorityResolutionError("ACTOR_DISABLED", "injected reauthentication")
+            return self.delegate.authenticate(*args, **kwargs)  # type: ignore[arg-type]
+
+    root = _legacy_tree(tmp_path / "project")
+    store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=store,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    store.commit_count = 0
+    store.fail_commit_number = 1
+
+    with pytest.raises(LegacyMigrationLifecycleError, match="ACTOR_DISABLED"):
+        LegacyMigrationRollbackExecutor(
+            store,
+            FailSecondAuthentication(AuthorityService(store, clock=lambda: NOW)),  # type: ignore[arg-type]
+            clock=lambda: NOW,
+        ).execute(
+            plan,
+            authority_request=authority_request,
+            reason="map ambiguous reauthentication failure",
+            idempotency_key="legacy-rollback:reauth-failure:1",
+        )
+    assert store.check_startup().healthy
+
+
+def test_atomic_rollback_removes_synthetic_approval_hold(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project", status="approved")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    assert (
+        migration.proposals[0].approval_disposition is LegacyApprovalDisposition.SYNTHETIC_REQUIRED
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+
+    LegacyMigrationRollbackExecutor(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        authority_request=authority_request,
+        reason="remove synthetic approval hold with imported roots",
+        idempotency_key="legacy-rollback:synthetic-hold:1",
+    )
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_approval_holds"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT approval_hold_reason_code FROM governance_legacy_rollback_scopes"
+        ).fetchone() == ("legacy_approval_without_audit",)
+    assert store.check_startup().healthy
+
+
+def test_atomic_rollback_is_all_or_nothing_for_multiple_proposals(tmp_path: Path) -> None:
+    class FailAfterFirstRoot(LegacyMigrationRollbackExecutor):
+        removed = 0
+
+        def _after_root_removed(self, root: object) -> None:
+            self.removed += 1
+            if self.removed == 1:
+                raise sqlite3.OperationalError("injected after first of multiple roots")
+
+    second_proposal_id = "PROP-20260730-E5F6A7B8"
+    root = _legacy_tree(tmp_path / "project")
+    _add_legacy_proposal(root, second_proposal_id)
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    assert len(migration.proposals) == 2
+    imported = import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    before = _logical_store_snapshot(store)
+
+    with pytest.raises(
+        LegacyMigrationLifecycleError,
+        match="LEGACY_MIGRATION_ROLLBACK_CONFLICT",
+    ):
+        FailAfterFirstRoot(
+            store,
+            AuthorityService(store, clock=lambda: NOW),
+            clock=lambda: NOW,
+        ).execute(
+            plan,
+            authority_request=authority_request,
+            reason="inject failure between exact roots",
+            idempotency_key="legacy-rollback:multi:failure",
+        )
+    assert _logical_store_snapshot(store) == before
+
+    result = LegacyMigrationRollbackExecutor(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        authority_request=authority_request,
+        reason="remove the complete exact-root set",
+        idempotency_key="legacy-rollback:multi:success",
+    )
+    assert result.removed_proposal_count == 2
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_rollback_scopes"
+        ).fetchone() == (2,)
+        for table in (
+            "governance_active_proposals",
+            "governance_definition_revisions",
+            "governance_aggregate_sequences",
+            "governance_audit_events",
+            "governance_outbox_events",
+            "governance_outbox_destinations",
+        ):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+    for proposal, digest in zip(migration.proposals, imported.definition_digests, strict=True):
+        assert objects.get_definition_object(proposal.proposal_ref, digest)
+    assert store.check_startup().healthy
+
+
+def test_atomic_rollback_reconciliation_recomputes_retained_scope_digest(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    result = LegacyMigrationRollbackExecutor(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        authority_request=authority_request,
+        reason="retain canonical rollback evidence",
+        idempotency_key="legacy-rollback:forged-digest:1",
+    )
+    forged_digest = f"sha256:{'f' * 64}"
+    trigger_names = (
+        "governance_legacy_lifecycle_commands_no_update",
+        "governance_legacy_lifecycle_results_no_update",
+        "governance_legacy_rollback_scopes_no_update",
+    )
+    with store.connect() as connection:
+        trigger_sql = {
+            name: str(
+                connection.execute(
+                    "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ?",
+                    (name,),
+                ).fetchone()[0]
+            )
+            for name in trigger_names
+        }
+        result_payload = json.loads(
+            str(
+                connection.execute(
+                    "SELECT result_json FROM governance_legacy_migration_lifecycle_results "
+                    "WHERE command_id = ?",
+                    (result.command_id,),
+                ).fetchone()[0]
+            )
+        )
+        for name in trigger_names:
+            connection.execute(f"DROP TRIGGER {name}")
+        connection.execute(
+            "UPDATE governance_legacy_migration_lifecycle_commands "
+            "SET request_fingerprint = ? WHERE command_id = ?",
+            (forged_digest.removeprefix("sha256:"), result.command_id),
+        )
+        connection.execute(
+            "UPDATE governance_legacy_rollback_scopes SET rollback_root_digest = ? "
+            "WHERE command_id = ?",
+            (forged_digest, result.command_id),
+        )
+        result_payload["rollback_root_digest"] = forged_digest
+        result_preimage = {
+            key: value
+            for key, value in result_payload.items()
+            if key not in {"result_digest", "replayed"}
+        }
+        result_payload["result_digest"] = _runtime_digest(result_preimage)
+        connection.execute(
+            "UPDATE governance_legacy_migration_lifecycle_results "
+            "SET result_json = ?, result_digest = ? WHERE command_id = ?",
+            (
+                json.dumps(
+                    result_payload,
+                    ensure_ascii=False,
+                    allow_nan=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                result_payload["result_digest"],
+                result.command_id,
+            ),
+        )
+        for name in trigger_names:
+            connection.execute(trigger_sql[name])
+
+    with pytest.raises(
+        GovernanceEventError,
+        match="LEGACY_MIGRATION_LIFECYCLE_ROOT_MISMATCH",
+    ):
+        store.check_startup()
+
+
+def test_atomic_rollback_reconciliation_rejects_post_rollback_audit_residue(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    with store.connect() as connection:
+        audit_columns = tuple(
+            str(row[1]) for row in connection.execute("PRAGMA table_info(governance_audit_events)")
+        )
+        audit_row = tuple(connection.execute("SELECT * FROM governance_audit_events").fetchone())
+    authority_request = _migration_authority(store)
+    plan = LegacyMigrationRollbackPlanner(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).plan(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+    )
+    LegacyMigrationRollbackExecutor(
+        store,
+        AuthorityService(store, clock=lambda: NOW),
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        authority_request=authority_request,
+        reason="remove roots before residue injection",
+        idempotency_key="legacy-rollback:residue:1",
+    )
+    with store.connect() as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            f"INSERT INTO governance_audit_events({', '.join(audit_columns)}) "
+            f"VALUES ({', '.join('?' for _ in audit_columns)})",
+            audit_row,
+        )
+        connection.execute("PRAGMA foreign_keys = ON")
+
+    with pytest.raises(
+        GovernanceEventError,
+        match="LEGACY_MIGRATION_ROLLBACK_RESIDUE",
+    ):
+        GovernanceEventService(store).reconcile()
+    with pytest.raises(GovernanceStoreError, match="foreign key integrity check"):
+        store.check_startup()
 
 
 def test_atomic_rollback_restores_preexisting_destination_exactly(tmp_path: Path) -> None:

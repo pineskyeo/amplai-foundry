@@ -271,7 +271,7 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         "8d016673e8b0ba25242d7eed0d934a0a86ac52b06b28d61e196b27c2710e9ea1"
     )
     assert INITIAL_MIGRATIONS[27].checksum == (
-        "9775fdd23e20aa09140c02a38e9bf660b8320ceb241997d078797ff5afbfdcbc"
+        "7f2a355f4516e1607b2f140907cf384fd4db36743cd80816ea4ea6e0ac045ee9"
     )
     assert metadata == ("amplai-governance",)
 

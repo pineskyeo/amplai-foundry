@@ -3328,6 +3328,9 @@ INITIAL_MIGRATIONS = (
                 previous_destination_delivered_sequence INTEGER,
                 previous_destination_operator_hold INTEGER,
                 previous_destination_updated_at TEXT,
+                approval_hold_reason_code TEXT,
+                approval_hold_source_artifact_digest TEXT,
+                approval_hold_created_at TEXT,
                 created_at TEXT NOT NULL,
                 PRIMARY KEY (command_id, proposal_id),
                 FOREIGN KEY (command_id)
@@ -3341,6 +3344,18 @@ INITIAL_MIGRATIONS = (
                 CHECK (
                     length(rollback_root_digest) = 71
                     AND substr(rollback_root_digest, 1, 7) = 'sha256:'
+                ),
+                CHECK (
+                    (
+                        approval_hold_reason_code IS NULL
+                        AND approval_hold_source_artifact_digest IS NULL
+                        AND approval_hold_created_at IS NULL
+                    ) OR (
+                        approval_hold_reason_code = 'legacy_approval_without_audit'
+                        AND length(approval_hold_source_artifact_digest) = 71
+                        AND substr(approval_hold_source_artifact_digest, 1, 7) = 'sha256:'
+                        AND approval_hold_created_at IS NOT NULL
+                    )
                 )
             ) WITHOUT ROWID
             """,
@@ -3383,6 +3398,10 @@ INITIAL_MIGRATIONS = (
                   ON t.migration_id = p.migration_id
                  AND t.project_namespace = p.project_namespace
                  AND t.project_id = p.project_id AND t.proposal_id = p.proposal_id
+                LEFT JOIN governance_legacy_approval_holds r
+                  ON r.migration_id = i.migration_id
+                 AND r.project_namespace = i.project_namespace
+                 AND r.project_id = i.project_id AND r.proposal_id = i.proposal_id
                 WHERE c.command_id = NEW.command_id
                   AND c.migration_id = NEW.migration_id
                   AND c.project_namespace = NEW.project_namespace
@@ -3413,6 +3432,23 @@ INITIAL_MIGRATIONS = (
                       NEW.previous_destination_delivered_sequence
                   AND p.previous_operator_hold IS NEW.previous_destination_operator_hold
                   AND p.previous_updated_at IS NEW.previous_destination_updated_at
+                  AND (
+                      (
+                          i.approval_disposition = 'synthetic_required'
+                          AND r.reason_code = NEW.approval_hold_reason_code
+                          AND r.reason_code = 'legacy_approval_without_audit'
+                          AND r.source_artifact_digest =
+                              NEW.approval_hold_source_artifact_digest
+                          AND r.source_artifact_digest = i.proposal_artifact_digest
+                          AND r.created_at = NEW.approval_hold_created_at
+                      ) OR (
+                          i.approval_disposition != 'synthetic_required'
+                          AND r.migration_id IS NULL
+                          AND NEW.approval_hold_reason_code IS NULL
+                          AND NEW.approval_hold_source_artifact_digest IS NULL
+                          AND NEW.approval_hold_created_at IS NULL
+                      )
+                  )
                   AND s.aggregate_sequence = NEW.aggregate_sequence
                   AND s.last_event_hash = NEW.event_hash
                   AND o.state = 'pending' AND o.attempts = 0
@@ -3432,6 +3468,24 @@ INITIAL_MIGRATIONS = (
             CREATE TRIGGER governance_legacy_rollback_scopes_no_delete
             BEFORE DELETE ON governance_legacy_rollback_scopes
             BEGIN SELECT RAISE(ABORT, 'legacy rollback scope is durable'); END
+            """,
+            "DROP TRIGGER governance_legacy_approval_holds_no_delete",
+            """
+            CREATE TRIGGER governance_legacy_approval_holds_no_delete
+            BEFORE DELETE ON governance_legacy_approval_holds
+            WHEN NOT EXISTS (
+                SELECT 1 FROM governance_legacy_rollback_scopes s
+                JOIN governance_legacy_migration_lifecycle_heads h
+                  ON h.migration_id = s.migration_id
+                WHERE s.migration_id = OLD.migration_id
+                  AND s.project_namespace = OLD.project_namespace
+                  AND s.project_id = OLD.project_id AND s.proposal_id = OLD.proposal_id
+                  AND s.approval_hold_reason_code = OLD.reason_code
+                  AND s.approval_hold_source_artifact_digest = OLD.source_artifact_digest
+                  AND s.approval_hold_created_at = OLD.created_at
+                  AND h.state = 'staged_verified'
+            )
+            BEGIN SELECT RAISE(ABORT, 'legacy approval hold is durable'); END
             """,
             "DROP TRIGGER governance_outbox_events_no_delete",
             """
@@ -4331,6 +4385,9 @@ class MigrationRunner:
                 ("previous_destination_delivered_sequence", "INTEGER", 0, 0),
                 ("previous_destination_operator_hold", "INTEGER", 0, 0),
                 ("previous_destination_updated_at", "TEXT", 0, 0),
+                ("approval_hold_reason_code", "TEXT", 0, 0),
+                ("approval_hold_source_artifact_digest", "TEXT", 0, 0),
+                ("approval_hold_created_at", "TEXT", 0, 0),
                 ("created_at", "TEXT", 1, 0),
             )
         for table, expected in expected_columns.items():
