@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.models import (
@@ -56,6 +56,16 @@ class BindingTarget(BaseModel):
     external_actor_id: str = Field(min_length=1)
     actor_ref: ActorRef
 
+    @model_validator(mode="after")
+    def validate_installation_scope(self) -> BindingTarget:
+        _validate_channel_installation(
+            self.provider,
+            self.provider_installation_ref,
+            None,
+            require_channel=False,
+        )
+        return self
+
 
 class BindingView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -64,8 +74,8 @@ class BindingView(BaseModel):
     target: BindingTarget
     binding_version: int = Field(ge=1)
     status: ActorBindingStatus
-    created_at: datetime
-    disabled_at: datetime | None = None
+    created_at: AwareDatetime
+    disabled_at: AwareDatetime | None = None
 
 
 class BindingTransitionView(BaseModel):
@@ -83,7 +93,56 @@ class BindingTransitionView(BaseModel):
     approval_id: str
     approved_by: str
     reason: str
-    occurred_at: datetime
+    occurred_at: AwareDatetime
+
+
+class DirectAuthorityRequest(BaseModel):
+    """Server API input; callers supply identity facts, never permissions."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    provider: ChannelProvider
+    provider_installation_ref: str = Field(min_length=1)
+    external_actor_id: str = Field(min_length=1)
+    project_ref: ProjectRef
+    request_id: str = Field(min_length=1)
+    channel: ChannelRef
+
+
+class IngressAuthorityRequest(BaseModel):
+    """Worker lease identity. Project and Actor are derived from durable records."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    command_id: str = Field(pattern=r"^CMD-[A-F0-9]{16}$")
+    worker_id: str = Field(min_length=1)
+    generation: int = Field(ge=1)
+
+
+def _validate_channel_installation(
+    provider: ChannelProvider,
+    installation: str,
+    channel: ChannelRef | None,
+    *,
+    require_channel: bool = True,
+) -> None:
+    if not installation.strip():
+        raise AuthorityResolutionError(
+            "PROVIDER_INSTALLATION_INVALID", "Provider installation이 비어 있습니다."
+        )
+    if provider is not ChannelProvider.SLACK:
+        return
+    workspace_id, separator, app_id = installation.partition(":")
+    if not workspace_id or not separator or not app_id:
+        raise AuthorityResolutionError(
+            "PROVIDER_INSTALLATION_INVALID",
+            "Slack installation은 workspace_id:app_id 형식이어야 합니다.",
+        )
+    if require_channel and (channel is None or channel.workspace_id != workspace_id):
+        raise AuthorityResolutionError(
+            "ACTION_CHANNEL_MISMATCH",
+            "Slack installation workspace와 channel workspace가 다릅니다.",
+        )
 
 
 class ActorBindingService:
@@ -272,7 +331,9 @@ class ActorBindingService:
         now = self._timestamp(self._aware(self._clock()))
         with self.store.connect() as connection, governance_transaction(connection):
             self._authorize_manager(connection, approval)
-            self._actor_row(connection, target.actor_ref)
+            _actor_type, _profile, actor_status = self._actor_row(connection, target.actor_ref)
+            if actor_status != ActorBindingStatus.ACTIVE.value:
+                raise AuthorityResolutionError("ACTOR_DISABLED", "대상 Actor가 비활성입니다.")
             current = self._active_binding(
                 connection,
                 target.provider,
@@ -584,58 +645,76 @@ class AuthorityService:
 
     def authenticate(
         self,
+        request: DirectAuthorityRequest | IngressAuthorityRequest,
         *,
-        provider: ChannelProvider,
-        provider_installation_ref: str,
-        external_actor_id: str,
-        project_ref: ProjectRef,
-        request_id: str,
-        channel: ChannelRef,
+        connection: sqlite3.Connection | None = None,
     ) -> AuthorityContext:
         authenticated_at = ActorBindingService._aware(self._clock())
-        if channel.provider is not provider:
+        if isinstance(request, IngressAuthorityRequest):
+            if connection is None or not connection.in_transaction:
+                raise AuthorityResolutionError(
+                    "GOVERNANCE_TRANSACTION_REQUIRED", "active transaction이 필요합니다."
+                )
+            return self._authenticate_ingress(connection, request, authenticated_at)
+        _validate_channel_installation(
+            request.provider,
+            request.provider_installation_ref,
+            request.channel,
+        )
+        if request.channel.provider is not request.provider:
             raise AuthorityResolutionError(
                 "ACTION_CHANNEL_MISMATCH", "인증 provider context와 channel이 다릅니다."
             )
-        with self.store.connect() as connection:
+        if connection is not None:
             return self._authenticate_in_connection(
                 connection,
-                provider,
-                provider_installation_ref,
-                external_actor_id,
-                project_ref,
-                request_id,
-                channel,
+                request.provider,
+                request.provider_installation_ref,
+                request.external_actor_id,
+                request.project_ref,
+                request.request_id,
+                request.channel,
+                authenticated_at,
+            )
+        with self.store.connect() as opened_connection:
+            return self._authenticate_in_connection(
+                opened_connection,
+                request.provider,
+                request.provider_installation_ref,
+                request.external_actor_id,
+                request.project_ref,
+                request.request_id,
+                request.channel,
                 authenticated_at,
             )
 
-    def authenticate_ingress_in_transaction(
+    def _authenticate_ingress(
         self,
         connection: sqlite3.Connection,
-        command_id: str,
-        *,
-        worker_id: str,
-        generation: int,
-        project_ref: ProjectRef,
+        request: IngressAuthorityRequest,
+        authenticated_at: datetime,
     ) -> AuthorityContext:
-        if not connection.in_transaction:
-            raise AuthorityResolutionError(
-                "GOVERNANCE_TRANSACTION_REQUIRED", "active transaction이 필요합니다."
-            )
         now = ActorBindingService._timestamp(ActorBindingService._aware(self._clock()))
         row = connection.execute(
             """
-            SELECT provider, provider_installation_ref, external_actor_key, channel_json
-            FROM governance_ingress_commands
-            WHERE command_id = ? AND state = 'leased' AND lease_owner = ?
-              AND claim_generation = ? AND lease_expires_at > ?
+            SELECT i.provider, i.provider_installation_ref, i.external_actor_key,
+                   i.channel_json, t.project_namespace, t.project_id
+            FROM governance_ingress_commands i
+            JOIN governance_action_tokens t
+              ON t.token_id = i.credential_id
+             AND t.token_hash = i.credential_hash
+             AND t.allowed_action = i.action
+            WHERE i.command_id = ? AND i.state = 'leased' AND i.lease_owner = ?
+              AND i.claim_generation = ? AND i.lease_expires_at > ?
             """,
-            (command_id, worker_id, generation, now),
+            (request.command_id, request.worker_id, request.generation, now),
         ).fetchone()
         if row is None:
             raise AuthorityResolutionError("INGRESS_LEASE_CONFLICT", "유효한 lease가 없습니다.")
         channel = ChannelRef.model_validate_json(str(row[3]))
         provider = ChannelProvider(str(row[0]))
+        installation = str(row[1])
+        _validate_channel_installation(provider, installation, channel)
         if channel.provider is not provider:
             raise AuthorityResolutionError(
                 "ACTION_CHANNEL_MISMATCH", "인증 provider context와 channel이 다릅니다."
@@ -643,12 +722,12 @@ class AuthorityService:
         return self._authenticate_in_connection(
             connection,
             provider,
-            str(row[1]),
+            installation,
             str(row[2]),
-            project_ref,
-            command_id,
+            ProjectRef(namespace=str(row[4]), project_id=str(row[5])),
+            request.command_id,
             channel,
-            ActorBindingService._aware(self._clock()),
+            authenticated_at,
         )
 
     @staticmethod

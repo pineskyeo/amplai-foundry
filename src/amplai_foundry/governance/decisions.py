@@ -15,7 +15,21 @@ from typing import cast
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from amplai_foundry.governance.active_proposals import ActiveProposalStatus
-from amplai_foundry.governance.models import ActorRef, ActorType, ChannelRef, Digest, ProposalRef
+from amplai_foundry.governance.authority import (
+    AuthorityResolutionError,
+    AuthorityService,
+    DirectAuthorityRequest,
+    IngressAuthorityRequest,
+)
+from amplai_foundry.governance.models import (
+    ActorRef,
+    ActorType,
+    AuthorityContext,
+    AuthorityPermission,
+    ChannelRef,
+    Digest,
+    ProposalRef,
+)
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 
@@ -103,22 +117,21 @@ class DecisionService:
     def __init__(
         self,
         store: GovernanceStore,
+        authority_service: AuthorityService,
         *,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
+        self.authority_service = authority_service
         self._clock = clock or _system_now
 
     def issue_tokens(
         self,
         ref: ProposalRef,
         *,
-        actor_ref: ActorRef,
-        channel_ref: ChannelRef,
+        authority_request: DirectAuthorityRequest,
         ttl: timedelta = timedelta(minutes=15),
     ) -> tuple[IssuedActionToken, ...]:
-        if actor_ref.actor_type is not ActorType.HUMAN:
-            raise DecisionError("AUTHORITY_DENIED")
         issued_at = self._aware(self._clock())
         if ttl <= timedelta(0):
             raise ValueError("Token TTL은 0보다 커야 합니다.")
@@ -127,12 +140,14 @@ class DecisionService:
             (action, self._token_id(), secrets.token_hex(16)) for action in DecisionAction
         )
         with self.store.connect() as connection, governance_transaction(connection):
+            authority = self._authenticate(authority_request, connection=connection)
+            self._require_decision_authority(authority, ref)
             proposal = self._proposal_row(connection, ref)
             if proposal is None:
                 raise DecisionError("PROPOSAL_NOT_FOUND")
             if ActiveProposalStatus(str(proposal[4])) is not ActiveProposalStatus.REVIEWED:
                 raise DecisionError("INVALID_PROPOSAL_STATE")
-            channel_json = self._channel_json(channel_ref)
+            channel_json = self._channel_json(authority.source.channel)
             for action, token_id, raw_token in credentials:
                 connection.execute(
                     """
@@ -152,8 +167,8 @@ class DecisionService:
                         proposal[2],
                         proposal[3],
                         action.value,
-                        actor_ref.actor_id,
-                        actor_ref.actor_type.value,
+                        authority.actor_ref.actor_id,
+                        authority.actor_ref.actor_type.value,
                         channel_json,
                         self._timestamp(issued_at),
                         self._timestamp(expires_at),
@@ -172,33 +187,72 @@ class DecisionService:
         ref: ProposalRef,
         *,
         action: DecisionAction,
-        actor_ref: ActorRef,
-        channel_ref: ChannelRef,
+        authority_request: DirectAuthorityRequest,
         raw_token: str,
         idempotency_key: str,
         request_fingerprint: str,
     ) -> DecisionResult:
         self._validate_command(idempotency_key, request_fingerprint, raw_token)
         with self.store.connect() as connection, governance_transaction(connection):
-            return self.decide_verified_hash_in_transaction(
+            authority = self._authenticate(authority_request, connection=connection)
+            self._require_decision_authority(authority, ref)
+            return self._decide_verified_hash_in_transaction(
                 connection,
                 ref,
                 action=action,
-                actor_ref=actor_ref,
-                channel_ref=channel_ref,
+                authority=authority,
                 credential_hash=self._token_hash(raw_token),
                 idempotency_key=idempotency_key,
                 request_fingerprint=request_fingerprint,
             )
 
-    def decide_verified_hash_in_transaction(
+    def decide_ingress_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        authority_request: IngressAuthorityRequest,
+        *,
+        idempotency_key: str,
+        request_fingerprint: str,
+    ) -> DecisionResult:
+        """Resolve durable ingress scope and execute under one caller-owned transaction."""
+
+        authority = self._authenticate(authority_request, connection=connection)
+        row = connection.execute(
+            """
+            SELECT t.proposal_id, i.action, i.credential_hash
+            FROM governance_ingress_commands i
+            JOIN governance_action_tokens t
+              ON t.token_id = i.credential_id
+             AND t.token_hash = i.credential_hash
+             AND t.allowed_action = i.action
+            WHERE i.command_id = ?
+            """,
+            (authority_request.command_id,),
+        ).fetchone()
+        if row is None:
+            raise DecisionError("ACTION_TOKEN_INVALID")
+        ref = ProposalRef(
+            project_ref=authority.project_ref,
+            proposal_id=str(row[0]),
+        )
+        self._require_decision_authority(authority, ref)
+        return self._decide_verified_hash_in_transaction(
+            connection,
+            ref,
+            action=DecisionAction(str(row[1])),
+            authority=authority,
+            credential_hash=str(row[2]),
+            idempotency_key=idempotency_key,
+            request_fingerprint=request_fingerprint,
+        )
+
+    def _decide_verified_hash_in_transaction(
         self,
         connection: sqlite3.Connection,
         ref: ProposalRef,
         *,
         action: DecisionAction,
-        actor_ref: ActorRef,
-        channel_ref: ChannelRef,
+        authority: AuthorityContext,
         credential_hash: str,
         idempotency_key: str,
         request_fingerprint: str,
@@ -213,7 +267,8 @@ class DecisionService:
             credential_hash,
         )
         processed_at = self._aware(self._clock())
-        channel_json = self._channel_json(channel_ref)
+        channel_json = self._channel_json(authority.source.channel)
+        actor_ref = authority.actor_ref
         replay = self._result_row(connection, idempotency_key)
         if replay is not None:
             return self._replay_result(
@@ -330,6 +385,26 @@ class DecisionService:
             token_id=str(token[0]),
             processed_at=processed_at,
         )
+
+    def _authenticate(
+        self,
+        request: DirectAuthorityRequest | IngressAuthorityRequest,
+        *,
+        connection: sqlite3.Connection,
+    ) -> AuthorityContext:
+        try:
+            return self.authority_service.authenticate(request, connection=connection)
+        except AuthorityResolutionError as error:
+            raise DecisionError(error.code) from error
+
+    @staticmethod
+    def _require_decision_authority(authority: AuthorityContext, ref: ProposalRef) -> None:
+        if authority.project_ref != ref.project_ref:
+            raise DecisionError("AUTHORITY_DENIED")
+        if authority.actor_ref.actor_type is not ActorType.HUMAN:
+            raise DecisionError("AUTHORITY_DENIED")
+        if AuthorityPermission.PROPOSAL_DECIDE not in authority.permissions:
+            raise DecisionError("AUTHORITY_DENIED")
 
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:

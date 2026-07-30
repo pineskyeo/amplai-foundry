@@ -23,6 +23,8 @@ from amplai_foundry.governance import (
     BindingTarget,
     ChannelProvider,
     ChannelRef,
+    DirectAuthorityRequest,
+    IngressAuthorityRequest,
     VerifiedProviderCommand,
 )
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
@@ -119,12 +121,14 @@ def _setup(
 
 def _authenticate(service: AuthorityService, project_ref: ProjectRef = PROJECT):
     return service.authenticate(
-        provider=ChannelProvider.SLACK,
-        provider_installation_ref="T123:APP1",
-        external_actor_id="U456",
-        project_ref=project_ref,
-        request_id="CMD-0123456789ABCDEF",
-        channel=CHANNEL,
+        DirectAuthorityRequest(
+            provider=ChannelProvider.SLACK,
+            provider_installation_ref="T123:APP1",
+            external_actor_id="U456",
+            project_ref=project_ref,
+            request_id="CMD-0123456789ABCDEF",
+            channel=CHANNEL,
+        )
     )
 
 
@@ -143,6 +147,32 @@ def test_authority_is_server_created_from_active_binding_and_project_permission(
     )
     assert authority.source.request_id == "CMD-0123456789ABCDEF"
     assert authority.authenticated_at == NOW
+
+
+def test_slack_installation_workspace_must_match_authority_channel(tmp_path: Path) -> None:
+    _store, _clock, bindings, authority_service = _setup(tmp_path)
+    bindings.create_binding(_target(), approval=_approval(10))
+    mismatched = DirectAuthorityRequest(
+        provider=ChannelProvider.SLACK,
+        provider_installation_ref="T123:APP1",
+        external_actor_id="U456",
+        project_ref=PROJECT,
+        request_id="CMD-0123456789ABCDEF",
+        channel=CHANNEL.model_copy(update={"workspace_id": "T999"}),
+    )
+
+    with pytest.raises(AuthorityResolutionError, match="ACTION_CHANNEL_MISMATCH"):
+        authority_service.authenticate(mismatched)
+
+
+def test_binding_to_disabled_actor_is_rejected_without_transition(tmp_path: Path) -> None:
+    _store, _clock, bindings, _authority = _setup(tmp_path)
+    bindings.disable_actor(USER, approval=_approval(10))
+
+    with pytest.raises(AuthorityResolutionError, match="ACTOR_DISABLED"):
+        bindings.create_binding(_target(), approval=_approval(11))
+
+    assert bindings.list_transitions() == ()
 
 
 @pytest.mark.parametrize("injected_field", ("permissions", "authority_context"))
@@ -296,12 +326,14 @@ def test_human_decision_and_intake_policy_permissions_are_enforced(tmp_path: Pat
         approval=_approval(12),
     )
     authority = AuthorityService(bindings.store, clock=lambda: NOW).authenticate(
-        provider=ChannelProvider.SLACK,
-        provider_installation_ref="T123:APP1",
-        external_actor_id="UINTAKE",
-        project_ref=PROJECT,
-        request_id="CMD-1111111111111111",
-        channel=CHANNEL,
+        DirectAuthorityRequest(
+            provider=ChannelProvider.SLACK,
+            provider_installation_ref="T123:APP1",
+            external_actor_id="UINTAKE",
+            project_ref=PROJECT,
+            request_id="CMD-1111111111111111",
+            channel=CHANNEL,
+        )
     )
     assert authority.permissions == frozenset(
         {
@@ -322,6 +354,46 @@ def _seed_leased_ingress(store: GovernanceStore) -> str:
     body_digest = f"sha256:{hashlib.sha256(b'body').hexdigest()}"
     credential_hash = f"sha256:{hashlib.sha256(b'token').hexdigest()}"
     with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals(
+                project_namespace, project_id, proposal_id,
+                active_definition_digest, content_revision, state_revision,
+                decision_epoch, status, created_at, updated_at
+            ) VALUES (?, ?, 'PROP-20260730-ABCDEF12', ?, 1, 2, 1,
+                      'reviewed', ?, ?)
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                f"sha256:{'1' * 64}",
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_action_tokens(
+                token_id, token_hash, project_namespace, project_id, proposal_id,
+                active_definition_digest, content_revision, state_revision,
+                decision_epoch, allowed_action, allowed_actor_id,
+                allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                state, resolved_at
+            ) VALUES ('TOK-0123456789ABCDEF', ?, ?, ?,
+                      'PROP-20260730-ABCDEF12', ?, 1, 2, 1, 'approve', ?,
+                      'human', ?, ?, ?, 'issued', NULL)
+            """,
+            (
+                credential_hash,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                f"sha256:{'1' * 64}",
+                USER.actor_id,
+                channel_json,
+                NOW.isoformat(),
+                (NOW + timedelta(minutes=15)).isoformat(),
+            ),
+        )
         connection.execute(
             """
             INSERT INTO governance_ingress_commands(
@@ -354,16 +426,30 @@ def test_ingress_authority_is_reevaluated_in_worker_transaction(tmp_path: Path) 
     bindings.rebind(_target(USER_TWO), approval=_approval(11))
 
     with store.connect() as connection, governance_transaction(connection):
-        authority = authority_service.authenticate_ingress_in_transaction(
-            connection,
-            command_id,
-            worker_id="worker",
-            generation=1,
-            project_ref=PROJECT,
+        authority = authority_service.authenticate(
+            IngressAuthorityRequest(
+                command_id=command_id,
+                worker_id="worker",
+                generation=1,
+            ),
+            connection=connection,
         )
 
     assert authority.actor_ref == USER_TWO
+    assert authority.project_ref == PROJECT
     assert authority.permissions == frozenset({AuthorityPermission.PROPOSAL_DECIDE})
+
+
+def test_ingress_authority_request_rejects_caller_selected_project() -> None:
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        IngressAuthorityRequest.model_validate(
+            {
+                "command_id": "CMD-0123456789ABCDEF",
+                "worker_id": "worker",
+                "generation": 1,
+                "project_ref": OTHER_PROJECT,
+            }
+        )
 
 
 def test_authority_failure_does_not_mutate_ingress_or_governance_aggregates(tmp_path: Path) -> None:
@@ -383,12 +469,13 @@ def test_authority_failure_does_not_mutate_ingress_or_governance_aggregates(tmp_
         governance_transaction(connection),
         pytest.raises(AuthorityResolutionError, match="ACTOR_UNMAPPED"),
     ):
-        authority_service.authenticate_ingress_in_transaction(
-            connection,
-            command_id,
-            worker_id="worker",
-            generation=1,
-            project_ref=PROJECT,
+        authority_service.authenticate(
+            IngressAuthorityRequest(
+                command_id=command_id,
+                worker_id="worker",
+                generation=1,
+            ),
+            connection=connection,
         )
 
     with store.connect() as connection:

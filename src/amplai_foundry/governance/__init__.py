@@ -20,6 +20,8 @@ from amplai_foundry.governance.authority import (
     BindingTarget,
     BindingTransitionView,
     BindingView,
+    DirectAuthorityRequest,
+    IngressAuthorityRequest,
 )
 from amplai_foundry.governance.decisions import (
     ActionTokenState,
@@ -119,10 +121,12 @@ __all__ = [
     "DefinitionObjectRef",
     "DefinitionObjectStoreError",
     "DefinitionRevision",
+    "DirectAuthorityRequest",
     "ExternalActorBinding",
     "FileProposalActionLedger",
     "ImmutableDefinitionObjectStore",
     "IngressAck",
+    "IngressAuthorityRequest",
     "IngressCommandView",
     "IngressConfig",
     "IngressError",
