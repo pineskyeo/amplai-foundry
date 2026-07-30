@@ -25,11 +25,12 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-006 — Authority And Actor Binding
   class: code
   gate: PASS at `a560843`
-- [~] MGC-007 — Direct Mutation Closure
+- [x] MGC-007 — Direct Mutation Closure
+  class: code
+  gate: PASS at `6d9c7ee`
+- [~] MGC-008 — Ordered Transactional Outbox
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-- [ ] MGC-008 — Ordered Transactional Outbox
-  class: code
 - [ ] MGC-009 — ApplyGrant And Apply Job
   class: code
 - [ ] MGC-010 — Fenced Publish Coordinator
