@@ -204,6 +204,10 @@ class GovernanceStore:
         from amplai_foundry.governance.events import GovernanceEventService
 
         GovernanceEventService.reconcile_connection(connection)
+        if health.schema_version >= 21:
+            from amplai_foundry.governance.legacy_migration import LegacyProposalImportService
+
+            LegacyProposalImportService.reconcile_verification_roots(connection)
 
     def _configure(
         self,

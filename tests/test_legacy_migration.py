@@ -39,6 +39,7 @@ from amplai_foundry.governance import (
     LegacyMigrationBackupEvidence,
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
+    LegacyMigrationVerificationReport,
     LegacyMutationFreeze,
     LegacyProjectPackBackupManifest,
     LegacyProposalDryRunService,
@@ -64,7 +65,7 @@ from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
     canonicalize_definition,
 )
-from amplai_foundry.governance.events import GovernanceEventService
+from amplai_foundry.governance.events import GovernanceEventError, GovernanceEventService
 from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS, MigrationRunner
 from amplai_foundry.governance.object_store import sha256_digest
 from amplai_foundry.governance.store import (
@@ -1185,9 +1186,164 @@ def test_verification_rescans_source_and_persists_bidirectional_report(
             connection.execute(
                 "UPDATE governance_legacy_migration_verifications SET verified_by = 'other'"
             )
+        with pytest.raises(sqlite3.DatabaseError, match="verification is durable"):
+            connection.execute("DELETE FROM governance_legacy_migration_verifications")
 
 
-@pytest.mark.parametrize("tamper", ["source", "active"])
+def test_verification_insert_guard_rejects_prepared_or_unbound_root(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.prepare(plan, backup)
+
+    with (
+        store.connect() as connection,
+        pytest.raises(
+            sqlite3.DatabaseError,
+            match="legacy verification root mismatch",
+        ),
+    ):
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_verifications(
+                verification_id, migration_id, project_namespace, project_id,
+                snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                source_file_count, report_digest, report_json, verified_by,
+                verified_at
+            ) VALUES ('MVF-0000000000000001', ?, ?, ?, ?, ?, ?, 1, 1, ?, '{}',
+                      'forged', ?)
+            """,
+            (
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                plan.snapshot_id,
+                plan.snapshot_digest,
+                plan.plan_digest,
+                f"sha256:{'f' * 64}",
+                NOW.isoformat(),
+            ),
+        )
+
+
+def test_v21_forged_verification_json_is_rejected_on_replay_and_upgrade(
+    tmp_path: Path,
+) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    path = tmp_path / "runtime" / "governance.db"
+    v21 = GovernanceStore(path, migration_runner=MigrationRunner(INITIAL_MIGRATIONS[:21]))
+    v21.initialize()
+    store, _objects, dry_run, service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+        store=v21,
+    )
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    snapshot = dry_run.create_snapshot(plan.freeze)
+    with store.connect() as connection:
+        proposals = service._verification_proposals(connection, plan)
+    verification_id, report_digest = service._verification_identity(plan, snapshot, proposals)
+    foreign_preimage = {
+        "migration_id": plan.plan_id,
+        "plan_digest": plan.plan_digest,
+        "project_ref": plan.project_ref.model_dump(mode="json"),
+        "proposals": [item.model_dump(mode="json") for item in proposals],
+        "snapshot_digest": snapshot.snapshot_digest,
+        "snapshot_id": snapshot.snapshot_id,
+        "source_files": [item.model_dump(mode="json") for item in snapshot.files],
+        "source_total_bytes": snapshot.total_bytes,
+        "verified_by": "different-actor",
+    }
+    foreign_digest = _canonical_digest(foreign_preimage)
+    foreign = LegacyMigrationVerificationReport(
+        verification_id=f"MVF-{foreign_digest[-16:].upper()}",
+        migration_id=plan.plan_id,
+        project_ref=plan.project_ref,
+        snapshot_id=plan.snapshot_id,
+        snapshot_digest=plan.snapshot_digest,
+        plan_digest=plan.plan_digest,
+        source_files=snapshot.files,
+        source_total_bytes=snapshot.total_bytes,
+        proposals=proposals,
+        report_digest=foreign_digest,
+        verified_by="different-actor",
+        verified_at=NOW,
+    )
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_legacy_migration_verifications(
+                verification_id, migration_id, project_namespace, project_id,
+                snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                source_file_count, report_digest, report_json, verified_by,
+                verified_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                verification_id,
+                plan.plan_id,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                plan.snapshot_id,
+                plan.snapshot_digest,
+                plan.plan_digest,
+                len(proposals),
+                len(snapshot.files),
+                report_digest,
+                json.dumps(foreign.model_dump(mode="json"), separators=(",", ":")),
+                foreign.verified_by,
+                NOW.isoformat(),
+            ),
+        )
+
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_MIGRATION_VERIFICATION_CONFLICT",
+    ):
+        service.verify_import(plan, backup)
+    with pytest.raises(GovernanceEventError, match="LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH"):
+        GovernanceStore(path).initialize()
+
+
+def test_verification_reconciles_after_durable_ambiguous_commit(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path / "project")
+    store = AmbiguousCommitStore(tmp_path / "runtime" / "governance.db")
+    store.initialize()
+    objects = ImmutableDefinitionObjectStore(PROJECT, root)
+    dry_run = LegacyProposalDryRunService(root, PROJECT)
+    service = LegacyProposalImportService(dry_run, store, objects)
+    backup = _backup_evidence(tmp_path / "fixture", root, store)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.import_state(plan, backup)
+    store.commit_count = 0
+    store.fail_commit_number = 2
+
+    report = service.verify_import(plan, backup)
+
+    assert report.replayed
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_migration_verifications"
+        ).fetchone() == (1,)
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    ["source", "source_same_length", "source_add", "source_delete", "active"],
+)
 def test_verification_rejects_source_or_import_root_mismatch(
     tmp_path: Path,
     tamper: str,
@@ -1200,9 +1356,16 @@ def test_verification_rejects_source_or_import_root_mismatch(
         validation_policy_ref="policy/migration/v1",
     )
     service.import_state(plan, backup)
-    if tamper == "source":
+    if tamper.startswith("source"):
         summary = root / ".amplai" / "proposals" / PROPOSAL_ID / "summary.md"
-        summary.write_bytes(summary.read_bytes() + b"tampered")
+        if tamper == "source":
+            summary.write_bytes(summary.read_bytes() + b"tampered")
+        elif tamper == "source_same_length":
+            summary.write_bytes(b"x" * len(summary.read_bytes()))
+        elif tamper == "source_add":
+            summary.with_name("extra.md").write_bytes(b"extra")
+        else:
+            summary.unlink()
         expected = "LEGACY_MIGRATION_VERIFICATION_SOURCE_MISMATCH"
     else:
         with store.connect() as connection:
@@ -1814,6 +1977,7 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migration_items_no_delete",
         "governance_legacy_migration_verifications_no_update",
         "governance_legacy_migration_verifications_no_delete",
+        "governance_legacy_migration_verifications_insert_guard",
     }
 
 

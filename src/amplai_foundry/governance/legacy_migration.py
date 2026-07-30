@@ -54,7 +54,11 @@ from amplai_foundry.governance.object_store import (
     ImmutableDefinitionObjectStore,
     sha256_digest,
 )
-from amplai_foundry.governance.store import GovernanceStore, governance_transaction
+from amplai_foundry.governance.store import (
+    GovernanceCommitAmbiguousError,
+    GovernanceStore,
+    governance_transaction,
+)
 from amplai_foundry.proposals.models import Proposal, ProposalStatus
 
 _PROPOSAL_ID = re.compile(r"^PROP-[0-9]{8}-[A-F0-9]{8}$")
@@ -1159,50 +1163,42 @@ class LegacyProposalImportService:
             with self.store.connect() as connection, governance_transaction(connection):
                 GovernanceEventService.reconcile_connection(connection)
                 proposals = self._verification_proposals(connection, plan)
-                preimage = {
-                    "migration_id": plan.plan_id,
-                    "plan_digest": plan.plan_digest,
-                    "project_ref": plan.project_ref.model_dump(mode="json"),
-                    "proposals": [item.model_dump(mode="json") for item in proposals],
-                    "snapshot_digest": snapshot.snapshot_digest,
-                    "snapshot_id": snapshot.snapshot_id,
-                    "source_files": [item.model_dump(mode="json") for item in snapshot.files],
-                    "source_total_bytes": snapshot.total_bytes,
-                    "verified_by": plan.freeze.actor_id,
-                }
-                report_digest = _digest(_canonical_json(preimage))
-                verification_id = f"MVF-{report_digest[-16:].upper()}"
+                verification_id, report_digest = self._verification_identity(
+                    plan,
+                    snapshot,
+                    proposals,
+                )
                 existing = connection.execute(
                     """
-                    SELECT report_digest, report_json, verified_at
+                    SELECT verification_id, migration_id, project_namespace, project_id,
+                           snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                           source_file_count, report_digest, report_json, verified_by,
+                           verified_at
                     FROM governance_legacy_migration_verifications
                     WHERE migration_id = ?
                     """,
                     (plan.plan_id,),
                 ).fetchone()
                 if existing is not None:
-                    if str(existing[0]) != report_digest:
-                        raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_CONFLICT")
-                    persisted = LegacyMigrationVerificationReport.model_validate_json(
-                        str(existing[1])
+                    return self._validated_persisted_verification(
+                        existing,
+                        plan=plan,
+                        snapshot=snapshot,
+                        proposals=proposals,
+                        verification_id=verification_id,
+                        report_digest=report_digest,
                     )
-                    return persisted.model_copy(update={"replayed": True})
                 verified_at = self._verification_timestamp()
-                report = LegacyMigrationVerificationReport(
+                report = self._build_verification_report(
+                    plan,
+                    snapshot,
+                    proposals,
                     verification_id=verification_id,
-                    migration_id=plan.plan_id,
-                    project_ref=plan.project_ref,
-                    snapshot_id=snapshot.snapshot_id,
-                    snapshot_digest=snapshot.snapshot_digest,
-                    plan_digest=plan.plan_digest,
-                    source_files=snapshot.files,
-                    source_total_bytes=snapshot.total_bytes,
-                    proposals=proposals,
                     report_digest=report_digest,
-                    verified_by=plan.freeze.actor_id,
                     verified_at=verified_at,
                 )
-                report_json = _compact_json(report.model_dump(mode="json"))
+                report_payload = report.model_dump(mode="json")
+                report_json = _compact_json(report_payload)
                 connection.execute(
                     """
                     INSERT INTO governance_legacy_migration_verifications(
@@ -1225,16 +1221,196 @@ class LegacyProposalImportService:
                         report_digest,
                         report_json,
                         plan.freeze.actor_id,
-                        GovernanceEventService._timestamp(verified_at),
+                        str(report_payload["verified_at"]),
                     ),
                 )
                 return report
         except LegacyMigrationScanError:
             raise
+        except GovernanceCommitAmbiguousError:
+            return self._reconcile_ambiguous_verification(plan, snapshot)
         except (GovernanceEventError, ValidationError) as error:
             raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_CONFLICT") from error
         except sqlite3.Error as error:
             raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_FAILED") from error
+
+    @staticmethod
+    def _verification_identity(
+        plan: LegacyProposalMigrationPlan,
+        snapshot: LegacyProposalSnapshot,
+        proposals: tuple[LegacyVerifiedProposal, ...],
+    ) -> tuple[str, str]:
+        preimage = {
+            "migration_id": plan.plan_id,
+            "plan_digest": plan.plan_digest,
+            "project_ref": plan.project_ref.model_dump(mode="json"),
+            "proposals": [item.model_dump(mode="json") for item in proposals],
+            "snapshot_digest": snapshot.snapshot_digest,
+            "snapshot_id": snapshot.snapshot_id,
+            "source_files": [item.model_dump(mode="json") for item in snapshot.files],
+            "source_total_bytes": snapshot.total_bytes,
+            "verified_by": plan.freeze.actor_id,
+        }
+        report_digest = _digest(_canonical_json(preimage))
+        return f"MVF-{report_digest[-16:].upper()}", report_digest
+
+    @staticmethod
+    def _build_verification_report(
+        plan: LegacyProposalMigrationPlan,
+        snapshot: LegacyProposalSnapshot,
+        proposals: tuple[LegacyVerifiedProposal, ...],
+        *,
+        verification_id: str,
+        report_digest: str,
+        verified_at: datetime,
+    ) -> LegacyMigrationVerificationReport:
+        return LegacyMigrationVerificationReport(
+            verification_id=verification_id,
+            migration_id=plan.plan_id,
+            project_ref=plan.project_ref,
+            snapshot_id=snapshot.snapshot_id,
+            snapshot_digest=snapshot.snapshot_digest,
+            plan_digest=plan.plan_digest,
+            source_files=snapshot.files,
+            source_total_bytes=snapshot.total_bytes,
+            proposals=proposals,
+            report_digest=report_digest,
+            verified_by=plan.freeze.actor_id,
+            verified_at=verified_at,
+        )
+
+    def _validated_persisted_verification(
+        self,
+        row: sqlite3.Row | tuple[object, ...],
+        *,
+        plan: LegacyProposalMigrationPlan,
+        snapshot: LegacyProposalSnapshot,
+        proposals: tuple[LegacyVerifiedProposal, ...],
+        verification_id: str,
+        report_digest: str,
+    ) -> LegacyMigrationVerificationReport:
+        try:
+            persisted = LegacyMigrationVerificationReport.model_validate_json(str(row[10]))
+            verified_at = datetime.fromisoformat(str(row[12]).replace("Z", "+00:00"))
+            expected = self._build_verification_report(
+                plan,
+                snapshot,
+                proposals,
+                verification_id=verification_id,
+                report_digest=report_digest,
+                verified_at=verified_at,
+            )
+        except (ValueError, ValidationError) as error:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_CONFLICT") from error
+        expected_row = (
+            verification_id,
+            plan.plan_id,
+            plan.project_ref.namespace,
+            plan.project_ref.project_id,
+            snapshot.snapshot_id,
+            snapshot.snapshot_digest,
+            plan.plan_digest,
+            len(proposals),
+            len(snapshot.files),
+            report_digest,
+            str(row[10]),
+            plan.freeze.actor_id,
+            str(row[12]),
+        )
+        if tuple(row) != expected_row or persisted != expected:
+            raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_CONFLICT")
+        return persisted.model_copy(update={"replayed": True})
+
+    def _reconcile_ambiguous_verification(
+        self,
+        plan: LegacyProposalMigrationPlan,
+        snapshot: LegacyProposalSnapshot,
+    ) -> LegacyMigrationVerificationReport:
+        with self.store.connect() as connection:
+            proposals = self._verification_proposals(connection, plan)
+            verification_id, report_digest = self._verification_identity(
+                plan,
+                snapshot,
+                proposals,
+            )
+            row = connection.execute(
+                """
+                SELECT verification_id, migration_id, project_namespace, project_id,
+                       snapshot_id, snapshot_digest, plan_digest, proposal_count,
+                       source_file_count, report_digest, report_json, verified_by,
+                       verified_at
+                FROM governance_legacy_migration_verifications
+                WHERE migration_id = ?
+                """,
+                (plan.plan_id,),
+            ).fetchone()
+            if row is None:
+                raise LegacyMigrationScanError("LEGACY_MIGRATION_VERIFICATION_AMBIGUOUS")
+            return self._validated_persisted_verification(
+                row,
+                plan=plan,
+                snapshot=snapshot,
+                proposals=proposals,
+                verification_id=verification_id,
+                report_digest=report_digest,
+            )
+
+    @staticmethod
+    def reconcile_verification_roots(connection: sqlite3.Connection) -> None:
+        if (
+            connection.execute(
+                """
+                SELECT 1 FROM sqlite_schema
+                WHERE type = 'table'
+                  AND name = 'governance_legacy_migration_verifications'
+                """
+            ).fetchone()
+            is None
+        ):
+            return
+        rows = connection.execute(
+            """
+            SELECT v.verification_id, v.migration_id, v.project_namespace,
+                   v.project_id, v.snapshot_id, v.snapshot_digest, v.plan_digest,
+                   v.proposal_count, v.source_file_count, v.report_digest,
+                   v.report_json, v.verified_by, v.verified_at,
+                   m.snapshot_id, m.snapshot_digest, m.plan_digest,
+                   m.proposal_count, m.status
+            FROM governance_legacy_migration_verifications v
+            LEFT JOIN governance_legacy_migrations m
+              ON m.migration_id = v.migration_id
+             AND m.project_namespace = v.project_namespace
+             AND m.project_id = v.project_id
+            """
+        ).fetchall()
+        for row in rows:
+            try:
+                report = LegacyMigrationVerificationReport.model_validate_json(str(row[10]))
+                column_verified_at = datetime.fromisoformat(str(row[12]).replace("Z", "+00:00"))
+            except (ValueError, ValidationError) as error:
+                raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH") from error
+            expected = (
+                report.verification_id,
+                report.migration_id,
+                report.project_ref.namespace,
+                report.project_ref.project_id,
+                report.snapshot_id,
+                report.snapshot_digest,
+                report.plan_digest,
+                len(report.proposals),
+                len(report.source_files),
+                report.report_digest,
+                _compact_json(report.model_dump(mode="json")),
+                report.verified_by,
+                str(row[12]),
+                report.snapshot_id,
+                report.snapshot_digest,
+                report.plan_digest,
+                len(report.proposals),
+                "state_imported",
+            )
+            if tuple(row) != expected or column_verified_at != report.verified_at:
+                raise GovernanceEventError("LEGACY_MIGRATION_VERIFICATION_ROOT_MISMATCH")
 
     def _verification_proposals(
         self,

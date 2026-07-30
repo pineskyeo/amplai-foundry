@@ -2622,6 +2622,46 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=22,
+        name="legacy-verification-root-binding",
+        statements=(
+            """
+            CREATE TRIGGER governance_legacy_migration_verifications_insert_guard
+            BEFORE INSERT ON governance_legacy_migration_verifications
+            WHEN json_valid(NEW.report_json) != 1
+              OR NOT EXISTS (
+                    SELECT 1 FROM governance_legacy_migrations m
+                    WHERE m.migration_id = NEW.migration_id
+                      AND m.project_namespace = NEW.project_namespace
+                      AND m.project_id = NEW.project_id
+                      AND m.snapshot_id = NEW.snapshot_id
+                      AND m.snapshot_digest = NEW.snapshot_digest
+                      AND m.plan_digest = NEW.plan_digest
+                      AND m.proposal_count = NEW.proposal_count
+                      AND m.status = 'state_imported'
+                )
+              OR json_extract(NEW.report_json, '$.verification_id') IS NOT NEW.verification_id
+              OR json_extract(NEW.report_json, '$.migration_id') IS NOT NEW.migration_id
+              OR json_extract(NEW.report_json, '$.project_ref.namespace')
+                    IS NOT NEW.project_namespace
+              OR json_extract(NEW.report_json, '$.project_ref.project_id')
+                    IS NOT NEW.project_id
+              OR json_extract(NEW.report_json, '$.snapshot_id') IS NOT NEW.snapshot_id
+              OR json_extract(NEW.report_json, '$.snapshot_digest') IS NOT NEW.snapshot_digest
+              OR json_extract(NEW.report_json, '$.plan_digest') IS NOT NEW.plan_digest
+              OR json_array_length(json_extract(NEW.report_json, '$.proposals'))
+                    IS NOT NEW.proposal_count
+              OR json_array_length(json_extract(NEW.report_json, '$.source_files'))
+                    IS NOT NEW.source_file_count
+              OR json_extract(NEW.report_json, '$.report_digest') IS NOT NEW.report_digest
+              OR json_extract(NEW.report_json, '$.verified_by') IS NOT NEW.verified_by
+              OR json_extract(NEW.report_json, '$.verified_at') IS NOT NEW.verified_at
+              OR json_extract(NEW.report_json, '$.replayed') != 0
+            BEGIN SELECT RAISE(ABORT, 'legacy verification root mismatch'); END
+            """,
+        ),
+    ),
 )
 
 
