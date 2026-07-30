@@ -368,6 +368,9 @@ def test_exact_v29_store_upgrades_additively_to_forward_recovery_evidence(
     upgraded = GovernanceStore(path)
     assert upgraded.initialize().schema_version == len(INITIAL_MIGRATIONS)
     with upgraded.connect() as connection:
+        assert connection.execute(
+            "SELECT checksum FROM governance_schema_migrations WHERE version = 30"
+        ).fetchone() == ("275cf292deefa1a58d793fb2c326e20abbe272a4ea819f06ae7cab61eae6990c",)
         tables = {
             str(row[0])
             for row in connection.execute(

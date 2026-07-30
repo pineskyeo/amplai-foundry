@@ -865,6 +865,13 @@ class LegacyMigrationForwardRecoveryExecutor:
                        i.next_state_revision, i.next_decision_epoch, i.next_status,
                        a.event_id, o.event_id
                 FROM governance_legacy_forward_recovery_items i
+                JOIN governance_definition_revisions d
+                  ON d.project_namespace = i.project_namespace
+                 AND d.project_id = i.project_id AND d.proposal_id = i.proposal_id
+                 AND d.content_revision = i.next_content_revision
+                 AND d.definition_digest = i.next_definition_digest
+                 AND d.previous_definition_digest = i.previous_definition_digest
+                 AND d.activated_from_status = i.previous_status
                 JOIN governance_audit_events a ON a.command_id = i.item_id
                 JOIN governance_outbox_events o
                   ON o.project_namespace = a.project_namespace
@@ -903,7 +910,10 @@ class LegacyMigrationForwardRecoveryExecutor:
                         "outbox_event_ids": tuple(str(row[13]) for row in item_rows),
                     }
                 )
-                for _item_id, item_rows in sorted(grouped.items())
+                for item_rows in sorted(
+                    grouped.values(),
+                    key=lambda values: str(values[0][1]),
+                )
             )
             expected_fingerprint = _digest(
                 {

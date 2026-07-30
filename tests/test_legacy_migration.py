@@ -40,6 +40,7 @@ from amplai_foundry.governance import (
     LegacyApprovalDisposition,
     LegacyApprovalReviewService,
     LegacyForwardRecoveryPlan,
+    LegacyForwardRecoveryResult,
     LegacyMigrationActivationResult,
     LegacyMigrationActivationService,
     LegacyMigrationBackupEvidence,
@@ -258,6 +259,54 @@ def _put_recovery_definition(
         canonical.canonical_bytes,
         canonical.digest,
     )
+
+
+def _completed_forward_recovery(
+    tmp_path: Path,
+) -> tuple[GovernanceStore, LegacyForwardRecoveryResult]:
+    root = _legacy_tree(tmp_path / "project")
+    store, objects, dry_run, import_service, backup = _import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    migration = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    import_service.import_state(migration, backup)
+    import_service.verify_import(migration, backup)
+    authority_request = _migration_authority(store)
+    authority = AuthorityService(store, clock=lambda: NOW)
+    LegacyMigrationActivationService(store, authority, clock=lambda: NOW).activate(
+        migration.plan_id,
+        authority_request=authority_request,
+        expected_lifecycle_revision=2,
+        reason="activate recovery corruption fixture",
+        idempotency_key="legacy-activation:forward-corruption:1",
+        request_fingerprint="e" * 64,
+    )
+    ref = migration.proposals[0].proposal_ref
+    plan = LegacyMigrationForwardRecoveryPlanner(store, authority, clock=lambda: NOW).plan(
+        migration.plan_id,
+        (ref,),
+        authority_request=authority_request,
+        expected_lifecycle_revision=3,
+    )
+    next_object = _put_recovery_definition(objects, ref, "recovery-corruption-fixture")
+    result = LegacyMigrationForwardRecoveryExecutor(
+        store,
+        authority,
+        objects,
+        clock=lambda: NOW,
+    ).execute(
+        plan,
+        (next_object,),
+        authority_request=authority_request,
+        reason="create complete evidence before corruption",
+        idempotency_key="legacy-forward-recovery:corruption:1",
+    )
+    return store, result
 
 
 def _tree_inventory(root: Path) -> dict[str, tuple[int, int, int, str | None]]:
@@ -3956,6 +4005,28 @@ def test_forward_recovery_executor_atomically_revises_and_replays(tmp_path: Path
     assert second_result.roots[0].next_definition_digest == second_object.digest
     assert store.check_startup().healthy
 
+    with store.connect() as connection:
+        connection.execute(
+            """
+            UPDATE governance_definition_revisions
+            SET previous_definition_digest = ?
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+              AND content_revision = ?
+            """,
+            (
+                f"sha256:{'f' * 64}",
+                PROJECT.namespace,
+                PROJECT.project_id,
+                ref.proposal_id,
+                execution_root.next_content_revision,
+            ),
+        )
+    with pytest.raises(
+        GovernanceEventError,
+        match="LEGACY_FORWARD_RECOVERY_RESULT_MISMATCH",
+    ):
+        store.check_startup()
+
 
 def test_forward_recovery_executor_rolls_back_all_roots_on_late_conflict(
     tmp_path: Path,
@@ -4024,6 +4095,119 @@ def test_forward_recovery_executor_rolls_back_all_roots_on_late_conflict(
 
     assert _logical_store_snapshot(store) == before
     assert store.check_startup().healthy
+
+    valid_second = _put_recovery_definition(
+        objects,
+        stale_root.proposal_ref,
+        "valid-second-root",
+    )
+    executor = LegacyMigrationForwardRecoveryExecutor(
+        store,
+        authority,
+        objects,
+        clock=lambda: NOW,
+    )
+    result = executor.execute(
+        plan,
+        (valid, valid_second),
+        authority_request=authority_request,
+        reason="commit two valid recovery roots in deterministic proposal order",
+        idempotency_key="legacy-forward-recovery:atomic-success:1",
+    )
+    replay = executor.execute(
+        plan,
+        (valid, valid_second),
+        authority_request=authority_request,
+        reason="commit two valid recovery roots in deterministic proposal order",
+        idempotency_key="legacy-forward-recovery:atomic-success:1",
+    )
+
+    assert tuple(root.proposal_ref for root in result.roots) == tuple(
+        root.proposal_ref for root in plan.roots
+    )
+    assert replay.model_copy(update={"replayed": False}) == result
+    assert store.check_startup().healthy
+
+
+@pytest.mark.parametrize(
+    ("evidence_kind", "trigger_name", "expected_error"),
+    (
+        (
+            "command",
+            "governance_legacy_forward_recovery_commands_no_update",
+            "LEGACY_FORWARD_RECOVERY_RESULT_MISMATCH",
+        ),
+        (
+            "item",
+            "governance_legacy_forward_recovery_items_no_update",
+            "LEGACY_FORWARD_RECOVERY_ROOT_MISMATCH",
+        ),
+        (
+            "result",
+            "governance_legacy_forward_recovery_results_no_update",
+            "LEGACY_FORWARD_RECOVERY_RESULT_MISMATCH",
+        ),
+        (
+            "audit",
+            "governance_audit_events_no_update",
+            "LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH",
+        ),
+        (
+            "outbox",
+            "governance_outbox_payload_immutable",
+            "AUDIT_OUTBOX_PAYLOAD_MISMATCH",
+        ),
+    ),
+)
+def test_forward_recovery_startup_rejects_corrupted_complete_evidence(
+    tmp_path: Path,
+    evidence_kind: str,
+    trigger_name: str,
+    expected_error: str,
+) -> None:
+    store, result = _completed_forward_recovery(tmp_path)
+    execution_root = result.roots[0]
+    fake_digest = f"sha256:{'f' * 64}"
+    mutations = {
+        "command": (
+            "UPDATE governance_legacy_forward_recovery_commands "
+            "SET activation_event_digest = ? WHERE recovery_id = ?",
+            (fake_digest, result.recovery_id),
+        ),
+        "item": (
+            "UPDATE governance_legacy_forward_recovery_items "
+            "SET payload_digest = ? WHERE item_id = ?",
+            (fake_digest, execution_root.item_id),
+        ),
+        "result": (
+            "UPDATE governance_legacy_forward_recovery_results "
+            "SET result_digest = ? WHERE recovery_id = ?",
+            (fake_digest, result.recovery_id),
+        ),
+        "audit": (
+            "UPDATE governance_audit_events SET definition_digest = ? WHERE event_id = ?",
+            (fake_digest, execution_root.audit_event_id),
+        ),
+        "outbox": (
+            "UPDATE governance_outbox_events SET payload_digest = ? WHERE event_id = ?",
+            (fake_digest, execution_root.outbox_event_ids[0]),
+        ),
+    }
+    statement, parameters = mutations[evidence_kind]
+
+    with store.connect() as connection:
+        trigger_row = connection.execute(
+            "SELECT sql FROM sqlite_schema WHERE type = 'trigger' AND name = ?",
+            (trigger_name,),
+        ).fetchone()
+        assert trigger_row is not None
+        trigger_sql = str(trigger_row[0])
+        connection.execute(f'DROP TRIGGER "{trigger_name}"')
+        connection.execute(statement, parameters)
+        connection.execute(trigger_sql)
+
+    with pytest.raises(GovernanceEventError, match=expected_error):
+        store.check_startup()
 
 
 def test_forward_recovery_executor_reconciles_durable_ambiguous_commit(

@@ -3765,6 +3765,13 @@ INITIAL_MIGRATIONS = (
         name="legacy-forward-recovery-evidence",
         statements=(
             """
+            CREATE UNIQUE INDEX governance_definition_revision_exact_identity
+            ON governance_definition_revisions(
+                project_namespace, project_id, proposal_id,
+                content_revision, definition_digest
+            )
+            """,
+            """
             CREATE TABLE governance_legacy_forward_recovery_commands (
                 recovery_id TEXT PRIMARY KEY NOT NULL,
                 migration_id TEXT NOT NULL,
@@ -3838,6 +3845,13 @@ INITIAL_MIGRATIONS = (
                     REFERENCES governance_active_proposals(
                         project_namespace, project_id, proposal_id
                     ) ON DELETE RESTRICT,
+                FOREIGN KEY (
+                    project_namespace, project_id, proposal_id,
+                    next_content_revision, next_definition_digest
+                ) REFERENCES governance_definition_revisions(
+                    project_namespace, project_id, proposal_id,
+                    content_revision, definition_digest
+                ) ON DELETE RESTRICT,
                 CHECK (
                     length(item_id) = 20
                     AND substr(item_id, 1, 4) = 'LFI-'
