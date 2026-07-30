@@ -1,0 +1,42 @@
+---
+workstream: messenger-governance-closure-v3
+review_skill: subagent-review
+spec: /Users/pinesky/Documents/Codex/2026-07-29/prior-conversation-with-codex-conversation-role/outputs/SPEC.md
+spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
+---
+
+# Progression Queue
+
+- [ ] MGC-001 — Governance Store Foundation
+  class: code
+  acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
+- [ ] MGC-002 — Immutable Definition Store
+  class: code
+- [ ] MGC-003 — Active Definition CAS And State Machine
+  class: code
+- [ ] MGC-004 — ActionToken And Decision Replay
+  class: code
+- [ ] MGC-005 — Durable Provider Ingress
+  class: code
+- [ ] MGC-006 — Authority And Actor Binding
+  class: code
+- [ ] MGC-007 — Direct Mutation Closure
+  class: code
+- [ ] MGC-008 — Ordered Transactional Outbox
+  class: code
+- [ ] MGC-009 — ApplyGrant And Apply Job
+  class: code
+- [ ] MGC-010 — Fenced Publish Coordinator
+  class: code
+- [ ] MGC-011 — V2 Migration
+  class: code
+- [ ] MGC-012 — Slack Reference Adapter
+  class: code
+- [ ] MGC-013 — Telegram Reference Adapter
+  class: code
+- [ ] MGC-014 — Hermes Skill
+  class: code
+- [ ] MGC-015 — Activation Control
+  class: code
+- [ ] MGC-016 — Full Verification And Closure
+  class: launch-runbook
