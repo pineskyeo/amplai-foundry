@@ -1,77 +1,50 @@
-# Current Item — MGC-011
+# Current Item — MGC-012
 
 ## Goal
 
-Legacy v2 Proposal artifact와 audit evidence를 변경하지 않고 deterministic snapshot으로
-고정한 뒤, qualified v3 Proposal definition·state·Audit·Outbox로 import한다. Approval
-evidence가 없는 approved/applied Proposal은 synthetic approval evidence와
-`legacy_approval_review_required` hold를 생성하며 human review 전 ApplyGrant를 금지한다.
+Slack interaction을 raw body 상태에서 인증하고 verified credential만 기존 durable
+ingress 계약으로 전달한다. 성공 ack는 ingress commit 이후 3초 이내 반환하며 decision,
+message projection과 retry는 background path에서 수행한다.
 
 ## Frozen Acceptance
 
-- A1: import는 operator가 legacy mutation freeze를 명시적으로 증명한 경우에만 시작하며 source root, Project identity와 canonical path를 검증함
-- A2: snapshot은 모든 imported file의 relative path, byte length, SHA-256과 deterministic aggregate digest를 보존하고 symlink, non-regular file, path escape와 scan 중 mutation을 거부함
-- A3: import 전 Project Pack snapshot과 Governance DB backup identity·digest를 durable migration root에 기록하고 backup 검증 실패 시 import하지 않음
-- A4: dry-run은 legacy Proposal을 strict schema로 읽고 qualified ProjectRef·ProposalRef, source status/revision, target status와 evidence disposition을 deterministic plan으로 만들며 authoritative DB/object store/legacy files를 수정하지 않음
-- A5: import는 legacy bytes와 mapping policy를 결합한 canonical v3 definition/input object를 생성하고 exact digest를 immutable object store에서 재검증함
-- A6: qualified Proposal row, definition revision, source revision과 lifecycle mapping이 하나의 migration transaction에서 생성되며 다른 Project의 같은 local Proposal ID와 충돌하지 않음
-- A7: legacy approval Audit가 존재하면 actor/time/action/idempotency evidence를 검증해 import하고, 없으면 `migration.synthetic_approval` event와 reason/source artifact digest를 생성함
-- A8: synthetic approval 대상은 `legacy_approval_review_required`로 import되고 human re-review 전 ActionToken decision과 ApplyGrant 발급이 모두 거부됨
-- A9: imported Audit는 append-only hash chain에 연결되고 imported idempotency identity는 replay와 payload conflict를 구분함
-- A10: imported authoritative state에 대응하는 ordered Outbox projection을 생성하고 source revision·destination sequence가 기존 stream과 단조 증가함
-- A11: 동일 snapshot/plan 재실행은 같은 완료 결과를 반환하고 다른 bytes 또는 mapping으로 같은 migration identity를 재사용하면 conflict로 실패함
-- A12: import transaction 또는 late Audit·Outbox 실패는 Proposal row, object activation, migration counters와 activation state를 부분 commit하지 않음
-- A13: verification은 source/import count, per-file hash, aggregate snapshot/plan digest, Proposal state/revision, Audit/idempotency와 projection roots를 양방향 검증함
-- A14: rollback은 activation 전 완료된 migration만 exact imported root 집합으로 되돌리고 legacy artifact와 기존 v3 row를 변경하지 않음
-- A15: activation 후 rollback은 거부되며 correction은 forward-recovery migration으로만 수행함
-- A16: dry-run, import interruption, duplicate replay, hash/count mismatch, cross-project same local ID, synthetic approval hold, rollback 전후와 activation 후 rollback 거부 integration test가 통과함
-- A17: 전체 regression과 `amplai-foundry verify`가 통과하고 Contract·Evidence·Ops subagent review의 P0/P1/Blocking-P2가 0건임
+- A1: raw request body를 deserialize 전에 확보하고 검증 byte와 fingerprint byte가 동일함
+- A2: `X-Slack-Signature` HMAC을 constant-time으로 검증하고 signing secret 또는 raw body를 저장·로그하지 않음
+- A3: `X-Slack-Request-Timestamp`의 허용 clock skew를 검증하고 stale 또는 malformed request를 fail-closed함
+- A4: verified payload의 `api_app_id`, workspace 또는 enterprise identity가 Project installation allowlist와 일치함
+- A5: 공식 `block_actions` contract만 수락하고 범용 `interaction_payload_id`를 요구하지 않음
+- A6: external actor, container/view, action ID, action timestamp와 raw body digest로 deterministic ingress fingerprint를 생성함
+- A7: opaque ActionToken credential은 hash로만 durable ingress에 전달하고 raw credential과 raw body는 DB·Audit·log에 남기지 않음
+- A8: durable ingress commit 전 success ack를 반환하지 않으며 DB busy 또는 commit 실패 시 non-success ack를 반환함
+- A9: ingress connection timeout과 전체 synchronous path가 Slack 3-second ack budget을 침범하지 않음
+- A10: ack 이후 decision 처리는 기존 authority, idempotency, token과 Proposal state 계약을 background worker에서 사용함
+- A11: Provider message는 ordered Outbox를 사용하며 retry, supersession, DLQ와 operator hold 계약을 우회하지 않음
+- A12: 동일 verified interaction replay는 최초 durable 결과로 수렴하고 같은 key의 다른 fingerprint는 conflict로 실패함
+- A13: unsupported payload, invalid signature/timestamp/app/workspace/actor/action과 malformed form/JSON test가 fail-closed함
+- A14: Slack adapter가 Telegram 또는 다른 Provider activation state를 변경하지 않음
+- A15: Slack reference E2E, 전체 regression과 `amplai-foundry verify`가 통과하고 Contract·Evidence·Ops review blocker가 0건임
 
 ## Slices
 
-1. Deterministic legacy snapshot and dry-run plan
-2. Atomic qualified definition and Proposal state import
-3. Audit/idempotency import, synthetic approval hold, and ordered projection
-4. Verification, pre-activation rollback, activation boundary, and recovery tests
+1. Raw request verification and normalized Slack interaction contract
+2. Durable ingress ack boundary and background decision handoff
+3. Ordered Slack message projection, retry and recovery
+4. Slack reference E2E, activation isolation and closure review
 
-## Slice Status
+## Current Package
 
-- Slice 1: `PASS` at `9b195d3`
-- Slice 2: `PASS` at `91dab70`
-- Slice 3: `PASS` at `53d2223`
-- Slice 4 Package 4.1 — A13 verification: `PASS` at `ef6ef06`
-- Slice 4 Package 4.2a — lifecycle activation and Outbox gate: `PASS` at `bebb28e`
-- Slice 4 Package 4.2b1 — exact-root rollback plan and attested destination provenance:
-  `PASS` at `c24724c`
-- Slice 4 Package 4.2b2 — atomic exact-root rollback executor and additive v29
-  compatibility: `PASS` at `d5c32ab`
-- Slice 4 Package 4.2c1 — authenticated deterministic forward-recovery planner,
-  safe-state/dependent-root policy and activated import evidence reconciliation:
-  `PASS` at `eb1334a`
-- Slice 4 Package 4.2c2 — authenticated atomic forward-recovery executor,
-  exact definition-revision evidence and corruption reconciliation:
-  `PASS` at `f6f2449`
-- Full tests: `611/611 PASS`
-- Full verification: `7/7 PASS`
-- Review gate: Contract·Evidence·Ops `P0=0`, `P1=0`, `Blocking-P2=0`
-- Retained advisory: `OPS-S2-06` — interrupted immutable object cleanup/accounting,
-  owner `MGC-011 Slice 4`
-- Retained advisory: activation fingerprint 형식, mixed multi-Proposal classification,
-  direct Apply/Publish gate와 predecessor trigger 복구 evidence를 Package 4.2 closure에서 보강함
-- Retained advisory: attestation failure injection, indirect dependent registry와 immutable
-  object accounting을 Package 4.2 closure에서 보강함
-- Next: MGC-011 A1–A17 final acceptance audit and closure decision
+- Package 1 — raw-body signature/timestamp/allowlist contract and fail-closed fixtures
 
 ## Out Of Scope
 
-- legacy files의 rewrite 또는 삭제
-- migration 중 canonical Git/Vault publish
-- synthetic approval의 자동 human 승인
-- Slack·Telegram Provider adapter
-- activation UI와 production kill switch
+- Telegram webhook와 callback adapter
+- Hermes natural-language Skill
+- production Slack credential 발급 또는 secret rotation 실행
+- Slack activation rollout
+- Provider message를 authoritative Proposal state로 사용하는 기능
 
 ## Review Team
 
-- Legacy mapping, qualified identity, authority and lifecycle contract reviewer
-- Snapshot, hash/count, migration evidence and regression reviewer
-- Transaction interruption, replay, rollback, activation and operational safety reviewer
+- Slack protocol, raw-body signature and normalized contract reviewer
+- credential secrecy, durable ack and replay evidence reviewer
+- timeout, retry, Outbox, DLQ and operational failure reviewer

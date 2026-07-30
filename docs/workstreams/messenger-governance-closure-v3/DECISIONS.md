@@ -63,3 +63,12 @@
   Recovery evidence는 exact definition revision에 결합하며 startup reconciliation이
   command, item, result, Audit, Outbox와 historical definition provenance 변조를 차단한다.
 - Source: MGC-011 Slice 4 Package 4.2c2 Contract·Evidence·Ops review
+
+## D-010 — V2 Migration Closure
+
+- Status: accepted
+- Decision: MGC-011 A1–A17은 `c3d635f`에서 PASS다. Activation 후 legacy
+  definition correction은 active transaction의 repository-local recovery scope와 durable
+  command evidence를 함께 요구하며 public 또는 committed-incomplete command 우회를
+  차단한다. MGC-012 Slack Reference Adapter로 진행한다.
+- Source: MGC-011 final Contract·Evidence·Ops gate

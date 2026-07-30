@@ -217,7 +217,7 @@ type: backend-feature
 project: amplai-foundry
 target: Proposal governance migration
 title: V2 Migration
-status: planned
+status: done
 priority: P1
 depends_on: [MGC-003, MGC-004, MGC-009]
 pipeline: dry-run → import → verify → rollback-test → subagent-review → gate
@@ -237,7 +237,7 @@ type: backend-feature
 project: amplai-foundry
 target: Slack adapter
 title: Slack Reference Adapter
-status: planned
+status: implementation-ready
 priority: P1
 depends_on: [MGC-005, MGC-008]
 pipeline: implement → sandbox-E2E → subagent-review → gate

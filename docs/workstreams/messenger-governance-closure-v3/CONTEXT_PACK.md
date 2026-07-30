@@ -25,9 +25,9 @@ Spec hash가 다르면 구현을 중단하고 contract 변경을 검토한다.
 ## Baseline
 
 - Branch: `main`
-- HEAD: `e78858cba73c70307385458ad37fe2c41e34173b`
-- Existing core: Actor/Channel/Authority/ProposalAction, stale check, action ledger
-- Current risk: YAML mutable state와 action ledger의 crash window
+- HEAD: `c3d635fdf20d5759cab803eaaa5922a905ab9233`
+- Existing core: MGC-001–011 Governance, ingress, Outbox, Apply/Publish와 v2 migration
+- Current risk: Slack raw-body 인증과 durable ack 사이의 3-second failure boundary
 
 ## Working Rule
 

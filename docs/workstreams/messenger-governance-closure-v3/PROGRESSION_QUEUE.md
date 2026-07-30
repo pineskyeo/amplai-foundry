@@ -37,12 +37,13 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [x] MGC-010 — Fenced Publish Coordinator
   class: code
   gate: PASS at `9f3215f`
-- [~] MGC-011 — V2 Migration
+- [x] MGC-011 — V2 Migration
+  class: code
+  gate: PASS at `c3d635f`
+- [~] MGC-012 — Slack Reference Adapter
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-  progress: Slice 4 Package 4.2c2 atomic forward-recovery executor PASS at `f6f2449`; A1–A17 final acceptance audit next
-- [ ] MGC-012 — Slack Reference Adapter
-  class: code
+  progress: Package 1 raw-body verification contract next
 - [ ] MGC-013 — Telegram Reference Adapter
   class: code
 - [ ] MGC-014 — Hermes Skill
