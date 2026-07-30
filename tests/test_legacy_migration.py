@@ -983,7 +983,6 @@ def test_populated_v17_store_upgrades_to_latest_without_rewriting_active_state(
         "governance_legacy_migrations_no_delete",
         "governance_legacy_migration_items_insert_guard",
         "governance_legacy_migration_items_no_update",
-        "governance_legacy_migration_items_provenance_guard",
         "governance_legacy_migration_items_no_delete",
     }
 
@@ -1100,7 +1099,7 @@ def test_populated_v18_store_upgrades_to_v19_without_rewriting_migration_evidenc
             connection.execute("DELETE FROM governance_legacy_migrations")
 
 
-def test_populated_v18_applied_hold_upgrade_repairs_git_provenance_on_replay(
+def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
     tmp_path: Path,
 ) -> None:
     root = _legacy_tree(tmp_path / "project", status="applied")
@@ -1221,6 +1220,23 @@ def test_populated_v18_applied_hold_upgrade_repairs_git_provenance_on_replay(
             ),
         )
 
+    progressed_path = tmp_path / "progressed-v18-runtime" / "governance.db"
+    progressed_path.parent.mkdir(parents=True)
+    with v18.connect() as source, sqlite3.connect(progressed_path) as destination:
+        source.backup(destination)
+    with sqlite3.connect(progressed_path) as connection:
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET state_revision = state_revision + 1,
+                decision_epoch = decision_epoch + 1,
+                status = 'reviewed',
+                applied_revision = NULL
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+
     latest = GovernanceStore(path)
     assert latest.initialize().schema_version == 19
     with latest.connect() as connection:
@@ -1240,14 +1256,39 @@ def test_populated_v18_applied_hold_upgrade_repairs_git_provenance_on_replay(
     with latest.connect() as connection:
         assert connection.execute(
             "SELECT legacy_git_revision FROM governance_legacy_migration_items"
-        ).fetchone() == ("a13d92f",)
-        with pytest.raises(sqlite3.DatabaseError, match="provenance repair is invalid"):
+        ).fetchone() == (None,)
+        with pytest.raises(sqlite3.DatabaseError, match="item is immutable"):
             connection.execute(
                 """
                 UPDATE governance_legacy_migration_items
                 SET legacy_git_revision = 'fffffff'
                 """
             )
+
+    progressed = GovernanceStore(progressed_path)
+    assert progressed.initialize().schema_version == 19
+    with progressed.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT state_revision, decision_epoch, status, applied_revision
+            FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        ).fetchone() == (
+            item.state_revision + 1,
+            item.decision_epoch + 1,
+            "reviewed",
+            None,
+        )
+        assert connection.execute(
+            "SELECT legacy_git_revision FROM governance_legacy_migration_items"
+        ).fetchone() == (None,)
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_MIGRATION_REPLAY_CONFLICT",
+    ):
+        LegacyProposalImportService(dry_run, progressed, objects).import_state(plan, backup)
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

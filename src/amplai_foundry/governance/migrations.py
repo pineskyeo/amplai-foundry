@@ -2266,6 +2266,15 @@ INITIAL_MIGRATIONS = (
                            WHERE p.project_namespace = i.project_namespace
                              AND p.project_id = i.project_id
                              AND p.proposal_id = i.proposal_id
+                             AND p.active_definition_digest = i.definition_digest
+                             AND p.content_revision = i.content_revision
+                             AND p.state_revision = i.state_revision
+                             AND p.decision_epoch = i.decision_epoch
+                             AND p.status = CASE i.target_status
+                                 WHEN 'legacy_approval_review_required'
+                                     THEN 'changes_requested'
+                                 ELSE i.target_status
+                             END
                        )
                        ELSE NULL
                    END,
@@ -2282,6 +2291,15 @@ INITIAL_MIGRATIONS = (
                   AND i.project_id = governance_active_proposals.project_id
                   AND i.proposal_id = governance_active_proposals.proposal_id
                   AND i.target_status NOT IN ('draft', 'reviewed')
+                  AND i.definition_digest =
+                      governance_active_proposals.active_definition_digest
+                  AND i.content_revision = governance_active_proposals.content_revision
+                  AND i.state_revision = governance_active_proposals.state_revision
+                  AND i.decision_epoch = governance_active_proposals.decision_epoch
+                  AND governance_active_proposals.status = CASE i.target_status
+                      WHEN 'legacy_approval_review_required' THEN 'changes_requested'
+                      ELSE i.target_status
+                  END
             )
             """,
             """
@@ -2343,21 +2361,8 @@ INITIAL_MIGRATIONS = (
             """,
             """
             CREATE TRIGGER governance_legacy_migration_items_no_update
-            BEFORE UPDATE OF
-                migration_id, project_namespace, project_id, proposal_id,
-                source_status, source_revision, target_status, definition_digest,
-                proposal_artifact_digest, content_revision, state_revision,
-                decision_epoch, approval_disposition, imported_at
-            ON governance_legacy_migration_items
+            BEFORE UPDATE ON governance_legacy_migration_items
             BEGIN SELECT RAISE(ABORT, 'legacy migration item is immutable'); END
-            """,
-            """
-            CREATE TRIGGER governance_legacy_migration_items_provenance_guard
-            BEFORE UPDATE OF legacy_git_revision ON governance_legacy_migration_items
-            WHEN OLD.legacy_git_revision IS NOT NULL
-              OR NEW.legacy_git_revision IS NULL
-              OR OLD.source_status != 'applied'
-            BEGIN SELECT RAISE(ABORT, 'legacy migration provenance repair is invalid'); END
             """,
             """
             CREATE TRIGGER governance_legacy_migration_items_no_delete
