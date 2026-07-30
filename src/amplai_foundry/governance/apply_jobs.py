@@ -852,10 +852,11 @@ class ApplyJobService:
                 WHERE status = 'queued'
                    OR (status = 'retry_wait' AND retry_at <= ?)
                    OR (status IN ('leased', 'running') AND lease_expires_at <= ?)
-                ORDER BY created_at, job_id
+                ORDER BY CASE WHEN attempts < ? THEN 0 ELSE 1 END,
+                         created_at, job_id
                 LIMIT 1
                 """,
-                (timestamp, timestamp),
+                (timestamp, timestamp, self._max_attempts),
             ).fetchone()
             if row is None:
                 return None

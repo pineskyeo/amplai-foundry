@@ -1099,6 +1099,70 @@ def test_expired_lease_at_attempt_cap_dead_letters_without_reclaim(tmp_path: Pat
         ).fetchone() == ("dead_lettered", "system-recovery")
 
 
+def test_claim_prioritizes_runnable_job_over_older_exhausted_job(tmp_path: Path) -> None:
+    store, first_job_id = _queued_job_fixture(tmp_path)
+    clock = [NOW]
+    jobs = ApplyJobService(store, clock=lambda: clock[0], max_attempts=1)
+    first = jobs.claim_next("worker-1", lease_ttl=timedelta(seconds=1))
+    assert first is not None
+    second_proposal_id = "PROP-20260730-BBBBBBBB"
+    definition_digest = f"sha256:{'c' * 64}"
+    snapshot_digest = f"sha256:{'d' * 64}"
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_active_proposals VALUES (
+                ?, ?, ?, ?, 1, 3, 1, 'apply_requested', ?, ?
+            )
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                second_proposal_id,
+                definition_digest,
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_approved_snapshots VALUES (
+                'APS-SECOND', ?, ?, ?, ?, ?, 1, 2, 1, 'bbbbbbb', ?
+            )
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                second_proposal_id,
+                definition_digest,
+                snapshot_digest,
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_apply_jobs VALUES (
+                'JOB-SECOND', 'APS-SECOND', ?, ?, ?, ?, 'bbbbbbb', 'queued',
+                0, 0, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?
+            )
+            """,
+            (
+                PROJECT.namespace,
+                PROJECT.project_id,
+                second_proposal_id,
+                snapshot_digest,
+                (NOW + timedelta(seconds=1)).isoformat(),
+                (NOW + timedelta(seconds=1)).isoformat(),
+            ),
+        )
+    clock[0] += timedelta(seconds=1)
+
+    claimed = jobs.claim_next("worker-2")
+    assert claimed is not None
+    assert claimed.job_id == "JOB-SECOND"
+    assert jobs.get_job(first_job_id).status.value == "leased"
+
+
 def test_apply_job_outbox_dispatches_on_monotonic_job_sequence(tmp_path: Path) -> None:
     class StrictRemote:
         def __init__(self, destination_ref: str) -> None:

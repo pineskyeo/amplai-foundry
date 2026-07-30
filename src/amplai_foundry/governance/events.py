@@ -939,7 +939,8 @@ class GovernanceEventService:
                         raise GovernanceEventError("APPLY_JOB_EVENT_ROOT_MISMATCH")
                     if event_type == "claimed":
                         valid = (
-                            status == "leased"
+                            before_status in {"queued", "retry_wait", "leased", "running"}
+                            and status == "leased"
                             and attempts == previous_attempts + 1
                             and fence == previous_fence + 1
                         )
@@ -952,7 +953,10 @@ class GovernanceEventService:
                     elif event_type == "publish_prepared":
                         valid = before_status == "running" and status == "publish_pending"
                     elif event_type == "dead_lettered":
-                        valid = status == "dead_letter"
+                        valid = (
+                            before_status in {"queued", "retry_wait", "leased", "running"}
+                            and status == "dead_letter"
+                        )
                     else:
                         valid = False
                     if event_type != "claimed" and (
@@ -974,7 +978,7 @@ class GovernanceEventService:
             ):
                 roots = connection.execute(
                     f"SELECT job_id, fencing_token, {digest_column}, {bytes_column} FROM {table}"
-                ).fetchall()
+                )
                 for root in roots:
                     if cls._digest(bytes(root[3])) != str(root[2]):
                         raise GovernanceEventError("APPLY_ARTIFACT_ROOT_MISMATCH")
