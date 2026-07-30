@@ -450,6 +450,66 @@ def test_scan_detects_file_mutation_between_read_and_final_enumeration(tmp_path:
         service.create_snapshot(_freeze(root))
 
 
+def test_scan_detects_same_length_rewrite_with_restored_mtime(tmp_path: Path) -> None:
+    root = _legacy_tree(tmp_path)
+    mutated = False
+
+    def mutate_once(path: Path) -> None:
+        nonlocal mutated
+        if mutated:
+            return
+        mutated = True
+        metadata = path.stat()
+        payload = bytearray(path.read_bytes())
+        payload[0] ^= 1
+        path.write_bytes(payload)
+        os.utime(path, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+
+    service = LegacyProposalDryRunService(
+        root,
+        PROJECT,
+        after_file_read=mutate_once,
+    )
+    with pytest.raises(LegacyMigrationScanError, match="LEGACY_SNAPSHOT_MUTATED"):
+        service.create_snapshot(_freeze(root))
+
+
+def test_deep_yaml_and_event_limit_fail_with_normalized_error(tmp_path: Path) -> None:
+    deep_root = _legacy_tree(tmp_path / "deep")
+    proposal = deep_root / ".amplai" / "proposals" / PROPOSAL_ID / "proposal.yaml"
+    proposal.write_bytes(b"[" * 1_200 + b"0" + b"]" * 1_200)
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match=r"LEGACY_PROPOSAL_STRUCTURE_LIMIT|LEGACY_PROPOSAL_INVALID",
+    ):
+        LegacyProposalDryRunService(deep_root, PROJECT).create_plan(
+            freeze=_freeze(deep_root),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/migration/v1",
+        )
+
+    event_root = _legacy_tree(tmp_path / "events")
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_PROPOSAL_STRUCTURE_LIMIT",
+    ):
+        LegacyProposalDryRunService(
+            event_root,
+            PROJECT,
+            config=LegacyMigrationScanConfig(maximum_yaml_events=2),
+        ).create_plan(
+            freeze=_freeze(event_root),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/migration/v1",
+        )
+
+
+def test_missing_source_root_fails_with_normalized_error(tmp_path: Path) -> None:
+    root = tmp_path / "missing-project"
+    with pytest.raises(LegacyMigrationScanError, match="LEGACY_SOURCE_ROOT_INVALID"):
+        LegacyProposalDryRunService(root, PROJECT).create_snapshot(_freeze(root))
+
+
 @pytest.mark.parametrize(
     ("base_revision", "policy", "code"),
     (

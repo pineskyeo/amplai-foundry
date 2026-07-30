@@ -13,6 +13,13 @@ from pathlib import Path, PurePosixPath
 
 import yaml
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError, model_validator
+from yaml.events import (
+    AliasEvent,
+    MappingEndEvent,
+    MappingStartEvent,
+    SequenceEndEvent,
+    SequenceStartEvent,
+)
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.models import Digest, ProposalRef
@@ -54,6 +61,9 @@ class LegacyMigrationScanConfig(BaseModel):
     maximum_files: int = Field(default=10_000, ge=1, le=1_000_000)
     maximum_file_bytes: int = Field(default=16 * 1024 * 1024, ge=1)
     maximum_total_bytes: int = Field(default=512 * 1024 * 1024, ge=1)
+    maximum_yaml_depth: int = Field(default=64, ge=1, le=1_024)
+    maximum_yaml_events: int = Field(default=100_000, ge=1)
+    maximum_yaml_aliases: int = Field(default=100, ge=0)
 
 
 class LegacyMutationFreeze(BaseModel):
@@ -323,9 +333,10 @@ class LegacyProposalDryRunService:
         ):
             raise LegacyMigrationScanError("LEGACY_PROPOSAL_PATH_INVALID")
         try:
+            self._validate_yaml_structure(payload)
             raw = yaml.safe_load(payload)
             proposal = Proposal.model_validate(raw)
-        except (UnicodeDecodeError, yaml.YAMLError, ValidationError) as error:
+        except (UnicodeDecodeError, yaml.YAMLError, ValidationError, RecursionError) as error:
             raise LegacyMigrationScanError("LEGACY_PROPOSAL_INVALID") from error
         if proposal.proposal_id != proposal_id:
             raise LegacyMigrationScanError("LEGACY_PROPOSAL_PATH_MISMATCH")
@@ -381,17 +392,20 @@ class LegacyProposalDryRunService:
             ProposalStatus.SUPERSEDED: 2,
         }[status]
 
-    def _validate_roots(self) -> tuple[tuple[int, int], tuple[int, int]]:
-        if self.project_root.resolve(strict=True) != self.project_root:
-            raise LegacyMigrationScanError("LEGACY_PROJECT_ROOT_SYMLINK")
+    def _validate_roots(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         try:
+            if self.project_root.resolve(strict=True) != self.project_root:
+                raise LegacyMigrationScanError("LEGACY_PROJECT_ROOT_SYMLINK")
             project_stat = self.project_root.lstat()
             legacy_stat = self.legacy_root.lstat()
-        except OSError as error:
+            resolved_legacy = self.legacy_root.resolve(strict=True)
+        except LegacyMigrationScanError:
+            raise
+        except (OSError, RuntimeError) as error:
             raise LegacyMigrationScanError("LEGACY_SOURCE_ROOT_INVALID") from error
         if not stat.S_ISDIR(project_stat.st_mode) or not stat.S_ISDIR(legacy_stat.st_mode):
             raise LegacyMigrationScanError("LEGACY_SOURCE_ROOT_INVALID")
-        if self.legacy_root.resolve(strict=True).parent.parent != self.project_root:
+        if resolved_legacy.parent.parent != self.project_root:
             raise LegacyMigrationScanError("LEGACY_SOURCE_ROOT_ESCAPE")
         return self._root_identities()
 
@@ -408,47 +422,56 @@ class LegacyProposalDryRunService:
         if base_revision is not None and freeze.base_revision != base_revision:
             raise LegacyMigrationScanError("LEGACY_FREEZE_BASE_REVISION_MISMATCH")
 
-    def _root_identities(self) -> tuple[tuple[int, int], tuple[int, int]]:
+    def _root_identities(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         try:
             project = self.project_root.lstat()
             legacy = self.legacy_root.lstat()
         except OSError as error:
             raise LegacyMigrationScanError("LEGACY_SOURCE_ROOT_INVALID") from error
-        return ((project.st_dev, project.st_ino), (legacy.st_dev, legacy.st_ino))
+        return (
+            (project.st_dev, project.st_ino, project.st_ctime_ns),
+            (legacy.st_dev, legacy.st_ino, legacy.st_ctime_ns),
+        )
 
-    def _enumerate_files(self) -> tuple[tuple[str, tuple[int, int, int, int]], ...]:
-        entries: list[tuple[str, tuple[int, int, int, int]]] = []
+    def _enumerate_files(self) -> tuple[tuple[str, tuple[int, int, int, int, int]], ...]:
+        entries: list[tuple[str, tuple[int, int, int, int, int]]] = []
+        pending = [self.legacy_root]
+        discovered_entries = 0
         try:
-            for directory, names, files in os.walk(self.legacy_root, followlinks=False):
-                directory_path = Path(directory)
-                discovered_names = tuple(names)
-                for name in (*discovered_names, *files):
-                    candidate = directory_path / name
-                    metadata = candidate.lstat()
-                    if stat.S_ISLNK(metadata.st_mode):
-                        raise LegacyMigrationScanError("LEGACY_SOURCE_SYMLINK")
-                    if name in names and not stat.S_ISDIR(metadata.st_mode):
-                        raise LegacyMigrationScanError("LEGACY_SOURCE_NOT_REGULAR")
-                    if name in files and not stat.S_ISREG(metadata.st_mode):
-                        raise LegacyMigrationScanError("LEGACY_SOURCE_NOT_REGULAR")
-                relative_directory = directory_path.relative_to(self.legacy_root)
-                if len(relative_directory.parts) == 1:
-                    names[:] = [name for name in names if name not in {"definitions", "inputs"}]
-                for name in files:
-                    candidate = directory_path / name
-                    metadata = candidate.lstat()
-                    relative = candidate.relative_to(self.legacy_root).as_posix()
-                    entries.append(
-                        (
-                            relative,
+            while pending:
+                directory_path = pending.pop()
+                with os.scandir(directory_path) as iterator:
+                    for child in iterator:
+                        discovered_entries += 1
+                        if discovered_entries > self.config.maximum_files:
+                            raise LegacyMigrationScanError("LEGACY_SNAPSHOT_FILE_LIMIT")
+                        candidate = directory_path / child.name
+                        metadata = child.stat(follow_symlinks=False)
+                        if stat.S_ISLNK(metadata.st_mode):
+                            raise LegacyMigrationScanError("LEGACY_SOURCE_SYMLINK")
+                        if stat.S_ISDIR(metadata.st_mode):
+                            relative_directory = directory_path.relative_to(self.legacy_root)
+                            if not (
+                                len(relative_directory.parts) == 1
+                                and child.name in {"definitions", "inputs"}
+                            ):
+                                pending.append(candidate)
+                            continue
+                        if not stat.S_ISREG(metadata.st_mode):
+                            raise LegacyMigrationScanError("LEGACY_SOURCE_NOT_REGULAR")
+                        relative = candidate.relative_to(self.legacy_root).as_posix()
+                        entries.append(
                             (
-                                metadata.st_dev,
-                                metadata.st_ino,
-                                metadata.st_size,
-                                metadata.st_mtime_ns,
-                            ),
+                                relative,
+                                (
+                                    metadata.st_dev,
+                                    metadata.st_ino,
+                                    metadata.st_size,
+                                    metadata.st_mtime_ns,
+                                    metadata.st_ctime_ns,
+                                ),
+                            )
                         )
-                    )
         except OSError as error:
             raise LegacyMigrationScanError("LEGACY_SOURCE_READ_FAILED") from error
         entries.sort(key=lambda item: item[0].encode("utf-8"))
@@ -457,13 +480,19 @@ class LegacyProposalDryRunService:
     def _read_stable(
         self,
         path: Path,
-        expected_identity: tuple[int, int, int, int],
+        expected_identity: tuple[int, int, int, int, int],
     ) -> bytes:
         descriptor = -1
         try:
             descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
             before = os.fstat(descriptor)
-            identity = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+            identity = (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+                before.st_ctime_ns,
+            )
             if identity != expected_identity or not stat.S_ISREG(before.st_mode):
                 raise LegacyMigrationScanError("LEGACY_SNAPSHOT_MUTATED")
             if before.st_size > self.config.maximum_file_bytes:
@@ -485,11 +514,13 @@ class LegacyProposalDryRunService:
                 before.st_ino,
                 before.st_size,
                 before.st_mtime_ns,
+                before.st_ctime_ns,
             ) != (
                 after.st_dev,
                 after.st_ino,
                 after.st_size,
                 after.st_mtime_ns,
+                after.st_ctime_ns,
             ):
                 raise LegacyMigrationScanError("LEGACY_SNAPSHOT_MUTATED")
             return payload
@@ -500,3 +531,27 @@ class LegacyProposalDryRunService:
         finally:
             if descriptor >= 0:
                 os.close(descriptor)
+
+    def _validate_yaml_structure(self, payload: bytes) -> None:
+        depth = 0
+        events = 0
+        aliases = 0
+        try:
+            for event in yaml.parse(payload):
+                events += 1
+                if events > self.config.maximum_yaml_events:
+                    raise LegacyMigrationScanError("LEGACY_PROPOSAL_STRUCTURE_LIMIT")
+                if isinstance(event, (MappingStartEvent, SequenceStartEvent)):
+                    depth += 1
+                    if depth > self.config.maximum_yaml_depth:
+                        raise LegacyMigrationScanError("LEGACY_PROPOSAL_STRUCTURE_LIMIT")
+                elif isinstance(event, (MappingEndEvent, SequenceEndEvent)):
+                    depth -= 1
+                elif isinstance(event, AliasEvent):
+                    aliases += 1
+                    if aliases > self.config.maximum_yaml_aliases:
+                        raise LegacyMigrationScanError("LEGACY_PROPOSAL_STRUCTURE_LIMIT")
+        except LegacyMigrationScanError:
+            raise
+        except (yaml.YAMLError, RecursionError) as error:
+            raise LegacyMigrationScanError("LEGACY_PROPOSAL_INVALID") from error
