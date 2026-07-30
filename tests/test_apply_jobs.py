@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import (
@@ -41,6 +42,7 @@ from amplai_foundry.governance.apply_jobs import (
 )
 from amplai_foundry.governance.events import GovernanceEventError
 from amplai_foundry.governance.migrations import INITIAL_MIGRATIONS
+from amplai_foundry.governance.publish import ProjectPublishGateView, PublishGateState
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
@@ -166,6 +168,72 @@ def _queued_job_fixture(tmp_path: Path):
         request_fingerprint=hashlib.sha256(b"queued-job-apply-1").hexdigest(),
     )
     return store, result.job_id
+
+
+def _publish_pending_job_fixture(tmp_path: Path):
+    store, job_id = _queued_job_fixture(tmp_path)
+    jobs = ApplyJobService(store, clock=lambda: NOW)
+    leased = jobs.claim_next("worker-publish-fixture")
+    assert leased is not None
+    jobs.start(
+        job_id,
+        worker_id="worker-publish-fixture",
+        fencing_token=leased.fencing_token,
+    )
+    published = jobs.stage_for_publish(
+        job_id,
+        worker_id="worker-publish-fixture",
+        fencing_token=leased.fencing_token,
+        artifact_bytes=b"immutable staged tree",
+        publish_request_bytes=b'{"canonical_ref":"refs/heads/main"}',
+    )
+    return store, published
+
+
+def _insert_prepared_publish_foundation(store: GovernanceStore, job_id: str) -> str:
+    intent_id = "PBI-0000000000000001"
+    with store.connect() as connection:
+        row = connection.execute(
+            """
+            SELECT snapshot_id, project_namespace, project_id, proposal_id,
+                   fencing_token, approved_snapshot_digest, expected_base_revision,
+                   staged_artifact_digest, publish_request_digest
+            FROM governance_apply_jobs WHERE job_id = ?
+            """,
+            (job_id,),
+        ).fetchone()
+        assert row is not None
+        connection.execute(
+            """
+            INSERT INTO governance_publish_intents(
+                intent_id, job_id, snapshot_id, project_namespace, project_id,
+                proposal_id, fencing_token, approved_snapshot_digest,
+                expected_base_revision, staged_artifact_digest, publish_request_digest,
+                canonical_ref, expected_old_ref, candidate_commit, candidate_tree_digest,
+                status, prepared_at, resolved_at, last_error_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prepared', ?, NULL, NULL)
+            """,
+            (
+                intent_id,
+                job_id,
+                *row,
+                "refs/heads/main",
+                "a" * 40,
+                "b" * 40,
+                f"sha256:{'c' * 64}",
+                NOW.isoformat(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_project_publish_gates(
+                project_namespace, project_id, canonical_ref, active_intent_id,
+                gate_revision, state, updated_at
+            ) VALUES (?, ?, 'refs/heads/main', ?, 1, 'locked', ?)
+            """,
+            (PROJECT.namespace, PROJECT.project_id, intent_id, NOW.isoformat()),
+        )
+    return intent_id
 
 
 def test_approved_decision_issues_snapshot_scoped_hash_only_grant(tmp_path: Path) -> None:
@@ -1316,3 +1384,166 @@ def test_startup_rejects_unrooted_job_field_tamper(
 
     with pytest.raises(GovernanceEventError, match="APPLY_JOB_EVENT_ROOT_MISMATCH"):
         store.initialize()
+
+
+def test_publish_intent_is_relationally_rooted_and_immutable(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="publish intent identity is immutable"):
+            connection.execute(
+                "UPDATE governance_publish_intents SET candidate_commit = ? WHERE intent_id = ?",
+                ("d" * 40, intent_id),
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="publish intent is durable"):
+            connection.execute(
+                "DELETE FROM governance_publish_intents WHERE intent_id = ?",
+                (intent_id,),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_publish_intents(
+                    intent_id, job_id, snapshot_id, project_namespace, project_id,
+                    proposal_id, fencing_token, approved_snapshot_digest,
+                    expected_base_revision, staged_artifact_digest, publish_request_digest,
+                    canonical_ref, expected_old_ref, candidate_commit,
+                    candidate_tree_digest, status, prepared_at
+                )
+                SELECT 'PBI-0000000000000002', job_id, snapshot_id, project_namespace,
+                       project_id, proposal_id, fencing_token,
+                       approved_snapshot_digest, expected_base_revision,
+                       ?, publish_request_digest, canonical_ref, expected_old_ref,
+                       candidate_commit, candidate_tree_digest, 'prepared', prepared_at
+                FROM governance_publish_intents WHERE intent_id = ?
+                """,
+                (f"sha256:{'f' * 64}", intent_id),
+            )
+
+
+def test_publish_gate_requires_monotonic_revision_and_explicit_release(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+
+    with store.connect() as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="publish gate"):
+            connection.execute(
+                """
+                UPDATE governance_project_publish_gates
+                SET state = 'unlocked', active_intent_id = NULL
+                WHERE project_namespace = ? AND project_id = ?
+                """,
+                (PROJECT.namespace, PROJECT.project_id),
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="transition is inconsistent"):
+            connection.execute(
+                """
+                UPDATE governance_project_publish_gates
+                SET state = 'unlocked', active_intent_id = NULL,
+                    gate_revision = gate_revision + 1, updated_at = ?
+                WHERE project_namespace = ? AND project_id = ?
+                """,
+                (NOW.isoformat(), PROJECT.namespace, PROJECT.project_id),
+            )
+        connection.execute(
+            """
+            UPDATE governance_publish_intents
+            SET status = 'cancelled', resolved_at = ?
+            WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), intent_id),
+        )
+        connection.execute(
+            """
+            UPDATE governance_project_publish_gates
+            SET state = 'unlocked', active_intent_id = NULL,
+                gate_revision = gate_revision + 1, updated_at = ?
+            WHERE project_namespace = ? AND project_id = ?
+            """,
+            (NOW.isoformat(), PROJECT.namespace, PROJECT.project_id),
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="publish gate is durable"):
+            connection.execute(
+                """
+                DELETE FROM governance_project_publish_gates
+                WHERE project_namespace = ? AND project_id = ?
+                """,
+                (PROJECT.namespace, PROJECT.project_id),
+            )
+        gate = connection.execute(
+            """
+            SELECT active_intent_id, gate_revision, state
+            FROM governance_project_publish_gates
+            """
+        ).fetchone()
+    assert gate == (None, 2, "unlocked")
+    assert intent_id == "PBI-0000000000000001"
+
+
+def test_publish_result_is_correlated_terminal_evidence(tmp_path: Path) -> None:
+    store, job = _publish_pending_job_fixture(tmp_path)
+    intent_id = _insert_prepared_publish_foundation(store, job.job_id)
+
+    with store.connect() as connection:
+        connection.execute(
+            """
+            UPDATE governance_publish_intents
+            SET status = 'published', resolved_at = ?
+            WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), intent_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO governance_publish_results(
+                intent_id, job_id, snapshot_id, project_namespace, project_id,
+                proposal_id, fencing_token, expected_old_ref, candidate_commit,
+                actual_ref, outcome, error_code, resolved_at
+            )
+            SELECT intent_id, job_id, snapshot_id, project_namespace, project_id,
+                   proposal_id, fencing_token, expected_old_ref, candidate_commit,
+                   candidate_commit, 'published', NULL, ?
+            FROM governance_publish_intents WHERE intent_id = ?
+            """,
+            (NOW.isoformat(), intent_id),
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "UPDATE governance_publish_results SET actual_ref = ? WHERE intent_id = ?",
+                ("e" * 40, intent_id),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO governance_publish_results(
+                    intent_id, job_id, snapshot_id, project_namespace, project_id,
+                    proposal_id, fencing_token, expected_old_ref, candidate_commit,
+                    actual_ref, outcome, error_code, resolved_at
+                ) VALUES (
+                    'PBI-0000000000000002', 'JOB-MISSING', 'SNP-MISSING',
+                    ?, ?, ?, 1, ?, ?, ?, 'published', NULL, ?
+                )
+                """,
+                (
+                    PROJECT.namespace,
+                    PROJECT.project_id,
+                    PROPOSAL.proposal_id,
+                    "a" * 40,
+                    "b" * 40,
+                    "b" * 40,
+                    NOW.isoformat(),
+                ),
+            )
+
+
+def test_publish_gate_model_rejects_unsafe_canonical_ref() -> None:
+    with pytest.raises(ValidationError):
+        ProjectPublishGateView(
+            project_ref=PROJECT,
+            canonical_ref="refs/heads/main..evil",
+            active_intent_id=None,
+            gate_revision=1,
+            state=PublishGateState.UNLOCKED,
+            updated_at=NOW,
+        )

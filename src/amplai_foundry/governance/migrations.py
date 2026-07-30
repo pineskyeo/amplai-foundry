@@ -1229,6 +1229,311 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=12,
+        name="fenced-publish-foundation",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_apply_job_publish_identity
+            ON governance_apply_jobs(
+                job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                fencing_token, approved_snapshot_digest, expected_base_revision,
+                staged_artifact_digest, publish_request_digest
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX governance_staging_artifact_publish_identity
+            ON governance_staging_artifacts(job_id, fencing_token, artifact_digest)
+            """,
+            """
+            CREATE UNIQUE INDEX governance_publish_input_identity
+            ON governance_publish_inputs(job_id, fencing_token, publish_request_digest)
+            """,
+            """
+            CREATE TABLE governance_publish_intents (
+                intent_id TEXT PRIMARY KEY NOT NULL,
+                job_id TEXT NOT NULL UNIQUE,
+                snapshot_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+                approved_snapshot_digest TEXT NOT NULL,
+                expected_base_revision TEXT NOT NULL,
+                staged_artifact_digest TEXT NOT NULL,
+                publish_request_digest TEXT NOT NULL,
+                canonical_ref TEXT NOT NULL,
+                expected_old_ref TEXT NOT NULL,
+                candidate_commit TEXT NOT NULL,
+                candidate_tree_digest TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (
+                    status IN (
+                        'prepared', 'published', 'publish_conflict',
+                        'cancelled', 'recovery_hold', 'failed'
+                    )
+                ),
+                prepared_at TEXT NOT NULL,
+                resolved_at TEXT,
+                last_error_code TEXT,
+                UNIQUE (
+                    intent_id, job_id, snapshot_id, project_namespace, project_id,
+                    proposal_id, fencing_token, expected_old_ref, candidate_commit
+                ),
+                FOREIGN KEY (
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    fencing_token, approved_snapshot_digest, expected_base_revision,
+                    staged_artifact_digest, publish_request_digest
+                ) REFERENCES governance_apply_jobs(
+                    job_id, snapshot_id, project_namespace, project_id, proposal_id,
+                    fencing_token, approved_snapshot_digest, expected_base_revision,
+                    staged_artifact_digest, publish_request_digest
+                ) ON DELETE RESTRICT,
+                FOREIGN KEY (job_id, fencing_token, staged_artifact_digest)
+                    REFERENCES governance_staging_artifacts(
+                        job_id, fencing_token, artifact_digest
+                    ) ON DELETE RESTRICT,
+                FOREIGN KEY (job_id, fencing_token, publish_request_digest)
+                    REFERENCES governance_publish_inputs(
+                        job_id, fencing_token, publish_request_digest
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(intent_id) = 20
+                    AND substr(intent_id, 1, 4) = 'PBI-'
+                    AND substr(intent_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(approved_snapshot_digest) = 71
+                    AND substr(approved_snapshot_digest, 1, 7) = 'sha256:'
+                    AND substr(approved_snapshot_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(staged_artifact_digest) = 71
+                    AND substr(staged_artifact_digest, 1, 7) = 'sha256:'
+                    AND substr(staged_artifact_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(publish_request_digest) = 71
+                    AND substr(publish_request_digest, 1, 7) = 'sha256:'
+                    AND substr(publish_request_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(candidate_tree_digest) = 71
+                    AND substr(candidate_tree_digest, 1, 7) = 'sha256:'
+                    AND substr(candidate_tree_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(expected_base_revision) BETWEEN 7 AND 64
+                    AND expected_base_revision NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(expected_old_ref) IN (40, 64)
+                    AND expected_old_ref NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(candidate_commit) IN (40, 64)
+                    AND candidate_commit NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(canonical_ref) BETWEEN 12 AND 255
+                    AND substr(canonical_ref, 1, 11) = 'refs/heads/'
+                    AND canonical_ref NOT GLOB '*[[:space:]~^:?*\\[]*'
+                    AND substr(canonical_ref, -1) != '/'
+                    AND instr(canonical_ref, '..') = 0
+                    AND instr(canonical_ref, '//') = 0
+                    AND instr(canonical_ref, '@{') = 0
+                ),
+                CHECK (
+                    (status IN ('prepared', 'recovery_hold') AND resolved_at IS NULL)
+                    OR (
+                        status IN ('published', 'publish_conflict', 'cancelled', 'failed')
+                        AND resolved_at IS NOT NULL
+                    )
+                ),
+                CHECK (
+                    (status IN ('prepared', 'published', 'cancelled')
+                     AND last_error_code IS NULL)
+                    OR (status IN ('publish_conflict', 'recovery_hold', 'failed')
+                     AND last_error_code IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE UNIQUE INDEX governance_one_active_publish_intent
+            ON governance_publish_intents(project_namespace, project_id)
+            WHERE status IN ('prepared', 'recovery_hold')
+            """,
+            """
+            CREATE TRIGGER governance_publish_intent_identity_immutable
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.intent_id != NEW.intent_id
+              OR OLD.job_id != NEW.job_id
+              OR OLD.snapshot_id != NEW.snapshot_id
+              OR OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.proposal_id != NEW.proposal_id
+              OR OLD.fencing_token != NEW.fencing_token
+              OR OLD.approved_snapshot_digest != NEW.approved_snapshot_digest
+              OR OLD.expected_base_revision != NEW.expected_base_revision
+              OR OLD.staged_artifact_digest != NEW.staged_artifact_digest
+              OR OLD.publish_request_digest != NEW.publish_request_digest
+              OR OLD.canonical_ref != NEW.canonical_ref
+              OR OLD.expected_old_ref != NEW.expected_old_ref
+              OR OLD.candidate_commit != NEW.candidate_commit
+              OR OLD.candidate_tree_digest != NEW.candidate_tree_digest
+              OR OLD.prepared_at != NEW.prepared_at
+            BEGIN SELECT RAISE(ABORT, 'publish intent identity is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_intent_transition_guard
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.status != NEW.status AND NOT (
+                (OLD.status = 'prepared' AND NEW.status IN (
+                    'published', 'publish_conflict', 'cancelled', 'recovery_hold', 'failed'
+                ))
+                OR (OLD.status = 'recovery_hold' AND NEW.status IN (
+                    'prepared', 'published', 'publish_conflict', 'cancelled', 'failed'
+                ))
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid publish intent transition'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_intent_state_requires_transition
+            BEFORE UPDATE ON governance_publish_intents
+            WHEN OLD.status = NEW.status AND (
+                OLD.resolved_at IS NOT NEW.resolved_at
+                OR OLD.last_error_code IS NOT NEW.last_error_code
+            )
+            BEGIN SELECT RAISE(ABORT, 'publish intent state requires transition'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_intents_no_delete
+            BEFORE DELETE ON governance_publish_intents
+            BEGIN SELECT RAISE(ABORT, 'publish intent is durable'); END
+            """,
+            """
+            CREATE TABLE governance_project_publish_gates (
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                canonical_ref TEXT NOT NULL,
+                active_intent_id TEXT UNIQUE,
+                gate_revision INTEGER NOT NULL CHECK (gate_revision >= 1),
+                state TEXT NOT NULL CHECK (state IN ('unlocked', 'locked', 'recovery_hold')),
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (project_namespace, project_id),
+                FOREIGN KEY (active_intent_id)
+                    REFERENCES governance_publish_intents(intent_id) ON DELETE RESTRICT,
+                CHECK (
+                    (state = 'unlocked' AND active_intent_id IS NULL)
+                    OR (state IN ('locked', 'recovery_hold') AND active_intent_id IS NOT NULL)
+                ),
+                CHECK (
+                    length(canonical_ref) BETWEEN 12 AND 255
+                    AND substr(canonical_ref, 1, 11) = 'refs/heads/'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_project_publish_gate_identity_immutable
+            BEFORE UPDATE ON governance_project_publish_gates
+            WHEN OLD.project_namespace != NEW.project_namespace
+              OR OLD.project_id != NEW.project_id
+              OR OLD.canonical_ref != NEW.canonical_ref
+              OR NEW.gate_revision != OLD.gate_revision + 1
+            BEGIN SELECT RAISE(ABORT, 'publish gate identity/revision is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_project_publish_gate_insert_consistency
+            BEFORE INSERT ON governance_project_publish_gates
+            WHEN NEW.state != 'unlocked' AND NOT EXISTS (
+                SELECT 1 FROM governance_publish_intents i
+                WHERE i.intent_id = NEW.active_intent_id
+                  AND i.project_namespace = NEW.project_namespace
+                  AND i.project_id = NEW.project_id
+                  AND i.canonical_ref = NEW.canonical_ref
+                  AND (
+                      (NEW.state = 'locked' AND i.status = 'prepared')
+                      OR (NEW.state = 'recovery_hold' AND i.status = 'recovery_hold')
+                  )
+            )
+            BEGIN SELECT RAISE(ABORT, 'publish gate does not match active intent'); END
+            """,
+            """
+            CREATE TRIGGER governance_project_publish_gate_update_consistency
+            BEFORE UPDATE ON governance_project_publish_gates
+            WHEN (
+                NEW.state = 'unlocked' AND EXISTS (
+                    SELECT 1 FROM governance_publish_intents i
+                    WHERE i.intent_id = OLD.active_intent_id
+                      AND i.status IN ('prepared', 'recovery_hold')
+                )
+            ) OR (
+                NEW.state != 'unlocked' AND NOT EXISTS (
+                    SELECT 1 FROM governance_publish_intents i
+                    WHERE i.intent_id = NEW.active_intent_id
+                      AND i.project_namespace = NEW.project_namespace
+                      AND i.project_id = NEW.project_id
+                      AND i.canonical_ref = NEW.canonical_ref
+                      AND (
+                          (NEW.state = 'locked' AND i.status = 'prepared')
+                          OR (NEW.state = 'recovery_hold' AND i.status = 'recovery_hold')
+                      )
+                )
+            )
+            BEGIN SELECT RAISE(ABORT, 'publish gate transition is inconsistent'); END
+            """,
+            """
+            CREATE TRIGGER governance_project_publish_gates_no_delete
+            BEFORE DELETE ON governance_project_publish_gates
+            BEGIN SELECT RAISE(ABORT, 'publish gate is durable'); END
+            """,
+            """
+            CREATE TABLE governance_publish_results (
+                intent_id TEXT PRIMARY KEY NOT NULL,
+                job_id TEXT NOT NULL UNIQUE,
+                snapshot_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL,
+                expected_old_ref TEXT NOT NULL,
+                candidate_commit TEXT NOT NULL,
+                actual_ref TEXT NOT NULL,
+                outcome TEXT NOT NULL CHECK (
+                    outcome IN ('published', 'publish_conflict', 'cancelled', 'failed')
+                ),
+                error_code TEXT,
+                resolved_at TEXT NOT NULL,
+                FOREIGN KEY (
+                    intent_id, job_id, snapshot_id, project_namespace, project_id,
+                    proposal_id, fencing_token, expected_old_ref, candidate_commit
+                ) REFERENCES governance_publish_intents(
+                    intent_id, job_id, snapshot_id, project_namespace, project_id,
+                    proposal_id, fencing_token, expected_old_ref, candidate_commit
+                ) ON DELETE RESTRICT,
+                CHECK (
+                    length(actual_ref) IN (40, 64)
+                    AND actual_ref NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    (outcome IN ('published', 'cancelled') AND error_code IS NULL)
+                    OR (outcome IN ('publish_conflict', 'failed') AND error_code IS NOT NULL)
+                ),
+                CHECK (outcome != 'published' OR actual_ref = candidate_commit),
+                CHECK (outcome != 'cancelled' OR actual_ref = expected_old_ref)
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE TRIGGER governance_publish_results_no_update
+            BEFORE UPDATE ON governance_publish_results
+            BEGIN SELECT RAISE(ABORT, 'publish result is append-only'); END
+            """,
+            """
+            CREATE TRIGGER governance_publish_results_no_delete
+            BEFORE DELETE ON governance_publish_results
+            BEGIN SELECT RAISE(ABORT, 'publish result is durable'); END
+            """,
+        ),
+    ),
 )
 
 
@@ -1669,6 +1974,56 @@ class MigrationRunner:
                         ("publish_request_digest", "TEXT", 1, 0),
                         ("publish_request_bytes", "BLOB", 1, 0),
                         ("created_at", "TEXT", 1, 0),
+                    ),
+                }
+            )
+        if schema_version >= 12:
+            expected_columns.update(
+                {
+                    "governance_publish_intents": (
+                        ("intent_id", "TEXT", 1, 1),
+                        ("job_id", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("fencing_token", "INTEGER", 1, 0),
+                        ("approved_snapshot_digest", "TEXT", 1, 0),
+                        ("expected_base_revision", "TEXT", 1, 0),
+                        ("staged_artifact_digest", "TEXT", 1, 0),
+                        ("publish_request_digest", "TEXT", 1, 0),
+                        ("canonical_ref", "TEXT", 1, 0),
+                        ("expected_old_ref", "TEXT", 1, 0),
+                        ("candidate_commit", "TEXT", 1, 0),
+                        ("candidate_tree_digest", "TEXT", 1, 0),
+                        ("status", "TEXT", 1, 0),
+                        ("prepared_at", "TEXT", 1, 0),
+                        ("resolved_at", "TEXT", 0, 0),
+                        ("last_error_code", "TEXT", 0, 0),
+                    ),
+                    "governance_project_publish_gates": (
+                        ("project_namespace", "TEXT", 1, 1),
+                        ("project_id", "TEXT", 1, 2),
+                        ("canonical_ref", "TEXT", 1, 0),
+                        ("active_intent_id", "TEXT", 0, 0),
+                        ("gate_revision", "INTEGER", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("updated_at", "TEXT", 1, 0),
+                    ),
+                    "governance_publish_results": (
+                        ("intent_id", "TEXT", 1, 1),
+                        ("job_id", "TEXT", 1, 0),
+                        ("snapshot_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("fencing_token", "INTEGER", 1, 0),
+                        ("expected_old_ref", "TEXT", 1, 0),
+                        ("candidate_commit", "TEXT", 1, 0),
+                        ("actual_ref", "TEXT", 1, 0),
+                        ("outcome", "TEXT", 1, 0),
+                        ("error_code", "TEXT", 0, 0),
+                        ("resolved_at", "TEXT", 1, 0),
                     ),
                 }
             )

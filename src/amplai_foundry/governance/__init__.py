@@ -94,6 +94,15 @@ from amplai_foundry.governance.projections import (
     YamlProjectionDestination,
     YamlProjectionRecord,
 )
+from amplai_foundry.governance.publish import (
+    ProjectPublishGateView,
+    PublishGateState,
+    PublishGovernanceError,
+    PublishIntentState,
+    PublishIntentView,
+    PublishOutcome,
+    PublishResultView,
+)
 
 __all__ = [
     "ActionTokenState",
@@ -156,6 +165,7 @@ __all__ = [
     "OutboxLeaseConflictError",
     "OutboxReconcileError",
     "OutboxState",
+    "ProjectPublishGateView",
     "ProjectionDestination",
     "ProposalAction",
     "ProposalActionAuditEvent",
@@ -166,6 +176,12 @@ __all__ = [
     "ProposalSubmissionService",
     "ProviderAuthenticator",
     "ProviderEnvelope",
+    "PublishGateState",
+    "PublishGovernanceError",
+    "PublishIntentState",
+    "PublishIntentView",
+    "PublishOutcome",
+    "PublishResultView",
     "VerifiedProviderCommand",
     "YamlProjectionDestination",
     "YamlProjectionRecord",
