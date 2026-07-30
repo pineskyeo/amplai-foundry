@@ -19,6 +19,7 @@ from pydantic import ValidationError
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import (
+    ActiveProposalError,
     ActiveProposalRepository,
     ActorBindingService,
     ActorRef,
@@ -29,9 +30,11 @@ from amplai_foundry.governance import (
     BindingTarget,
     ChannelProvider,
     ChannelRef,
+    DecisionAction,
     DirectAuthorityRequest,
     ImmutableDefinitionObjectStore,
     LegacyApprovalDisposition,
+    LegacyApprovalReviewService,
     LegacyMigrationBackupEvidence,
     LegacyMigrationScanConfig,
     LegacyMigrationScanError,
@@ -41,8 +44,13 @@ from amplai_foundry.governance import (
     LegacyProposalImportService,
     LegacyProposalMigrationPlan,
     ProposalRef,
+    ProposalSubmissionService,
 )
-from amplai_foundry.governance.apply_jobs import ApplyGovernanceError, ApplyRequestService
+from amplai_foundry.governance.apply_jobs import (
+    ApplyGovernanceError,
+    ApplyGrantService,
+    ApplyRequestService,
+)
 from amplai_foundry.governance.decisions import DecisionError, DecisionService
 from amplai_foundry.governance.definitions import (
     ProposalDefinitionManifest,
@@ -292,14 +300,20 @@ def _migration_authority(store: GovernanceStore) -> DirectAuthorityRequest:
     bindings.grant_permission(
         REVIEWER,
         PROJECT,
-        AuthorityPermission.PROPOSAL_DECIDE,
+        AuthorityPermission.PROPOSAL_SUBMIT_REVIEW,
         approval=approval(2),
     )
     bindings.grant_permission(
         REVIEWER,
         PROJECT,
-        AuthorityPermission.PROPOSAL_REQUEST_APPLY,
+        AuthorityPermission.PROPOSAL_DECIDE,
         approval=approval(3),
+    )
+    bindings.grant_permission(
+        REVIEWER,
+        PROJECT,
+        AuthorityPermission.PROPOSAL_REQUEST_APPLY,
+        approval=approval(4),
     )
     bindings.create_binding(
         BindingTarget(
@@ -308,7 +322,7 @@ def _migration_authority(store: GovernanceStore) -> DirectAuthorityRequest:
             external_actor_id="U456",
             actor_ref=REVIEWER,
         ),
-        approval=approval(4),
+        approval=approval(5),
     )
     return DirectAuthorityRequest(
         provider=ChannelProvider.SLACK,
@@ -1019,6 +1033,7 @@ def test_migration_root_and_items_are_database_enforced_durable_evidence(
 
 def test_synthetic_approval_import_creates_audit_outbox_hold_and_enforcement(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = _legacy_tree(tmp_path / "project", status="approved")
     store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
@@ -1108,6 +1123,36 @@ def test_synthetic_approval_import_creates_audit_outbox_hold_and_enforcement(
             item.proposal_ref,
             authority_request=authority_request,
         )
+    with pytest.raises(DecisionError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
+        DecisionService(store, authority, clock=lambda: NOW).decide(
+            item.proposal_ref,
+            action=DecisionAction.APPROVE,
+            authority_request=authority_request,
+            raw_token="preissued-action-token",
+            idempotency_key="legacy-hold:preissued-decision",
+            request_fingerprint="e" * 64,
+        )
+    grant_issuer = ApplyGrantService(store, authority, _objects, clock=lambda: NOW)
+    synthetic_approved_source = (
+        PROJECT.namespace,
+        PROJECT.project_id,
+        PROPOSAL_ID,
+        imported.definition_digests[0],
+        item.content_revision,
+        item.state_revision,
+        item.decision_epoch,
+        NOW.isoformat(),
+    )
+    monkeypatch.setattr(
+        grant_issuer,
+        "_approved_decision_row",
+        lambda _connection, _key: synthetic_approved_source,
+    )
+    with pytest.raises(ApplyGovernanceError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
+        grant_issuer._issue_from_approved_decision(
+            "legacy-hold:preexisting-approved-decision",
+            authority_request=authority_request,
+        )
     with pytest.raises(ApplyGovernanceError, match="LEGACY_APPROVAL_REVIEW_REQUIRED"):
         ApplyRequestService(store, authority, clock=lambda: NOW).request_apply(
             item.proposal_ref,
@@ -1121,6 +1166,124 @@ def test_synthetic_approval_import_creates_audit_outbox_hold_and_enforcement(
             0,
         )
         assert connection.execute("SELECT COUNT(*) FROM governance_apply_jobs").fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_apply_grants").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_decision_results"
+        ).fetchone() == (0,)
+
+    review_service = LegacyApprovalReviewService(store, authority, clock=lambda: NOW)
+    with store.connect() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER fail_legacy_review_outbox
+            BEFORE INSERT ON governance_outbox_events
+            BEGIN SELECT RAISE(ABORT, 'forced legacy review outbox failure'); END
+            """
+        )
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_APPROVAL_REVIEW_CONFLICT",
+    ):
+        review_service.resolve(
+            item.proposal_ref,
+            authority_request=authority_request,
+            reason="human reviewed untrusted legacy approval",
+            idempotency_key="legacy-review:synthetic:failed",
+            request_fingerprint="d" * 64,
+        )
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_approval_reviews"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT state_revision, decision_epoch, status FROM governance_active_proposals"
+        ).fetchone() == (
+            item.state_revision,
+            item.decision_epoch,
+            "draft",
+        )
+        assert connection.execute("SELECT COUNT(*) FROM governance_audit_events").fetchone() == (1,)
+        connection.execute("DROP TRIGGER fail_legacy_review_outbox")
+    review = review_service.resolve(
+        item.proposal_ref,
+        authority_request=authority_request,
+        reason="human reviewed untrusted legacy approval",
+        idempotency_key="legacy-review:synthetic:1",
+        request_fingerprint="b" * 64,
+    )
+    replay = review_service.resolve(
+        item.proposal_ref,
+        authority_request=authority_request,
+        reason="human reviewed untrusted legacy approval",
+        idempotency_key="legacy-review:synthetic:1",
+        request_fingerprint="b" * 64,
+    )
+    assert replay.model_copy(update={"replayed": False}) == review
+    assert replay.replayed is True
+
+    active = ActiveProposalRepository(store, _objects)
+    reviewed = ProposalSubmissionService(store, active, authority).submit_for_review(
+        item.proposal_ref,
+        authority_request=authority_request,
+        expected_state_revision=review.state_revision,
+    )
+    decisions = DecisionService(store, authority, clock=lambda: NOW)
+    approve = next(
+        token
+        for token in decisions.issue_tokens(
+            item.proposal_ref,
+            authority_request=authority_request,
+        )
+        if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    decision = decisions.decide(
+        item.proposal_ref,
+        action=DecisionAction.APPROVE,
+        authority_request=authority_request,
+        raw_token=approve.raw_token,
+        idempotency_key="legacy-review:decision:approve",
+        request_fingerprint="c" * 64,
+    )
+    issued_grant = ApplyGrantService(
+        store,
+        authority,
+        _objects,
+        clock=lambda: NOW,
+    )._issue_from_approved_decision(
+        "legacy-review:decision:approve",
+        authority_request=authority_request,
+    )
+    assert reviewed.status.value == "reviewed"
+    assert decision.proposal_status.value == "approved"
+    assert issued_grant.record.state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT actor_id, reason FROM governance_legacy_approval_reviews"
+        ).fetchone() == (
+            REVIEWER.actor_id,
+            "human reviewed untrusted legacy approval",
+        )
+        assert connection.execute(
+            "SELECT aggregate_sequence FROM governance_audit_events ORDER BY aggregate_sequence"
+        ).fetchall()[:2] == [(1,), (2,)]
+        audit_chain = connection.execute(
+            "SELECT event_hash, previous_event_hash FROM governance_audit_events "
+            "ORDER BY aggregate_sequence"
+        ).fetchall()
+        assert audit_chain[0][1] is None
+        assert audit_chain[1][1] == audit_chain[0][0]
+        assert connection.execute(
+            "SELECT destination_sequence FROM governance_outbox_events "
+            "WHERE destination_ref = ? ORDER BY destination_sequence",
+            (f"yaml:{PROJECT.namespace}:{PROJECT.project_id}:{PROPOSAL_ID}",),
+        ).fetchall()[:2] == [(1,), (2,)]
+        with pytest.raises(sqlite3.DatabaseError, match="approval review is immutable"):
+            connection.execute(
+                "UPDATE governance_legacy_approval_reviews SET actor_id = 'ACT-TAMPER'"
+            )
+        with pytest.raises(sqlite3.DatabaseError, match="approval review is durable"):
+            connection.execute("DELETE FROM governance_legacy_approval_reviews")
+    GovernanceEventService(store).reconcile()
 
 
 def test_strict_legacy_approval_audit_imports_human_evidence(tmp_path: Path) -> None:
@@ -1188,6 +1351,70 @@ def test_invalid_legacy_approval_audit_rolls_back_authoritative_state(tmp_path: 
             "governance_legacy_approval_holds",
         ):
             assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("actor_id", "different-legacy-user"),
+        ("occurred_at", "2026-07-30T12:00:01Z"),
+    ),
+)
+def test_validly_fingerprinted_mismatched_approval_evidence_fails_closed(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    root = _legacy_tree(tmp_path / field, status="approved")
+    audit_path = root / ".amplai" / "proposals" / PROPOSAL_ID / "approval-audit.json"
+    evidence = json.loads(_approval_audit_payload())
+    evidence[field] = value
+    evidence.pop("request_fingerprint")
+    evidence["request_fingerprint"] = _canonical_digest(evidence).removeprefix("sha256:")
+    audit_path.write_text(
+        json.dumps(evidence, separators=(",", ":"), sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    store, _objects, dry_run, service, backup = _import_fixture(tmp_path / "fixture", root)
+    plan = dry_run.create_plan(
+        freeze=_freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+
+    with pytest.raises(LegacyMigrationScanError, match="LEGACY_APPROVAL_AUDIT_INVALID"):
+        service.import_state(plan, backup)
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_active_proposals"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_import_commands"
+        ).fetchone() == (0,)
+
+
+@pytest.mark.parametrize(
+    "status",
+    ("draft", "reviewed", "changes_requested", "rejected", "superseded"),
+)
+def test_non_approved_state_rejects_approval_audit_artifact(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    root = _legacy_tree(tmp_path / status, status=status)
+    audit_path = root / ".amplai" / "proposals" / PROPOSAL_ID / "approval-audit.json"
+    audit_path.write_bytes(_approval_audit_payload())
+
+    with pytest.raises(
+        LegacyMigrationScanError,
+        match="LEGACY_APPROVAL_AUDIT_STATE_INVALID",
+    ):
+        LegacyProposalDryRunService(root, PROJECT).create_plan(
+            freeze=_freeze(root),
+            base_revision="a13d92f",
+            validation_policy_ref="policy/migration/v1",
+        )
 
 
 def test_legacy_event_outbox_failure_rolls_back_state_audit_and_hold(tmp_path: Path) -> None:
@@ -1633,6 +1860,39 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
         ).fetchone() == (None,)
 
     replay_service = LegacyProposalImportService(dry_run, latest, objects)
+    for trigger_name, table in (
+        ("fail_legacy_backfill_audit", "governance_audit_events"),
+        ("fail_legacy_backfill_outbox", "governance_outbox_events"),
+    ):
+        with latest.connect() as connection:
+            connection.execute(
+                f"""
+                CREATE TRIGGER {trigger_name}
+                BEFORE INSERT ON {table}
+                BEGIN SELECT RAISE(ABORT, 'forced legacy backfill failure'); END
+                """
+            )
+        with pytest.raises(
+            LegacyMigrationScanError,
+            match="LEGACY_MIGRATION_REPLAY_CONFLICT",
+        ):
+            replay_service.import_state(plan, backup)
+        with latest.connect() as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM governance_legacy_event_backfill_pending"
+            ).fetchone() == (1,)
+            for authoritative_table in (
+                "governance_legacy_import_commands",
+                "governance_legacy_approval_holds",
+                "governance_audit_events",
+                "governance_outbox_events",
+                "governance_aggregate_sequences",
+                "governance_outbox_destinations",
+            ):
+                assert connection.execute(
+                    f"SELECT COUNT(*) FROM {authoritative_table}"
+                ).fetchone() == (0,)
+            connection.execute(f"DROP TRIGGER {trigger_name}")
     assert replay_service.import_state(plan, backup) == imported
     with latest.connect() as connection:
         assert connection.execute(
@@ -1663,6 +1923,7 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
 
     progressed = GovernanceStore(progressed_path)
     assert progressed.initialize().schema_version == len(INITIAL_MIGRATIONS)
+    progressed_authority = _migration_authority(progressed)
     with progressed.connect() as connection:
         assert connection.execute(
             """
@@ -1683,11 +1944,43 @@ def test_populated_v18_applied_hold_upgrade_verifies_git_provenance_on_replay(
         assert connection.execute(
             "SELECT COUNT(*) FROM governance_legacy_event_backfill_pending"
         ).fetchone() == (1,)
-    with pytest.raises(
-        LegacyMigrationScanError,
-        match="LEGACY_MIGRATION_REPLAY_CONFLICT",
-    ):
+    with pytest.raises(ActiveProposalError, match="LEGACY_MIGRATION_EVENT_BACKFILL_PENDING"):
+        ProposalSubmissionService(
+            progressed,
+            ActiveProposalRepository(progressed, objects),
+            AuthorityService(progressed, clock=lambda: NOW),
+        ).submit_for_review(
+            item.proposal_ref,
+            authority_request=progressed_authority,
+            expected_state_revision=item.state_revision + 1,
+        )
+
+    assert (
         LegacyProposalImportService(dry_run, progressed, objects).import_state(plan, backup)
+        == imported
+    )
+    with progressed.connect() as connection:
+        assert connection.execute(
+            """
+            SELECT state_revision, decision_epoch, status
+            FROM governance_active_proposals
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        ).fetchone() == (
+            item.state_revision + 1,
+            item.decision_epoch + 1,
+            "reviewed",
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_legacy_event_backfill_pending"
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT event_type FROM governance_audit_events").fetchone() == (
+            "migration.synthetic_approval",
+        )
+        assert connection.execute(
+            "SELECT destination_sequence FROM governance_outbox_events"
+        ).fetchone() == (1,)
 
 
 def test_backup_failure_prevents_migration_root_and_state_import(tmp_path: Path) -> None:

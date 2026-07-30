@@ -74,6 +74,8 @@ from amplai_foundry.governance.ingress import (
 from amplai_foundry.governance.ledger import FileProposalActionLedger
 from amplai_foundry.governance.legacy_migration import (
     LegacyApprovalDisposition,
+    LegacyApprovalReviewResult,
+    LegacyApprovalReviewService,
     LegacyMigrationBackupEvidence,
     LegacyMigrationImportResult,
     LegacyMigrationScanConfig,
@@ -194,6 +196,8 @@ __all__ = [
     "InvalidProposalTransitionError",
     "IssuedActionToken",
     "LegacyApprovalDisposition",
+    "LegacyApprovalReviewResult",
+    "LegacyApprovalReviewService",
     "LegacyMigrationBackupEvidence",
     "LegacyMigrationImportResult",
     "LegacyMigrationScanConfig",

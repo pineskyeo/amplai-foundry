@@ -10,6 +10,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.authority import AuthorityService, DirectAuthorityRequest
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.models import AuthorityPermission, Digest, ProposalRef
 from amplai_foundry.governance.object_store import DefinitionObjectRef
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
@@ -185,6 +186,9 @@ class ActiveProposalRepository:
                     expected_state_revision,
                     next_object_ref.digest,
                 )
+            block = legacy_mutation_block(connection, ref)
+            if block is not None:
+                raise ActiveProposalError(block)
             current = self._view(current_row, ref)
             return self._activate_next(
                 connection,
@@ -407,6 +411,9 @@ class ProposalSubmissionService:
             if row is None:
                 raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
             current = self.repository._view(row, ref)
+            block = legacy_mutation_block(connection, ref)
+            if block is not None:
+                raise ActiveProposalError(block)
             if (
                 current.status is not ActiveProposalStatus.DRAFT
                 or current.state_revision != expected_state_revision

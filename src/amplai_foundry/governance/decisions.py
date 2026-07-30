@@ -25,6 +25,7 @@ from amplai_foundry.governance.events import (
     DecisionProjectionPayload,
     GovernanceEventService,
 )
+from amplai_foundry.governance.legacy_gates import legacy_mutation_block
 from amplai_foundry.governance.models import (
     ActorRef,
     ActorType,
@@ -436,25 +437,9 @@ class DecisionService:
         connection: sqlite3.Connection,
         ref: ProposalRef,
     ) -> None:
-        if (
-            connection.execute(
-                """
-            SELECT 1 FROM sqlite_schema
-            WHERE type = 'table' AND name = 'governance_legacy_approval_holds'
-            """
-            ).fetchone()
-            is None
-        ):
-            return
-        held = connection.execute(
-            """
-            SELECT 1 FROM governance_legacy_approval_holds
-            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
-            """,
-            cls._identity(ref),
-        ).fetchone()
-        if held is not None:
-            raise DecisionError("LEGACY_APPROVAL_REVIEW_REQUIRED")
+        block = legacy_mutation_block(connection, ref)
+        if block is not None:
+            raise DecisionError(block)
 
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:

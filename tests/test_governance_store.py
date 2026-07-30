@@ -238,6 +238,9 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (19, "legacy-migration-durability"),
         (20, "legacy-migration-audit-projection"),
     ]
+    assert INITIAL_MIGRATIONS[19].checksum == (
+        "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"
+    )
     assert metadata == ("amplai-governance",)
 
 

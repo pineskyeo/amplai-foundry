@@ -9,7 +9,7 @@ import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
@@ -88,6 +88,23 @@ class LegacyMigrationProjectionPayload(BaseModel):
     source_status: str
     target_status: str
     validation_policy_ref: str = Field(min_length=1)
+
+
+class LegacyApprovalReviewProjectionPayload(BaseModel):
+    """Secret-free projection for governed human resolution of a synthetic hold."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    aggregate_ref: ProposalRef
+    event_type: Literal["migration.synthetic_approval_reviewed"] = (
+        "migration.synthetic_approval_reviewed"
+    )
+    idempotency_key: str = Field(min_length=1)
+    migration_id: str = Field(pattern=r"^MPL-[A-F0-9]{16}$")
+    reason: str = Field(min_length=3, max_length=512)
+    source_state_revision: int = Field(ge=2)
+    before_status: str
+    after_status: Literal["draft"] = "draft"
 
 
 class ApplyProjectionPayload(BaseModel):
@@ -385,6 +402,67 @@ class GovernanceEventService:
         )
         if self._timestamp(result[0].occurred_at) != str(row[8]):
             raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_SOURCE_MISMATCH")
+        return result
+
+    def _append_legacy_approval_review_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        review_id: str,
+        payload: LegacyApprovalReviewProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
+        payload_digest = self._digest(payload_json.encode("utf-8"))
+        row = connection.execute(
+            """
+            SELECT migration_id, project_namespace, project_id, proposal_id,
+                   idempotency_key, actor_id, actor_type, occurred_at, reason,
+                   definition_digest, source_state_revision, payload_digest, payload_json
+            FROM governance_legacy_approval_reviews
+            WHERE review_id = ?
+            """,
+            (review_id,),
+        ).fetchone()
+        if row is None or tuple(row[:5]) != (
+            payload.migration_id,
+            *self._identity(ref),
+            payload.idempotency_key,
+        ):
+            raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_SOURCE_MISMATCH")
+        if (
+            str(row[8]) != payload.reason
+            or int(row[10]) != payload.source_state_revision
+            or str(row[11]) != payload_digest
+            or str(row[12]) != payload_json
+        ):
+            raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_SOURCE_MISMATCH")
+        result = self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=review_id,
+            event_type=payload.event_type,
+            actor_id=str(row[5]),
+            actor_type=str(row[6]),
+            policy_snapshot_id=self._digest(b"legacy-approval-human-review:v1"),
+            destinations=(
+                OutboxDestination(
+                    destination_ref=(
+                        f"yaml:{ref.project_ref.namespace}:"
+                        f"{ref.project_ref.project_id}:{ref.proposal_id}"
+                    )
+                ),
+            ),
+            before_state=payload.before_status,
+            after_state=payload.after_status,
+            definition_digest=str(row[9]),
+            source_state_revision=payload.source_state_revision,
+            payload=payload,
+        )
+        if self._timestamp(result[0].occurred_at) != str(row[7]):
+            raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_SOURCE_MISMATCH")
         return result
 
     def _append_apply_job_in_transaction(
@@ -958,6 +1036,65 @@ class GovernanceEventService:
             elif hold is not None:
                 raise GovernanceEventError("LEGACY_APPROVAL_HOLD_MISMATCH")
         if has_legacy_import_commands:
+            review_rows = connection.execute(
+                """
+                SELECT review_id, migration_id, project_namespace, project_id,
+                       proposal_id, idempotency_key, request_fingerprint, actor_id,
+                       actor_type, occurred_at, reason, request_id, channel_json,
+                       definition_digest, source_state_revision, payload_digest, payload_json
+                FROM governance_legacy_approval_reviews
+                ORDER BY migration_id, proposal_id
+                """
+            ).fetchall()
+            for review in review_rows:
+                try:
+                    review_payload = LegacyApprovalReviewProjectionPayload.model_validate_json(
+                        str(review[16])
+                    )
+                except ValueError as error:
+                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_ROOT_MISMATCH") from error
+                ref = cls._proposal_ref(review[2], review[3], review[4])
+                destination = OutboxDestination(
+                    destination_ref=f"yaml:{review[2]}:{review[3]}:{review[4]}"
+                )
+                expected_payload_digest = cls._digest(str(review[16]).encode("utf-8"))
+                if (
+                    str(review[15]) != expected_payload_digest
+                    or review_payload.aggregate_ref != ref
+                    or review_payload.migration_id != str(review[1])
+                    or review_payload.idempotency_key != str(review[5])
+                    or review_payload.reason != str(review[10])
+                    or review_payload.source_state_revision != int(review[14])
+                ):
+                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_ROOT_MISMATCH")
+                command_id = str(review[0])
+                manifest_digest = cls._destination_manifest_digest((destination,))
+                decision_commands[command_id] = (
+                    expected_payload_digest,
+                    int(review[14]),
+                    manifest_digest,
+                    1,
+                )
+                audits = connection.execute(
+                    "SELECT * FROM governance_audit_events WHERE command_id = ?",
+                    (command_id,),
+                ).fetchall()
+                if len(audits) != 1:
+                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
+                audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+                if (
+                    audit.event_type != review_payload.event_type
+                    or audit.actor_id != str(review[7])
+                    or audit.actor_type != str(review[8])
+                    or audit.policy_snapshot_id != cls._digest(b"legacy-approval-human-review:v1")
+                    or audit.before_state != review_payload.before_status
+                    or audit.after_state != review_payload.after_status
+                    or audit.definition_digest != str(review[13])
+                    or cls._timestamp(audit.occurred_at) != str(review[9])
+                    or audit.destination_manifest_digest != manifest_digest
+                    or audit.destination_count != 1
+                ):
+                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
             uncovered_item = connection.execute(
                 """
                 SELECT 1
@@ -994,6 +1131,8 @@ class GovernanceEventService:
                 """
                 SELECT idempotency_key FROM (
                     SELECT idempotency_key FROM governance_legacy_import_commands
+                    UNION ALL
+                    SELECT idempotency_key FROM governance_legacy_approval_reviews
                     UNION ALL
                     SELECT idempotency_key FROM governance_decision_results
                     UNION ALL

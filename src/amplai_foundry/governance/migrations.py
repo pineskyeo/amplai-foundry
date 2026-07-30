@@ -2476,6 +2476,51 @@ INITIAL_MIGRATIONS = (
             ) WITHOUT ROWID
             """,
             """
+            CREATE TABLE governance_legacy_approval_reviews (
+                review_id TEXT PRIMARY KEY NOT NULL,
+                migration_id TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                request_fingerprint TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                actor_type TEXT NOT NULL CHECK (actor_type = 'human'),
+                occurred_at TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                channel_json TEXT NOT NULL,
+                definition_digest TEXT NOT NULL,
+                source_state_revision INTEGER NOT NULL CHECK (source_state_revision >= 2),
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                UNIQUE (migration_id, project_namespace, project_id, proposal_id),
+                FOREIGN KEY (migration_id, project_namespace, project_id, proposal_id)
+                    REFERENCES governance_legacy_approval_holds(
+                        migration_id, project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(review_id) = 20
+                    AND substr(review_id, 1, 4) = 'LAR-'
+                    AND substr(review_id, 5) NOT GLOB '*[^A-F0-9]*'
+                ),
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(definition_digest) = 71
+                    AND substr(definition_digest, 1, 7) = 'sha256:'
+                    AND substr(definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                ),
+                CHECK (
+                    length(payload_digest) = 71
+                    AND substr(payload_digest, 1, 7) = 'sha256:'
+                    AND substr(payload_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
             INSERT INTO governance_legacy_event_backfill_pending(
                 migration_id, project_namespace, project_id, proposal_id, created_at
             )
@@ -2507,6 +2552,16 @@ INITIAL_MIGRATIONS = (
             CREATE TRIGGER governance_legacy_event_backfill_pending_no_update
             BEFORE UPDATE ON governance_legacy_event_backfill_pending
             BEGIN SELECT RAISE(ABORT, 'legacy event backfill marker is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_approval_reviews_no_update
+            BEFORE UPDATE ON governance_legacy_approval_reviews
+            BEGIN SELECT RAISE(ABORT, 'legacy approval review is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_legacy_approval_reviews_no_delete
+            BEFORE DELETE ON governance_legacy_approval_reviews
+            BEGIN SELECT RAISE(ABORT, 'legacy approval review is durable'); END
             """,
         ),
     ),
@@ -3140,6 +3195,25 @@ class MigrationRunner:
                         ("project_id", "TEXT", 1, 3),
                         ("proposal_id", "TEXT", 1, 4),
                         ("created_at", "TEXT", 1, 0),
+                    ),
+                    "governance_legacy_approval_reviews": (
+                        ("review_id", "TEXT", 1, 1),
+                        ("migration_id", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("idempotency_key", "TEXT", 1, 0),
+                        ("request_fingerprint", "TEXT", 1, 0),
+                        ("actor_id", "TEXT", 1, 0),
+                        ("actor_type", "TEXT", 1, 0),
+                        ("occurred_at", "TEXT", 1, 0),
+                        ("reason", "TEXT", 1, 0),
+                        ("request_id", "TEXT", 1, 0),
+                        ("channel_json", "TEXT", 1, 0),
+                        ("definition_digest", "TEXT", 1, 0),
+                        ("source_state_revision", "INTEGER", 1, 0),
+                        ("payload_digest", "TEXT", 1, 0),
+                        ("payload_json", "TEXT", 1, 0),
                     ),
                 }
             )
