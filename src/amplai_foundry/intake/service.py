@@ -85,6 +85,11 @@ class KnowledgeIntakeService:
         self.proposal_builder = IntakeProposalBuilder()
 
     def process_batch(self, request: IntentRequest) -> list[IntakeResult]:
+        self.authority_service.store.check_startup()
+        try:
+            self.authority_service.authenticate_identity(request.identity)
+        except AuthorityResolutionError as error:
+            raise KnowledgeIntakeError(error.code) from error
         artifact_paths = [
             (self.workspace_root / artifact.path).resolve()
             if not Path(artifact.path).is_absolute()
@@ -107,6 +112,12 @@ class KnowledgeIntakeService:
         pack = self.pack_repository.get(resolution.project.project_id)
         if pack is None:
             raise KnowledgeIntakeError("resolved Project Pack을 다시 찾을 수 없습니다.")
+        try:
+            authority = self.authority_service.authenticate(request.identity.for_project(pack.ref))
+        except AuthorityResolutionError as error:
+            raise KnowledgeIntakeError(error.code) from error
+        if AuthorityPermission.PROPOSAL_SUBMIT_REVIEW not in authority.permissions:
+            raise KnowledgeIntakeError("AUTHORITY_DENIED")
         pack_validation = ProjectPackService(self.pack_repository).validate(pack)
         if not pack_validation.valid:
             reason = "Project Pack validation failed: " + "; ".join(pack_validation.issues)
@@ -118,12 +129,6 @@ class KnowledgeIntakeService:
                 )
                 for artifact in request.artifacts
             ]
-        try:
-            authority = self.authority_service.authenticate(request.identity.for_project(pack.ref))
-        except AuthorityResolutionError as error:
-            raise KnowledgeIntakeError(error.code) from error
-        if AuthorityPermission.PROPOSAL_SUBMIT_REVIEW not in authority.permissions:
-            raise KnowledgeIntakeError("AUTHORITY_DENIED")
         results: list[IntakeResult] = []
         for artifact, path in zip(request.artifacts, artifact_paths, strict=True):
             single_request = request.model_copy(update={"artifacts": [artifact]})

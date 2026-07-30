@@ -14,6 +14,7 @@ import pytest
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import (
     ActionTokenState,
+    ActiveProposalError,
     ActiveProposalRepository,
     ActiveProposalStatus,
     ActorBindingService,
@@ -33,6 +34,7 @@ from amplai_foundry.governance import (
     IngressAuthorityRequest,
     ProposalDefinitionManifest,
     ProposalRef,
+    ProposalSubmissionService,
     canonicalize_definition,
 )
 from amplai_foundry.governance.object_store import DefinitionObjectRef
@@ -162,6 +164,12 @@ def _reviewed(
         approval=_approval(3),
     )
     bindings.grant_permission(
+        ACTOR,
+        PROJECT,
+        AuthorityPermission.PROPOSAL_SUBMIT_REVIEW,
+        approval=_approval(7),
+    )
+    bindings.grant_permission(
         OTHER_ACTOR,
         PROJECT,
         AuthorityPermission.PROPOSAL_DECIDE,
@@ -194,16 +202,36 @@ def _reviewed(
         expected_state_revision=0,
         next_object_ref=definition,
     )
-    active.submit_for_review(
+    authority = AuthorityService(store, clock=clock)
+    ProposalSubmissionService(store, active, authority).submit_for_review(
         PROPOSAL,
+        authority_request=_authority_request(),
         expected_state_revision=initial.state_revision,
     )
-    authority = AuthorityService(store, clock=clock)
     return store, objects, active, DecisionService(store, authority, clock=clock), clock
 
 
 def _issue(service: DecisionService):
     return service.issue_tokens(PROPOSAL, authority_request=_authority_request())
+
+
+def test_submit_for_review_requires_project_submit_permission(tmp_path: Path) -> None:
+    store, _objects, active, _decisions, clock = _reviewed(tmp_path)
+    current = active.get(PROPOSAL)
+    assert current is not None
+
+    with pytest.raises(ActiveProposalError, match="AUTHORITY_DENIED"):
+        ProposalSubmissionService(
+            store,
+            active,
+            AuthorityService(store, clock=clock),
+        ).submit_for_review(
+            PROPOSAL,
+            authority_request=_authority_request(external_actor_id="U999"),
+            expected_state_revision=current.state_revision,
+        )
+
+    assert active.get(PROPOSAL) == current
 
 
 def test_issues_three_separate_hash_only_tokens_bound_to_reviewed_snapshot(

@@ -20,6 +20,27 @@ def _python_sources() -> tuple[Path, ...]:
     return tuple(sorted(SOURCE_ROOT.rglob("*.py")))
 
 
+def _import_bindings(tree: ast.AST) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            for alias in node.names:
+                bindings[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+    return bindings
+
+
+def _qualified_name(node: ast.expr, bindings: dict[str, str]) -> str:
+    if isinstance(node, ast.Name):
+        return bindings.get(node.id, node.id)
+    if isinstance(node, ast.Attribute):
+        base = _qualified_name(node.value, bindings)
+        return f"{base}.{node.attr}" if base else node.attr
+    return ""
+
+
 def test_removed_direct_mutation_symbols_do_not_reenter_production_code() -> None:
     forbidden = {
         "ProposalActionService",
@@ -31,6 +52,10 @@ def test_removed_direct_mutation_symbols_do_not_reenter_production_code() -> Non
     for path in _python_sources():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    if alias.name.rsplit(".", 1)[-1] in forbidden:
+                        findings.append(f"{path}:{node.lineno}:{alias.name}")
             if isinstance(node, ast.Name) and node.id in forbidden:
                 findings.append(f"{path}:{node.lineno}:{node.id}")
             if isinstance(node, ast.Attribute) and node.attr in forbidden:
@@ -46,17 +71,11 @@ def test_governance_authority_context_is_constructed_only_by_authority_service()
         if path == allowed:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        bindings = _import_bindings(tree)
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            name = (
-                node.func.id
-                if isinstance(node.func, ast.Name)
-                else node.func.attr
-                if isinstance(node.func, ast.Attribute)
-                else ""
-            )
-            if name == "AuthorityContext":
+            if _qualified_name(node.func, bindings).rsplit(".", 1)[-1] == "AuthorityContext":
                 findings.append(f"{path}:{node.lineno}")
 
     assert findings == []
@@ -122,6 +141,7 @@ def test_legacy_apply_engines_are_private_and_have_no_production_callers() -> No
     assert "apply" not in legacy_apply_public
     assert "approve" not in roadmap_public
     assert "apply" not in roadmap_public
+    assert "submit_for_review" not in active_public
     assert "transition_state" not in active_public
     assert "save" not in roadmap_repository_public
     for path in _python_sources():
@@ -135,6 +155,58 @@ def test_legacy_apply_engines_are_private_and_have_no_production_callers() -> No
         assert "_approve_legacy_proposal" not in text, path
         assert "_approve_legacy_proposal(" not in text, path
         assert "_apply_legacy_proposal(" not in text, path
+
+
+def test_private_fixture_mutators_have_no_external_production_callers() -> None:
+    defining_modules = {
+        "_LegacyProposalApplyEngine": {SOURCE_ROOT / "proposals/apply.py"},
+        "_approve_legacy_proposal": {
+            SOURCE_ROOT / "proposals/apply.py",
+            SOURCE_ROOT / "roadmaps/service.py",
+        },
+        "_apply_legacy_fixture": {SOURCE_ROOT / "proposals/apply.py"},
+        "_apply_locked": {SOURCE_ROOT / "roadmaps/service.py"},
+        "_apply_legacy_proposal": {SOURCE_ROOT / "roadmaps/service.py"},
+        "_save_legacy_fixture": {
+            SOURCE_ROOT / "proposals/apply.py",
+            SOURCE_ROOT / "roadmaps/service.py",
+        },
+    }
+    findings: list[str] = []
+    for path in _python_sources():
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Name, ast.Attribute)):
+                continue
+            symbol = node.id if isinstance(node, ast.Name) else node.attr
+            if symbol not in defining_modules:
+                continue
+            allowed = defining_modules[symbol]
+            if path not in allowed:
+                findings.append(f"{path}:{node.lineno}:{symbol}")
+    assert findings == []
+
+
+def test_architecture_name_resolution_detects_aliased_authority_constructor() -> None:
+    tree = ast.parse("from amplai_foundry.governance.models import AuthorityContext as AC\nAC()\n")
+    bindings = _import_bindings(tree)
+    call = next(node for node in ast.walk(tree) if isinstance(node, ast.Call))
+    assert _qualified_name(call.func, bindings) == (
+        "amplai_foundry.governance.models.AuthorityContext"
+    )
+
+
+def test_cli_intake_does_not_expose_authority_selector_options() -> None:
+    tree = ast.parse((SOURCE_ROOT / "cli.py").read_text(encoding="utf-8"))
+    command = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "intake_process_command"
+    )
+    parameters = {argument.arg for argument in command.args.args}
+    assert parameters.isdisjoint(
+        {"provider_installation_ref", "external_actor_id", "governance_db"}
+    )
 
 
 @pytest.mark.parametrize("field", ("authority", "permissions", "authority_context"))

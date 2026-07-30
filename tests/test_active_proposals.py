@@ -15,6 +15,7 @@ from amplai_foundry.governance.active_proposals import (
     ActiveProposalNotFoundError,
     ActiveProposalRepository,
     ActiveProposalStatus,
+    ActiveProposalView,
     DefinitionCASConflictError,
     InvalidProposalTransitionError,
     state_transition_allowed,
@@ -29,7 +30,7 @@ from amplai_foundry.governance.object_store import (
     DefinitionObjectRef,
     ImmutableDefinitionObjectStore,
 )
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 PROJECT = ProjectRef(project_id="amplai", namespace="org/default/project/amplai")
 OTHER_PROJECT = ProjectRef(project_id="cortex", namespace="org/default/project/cortex")
@@ -71,6 +72,51 @@ def _repository(
     root = project_root or tmp_path
     objects = ImmutableDefinitionObjectStore(project_ref, root)
     return governance_store, objects, ActiveProposalRepository(governance_store, objects)
+
+
+def _transition_state_fixture(
+    repository: ActiveProposalRepository,
+    ref: ProposalRef,
+    *,
+    expected_status: ActiveProposalStatus,
+    expected_state_revision: int,
+    next_status: ActiveProposalStatus,
+) -> ActiveProposalView:
+    """Test-only lifecycle fixture; production transitions are service-owned."""
+
+    with repository.store.connect() as connection, governance_transaction(connection):
+        row = repository._select(connection, ref)
+        if row is None:
+            raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
+        current = repository._view(row, ref)
+        if current.status != expected_status or current.state_revision != expected_state_revision:
+            raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
+        if not state_transition_allowed(current.status, next_status):
+            raise InvalidProposalTransitionError(
+                f"INVALID_PROPOSAL_TRANSITION:{current.status}->{next_status}"
+            )
+        updated = connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET status = ?, state_revision = state_revision + 1,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+              AND status = ? AND state_revision = ?
+            """,
+            (
+                next_status.value,
+                ref.project_ref.namespace,
+                ref.project_ref.project_id,
+                ref.proposal_id,
+                expected_status.value,
+                expected_state_revision,
+            ),
+        )
+        if updated.rowcount != 1:
+            raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
+        result = repository._select(connection, ref)
+        assert result is not None
+        return repository._view(result, ref)
 
 
 class FailingRevisionRepository(ActiveProposalRepository):
@@ -269,13 +315,15 @@ def test_definition_revisions_increment_all_counters_and_changes_requested_retur
     )
     assert (current.content_revision, current.state_revision, current.decision_epoch) == (2, 2, 2)
 
-    current = repository._transition_state_legacy_fixture(
+    current = _transition_state_fixture(
+        repository,
         PROPOSAL,
         expected_status=current.status,
         expected_state_revision=current.state_revision,
         next_status=ActiveProposalStatus.REVIEWED,
     )
-    current = repository._transition_state_legacy_fixture(
+    current = _transition_state_fixture(
+        repository,
         PROPOSAL,
         expected_status=current.status,
         expected_state_revision=current.state_revision,
@@ -283,7 +331,8 @@ def test_definition_revisions_increment_all_counters_and_changes_requested_retur
     )
     assert current.status is ActiveProposalStatus.CHANGES_REQUESTED
     with pytest.raises(InvalidProposalTransitionError):
-        repository._transition_state_legacy_fixture(
+        _transition_state_fixture(
+            repository,
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -346,7 +395,8 @@ def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters
         ActiveProposalStatus.APPLY_REQUESTED,
         ActiveProposalStatus.APPLIED,
     ):
-        current = repository._transition_state_legacy_fixture(
+        current = _transition_state_fixture(
+            repository,
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -357,7 +407,8 @@ def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters
     assert current.content_revision == initial.content_revision
     assert current.decision_epoch == initial.decision_epoch
     with pytest.raises(InvalidProposalTransitionError):
-        repository._transition_state_legacy_fixture(
+        _transition_state_fixture(
+            repository,
             PROPOSAL,
             expected_status=current.status,
             expected_state_revision=current.state_revision,
@@ -386,7 +437,8 @@ def test_stale_cas_and_invalid_transition_leave_aggregate_unchanged(tmp_path: Pa
     assert repository.get(PROPOSAL) == initial
 
     with pytest.raises(DefinitionCASConflictError, match="PROPOSAL_STATE_STALE"):
-        repository._transition_state_legacy_fixture(
+        _transition_state_fixture(
+            repository,
             PROPOSAL,
             expected_status=ActiveProposalStatus.DRAFT,
             expected_state_revision=99,
@@ -395,7 +447,8 @@ def test_stale_cas_and_invalid_transition_leave_aggregate_unchanged(tmp_path: Pa
     assert repository.get(PROPOSAL) == initial
 
     with pytest.raises(InvalidProposalTransitionError):
-        repository._transition_state_legacy_fixture(
+        _transition_state_fixture(
+            repository,
             PROPOSAL,
             expected_status=initial.status,
             expected_state_revision=initial.state_revision,
@@ -518,7 +571,8 @@ def test_concurrent_state_cas_has_exactly_one_winner_and_one_revision_increment(
 
     def transition(next_status: ActiveProposalStatus) -> str:
         try:
-            repository._transition_state_legacy_fixture(
+            _transition_state_fixture(
+                repository,
                 PROPOSAL,
                 expected_status=initial.status,
                 expected_state_revision=initial.state_revision,

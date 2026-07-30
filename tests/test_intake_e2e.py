@@ -1,4 +1,6 @@
 import json
+import os
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -29,7 +31,7 @@ from amplai_foundry.governance import (
     ChannelRef,
     ExternalActorIdentity,
 )
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.store import GovernanceStore, GovernanceStoreError
 from amplai_foundry.ingestion.service import SourceIngestionService
 from amplai_foundry.intake.models import ArtifactRef, IntentRequest
 from amplai_foundry.intake.service import KnowledgeIntakeError, KnowledgeIntakeService
@@ -65,8 +67,8 @@ def _approval(index: int) -> BindingApproval:
 def _identity() -> ExternalActorIdentity:
     return ExternalActorIdentity(
         provider=ChannelProvider.CLI,
-        provider_installation_ref="local:test",
-        external_actor_id="tester",
+        provider_installation_ref="local:cli",
+        external_actor_id=f"uid:{os.getuid()}",
         request_id="INTAKE-TEST-REQUEST",
         channel=ChannelRef(provider=ChannelProvider.CLI, message_id="intake-test-message"),
     )
@@ -86,8 +88,8 @@ def _ensure_governance(root: Path) -> GovernanceStore:
         bindings.create_binding(
             BindingTarget(
                 provider=ChannelProvider.CLI,
-                provider_installation_ref="local:test",
-                external_actor_id="tester",
+                provider_installation_ref="local:cli",
+                external_actor_id=f"uid:{os.getuid()}",
                 actor_ref=INTAKE_ACTOR,
             ),
             approval=_approval(2),
@@ -210,6 +212,25 @@ def _service(root: Path) -> KnowledgeIntakeService:
     )
 
 
+def _project_file_snapshot(root: Path) -> dict[str, bytes]:
+    tracked_suffixes = {".md", ".yaml", ".yml"}
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.suffix.casefold() in tracked_suffixes
+    }
+
+
+def _token_snapshot(store: GovernanceStore) -> tuple[tuple[object, ...], ...]:
+    with store.connect() as connection:
+        return tuple(
+            connection.execute(
+                "SELECT token_id, token_hash, state, resolved_at "
+                "FROM governance_action_tokens ORDER BY token_id"
+            ).fetchall()
+        )
+
+
 def test_roadmap_intake_is_review_only_reproducible_and_idempotent(tmp_path: Path) -> None:
     _pack(tmp_path)
     _roadmap_state(tmp_path)
@@ -309,21 +330,101 @@ def test_intake_authority_failure_precedes_source_and_proposal_mutation(
             )
         expected = "PROJECT_ACCESS_DENIED"
 
+    files_before = _project_file_snapshot(tmp_path)
+    tokens_before = _token_snapshot(store)
+
     with pytest.raises(KnowledgeIntakeError, match=expected):
         service.process(request)
 
+    assert _project_file_snapshot(tmp_path) == files_before
+    assert _token_snapshot(store) == tokens_before
     assert not list((tmp_path / "memory/00-sources").glob("*.md"))
     assert not list((tmp_path / ".amplai/proposals").glob("*/proposal.yaml"))
+    assert not list((tmp_path / ".amplai/intake-holds").glob("*.yaml"))
+
+
+def test_unresolved_intake_rejects_unmapped_actor_before_hold_persistence(
+    tmp_path: Path,
+) -> None:
+    artifact = tmp_path / "ambiguous.md"
+    artifact.write_text("# Design\n\nApply this.\n", encoding="utf-8")
+    store = _ensure_governance(tmp_path)
+    request = _request(artifact.name).model_copy(
+        update={"identity": _identity().model_copy(update={"external_actor_id": "unknown-user"})}
+    )
+    files_before = _project_file_snapshot(tmp_path)
+    tokens_before = _token_snapshot(store)
+
+    with pytest.raises(KnowledgeIntakeError, match="ACTOR_UNMAPPED"):
+        KnowledgeIntakeService(tmp_path, AuthorityService(store)).process(request)
+
+    assert _project_file_snapshot(tmp_path) == files_before
+    assert _token_snapshot(store) == tokens_before
+    assert not list((tmp_path / ".amplai/intake-holds").glob("*.yaml"))
+
+
+def test_invalid_pack_rejects_unpermitted_actor_before_hold_persistence(
+    tmp_path: Path,
+) -> None:
+    _pack(tmp_path)
+    (tmp_path / "memory").rmdir()
+    artifact = tmp_path / "roadmap.md"
+    artifact.write_text("# Roadmap\n\nStatus: planned\n", encoding="utf-8")
+    store = _ensure_governance(tmp_path)
+    with store.connect() as connection:
+        connection.execute(
+            "DELETE FROM governance_actor_permissions WHERE actor_id = ?",
+            (INTAKE_ACTOR.actor_id,),
+        )
+    files_before = _project_file_snapshot(tmp_path)
+    tokens_before = _token_snapshot(store)
+
+    with pytest.raises(KnowledgeIntakeError, match="PROJECT_ACCESS_DENIED"):
+        KnowledgeIntakeService(tmp_path, AuthorityService(store)).process(_request(artifact.name))
+
+    assert _project_file_snapshot(tmp_path) == files_before
+    assert _token_snapshot(store) == tokens_before
+    assert not list((tmp_path / ".amplai/intake-holds").glob("*.yaml"))
+
+
+def test_unresolved_intake_missing_governance_store_mutates_no_hold(
+    tmp_path: Path,
+) -> None:
+    artifact = tmp_path / "ambiguous.md"
+    artifact.write_text("# Design\n\nApply this.\n", encoding="utf-8")
+    store = GovernanceStore(tmp_path / ".amplai/runtime/governance.db")
+    files_before = _project_file_snapshot(tmp_path)
+
+    with pytest.raises(GovernanceStoreError, match="존재하지 않습니다"):
+        KnowledgeIntakeService(tmp_path, AuthorityService(store)).process(_request(artifact.name))
+
+    assert _project_file_snapshot(tmp_path) == files_before
+    assert not store.path.exists()
+    assert not list((tmp_path / ".amplai/intake-holds").glob("*.yaml"))
 
 
 def test_cli_intake_governance_unavailable_fails_before_project_mutation(
     tmp_path: Path,
 ) -> None:
     _pack(tmp_path)
+    (tmp_path / ".amplai/runtime/governance.db").unlink()
     artifact = tmp_path / "roadmap.md"
     artifact.write_text("# Roadmap\n\nStatus: planned\n", encoding="utf-8")
-    missing = tmp_path / "missing-governance.db"
-
+    subprocess.run(
+        ["git", "init", "-q"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    files_before = _project_file_snapshot(tmp_path)
+    git_before = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
     result = RUNNER.invoke(
         app,
         [
@@ -334,14 +435,24 @@ def test_cli_intake_governance_unavailable_fails_before_project_mutation(
             "이 로드맵을 반영해줘",
             "--workspace",
             str(tmp_path),
-            "--governance-db",
-            str(missing),
         ],
     )
 
     assert result.exit_code == 1
+    assert _project_file_snapshot(tmp_path) == files_before
+    assert (
+        subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        == git_before
+    )
     assert not list((tmp_path / "memory/00-sources").glob("*.md"))
     assert not list((tmp_path / ".amplai/proposals").glob("*/proposal.yaml"))
+    assert not list((tmp_path / ".amplai/intake-holds").glob("*.yaml"))
 
 
 def test_normalized_duplicate_uses_stored_source_for_evidence_validation(
@@ -834,10 +945,6 @@ def test_phase_one_cli_exposes_project_intake_and_roadmap_commands(tmp_path: Pat
             "이 로드맵을 AMPLAI에 반영해줘",
             "--workspace",
             str(tmp_path),
-            "--provider-installation",
-            "local:test",
-            "--external-actor-id",
-            "tester",
             "--json",
         ],
     )

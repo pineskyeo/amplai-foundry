@@ -44,9 +44,10 @@ record로 남는다. Phase 8 Observatory는 이 기록을 replay baseline으로 
 amplai-foundry intake process roadmap.md \
   --instruction "이 로드맵을 AMPLAI에 반영해줘" \
   --project amplai \
-  --provider-installation local:cli \
-  --external-actor-id ACTOR-BINDING-KEY \
   --json
 ```
+
+CLI identity는 현재 OS user ID에서 파생한다. Governance Store 경로는 Workspace의
+`.amplai/runtime/governance.db`로 고정하며 요청 옵션으로 바꿀 수 없다.
 
 여러 artifact는 한 요청에서 같은 Project resolution을 공유하지만 Source, Candidate, 비교, Proposal과 IntakeRun은 artifact별로 분리된다.

@@ -9,7 +9,8 @@ from typing import Protocol, cast
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from amplai_foundry.domain.identity import ProjectRef
-from amplai_foundry.governance.models import Digest, ProposalRef
+from amplai_foundry.governance.authority import AuthorityService, DirectAuthorityRequest
+from amplai_foundry.governance.models import AuthorityPermission, Digest, ProposalRef
 from amplai_foundry.governance.object_store import DefinitionObjectRef
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
@@ -193,66 +194,6 @@ class ActiveProposalRepository:
                 next_object_ref.digest,
             )
 
-    def submit_for_review(
-        self,
-        ref: ProposalRef,
-        *,
-        expected_state_revision: int,
-    ) -> ActiveProposalView:
-        return self._transition_state_legacy_fixture(
-            ref,
-            expected_status=ActiveProposalStatus.DRAFT,
-            expected_state_revision=expected_state_revision,
-            next_status=ActiveProposalStatus.REVIEWED,
-        )
-
-    def _transition_state_legacy_fixture(
-        self,
-        ref: ProposalRef,
-        *,
-        expected_status: ActiveProposalStatus,
-        expected_state_revision: int,
-        next_status: ActiveProposalStatus,
-    ) -> ActiveProposalView:
-        if expected_state_revision < 1:
-            raise ValueError("expected_state_revision은 1 이상이어야 합니다.")
-        with self.store.connect() as connection, governance_transaction(connection):
-            row = self._select(connection, ref)
-            if row is None:
-                raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
-            current = self._view(row, ref)
-            if (
-                current.status != expected_status
-                or current.state_revision != expected_state_revision
-            ):
-                raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
-            if not state_transition_allowed(current.status, next_status):
-                raise InvalidProposalTransitionError(
-                    f"INVALID_PROPOSAL_TRANSITION:{current.status}->{next_status}"
-                )
-            updated = connection.execute(
-                """
-                UPDATE governance_active_proposals
-                SET status = ?,
-                    state_revision = state_revision + 1,
-                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
-                  AND status = ? AND state_revision = ?
-                """,
-                (
-                    next_status.value,
-                    *self._identity(ref),
-                    expected_status.value,
-                    expected_state_revision,
-                ),
-            )
-            if updated.rowcount != 1:
-                raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
-            result = self._select(connection, ref)
-            if result is None:
-                raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
-            return self._view(result, ref)
-
     def _activate_initial(
         self,
         connection: sqlite3.Connection,
@@ -429,3 +370,62 @@ class ActiveProposalRepository:
                 "updated_at": row[6],
             }
         )
+
+
+class ProposalSubmissionService:
+    """Authorize and atomically submit a draft Proposal for review."""
+
+    def __init__(
+        self,
+        store: GovernanceStore,
+        repository: ActiveProposalRepository,
+        authority_service: AuthorityService,
+    ) -> None:
+        self.store = store
+        self.repository = repository
+        self.authority_service = authority_service
+
+    def submit_for_review(
+        self,
+        ref: ProposalRef,
+        *,
+        authority_request: DirectAuthorityRequest,
+        expected_state_revision: int,
+    ) -> ActiveProposalView:
+        if expected_state_revision < 1:
+            raise ValueError("expected_state_revision은 1 이상이어야 합니다.")
+        if authority_request.project_ref != ref.project_ref:
+            raise ActiveProposalError("PROJECT_SCOPE_MISMATCH")
+        with self.store.connect() as connection, governance_transaction(connection):
+            authority = self.authority_service.authenticate(
+                authority_request,
+                connection=connection,
+            )
+            if AuthorityPermission.PROPOSAL_SUBMIT_REVIEW not in authority.permissions:
+                raise ActiveProposalError("AUTHORITY_DENIED")
+            row = self.repository._select(connection, ref)
+            if row is None:
+                raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
+            current = self.repository._view(row, ref)
+            if (
+                current.status is not ActiveProposalStatus.DRAFT
+                or current.state_revision != expected_state_revision
+            ):
+                raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
+            updated = connection.execute(
+                """
+                UPDATE governance_active_proposals
+                SET status = 'reviewed',
+                    state_revision = state_revision + 1,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+                  AND status = 'draft' AND state_revision = ?
+                """,
+                (*ActiveProposalRepository._identity(ref), expected_state_revision),
+            )
+            if updated.rowcount != 1:
+                raise DefinitionCASConflictError("PROPOSAL_STATE_STALE")
+            result = self.repository._select(connection, ref)
+            if result is None:
+                raise ActiveProposalNotFoundError("PROPOSAL_NOT_FOUND")
+            return self.repository._view(result, ref)

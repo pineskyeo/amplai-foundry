@@ -51,14 +51,13 @@ amplai-foundry project rebuild amplai
 ```bash
 amplai-foundry intake process roadmap.md \
   --instruction "이 로드맵을 AMPLAI에 반영해줘" \
-  --project amplai \
-  --provider-installation local:cli \
-  --external-actor-id ACTOR-BINDING-KEY
+  --project amplai
 ```
 
 이 명령은 Source 원문, 분류, Candidate, 의미 비교, review Proposal, Roadmap 분석과
-최소 평가 기록을 만든다. AMPLAI는 external identity를 active Actor binding과 Project
-permission으로 다시 확인한다. Intake Policy Actor는 review Proposal만 제출한다.
+최소 평가 기록을 만든다. CLI identity는 현재 OS user ID에서 파생하고 Governance Store는
+Workspace의 `.amplai/runtime/governance.db`로 고정한다. AMPLAI는 이 identity를 active
+Actor binding과 Project permission으로 다시 확인한다. Intake Policy Actor는 review Proposal만 제출한다.
 프로젝트나 문서 유형을 안전하게 확정하지 못하면 exit code `1`과 `HOLD`를 반환한다.
 
 ### Project Pack And Roadmap

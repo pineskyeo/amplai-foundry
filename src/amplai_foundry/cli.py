@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import sys
 from dataclasses import asdict
@@ -482,18 +483,6 @@ def intake_process_command(
     instruction: Annotated[str, typer.Option("--instruction")],
     project: Annotated[str | None, typer.Option("--project")] = None,
     source_type: Annotated[str, typer.Option("--source-type")] = "document",
-    provider_installation_ref: Annotated[
-        str,
-        typer.Option("--provider-installation"),
-    ] = "local:cli",
-    external_actor_id: Annotated[
-        str,
-        typer.Option("--external-actor-id"),
-    ] = "local-user",
-    governance_db: Annotated[
-        Path,
-        typer.Option("--governance-db"),
-    ] = Path(".amplai/runtime/governance.db"),
     workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
@@ -512,8 +501,8 @@ def intake_process_command(
         project_hint=project,
         identity=ExternalActorIdentity(
             provider=ChannelProvider.CLI,
-            provider_installation_ref=provider_installation_ref,
-            external_actor_id=external_actor_id,
+            provider_installation_ref="local:cli",
+            external_actor_id=f"uid:{os.getuid()}",
             request_id=request_id,
             channel=ChannelRef(
                 provider=ChannelProvider.CLI,
@@ -522,8 +511,7 @@ def intake_process_command(
         ),
     )
     try:
-        store_path = governance_db if governance_db.is_absolute() else workspace / governance_db
-        governance_store = GovernanceStore(store_path)
+        governance_store = GovernanceStore(workspace / ".amplai/runtime/governance.db")
         governance_store.check_startup()
         results = KnowledgeIntakeService(
             workspace,

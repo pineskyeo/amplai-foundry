@@ -710,6 +710,60 @@ class AuthorityService:
                 authenticated_at,
             )
 
+    def authenticate_identity(self, identity: ExternalActorIdentity) -> ActorRef:
+        """Verify an external identity before any project-independent durable write."""
+
+        _validate_channel_installation(
+            identity.provider,
+            identity.provider_installation_ref,
+            identity.channel,
+        )
+        if identity.channel.provider is not identity.provider:
+            raise AuthorityResolutionError(
+                "ACTION_CHANNEL_MISMATCH", "인증 provider context와 channel이 다릅니다."
+            )
+        with self.store.connect() as connection:
+            binding = connection.execute(
+                """
+                SELECT b.actor_id, b.status, a.actor_type, a.status
+                FROM governance_external_actor_bindings b
+                JOIN governance_actors a ON a.actor_id = b.actor_id
+                WHERE b.provider = ? AND b.provider_installation_ref = ?
+                  AND b.external_actor_id = ?
+                ORDER BY b.binding_version DESC LIMIT 1
+                """,
+                (
+                    identity.provider.value,
+                    identity.provider_installation_ref,
+                    identity.external_actor_id,
+                ),
+            ).fetchone()
+            has_submit_permission = False
+            if binding is not None:
+                has_submit_permission = (
+                    connection.execute(
+                        """
+                        SELECT 1 FROM governance_actor_permissions
+                        WHERE actor_id = ? AND permission = ?
+                        LIMIT 1
+                        """,
+                        (
+                            str(binding[0]),
+                            AuthorityPermission.PROPOSAL_SUBMIT_REVIEW.value,
+                        ),
+                    ).fetchone()
+                    is not None
+                )
+        if binding is None:
+            raise AuthorityResolutionError("ACTOR_UNMAPPED", "매핑된 Actor가 없습니다.")
+        if str(binding[1]) != ActorBindingStatus.ACTIVE.value or str(binding[3]) != "active":
+            raise AuthorityResolutionError("ACTOR_DISABLED", "Actor binding이 비활성입니다.")
+        if not has_submit_permission:
+            raise AuthorityResolutionError(
+                "PROJECT_ACCESS_DENIED", "Actor가 Intake submit permission을 갖지 않습니다."
+            )
+        return ActorRef.model_validate({"actor_id": str(binding[0]), "actor_type": str(binding[2])})
+
     def _authenticate_ingress(
         self,
         connection: sqlite3.Connection,

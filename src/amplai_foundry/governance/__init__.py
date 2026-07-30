@@ -9,6 +9,7 @@ from amplai_foundry.governance.active_proposals import (
     DefinitionCASConflictError,
     DefinitionRevision,
     InvalidProposalTransitionError,
+    ProposalSubmissionService,
     state_transition_allowed,
 )
 from amplai_foundry.governance.authority import (
@@ -136,6 +137,7 @@ __all__ = [
     "ProposalActionType",
     "ProposalDefinitionManifest",
     "ProposalRef",
+    "ProposalSubmissionService",
     "ProviderAuthenticator",
     "ProviderEnvelope",
     "VerifiedProviderCommand",
