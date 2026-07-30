@@ -1078,7 +1078,7 @@ class MigrationRunner:
         }
         for table, expected_sql in expected_create_sql.items():
             if schema_version >= 7 and table == "governance_audit_events":
-                continue
+                expected_sql = self._expected_altered_audit_sql()
             row = connection.execute(
                 "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
                 (table,),
@@ -1149,6 +1149,32 @@ class MigrationRunner:
                 (migration.version, migration.name, migration.checksum),
             )
         return self.latest_version
+
+    def _expected_altered_audit_sql(self) -> str:
+        base = next(
+            statement
+            for statement in self.migrations[5].statements
+            if "CREATE TABLE governance_audit_events" in statement
+        )
+        alters = tuple(
+            statement
+            for migration in self.migrations[6:]
+            for statement in migration.statements
+            if statement.startswith("ALTER TABLE governance_audit_events")
+        )
+        with sqlite3.connect(":memory:") as fixture:
+            fixture.execute(base)
+            for statement in alters:
+                fixture.execute(statement)
+            row = fixture.execute(
+                """
+                SELECT sql FROM sqlite_master
+                WHERE type = 'table' AND name = 'governance_audit_events'
+                """
+            ).fetchone()
+        if row is None:
+            raise GovernanceMigrationError("audit schema fixture를 생성할 수 없습니다.")
+        return " ".join(str(row[0]).split())
 
     @staticmethod
     def _backfill_audit_manifests(connection: sqlite3.Connection) -> None:

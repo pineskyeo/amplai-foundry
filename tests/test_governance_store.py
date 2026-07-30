@@ -229,6 +229,26 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
     assert metadata == ("amplai-governance",)
 
 
+def test_startup_rejects_audit_table_constraint_drift(tmp_path: Path) -> None:
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA writable_schema = ON")
+        connection.execute(
+            """
+            UPDATE sqlite_master
+            SET sql = replace(sql, 'CHECK (aggregate_sequence >= 1)', '')
+            WHERE type = 'table' AND name = 'governance_audit_events'
+            """
+        )
+        schema_version = int(connection.execute("PRAGMA schema_version").fetchone()[0])
+        connection.execute(f"PRAGMA schema_version = {schema_version + 1}")
+        connection.execute("PRAGMA writable_schema = OFF")
+
+    with pytest.raises(GovernanceMigrationError, match="required schema SQL"):
+        GovernanceStore(path).check_startup()
+
+
 def test_network_filesystem_is_rejected_before_database_creation(tmp_path: Path) -> None:
     path = tmp_path / "governance.db"
     guard = LocalFilesystemGuard(FixedFilesystemProbe(local=False, kind="nfs"))
