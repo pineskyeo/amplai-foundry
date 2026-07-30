@@ -983,6 +983,64 @@ def test_repeated_final_recovery_crash_is_bounded_to_dlq(tmp_path: Path) -> None
         )
 
 
+def test_lowered_max_attempts_does_not_strand_expired_lease(tmp_path: Path) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    clock = MutableClock()
+    _audit, outbox = _append(
+        GovernanceEventService(store, clock=clock),
+        store,
+        command_id="command-lowered-max",
+        state_revision=2,
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    original = OutboxDispatcher(
+        store,
+        config=OutboxConfig(
+            lease_seconds=1,
+            max_attempts=3,
+            retry_base_seconds=1,
+            retry_cap_seconds=1,
+        ),
+        clock=clock,
+    )
+    first = original.claim_next("worker-1", destination_ref=provider.destination_ref)
+    assert first is not None
+    original.fail(
+        first.event_id,
+        dispatcher_id="worker-1",
+        generation=first.claim_generation,
+        error_code="REMOTE_500",
+    )
+    clock.advance(timedelta(seconds=1))
+    second = original.claim_next("worker-2", destination_ref=provider.destination_ref)
+    assert second is not None and (second.attempts, second.claim_generation) == (2, 2)
+
+    restarted = OutboxDispatcher(
+        store,
+        config=OutboxConfig(
+            lease_seconds=1,
+            max_attempts=1,
+            retry_base_seconds=1,
+            retry_cap_seconds=1,
+        ),
+        clock=clock,
+    )
+    clock.advance(timedelta(seconds=2))
+    assert restarted.claim_next("worker-3", destination_ref=provider.destination_ref) is None
+    clock.advance(timedelta(seconds=1))
+    assert restarted.claim_next("worker-3", destination_ref=provider.destination_ref) is None
+
+    dead = restarted.get(provider.event_id)
+    assert dead.state is OutboxState.DEAD_LETTER
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_dead_letters"
+        ).fetchone() == (1,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_operator_holds").fetchone() == (
+            1,
+        )
+
+
 def test_unreconcilable_remote_state_moves_to_dlq_and_operator_hold(tmp_path: Path) -> None:
     class DivergedRemote:
         def __init__(self, destination_ref: str) -> None:

@@ -1141,9 +1141,10 @@ class OutboxDispatcher:
               AND NOT (
                 last_error_code = 'OUTBOX_LEASE_EXPIRED'
                 AND claim_generation = attempts
+                AND attempts = ?
               )
             """,
-            (self.config.max_attempts, now),
+            (self.config.max_attempts, now, self.config.max_attempts),
         ).fetchall()
         for row in rows:
             self._dead_letter(
