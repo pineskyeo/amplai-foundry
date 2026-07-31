@@ -38,6 +38,8 @@ testpaths = ["tests"]
 target-version = "py311"
 line-length = 100
 src = ["src", "tests"]
+# Vendored agent skill assets keep their upstream formatting so updates stay clean.
+extend-exclude = [".agents", ".ai-team", ".claude", ".specify"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
