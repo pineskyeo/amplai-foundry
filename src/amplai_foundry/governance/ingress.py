@@ -39,6 +39,16 @@ class IngressLeaseConflictError(IngressError):
     pass
 
 
+_COMMAND_COLUMNS = (
+    "command_id, provider, provider_installation_ref, "
+    "provider_fingerprint, raw_body_digest, external_event_id, "
+    "external_actor_key, channel_json, credential_kind, credential_id, "
+    "action, received_at, state, attempts, "
+    "claim_generation, lease_owner, lease_expires_at, retry_at, "
+    "completed_at, last_error_code"
+)
+
+
 class IngressState(StrEnum):
     PENDING = "pending"
     LEASED = "leased"
@@ -369,6 +379,21 @@ class IngressService:
             row = self._select(connection, command_id)
         return self._view(row) if row is not None else None
 
+    def stranded(self, *, limit: int = 100) -> tuple[IngressCommandView, ...]:
+        """List commands no worker will claim again. Operator recovery reads this."""
+
+        if limit < 1:
+            raise ValueError("limit은 1 이상이어야 합니다.")
+        with self.store.connect() as connection:
+            rows = connection.execute(
+                f"SELECT {_COMMAND_COLUMNS} "
+                "FROM governance_ingress_commands "
+                "WHERE state IN ('dead_letter', 'recovery_hold') "
+                "ORDER BY received_at, command_id LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return tuple(self._view(cast(tuple[object, ...], row)) for row in rows)
+
     def _finalize(
         self,
         command_id: str,
@@ -440,15 +465,7 @@ class IngressService:
         return cast(
             tuple[object, ...] | None,
             connection.execute(
-                """
-                SELECT command_id, provider, provider_installation_ref,
-                       provider_fingerprint, raw_body_digest, external_event_id,
-                       external_actor_key, channel_json, credential_kind, credential_id,
-                       action, received_at, state, attempts,
-                       claim_generation, lease_owner, lease_expires_at, retry_at,
-                       completed_at, last_error_code
-                FROM governance_ingress_commands WHERE command_id = ?
-                """,
+                f"SELECT {_COMMAND_COLUMNS} FROM governance_ingress_commands WHERE command_id = ?",
                 (command_id,),
             ).fetchone(),
         )

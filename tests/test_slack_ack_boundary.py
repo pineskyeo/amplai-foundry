@@ -15,6 +15,7 @@ from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import (
     AckBudget,
     AckOutcome,
+    ActiveProposalStatus,
     ActorBindingService,
     ActorRef,
     ActorType,
@@ -63,6 +64,12 @@ CHANNEL = ChannelRef(
     channel_id="C789",
     message_id="1722387600.000200",
 )
+OTHER_CHANNEL = ChannelRef(
+    provider=ChannelProvider.SLACK,
+    workspace_id="T123",
+    channel_id="C999",
+    message_id="1722387600.000300",
+)
 
 
 def _payload(**changes: object) -> dict[str, object]:
@@ -78,18 +85,25 @@ def _payload(**changes: object) -> dict[str, object]:
             "channel_id": "C789",
             "message_ts": "1722387600.000200",
         },
-        "actions": [
-            {
-                "type": "button",
-                "action_id": "approve",
-                "block_id": "proposal-actions",
-                "action_ts": "1722387723.000400",
-                "value": f"{TOKEN_ID}.{RAW_TOKEN}",
-            }
-        ],
+        "actions": [_action()],
     }
     payload.update(changes)
     return payload
+
+
+def _action(
+    *,
+    token_id: str = TOKEN_ID,
+    raw_token: str = RAW_TOKEN,
+    action_ts: str = "1722387723.000400",
+) -> dict[str, object]:
+    return {
+        "type": "button",
+        "action_id": "approve",
+        "block_id": "proposal-actions",
+        "action_ts": action_ts,
+        "value": f"{token_id}.{raw_token}",
+    }
 
 
 def _body(payload: dict[str, object] | None = None) -> bytes:
@@ -165,7 +179,17 @@ def _monotonic(*values: float) -> Callable[[], float]:
     return _next
 
 
-def _seed(store: GovernanceStore, *, token_expires_at: datetime | None = None) -> None:
+def _seed(
+    store: GovernanceStore,
+    *,
+    token_expires_at: datetime | None = None,
+    grant_decide: bool = True,
+) -> None:
+    _seed_bindings(store, grant_decide=grant_decide)
+    _seed_proposal(store, expires_at=token_expires_at)
+
+
+def _seed_bindings(store: GovernanceStore, *, grant_decide: bool = True) -> None:
     bindings = ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW)
     bindings.bootstrap_manager(MANAGER)
     bindings.register_actor(
@@ -176,16 +200,17 @@ def _seed(store: GovernanceStore, *, token_expires_at: datetime | None = None) -
             reason="register Slack integration actor",
         ),
     )
-    bindings.grant_permission(
-        USER,
-        PROJECT,
-        AuthorityPermission.PROPOSAL_DECIDE,
-        approval=BindingApproval(
-            approval_id="APR-0000000000000002",
-            approved_by=MANAGER,
-            reason="grant Slack decision permission",
-        ),
-    )
+    if grant_decide:
+        bindings.grant_permission(
+            USER,
+            PROJECT,
+            AuthorityPermission.PROPOSAL_DECIDE,
+            approval=BindingApproval(
+                approval_id="APR-0000000000000002",
+                approved_by=MANAGER,
+                reason="grant Slack decision permission",
+            ),
+        )
     bindings.create_binding(
         BindingTarget(
             provider=ChannelProvider.SLACK,
@@ -199,15 +224,27 @@ def _seed(store: GovernanceStore, *, token_expires_at: datetime | None = None) -
             reason="bind Slack immutable actor identity",
         ),
     )
+
+
+def _seed_proposal(
+    store: GovernanceStore,
+    *,
+    proposal_id: str = PROPOSAL_ID,
+    token_id: str = TOKEN_ID,
+    raw_token: str = RAW_TOKEN,
+    expires_at: datetime | None = None,
+    state_revision: int = 2,
+    channel: ChannelRef = CHANNEL,
+) -> None:
     channel_json = json.dumps(
-        CHANNEL.model_dump(mode="json", exclude_none=True),
+        channel.model_dump(mode="json", exclude_none=True),
         ensure_ascii=False,
         separators=(",", ":"),
         sort_keys=True,
     )
     definition_digest = f"sha256:{'1' * 64}"
-    credential_hash = f"sha256:{hashlib.sha256(RAW_TOKEN.encode()).hexdigest()}"
-    expires_at = token_expires_at or (NOW + timedelta(minutes=15))
+    credential_hash = f"sha256:{hashlib.sha256(raw_token.encode()).hexdigest()}"
+    token_expiry = expires_at or (NOW + timedelta(minutes=15))
     with store.connect() as connection:
         connection.execute(
             """
@@ -215,13 +252,14 @@ def _seed(store: GovernanceStore, *, token_expires_at: datetime | None = None) -
                 project_namespace, project_id, proposal_id, active_definition_digest,
                 content_revision, state_revision, decision_epoch, status,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 1, 2, 1, 'reviewed', ?, ?)
+            ) VALUES (?, ?, ?, ?, 1, ?, 1, 'reviewed', ?, ?)
             """,
             (
                 PROJECT.namespace,
                 PROJECT.project_id,
-                PROPOSAL_ID,
+                proposal_id,
                 definition_digest,
+                state_revision,
                 NOW.isoformat(),
                 NOW.isoformat(),
             ),
@@ -233,20 +271,21 @@ def _seed(store: GovernanceStore, *, token_expires_at: datetime | None = None) -
                 active_definition_digest, content_revision, state_revision,
                 decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
                 bound_channel_json, issued_at, expires_at, state, resolved_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 1, 2, 1,
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 1,
                       'approve', ?, 'human', ?, ?, ?, 'issued', NULL)
             """,
             (
-                TOKEN_ID,
+                token_id,
                 credential_hash,
                 PROJECT.namespace,
                 PROJECT.project_id,
-                PROPOSAL_ID,
+                proposal_id,
                 definition_digest,
+                state_revision,
                 USER.actor_id,
                 channel_json,
                 NOW.isoformat(),
-                expires_at.isoformat(),
+                token_expiry.isoformat(),
             ),
         )
 
@@ -518,7 +557,10 @@ def test_success_is_downgraded_when_the_synchronous_path_exceeds_the_budget(
     assert stored is not None
 
 
-def test_budget_exceeded_command_converges_when_slack_retries(tmp_path: Path) -> None:
+def test_budget_exceeded_command_converges_on_an_identical_redelivery(tmp_path: Path) -> None:
+    # Slack does not redeliver interactive payloads — an over-budget request surfaces an
+    # error to the user instead. This proves at-least-once redelivery of the SAME bytes
+    # converges; the durable command is decided by the worker either way.
     store = _store(tmp_path)
     _seed(store)
     ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
@@ -583,9 +625,16 @@ def test_reclaimed_command_converges_on_the_first_decision(
         raise GovernanceStoreError("killed before the ingress command was finalized")
 
     monkeypatch.setattr(ingress, "complete", _crash)
-    with pytest.raises(GovernanceStoreError):
-        worker.process_next("slack-worker-1")
+    crashed = worker.process_next("slack-worker-1")
     monkeypatch.undo()
+
+    assert crashed is not None
+    assert crashed.outcome is WorkerOutcome.FINALIZE_FAILED
+    assert crashed.decision is not None
+    assert not crashed.decision.replayed
+    stranded = ingress.get(ack.command_id)
+    assert stranded is not None
+    assert stranded.state is IngressState.LEASED
 
     now[0] = NOW + timedelta(seconds=31)
     reclaimed = worker.process_next("slack-worker-2")
@@ -650,3 +699,248 @@ def test_ack_response_and_worker_result_carry_no_raw_body_or_credential(
     assert RAW_TOKEN not in serialized
     assert body.decode() not in serialized
     assert SIGNING_SECRET not in serialized
+
+
+@pytest.mark.parametrize(
+    "envelope_factory",
+    [
+        lambda: _envelope(signature="v0=" + "0" * 64),
+        lambda: _envelope(_body(_payload(api_app_id="A999"))),
+        lambda: _envelope(b"payload=%7B"),
+    ],
+)
+def test_rejected_responses_carry_no_raw_body_or_credential(
+    tmp_path: Path,
+    envelope_factory: Callable[[], ProviderEnvelope],
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+
+    serialized = boundary.submit(envelope_factory()).model_dump_json()
+
+    assert RAW_TOKEN not in serialized
+    assert TOKEN_ID not in serialized
+    assert SIGNING_SECRET not in serialized
+
+
+def test_completed_decision_moves_the_proposal_and_consumes_the_token(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert result is not None
+    assert result.decision is not None
+    assert result.decision.proposal_status is ActiveProposalStatus.APPROVED
+    with store.connect() as connection:
+        state = connection.execute(
+            "SELECT state FROM governance_action_tokens WHERE token_id = ?",
+            (TOKEN_ID,),
+        ).fetchone()
+    assert state is not None
+    assert str(state[0]) == "consumed"
+
+
+def test_real_clock_measures_the_synchronous_path_without_injection(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    response = BoundedIngressAck(ingress).submit(_envelope())
+
+    assert response.success
+    assert response.elapsed_ms >= 0
+    assert response.elapsed_ms < AckBudget().total_ms
+
+
+# A10 — retry, hold, lease and claim contracts
+
+
+def test_transient_decision_failure_keeps_the_retry_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RETRY
+    assert result.state is IngressState.RETRY_WAIT
+    assert result.error_code == "INGRESS_DECISION_UNAVAILABLE"
+    assert result.command_id == ack.command_id
+    held = ingress.get(str(ack.command_id))
+    assert held is not None
+    assert held.attempts == 1
+
+
+def test_missing_project_permission_holds_instead_of_burning_retries(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store, grant_decide=False)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.state is IngressState.RECOVERY_HOLD
+    assert result.error_code in {"PROJECT_ACCESS_DENIED", "AUTHORITY_DENIED"}
+
+
+def test_claim_failure_is_reported_instead_of_killing_the_worker_loop(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress claim connection is busy")
+
+    monkeypatch.setattr(ingress, "claim_next", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED
+    assert result.error_code == "INGRESS_CLAIM_FAILED"
+    assert result.command_id is None
+
+
+def test_two_distinct_interactions_do_not_share_a_replay_result(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store)
+    _seed_proposal(
+        store,
+        proposal_id="PROP-20260730-BBBBBBBB",
+        token_id="TOK-ABCDEF0123456789",
+        raw_token="fedcba9876543210fedcba9876543210",
+        channel=OTHER_CHANNEL,
+    )
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    second_body = _body(
+        _payload(
+            container={
+                "type": "message",
+                "channel_id": OTHER_CHANNEL.channel_id,
+                "message_ts": OTHER_CHANNEL.message_id,
+            },
+            actions=[
+                _action(
+                    token_id="TOK-ABCDEF0123456789",
+                    raw_token="fedcba9876543210fedcba9876543210",
+                    action_ts="1722387999.000900",
+                )
+            ],
+        )
+    )
+    assert boundary.submit(_envelope(second_body)).success
+    worker = _worker(store, ingress)
+
+    first = worker.process_next("slack-worker")
+    second = worker.process_next("slack-worker")
+
+    assert first is not None
+    assert second is not None
+    assert first.outcome is WorkerOutcome.COMPLETED
+    assert second.outcome is WorkerOutcome.COMPLETED
+    assert first.decision is not None
+    assert second.decision is not None
+    assert not first.decision.replayed
+    assert not second.decision.replayed
+    assert first.decision.proposal_ref.proposal_id != second.decision.proposal_ref.proposal_id
+    assert first.decision.token_id != second.decision.token_id
+
+
+def test_projection_conflict_does_not_strand_a_leased_command(tmp_path: Path) -> None:
+    # Two proposals in one channel share an Outbox destination, so the second decision
+    # can raise GovernanceEventError. That must not escape the worker.
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store)
+    _seed_proposal(
+        store,
+        proposal_id="PROP-20260730-CCCCCCCC",
+        token_id="TOK-ABCDEF0123456789",
+        raw_token="fedcba9876543210fedcba9876543210",
+        state_revision=2,
+    )
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    second_body = _body(
+        _payload(
+            actions=[
+                _action(
+                    token_id="TOK-ABCDEF0123456789",
+                    raw_token="fedcba9876543210fedcba9876543210",
+                    action_ts="1722387999.000900",
+                )
+            ]
+        )
+    )
+    assert boundary.submit(_envelope(second_body)).success
+    worker = _worker(store, ingress)
+
+    results = [worker.process_next("slack-worker") for _ in range(2)]
+
+    assert all(result is not None for result in results)
+    outcomes = {result.outcome for result in results if result is not None}
+    assert WorkerOutcome.COMPLETED in outcomes
+    assert WorkerOutcome.RETRY in outcomes
+    conflicted = next(
+        result for result in results if result is not None and result.outcome is WorkerOutcome.RETRY
+    )
+    assert conflicted.error_code == "OUTBOX_SOURCE_REVISION_CONFLICT"
+    for result in results:
+        assert result is not None
+        settled = ingress.get(str(result.command_id))
+        assert settled is not None
+        assert settled.state is not IngressState.LEASED
+
+
+def test_stranded_commands_are_visible_to_an_operator(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    assert not ingress.stranded()
+
+    result = _worker(store, ingress).process_next("slack-worker")
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+
+    stranded = ingress.stranded()
+    assert len(stranded) == 1
+    assert stranded[0].command_id == ack.command_id
+    assert stranded[0].state is IngressState.RECOVERY_HOLD
+    assert stranded[0].last_error_code == "ACTION_TOKEN_EXPIRED"
+
+
+def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    with pytest.raises(ValueError, match="limit"):
+        ingress.stranded(limit=0)

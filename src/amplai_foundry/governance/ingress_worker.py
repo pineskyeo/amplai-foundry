@@ -16,8 +16,10 @@ from amplai_foundry.governance.decisions import (
     DecisionResult,
     DecisionService,
 )
+from amplai_foundry.governance.events import GovernanceEventError
 from amplai_foundry.governance.ingress import (
     IngressCommandView,
+    IngressError,
     IngressLeaseConflictError,
     IngressService,
     IngressState,
@@ -28,6 +30,10 @@ from amplai_foundry.governance.store import (
     governance_transaction,
 )
 
+_LEASE_CONFLICT = "INGRESS_LEASE_CONFLICT"
+
+# Denials that no retry can change. Every other failure keeps its retry budget.
+# Derived from AuthorityResolutionError, DecisionError and legacy_mutation_block.
 _TERMINAL_CODES: frozenset[str] = frozenset(
     {
         "ACTION_ACTOR_MISMATCH",
@@ -37,13 +43,22 @@ _TERMINAL_CODES: frozenset[str] = frozenset(
         "ACTION_TOKEN_INVALID",
         "ACTOR_DISABLED",
         "ACTOR_UNMAPPED",
+        "AUTHORITY_BOOTSTRAP_CLOSED",
         "AUTHORITY_DENIED",
         "BINDING_STALE",
         "GOVERNANCE_TRANSACTION_REQUIRED",
         "IDEMPOTENCY_CONFLICT",
         "INVALID_PROPOSAL_STATE",
+        "LEGACY_APPROVAL_REVIEW_REQUIRED",
+        "LEGACY_FORWARD_RECOVERY_REQUIRED",
+        "LEGACY_MIGRATION_EVENT_BACKFILL_PENDING",
+        "LEGACY_MIGRATION_NOT_ACTIVATED",
+        "LEGACY_MIGRATION_RECOVERY_REQUIRED",
+        "LEGACY_MIGRATION_ROLLED_BACK",
+        "PROJECT_ACCESS_DENIED",
         "PROPOSAL_NOT_FOUND",
         "PROPOSAL_STALE",
+        "PROVIDER_INSTALLATION_INVALID",
     }
 )
 
@@ -53,6 +68,8 @@ class WorkerOutcome(StrEnum):
     RETRY = "retry"
     RECOVERY_HOLD = "recovery_hold"
     LEASE_LOST = "lease_lost"
+    FINALIZE_FAILED = "finalize_failed"
+    CLAIM_FAILED = "claim_failed"
 
 
 class IngressWorkerResult(BaseModel):
@@ -61,7 +78,7 @@ class IngressWorkerResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     outcome: WorkerOutcome
-    command_id: str
+    command_id: str | None = None
     state: IngressState | None = None
     error_code: str | None = None
     decision: DecisionResult | None = None
@@ -81,7 +98,15 @@ class IngressDecisionWorker:
         self.decisions = decisions
 
     def process_next(self, worker_id: str) -> IngressWorkerResult | None:
-        claim = self.ingress.claim_next(worker_id)
+        """Return None only when no command is claimable. Never raise at the caller."""
+
+        try:
+            claim = self.ingress.claim_next(worker_id)
+        except (GovernanceStoreError, IngressError, sqlite3.Error) as error:
+            return IngressWorkerResult(
+                outcome=WorkerOutcome.CLAIM_FAILED,
+                error_code=_error_code(error, "INGRESS_CLAIM_FAILED"),
+            )
         if claim is None:
             return None
         return self.process(claim, worker_id=worker_id)
@@ -103,23 +128,40 @@ class IngressDecisionWorker:
                     idempotency_key=self.idempotency_key(claim.command_id),
                     request_fingerprint=claim.provider_fingerprint,
                 )
-        except (AuthorityResolutionError, DecisionError) as error:
-            if error.code == "INGRESS_LEASE_CONFLICT":
+        except (AuthorityResolutionError, DecisionError, GovernanceEventError) as error:
+            if error.code == _LEASE_CONFLICT:
                 return IngressWorkerResult(
                     outcome=WorkerOutcome.LEASE_LOST,
                     command_id=claim.command_id,
                     error_code=error.code,
                 )
-            if error.code in _TERMINAL_CODES:
-                return self._hold(claim, worker_id=worker_id, error_code=error.code)
-            return self._retry(claim, worker_id=worker_id, error_code=error.code)
+            outcome = (
+                WorkerOutcome.RECOVERY_HOLD
+                if error.code in _TERMINAL_CODES
+                else WorkerOutcome.RETRY
+            )
+            return self._finalize(claim, worker_id, outcome, error_code=error.code)
         except (GovernanceStoreError, sqlite3.Error):
-            return self._retry(
+            return self._finalize(
                 claim,
-                worker_id=worker_id,
+                worker_id,
+                WorkerOutcome.RETRY,
                 error_code="INGRESS_DECISION_UNAVAILABLE",
             )
-        return self._complete(claim, worker_id=worker_id, decision=decision)
+        except Exception:
+            # Fail closed on an unclassified error rather than abandoning the lease.
+            return self._finalize(
+                claim,
+                worker_id,
+                WorkerOutcome.RETRY,
+                error_code="INGRESS_DECISION_FAILED",
+            )
+        return self._finalize(
+            claim,
+            worker_id,
+            WorkerOutcome.COMPLETED,
+            decision=decision,
+        )
 
     @staticmethod
     def idempotency_key(command_id: str) -> str:
@@ -127,19 +169,17 @@ class IngressDecisionWorker:
 
         return f"ingress:{command_id}"
 
-    def _complete(
+    def _finalize(
         self,
         claim: IngressCommandView,
-        *,
         worker_id: str,
-        decision: DecisionResult,
+        outcome: WorkerOutcome,
+        *,
+        error_code: str | None = None,
+        decision: DecisionResult | None = None,
     ) -> IngressWorkerResult:
         try:
-            view = self.ingress.complete(
-                claim.command_id,
-                worker_id=worker_id,
-                generation=claim.claim_generation,
-            )
+            view = self._transition(claim, worker_id, outcome, error_code)
         except IngressLeaseConflictError as error:
             return IngressWorkerResult(
                 outcome=WorkerOutcome.LEASE_LOST,
@@ -147,63 +187,52 @@ class IngressDecisionWorker:
                 error_code=error.code,
                 decision=decision,
             )
+        except (GovernanceStoreError, IngressError, sqlite3.Error) as error:
+            # The decision transaction already committed. The lease expires and a
+            # reclaim converges on the first result through the idempotency key.
+            return IngressWorkerResult(
+                outcome=WorkerOutcome.FINALIZE_FAILED,
+                command_id=claim.command_id,
+                error_code=_error_code(error, "INGRESS_FINALIZE_FAILED"),
+                decision=decision,
+            )
         return IngressWorkerResult(
-            outcome=WorkerOutcome.COMPLETED,
+            outcome=outcome,
             command_id=claim.command_id,
             state=view.state,
+            error_code=error_code,
             decision=decision,
         )
 
-    def _retry(
+    def _transition(
         self,
         claim: IngressCommandView,
-        *,
         worker_id: str,
-        error_code: str,
-    ) -> IngressWorkerResult:
-        try:
-            view = self.ingress.retry(
+        outcome: WorkerOutcome,
+        error_code: str | None,
+    ) -> IngressCommandView:
+        if outcome is WorkerOutcome.COMPLETED:
+            return self.ingress.complete(
                 claim.command_id,
                 worker_id=worker_id,
                 generation=claim.claim_generation,
-                error_code=error_code,
             )
-        except IngressLeaseConflictError as error:
-            return IngressWorkerResult(
-                outcome=WorkerOutcome.LEASE_LOST,
-                command_id=claim.command_id,
-                error_code=error.code,
+        code = error_code or "INGRESS_DECISION_FAILED"
+        if outcome is WorkerOutcome.RECOVERY_HOLD:
+            return self.ingress.recovery_hold(
+                claim.command_id,
+                worker_id=worker_id,
+                generation=claim.claim_generation,
+                error_code=code,
             )
-        return IngressWorkerResult(
-            outcome=WorkerOutcome.RETRY,
-            command_id=claim.command_id,
-            state=view.state,
-            error_code=error_code,
+        return self.ingress.retry(
+            claim.command_id,
+            worker_id=worker_id,
+            generation=claim.claim_generation,
+            error_code=code,
         )
 
-    def _hold(
-        self,
-        claim: IngressCommandView,
-        *,
-        worker_id: str,
-        error_code: str,
-    ) -> IngressWorkerResult:
-        try:
-            view = self.ingress.recovery_hold(
-                claim.command_id,
-                worker_id=worker_id,
-                generation=claim.claim_generation,
-                error_code=error_code,
-            )
-        except IngressLeaseConflictError as error:
-            return IngressWorkerResult(
-                outcome=WorkerOutcome.LEASE_LOST,
-                command_id=claim.command_id,
-                error_code=error.code,
-            )
-        return IngressWorkerResult(
-            outcome=WorkerOutcome.RECOVERY_HOLD,
-            command_id=claim.command_id,
-            state=view.state,
-            error_code=error_code,
-        )
+
+def _error_code(error: Exception, fallback: str) -> str:
+    code = getattr(error, "code", None)
+    return code if isinstance(code, str) and code else fallback
