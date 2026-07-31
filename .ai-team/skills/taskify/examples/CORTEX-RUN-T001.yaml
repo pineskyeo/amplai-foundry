@@ -1,0 +1,106 @@
+schema_version: "1.0"
+
+id: CORTEX-RUN-T001
+title: Establish active-run ownership and lookup
+type: feature
+status: ready
+
+goal:
+  outcome: Production start processing can atomically create and retrieve the one active run owned for a lot.
+  user_value: Later start and retry behaviors have one authoritative run identity and cannot rely on process-local guesses.
+
+source:
+  feature: CORTEX-RUN
+  files:
+    - path: docs/specs/lot-start.md
+      section: ACTIVE-RUN-OWNERSHIP
+  requirements:
+    - RUN-REQ-001
+    - RUN-REQ-002
+  decisions:
+    - ADR-016
+
+scope:
+  include:
+    - Define the authoritative active-run lookup and creation boundary.
+    - Prove that one active run can be retrieved by lot.
+    - Add focused tests for ownership and lookup.
+  exclude:
+    - Duplicate HTTP request behavior.
+    - Daemon restart recovery.
+    - Production deployment and RPM packaging.
+  allowed_paths:
+    - src/production/**
+    - tests/production/**
+  forbidden_paths:
+    - deploy/**
+    - packaging/**
+    - systemd/**
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - Keep active-run ownership behind one production-domain interface.
+    - Preserve existing run identifiers and persistence contracts.
+  invariants:
+    - At most one active run exists for a lot.
+    - Run lookup does not create a run as a side effect.
+  non_goals:
+    - Implementing duplicate-request API semantics.
+    - Replacing the persistence engine.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: no active run exists for lot LOT123
+      when: the production domain creates an active run for LOT123
+      then: subsequent lookup returns that run_id
+    - id: AC-02
+      given: an active run already exists for lot LOT123
+      when: the production domain attempts another atomic create for LOT123
+      then: no second active run is committed
+  commands:
+    - id: unit
+      kind: test
+      run: make test-production
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: changed_files_summary
+      source: implementation
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - Incorrect ownership could allow duplicate equipment execution.
+    - Persistence races could violate the single-active-run invariant.
+  approvals:
+    - production-state-owner
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - Active-run ownership interface.
+    - Atomic creation and lookup tests.
+  notes: []

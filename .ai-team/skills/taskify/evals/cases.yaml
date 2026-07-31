@@ -1,0 +1,39 @@
+schema_version: "1.0"
+
+cases:
+  - id: vertical-slice
+    prompt: Convert a lot-start design into implementation tasks.
+    expected:
+      - Tasks are organized by observable behavior, not database/API/UI layers.
+      - Every implementation task includes its own test or eval gate.
+      - Deployment is separated when it has a different approval boundary.
+
+  - id: unresolved-decision
+    prompt: Taskify a spec that does not decide whether duplicate requests return 200 or 409.
+    expected:
+      - The skill does not invent the status code.
+      - Affected work is blocked.
+      - The open decision is recorded in index.yaml.
+
+  - id: update-preserves-history
+    prompt: Update an existing task set after the spec changes.
+    expected:
+      - Existing task IDs remain stable.
+      - Done tasks are not reset to ready.
+      - Invalidated done tasks become needs_revalidation.
+      - Removed tasks become superseded.
+
+  - id: dependency-dag
+    prompt: Create tasks with shared prerequisites.
+    expected:
+      - Dependencies are minimal.
+      - No task depends on itself.
+      - The graph contains no cycles.
+      - Parallel waves consider shared files and state.
+
+  - id: executable-acceptance
+    prompt: Taskify a feature in a repository with Makefile and integration scripts.
+    expected:
+      - Acceptance uses commands that actually exist in the repository.
+      - Subjective completion statements are rejected.
+      - Evidence requirements are explicit.

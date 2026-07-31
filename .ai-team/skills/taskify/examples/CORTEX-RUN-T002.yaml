@@ -1,0 +1,121 @@
+schema_version: "1.0"
+
+id: CORTEX-RUN-T002
+title: Return the existing active run for a duplicate lot-start request
+type: feature
+status: ready
+
+goal:
+  outcome: A duplicate start request for the same lot returns the existing active run without creating another active run.
+  user_value: Operators and upstream orchestration can retry safely without causing duplicate equipment execution.
+
+source:
+  feature: CORTEX-RUN
+  files:
+    - path: docs/specs/lot-start.md
+      section: DUPLICATE-START
+  requirements:
+    - RUN-REQ-004
+    - RUN-REQ-007
+  decisions:
+    - ADR-017
+
+scope:
+  include:
+    - Detect an existing active run for the requested lot.
+    - Return its run_id through the existing start API contract.
+    - Prevent duplicate creation under concurrent requests.
+    - Emit evidence sufficient to diagnose deduplication.
+  exclude:
+    - Recovery of active runs after daemon restart.
+    - Cross-lot scheduling policy.
+    - Production deployment and RPM packaging.
+  allowed_paths:
+    - src/production/**
+    - tests/production/**
+    - tests/integration/**
+  forbidden_paths:
+    - deploy/**
+    - packaging/**
+    - systemd/**
+
+dependencies:
+  tasks:
+    - CORTEX-RUN-T001
+  external: []
+
+implementation:
+  guidance:
+    - Reuse the existing active-run ownership boundary.
+    - Keep the public API response backward compatible.
+  invariants:
+    - At most one active run exists for a lot.
+    - A request for another lot does not reuse the current run.
+  non_goals:
+    - Redesigning the full production state machine.
+    - Changing database technology.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: an active run exists for lot LOT123
+      when: the start endpoint receives another request for LOT123
+      then: the response contains the existing run_id and no second active run is created
+    - id: AC-02
+      given: no active run exists for lot LOT999
+      when: the start endpoint receives a request for LOT999
+      then: a new run is created according to the existing start contract
+    - id: AC-03
+      given: two start requests for LOT123 arrive concurrently
+      when: both requests complete
+      then: both resolve to the same run_id and exactly one active run exists
+  commands:
+    - id: unit
+      kind: test
+      run: make test-production
+      required: true
+    - id: integration
+      kind: integration
+      run: tests/integration/test_duplicate_start.sh
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: integration
+      required: true
+    - type: changed_files_summary
+      source: implementation
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - Concurrent request races could start equipment twice.
+    - Incorrect lot comparison could reuse a run across lots.
+  approvals:
+    - production-state-owner
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - Production start deduplication logic.
+    - Unit and concurrent integration tests.
+    - Structured deduplication event or log evidence.
+  notes: []
