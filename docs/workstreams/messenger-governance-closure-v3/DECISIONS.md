@@ -118,3 +118,27 @@
   destination granularity 자체의 수정은 Package 3 Slack message projection 범위다.
 - Source: MGC-012 Package 2 구현 중 발견, `tests/test_slack_ack_boundary.py`
   `test_projection_conflict_does_not_strand_a_leased_command`
+
+## D-015 — Ingress Replay Precedes Authority Creation
+
+- Status: accepted
+- Decision: `decide_ingress_in_transaction`은 durable ingress row와 idempotency result를
+  먼저 조회하고, 기존 결과가 없을 때만 Authority를 생성한다. SPEC Replay Precedence
+  1–7 순서를 그대로 따른다. Replay 비교는 resolved Authority의 actor/channel 대신 durable
+  ingress identity(`request_fingerprint`, `proposal_id`, `action`)에 결합한다. 이미 commit된
+  decision이 finalize 실패 후 reclaim될 때 그 사이의 permission 회수나 binding 변경으로
+  재거부되지 않는다. Replay 경로는 mutation을 하지 않으므로 lease fencing을 건너뛰어도
+  안전하다. Lease를 잃은 worker는 뒤이은 finalize에서 `LEASE_LOST`를 받는다.
+- Source: MGC-012 Package 2 round 2 failure/recovery review, `decisions.py`
+  MGC-006 이후 존재했으나 worker가 없어 도달 불가였다.
+
+## D-016 — Event Errors Are Terminal By Default
+
+- Status: accepted
+- Decision: `GovernanceEventError`는 integrity assertion이 지배적이므로 worker에서
+  terminal을 기본값으로 분류하고 `AUDIT_SEQUENCE_CONFLICT`, `OUTBOX_SEQUENCE_CONFLICT`,
+  `OUTBOX_SOURCE_REVISION_CONFLICT`만 재시도한다. 새 event code는 목록에 없으므로
+  자동으로 `recovery_hold`가 된다. SPEC은 DB integrity failure에 즉시 fail-closed를
+  요구하므로 hash chain 오류에 governed mutation을 재시도하지 않는다. D-014의
+  `OUTBOX_SOURCE_REVISION_CONFLICT` 재시도 승인은 유지한다.
+- Source: MGC-012 Package 2 round 2 failure/recovery review
