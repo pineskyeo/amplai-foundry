@@ -65,11 +65,20 @@ steps:
     options: [approve, reject]
     on_reject: abort
 
+  # speckit.tasks 는 /taskify 와 중복이라 제거했다 (skill 디렉터리도 삭제).
+  # task 분해는 /taskify 가 맡는다 — vertical slice 강제, ID 불변, acceptance 를
+  # repo 에 실제 있는 명령으로만 쓴다.
   - id: tasks
-    command: speckit.tasks
-    integration: "{{ inputs.integration }}"
-    input:
-      args: "{{ inputs.spec }}"
+    type: gate
+    message: |
+      Run /taskify now to produce the task manifests.
+
+        /taskify <spec.md 또는 plan.md 경로와 범위>
+
+      산출물: <output-dir>/index.yaml + <FEATURE>-T001.yaml …
+      validator 가 통과해야 approve 한다.
+    options: [approve, reject]
+    on_reject: abort
 
   - id: implement
     command: speckit.implement

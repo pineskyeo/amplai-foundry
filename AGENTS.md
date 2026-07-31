@@ -68,8 +68,34 @@ subagent review   → contract / failure-recovery / regression 3인
 /pinesky-workstream-gate → PASS 기록
 ```
 
-- `/speckit-tasks` 대신 `/taskify`를 쓴다. 두 skill이 같은 일을 하므로 산출물을 두 벌 만들지 않는다.
+- `/speckit-tasks`는 `/taskify`와 중복이라 **제거했다** (skill 디렉터리 삭제, workflow step은 gate로 대체). 산출물을 두 벌 만들지 않는다.
 - `/speckit-clarify`는 `/speckit-plan` 전에, `/speckit-analyze`는 `/speckit-implement` 전에 선택적으로 쓴다.
+
+### Skill Routing
+
+겹칠 때 무엇을 부를지는 아래로 정한다.
+
+| 하려는 일 | skill |
+|---|---|
+| 개념을 이해·설명 (Feynman 4단계, 모르는 곳 드러내기) | `/feynman` |
+| 코드베이스·subsystem·흐름 설명 | `/eli12` |
+| 계획·설계를 심문해 다듬기 | `/grill-me` |
+| spec의 모호성을 질문 5개로 좁히기 | `/speckit-clarify` |
+| spec 작성·갱신 | `/speckit-specify` |
+| 설계 계획 | `/speckit-plan` |
+| 작업 분해 → task manifest | `/taskify` |
+| 구현 | `/speckit-implement` |
+| spec/plan/tasks 정합성 점검 | `/speckit-analyze` |
+| 요구사항 품질 체크리스트 | `/speckit-checklist` |
+| 구현 후 잔여 작업 회수 | `/speckit-converge` |
+| task → GitHub issue | `/speckit-taskstoissues` |
+| 원칙 수립·개정 | `/speckit-constitution` |
+
+경계가 헷갈리는 짝:
+
+- `/feynman` vs `/eli12` — 개념이면 feynman, 이 repo의 코드면 eli12. eli12는 bug triage·code review에 쓰지 않는다 (skill 자체 선언).
+- `/grill-me` vs `/speckit-clarify` — grill-me는 형식 없는 심문이고 아무 데나 쓴다. speckit-clarify는 spec 파일에 답을 써넣는 파이프라인 단계다.
+- `/speckit-analyze` vs `/speckit-checklist` — analyze는 artifact 3자 정합성, checklist는 요구사항 자체의 품질.
 
 ### Review Before Gate
 
