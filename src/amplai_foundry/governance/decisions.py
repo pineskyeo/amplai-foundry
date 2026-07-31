@@ -222,7 +222,8 @@ class DecisionService:
     ) -> DecisionResult:
         """Resolve durable ingress scope and execute under one caller-owned transaction."""
 
-        authority = self._authenticate(authority_request, connection=connection)
+        if not connection.in_transaction:
+            raise DecisionError("GOVERNANCE_TRANSACTION_REQUIRED")
         row = connection.execute(
             """
             SELECT t.proposal_id, i.action, i.credential_hash
@@ -237,17 +238,30 @@ class DecisionService:
         ).fetchone()
         if row is None:
             raise DecisionError("ACTION_TOKEN_INVALID")
-        ref = ProposalRef(
-            project_ref=authority.project_ref,
-            proposal_id=str(row[0]),
-        )
+        proposal_id = str(row[0])
+        action = DecisionAction(str(row[1]))
+        credential_hash = str(row[2])
+        self._validate_verified_command(idempotency_key, request_fingerprint, credential_hash)
+        # Replay precedence: an existing result is returned before an Authority exists,
+        # so a reclaim after a committed decision cannot be re-denied by a later
+        # binding or permission change.
+        replay = self._result_row(connection, idempotency_key)
+        if replay is not None:
+            return self._replay_ingress_result(
+                replay,
+                proposal_id=proposal_id,
+                action=action,
+                request_fingerprint=request_fingerprint,
+            )
+        authority = self._authenticate(authority_request, connection=connection)
+        ref = ProposalRef(project_ref=authority.project_ref, proposal_id=proposal_id)
         self._require_decision_authority(authority, ref)
         return self._decide_verified_hash_in_transaction(
             connection,
             ref,
-            action=DecisionAction(str(row[1])),
+            action=action,
             authority=authority,
-            credential_hash=str(row[2]),
+            credential_hash=credential_hash,
             idempotency_key=idempotency_key,
             request_fingerprint=request_fingerprint,
         )
@@ -549,8 +563,31 @@ class DecisionService:
             or str(row[7]) != channel_json
         ):
             raise DecisionError("IDEMPOTENCY_CONFLICT")
+        return DecisionService._replayed_decision(row, original_ref)
+
+    @staticmethod
+    def _replay_ingress_result(
+        row: tuple[object, ...],
+        *,
+        proposal_id: str,
+        action: DecisionAction,
+        request_fingerprint: str,
+    ) -> DecisionResult:
+        """Bind the replay to durable ingress identity instead of a resolved Authority."""
+
+        original_ref = DecisionService._proposal_ref(row[1], row[2], row[3])
+        if (
+            str(row[0]) != request_fingerprint
+            or original_ref.proposal_id != proposal_id
+            or str(row[4]) != action.value
+        ):
+            raise DecisionError("IDEMPOTENCY_CONFLICT")
+        return DecisionService._replayed_decision(row, original_ref)
+
+    @staticmethod
+    def _replayed_decision(row: tuple[object, ...], ref: ProposalRef) -> DecisionResult:
         return DecisionResult(
-            proposal_ref=original_ref,
+            proposal_ref=ref,
             action=DecisionAction(str(row[4])),
             proposal_status=ActiveProposalStatus(str(row[8])),
             active_definition_digest=str(row[9]),

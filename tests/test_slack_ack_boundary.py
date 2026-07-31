@@ -38,6 +38,7 @@ from amplai_foundry.governance import (
     VerifiedProviderCommand,
     WorkerOutcome,
 )
+from amplai_foundry.governance.events import GovernanceEventError
 from amplai_foundry.governance.store import (
     GovernanceCommitAmbiguousError,
     GovernanceStore,
@@ -936,6 +937,128 @@ def test_stranded_commands_are_visible_to_an_operator(tmp_path: Path) -> None:
     assert stranded[0].command_id == ack.command_id
     assert stranded[0].state is IngressState.RECOVERY_HOLD
     assert stranded[0].last_error_code == "ACTION_TOKEN_EXPIRED"
+
+
+def test_audit_integrity_failure_holds_instead_of_burning_retries(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceEventError("AUDIT_HASH_CHAIN_INVALID")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.state is IngressState.RECOVERY_HOLD
+    assert result.error_code == "AUDIT_HASH_CHAIN_INVALID"
+
+
+def test_unclassified_failure_fails_closed_into_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise RuntimeError("unclassified worker failure")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RETRY
+    assert result.state is IngressState.RETRY_WAIT
+    assert result.error_code == "INGRESS_DECISION_FAILED"
+
+
+def test_committed_decision_replays_after_the_actor_loses_permission(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(store, _authenticator(), clock=lambda: now[0])
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress)
+
+    def _crash(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("killed before the ingress command was finalized")
+
+    monkeypatch.setattr(ingress, "complete", _crash)
+    crashed = worker.process_next("slack-worker-1")
+    monkeypatch.undo()
+    assert crashed is not None
+    assert crashed.outcome is WorkerOutcome.FINALIZE_FAILED
+
+    with store.connect() as connection:
+        connection.execute("DELETE FROM governance_actor_permissions")
+    now[0] = NOW + timedelta(seconds=31)
+    reclaimed = worker.process_next("slack-worker-2")
+
+    assert reclaimed is not None
+    assert reclaimed.outcome is WorkerOutcome.COMPLETED
+    assert reclaimed.command_id == ack.command_id
+    assert reclaimed.decision is not None
+    assert reclaimed.decision.replayed
+    assert reclaimed.decision.proposal_status is ActiveProposalStatus.APPROVED
+    assert not ingress.stranded()
+
+
+def test_retry_exhausted_command_is_stranded_before_the_sweep(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    for _ in range(2):
+        assert worker.process_next("slack-worker") is not None
+        now[0] = now[0] + timedelta(minutes=10)
+
+    exhausted = ingress.get(str(ack.command_id))
+    assert exhausted is not None
+    assert exhausted.state is IngressState.RETRY_WAIT
+    assert exhausted.attempts == 2
+    before_sweep = ingress.stranded()
+    assert len(before_sweep) == 1
+    assert before_sweep[0].command_id == ack.command_id
+
+    assert worker.process_next("slack-worker") is None
+    after_sweep = ingress.stranded()
+
+    assert len(after_sweep) == 1
+    assert after_sweep[0].command_id == ack.command_id
+    assert after_sweep[0].state is IngressState.DEAD_LETTER
 
 
 def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:

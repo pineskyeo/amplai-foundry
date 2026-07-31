@@ -380,7 +380,11 @@ class IngressService:
         return self._view(row) if row is not None else None
 
     def stranded(self, *, limit: int = 100) -> tuple[IngressCommandView, ...]:
-        """List commands no worker will claim again. Operator recovery reads this."""
+        """List commands no worker will claim again. Operator recovery reads this.
+
+        A retry-exhausted command is included before the `claim_next` sweep converts it
+        to `dead_letter`, so a stopped worker fleet cannot hide it.
+        """
 
         if limit < 1:
             raise ValueError("limit은 1 이상이어야 합니다.")
@@ -389,8 +393,9 @@ class IngressService:
                 f"SELECT {_COMMAND_COLUMNS} "
                 "FROM governance_ingress_commands "
                 "WHERE state IN ('dead_letter', 'recovery_hold') "
+                "   OR (state = 'retry_wait' AND attempts >= ?) "
                 "ORDER BY received_at, command_id LIMIT ?",
-                (limit,),
+                (self.config.max_attempts, limit),
             ).fetchall()
         return tuple(self._view(cast(tuple[object, ...], row)) for row in rows)
 

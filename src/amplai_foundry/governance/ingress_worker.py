@@ -32,8 +32,19 @@ from amplai_foundry.governance.store import (
 
 _LEASE_CONFLICT = "INGRESS_LEASE_CONFLICT"
 
+# Event errors are integrity assertions by default, so an unlisted code is terminal.
+# Only sequence and revision CAS losses can change on a later attempt.
+_RETRYABLE_EVENT_CODES: frozenset[str] = frozenset(
+    {
+        "AUDIT_SEQUENCE_CONFLICT",
+        "OUTBOX_SEQUENCE_CONFLICT",
+        "OUTBOX_SOURCE_REVISION_CONFLICT",
+    }
+)
+
 # Denials that no retry can change. Every other failure keeps its retry budget.
-# Derived from AuthorityResolutionError, DecisionError and legacy_mutation_block.
+# Covers AuthorityResolutionError and DecisionError, including the legacy gate codes
+# those surface. GovernanceEventError is classified by _RETRYABLE_EVENT_CODES instead.
 _TERMINAL_CODES: frozenset[str] = frozenset(
     {
         "ACTION_ACTOR_MISMATCH",
@@ -128,7 +139,14 @@ class IngressDecisionWorker:
                     idempotency_key=self.idempotency_key(claim.command_id),
                     request_fingerprint=claim.provider_fingerprint,
                 )
-        except (AuthorityResolutionError, DecisionError, GovernanceEventError) as error:
+        except GovernanceEventError as error:
+            outcome = (
+                WorkerOutcome.RETRY
+                if error.code in _RETRYABLE_EVENT_CODES
+                else WorkerOutcome.RECOVERY_HOLD
+            )
+            return self._finalize(claim, worker_id, outcome, error_code=error.code)
+        except (AuthorityResolutionError, DecisionError) as error:
             if error.code == _LEASE_CONFLICT:
                 return IngressWorkerResult(
                     outcome=WorkerOutcome.LEASE_LOST,
