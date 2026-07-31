@@ -71,6 +71,17 @@ from amplai_foundry.governance.ingress import (
     ProviderEnvelope,
     VerifiedProviderCommand,
 )
+from amplai_foundry.governance.ingress_ack import (
+    AckBudget,
+    AckOutcome,
+    BoundedIngressAck,
+    ProviderAckResponse,
+)
+from amplai_foundry.governance.ingress_worker import (
+    IngressDecisionWorker,
+    IngressWorkerResult,
+    WorkerOutcome,
+)
 from amplai_foundry.governance.ledger import FileProposalActionLedger
 from amplai_foundry.governance.legacy_lifecycle import (
     LegacyMigrationActivationResult,
@@ -164,6 +175,8 @@ from amplai_foundry.governance.slack import (
 )
 
 __all__ = [
+    "AckBudget",
+    "AckOutcome",
     "ActionTokenState",
     "ActionTokenView",
     "ActiveProposalError",
@@ -187,6 +200,7 @@ __all__ = [
     "BindingTarget",
     "BindingTransitionView",
     "BindingView",
+    "BoundedIngressAck",
     "CandidateCommitEvidence",
     "CanonicalDefinition",
     "ChannelProvider",
@@ -216,10 +230,12 @@ __all__ = [
     "IngressAuthorityRequest",
     "IngressCommandView",
     "IngressConfig",
+    "IngressDecisionWorker",
     "IngressError",
     "IngressLeaseConflictError",
     "IngressService",
     "IngressState",
+    "IngressWorkerResult",
     "InvalidProposalTransitionError",
     "IssuedActionToken",
     "LegacyApprovalDisposition",
@@ -271,6 +287,7 @@ __all__ = [
     "ProposalDefinitionManifest",
     "ProposalRef",
     "ProposalSubmissionService",
+    "ProviderAckResponse",
     "ProviderAuthenticator",
     "ProviderEnvelope",
     "PublishGateState",
@@ -287,6 +304,7 @@ __all__ = [
     "SlackInstallationPolicy",
     "SubprocessGitCandidateInspector",
     "VerifiedProviderCommand",
+    "WorkerOutcome",
     "YamlProjectionDestination",
     "YamlProjectionRecord",
     "canonicalize_definition",
