@@ -16,12 +16,13 @@
 - Planning: PASS
 - Implementation: MGC-001–011 PASS / MGC-012 ACTIVE
 - Subagent Review: MGC-012 Package 1 PASS at `ef35201` — P0/P1/Blocking-P2 0
-- Subagent Review: MGC-012 Package 2 미실행
-- Repository Verification: PASS — all seven verify stages at `0179fc9`
+- Subagent Review: MGC-012 Package 2 round 1 완료 — 고유 blocker 8건 전부 해소,
+  수정본 re-review 미실행
+- Repository Verification: PASS — all seven verify stages at `23bc421`
 
 ## Next
 
-`MGC-012 — Slack Reference Adapter` Package 2의 Contract·Evidence·Ops review를 실행한다.
-Package 2 durable ack boundary와 background decision handoff는 `0179fc9`에서 구현을
-마쳤고 `673/673` test와 7-stage verification이 통과했다. Review 이후 Package 3의 ordered
-Slack message projection으로 진행한다.
+`MGC-012 — Slack Reference Adapter` Package 2 수정본에 대한 Contract·Evidence·Ops
+re-review를 실행한 뒤 gate를 판정한다. 구현은 `0179fc9`, review 수정은 `23bc421`이며
+`685/685` test와 7-stage verification이 통과했다. Gate 이후 Package 3의 ordered Slack
+message projection으로 진행한다.

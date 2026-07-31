@@ -81,3 +81,40 @@
   동일한 단일 `workspace_id:api_app_id` 형식이다. Parser는 strict UTF-8, duplicate-key
   rejection과 body/depth/node/string budget을 적용하며 unsupported surface는 fail-closed한다.
 - Source: MGC-012 Package 1 Contract·Evidence·Ops review
+
+## D-012 — Slack Ack Budget Is A Config Invariant, Not A Deadline
+
+- Status: accepted
+- Decision: A9는 두 가지로만 강제한다. 첫째, `BoundedIngressAck` 생성자가
+  `ingress busy_timeout_ms < ack budget`을 요구하고 위반 시 구성 자체를 거부한다. 둘째,
+  전체 synchronous path를 측정해 budget 초과 시 success ack를 non-success로 강등한다.
+  진행 중인 request를 중단하지는 않는다. HTTP layer가 이 package 범위 밖이라 hard
+  deadline을 걸 대상이 없다. Review 실측에서 write 경합 시 `submit()` 한 번이 2641ms로
+  budget 3000ms의 88%를 `accept()` 안에서 소비했다. 정확한 timeout 값은 SPEC에 따라
+  Activation Record가 보유하며 MGC-015에서 정한다.
+- Source: MGC-012 Package 2 Evidence·Ops review
+
+## D-013 — Slack Does Not Redeliver Interactive Payloads
+
+- Status: accepted
+- Decision: Slack은 interactivity request를 재시도하지 않는다. 3초 안에 200을 받지
+  못하면 사용자에게 error를 표시한다. `X-Slack-Retry-Num` 3회 backoff는 Events API 계약이며
+  interactivity에 적용되지 않는다. 따라서 `BUDGET_EXCEEDED` 응답은 Slack 자동 재전송으로
+  수렴하지 않는다. 다만 durable commit은 이미 끝났으므로 background worker가 decision을
+  완료한다. 사용자가 버튼을 다시 누르면 `action_ts`가 달라져 새 command가 되고 token이
+  이미 consumed라 `recovery_hold`로 간다. 이 재클릭 경로는 Package 3의 Slack message
+  projection이 버튼을 갱신해 제거한다.
+- Source: https://docs.slack.dev/interactivity/handling-user-interaction/
+
+## D-014 — Provider Outbox Destination Is Per Channel
+
+- Status: accepted
+- Decision: provider outbox destination은 `provider:{provider}:{channel_digest}`로
+  channel 단위이고 `source_state_revision` CAS는 해당 destination의 마지막 event와
+  비교한다. 반면 `supersession_key`는 `proposal-card:{proposal_id}`로 proposal 단위다.
+  같은 Slack channel의 두 번째 proposal decision은 `OUTBOX_SOURCE_REVISION_CONFLICT`로
+  실패하고 retry budget을 소진한 뒤 `dead_letter`에 도달한다. Package 2는 이 오류가
+  worker를 탈출하지 않도록 봉쇄하고 `IngressService.stranded()`로 관측 가능하게만 한다.
+  destination granularity 자체의 수정은 Package 3 Slack message projection 범위다.
+- Source: MGC-012 Package 2 구현 중 발견, `tests/test_slack_ack_boundary.py`
+  `test_projection_conflict_does_not_strand_a_leased_command`
