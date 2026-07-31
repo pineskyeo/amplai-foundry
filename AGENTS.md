@@ -52,3 +52,38 @@
 6. `MGC-009` 이전에는 canonical Vault와 Git state 미수정
 
 `CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 Codex가 임의로 결정하지 않는다.
+
+## Spec-Kit Adoption
+
+이 repository는 spec-kit(`/speckit-*`)과 기존 workstream 체계를 함께 쓴다. 원칙은 `.specify/memory/constitution.md`에 있고 그 문서는 이 파일의 파생이다. 두 문서가 어긋나면 이 파일이 이긴다.
+
+### Pipeline
+
+```text
+/speckit-specify  → spec.md
+/speckit-plan     → plan.md
+/taskify          → task manifest
+/speckit-implement→ 구현
+subagent review   → contract / failure-recovery / regression 3인
+/pinesky-workstream-gate → PASS 기록
+```
+
+- `/speckit-tasks` 대신 `/taskify`를 쓴다. 두 skill이 같은 일을 하므로 산출물을 두 벌 만들지 않는다.
+- `/speckit-clarify`는 `/speckit-plan` 전에, `/speckit-analyze`는 `/speckit-implement` 전에 선택적으로 쓴다.
+
+### Review Before Gate
+
+`/speckit-implement` 다음에는 반드시 subagent review를 돌린다.
+
+- reviewer는 관점이 서로 다른 셋이다. contract, failure/recovery, regression.
+- P0, P1, Blocking-P2가 하나라도 있으면 gate를 열지 않는다.
+- Advisory는 기록하고 item별로 판단한다.
+- review를 실행하지 않았으면 gate 결과를 기록하지 않는다. 실행하지 않은 검증을 통과했다고 보고하지 않는다는 Completion Gate 규칙이 여기에도 적용된다.
+
+`.specify/workflows/speckit/workflow.yml`의 `review-implementation` step이 이 관문이다.
+
+### Scope
+
+- spec-kit은 `specs/` 아래 문서만 만든다. canonical Vault와 Git state는 Codex Curation Contract를 따른다.
+- spec-kit script는 git branch를 만들지 않는다. `specs/NNN-name/` 디렉터리만 만든다.
+- `/speckit-implement`는 코드를 실제로 수정한다. 사용자가 직접 호출할 때만 실행한다.

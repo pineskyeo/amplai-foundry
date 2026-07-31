@@ -76,3 +76,21 @@ steps:
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
+
+  # Constitution 원칙 V — 구현 완료는 gate 통과가 아니다. 서로 다른 관점의 독립
+  # reviewer 셋이 blocker 0건을 확인해야 열린다. 절차는 AGENTS.md 의
+  # "Spec-Kit Adoption" 절에 있다.
+  - id: review-implementation
+    type: gate
+    message: |
+      Run the three-reviewer subagent review before closing this cycle.
+
+        1. contract reviewer      — 계약과 acceptance 충족 여부
+        2. failure/recovery reviewer — 실패 경로, timeout, 복구
+        3. regression reviewer    — 기존 동작 회귀
+
+      P0 / P1 / Blocking-P2 가 하나라도 있으면 reject 한다.
+      Advisory 는 기록하고 판단한다.
+      review 를 실행하지 않았다면 approve 하지 않는다.
+    options: [approve, reject]
+    on_reject: abort
