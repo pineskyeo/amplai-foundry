@@ -30,6 +30,7 @@ from amplai_foundry.governance import (
     DecisionService,
     IngressConfig,
     IngressDecisionWorker,
+    IngressError,
     IngressService,
     IngressState,
     ProviderEnvelope,
@@ -631,6 +632,8 @@ def test_reclaimed_command_converges_on_the_first_decision(
 
     assert crashed is not None
     assert crashed.outcome is WorkerOutcome.FINALIZE_FAILED
+    assert crashed.error_code is None
+    assert crashed.finalize_error_code == "INGRESS_FINALIZE_FAILED"
     assert crashed.decision is not None
     assert not crashed.decision.replayed
     stranded = ingress.get(ack.command_id)
@@ -1059,6 +1062,58 @@ def test_retry_exhausted_command_is_stranded_before_the_sweep(
     assert len(after_sweep) == 1
     assert after_sweep[0].command_id == ack.command_id
     assert after_sweep[0].state is IngressState.DEAD_LETTER
+
+
+def test_claim_failure_keeps_the_underlying_ingress_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise IngressError("INGRESS_NOT_FOUND")
+
+    monkeypatch.setattr(ingress, "claim_next", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED
+    assert result.error_code == "INGRESS_NOT_FOUND"
+
+
+def test_finalize_failure_preserves_the_denial_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _crash(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("recovery hold write failed")
+
+    monkeypatch.setattr(ingress, "recovery_hold", _crash)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.FINALIZE_FAILED
+    assert result.error_code == "ACTION_TOKEN_EXPIRED"
+    assert result.finalize_error_code == "INGRESS_FINALIZE_FAILED"
+    assert result.decision is None
+
+
+def test_process_next_rejects_a_blank_worker_id(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    with pytest.raises(ValueError, match="worker_id"):
+        _worker(store, ingress).process_next("   ")
 
 
 def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:

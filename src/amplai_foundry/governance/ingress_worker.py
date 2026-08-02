@@ -92,6 +92,7 @@ class IngressWorkerResult(BaseModel):
     command_id: str | None = None
     state: IngressState | None = None
     error_code: str | None = None
+    finalize_error_code: str | None = None
     decision: DecisionResult | None = None
 
 
@@ -109,8 +110,15 @@ class IngressDecisionWorker:
         self.decisions = decisions
 
     def process_next(self, worker_id: str) -> IngressWorkerResult | None:
-        """Return None only when no command is claimable. Never raise at the caller."""
+        """Claim one command and resolve it.
 
+        Returns None only when nothing is claimable. Store and ingress failures are
+        reported as `CLAIM_FAILED` rather than raised, so a caller loop survives them.
+        A malformed `worker_id` is a caller defect and still raises `ValueError`.
+        """
+
+        if not worker_id.strip():
+            raise ValueError("worker_id는 비어 있을 수 없습니다.")
         try:
             claim = self.ingress.claim_next(worker_id)
         except (GovernanceStoreError, IngressError, sqlite3.Error) as error:
@@ -206,12 +214,14 @@ class IngressDecisionWorker:
                 decision=decision,
             )
         except (GovernanceStoreError, IngressError, sqlite3.Error) as error:
-            # The decision transaction already committed. The lease expires and a
-            # reclaim converges on the first result through the idempotency key.
+            # The decision transaction already resolved. The lease expires and a reclaim
+            # converges on the first result through the idempotency key. `error_code`
+            # keeps the decision outcome so the write failure does not erase it.
             return IngressWorkerResult(
                 outcome=WorkerOutcome.FINALIZE_FAILED,
                 command_id=claim.command_id,
-                error_code=_error_code(error, "INGRESS_FINALIZE_FAILED"),
+                error_code=error_code,
+                finalize_error_code=_error_code(error, "INGRESS_FINALIZE_FAILED"),
                 decision=decision,
             )
         return IngressWorkerResult(
