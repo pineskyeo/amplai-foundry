@@ -1330,6 +1330,119 @@ def test_process_next_rejects_a_blank_worker_id_before_touching_ingress(
         _worker(store, ingress).process_next("   ")
 
 
+def test_a_live_lease_on_the_last_attempt_is_not_stranded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=1),
+        clock=lambda: NOW,
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress)
+
+    def _crash(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("killed before the ingress command was finalized")
+
+    monkeypatch.setattr(ingress, "complete", _crash)
+    assert worker.process_next("slack-worker") is not None
+
+    held = ingress.get(str(ack.command_id))
+    assert held is not None
+    assert held.state is IngressState.LEASED
+    assert held.attempts == 1
+    assert held.lease_expires_at is not None
+    assert held.lease_expires_at > NOW
+    assert ingress.stranded() == ()
+
+
+def test_a_transient_sqlite_error_retries_instead_of_holding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RETRY
+    assert result.error_code == "INGRESS_DECISION_UNAVAILABLE"
+
+
+def test_extended_corruption_codes_also_hold(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        error = sqlite3.DatabaseError("database disk image is malformed")
+        error.sqlite_errorcode = sqlite3.SQLITE_CORRUPT_INDEX
+        raise error
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "INGRESS_STORE_CORRUPT"
+
+
+def test_committed_decision_ignores_a_foreign_result(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store)
+    _seed_proposal(
+        store,
+        proposal_id="PROP-20260730-DDDDDDDD",
+        token_id="TOK-ABCDEF0123456789",
+        raw_token="fedcba9876543210fedcba9876543210",
+        channel=OTHER_CHANNEL,
+    )
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    command_id = str(ack.command_id)
+    worker = _worker(store, ingress)
+    _plant_result(
+        store,
+        idempotency_key=worker.idempotency_key(command_id),
+        fingerprint="f" * 64,
+        proposal_id="PROP-20260730-DDDDDDDD",
+        action="reject",
+        proposal_status="rejected",
+    )
+
+    assert worker.committed_decision(command_id) is None
+
+
+def test_result_for_rejects_a_blank_idempotency_key(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    with pytest.raises(ValueError, match="idempotency_key"):
+        _worker(store, ingress).decisions.result_for("   ")
+
+
 def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:
     store = _store(tmp_path)
     ingress = IngressService(store, _authenticator(), clock=lambda: NOW)

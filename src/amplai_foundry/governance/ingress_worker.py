@@ -84,7 +84,14 @@ class WorkerOutcome(StrEnum):
 
 
 class IngressWorkerResult(BaseModel):
-    """One background handoff attempt for a single durable ingress command."""
+    """One background handoff attempt for a single durable ingress command.
+
+    `error_code` reports the decision phase and `finalize_error_code` the ingress write
+    that followed it. A lease lost before the decision therefore carries the lease code
+    in `error_code`; a lease lost during the write carries it in `finalize_error_code`
+    and keeps the decision outcome. Read `finalize_error_code` to detect write failures
+    uniformly. `decision` is set only when the decision transaction committed.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -217,9 +224,20 @@ class IngressDecisionWorker:
         A command whose finalize write kept failing ends in `dead_letter` carrying
         `INGRESS_LEASE_EXPIRED`, which reads like a failure even though the governed
         decision committed. Operator recovery uses this to tell the two apart.
+
+        The result is bound to the command's own credential and action, so a foreign
+        row stored under the same replay key answers None instead of misreporting.
         """
 
-        return self.decisions.result_for(self.idempotency_key(command_id))
+        command = self.ingress.get(command_id)
+        if command is None:
+            return None
+        result = self.decisions.result_for(self.idempotency_key(command_id))
+        if result is None:
+            return None
+        if result.token_id != command.credential_id or result.action is not command.action:
+            return None
+        return result
 
     def _finalize(
         self,
@@ -290,9 +308,10 @@ class IngressDecisionWorker:
 
 def _is_corruption(error: sqlite3.DatabaseError) -> bool:
     code = getattr(error, "sqlite_errorcode", None)
-    if isinstance(code, int):
-        return code in {sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB}
-    return False
+    if not isinstance(code, int):
+        return False
+    # sqlite_errorcode carries the extended code, so compare the primary byte.
+    return code & 0xFF in {sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB}
 
 
 def _error_code(error: Exception, fallback: str) -> str:
