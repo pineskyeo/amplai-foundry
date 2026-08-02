@@ -455,6 +455,17 @@ class DecisionService:
         if block is not None:
             raise DecisionError(block)
 
+    def result_for(self, idempotency_key: str) -> DecisionResult | None:
+        """Read a committed decision by replay key without touching Proposal or Token."""
+
+        if not idempotency_key.strip():
+            raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
+        with self.store.connect() as connection:
+            row = self._result_row(connection, idempotency_key)
+        if row is None:
+            return None
+        return self._replayed_decision(row, self._proposal_ref(row[1], row[2], row[3]))
+
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:
             row = connection.execute(

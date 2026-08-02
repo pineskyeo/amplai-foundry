@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import sqlite3
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -31,6 +32,7 @@ from amplai_foundry.governance import (
     IngressConfig,
     IngressDecisionWorker,
     IngressError,
+    IngressLeaseConflictError,
     IngressService,
     IngressState,
     ProviderEnvelope,
@@ -1108,9 +1110,221 @@ def test_finalize_failure_preserves_the_denial_code(
     assert result.decision is None
 
 
-def test_process_next_rejects_a_blank_worker_id(tmp_path: Path) -> None:
+def _plant_result(
+    store: GovernanceStore,
+    *,
+    idempotency_key: str,
+    fingerprint: str,
+    proposal_id: str = PROPOSAL_ID,
+    action: str = "approve",
+    proposal_status: str = "approved",
+) -> None:
+    channel_json = json.dumps(
+        CHANNEL.model_dump(mode="json", exclude_none=True),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    with store.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO governance_decision_results(
+                idempotency_key, request_fingerprint, project_namespace, project_id,
+                proposal_id, action, actor_id, actor_type, channel_json,
+                proposal_status, active_definition_digest, content_revision,
+                state_revision, decision_epoch, token_id, processed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'human', ?, ?, ?, 1, 3, 1, ?, ?)
+            """,
+            (
+                idempotency_key,
+                fingerprint,
+                PROJECT.namespace,
+                PROJECT.project_id,
+                proposal_id,
+                action,
+                USER.actor_id,
+                channel_json,
+                proposal_status,
+                f"sha256:{'1' * 64}",
+                TOKEN_ID,
+                NOW.isoformat(),
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "planted",
+    [
+        {"fingerprint": "f" * 64},
+        {"proposal_id": "PROP-20260730-DDDDDDDD"},
+        {"action": "reject", "proposal_status": "rejected"},
+    ],
+    ids=["fingerprint", "proposal", "action"],
+)
+def test_a_foreign_result_under_the_same_key_is_a_conflict(
+    tmp_path: Path,
+    planted: dict[str, str],
+) -> None:
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store)
+    _seed_proposal(
+        store,
+        proposal_id="PROP-20260730-DDDDDDDD",
+        token_id="TOK-ABCDEF0123456789",
+        raw_token="fedcba9876543210fedcba9876543210",
+        channel=OTHER_CHANNEL,
+    )
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    command_id = str(ack.command_id)
+    stored = ingress.get(command_id)
+    assert stored is not None
+    worker = _worker(store, ingress)
+    _plant_result(
+        store,
+        idempotency_key=worker.idempotency_key(command_id),
+        fingerprint=str(planted.get("fingerprint", stored.provider_fingerprint)),
+        proposal_id=str(planted.get("proposal_id", PROPOSAL_ID)),
+        action=str(planted.get("action", "approve")),
+        proposal_status=str(planted.get("proposal_status", "approved")),
+    )
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "IDEMPOTENCY_CONFLICT"
+    assert result.decision is None
+
+
+def test_a_command_with_retry_budget_left_is_not_stranded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=3),
+        clock=lambda: NOW,
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    assert worker.process_next("slack-worker") is not None
+
+    assert not ingress.stranded()
+
+
+def test_an_expired_lease_on_the_last_attempt_is_stranded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=1),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress)
+
+    def _crash(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("killed before the ingress command was finalized")
+
+    monkeypatch.setattr(ingress, "complete", _crash)
+    crashed = worker.process_next("slack-worker")
+    monkeypatch.undo()
+    assert crashed is not None
+    assert crashed.outcome is WorkerOutcome.FINALIZE_FAILED
+
+    now[0] = NOW + timedelta(seconds=31)
+    stranded = ingress.stranded()
+
+    assert len(stranded) == 1
+    assert stranded[0].command_id == ack.command_id
+    assert stranded[0].state is IngressState.LEASED
+    committed = worker.committed_decision(str(ack.command_id))
+    assert committed is not None
+    assert committed.proposal_status is ActiveProposalStatus.APPROVED
+
+
+def test_committed_decision_is_none_for_an_undecided_command(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+
+    assert _worker(store, ingress).committed_decision(str(ack.command_id)) is None
+
+
+def test_store_corruption_holds_instead_of_retrying(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        error = sqlite3.DatabaseError("database disk image is malformed")
+        error.sqlite_errorcode = sqlite3.SQLITE_CORRUPT
+        raise error
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "INGRESS_STORE_CORRUPT"
+
+
+def test_lease_loss_during_finalize_keeps_the_denial_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise IngressLeaseConflictError("INGRESS_LEASE_CONFLICT")
+
+    monkeypatch.setattr(ingress, "recovery_hold", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.LEASE_LOST
+    assert result.error_code == "ACTION_TOKEN_EXPIRED"
+    assert result.finalize_error_code == "INGRESS_LEASE_CONFLICT"
+
+
+def test_process_next_rejects_a_blank_worker_id_before_touching_ingress(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     store = _store(tmp_path)
     ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    monkeypatch.setattr(ingress, "claim_next", lambda worker_id: None)
 
     with pytest.raises(ValueError, match="worker_id"):
         _worker(store, ingress).process_next("   ")

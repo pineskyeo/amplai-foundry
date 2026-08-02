@@ -382,20 +382,23 @@ class IngressService:
     def stranded(self, *, limit: int = 100) -> tuple[IngressCommandView, ...]:
         """List commands no worker will claim again. Operator recovery reads this.
 
-        A retry-exhausted command is included before the `claim_next` sweep converts it
-        to `dead_letter`, so a stopped worker fleet cannot hide it.
+        An attempt-exhausted command is included before the `claim_next` sweep converts
+        it to `dead_letter`, whether it waits in `retry_wait` or still holds an expired
+        lease, so a stopped worker fleet cannot hide it.
         """
 
         if limit < 1:
             raise ValueError("limit은 1 이상이어야 합니다.")
+        now = self._timestamp(self._aware(self._clock()))
         with self.store.connect() as connection:
             rows = connection.execute(
                 f"SELECT {_COMMAND_COLUMNS} "
                 "FROM governance_ingress_commands "
                 "WHERE state IN ('dead_letter', 'recovery_hold') "
                 "   OR (state = 'retry_wait' AND attempts >= ?) "
+                "   OR (state = 'leased' AND attempts >= ? AND lease_expires_at <= ?) "
                 "ORDER BY received_at, command_id LIMIT ?",
-                (self.config.max_attempts, limit),
+                (self.config.max_attempts, self.config.max_attempts, now, limit),
             ).fetchall()
         return tuple(self._view(cast(tuple[object, ...], row)) for row in rows)
 

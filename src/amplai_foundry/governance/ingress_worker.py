@@ -167,6 +167,22 @@ class IngressDecisionWorker:
                 else WorkerOutcome.RETRY
             )
             return self._finalize(claim, worker_id, outcome, error_code=error.code)
+        except sqlite3.DatabaseError as error:
+            # A corrupt database fails closed. SPEC requires no further governed
+            # mutation attempts once storage integrity is in doubt.
+            if _is_corruption(error):
+                return self._finalize(
+                    claim,
+                    worker_id,
+                    WorkerOutcome.RECOVERY_HOLD,
+                    error_code="INGRESS_STORE_CORRUPT",
+                )
+            return self._finalize(
+                claim,
+                worker_id,
+                WorkerOutcome.RETRY,
+                error_code="INGRESS_DECISION_UNAVAILABLE",
+            )
         except (GovernanceStoreError, sqlite3.Error):
             return self._finalize(
                 claim,
@@ -195,6 +211,16 @@ class IngressDecisionWorker:
 
         return f"ingress:{command_id}"
 
+    def committed_decision(self, command_id: str) -> DecisionResult | None:
+        """Answer whether a stranded command already decided. Reads no Proposal state.
+
+        A command whose finalize write kept failing ends in `dead_letter` carrying
+        `INGRESS_LEASE_EXPIRED`, which reads like a failure even though the governed
+        decision committed. Operator recovery uses this to tell the two apart.
+        """
+
+        return self.decisions.result_for(self.idempotency_key(command_id))
+
     def _finalize(
         self,
         claim: IngressCommandView,
@@ -210,7 +236,8 @@ class IngressDecisionWorker:
             return IngressWorkerResult(
                 outcome=WorkerOutcome.LEASE_LOST,
                 command_id=claim.command_id,
-                error_code=error.code,
+                error_code=error_code,
+                finalize_error_code=error.code,
                 decision=decision,
             )
         except (GovernanceStoreError, IngressError, sqlite3.Error) as error:
@@ -259,6 +286,13 @@ class IngressDecisionWorker:
             generation=claim.claim_generation,
             error_code=code,
         )
+
+
+def _is_corruption(error: sqlite3.DatabaseError) -> bool:
+    code = getattr(error, "sqlite_errorcode", None)
+    if isinstance(code, int):
+        return code in {sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB}
+    return False
 
 
 def _error_code(error: Exception, fallback: str) -> str:
