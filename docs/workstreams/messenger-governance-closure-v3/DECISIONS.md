@@ -142,3 +142,19 @@
   요구하므로 hash chain 오류에 governed mutation을 재시도하지 않는다. D-014의
   `OUTBOX_SOURCE_REVISION_CONFLICT` 재시도 승인은 유지한다.
 - Source: MGC-012 Package 2 round 2 failure/recovery review
+
+## D-017 — Stranded Ingress Is Observable Without A Worker
+
+- Status: accepted
+- Decision: `IngressService.stranded()`는 `claim_next`가 다시 claim 하지 않을 command를
+  정확히 반환한다. `dead_letter`, `recovery_hold`, attempt를 소진한 `retry_wait`, 그리고
+  attempt를 소진한 채 lease가 만료된 `leased`를 포함한다. `dead_letter` 전이가
+  `claim_next` 내부 sweep에서만 일어나므로 worker가 멈춘 상태에서도 가려지지 않는다.
+  Lease가 살아 있는 command는 소유 worker가 아직 finalize 할 수 있으므로 제외한다.
+  Storage 무결성 오류는 재시도하지 않는다. `sqlite_errorcode`의 primary byte가
+  `SQLITE_CORRUPT` 또는 `SQLITE_NOTADB`면 `INGRESS_STORE_CORRUPT`로 즉시
+  `recovery_hold`한다. 나머지 `sqlite3.DatabaseError`는 transient로 보고 retry budget을
+  유지한다. `IngressDecisionWorker.committed_decision()`은 stranded command가 이미
+  decision을 commit 했는지 답한다. 결과는 command의 credential과 action에 결합하므로
+  같은 replay key 아래의 외부 row를 이 command의 decision으로 보고하지 않는다.
+- Source: MGC-012 Package 2 round 3·4 contract·failure-recovery·regression review

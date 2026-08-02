@@ -16,14 +16,13 @@
 - Planning: PASS
 - Implementation: MGC-001–011 PASS / MGC-012 ACTIVE
 - Subagent Review: MGC-012 Package 1 PASS at `ef35201` — P0/P1/Blocking-P2 0
-- Subagent Review: MGC-012 Package 2 round 1 blocker 8건, round 2 blocker 5건 전부
-  해소. Round 2 수정본 re-review 미실행
-- Repository Verification: PASS — all seven verify stages at `362cc4b`
+- Subagent Review: MGC-012 Package 2 PASS at `7501385` — round 4 contract·
+  failure-recovery·regression blocker 0. Round 1–3에서 고유 blocker 16건을 해소했다
+- Repository Verification: PASS — all seven verify stages at `7501385`
 
 ## Next
 
-`MGC-012 — Slack Reference Adapter` Package 2 round 2 수정본에 대한
-contract·failure-recovery·regression re-review를 실행한 뒤 gate를 판정한다. 구현은
-`0179fc9`, round 1 수정은 `23bc421`, round 2 수정은 `362cc4b`이며 `689/689` test와
-7-stage verification이 통과했다. Round 2 수정이 `decisions.py`까지 닿으므로 regression
-lens가 필요하다. Gate 이후 Package 3의 ordered Slack message projection으로 진행한다.
+`MGC-012 — Slack Reference Adapter` Package 3의 ordered Slack message projection,
+retry와 recovery를 구현한다. Package 2 durable ack boundary와 background decision
+handoff는 `7501385`에서 gate PASS다. Package 3는 D-014의 provider outbox destination
+granularity를 함께 해소해야 한다.
