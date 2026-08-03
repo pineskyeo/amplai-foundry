@@ -177,7 +177,34 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
 
-Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit-tasks` first to regenerate the task list.
+Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, regenerate the task list — see the recovery path below.
+
+<!-- LOCAL MODIFICATION (amplai-foundry, 2026-08-03): upstream said "run
+     /speckit-tasks", but this project deleted that skill in favour of /taskify
+     (CLAUDE.md, "Spec-Kit Adoption"). The pointer was dead. -->
+
+**Recovery when `tasks.md` is missing or stale (project-specific)**
+
+`/speckit-tasks` does not exist here. `tasks.md` is a **generated** checklist;
+the source of truth is the taskify manifest set. Regenerate it:
+
+```bash
+# 1. produce/refresh the manifests (only if missing or out of date)
+/taskify <plan.md path and scope>
+
+# 2. validate them
+python3 .claude/skills/taskify/scripts/validate_task_manifest.py <manifest-dir>
+
+# 3. render tasks.md INTO THE FEATURE DIR. --out is required whenever the
+#    manifests live under .amplai/tasks/, which is the taskify default for any
+#    source outside specs/.
+python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> --out <feature-dir>/tasks.md
+```
+
+Never hand-edit `tasks.md` — the generator refuses to overwrite a file it did
+not write. For each task, open the `manifest:` path listed on its line and treat
+that YAML as the contract: acceptance behaviors, invariants, forbidden_paths,
+and loop/stop conditions live there, not in the checklist.
 
 ## Mandatory Post-Execution Hooks
 

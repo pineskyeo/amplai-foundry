@@ -41,7 +41,8 @@ different directories, so the default `<manifest_dir>/../tasks.md` would land in
         .amplai/tasks/<feature-slug> --out specs/<feature>/tasks.md
 
 Only when the manifests already live inside the feature directory (e.g.
-`specs/<feature>/task-manifests/`) is the default correct.
+`specs/<feature>/task-manifests/`) is the default correct. The generated header
+echoes back the exact command that reproduces the file, --out included.
 """
 import argparse
 import os
@@ -86,7 +87,22 @@ def required_commands(manifest):
     return out
 
 
-def render(index, manifests, manifest_dir, rel_base):
+def regeneration_command(manifest_dir, out_path, repo_root):
+    """The exact invocation that reproduces out_path.
+
+    Must include --out whenever the default target (<manifest_dir>/../tasks.md)
+    is not where the file actually goes; otherwise someone copies the header
+    command, runs it, and silently writes tasks.md to a directory speckit never
+    reads."""
+    default_out = os.path.join(os.path.dirname(manifest_dir), "tasks.md")
+    man = os.path.relpath(manifest_dir, repo_root)
+    cmd = "python3 .specify/scripts/taskify_to_tasks_md.py %s" % man
+    if os.path.abspath(default_out) != os.path.abspath(out_path):
+        cmd += " --out %s" % os.path.relpath(out_path, repo_root)
+    return cmd
+
+
+def render(index, manifests, manifest_dir, rel_base, regen_cmd):
     idx_tasks = {t["id"]: t for t in index.get("tasks", [])}
     waves = (index.get("execution") or {}).get("waves") or []
     feature = index.get("feature") or {}
@@ -97,13 +113,12 @@ def render(index, manifests, manifest_dir, rel_base):
     lines.append("")
     lines.append("%s -->" % GENERATED_MARKER)
     lines.append("<!-- DO NOT EDIT BY HAND. Source of truth is "
-                 "task-manifests/index.yaml + the per-task YAML manifests. -->")
+                 "%s/index.yaml + the per-task YAML manifests. -->" % rel_base)
     lines.append("")
     lines.append("> **생성물이다. 직접 수정하지 않는다.**")
     lines.append("> 출처: `%s/index.yaml` 과 `%s/<ID>.yaml`."
                  % (rel_base, rel_base))
-    lines.append("> 재생성: `python3 .specify/scripts/taskify_to_tasks_md.py %s`"
-                 % rel_base)
+    lines.append("> 재생성 (repo root 에서): `%s`" % regen_cmd)
     lines.append(">")
     lines.append("> 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, "
                  "invariants, forbidden_paths, loop/stop conditions. 구현 전에 "
@@ -231,7 +246,9 @@ def main(argv=None):
             return 1
 
     rel_base = os.path.relpath(manifest_dir, os.path.dirname(out_path))
-    text = render(index, manifests, manifest_dir, rel_base)
+    repo_root = os.getcwd()
+    regen_cmd = regeneration_command(manifest_dir, out_path, repo_root)
+    text = render(index, manifests, manifest_dir, rel_base, regen_cmd)
     with open(out_path, "w", encoding="utf-8") as handle:
         handle.write(text)
     print("wrote %s (%d task(s) from %s)"

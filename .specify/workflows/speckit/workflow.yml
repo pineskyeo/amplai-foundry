@@ -68,18 +68,46 @@ steps:
   # speckit.tasks 는 /taskify 와 중복이라 제거했다 (skill 디렉터리도 삭제).
   # task 분해는 /taskify 가 맡는다 — vertical slice 강제, ID 불변, acceptance 를
   # repo 에 실제 있는 명령으로만 쓴다.
+  #
+  # 2026-08-03: 여기서 끊겨 있었다. tasks 단계만 gate 로 바꾸고 다음 implement 단계를
+  # 안 맞춰서, speckit.implement 가 요구하는 tasks.md 가 영영 안 생겼다
+  # (.claude/skills/speckit-implement/SKILL.md:180 -> check-prerequisites.sh
+  #  --require-tasks). 그 skill 의 복구 안내는 삭제된 /speckit-tasks 를 가리켜서
+  # 빠져나갈 수도 없었다. 아래 3단계로 닫았다.
   - id: tasks
     type: gate
     message: |
-      Run /taskify now to produce the task manifests.
+      1. /taskify 로 task manifest 를 만든다.
 
-        /taskify <spec.md 또는 plan.md 경로와 범위>
+           /taskify <spec.md 또는 plan.md 경로와 범위>
 
-      산출물: <output-dir>/index.yaml + <FEATURE>-T001.yaml …
-      validator 가 통과해야 approve 한다.
+         산출물: <manifest-dir>/index.yaml + <FEATURE>-T001.yaml …
+         설계 소스가 specs/ 밖이면 <manifest-dir> 는 .amplai/tasks/<slug>/ 다.
+
+      2. validator 를 돌린다. 통과해야 다음으로 간다.
+
+           python3 .claude/skills/taskify/scripts/validate_task_manifest.py <manifest-dir>
+
+      3. speckit 이 읽을 tasks.md 를 **생성**한다. 손으로 쓰지 않는다.
+
+           python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> \
+               --out <feature-dir>/tasks.md
+
+         **--out 을 반드시 준다.** manifest 는 .amplai/tasks/ 아래 있고 speckit 은
+         feature dir 에서 tasks.md 를 찾는다 — 서로 다른 디렉터리다. 기본값으로
+         돌리면 .amplai/tasks/tasks.md 에 써서 speckit 이 못 찾는다.
+
+         생성된 tasks.md 는 순서·파일소유만 담은 목차다. 계약(acceptance,
+         invariants, forbidden_paths)은 manifest YAML 에 그대로 있다.
+         blocked task 는 실행 단계에서 빠진다.
+
+      셋 다 끝났으면 approve 한다.
     options: [approve, reject]
     on_reject: abort
 
+  # tasks.md 는 생성물이다. implement 는 task 마다 tasks.md 의 `manifest:` 줄이
+  # 가리키는 YAML 을 열어 acceptance·invariants·forbidden_paths 를 계약으로 삼는다.
+  # 체크리스트만 보고 구현하면 그 계약이 통째로 빠진다.
   - id: implement
     command: speckit.implement
     integration: "{{ inputs.integration }}"

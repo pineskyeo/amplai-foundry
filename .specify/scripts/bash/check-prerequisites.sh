@@ -133,7 +133,12 @@ fi
 # Check for tasks.md if required
 if $REQUIRE_TASKS && [[ ! -f "$TASKS" ]]; then
     echo "ERROR: tasks.md not found in $FEATURE_DIR" >&2
-    echo "Run /speckit-tasks first to create the task list." >&2
+    # LOCAL MODIFICATION (amplai-foundry, 2026-08-03): /speckit-tasks was removed
+    # in favour of /taskify (CLAUDE.md "Spec-Kit Adoption"). tasks.md is
+    # generated from the taskify manifests.
+    echo "tasks.md is generated from the taskify manifests. Regenerate it:" >&2
+    echo "  python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> --out $TASKS" >&2
+    echo "If the manifests do not exist yet, run /taskify first." >&2
     exit 1
 fi
 

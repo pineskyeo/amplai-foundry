@@ -68,7 +68,17 @@ state of the code, determine which requirements, acceptance criteria, plan decis
 existing tasks are unmet, incomplete, or only partially satisfied, and **append each piece
 of remaining work as a new, traceable task** at the bottom of `tasks.md` so that
 `/speckit-implement` can complete it. This command MUST run only after
-`/speckit-implement` has run on the current `tasks.md`, and after `/speckit-tasks` has produced a complete `tasks.md`.
+`/speckit-implement` has run on the current `tasks.md`, and after a complete `tasks.md` exists.
+
+<!-- LOCAL MODIFICATION (amplai-foundry, 2026-08-03): /speckit-tasks was removed
+     in favour of /taskify. -->
+
+> **project conflict — read before running.** Here `tasks.md` is **generated** by
+> `.specify/scripts/taskify_to_tasks_md.py` from the taskify manifests.
+> Appending new tasks to the bottom of `tasks.md` would be erased the next time
+> it is regenerated. Write the remaining work as a new task manifest in the
+> manifest directory with a fresh ID (never renumber surviving tasks), add it to
+> `index.yaml`, then regenerate `tasks.md`.
 
 This is **not** a diff tool and does **not** track changes. It assesses the present state
 of the code relative to the feature's artifacts — no git, no branch comparison, no history.
@@ -104,7 +114,9 @@ Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --inclu
 - CONSTITUTION = `.specify/memory/constitution.md` (if present)
 If `spec.md`, `plan.md`, or `tasks.md` is missing, STOP with a clear, actionable message naming the
 prerequisite command to run (`/speckit-specify` for a missing spec, `/speckit-plan` for a missing plan,
-`/speckit-tasks` for missing tasks). Do not produce partial output.
+and for missing tasks: `/taskify` followed by
+`python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> --out FEATURE_DIR/tasks.md` —
+`/speckit-tasks` does not exist in this project). Do not produce partial output.
 For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 ### 2. Load Artifacts (Progressive Disclosure)

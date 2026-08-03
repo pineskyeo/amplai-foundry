@@ -53,7 +53,9 @@ specs/[###-feature]/
 ├── data-model.md        # Phase 1 output (/speckit-plan command)
 ├── quickstart.md        # Phase 1 output (/speckit-plan command)
 ├── contracts/           # Phase 1 output (/speckit-plan command)
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+└── tasks.md             # generated from the /taskify manifests by
+                         # .specify/scripts/taskify_to_tasks_md.py
+                         # (manifests default to .amplai/tasks/<slug>/ outside specs/)
 ```
 
 ### Source Code (repository root)
