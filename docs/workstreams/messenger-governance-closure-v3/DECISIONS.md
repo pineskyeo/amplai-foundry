@@ -158,3 +158,33 @@
   decision을 commit 했는지 답한다. 결과는 command의 credential과 action에 결합하므로
   같은 replay key 아래의 외부 row를 이 command의 decision으로 보고하지 않는다.
 - Source: MGC-012 Package 2 round 3·4 contract·failure-recovery·regression review
+
+## D-018 — Package 3 Scope And Method
+
+- Status: accepted
+- Decision: Package 3는 아래 넷으로 고정한다.
+
+  1. **D-014를 범위에서 뺀다.** `provider:{provider}:{channel_digest}`는 세 곳에서
+     생성되고 그중 둘이 `reconcile_connection`의 startup 검증이다. 형식을 바꾸면 이미
+     커밋된 outbox row가 `_destination_manifest_digest` 불일치로 거부되므로 evidence
+     migration이 필요하다. 별도 item으로 분리한다.
+  2. **실제 network 호출을 하지 않는다.** `SlackProjectionDestination`은 주입받은
+     transport Protocol을 부른다. dependency는 `pydantic`·`pyyaml`·`typer` 셋을
+     유지한다. 실제 호출은 slice 4 Slack reference E2E가 맡는다. Slack API의 receipt
+     필드와 error code는 구현 전에 공식 문서로 고정한다.
+  3. **`reconcile()`은 message marker read-back으로 판정한다.** 전송 메시지에
+     event 식별자를 담고 reconcile은 channel을 조회해 그 marker를 찾는다.
+     `YamlProjectionDestination`이 자기 write를 알아보는 것과 같은 관계다. remote가
+     유일한 진실 원천이라 two-phase 상태 불일치가 없다. 따라서 transport Protocol은
+     send와 read를 모두 갖는다.
+  4. **전 파이프라인을 쓰되 wave마다 review한다.** `/speckit-clarify` →
+     `/speckit-plan` → `/taskify` → `/speckit-implement`를 wave 단위로 돌리고 각 wave
+     종료 시 subagent 3인 review를 넣는다. `taskify_to_tasks_md.py`가 taskify의
+     execution wave를 speckit Phase로 매핑하므로 phase는 vertical slice다. Package 2에서
+     자기 검증 후 독립 review가 다섯 번 모두 blocker를 찾았다.
+
+  `spec.md`는 `AGENTS.md ↔ constitution.md`와 같은 파생 문서로 만든다. 상단에 외부
+  `SPEC.md`(sha 명시)와 `CURRENT_ITEM.md` A11의 파생이며 어긋나면 원본이 이긴다고
+  적는다. `plan-template.md`가 `spec.md`를 입력으로 요구해 건너뛸 수 없다.
+- Source: 2026-08-03 `/grill-me` 세션. 미결: feature 디렉터리 이름과 task ID prefix,
+  wave별 review에 3 lens를 전부 쓸지 여부.

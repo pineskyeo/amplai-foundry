@@ -25,5 +25,9 @@
 
 `MGC-012 — Slack Reference Adapter` Package 3의 ordered Slack message projection,
 retry와 recovery를 구현한다. Package 2 durable ack boundary와 background decision
-handoff는 `7501385`에서 gate PASS다. Package 3는 D-014의 provider outbox destination
-granularity를 함께 해소해야 한다.
+handoff는 `2dcf663`에서 gate PASS다.
+
+Package 3의 범위와 진행 방식은 D-018에 있다. D-014의 provider outbox destination
+granularity는 Package 3에 넣지 않는다. `destination_ref` 형식을 바꾸면
+`reconcile_connection`이 기존 durable row를 digest 불일치로 거부하므로 evidence
+migration이 필요하고, 그건 별도 item이다.
