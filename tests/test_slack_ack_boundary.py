@@ -1118,6 +1118,7 @@ def _plant_result(
     proposal_id: str = PROPOSAL_ID,
     action: str = "approve",
     proposal_status: str = "approved",
+    token_id: str = TOKEN_ID,
 ) -> None:
     channel_json = json.dumps(
         CHANNEL.model_dump(mode="json", exclude_none=True),
@@ -1146,7 +1147,7 @@ def _plant_result(
                 channel_json,
                 proposal_status,
                 f"sha256:{'1' * 64}",
-                TOKEN_ID,
+                token_id,
                 NOW.isoformat(),
             ),
         )
@@ -1407,7 +1408,19 @@ def test_extended_corruption_codes_also_hold(
     assert result.error_code == "INGRESS_STORE_CORRUPT"
 
 
-def test_committed_decision_ignores_a_foreign_result(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "planted",
+    [
+        {"fingerprint": "f" * 64},
+        {"token_id": "TOK-ABCDEF0123456789"},
+        {"action": "reject", "proposal_status": "rejected"},
+    ],
+    ids=["fingerprint", "credential", "action"],
+)
+def test_committed_decision_ignores_a_foreign_result(
+    tmp_path: Path,
+    planted: dict[str, str],
+) -> None:
     store = _store(tmp_path)
     _seed_bindings(store)
     _seed_proposal(store)
@@ -1422,17 +1435,57 @@ def test_committed_decision_ignores_a_foreign_result(tmp_path: Path) -> None:
     boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
     ack = boundary.submit(_envelope())
     command_id = str(ack.command_id)
+    command = ingress.get(command_id)
+    assert command is not None
     worker = _worker(store, ingress)
     _plant_result(
         store,
         idempotency_key=worker.idempotency_key(command_id),
-        fingerprint="f" * 64,
-        proposal_id="PROP-20260730-DDDDDDDD",
-        action="reject",
-        proposal_status="rejected",
+        fingerprint=str(planted.get("fingerprint", command.provider_fingerprint)),
+        token_id=str(planted.get("token_id", TOKEN_ID)),
+        action=str(planted.get("action", "approve")),
+        proposal_status=str(planted.get("proposal_status", "approved")),
     )
 
     assert worker.committed_decision(command_id) is None
+
+
+def test_committed_decision_is_none_when_the_command_row_is_gone(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    worker = _worker(store, ingress)
+    _plant_result(
+        store,
+        idempotency_key=worker.idempotency_key("CMD-DEADBEEFDEADBEEF"),
+        fingerprint="f" * 64,
+    )
+
+    assert worker.committed_decision("CMD-DEADBEEFDEADBEEF") is None
+
+
+def test_a_non_database_store_holds_instead_of_retrying(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    worker = _worker(store, ingress)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        error = sqlite3.DatabaseError("file is not a database")
+        error.sqlite_errorcode = sqlite3.SQLITE_NOTADB
+        raise error
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "INGRESS_STORE_CORRUPT"
 
 
 def test_result_for_rejects_a_blank_idempotency_key(tmp_path: Path) -> None:

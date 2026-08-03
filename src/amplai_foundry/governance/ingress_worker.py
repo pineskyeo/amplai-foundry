@@ -225,14 +225,19 @@ class IngressDecisionWorker:
         `INGRESS_LEASE_EXPIRED`, which reads like a failure even though the governed
         decision committed. Operator recovery uses this to tell the two apart.
 
-        The result is bound to the command's own credential and action, so a foreign
-        row stored under the same replay key answers None instead of misreporting.
+        The result is bound to the command's own request fingerprint, credential and
+        action, so a foreign row stored under the same replay key answers None instead
+        of misreporting. Two clicks on one token produce distinct commands with distinct
+        fingerprints, which is why the fingerprint carries the binding.
         """
 
         command = self.ingress.get(command_id)
         if command is None:
             return None
-        result = self.decisions.result_for(self.idempotency_key(command_id))
+        result = self.decisions.result_for(
+            self.idempotency_key(command_id),
+            expected_fingerprint=command.provider_fingerprint,
+        )
         if result is None:
             return None
         if result.token_id != command.credential_id or result.action is not command.action:

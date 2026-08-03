@@ -455,14 +455,26 @@ class DecisionService:
         if block is not None:
             raise DecisionError(block)
 
-    def result_for(self, idempotency_key: str) -> DecisionResult | None:
-        """Read a committed decision by replay key without touching Proposal or Token."""
+    def result_for(
+        self,
+        idempotency_key: str,
+        *,
+        expected_fingerprint: str | None = None,
+    ) -> DecisionResult | None:
+        """Read a committed decision by replay key without touching Proposal or Token.
+
+        `expected_fingerprint` binds the answer to the request that produced it, the same
+        way the replay path binds. A stored row under this key that was produced by a
+        different request answers None.
+        """
 
         if not idempotency_key.strip():
             raise ValueError("idempotency_key는 비어 있을 수 없습니다.")
         with self.store.connect() as connection:
             row = self._result_row(connection, idempotency_key)
         if row is None:
+            return None
+        if expected_fingerprint is not None and str(row[0]) != expected_fingerprint:
             return None
         return self._replayed_decision(row, self._proposal_ref(row[1], row[2], row[3]))
 
