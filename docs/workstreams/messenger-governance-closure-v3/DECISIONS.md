@@ -187,4 +187,48 @@
   `SPEC.md`(sha 명시)와 `CURRENT_ITEM.md` A11의 파생이며 어긋나면 원본이 이긴다고
   적는다. `plan-template.md`가 `spec.md`를 입력으로 요구해 건너뛸 수 없다.
 - Source: 2026-08-03 `/grill-me` 세션. 미결: feature 디렉터리 이름과 task ID prefix,
-  wave별 review에 3 lens를 전부 쓸지 여부.
+  wave별 review에 3 lens를 전부 쓸지 여부. 미결은 D-019가 닫았고 항목 4의 반복 단위는
+  D-019가 정정한다.
+
+## D-019 — Package 3 Pipeline Binding
+
+- Status: accepted
+- Decision: D-018의 미결을 닫고 파이프라인 실행 형태를 아래로 고정한다.
+
+  1. **feature 디렉터리는 MGC-012 전체를 담는다.** `spec.md`는 A1–A15를 전부 싣고
+     plan·taskify 대상은 Package 3다. Package 1·2는 완료 상태로 표시만 한다.
+     slice 4가 slice 3의 transport Protocol을 실제 호출로 채우므로 같은 계약을 두
+     디렉터리로 쪼개지 않는다.
+  2. **디렉터리는 `specs/001-mgc-012-slack-reference-adapter/`다.** `001`은
+     `create-new-feature.sh:get_highest_from_specs`가 매기는 지역 일련번호라 workstream
+     순서와 무관하다. slug에 `mgc-012`를 넣어 `docs/workstreams/`와의 연결을 디렉터리
+     이름 수준에서 유지한다.
+  3. **task ID prefix는 `MGC-012`다.** ID는 `MGC-012-T001` 형식이고
+     `validate_task_manifest.py:38`의 `^[A-Z][A-Z0-9_-]*-T[0-9]{3,}$`를 통과한다.
+     prefix를 파싱하는 코드는 없다. Package 4도 같은 prefix로 번호를 이어 쓴다.
+  4. **wave마다 3 lens를 전부 쓴다.** 검토 범위는 그 wave의 diff로 한정한다. lens
+     이름은 `workflow.yml`의 contract·failure-recovery·regression을 쓰고
+     `CURRENT_ITEM.md` Review Team의 Slack 특화 서술을 각 lens의 focus로 넣는다. lens를
+     고르는 판단 자체가 틀리는 것이 Package 2 round 5에서 실제로 일어났다 — 3 lens가
+     0건을 낸 diff에서 regression lens가 blocker를 찾았다.
+  5. **`/speckit-specify`를 돌리지 않는다.** `create-new-feature.sh`로 디렉터리와
+     `.specify/feature.json`만 만들고 `spec.md` 본문은 파생으로 직접 쓴다. 생성기는
+     자연어 설명에서 새 문장을 만드는데 A1–A15는 frozen이라 어긋남을 애초에 만들지
+     않는다. script를 건너뛰면 `feature.json`이 없어 `/speckit-plan`이 feature를 못 찾는다.
+  6. **반복 단위는 implement다.** clarify·plan·taskify는 Package 3 전체에 한 번 돌고
+     implement만 wave 단위로 돌며 wave 끝마다 review한다. D-018 항목 4의 "wave 단위로
+     네 skill을 돈다"는 성립하지 않는다 — wave는 `/taskify` 산출물
+     (`index.yaml`의 `waves` → `taskify_to_tasks_md.py:135`)이라 taskify 전에는
+     존재하지 않는다.
+  7. **Slack API 사실은 `research.md`에 고정한다.** `plan-template.md:52`가 Phase 0
+     산출물로 지정한 파일이다. receipt 필드와 error code를 공식 문서 URL과 조회 날짜로
+     인용한다. `spec.md`에 넣지 않는다 — 원본이 외부 `SPEC.md`와 `CURRENT_ITEM.md`
+     둘뿐이라는 파생 규칙을 깬다. `contracts/`의 Protocol 정의는 이 사실을 입력으로 쓴다.
+  8. **Package 4는 이번 plan·taskify 범위 밖이다.** Slack test workspace 구성과
+     credential 경로를 지금 모른다. `blocked` task로 넣어도 acceptance를 추정으로
+     써야 하므로 넣지 않는다. Package 3 gate 통과 후 같은 manifest에 새 ID로 append한다.
+  9. **`/speckit-clarify`를 건너뛴다.** 이 세션이 대체한다. spec은 A1–A15가 frozen이라
+     모호성이 방법 쪽에 있었고 위 여덟 항목이 그걸 닫았다. clarify는 답을 `spec.md`에
+     써넣어 파생 규칙에 예외를 뚫는다.
+- Source: 2026-08-03 `/grill-me` 세션 2회차. 미결 없음. Package 4의 Slack test
+  workspace 구성과 credential 경로는 Package 3 gate 후에 정한다.
