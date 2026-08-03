@@ -36,10 +36,12 @@ message projection과 retry는 background path에서 수행한다.
 - Package 1 — raw-body signature/timestamp/allowlist contract and fail-closed fixtures:
   `PASS` at `ef35201`
 - Package 2 — durable ingress ack boundary and background decision handoff:
-  `PASS` at `7501385`
-- Tests: `705/705 PASS`
+  `PASS` at `2dcf663`
+- Tests: `709/709 PASS`
 - Verification: `7/7 PASS`
-- Review: 4 round 진행. round 1–3 고유 blocker 16건 해소, round 4 blocker 0
+- Review: 5 round 진행. round 1–3 고유 blocker 16건, round 5 blocker 1건 해소.
+  round 4 three-lens blocker 0 at `f3f7a98`, round 5 post-gate regression blocker 0
+  at `2dcf663`
 - Next: Package 3 — ordered Slack message projection, retry and recovery
 
 ## Out Of Scope

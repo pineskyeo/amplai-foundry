@@ -16,9 +16,10 @@
 - Planning: PASS
 - Implementation: MGC-001–011 PASS / MGC-012 ACTIVE
 - Subagent Review: MGC-012 Package 1 PASS at `ef35201` — P0/P1/Blocking-P2 0
-- Subagent Review: MGC-012 Package 2 PASS at `7501385` — round 4 contract·
-  failure-recovery·regression blocker 0. Round 1–3에서 고유 blocker 16건을 해소했다
-- Repository Verification: PASS — all seven verify stages at `7501385`
+- Subagent Review: MGC-012 Package 2 — round 4 three-lens blocker 0 at `f3f7a98`,
+  post-gate delta regression review blocker 0 at `2dcf663`. Round 1–3에서 고유
+  blocker 16건, round 5에서 1건을 해소했다
+- Repository Verification: PASS — all seven verify stages at `2dcf663`, 709 tests
 
 ## Next
 

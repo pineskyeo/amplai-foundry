@@ -7,10 +7,15 @@ PASS
 ## Evidence
 
 - Implementation: `0179fc9`
-- Review fixes: `23bc421`, `362cc4b`, `5146428`, `f3f7a98`, `7501385`
-- Tests: `705/705 PASS`
-- Canonical verification: `7/7 PASS`
-- Review: round 4 contract·failure-recovery·regression blocker 0
+- Review fixes: `23bc421`, `362cc4b`, `5146428`, `f3f7a98`, `7501385`, `2dcf663`
+- Gate commit: `2dcf663`
+- Tests: `709/709 PASS`
+- Canonical verification: `7/7 PASS` at `2dcf663`
+- Review: round 4 three-lens blocker 0 at `f3f7a98`; round 5 post-gate delta
+  regression review blocker 0 at `2dcf663`
+
+Round 4 는 `f3f7a98`에서 돌았고 `7501385`는 그 뒤에 들어갔다. 두 sha를 하나로 적지
+않는다. `7501385`는 round 5가 따로 검토했다.
 
 ## Review Rounds
 
@@ -19,9 +24,14 @@ PASS
 | 1 | Contract 1 / Evidence 4 / Ops 6 | 8 | 전부 해소 |
 | 2 | contract 1 / failure-recovery 3 / regression 2 | 5 | 전부 해소 |
 | 3 | contract 2 / failure-recovery 1 / regression 1 | 3 | 전부 해소 |
-| 4 | 0 / 0 / 0 | 0 | PASS |
+| 4 | 0 / 0 / 0 | 0 | three-lens PASS at `f3f7a98` |
+| 5 | regression 1 | 1 | 해소, PASS at `2dcf663` |
 
-Round 4 이후 non-blocking 증거 공백 3건과 advisory 3건을 추가로 닫았다. `7501385`.
+Round 4 이후 non-blocking 증거 공백 3건과 advisory 3건을 `7501385`로 닫았다. 그 delta는
+round 4가 보지 못한 코드라 round 5 regression lens를 따로 돌렸고, `committed_decision`의
+`token_id` guard가 실제로는 검증되지 않는다는 blocker 1건이 나왔다. `_plant_result`가
+`TOKEN_ID`를 하드코딩해 `action` arm만 발동하고 있었다. `2dcf663`에서 guard를
+`request_fingerprint`까지 결합하고 arm별 test를 분리했다.
 
 ## Mutation Evidence
 
@@ -42,7 +52,11 @@ Reviewer가 4개 round 동안 살아남는다고 보고한 mutation은 전부 te
 | `_is_corruption` 상시 True | `test_a_transient_sqlite_error_retries_instead_of_holding` |
 | `_is_corruption` 상시 False | `test_store_corruption_holds_instead_of_retrying` |
 | `_is_corruption` primary code 비교 | `test_extended_corruption_codes_also_hold` |
-| `committed_decision` 무검증 | `test_committed_decision_ignores_a_foreign_result` |
+| `committed_decision` fingerprint arm 제거 | `..._ignores_a_foreign_result[fingerprint]` |
+| `committed_decision` credential arm 제거 | `..._ignores_a_foreign_result[credential]` |
+| `committed_decision` action arm 제거 | `..._ignores_a_foreign_result[action]` |
+| `committed_decision` None-guard 제거 | `test_committed_decision_is_none_when_the_command_row_is_gone` |
+| `_is_corruption`에서 `SQLITE_NOTADB` 제거 | `test_a_non_database_store_holds_instead_of_retrying` |
 | `result_for` blank key 미검증 | `test_result_for_rejects_a_blank_idempotency_key` |
 | `process_next` worker_id 미검증 | `test_process_next_rejects_a_blank_worker_id_before_touching_ingress` |
 | `LEASE_LOST` code 되돌리기 | `test_lease_loss_during_finalize_keeps_the_denial_code` |
