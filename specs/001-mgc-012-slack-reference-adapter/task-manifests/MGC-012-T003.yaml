@@ -1,0 +1,151 @@
+schema_version: "1.0"
+
+id: MGC-012-T003
+title: Bounded fail-closed reconcile by message marker read-back
+type: feature
+status: ready
+
+goal:
+  outcome: >-
+    reconcile() 이 channel 을 최신부터 역순으로 상한까지 훑어 세 갈래로 판정한다 —
+    marker 발견은 receipt, 하위 sequence marker 선발견은 None, 상한 초과는
+    OutboxReconcileError.
+  user_value: >-
+    send 성공 후 mark 전에 죽어도 중복 Card 가 생기지 않는다. 판정할 수 없으면 조용히
+    추측하지 않고 operator 를 부른다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      section: C-2.2, C-2.3
+    - path: specs/001-mgc-012-slack-reference-adapter/research.md
+      section: R-003, R-004
+    - path: specs/001-mgc-012-slack-reference-adapter/plan.md
+      section: P-001
+  requirements:
+    - FR-003
+    - FR-006
+  decisions:
+    - D-018
+    - D-019
+
+scope:
+  include:
+    - reconcile() 의 bounded 역순 조회와 세 갈래 판정
+    - max_history_pages 상한 값 확정과 그 근거 기록
+    - 다른 app 이 심은 metadata 를 app_id 로 배제
+    - event_id 는 같은데 payload_digest 가 다른 marker 를 만났을 때 계속 훑는 동작
+  exclude:
+    - dispatcher 를 통한 통합 시나리오 (T005 소유)
+    - Slack error 분류 (T001 소유)
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - tests/test_slack_projection.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+    - src/amplai_foundry/governance/slack.py
+    - pyproject.toml
+
+dependencies:
+  tasks:
+    - MGC-012-T002
+  external: []
+
+implementation:
+  guidance:
+    - read_history 는 include_all_metadata=true 로 부른다. 없으면 event_payload 가 안 와서
+      판정 자체가 불가능하다 (research.md R-003).
+    - 하위 sequence marker 선발견이 "아직 안 보냈다"의 증거다. claim_next 가 이전 sequence
+      미확정 시 다음 event 를 claim 하지 않는다 (events.py:2648).
+    - reconcile 은 매 전송 시도마다 불린다 (events.py:2842). 조회 비용을 상한으로 묶는다.
+  invariants:
+    - 판정 불가는 fail-closed 다. 못 찾았다고 미전송으로 단정하지 않는다.
+    - reconcile 이 만드는 receipt 와 send 가 만드는 receipt 는 같은 형식이어야 한다.
+    - remote 가 유일한 진실 원천이다. local 에 ts 를 저장해 판정하지 않는다.
+  non_goals:
+    - 지워진 Card 를 재전송하는 복구
+    - Retry-After 반영
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: history 에 이 event 의 marker 를 담은 message 가 있는 상태
+      when: reconcile() 을 부르면
+      then: slack:{channel}:{ts} receipt 를 반환하고 send 로 가지 않는다
+    - id: AC-02
+      given: history 에 같은 destination 의 더 낮은 destination_sequence marker 가 먼저
+        나오고 이 event 의 marker 는 없는 상태
+      when: reconcile() 을 부르면
+      then: None 을 반환한다
+    - id: AC-03
+      given: max_history_pages 까지 훑어도 이 event 의 marker 도 하위 sequence marker 도
+        없는 상태
+      when: reconcile() 을 부르면
+      then: OutboxReconcileError 를 던진다
+    - id: AC-04
+      given: 다른 app_id 가 심은 같은 모양의 metadata 가 history 에 있는 상태
+      when: reconcile() 을 부르면
+      then: 그 message 를 이 event 의 marker 로 인정하지 않는다
+    - id: AC-05
+      given: read_history 호출을 기록하는 fake transport
+      when: reconcile() 이 조회하면
+      then: include_all_metadata 를 켜서 부르고 page 수가 max_history_pages 를 넘지 않는다
+    - id: AC-06
+      given: 같은 message 에 대한 send 결과와 reconcile 결과
+      when: 두 receipt 를 비교하면
+      then: 문자열이 같다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_projection.py
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: typecheck
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - 판정 규칙이 틀리면 중복 Card 또는 부당한 operator hold 가 된다.
+    - max_history_pages 가 너무 작으면 정상 상황이 hold 로 떨어진다. 너무 크면 rate limit 을
+      민다 (conversations.history Tier 2).
+  approvals:
+    - wave 3 종료 시 failure/recovery lens review
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - src/amplai_foundry/governance/slack_projection.py 확장
+    - tests/test_slack_projection.py 확장
+  notes:
+    - max_history_pages 의 확정 값과 근거를 코드 주석 또는 test 에 남긴다. OQ-001 이 여기서
+      닫힌다.

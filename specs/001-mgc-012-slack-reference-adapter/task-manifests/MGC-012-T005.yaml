@@ -1,0 +1,171 @@
+schema_version: "1.0"
+
+id: MGC-012-T005
+title: Crash recovery, hold on undecidable reconcile and failure matrix
+type: feature
+status: ready
+
+goal:
+  outcome: >-
+    send 성공 후 mark 전 종료가 중복 Card 없이 수렴하고, 판정 불가와 terminal 실패는
+    DLQ + operator hold 로 떨어져 그 destination 의 이후 event 를 멈춘다.
+  user_value: >-
+    실패가 조용히 사라지지 않는다. 회복 불가 상태는 사람에게 보이고, 일시 오류는 사람을
+    부르지 않는다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/001-mgc-012-slack-reference-adapter/spec.md
+      section: SC-004, SC-005
+    - path: specs/001-mgc-012-slack-reference-adapter/plan.md
+      section: P-001, P-002
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      section: C-3
+  requirements:
+    - FR-006
+    - FR-007
+    - FR-010
+    - FR-011
+  decisions:
+    - D-016
+    - D-018
+    - D-019
+
+scope:
+  include:
+    - send 성공 후 mark 없이 중단하고 재개하는 시나리오
+    - 사람이 Card 를 지운 뒤 reconcile 이 hold 를 만드는 시나리오
+    - retryable 실패가 retry_wait 로 가는 것
+    - terminal 실패가 재시도 없이 DLQ + hold 로 가는 것
+    - hold 가 걸린 destination 의 다음 event 가 claim 되지 않는 것
+    - Slack adapter 가 다른 Provider activation state 를 바꾸지 않음을 확인
+  exclude:
+    - 순서와 supersession (T004 소유)
+    - 실제 Slack workspace E2E (Package 4)
+  allowed_paths:
+    - tests/test_slack_projection.py
+    - src/amplai_foundry/governance/slack_projection.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+    - src/amplai_foundry/governance/slack.py
+    - pyproject.toml
+
+dependencies:
+  tasks:
+    - MGC-012-T003
+  external: []
+
+implementation:
+  guidance:
+    - terminal 을 즉시 DLQ 로 보내는 경로는 OutboxReconcileError 뿐이다
+      (events.py:2856-2863). 일반 예외는 attempts 를 소진해야 DLQ 에 간다.
+    - hold 가 이후 event 를 멈추는 근거는 claim_next 의 d.operator_hold = 0 이다
+      (events.py:2634).
+    - 지워진 Card 는 재전송하지 않고 hold 로 둔다 (plan.md P-001).
+  invariants:
+    - 판정 불가는 hold 다. 추측해서 재전송하지 않는다.
+    - 같은 event 를 두 번 전달하지 않는다.
+    - Telegram 또는 다른 Provider 의 activation state 를 바꾸지 않는다.
+  non_goals:
+    - Retry-After 를 backoff 에 반영
+    - hold 를 자동으로 푸는 기능
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: transport 가 post_message 를 성공했으나 mark_delivered 전에 중단된 상태
+      when: 같은 event 로 deliver_next 를 다시 부르면
+      then: reconcile 이 marker 를 찾아 delivered 로 확정하고 Slack message 는 하나뿐이다
+    - id: AC-02
+      given: AC-01 상태에서 history 의 그 message 를 지운 상태
+      when: deliver_next 를 다시 부르면
+      then: dead_letter 와 outbox_destination scope 의 operator hold 가 생기고 재전송하지
+        않는다
+    - id: AC-03
+      given: hold 가 걸린 destination 에 다음 pending event 가 있는 상태
+      when: claim_next 를 부르면
+      then: 그 event 를 claim 하지 않는다
+    - id: AC-04
+      given: transport 가 ratelimited 를 반환하는 상태
+      when: deliver_next 를 부르면
+      then: event 가 retry_wait 로 가고 attempts 가 오른다
+    - id: AC-05
+      given: transport 가 channel_not_found 를 반환하는 상태
+      when: deliver_next 를 부르면
+      then: attempts 소진을 기다리지 않고 dead_letter 와 hold 가 생긴다
+    - id: AC-06
+      given: transport 가 HTTP 5xx 로 실패하는 상태
+      when: deliver_next 를 부르면
+      then: event 가 retry_wait 로 간다
+    - id: AC-07
+      given: Slack projection 경로를 끝까지 돌린 뒤
+      when: 다른 Provider 의 activation state 를 읽으면
+      then: 변경되지 않았다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_projection.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint
+      required: true
+    - id: verify
+      kind: integration
+      run: amplai-foundry verify
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - 중복 Card 는 사람이 보는 결과라 되돌리기 어렵다.
+    - hold 조건이 너무 넓으면 정상 운영이 자주 멈춘다.
+  approvals:
+    - wave 4 종료 시 3 lens review 전원
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - tests/test_slack_projection.py 확장
+  notes:
+    - T004 와 같은 test file 을 쓴다. 병렬 실행하지 않는다.
+    - 이 task 가 Package 3 의 마지막이다. 통과 후 gate 기록과 Package 4 taskify 로 간다.

@@ -1,0 +1,204 @@
+schema_version: "1.0"
+
+feature:
+  id: MGC-012
+  title: Slack Reference Adapter — Package 3 ordered message projection
+  source_status: approved
+
+source:
+  files:
+    - path: specs/001-mgc-012-slack-reference-adapter/spec.md
+      revision: f595643
+    - path: specs/001-mgc-012-slack-reference-adapter/plan.md
+      revision: uncommitted
+    - path: specs/001-mgc-012-slack-reference-adapter/research.md
+      revision: uncommitted
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      revision: uncommitted
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      revision: f595643
+  generated_from:
+    - spec
+    - plan
+    - research
+    - contracts
+  generated_at: 2026-08-03
+
+tasks:
+  - id: MGC-012-T001
+    title: Slack transport Protocol and error classification
+    status: ready
+    depends_on: []
+    requirements:
+      - FR-002
+      - FR-010
+      - FR-012
+  - id: MGC-012-T002
+    title: Slack projection send path with marker and receipt
+    status: ready
+    depends_on:
+      - MGC-012-T001
+    requirements:
+      - FR-001
+      - FR-003
+      - FR-008
+      - FR-009
+  - id: MGC-012-T003
+    title: Bounded fail-closed reconcile by message marker read-back
+    status: ready
+    depends_on:
+      - MGC-012-T002
+    requirements:
+      - FR-003
+      - FR-006
+  - id: MGC-012-T004
+    title: Ordered delivery and supersession through the real dispatcher
+    status: ready
+    depends_on:
+      - MGC-012-T003
+    requirements:
+      - FR-004
+      - FR-005
+      - FR-007
+  - id: MGC-012-T005
+    title: Crash recovery, hold on undecidable reconcile and failure matrix
+    status: ready
+    depends_on:
+      - MGC-012-T003
+    requirements:
+      - FR-006
+      - FR-007
+      - FR-010
+      - FR-011
+
+execution:
+  waves:
+    - wave: 1
+      tasks:
+        - MGC-012-T001
+    - wave: 2
+      tasks:
+        - MGC-012-T002
+    - wave: 3
+      tasks:
+        - MGC-012-T003
+    - wave: 4
+      tasks:
+        - MGC-012-T004
+        - MGC-012-T005
+  critical_path:
+    - MGC-012-T001
+    - MGC-012-T002
+    - MGC-012-T003
+    - MGC-012-T005
+
+coverage:
+  requirements:
+    - id: FR-001
+      status: covered
+      tasks:
+        - MGC-012-T002
+    - id: FR-002
+      status: covered
+      tasks:
+        - MGC-012-T001
+    - id: FR-003
+      status: covered
+      tasks:
+        - MGC-012-T002
+        - MGC-012-T003
+    - id: FR-004
+      status: covered
+      tasks:
+        - MGC-012-T004
+    - id: FR-005
+      status: covered
+      tasks:
+        - MGC-012-T004
+    - id: FR-006
+      status: covered
+      tasks:
+        - MGC-012-T003
+        - MGC-012-T005
+    - id: FR-007
+      status: covered
+      tasks:
+        - MGC-012-T004
+        - MGC-012-T005
+    - id: FR-008
+      status: covered
+      tasks:
+        - MGC-012-T002
+    - id: FR-009
+      status: covered
+      tasks:
+        - MGC-012-T002
+    - id: FR-010
+      status: covered
+      tasks:
+        - MGC-012-T001
+        - MGC-012-T005
+    - id: FR-011
+      status: covered
+      tasks:
+        - MGC-012-T005
+    - id: FR-012
+      status: covered
+      tasks:
+        - MGC-012-T001
+  deferred:
+    - id: A15-package-4
+      reason: >-
+        Slack reference E2E, activation isolation, closure review 는 Package 4 다.
+        Slack test workspace 구성과 credential 경로가 확정되지 않아 acceptance 를 쓸 수 없다.
+        D-019 항목 8.
+    - id: D-014
+      reason: >-
+        provider outbox destination granularity 변경은 evidence migration 이 필요해 별도
+        item 이다. D-018 항목 1.
+    - id: R-007
+      reason: >-
+        Retry-After 를 backoff 에 주입하려면 MGC-008 에서 gate PASS 한 OutboxDispatcher
+        계약을 바꿔야 한다. 별도 item 이다.
+    - id: R-008
+      reason: >-
+        이미 전달된 Card 를 chat.update 로 갱신하는 기능은 A11 에 근거가 없다.
+  excluded:
+    - id: A1-A10
+      reason: Package 1·2 에서 이미 충족했다. gate PASS at ef35201, 2dcf663.
+  uncovered: []
+
+open_questions:
+  - id: OQ-001
+    question: >-
+      max_history_pages 의 확정 값은 얼마인가. 너무 작으면 정상 상황이 hold 로 떨어지고
+      너무 크면 conversations.history Tier 2 rate limit 을 민다.
+    owner: MGC-012-T003
+    blocking: false
+    note: >-
+      task 경계를 바꾸지 않는 구현 상수라 blocked 로 두지 않는다. T003 이 값을 정하고 근거를
+      남긴다.
+  - id: OQ-002
+    question: marker 의 event_type 고정 문자열 값은 무엇인가.
+    owner: MGC-012-T001
+    blocking: false
+    note: >-
+      한 번 정하면 바꾸지 않는다. 바꾸면 이전에 나간 marker 를 못 읽는다. task 경계는 바꾸지
+      않는다.
+  - id: OQ-003
+    question: >-
+      Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다
+      (research.md R-003 미확인).
+    owner: Package 4
+    blocking: false
+    note: >-
+      marker 에 payload 본문을 넣지 않는 것으로 회피한다. 실측은 실제 workspace 가 있는
+      Package 4 몫이다.
+
+update_history:
+  - date: 2026-08-03
+    summary: >-
+      Package 3 최초 taskification. plan.md 의 wave 4개를 task 5개로 쪼갰다. wave 4 는
+      순서 보장(T004)과 실패 복구(T005)로 나눴다 — 독립적으로 유용한 결과가 둘이고 rollback
+      경계가 다르다. 둘은 같은 test file 을 쓰므로 병렬 안전이 아니다.
+    source_revision: f595643

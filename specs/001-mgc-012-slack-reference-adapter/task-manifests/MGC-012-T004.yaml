@@ -1,0 +1,138 @@
+schema_version: "1.0"
+
+id: MGC-012-T004
+title: Ordered delivery and supersession through the real dispatcher
+type: feature
+status: ready
+
+goal:
+  outcome: >-
+    SlackProjectionDestination 이 실제 OutboxDispatcher.deliver_next 와 물려 돌면서
+    순차 전달, 경쟁 dispatcher 직렬화, pending supersession 을 지킨다.
+  user_value: >-
+    사람이 낡은 Card 를 보고 결정하지 않는다. 순서 보장이 destination 구현으로 깨지지
+    않음을 증명한다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/001-mgc-012-slack-reference-adapter/spec.md
+      section: SC-001, SC-002, SC-003
+    - path: specs/001-mgc-012-slack-reference-adapter/plan.md
+      section: Wave 4
+    - path: specs/001-mgc-012-slack-reference-adapter/research.md
+      section: R-001, R-008
+  requirements:
+    - FR-004
+    - FR-005
+    - FR-007
+  decisions:
+    - D-018
+    - D-019
+
+scope:
+  include:
+    - deliver_next 와 SlackProjectionDestination 을 물린 통합 test
+    - reverse-order delivery
+    - competing dispatcher 직렬화
+    - pending event supersession
+  exclude:
+    - crash recovery 와 deleted card (T005 소유)
+    - error 분류 행동 (T005 소유)
+    - OutboxDispatcher 코드 수정
+  allowed_paths:
+    - tests/test_slack_projection.py
+    - src/amplai_foundry/governance/slack_projection.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+    - src/amplai_foundry/governance/slack.py
+    - pyproject.toml
+
+dependencies:
+  tasks:
+    - MGC-012-T003
+  external: []
+
+implementation:
+  guidance:
+    - dispatcher 는 고치지 않는다. 통합이 안 되면 destination 쪽이 계약을 어긴 것이다.
+    - supersede_pending 은 pending event 만 대상으로 한다 (events.py:2797). 이미 delivered
+      된 Card 를 되돌리는 요구는 A11 에 없다.
+  invariants:
+    - retry, DLQ, operator hold 를 우회하는 별도 경로를 만들지 않는다.
+    - superseded event 는 Slack 으로 나가지 않는다.
+  non_goals:
+    - chat.update 로 기존 Card 갱신
+    - Retry-After 를 backoff 에 주입
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 같은 destination 에 destination_sequence 1 과 2 인 pending event 가 있는 상태
+      when: dispatcher 를 돌리면
+      then: 1 이 delivered 되기 전에 2 를 transport 로 보내지 않는다
+    - id: AC-02
+      given: 같은 destination 을 두 dispatcher 가 동시에 claim 하는 상태
+      when: 둘 다 deliver_next 를 부르면
+      then: 한쪽만 전송하고 다른 쪽은 lease 를 얻지 못한다
+    - id: AC-03
+      given: pending event 를 새 event 로 supersede 한 상태
+      when: dispatcher 를 돌리면
+      then: superseded event 는 transport 로 나가지 않고 새 event 만 전달된다
+    - id: AC-04
+      given: 전달이 끝난 destination
+      when: destination row 의 delivered_sequence 를 읽으면
+      then: 마지막으로 전달한 destination_sequence 와 같다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_projection.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - 통합에서 실패하면 원인이 destination 계약 위반인지 test harness 문제인지 가려야 한다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - tests/test_slack_projection.py 확장
+  notes:
+    - T005 와 같은 test file 을 쓴다. 병렬 실행하지 않는다.

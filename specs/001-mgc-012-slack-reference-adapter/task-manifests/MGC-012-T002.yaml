@@ -1,0 +1,146 @@
+schema_version: "1.0"
+
+id: MGC-012-T002
+title: Slack projection send path with marker and receipt
+type: feature
+status: ready
+
+goal:
+  outcome: >-
+    SlackProjectionDestination.send() 가 destination_ref 와 payload digest 를 먼저
+    검증하고, 통과한 event 만 marker 를 실어 transport 로 보내며, slack:{channel}:{ts}
+    receipt 를 반환한다.
+  user_value: >-
+    Card 가 Slack 으로 나가는 유일한 경로가 생긴다. 사전 검증이 없으면 손상된 payload 가
+    사람에게 보이는 Card 로 나간다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      section: C-2.1, C-2.3
+    - path: specs/001-mgc-012-slack-reference-adapter/data-model.md
+      section: SlackMessageMarker, Validation Rules
+    - path: specs/001-mgc-012-slack-reference-adapter/research.md
+      section: R-003, R-005
+  requirements:
+    - FR-001
+    - FR-003
+    - FR-008
+    - FR-009
+  decisions:
+    - D-018
+    - D-019
+
+scope:
+  include:
+    - SlackProjectionDestination 클래스와 destination_ref 속성
+    - send() — 사전 검증 두 가지, marker 구성, receipt 생성
+    - payload digest 계산을 YamlProjectionDestination 과 같은 규칙으로 맞추기
+  exclude:
+    - reconcile()
+    - dispatcher 통합 시나리오
+    - chat.update 로 기존 Card 를 갱신하는 것
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - tests/test_slack_projection.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+    - src/amplai_foundry/governance/slack.py
+    - pyproject.toml
+
+dependencies:
+  tasks:
+    - MGC-012-T001
+  external: []
+
+implementation:
+  guidance:
+    - 검증 순서는 projections.py:53-57 과 같다. transport 를 부르기 전에 둘 다 통과해야 한다.
+    - >-
+      digest 규칙은 projections.py:165 와 같아야 한다 — ensure_ascii=False,
+      separators=(",", ":"), sort_keys=True, "sha256:" prefix.
+    - marker 는 event_id, destination_ref, destination_sequence, payload_digest 넷만 담는다.
+  invariants:
+    - destination_ref 형식 provider:{provider}:{channel_digest} 를 만들거나 해석하지 않는다.
+    - marker 에 payload 본문을 넣지 않는다. metadata 크기 상한이 미확인이다.
+    - receipt 는 같은 message 에 대해 항상 같은 문자열이어야 한다.
+  non_goals:
+    - reconcile 판정
+    - 실패 분류 (T001 소유)
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: event.destination_ref 가 destination 자신의 것과 다른 event
+      when: send() 를 부르면
+      then: OUTBOX_DESTINATION_MISMATCH 로 실패하고 transport 를 부르지 않는다
+    - id: AC-02
+      given: payload 를 바꿔 payload_digest 와 어긋나게 만든 event
+      when: send() 를 부르면
+      then: OUTBOX_PAYLOAD_INTEGRITY_FAILURE 로 실패하고 transport 를 부르지 않는다
+    - id: AC-03
+      given: 검증을 통과하는 event 와 성공을 반환하는 fake transport
+      when: send() 를 부르면
+      then: slack:{channel}:{ts} 형식의 receipt 를 반환한다
+    - id: AC-04
+      given: 검증을 통과하는 event
+      when: send() 가 transport.post_message 를 부르면
+      then: marker 에 event_id, destination_ref, destination_sequence, payload_digest 가
+        담기고 payload 본문은 담기지 않는다
+    - id: AC-05
+      given: 같은 payload
+      when: SlackProjectionDestination 과 YamlProjectionDestination 이 각각 digest 를
+        계산하면
+      then: 두 값이 같다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_projection.py
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: typecheck
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - digest 규칙이 YamlProjectionDestination 과 어긋나면 두 destination 이 같은 event 를
+      다르게 판정한다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - src/amplai_foundry/governance/slack_projection.py 확장
+    - tests/test_slack_projection.py 확장
+  notes:
+    - wave 2 종료 후 3 lens review 를 돌린다.
