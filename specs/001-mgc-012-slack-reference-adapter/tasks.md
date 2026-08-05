@@ -9,18 +9,9 @@
 >
 > 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다.
 
-**Design source**: `specs/001-mgc-012-slack-reference-adapter/spec.md`, `specs/001-mgc-012-slack-reference-adapter/plan.md`, `specs/001-mgc-012-slack-reference-adapter/research.md`, `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`, `docs/workstreams/messenger-governance-closure-v3/DECISIONS.md`
+**Design source**: `specs/001-mgc-012-slack-reference-adapter/spec.md`, `specs/001-mgc-012-slack-reference-adapter/plan.md`, `specs/001-mgc-012-slack-reference-adapter/research.md`, `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`, `specs/001-mgc-012-slack-reference-adapter/data-model.md`, `docs/workstreams/messenger-governance-closure-v3/DECISIONS.md`
 
 ## Phase 1
-
-- [ ] MGC-012-T001 Slack transport Protocol and error classification
-  - manifest: `task-manifests/MGC-012-T001.yaml`
-  - files: `src/amplai_foundry/governance/slack_projection.py`, `tests/test_slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-
-## Phase 2
 
 - [ ] MGC-012-T002 Slack projection send path with marker and receipt
   - manifest: `task-manifests/MGC-012-T002.yaml`
@@ -30,7 +21,7 @@
   - verify: `python -m ruff check .`
   - verify: `python -m mypy`
 
-## Phase 3
+## Phase 2
 
 - [ ] MGC-012-T003 Bounded fail-closed reconcile by message marker read-back
   - manifest: `task-manifests/MGC-012-T003.yaml`
@@ -40,7 +31,7 @@
   - verify: `python -m ruff check .`
   - verify: `python -m mypy`
 
-## Phase 4
+## Phase 3
 
 - [ ] MGC-012-T004 Ordered delivery and supersession through the real dispatcher
   - manifest: `task-manifests/MGC-012-T004.yaml`
@@ -61,8 +52,11 @@
   - verify: `amplai-foundry lint`
   - verify: `amplai-foundry verify`
 
+## Not scheduled
+
+- MGC-012-T001 (done) Slack transport Protocol and error classification
+
 ## Open questions
 
 - **OQ-001** max_history_pages 의 확정 값은 얼마인가. 너무 작으면 정상 상황이 hold 로 떨어지고 너무 크면 conversations.history Tier 2 rate limit 을 민다.
-- **OQ-002** marker 의 event_type 고정 문자열 값은 무엇인가.
 - **OQ-003** Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다 (research.md R-003 미확인).

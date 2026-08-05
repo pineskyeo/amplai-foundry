@@ -29,6 +29,7 @@ source:
   decisions:
     - D-018
     - D-019
+    - D-020
 
 scope:
   include:
@@ -96,6 +97,10 @@ acceptance:
       given: 같은 message 에 대한 send 결과와 reconcile 결과
       when: 두 receipt 를 비교하면
       then: 문자열이 같다
+    - id: AC-07
+      given: read_history 가 SlackTransportError 아닌 예외를 던지는 transport
+      when: reconcile() 을 부르면
+      then: destination 이 그것을 잡아 재감싼 뒤 분류한다. 분류를 건너뛰지 않는다
   commands:
     - id: unit
       kind: test

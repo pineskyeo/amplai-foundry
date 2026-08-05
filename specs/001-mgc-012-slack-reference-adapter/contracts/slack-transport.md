@@ -34,6 +34,18 @@ class SlackTransport(Protocol):
 send 와 read 를 모두 갖는 이유는 D-018 항목 3 이다 — reconcile 이 message marker
 read-back 으로 판정하므로 read 가 없으면 계약이 성립하지 않는다.
 
+구현체의 의무 둘. signature 로 강제할 수 없어 계약으로 적는다 (wave 1 review, D-020).
+
+- **모든 실패를 `SlackTransportError` 로 감싼다.** 다른 예외가 새어 나가면 C-3 분류가 아예
+  돌지 않는다. dispatcher 의 `except Exception` 이 그것을 무조건 retryable 로 만들어,
+  terminal 이어야 할 `invalid_auth` 가 조용히 재시도된 뒤 attempt 소진으로만 멈춘다.
+  `SlackProjectionDestination` 도 새어 나온 예외를 재감싸지만 (T002) 그건 **두 번째
+  방어선**이지 이 의무의 대체가 아니다. 구현체가 code 를 실어 보내야 원인이 남는다.
+- **호출 시간을 `OutboxConfig.lease_seconds` 보다 확실히 짧게 묶는다.** lease 만료 뒤에
+  실패하면 dispatcher 의 `fail()` 이 `_require_lease` 에서 `OutboxLeaseConflictError` 로
+  터져 **terminal 판정이 통째로 버려진다** — dead letter 도 hold 도 안 생기고, 나중에
+  sweep 이 `OUTBOX_LEASE_EXPIRED` 로 되돌려 영구 실패를 다시 시도한다.
+
 ### C-1.1 — `post_message`
 
 - `marker` 는 Slack `metadata` 로 나간다. `event_type` + `event_payload` 형태다
@@ -122,15 +134,47 @@ class SlackProjectionDestination:
 
 입력은 transport 예외, 출력은 dispatcher 로 나가는 예외 종류다.
 
-| 입력 | 분류 | destination 이 던지는 것 | dispatcher 결과 |
-|---|---|---|---|
-| 연결 실패 / timeout / HTTP 5xx (Slack error code 없음) | retryable | 일반 예외 | `retry_wait`, 소진 시 DLQ |
-| `ratelimited`, `rate_limited`, HTTP 429 | retryable | 일반 예외 | 위와 같음 |
-| `request_timeout`, `service_unavailable`, `internal_error`, `fatal_error` | retryable | 일반 예외 | 위와 같음 |
-| 그 밖의 모든 Slack error code | terminal | `OutboxReconcileError` | 즉시 DLQ + hold |
+**위에서부터 먼저 맞는 규칙이 이긴다.** 아래 표는 순서 있는 규칙이지 집합이 아니다.
+
+| # | 입력 | 분류 | destination 이 던지는 것 | dispatcher 결과 |
+|---|---|---|---|---|
+| 1 | HTTP 429 | retryable | 일반 예외 | `retry_wait`, 소진 시 DLQ |
+| 2 | **Slack error code 가 없는 모든 실패** — 연결 실패, timeout, 임의의 HTTP status | retryable | 일반 예외 | 위와 같음 |
+| 3 | `ratelimited`, `rate_limited`, `request_timeout`, `service_unavailable`, `internal_error`, `fatal_error` | retryable | 일반 예외 | 위와 같음 |
+| 4 | 그 밖의 모든 Slack error code | terminal | `OutboxReconcileError` | 즉시 DLQ + hold |
+
+규칙 1 이 규칙 4 보다 앞이라 **HTTP 429 는 allowlist 밖 code 를 달고 와도 재시도한다.** 429 는
+Slack 이 "지금 말고 나중에" 라고 답한 것이라 함께 온 code 를 확정 판정으로 읽지 않는다.
+영구 실패면 attempt 를 소진하고 같은 dead letter 에 도달한다.
 
 근거는 research R-006 과 plan P-002 다. allowlist 에 없는 code 는 전부 terminal 이다 —
 D-016 의 fail-closed 원칙과 같다.
+
+**status code 로 가르지 않는 이유** (wave 1 review, D-020): Slack 은 application error 를
+HTTP 200 + `ok: false` 로 준다. 진짜 HTTP 4xx 는 429 하나뿐이고 그건 규칙 1 이 잡는다.
+그래서 code 없는 4xx 는 거의 전부 proxy·WAF·load balancer 가 낸 것이고 그건 transient 다.
+그리고 **retryable 이 보수적인 쪽이다** — 영구 실패를 retryable 로 잘못 봐도 attempt 를
+소진하면 같은 DLQ + hold 에 도달한다(기본값이면 약 75초). 반대로 transient 를 terminal 로
+보면 destination 전체가 즉시 멈추고, 그 hold 는 `governance_operator_holds` 의
+`CHECK (resolved_at IS NULL)` 때문에 되돌릴 수 없다.
+
+**error code 는 정규화 후 비교한다.** 앞뒤 공백을 없애고 소문자로 맞춘다. 빈 문자열과 str
+아닌 값은 code 없음과 같게 다룬다. `is None` 만 보면 `""` 가 allowlist 를 못 만나고 terminal
+로 떨어져 분류가 통째로 뒤집힌다.
+
+**정규화는 값을 버리지 않는다.** 형식이 이상해도 (`missing_scope: chat:write` 처럼 detail 이
+붙어 오거나 64자를 넘어도) 그대로 분류에 넣는다. 버리면 그 값이 code 없음이 되어 규칙 2 로
+빠지고, retryable 경로는 원인을 안 남긴다. 형식이 이상한 code 는 정의상 allowlist 밖이므로
+규칙 4 가 terminal 로 보낸다. 원본은 진단용으로 예외 객체에 남는다.
+
+**terminal code 문자열은 Slack 원인을 담는다** — `SLACK_PROJECTION_TERMINAL_ERROR:{suffix}`.
+dispatcher 는 예외 객체를 버리고 `code` 문자열만 dead letter 와 operator hold 에 적는다.
+원인이 없으면 `invalid_auth`(token 회전 후 전량 replay), `channel_not_found`(폐기 후 재지정),
+`msg_blocks_too_long`(code 버그라 replay 무의미)이 전부 같은 row 가 된다.
+
+접미사는 **저장 직전에만** 형식을 맞춘다 — 허용 밖 문자를 `_` 로 바꾸고 64자로 자른다.
+code 가 없으면 `unknown` 이다. 저장 대상 두 table 이 append-only 라 원격 문자열을 무제한
+길이로 남기면 지울 수 없다. 다듬되 버리지 않는다.
 
 **`OutboxReconcileError` 를 terminal 신호로 쓰는 이유**: `deliver_next` 에서
 `unreconcilable=True` 가 붙는 경로가 그것 하나뿐이다 (`events.py:2856`–`2863`). 일반 예외는

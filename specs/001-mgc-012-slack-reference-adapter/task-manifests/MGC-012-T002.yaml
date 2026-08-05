@@ -31,16 +31,23 @@ source:
   decisions:
     - D-018
     - D-019
+    - D-020
 
 scope:
   include:
     - SlackProjectionDestination 클래스와 destination_ref 속성
     - send() — 사전 검증 두 가지, marker 구성, receipt 생성
     - payload digest 계산을 YamlProjectionDestination 과 같은 규칙으로 맞추기
+    - transport 가 SlackTransportError 아닌 예외를 던져도 destination 이 잡아 재감싼 뒤
+      분류한다. C-1 의 transport 의무를 대체하지 않고 방어선을 하나 더한다 (D-020 항목 4)
+    - retryable 로 분류된 실패의 원인을 dead letter 까지 남길 방법을 정한다.
+      destination 안에서 닫히면 그렇게 하고, dispatcher 수정이 필요하면 scope 확대를
+      제안하고 멈춘다 (D-020 항목 6)
   exclude:
     - reconcile()
     - dispatcher 통합 시나리오
     - chat.update 로 기존 Card 를 갱신하는 것
+    - OutboxDispatcher 수정. 필요하다고 판단되면 scope_boundary_must_expand 로 멈춘다
   allowed_paths:
     - src/amplai_foundry/governance/slack_projection.py
     - tests/test_slack_projection.py
@@ -94,6 +101,10 @@ acceptance:
       when: SlackProjectionDestination 과 YamlProjectionDestination 이 각각 digest 를
         계산하면
       then: 두 값이 같다
+    - id: AC-06
+      given: SlackTransportError 가 아닌 임의의 예외를 던지는 transport
+      when: send() 를 부르면
+      then: destination 이 그것을 잡아 재감싼 뒤 분류한다. 분류를 건너뛰지 않는다
   commands:
     - id: unit
       kind: test

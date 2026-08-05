@@ -15,7 +15,7 @@
 | S1 | `https://docs.slack.dev/reference/methods/chat.postMessage` | 2026-08-03 | `api.slack.com/methods/...` 는 302로 여기 redirect 된다 |
 | S2 | `https://docs.slack.dev/reference/methods/conversations.history` | 2026-08-03 | 동일 redirect |
 | S3 | `https://docs.slack.dev/messaging/message-metadata` | 2026-08-03 | |
-| S4 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-03 | |
+| S4 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-03, 2026-08-05 재조회 | `Retry-After` 상한은 문서화되지 않는다 (R-007) |
 
 코드 근거는 `src/amplai_foundry/governance/events.py` 와 `projections.py` 다. 인용한 line
 번호는 조회 시점 `f595643` 기준이다.
@@ -37,7 +37,7 @@ claim_next → destination.reconcile(event)
 
 - `reconcile` 이 `OutboxReconcileError` 를 던지면 `fail(..., unreconcilable=True)` 로 간다
   (`events.py:2856`–`2863`).
-- `unreconcilable=True` 는 attempts 와 무관하게 `_dead_letter` 를 부른다 (`events.py:2781`).
+- `unreconcilable=True` 는 attempts 와 무관하게 `_dead_letter` 를 부른다 (`events.py:2779`–`2780`).
 - `_dead_letter` (`events.py:2903`)는 `governance_outbox_dead_letters` row 와
   `governance_operator_holds` row(`scope_kind='outbox_destination'`)를 함께 만든다.
 - `claim_next` 의 SQL 은 `d.operator_hold = 0` 조건을 갖는다 (`events.py:2634`). hold 가
@@ -122,7 +122,7 @@ operator hold를 생성한다" 고 못박았고, `deliver_next` 는 `OutboxRecon
 
 **미확인**: 사람이 Card 를 지웠다가 다시 만든 경우 (SPEC.md 검증 항목 "deleted/recreated
 Provider message"). 지워진 message 는 `conversations.history` 에 없으므로 위 표의 세 번째
-줄로 떨어져 hold 가 걸린다. 이게 맞는 동작인지는 **판단이 필요하다** — `plan.md` 가 정한다.
+줄로 떨어져 hold 가 걸린다. 이게 맞는 동작인지는 판단이 필요했고 `plan.md` P-001 이 hold 로 닫았다.
 
 ## R-005 — Receipt String Format
 
@@ -174,9 +174,11 @@ D-016 의 fail-closed 원칙과 반대다. 기각한다.
 분류를 allowlist 방식으로 두는 것이 더 안전하다 — 목록이 불완전해도 동작이 안전한 쪽으로
 떨어진다.
 
-**미확인 2**: S4 는 429 만 다루고 **5xx 응답 처리 지침이 없다.** 위 표의
+**미확인 2 (닫힘)**: S4 는 429 만 다루고 **5xx 응답 처리 지침이 없다.** 위 표의
 `service_unavailable`·`internal_error` 는 error code 기준이지 HTTP status 기준이 아니다.
-HTTP 5xx 자체를 어떻게 볼지는 `plan.md` 가 정한다.
+`plan.md` P-002 가 5xx 를 재시도로 정했고, wave 1 review 후 **status code 로 가르지 않는
+것**으로 확정했다 (D-020). Slack code 가 없으면 status 와 무관하게 전부 재시도다. 근거는
+contracts C-3 에 적었다.
 
 ## R-007 — `Retry-After` Is Not Wired Into The Existing Backoff
 
@@ -193,6 +195,41 @@ Protocol 이 그 값을 error 에 실어 올리되, `OutboxDispatcher._backoff_s
 
 **Alternatives considered**: dispatcher 에 `retry_after_seconds` 를 받는 인자를 추가하는
 안. MGC-008 에서 gate PASS 한 계약을 건드린다. 별도 item 으로 남긴다.
+
+### Retry-After 에 대해 확인된 사실과 확인 안 된 것
+
+S4 를 2026-08-05 에 다시 조회해 아래를 확정했다.
+
+**확인됨**
+
+- `Retry-After` header 의 단위는 초다.
+- 문서가 주는 구체적 숫자는 **예시 하나뿐**이다 — `conversations.info` 를 30초 기다리라는 예.
+- 문서는 그 값을 typical·maximum·guaranteed 로 규정하지 **않는다**.
+
+**확인 안 됨**
+
+- `Retry-After` 의 상한. Slack 은 문서화하지 않는다.
+- 실제로 흔한 값의 범위. 관측 데이터가 없다.
+
+> 이 문서의 이전 판은 "rate-limited tier 에서 30~60초가 흔하다" 를 S4 근거로 적었다.
+> **그 문장은 S4 에 없다.** wave 1 round 4 review 에서 드러났고 여기서 삭제한다. 그 숫자를
+> 근거로 삼았던 하한 상수도 함께 뺐다.
+
+### 수용한 잔여 위험 (wave 1 review, D-020)
+
+`OutboxConfig` 기본값(`retry_base_seconds=5`, `max_attempts=5`)이면 재시도가 5·10·20·40초에
+일어나 **재시도 예산이 75초에 소진된다.** `Retry-After` 가 그보다 크면 Slack 이 기다리라고 한
+창 안에서 attempt 를 다 쓰고 dead letter 와 operator hold 에 도달한다. 그리고 rate limit 은
+app/workspace 범위라 같은 Slack app 의 다른 트래픽과 예산을 공유한다 — "governance card 는
+사람 결정 속도로 발생한다"는 위 근거가 그 경우를 덮지 못한다.
+
+**그 위험이 실제로 발생하는지는 판정할 수 없다.** `Retry-After` 상한이 문서에 없으므로
+75초가 충분한지 부족한지를 공식 문서로 말할 수 없다. 그래서 wave 1 은 하한 상수를 두지
+않는다. 근거 없는 숫자를 기계적 관문으로 만들면 만족시킨 쪽이 안전하다고 잘못 믿는다.
+
+대신 test 가 기본 schedule 을 사실로 고정한다 — 대기 `[5, 10, 20, 40]`, 합 75. Package 4 가
+Slack destination 의 `OutboxConfig` 를 만들 때 이 schedule 과 실제 관측한 `Retry-After` 값을
+함께 입력으로 쓴다. 값 결정에 필요한 관측은 실제 workspace 가 있는 Package 4 몫이다.
 
 ## R-008 — Card Supersession Uses postMessage Only
 
@@ -221,9 +258,11 @@ event** 만 `superseded` 로 바꾼다 (`events.py:2797`, `OUTBOX_SUPERSEDE_INVA
 | Slack error code | R-006 에서 allowlist 방식으로 고정. 목록 완전성은 **미확인으로 남김** |
 | channel 조회로 marker 를 찾는 것이 가능한가 | **가능하다** — R-003. `conversations.history` + `include_all_metadata=true` |
 
-## Open For Plan
+## Closed By Plan And Review
 
-`plan.md` 가 정해야 할 것 둘. 둘 다 사실이 아니라 판단이다.
+`plan.md` 가 정해야 했던 둘. 둘 다 사실이 아니라 판단이었고 지금은 닫혔다.
 
-1. 사람이 Card 를 지웠다가 다시 만든 경우 hold 로 떨어뜨리는 것이 맞는가 (R-004).
-2. HTTP 5xx 자체를 재시도로 볼 것인가 (R-006 미확인 2).
+1. 사람이 Card 를 지웠다가 다시 만든 경우 hold 로 떨어뜨리는 것이 맞는가 (R-004) —
+   **닫힘.** `plan.md` P-001 이 hold 로 정했다.
+2. HTTP status 를 어떻게 볼 것인가 (R-006 미확인 2) — **닫힘.** `plan.md` P-002 가 5xx 를
+   재시도로 정했고, wave 1 review 후 D-020 항목 1 이 status 로 가르지 않는 것으로 확정했다.

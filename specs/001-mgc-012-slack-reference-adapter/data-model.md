@@ -81,13 +81,20 @@ transport 의 read 반환 항목. `conversations.history` 응답의 message 에�
 | `metadata` | marker 복원. `include_all_metadata=true` 로 조회해야 `event_payload` 가 온다 |
 | `app_id` | 다른 app 이 심은 metadata 배제 (S3) |
 
-### `SlackErrorClass`
+### `SlackFailureClass`
 
-`retryable` | `terminal` 두 값이다. 분류 규칙은 research R-006 과 plan P-002 다.
+`retryable` | `terminal` 두 값이다. 분류 규칙은 research R-006, plan P-002, D-020 이다.
+**순서 있는 규칙이고 먼저 맞는 것이 이긴다** (contracts C-3).
 
-- transport 층 실패(연결 실패, timeout, HTTP 5xx) → `retryable`
-- Slack error code 가 allowlist 에 있으면 → `retryable`
-- 그 밖의 모든 Slack error code → `terminal`
+1. HTTP 429 → `retryable`. allowlist 밖 code 를 달고 와도 그렇다
+2. Slack error code 가 없는 모든 실패 → `retryable`. status code 로 가르지 않는다
+3. Slack error code 가 allowlist 에 있으면 → `retryable`
+4. 형식과 무관하게 그 밖의 모든 Slack error code → `terminal`
+
+비교 전에 code 를 정규화한다 — 앞뒤 공백 제거, 소문자화, 빈 문자열과 str 아닌 값은 code
+없음으로 취급. **형식이 이상해도 버리지 않는다** — 버리면 규칙 4 대상이 규칙 2 로 새고,
+그 경로는 원인을 안 남긴다. 저장 문자열의 형식 강제는 별개이며 `persisted_code_suffix` 가
+저장 직전에만 한다.
 
 ## State Transitions
 

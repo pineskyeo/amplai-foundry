@@ -15,8 +15,10 @@ source:
       revision: uncommitted
     - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
       revision: uncommitted
+    - path: specs/001-mgc-012-slack-reference-adapter/data-model.md
+      revision: uncommitted
     - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
-      revision: f595643
+      revision: uncommitted
   generated_from:
     - spec
     - plan
@@ -27,7 +29,7 @@ source:
 tasks:
   - id: MGC-012-T001
     title: Slack transport Protocol and error classification
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-002
@@ -178,13 +180,6 @@ open_questions:
     note: >-
       task 경계를 바꾸지 않는 구현 상수라 blocked 로 두지 않는다. T003 이 값을 정하고 근거를
       남긴다.
-  - id: OQ-002
-    question: marker 의 event_type 고정 문자열 값은 무엇인가.
-    owner: MGC-012-T001
-    blocking: false
-    note: >-
-      한 번 정하면 바꾸지 않는다. 바꾸면 이전에 나간 marker 를 못 읽는다. task 경계는 바꾸지
-      않는다.
   - id: OQ-003
     question: >-
       Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다
@@ -202,3 +197,16 @@ update_history:
       순서 보장(T004)과 실패 복구(T005)로 나눴다 — 독립적으로 유용한 결과가 둘이고 rollback
       경계가 다르다. 둘은 같은 test file 을 쓰므로 병렬 안전이 아니다.
     source_revision: f595643
+  - date: 2026-08-05
+    summary: >-
+      wave 1 review 3라운드 반영. T001 에 AC-06~09 추가, AC-03·AC-05 문구를 test 와 일치시킴,
+      command 와 evidence 에 ruff format 과 tests typecheck 추가. D-020 을 source.decisions
+      에 넣었다. OQ-002 는 T001 이 amplai_proposal_card 로 닫아 목록에서 뺐다. T002 에 wrap
+      방어선과 retryable 원인 보존 항목을, T003 에 read 경로 wrap AC 를 넣었다.
+    source_revision: uncommitted
+  - date: 2026-08-05
+    summary: >-
+      wave 1 gate PASS. review 4라운드에서 3 lens 전부를 돌렸고 마지막 라운드의 blocker 를
+      반영한 뒤 P0·P1·Blocking-P2 가 0건이다. T001 을 done 으로 옮긴다. 근거는
+      CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md 다. wave 2 는 T002 부터다.
+    source_revision: uncommitted

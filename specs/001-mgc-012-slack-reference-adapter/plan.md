@@ -81,15 +81,25 @@ Card 를 만든다. SPEC.md `Outbox Ordering` 의 "Reconcile 불가 시 DLQ와 o
 
 | 층 | 처리 |
 |---|---|
-| transport 실패 (연결 실패, timeout, HTTP 5xx) — Slack 이 `ok:false` 를 안 준 경우 | **재시도** |
+| **Slack error code 가 없는 모든 실패** — 연결 실패, timeout, 임의의 HTTP status | **재시도** |
 | Slack 이 준 error code | research R-006 의 allowlist 만 재시도, 나머지 terminal |
+
+판정 기준은 status code 가 아니라 **Slack 이 `ok:false` 를 줬는지** 하나다. HTTP 429 는
+Slack code 유무와 무관하게 재시도이고, 규칙은 위에서부터 먼저 맞는 것이 이긴다.
 
 **근거**: transport 실패는 "요청이 처리됐는지 모른다"는 상태다. 그런데 다음 시도는 send 전에
 reconcile 을 먼저 하므로 (R-002) 이미 posted 됐으면 marker 로 확정된다. **재시도가 idempotent
 하다.** 반면 Slack 이 명시적으로 준 unknown code 는 의미를 모르는 것이라 D-016 의 fail-closed
 를 따라 terminal 로 둔다.
 
-**기각**: 5xx 도 terminal 로 두는 안. 일시적 장애에 operator hold 를 걸어 사람을 부른다.
+**기각 1**: 5xx 도 terminal 로 두는 안. 일시적 장애에 operator hold 를 걸어 사람을 부른다.
+
+**기각 2 (wave 1 review, D-020 항목 1)**: code 없는 non-429 4xx 를 terminal 로 두는 안.
+초기 구현이 이 안이었고 reviewer 셋이 모두 반대했다. Slack 은 application error 를 HTTP 200 +
+`ok:false` 로 주므로 code 없는 4xx 는 거의 전부 중간 장비가 낸 것이고 그건 transient 다.
+게다가 retryable 이 보수적인 쪽이다 — 영구 실패를 재시도로 봐도 attempt 소진 후 같은 dead
+letter 와 hold 에 도달하지만, transient 를 terminal 로 보면 destination 이 즉시 멈추고 그
+hold 는 되돌릴 수 없다.
 
 ## Project Structure
 
@@ -142,7 +152,7 @@ regression 3 lens review 를 돌린다 (D-019 항목 4).
 
 - transport Protocol 정의 (send / read)
 - Slack error code → retryable·terminal 분류기
-- transport 실패(5xx·timeout)와 Slack error code 를 다른 층으로 다루는 경계 (P-002)
+- Slack error code 가 없는 실패와 Slack error code 를 다른 층으로 다루는 경계 (P-002)
 - 검증: 분류기 단위 test. network 없음
 
 ### Wave 2 — Send Path

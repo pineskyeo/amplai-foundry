@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T001
 title: Slack transport Protocol and error classification
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -22,6 +22,8 @@ source:
       section: R-006
     - path: specs/001-mgc-012-slack-reference-adapter/plan.md
       section: P-002
+    - path: specs/001-mgc-012-slack-reference-adapter/data-model.md
+      section: SlackFailureClass
   requirements:
     - FR-002
     - FR-010
@@ -30,13 +32,16 @@ source:
     - D-016
     - D-018
     - D-019
+    - D-020
 
 scope:
   include:
     - SlackTransport Protocol 정의 — post_message 와 read_history
     - SlackSendResult, SlackHistoryMessage, SlackHistoryPage 구조 정의
     - Slack error code 분류기 — retryable allowlist, 나머지 terminal
-    - transport 층 실패(연결 실패, timeout, HTTP 5xx)를 retryable 로 다루는 경계
+    - Slack error code 가 없는 실패를 status 무관하게 retryable 로 다루는 경계
+    - error code 정규화와, 저장될 접미사에만 적용하는 형식 강제
+    - 기본 retry schedule 을 사실로 고정하는 test. 하한 상수는 두지 않는다
     - marker 의 event_type 고정 문자열 값 확정
     - test 용 fake transport
   exclude:
@@ -64,8 +69,10 @@ implementation:
       붙는 경로가 그것뿐이다 (events.py:2856-2863).
   invariants:
     - dependency 는 pydantic, pyyaml, typer 셋을 유지한다.
-    - 분류기는 allowlist 방식이다. 모르는 code 는 terminal 로 떨어진다.
+    - 분류기는 allowlist 방식이다. 모르는 Slack code 는 terminal 로 떨어진다.
+    - Slack code 가 없는 실패는 status 로 가르지 않고 전부 retryable 이다.
     - event_type 문자열은 한 번 정하면 바꾸지 않는다. 바꾸면 이전 marker 를 못 읽는다.
+    - terminal code 문자열은 Slack 원인을 담는다. dispatcher 가 예외 객체를 버린다.
   non_goals:
     - 실제 Slack API 호출
     - rate limit 대응 로직
@@ -81,17 +88,38 @@ acceptance:
       when: 분류기에 그 실패를 넣으면
       then: terminal 로 분류하고 OutboxReconcileError 로 대응시킨다
     - id: AC-03
-      given: research.md R-006 allowlist 에 없는 임의의 Slack error code
+      given: research.md R-006 allowlist 에 없는 임의의 Slack error code. 식별자 형식을
+        벗어난 값도 포함한다
       when: 분류기에 그 실패를 넣으면
-      then: terminal 로 분류한다
+      then: 형식과 무관하게 terminal 로 분류한다. 형식 때문에 값을 버리지 않는다
     - id: AC-04
-      given: Slack error code 없이 연결이 끊기거나 HTTP 5xx 가 온 상황
+      given: Slack error code 없이 실패한 상황 — 연결 끊김, timeout, 임의의 HTTP status
       when: 분류기에 그 실패를 넣으면
-      then: retryable 로 분류한다
+      then: status code 와 무관하게 retryable 로 분류한다
     - id: AC-05
       given: slack_projection 모듈
       when: import 를 정적으로 훑으면
-      then: stdlib 과 pydantic 밖의 module 을 import 하지 않는다
+      then: stdlib, amplai_foundry, pydantic 밖의 module 을 import 하지 않는다.
+        repo 전체 dependency 셋 유지는 별개이며 invariants 가 담당한다
+    - id: AC-06
+      given: Slack error code 가 빈 문자열이거나 대소문자·공백이 섞였거나 str 이 아닌 상황
+      when: 분류기에 그 실패를 넣으면
+      then: 정규화 후 판정한다. 빈 값과 str 아닌 값은 code 없음으로 보고 retryable 이다.
+        원본은 진단용으로 남는다
+    - id: AC-07
+      given: 임의의 Slack error code
+      when: 저장될 접미사를 만들면
+      then: 허용 밖 문자를 치환하고 64자로 자른다. 값을 버리지 않으며 code 가 없으면
+        unknown 이다
+    - id: AC-08
+      given: HTTP 429 와 allowlist 밖 Slack error code 가 함께 온 실패
+      when: 분류기에 그 실패를 넣으면
+      then: 규칙 순서에 따라 retryable 로 분류한다
+    - id: AC-09
+      given: OutboxConfig 기본값
+      when: 재시도 backoff schedule 을 읽으면
+      then: 대기가 [5, 10, 20, 40] 이고 합이 75 임을 test 가 고정한다. Slack 이
+        Retry-After 상한을 문서화하지 않아 충분한지는 판정하지 않는다
   commands:
     - id: unit
       kind: test
@@ -101,9 +129,17 @@ acceptance:
       kind: lint
       run: python -m ruff check .
       required: true
+    - id: format
+      kind: lint
+      run: python -m ruff format --check .
+      required: true
     - id: typecheck
       kind: typecheck
       run: python -m mypy
+      required: true
+    - id: typecheck_tests
+      kind: typecheck
+      run: python -m mypy tests/test_slack_projection.py
       required: true
   manual_checks: []
   evidence:
@@ -111,7 +147,16 @@ acceptance:
       source: unit
       required: true
     - type: command_output
+      source: lint
+      required: true
+    - type: command_output
+      source: format
+      required: true
+    - type: command_output
       source: typecheck
+      required: true
+    - type: command_output
+      source: typecheck_tests
       required: true
 
 risk:
@@ -131,10 +176,11 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-05"
+  evidence_paths:
+    - docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md
 
 handoff:
   expected_changes:

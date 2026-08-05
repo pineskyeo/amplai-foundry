@@ -232,3 +232,78 @@
      써넣어 파생 규칙에 예외를 뚫는다.
 - Source: 2026-08-03 `/grill-me` 세션 2회차. 미결 없음. Package 4의 Slack test
   workspace 구성과 credential 경로는 Package 3 gate 후에 정한다.
+
+## D-020 — Slack Failure Classification Is Retry-Biased
+
+- Status: accepted
+- Decision: MGC-012 Package 3 wave 1 review 결과를 아래로 고정한다.
+
+  1. **Slack error code가 없는 실패는 status code로 가르지 않고 전부 retryable이다.**
+     Slack은 application error를 HTTP 200 + `ok: false`로 준다. 진짜 HTTP 4xx는 429
+     하나뿐이고 그건 별도 규칙이 잡는다. 따라서 code 없는 4xx는 거의 전부 proxy·WAF·
+     load balancer가 낸 것이고 그건 transient다. 구현이 처음에 code 없는 non-429 4xx를
+     terminal로 좁혔으나 reviewer 셋이 모두 반대했다.
+
+     판단 근거는 비대칭이다. 영구 실패를 retryable로 잘못 분류해도 attempt를 소진하면
+     같은 dead letter와 operator hold에 도달한다 — 기본값이면 약 75초 손해다. 반대로
+     transient를 terminal로 분류하면 destination 전체가 즉시 멈추고, 그 hold는
+     `governance_operator_holds`의 `CHECK (resolved_at IS NULL)` 때문에 되돌릴 수 없다.
+     **retryable이 보수적인 쪽이다.** D-016의 fail-closed는 재시도가 도움이 안 된다는
+     증거가 있는 Slack governance code에 적용되고, Slack body 없는 HTTP status는 Slack이
+     처리했다는 증거가 없으므로 그 범주가 아니다.
+
+  2. **error code는 정규화 후 비교한다.** 앞뒤 공백 제거, 소문자화, 빈 문자열은 code
+     없음과 동일. `is None`만 검사하면 `""`가 allowlist를 못 만나고 terminal로 떨어져
+     분류가 통째로 뒤집힌다. transport가 응답 JSON의 기본값으로 `""`를 넘기는 것은
+     흔한 구현이다.
+
+  3. **terminal code 문자열이 Slack 원인을 담는다** — `SLACK_PROJECTION_TERMINAL_ERROR:{code}`.
+     dispatcher는 예외 객체를 버리고 `code` 문자열만 dead letter와 operator hold에 적는다.
+     `governance/` 아래에 logging이 없어 원인이 다른 곳에도 안 남는다. 원인이 없으면
+     `invalid_auth`, `channel_not_found`, `msg_blocks_too_long`, `not_in_channel`이 전부
+     같은 row가 되는데 operator의 복구 행동은 넷이 다 다르다.
+
+     error code column에 CHECK나 길이 제약이 없음을 확인했다 — `last_error_code`
+     (`migrations.py:269`), dead letter `error_code` (`:614`), operator hold `reason_code`
+     (`:625`). 문자열을 비교하는 기존 handler는 **있다** — `events.py:2644`, `:2681`,
+     `:2845`, `:2888` 넷이고 전부 `last_error_code = 'OUTBOX_LEASE_EXPIRED'`만 본다.
+     terminal 경로는 `unreconcilable=True`라 `retry_wait`를 거치지 않고 네 곳 전부
+     `state`가 `pending` 또는 `retry_wait`인 행만 보므로 만나지 않는다.
+
+     저장될 접미사는 허용 밖 문자를 `_`로 바꾸고 64자로 자른다. **분류에는 이 형식을
+     적용하지 않는다** — 적용하면 형식이 이상한 terminal code가 code 없음이 되어 항목 1의
+     retryable 경로로 새고, 그 경로는 항목 6대로 원인을 남기지 않는다. 다듬되 버리지
+     않는다. 원본은 예외 객체에 진단용으로 남긴다.
+
+  4. **transport Protocol에 의무 둘을 명시한다.** signature로 강제할 수 없어 계약 문서와
+     docstring에 적는다. (a) 모든 실패를 `SlackTransportError`로 감싼다 — 다른 예외가
+     새면 분류가 아예 돌지 않고 무조건 재시도가 된다. (b) 호출 시간을
+     `OutboxConfig.lease_seconds`보다 짧게 묶는다 — lease 만료 후 실패하면 `fail()`이
+     lease conflict로 터져 terminal 판정이 통째로 버려지고 dead letter도 hold도 안 생긴다.
+
+  5. **`Retry-After` 잔여 위험을 수용하되 하한 상수는 두지 않는다.** 기본값이면 재시도
+     예산이 75초에 소진된다 (대기 5·10·20·40). `Retry-After`가 그보다 크면 Slack이
+     기다리라고 한 창 안에서 attempt를 다 쓰고 되돌릴 수 없는 hold에 도달한다. rate
+     limit이 app/workspace 범위라 같은 app의 다른 트래픽과 예산을 공유한다.
+
+     **그 위험이 실제로 발생하는지는 판정할 수 없다.** Slack은 `Retry-After`의 상한을
+     문서화하지 않는다. 문서화된 숫자는 30초 예시 하나뿐이다 (research S4, 2026-08-05
+     재조회). 이 Decision의 이전 판은 "30~60초가 흔하다"를 근거로 하한 상수를 두었으나
+     **그 문장은 S4에 없었다.** wave 1 round 4 review에서 드러났고 상수와 함께 뺐다.
+     근거 없는 숫자를 기계적 관문으로 만들면 만족시킨 쪽이 안전하다고 잘못 믿는다.
+
+     대신 test가 기본 schedule을 사실로 고정한다 — 대기 `[5, 10, 20, 40]`, 합 75.
+     Package 4가 `OutboxConfig`를 만들 때 이 schedule과 실제 관측한 `Retry-After`를 함께
+     입력으로 쓴다. R-007의 dispatcher 계약 변경 금지는 유지한다.
+
+  6. **retryable 경로의 원인 소실은 wave 2로 넘긴다.** terminal은 3에서 닫혔으나
+     retryable로 분류된 실패가 attempt를 소진하면 `deliver_next`의 generic handler가
+     예외를 버리고 `OUTBOX_DELIVERY_FAILED` 상수만 남긴다 (`events.py:2864`). 항목 1의
+     결정이 이 경로를 넓혔으므로 같은 Package 안에서 닫아야 한다. 고치려면 `events.py`를
+     바꿔야 하는데 그건 MGC-012-T001의 `forbidden_paths`다. T002에 명시적 항목으로
+     넘긴다 — destination이 재감싸서 해결되면 dispatcher를 안 건드려도 된다.
+- Source: 2026-08-03 사용자 결정. MGC-012 Package 3 wave 1의 contract·failure-recovery·
+  regression review 결과를 근거로 제시하고 사용자가 항목별로 선택했다. review 산출물은
+  근거이지 승인 주체가 아니다 (D-004는 review를 gate로 규정한다). 항목 1·3·5의 선택지와
+  그 대가는 사용자에게 제시된 뒤 확정됐다. wave 1 gate 결과는 이 Decision이 아니라
+  CHECKPOINTS 기록에 남긴다.
