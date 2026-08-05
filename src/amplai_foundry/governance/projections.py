@@ -50,11 +50,15 @@ class YamlProjectionDestination:
             return None
 
     def send(self, event: OutboxEventView) -> str:
+        # 두 검증 실패는 `OutboxReconcileError` 다. 부모인 `GovernanceEventError` 로
+        # 던지면 `deliver_next` 의 `except OutboxReconcileError` 가 못 잡고 generic
+        # handler 로 떨어져 원인이 `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. 두 조건은
+        # event row 의 불변 column 에서 나오므로 재시도가 확정적으로 무의미하다 (D-022).
         if event.destination_ref != self.destination_ref:
-            raise GovernanceEventError("OUTBOX_DESTINATION_MISMATCH")
+            raise OutboxReconcileError("OUTBOX_DESTINATION_MISMATCH")
         actual_digest = self._payload_digest(event.payload)
         if actual_digest != event.payload_digest:
-            raise GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
+            raise OutboxReconcileError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
         with self._locked():
             current = self._read()
             if current is not None and self._matches_event(current, event):

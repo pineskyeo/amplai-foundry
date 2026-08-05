@@ -68,7 +68,10 @@ transport 의 send 반환값. `chat.postMessage` 성공 응답에서 필요한 �
 | `channel` | `channel` |
 | `ts` | `ts` |
 
-receipt 는 이 둘로 만든다 — `slack:{channel}:{ts}` (research R-005).
+receipt 는 `slack:{channel}:{ts}` 다 (research R-005). **`ts` 만 이 구조에서 온다.**
+`{channel}` 은 destination 생성자가 받은 값이고 `SlackSendResult.channel` 이 아니다 —
+`reconcile()` 은 `conversations.history` 응답에서 channel 을 못 얻어 생성자 값밖에 쓸 수
+없고, 두 경로가 다른 문자열을 만들면 C-2.3 이 깨진다. 근거는 contracts C-2.1 이다.
 
 ### `SlackHistoryMessage`
 
@@ -118,6 +121,7 @@ pending ─claim_next──▶ leased ─reconcile 성공/send 성공──▶ d
 | `reconcile()` 이 `None` 반환 | `send()` 로 진행 |
 | `reconcile()` 이 `OutboxReconcileError` | `dead_letter` + hold (attempts 무관) |
 | `send()` 가 receipt 반환 | `delivered` |
+| `send()` 가 사전 검증 실패 (`OutboxReconcileError`) | `dead_letter` + hold, attempts 무관 (D-022) |
 | `send()` 가 그 밖의 예외 | `OUTBOX_DELIVERY_FAILED` 로 `retry_wait` 또는 소진 시 DLQ |
 
 **terminal 인 Slack error 를 즉시 DLQ 로 보내려면 `OutboxReconcileError` 를 써야 한다** —
@@ -127,13 +131,18 @@ pending ─claim_next──▶ leased ─reconcile 성공/send 성공──▶ d
 ## Validation Rules
 
 `YamlProjectionDestination.send` 가 이미 쓰는 것과 같은 순서로 검증한다
-(`projections.py:53`–`57`).
+(`projections.py:57`–`61`).
 
 1. `event.destination_ref != self.destination_ref` → `OUTBOX_DESTINATION_MISMATCH`
 2. `payload` 를 정규 JSON 으로 직렬화해 만든 digest ≠ `event.payload_digest` →
    `OUTBOX_PAYLOAD_INTEGRITY_FAILURE`
 3. 위 둘을 통과한 뒤에만 transport 를 부른다
 
-digest 계산은 `YamlProjectionDestination._payload_digest` (`projections.py:165`)와 같은
+**둘 다 `OutboxReconcileError` 로 던진다** (D-022). 즉시 dead letter + operator hold 다.
+재시도하지 않는다 — 두 조건은 event row 의 불변 column 에서 나와 재시도가 확정적으로
+무의미하고, 부모인 `GovernanceEventError` 로 던지면 원인이 `OUTBOX_DELIVERY_FAILED` 로
+덮인다.
+
+digest 계산은 `YamlProjectionDestination._payload_digest` (`projections.py:169`)와 같은
 규칙이어야 한다 — `ensure_ascii=False`, `separators=(",", ":")`, `sort_keys=True`,
 `sha256:` prefix. 두 destination 이 같은 event 를 다르게 판정하면 안 된다.

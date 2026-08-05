@@ -1219,3 +1219,30 @@ def test_yaml_projection_reconcile_rejects_self_inconsistent_record(tmp_path: Pa
 
     with pytest.raises(OutboxReconcileError, match="YAML_PROJECTION_DIVERGED"):
         projection.reconcile(yaml_event)
+
+
+# D-022 — 두 사전 검증 실패는 `OutboxReconcileError` 다. 부모인 `GovernanceEventError` 로
+# 던지면 `deliver_next` 의 unreconcilable 경로를 못 타고 generic handler 로 떨어져 원인이
+# `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. 두 조건은 event row 의 불변 column 에서 나오므로
+# 재시도가 확정적으로 무의미하다. 부모 관계 때문에 타입 검사만으로는 방향이 안 잡혀
+# `type(...) is` 로 못박는다.
+def test_yaml_projection_pre_send_validation_is_unreconcilable(tmp_path: Path) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _audit, outbox = _append(events, store, command_id="command-yaml", state_revision=2)
+    yaml_event = next(event for event in outbox if event.destination_ref.startswith("yaml:"))
+    projection = YamlProjectionDestination(
+        tmp_path / "projection/proposal.yaml",
+        destination_ref=yaml_event.destination_ref,
+    )
+
+    with pytest.raises(OutboxReconcileError) as mismatch:
+        projection.send(yaml_event.model_copy(update={"destination_ref": "yaml:other"}))
+    assert type(mismatch.value) is OutboxReconcileError
+    assert mismatch.value.code == "OUTBOX_DESTINATION_MISMATCH"
+
+    with pytest.raises(OutboxReconcileError) as integrity:
+        projection.send(yaml_event.model_copy(update={"payload": {"tampered": True}}))
+    assert type(integrity.value) is OutboxReconcileError
+    assert integrity.value.code == "OUTBOX_PAYLOAD_INTEGRITY_FAILURE"
+    assert not (tmp_path / "projection/proposal.yaml").exists()

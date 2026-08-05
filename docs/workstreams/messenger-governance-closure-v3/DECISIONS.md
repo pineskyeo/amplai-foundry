@@ -307,3 +307,92 @@
   근거이지 승인 주체가 아니다 (D-004는 review를 gate로 규정한다). 항목 1·3·5의 선택지와
   그 대가는 사용자에게 제시된 뒤 확정됐다. wave 1 gate 결과는 이 Decision이 아니라
   CHECKPOINTS 기록에 남긴다.
+
+## D-021 — Exhausted Retryable Failures Carry Their Cause
+
+- Status: accepted
+- Decision: D-020 항목 6이 wave 2로 넘긴 선택을 아래로 닫는다. `OutboxDispatcher`는 안
+  고친다.
+
+  `SlackProjectionDestination` 생성자가 `max_attempts`를 받는다. `send()`가
+  `event.attempts >= max_attempts`인 호출에서 retryable 실패를 만나면 원래 예외 대신
+  `SLACK_PROJECTION_RETRY_EXHAUSTED:{suffix}`를 code로 갖는 `OutboxReconcileError`를
+  올린다. 그 미만이면 원래 예외를 그대로 올려 `retry_wait` 경로를 탄다.
+
+  근거는 셋이다.
+
+  1. `attempts`는 `claim_next`가 claim 시점에, `attempts < max_attempts`인 동안 증가시킨다
+     (`events.py:2672`의 `CASE WHEN attempts < ?`). `send()` 안에서 보는 값이 현재 시도
+     번호이고 상한을 넘지 않는다. 증가하지 않는 재claim은 lease 만료 replay 하나뿐인데
+     그 경로는 `deliver_next`가 `send()` 앞에서 가로챈다 (`events.py:2843`-`2853`).
+  2. `fail()`은 `exhausted or unreconcilable`을 같은 `_dead_letter`로 보낸다
+     (`events.py:2778`). 마지막 attempt라면 state 전이가 **바뀌지 않는다.** 달라지는 것은
+     dead letter와 operator hold에 적히는 error_code 하나다. 재시도 횟수를 줄이지 않는다.
+  3. 이것이 없으면 연결 실패, timeout, `ratelimited`, `internal_error`가 전부
+     `OUTBOX_DELIVERY_FAILED` 한 줄이 된다 (`events.py:2864`가 예외를 버리고 상수만
+     남긴다). operator의 복구 행동은 넷이 다 다르다.
+
+  **재분류가 아니라 소진 시점의 기록이다.** 분류 규칙 C-3는 그대로다. terminal 판정은
+  attempt와 무관하게 여전히 즉시 DLQ다.
+
+  `suffix`는 Slack code가 있으면 그 code다. transport층 실패라 code가 없으면 원인 예외의
+  class 이름을 `transport_{name}`으로 넣는다. 둘 다 없으면 `no_slack_code`다. terminal
+  경로의 `unknown`과 다른 문자열을 쓴다 — 같으면 두 사건이 같은 row가 된다. 형식 강제는
+  `persisted_code_suffix`가 저장 직전에만 한다 (D-020 항목 3과 같다).
+
+  **대가 하나를 명시한다.** `max_attempts`는 호출자가 dispatcher의
+  `OutboxConfig.max_attempts`와 같게 줘야 하고 destination은 그것을 검증할 경로가 없다.
+  더 크면 이 규칙이 안 돌아 원인이 그대로 사라진다. 더 작으면 남은 attempt를 두고
+  되돌릴 수 없는 hold를 만든다. 대안이었던 `events.py` 수정은 MGC-008에서 gate PASS한
+  dispatcher 계약을 건드리고 T002의 `forbidden_paths`다.
+- Source: 2026-08-05 사용자 결정. D-020 항목 6이 남긴 선택지 셋(contract C-2에
+  `max_attempts` 추가 / scope 확대 후 `events.py` 수정 / 항목 6을 다시 미룸)을 제시하고
+  사용자가 첫째를 골랐다. 반영 위치는 `contracts/slack-transport.md` C-2·C-3.1과
+  `task-manifests/MGC-012-T002.yaml`이다.
+
+## D-022 — Pre-Send Validation Failures Are Unreconcilable
+
+- Status: accepted
+- Decision: `ProjectionDestination.send()`의 두 사전 검증 실패를 `GovernanceEventError`가
+  아니라 `OutboxReconcileError`로 던진다. `SlackProjectionDestination`과
+  `YamlProjectionDestination` 둘 다 바꾼다.
+
+  - `OUTBOX_DESTINATION_MISMATCH`
+  - `OUTBOX_PAYLOAD_INTEGRITY_FAILURE`
+
+  근거는 셋이다.
+
+  1. `OutboxReconcileError`는 `GovernanceEventError`의 **자식**이다 (`events.py:24`-`35`).
+     그래서 부모로 던지면 `deliver_next`의 `except OutboxReconcileError`
+     (`events.py:2856`)가 못 잡고 generic handler로 떨어져 (`events.py:2864`) 원인이
+     `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. payload 손상(무결성 사건)과 destination
+     배선 버그가 평범한 전달 실패와 같은 row가 된다.
+  2. **재시도가 확정적으로 무의미하다.** `payload`와 `payload_digest`, `destination_ref`는
+     event row의 불변 column이다. 5번을 더 시도해도 같은 값을 읽는다. 그 사이 약 75초를
+     쓰고, 결말은 어차피 같은 dead letter다.
+  3. 두 destination을 같이 바꾼다. 한쪽만 바꾸면 같은 조건을 두 destination이 다르게
+     다루고, 그 차이는 계약이 아니라 사고다.
+
+  이것은 D-021과 같은 결함의 나머지 절반이다. D-021이 retryable **분류** 경로를 닫았고
+  이것이 **사전 검증** 경로를 닫는다.
+
+  **대가.** `YamlProjectionDestination`은 `APPROVALS.md`의 `APR-002`(MGC-008, PASS,
+  2026-07-30)가 덮는 subsystem이다. 그 승인 기록에 이 두 예외의 종류를 규정한 문장은
+  없다 — wave 2 reviewer가 `docs/workstreams/messenger-governance-closure-v3/` 전체를
+  훑어 확인했다. 그래서 `supersedes` 대상 Decision이 없고 이 항목이 최초 규정이다.
+  gate PASS한 subsystem의 code를 바꾼 사실만 여기 남긴다.
+
+  `projections.py`는 MGC-012-T002의 `forbidden_paths`였다. 사용자가 scope 확대를
+  승인해 열었다. `events.py`는 열지 않았다 — 새 예외 class를 만들지 않고 기존
+  `OutboxReconcileError`를 그대로 쓰므로 dispatcher 계약은 그대로다. `except
+  GovernanceEventError`로 잡던 기존 호출자는 자식 class도 그대로 잡으므로 영향이 없다.
+
+  `deliver_next`가 이 예외를 `unreconcilable=True`로 보내 만드는 operator hold는
+  `governance_operator_holds`의 `CHECK (resolved_at IS NULL)` 때문에 되돌릴 수 없다.
+  그것을 수용한다 — 두 조건은 transient가 아니라 확정된 결함이고, D-016의 fail-closed가
+  적용되는 범주다.
+- Source: 2026-08-05 사용자 결정. MGC-012 Package 3 wave 2 review의 failure/recovery lens가
+  P1로 지적했고 reviewer가 실물 dispatcher로 재현했다. 선택지 셋(Slack만 변경 / 두
+  destination 변경 / 수용 후 기록)을 제시하고 사용자가 둘째를 골랐다. review 산출물은
+  근거이지 승인 주체가 아니다 (D-004). 기록은
+  `CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md`다.

@@ -139,7 +139,7 @@ Provider message"). 지워진 message 는 `conversations.history` 에 없으므�
 는 그 조건을 만족한다.
 
 기존 `YamlProjectionDestination._receipt` 는 `yaml:{aggregate_sequence}:{payload_digest}`
-다 (`projections.py:191`). prefix 로 destination 종류를 구분하는 형태를 따른다.
+다 (`projections.py:195`). prefix 로 destination 종류를 구분하는 형태를 따른다.
 
 ## R-006 — Slack Error Classification
 

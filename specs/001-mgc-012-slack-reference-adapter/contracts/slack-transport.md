@@ -77,6 +77,7 @@ class SlackProjectionDestination:
         destination_ref: str,
         channel: str,
         max_history_pages: int,
+        max_attempts: int,
     ) -> None: ...
 
     destination_ref: str
@@ -90,17 +91,52 @@ class SlackProjectionDestination:
 
 `channel` 은 별도로 받는다. `channel_digest` 는 digest 라 역산이 안 된다.
 
+`max_attempts` 는 C-3.1 이 쓴다. **호출자는 이 값을 그 destination 을 도는
+`OutboxDispatcher` 의 `OutboxConfig.max_attempts` 와 같게 준다.** 더 크면 C-3.1 이 안 돌아
+retryable 원인이 그대로 사라지고, 더 작으면 아직 남은 attempt 를 두고 되돌릴 수 없는 hold 를
+만든다. destination 은 dispatcher config 를 읽을 경로가 없어 검증하지 못한다.
+
+**생성자가 거부하는 값 넷.** dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이
+안 되는 값은 막는다. 넷 다 `ValueError` 다.
+
+| 조건 | 막는 이유 |
+|---|---|
+| `destination_ref` 가 공백뿐 | 어떤 event 도 claim 되지 않아 조용히 멈춘다 |
+| `channel` 이 공백뿐 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |
+| `max_history_pages < 1` | reconcile 이 아무것도 안 훑어 첫 전달부터 판정불가로 떨어진다 |
+| `max_attempts < 1` | 첫 transient 실패가 곧바로 C-3.1 을 타 되돌릴 수 없는 hold 를 만든다 |
+
+`destination_ref` 와 `channel` 은 앞뒤 공백을 **지워서 저장한다.** 검사만 하면 env var 나
+YAML scalar 에서 온 개행이 그대로 Slack 에 나가 `channel_not_found` (allowlist 밖 → terminal
+→ 되돌릴 수 없는 hold) 를 부르고, `reconcile()` 이 정규화된 config 로 만든 receipt 와 갈린다.
+
+뒤 둘의 하한은 `OutboxConfig` 의 `ge=1` 과 같다 (`events.py:2553`). config 를 안 읽고도
+검사된다.
+
 ### C-2.1 — `send()` 계약
 
 | 조건 | 결과 |
 |---|---|
-| `event.destination_ref != self.destination_ref` | `GovernanceEventError("OUTBOX_DESTINATION_MISMATCH")` |
-| payload digest 불일치 | `GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")` |
+| `event.destination_ref != self.destination_ref` | `OutboxReconcileError("OUTBOX_DESTINATION_MISMATCH")` |
+| payload digest 불일치 | `OutboxReconcileError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")` |
 | transport 성공 | `"slack:{channel}:{ts}"` 반환 |
-| transport 실패 | C-3 분류에 따른 예외 |
+| transport 실패, retryable 분류 | 원래 예외. 단 마지막 attempt 는 C-3.1 |
+| transport 실패, terminal 분류 | `SlackProjectionTerminalError`. attempt 와 무관하다 |
 
-검증 순서는 `YamlProjectionDestination.send` 와 같다 (`projections.py:53`–`57`). transport 를
+검증 순서는 `YamlProjectionDestination.send` 와 같다 (`projections.py:57`–`61`). transport 를
 부르기 전에 둘 다 통과해야 한다.
+
+**두 검증 실패는 `OutboxReconcileError` 다** (D-022). 부모인 `GovernanceEventError` 로 던지면
+`deliver_next` 의 `except OutboxReconcileError` (`events.py:2856`)가 못 잡고 generic handler 로
+떨어져 원인이 `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. 두 조건은 event row 의 불변 column 에서
+나오므로 재시도가 확정적으로 무의미하다. `YamlProjectionDestination` 도 같이 바꿨다 — 두
+destination 이 같은 조건을 다르게 다루면 안 된다.
+
+**receipt 의 `{channel}` 은 생성자가 받은 `channel` 이다.** `SlackSendResult.channel` 이
+아니다. `reconcile()` 은 `conversations.history` 응답에서 channel 을 얻지 못해 생성자 값밖에
+쓸 수 없다 (C-1.2 의 message 필드는 `ts`·`metadata`·`app_id` 셋뿐이다). Slack 이 우리가 보낸
+channel 과 다른 표현을 돌려주면 (이름으로 보내고 ID 를 받는 경우) 두 경로의 receipt 가
+갈라지고 C-2.3 이 깨진다. `ts` 는 `SlackSendResult.ts` 를 그대로 쓴다.
 
 ### C-2.2 — `reconcile()` 계약
 
@@ -183,6 +219,40 @@ code 가 없으면 `unknown` 이다. 저장 대상 두 table 이 append-only 라
 
 `Retry-After` header 값은 예외에 실어 올리되 backoff 계산에 넣지 않는다 (research R-007).
 `fail()` 에 지연을 주입할 인자가 없고, 그걸 만드는 것은 MGC-008 계약 변경이다.
+
+### C-3.1 — Last Attempt Carries The Retryable Cause
+
+D-020 항목 6 을 여기서 닫는다. retryable 로 분류된 실패가 attempt 를 소진하면
+`deliver_next` 의 generic handler 가 예외를 버리고 `OUTBOX_DELIVERY_FAILED` 상수만 남긴다
+(`events.py:2864`). 그 상수가 dead letter 와 operator hold 에 그대로 적혀
+(`events.py:2903` `_dead_letter`), 연결 실패·timeout·`ratelimited`·`internal_error` 가 전부
+같은 row 가 된다.
+
+**`event.attempts >= max_attempts` 인 호출에서만 retryable 을 terminal 로 올린다.**
+
+```text
+SLACK_PROJECTION_RETRY_EXHAUSTED:{suffix}
+```
+
+- `attempts` 는 `claim_next` 가 claim 시점에, **`attempts < max_attempts` 인 동안** 증가시킨다
+  (`events.py:2672` 의 `CASE WHEN attempts < ?`). 그래서 `send()` 안에서 보는
+  `event.attempts` 가 현재 시도 번호이고 상한을 넘지 않는다. 증가하지 않는 재claim 은
+  lease 만료 replay 하나뿐인데 그 경로는 `deliver_next` 가 `send()` 앞에서 가로채
+  `OUTBOX_POST_SEND_RECONCILE_REQUIRED` 로 끝낸다 (`events.py:2843`-`2853`).
+- `fail()` 은 `exhausted or unreconcilable` 을 같은 `_dead_letter` 로 보낸다
+  (`events.py:2778`). 마지막 attempt 라면 state 전이는 **바뀌지 않고** error_code 만
+  달라진다. 재시도를 한 번도 줄이지 않는다.
+- dispatcher 는 안 고친다. `events.py` 는 T002 의 `forbidden_paths` 다.
+- `suffix` 는 `persisted_code_suffix` 가 만든다. Slack code 가 있으면 그 code, transport 층
+  실패라 code 가 없으면 원인 예외의 class 이름을 `transport_{name}` 으로 넣는다. 둘 다
+  없으면 `no_slack_code` 다.
+
+마지막 attempt 가 아니면 원래 예외를 그대로 올린다. 분류 규칙 C-3 자체는 바뀌지 않는다 —
+이것은 **소진 시점의 기록**이지 재분류가 아니다.
+
+**terminal 로 분류된 실패에는 적용하지 않는다.** 마지막 attempt 에 terminal code 가 오면
+`SLACK_PROJECTION_TERMINAL_ERROR:{code}` 가 이긴다 — 둘 다 dead letter 로 가지만 그쪽이 더
+정확한 원인이다.
 
 ## C-4 — What This Contract Forbids
 

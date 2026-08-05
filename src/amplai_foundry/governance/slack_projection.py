@@ -8,6 +8,7 @@ transport 를 Protocol 로만 정의한다. 실제 HTTP 구현은 Package 4 가 
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -15,7 +16,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Final, NoReturn, Protocol
 
-from amplai_foundry.governance.events import OutboxReconcileError
+from amplai_foundry.governance.events import OutboxEventView, OutboxReconcileError
 
 # Slack message metadata 의 event_type. 한 번 정하면 바꾸지 않는다 — 바꾸면 이전에 나간
 # marker 를 reconcile 이 못 읽는다 (task manifest MGC-012-T001 invariants, OQ-002).
@@ -35,6 +36,7 @@ RETRYABLE_SLACK_ERROR_CODES: Final = frozenset(
 )
 
 _TERMINAL_ERROR_CODE: Final = "SLACK_PROJECTION_TERMINAL_ERROR"
+_RETRY_EXHAUSTED_ERROR_CODE: Final = "SLACK_PROJECTION_RETRY_EXHAUSTED"
 _RATE_LIMIT_STATUS: Final = 429
 
 # 저장될 접미사의 형식. **분류에는 쓰지 않는다.** terminal code 는 dead letter 와 operator
@@ -66,6 +68,11 @@ class SlackTransportError(RuntimeError):
     않는다. 형식 강제는 저장 직전에만 한다 (`persisted_code_suffix`).
 
     `raw_error_code` 는 transport 가 넘긴 원본이다. 진단용으로만 쓴다.
+
+    `transport_exception` 은 `SlackTransportError` 가 아닌 예외를 destination 이 재감쌀 때
+    (C-1 의무 위반에 대한 두 번째 방어선) 원인 예외의 class 이름을 넣는 자리다. **분류에는
+    쓰지 않는다** — 쓰면 code 없는 실패가 terminal 로 떨어져 D-020 항목 1 이 뒤집힌다.
+    C-3.1 이 attempt 소진 시점에 원인 문자열을 만들 때만 읽는다.
     """
 
     def __init__(
@@ -75,6 +82,7 @@ class SlackTransportError(RuntimeError):
         error_code: str | None = None,
         status_code: int | None = None,
         retry_after_seconds: int | None = None,
+        transport_exception: str | None = None,
     ) -> None:
         # 빈 문자열과 대소문자 차이를 여기서 흡수한다. transport 가 응답 JSON 의 기본값으로
         # ""를 넘기면 `is None` 검사를 빠져나가 allowlist 를 못 만나고 terminal 로 떨어진다.
@@ -92,6 +100,7 @@ class SlackTransportError(RuntimeError):
         self.error_code = normalized or None
         self.status_code = status_code
         self.retry_after_seconds = retry_after_seconds
+        self.transport_exception = transport_exception
         super().__init__(message)
 
 
@@ -115,6 +124,41 @@ class SlackProjectionTerminalError(OutboxReconcileError):
     def __init__(self, slack_error_code: str | None) -> None:
         self.slack_error_code = slack_error_code
         super().__init__(f"{_TERMINAL_ERROR_CODE}:{persisted_code_suffix(slack_error_code)}")
+
+
+class SlackProjectionRetryExhaustedError(OutboxReconcileError):
+    """The last retryable attempt, raised so the cause reaches the dead letter.
+
+    retryable 로 분류된 실패가 attempt 를 소진하면 `deliver_next` 의 generic handler 가
+    예외를 버리고 `OUTBOX_DELIVERY_FAILED` 상수만 남긴다 (`events.py:2864`). 그 상수가
+    dead letter 와 operator hold 에 그대로 적혀 연결 실패, timeout, `ratelimited`,
+    `internal_error` 가 전부 같은 row 가 된다 (D-020 항목 6).
+
+    **재분류가 아니라 소진 시점의 기록이다.** 마지막 attempt 에서만 만든다. 그 시점의
+    `fail()` 은 `exhausted or unreconcilable` 을 같은 `_dead_letter` 로 보내므로
+    (`events.py:2778`) state 전이는 바뀌지 않고 error_code 만 달라진다. 재시도 횟수를
+    한 번도 줄이지 않는다.
+    """
+
+    def __init__(self, error: SlackTransportError) -> None:
+        self.slack_error_code = error.error_code
+        super().__init__(f"{_RETRY_EXHAUSTED_ERROR_CODE}:{exhausted_cause_suffix(error)}")
+
+
+def exhausted_cause_suffix(error: SlackTransportError) -> str:
+    """Name the cause of one exhausted retryable failure for an append-only column.
+
+    Slack code 가 있으면 그것을 쓴다. transport 층 실패라 code 가 없으면 재감싼 원인
+    예외의 class 이름을 쓴다 — `transport_connectionreseterror` 처럼 남아야 operator 가
+    network 문제와 Slack 문제를 가른다. `persisted_code_suffix` 가 소문자로 내리므로
+    저장된 문자열도 소문자다. 둘 다 없으면 `no_slack_code` 다. `unknown` 을 쓰지 않는다 —
+    terminal 경로의 `unknown` 과 섞이면 두 사건이 구분되지 않는다.
+    """
+    if error.error_code:
+        return persisted_code_suffix(error.error_code)
+    if error.transport_exception:
+        return persisted_code_suffix(f"transport_{error.transport_exception}")
+    return "no_slack_code"
 
 
 def persisted_code_suffix(slack_error_code: str | None) -> str:
@@ -282,3 +326,178 @@ def raise_for_slack_failure(error: SlackTransportError) -> NoReturn:
     if classify_slack_failure(error) is SlackFailureClass.TERMINAL:
         raise SlackProjectionTerminalError(error.error_code) from error
     raise error
+
+
+def build_slack_marker(event: OutboxEventView) -> dict[str, object]:
+    """Build the Slack `metadata` that `reconcile()` reads back.
+
+    Slack 쪽 표현은 `event_type` + `event_payload` 다 (research S3). `event_payload` 에
+    담는 것은 넷뿐이다 — `event_id`, `destination_ref`, `destination_sequence`,
+    `payload_digest`.
+
+    **payload 본문은 안 담는다.** metadata 크기 상한을 공식 문서에서 확인하지 못했고
+    (research.md R-003 미확인) `metadata_too_large` error code 는 실재한다. 그 code 는
+    allowlist 밖이라 terminal 이고, terminal 은 되돌릴 수 없는 hold 를 만든다.
+    """
+    return {
+        "event_type": SLACK_PROJECTION_EVENT_TYPE,
+        "event_payload": {
+            "event_id": event.event_id,
+            "destination_ref": event.destination_ref,
+            "destination_sequence": event.destination_sequence,
+            "payload_digest": event.payload_digest,
+        },
+    }
+
+
+def payload_digest(payload: Mapping[str, object]) -> str:
+    """Digest one payload the way `YamlProjectionDestination` does.
+
+    규칙이 `projections.py:169` 와 같아야 한다 — `ensure_ascii=False`,
+    `separators=(",", ":")`, `sort_keys=True`, `sha256:` prefix. 두 destination 이 같은
+    event 를 다르게 판정하면 하나는 보내고 하나는 무결성 실패로 막는다. 규칙 일치는
+    test 가 두 값을 직접 대조해 고정한다.
+    """
+    canonical = json.dumps(
+        dict(payload),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+
+
+class SlackProjectionDestination:
+    """`ProjectionDestination` (`events.py:236`) backed by an injected Slack transport.
+
+    `destination_ref` 는 `provider:slack:{channel_digest}` 를 그대로 받는다. 앞뒤 공백만
+    지우고 형식은 만들지도 해석하지도 않는다 (D-018 항목 1). `channel` 을 따로 받는 이유는
+    `channel_digest` 가 digest 라 역산이 안 되기 때문이다.
+
+    `max_attempts` 는 이 destination 을 도는 `OutboxDispatcher` 의
+    `OutboxConfig.max_attempts` 와 **같은 값이어야 한다** (contracts C-2). destination 은
+    dispatcher config 를 읽을 경로가 없어 검증하지 못한다. 더 크면 C-3.1 이 안 돌아
+    retryable 원인이 사라지고, 더 작으면 남은 attempt 를 두고 되돌릴 수 없는 hold 를
+    만든다.
+    """
+
+    def __init__(
+        self,
+        transport: SlackTransport,
+        *,
+        destination_ref: str,
+        channel: str,
+        max_history_pages: int,
+        max_attempts: int,
+    ) -> None:
+        # dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이 안 되는 값은
+        # 여기서 막는다. `max_attempts < 1` 이면 첫 transient 실패가 곧바로 C-3.1 을 타
+        # 되돌릴 수 없는 hold 를 만들고, `max_history_pages < 1` 이면 reconcile 이 아무것도
+        # 훑지 않아 첫 전달부터 판정불가로 떨어진다. 둘 다 `OutboxConfig` 의 `ge=1` 과 같은
+        # 하한이라 config 를 안 읽고도 검사된다.
+        if not destination_ref.strip():
+            raise ValueError("destination_ref는 비어 있을 수 없습니다.")
+        if not channel.strip():
+            raise ValueError("channel은 비어 있을 수 없습니다.")
+        if max_history_pages < 1:
+            raise ValueError("max_history_pages는 1 이상이어야 합니다.")
+        if max_attempts < 1:
+            raise ValueError("max_attempts는 1 이상이어야 합니다.")
+        # 앞뒤 공백을 지우고 저장한다. 검사만 하고 원본을 쓰면 env var 나 YAML scalar 에서
+        # 온 개행 하나가 그대로 Slack 에 나가 `channel_not_found` 를 부른다. 그 code 는
+        # allowlist 밖이라 terminal 이고 hold 는 되돌릴 수 없다. `_receipt` 도 이 값을
+        # 쓰므로 정규화 안 하면 reconcile 과 receipt 가 갈라진다 (C-2.3).
+        self.destination_ref = destination_ref.strip()
+        self.channel = channel.strip()
+        self.max_history_pages = max_history_pages
+        self.max_attempts = max_attempts
+        self._transport = transport
+
+    def send(self, event: OutboxEventView) -> str:
+        """Post one Card and return `slack:{channel}:{ts}`.
+
+        검증 둘을 먼저 통과해야 transport 를 부른다. 순서는
+        `YamlProjectionDestination.send` 와 같다 (`projections.py:57`-`61`). 사전 검증이
+        없으면 손상된 payload 가 사람에게 보이는 Card 로 나가고, `chat.update` 로 되돌리는
+        것은 범위 밖이다 (research R-008).
+        """
+        # `OutboxReconcileError` 다. 부모인 `GovernanceEventError` 로 던지면
+        # `deliver_next` 의 `except OutboxReconcileError` (`events.py:2856`)가 못 잡고
+        # generic handler 로 떨어져 원인이 `OUTBOX_DELIVERY_FAILED` 로 덮인다. 두 조건은
+        # event row 의 불변 column 에서 나와 재시도가 확정적으로 무의미하다 (D-022).
+        if event.destination_ref != self.destination_ref:
+            raise OutboxReconcileError("OUTBOX_DESTINATION_MISMATCH")
+        if payload_digest(event.payload) != event.payload_digest:
+            raise OutboxReconcileError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
+        # try 밖에서 만든다. 안에서 만들면 marker 구성 버그가 `transport_...` 로 기록되어
+        # 우리 결함이 transport 구현자 탓으로 남는다.
+        marker = build_slack_marker(event)
+        try:
+            result = self._transport.post_message(
+                channel=self.channel,
+                payload=event.payload,
+                marker=marker,
+            )
+        except SlackTransportError as error:
+            self._raise_for_failure(error, event)
+        except Exception as error:
+            # C-1 의무 위반에 대한 두 번째 방어선이다. 넓게 잡는 것이 의도다 — 좁히면
+            # 새어 나온 예외가 dispatcher 의 generic handler 로 가서 원인 없이 재시도된다.
+            self._raise_for_failure(self._rewrap(error), event)
+        return self._receipt(result.ts)
+
+    def _raise_for_failure(self, error: SlackTransportError, event: OutboxEventView) -> NoReturn:
+        """Turn one classified failure into the exception the dispatcher expects.
+
+        terminal 은 즉시 DLQ + hold 다. retryable 은 원래 예외를 그대로 올려
+        `OUTBOX_DELIVERY_FAILED` → `retry_wait` 경로를 탄다. 단 **마지막 attempt 는**
+        원인을 담은 `SlackProjectionRetryExhaustedError` 로 올린다 (C-3.1, D-020 항목 6).
+        그 시점의 state 전이는 어차피 dead letter 라 바뀌는 것은 error_code 뿐이다.
+        """
+        if event.attempts >= self.max_attempts and (
+            classify_slack_failure(error) is SlackFailureClass.RETRYABLE
+        ):
+            raise SlackProjectionRetryExhaustedError(error) from error
+        # terminal 판정과 retryable 재던지기는 T001 의 `raise_for_slack_failure` 하나만
+        # 쓴다. 여기서 다시 쓰면 분류 규칙이 두 벌이 되고 T001 test 가 도는 쪽은 죽은
+        # copy 가 된다.
+        raise_for_slack_failure(error)
+
+    @staticmethod
+    def _rewrap(error: BaseException) -> SlackTransportError:
+        """Wrap one out-of-contract exception so classification still runs.
+
+        C-1 은 transport 가 모든 실패를 `SlackTransportError` 로 감싸도록 요구한다. 그
+        의무를 어긴 구현이 있어도 분류를 건너뛰지 않는다 (D-020 항목 4).
+
+        `error_code` 는 비운다. 채우면 allowlist 밖이라 terminal 이 되고, 그것은 구현
+        결함을 되돌릴 수 없는 hold 로 바꾼다. code 없음은 규칙 2 로 retryable 이고 그쪽이
+        보수적이다 (D-020 항목 1). 원인은 `transport_exception` 에 남아 attempt 소진 시
+        dead letter 까지 간다.
+
+        이름은 builtin 이 아니면 module 을 붙인다. Package 4 가 HTTP client 를 넣으면
+        `ConnectError` 같은 흔한 이름이 여러 module 에서 나와 한 문자열로 뭉친다.
+        """
+        origin = type(error)
+        module = origin.__module__.replace(".", "_")
+        label = origin.__qualname__ if module == "builtins" else f"{module}_{origin.__qualname__}"
+        wrapped = SlackTransportError(
+            f"Slack transport raised an unwrapped {origin.__qualname__}",
+            transport_exception=label,
+        )
+        # 재시도 경로에서 이 예외가 그대로 올라간다. `__cause__` 를 손으로 붙이지 않으면
+        # 원인 예외가 traceback 에서만 보이고 (`__context__`), 그것도 dispatcher 가
+        # 예외 객체를 버리는 순간 사라진다.
+        wrapped.__cause__ = error
+        return wrapped
+
+    def _receipt(self, ts: str) -> str:
+        """Build the receipt both `send()` and `reconcile()` must agree on (C-2.3).
+
+        `{channel}` 은 생성자가 받은 값이다. `SlackSendResult.channel` 이 아니다 —
+        `reconcile()` 은 `conversations.history` message 에서 channel 을 못 얻어
+        (`ts`·`metadata`·`app_id` 셋뿐) 생성자 값밖에 쓸 수 없다. 두 경로가 다른 문자열을
+        만들면 `mark_delivered` 가 `OUTBOX_DELIVERY_RESULT_CONFLICT` 를 던진다
+        (`events.py:2717`).
+        """
+        return f"slack:{self.channel}:{ts}"

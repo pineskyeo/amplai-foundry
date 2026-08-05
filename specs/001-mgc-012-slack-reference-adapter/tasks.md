@@ -13,16 +13,6 @@
 
 ## Phase 1
 
-- [ ] MGC-012-T002 Slack projection send path with marker and receipt
-  - manifest: `task-manifests/MGC-012-T002.yaml`
-  - depends on: MGC-012-T001
-  - files: `src/amplai_foundry/governance/slack_projection.py`, `tests/test_slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-
-## Phase 2
-
 - [ ] MGC-012-T003 Bounded fail-closed reconcile by message marker read-back
   - manifest: `task-manifests/MGC-012-T003.yaml`
   - depends on: MGC-012-T002
@@ -31,7 +21,7 @@
   - verify: `python -m ruff check .`
   - verify: `python -m mypy`
 
-## Phase 3
+## Phase 2
 
 - [ ] MGC-012-T004 Ordered delivery and supersession through the real dispatcher
   - manifest: `task-manifests/MGC-012-T004.yaml`
@@ -55,6 +45,7 @@
 ## Not scheduled
 
 - MGC-012-T001 (done) Slack transport Protocol and error classification
+- MGC-012-T002 (done) Slack projection send path with marker and receipt
 
 ## Open questions
 

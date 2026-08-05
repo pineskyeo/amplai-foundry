@@ -135,11 +135,13 @@ attempts 전이를 확인한다.
 
 - destination 의 첫 event 인데 `destination_sequence` 가 1 이 아니면 어떻게 되나 —
   `YamlProjectionDestination` 은 `YAML_SEQUENCE_CAS_CONFLICT` 로 거부한다
-  (`projections.py:68`). Slack 쪽 대응 동작을 정의해야 한다.
+  (`projections.py:72`). Slack 쪽 대응 동작을 정의해야 한다.
 - payload digest 가 event 의 `payload_digest` 와 다르면 —
-  `OUTBOX_PAYLOAD_INTEGRITY_FAILURE` 로 전송 전에 멈춘다 (`projections.py:57` 대응).
+  `OUTBOX_PAYLOAD_INTEGRITY_FAILURE` 로 전송 전에 멈춘다 (`projections.py:61` 대응).
+  재시도하지 않고 곧바로 DLQ + operator hold 다 (D-022).
 - event 의 `destination_ref` 가 destination 자신의 것과 다르면 —
-  `OUTBOX_DESTINATION_MISMATCH` (`projections.py:54` 대응).
+  `OUTBOX_DESTINATION_MISMATCH` (`projections.py:58` 대응). 이것도 재시도 없이
+  DLQ + operator hold 다 (D-022).
 - 사람이 Slack 에서 Card message 를 지웠다가 다시 만든 경우 — SPEC.md 검증 항목
   "deleted/recreated Provider message" 에 있다. marker read-back 이 못 찾는 상황이다.
 - 두 dispatcher 가 같은 destination 을 동시에 claim — lease 와 fencing 으로 직렬화한다.

@@ -46,8 +46,8 @@ fake 는 `tests/` 안에 둔다. `src/` 에 넣지 않는다.
 | 6 | transport 가 `ratelimited` 를 낸다 | `retry_wait` 로 가고 attempts 가 오른다 | contract C-3 |
 | 7 | transport 가 `channel_not_found` 를 낸다 | 재시도 없이 DLQ + hold | contract C-3 |
 | 8 | transport 가 HTTP 5xx 를 낸다 | `retry_wait` | plan P-002 |
-| 9 | `event.destination_ref` 를 어긋나게 준다 | `OUTBOX_DESTINATION_MISMATCH`, transport 미호출 | contract C-2.1 |
-| 10 | payload 를 바꿔 digest 를 어긋나게 한다 | `OUTBOX_PAYLOAD_INTEGRITY_FAILURE`, transport 미호출 | contract C-2.1 |
+| 9 | `event.destination_ref` 를 어긋나게 준다 | `OUTBOX_DESTINATION_MISMATCH`, transport 미호출. 재시도 없이 DLQ + hold | contract C-2.1, D-022 |
+| 10 | payload 를 바꿔 digest 를 어긋나게 한다 | `OUTBOX_PAYLOAD_INTEGRITY_FAILURE`, transport 미호출. 재시도 없이 DLQ + hold | contract C-2.1, D-022 |
 
 시나리오 5 는 hold 가 걸린 뒤 **같은 destination 의 다음 event 가 claim 되지 않는 것**까지
 확인한다. `claim_next` 의 `d.operator_hold = 0` 조건이 그것이다 (`events.py:2634`).

@@ -4,24 +4,45 @@ import ast
 import inspect
 import sys
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
 import pytest
 
+# dispatcher 를 실물로 돌리는 fixture 는 test_governance_events 에 이미 있다. 복제하면
+# 두 벌이 어긋난다. tests/ 에 __init__.py 가 없어 pytest 가 그 디렉터리를 sys.path 에
+# 넣으므로 top-level module 로 import 된다.
+import test_governance_events as governance_fixtures
+from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import slack_projection
-from amplai_foundry.governance.events import OutboxConfig, OutboxDispatcher, OutboxReconcileError
+from amplai_foundry.governance.events import (
+    GovernanceEventError,
+    GovernanceEventService,
+    OutboxConfig,
+    OutboxDispatcher,
+    OutboxEventView,
+    OutboxReconcileError,
+    OutboxState,
+    ProjectionDestination,
+)
+from amplai_foundry.governance.models import ProposalRef
+from amplai_foundry.governance.projections import YamlProjectionDestination
 from amplai_foundry.governance.slack_projection import (
     RETRYABLE_SLACK_ERROR_CODES,
     SLACK_PROJECTION_EVENT_TYPE,
     SlackFailureClass,
     SlackHistoryMessage,
     SlackHistoryPage,
+    SlackProjectionDestination,
+    SlackProjectionRetryExhaustedError,
     SlackProjectionTerminalError,
     SlackSendResult,
     SlackTransport,
     SlackTransportError,
+    build_slack_marker,
     classify_slack_failure,
+    payload_digest,
     persisted_code_suffix,
     raise_for_slack_failure,
 )
@@ -431,3 +452,650 @@ def test_unreadable_status_code_does_not_trigger_the_rate_limit_rule(status_code
         status_code=cast("int", status_code),
     )
     assert classify_slack_failure(failure) is SlackFailureClass.TERMINAL
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T002 — SlackProjectionDestination.send()
+# --------------------------------------------------------------------------------------
+
+DESTINATION_REF = "provider:slack:sha256:" + "ab" * 32
+CHANNEL = "C0SLACK01"
+MAX_ATTEMPTS = OutboxConfig().max_attempts
+PROPOSAL = ProposalRef(
+    project_ref=ProjectRef(project_id="amplai", namespace="org/default/project/amplai"),
+    proposal_id="PROP-20260730-ABCDEF12",
+)
+PAYLOAD: dict[str, object] = {"text": "제안 카드", "blocks": [{"type": "section"}]}
+
+
+def _event(
+    *,
+    payload: dict[str, object] | None = None,
+    digest: str | None = None,
+    destination_ref: str = DESTINATION_REF,
+    destination_sequence: int = 1,
+    attempts: int = 1,
+) -> OutboxEventView:
+    body = dict(PAYLOAD if payload is None else payload)
+    return OutboxEventView(
+        event_id="EVT-0000000000000001",
+        proposal_ref=PROPOSAL,
+        aggregate_sequence=destination_sequence,
+        destination_ref=destination_ref,
+        destination_sequence=destination_sequence,
+        source_state_revision=1,
+        payload_digest=digest or payload_digest(body),
+        payload=body,
+        state=OutboxState.LEASED,
+        attempts=attempts,
+        claim_generation=attempts,
+        created_at=datetime(2026, 8, 5, tzinfo=UTC),
+    )
+
+
+def _destination(
+    transport: FakeSlackTransport,
+    *,
+    max_attempts: int = MAX_ATTEMPTS,
+) -> SlackProjectionDestination:
+    return SlackProjectionDestination(
+        transport,
+        destination_ref=DESTINATION_REF,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=max_attempts,
+    )
+
+
+class ExplodingTransport(FakeSlackTransport):
+    """C-1 의 감싸기 의무를 어기는 구현. destination 의 두 번째 방어선을 검사한다."""
+
+    def __init__(self, error: BaseException) -> None:
+        super().__init__()
+        self.error = error
+
+    def post_message(
+        self,
+        *,
+        channel: str,
+        payload: Mapping[str, object],
+        marker: Mapping[str, object],
+    ) -> SlackSendResult:
+        raise self.error
+
+
+# T002 는 send 만 연다. `reconcile` 은 T003 이라 지금은 Protocol 을 **만족하지 않는다**.
+# annotation 으로 적으면 runtime 에 아무것도 증명되지 않고 mypy 는 tests/ 를 안 본다
+# (pyproject.toml packages = ["amplai_foundry"]) — 초록불이 거짓말이 된다. 구성원을
+# 직접 대조해 T003 이 붙는 순간 이 test 가 뒤집히게 둔다.
+def test_destination_implements_the_protocol_members_t002_owns() -> None:
+    required = {n for n in vars(ProjectionDestination) if not n.startswith("_")}
+    assert required == {"reconcile", "send"}
+    destination = _destination(FakeSlackTransport())
+    assert destination.destination_ref == DESTINATION_REF
+    assert callable(destination.send)
+    assert not hasattr(destination, "reconcile"), "T003 이 붙었으면 이 test 를 갱신한다"
+
+
+# T002 AC-01 — 검증이 transport 앞이라는 것이 계약이다. 뒤로 가면 손상된 payload 가 사람에게
+# 보이는 Card 로 나가고 chat.update 로 되돌리는 것은 범위 밖이다 (research R-008).
+def test_destination_mismatch_fails_before_the_transport_is_called() -> None:
+    transport = FakeSlackTransport()
+    with pytest.raises(OutboxReconcileError) as caught:
+        _destination(transport).send(_event(destination_ref="provider:slack:other"))
+    assert caught.value.code == "OUTBOX_DESTINATION_MISMATCH"
+    assert transport.posted == []
+
+
+# T002 AC-02
+def test_payload_integrity_failure_fails_before_the_transport_is_called() -> None:
+    transport = FakeSlackTransport()
+    tampered = _event(digest=payload_digest({"text": "다른 내용"}))
+    with pytest.raises(OutboxReconcileError) as caught:
+        _destination(transport).send(tampered)
+    assert caught.value.code == "OUTBOX_PAYLOAD_INTEGRITY_FAILURE"
+    assert transport.posted == []
+
+
+# T002 AC-02 — 검증 순서도 계약이다. 둘 다 어긋난 event 는 mismatch 로 먼저 걸린다
+# (projections.py:57-61 과 같다).
+def test_destination_mismatch_is_checked_before_payload_integrity() -> None:
+    broken = _event(
+        destination_ref="provider:slack:other",
+        digest=payload_digest({"text": "다른 내용"}),
+    )
+    with pytest.raises(OutboxReconcileError) as caught:
+        _destination(FakeSlackTransport()).send(broken)
+    assert caught.value.code == "OUTBOX_DESTINATION_MISMATCH"
+
+
+# T002 AC-03
+def test_send_returns_a_slack_receipt() -> None:
+    transport = FakeSlackTransport()
+    receipt = _destination(transport).send(_event())
+    assert receipt == f"slack:{CHANNEL}:{transport.posted[0].ts}"
+
+
+# T002 AC-03 / C-2.3 — receipt 의 channel 은 생성자 값이다. reconcile 은 history message 에서
+# channel 을 못 얻으므로 (ts·metadata·app_id 셋뿐) transport 가 다른 표현을 돌려줘도
+# 두 경로가 같은 문자열을 만들어야 한다. 갈라지면 mark_delivered 가
+# OUTBOX_DELIVERY_RESULT_CONFLICT 를 던진다 (events.py:2717).
+def test_receipt_uses_the_configured_channel_not_the_response_channel() -> None:
+    class RenamingTransport(FakeSlackTransport):
+        def post_message(
+            self,
+            *,
+            channel: str,
+            payload: Mapping[str, object],
+            marker: Mapping[str, object],
+        ) -> SlackSendResult:
+            result = super().post_message(channel=channel, payload=payload, marker=marker)
+            return SlackSendResult(channel="C_RENAMED_BY_SLACK", ts=result.ts)
+
+    transport = RenamingTransport()
+    assert _destination(transport).send(_event()).startswith(f"slack:{CHANNEL}:")
+
+
+# C-2.3 의 나머지 절반 — send 와 reconcile 이 같은 문자열을 만드는지 — 는 reconcile 이
+# 없는 T002 에서 검사할 수 없다. T003 이 닫는다.
+
+
+# T002 AC-04
+def test_marker_carries_the_four_identity_fields() -> None:
+    marker = build_slack_marker(_event(destination_sequence=7))
+    assert marker["event_type"] == SLACK_PROJECTION_EVENT_TYPE
+    assert marker["event_payload"] == {
+        "event_id": "EVT-0000000000000001",
+        "destination_ref": DESTINATION_REF,
+        "destination_sequence": 7,
+        "payload_digest": payload_digest(PAYLOAD),
+    }
+
+
+# T002 AC-04 — payload 본문을 넣으면 metadata_too_large 가 난다. 그 code 는 allowlist 밖이라
+# terminal 이고 terminal 은 되돌릴 수 없는 hold 를 만든다 (research R-003 미확인).
+def test_marker_never_carries_the_payload_body() -> None:
+    transport = FakeSlackTransport()
+    _destination(transport).send(_event())
+    metadata = transport.posted[0].metadata
+    assert metadata is not None
+    serialized = repr(dict(metadata))
+    assert "제안 카드" not in serialized
+    assert "blocks" not in serialized
+
+
+# T002 AC-04 — transport 가 실제로 받는 세 인자를 그대로 고정한다. marker 를 여기서 안 보면
+# send() 가 marker 를 통째로 빼먹어도 test 가 전부 통과한다. marker 없이 나간 Card 는
+# reconcile 이 못 읽어 재시도마다 사람이 보는 channel 에 중복 Card 를 만들고, chat.update
+# 로 되돌리는 것은 범위 밖이다 (research R-008).
+def test_send_passes_the_configured_channel_payload_and_marker() -> None:
+    seen: dict[str, object] = {}
+
+    class RecordingTransport(FakeSlackTransport):
+        def post_message(
+            self,
+            *,
+            channel: str,
+            payload: Mapping[str, object],
+            marker: Mapping[str, object],
+        ) -> SlackSendResult:
+            seen["channel"] = channel
+            seen["payload"] = dict(payload)
+            seen["marker"] = dict(marker)
+            return super().post_message(channel=channel, payload=payload, marker=marker)
+
+    event = _event()
+    _destination(RecordingTransport()).send(event)
+    assert seen == {
+        "channel": CHANNEL,
+        "payload": PAYLOAD,
+        "marker": build_slack_marker(event),
+    }
+
+
+# T002 AC-05 — 두 destination 이 같은 event 를 다르게 판정하면 하나는 보내고 하나는 막는다.
+def test_digest_rule_matches_the_yaml_destination(tmp_path: Path) -> None:
+    yaml_destination = YamlProjectionDestination(
+        tmp_path / "projection.yaml",
+        destination_ref=DESTINATION_REF,
+    )
+    # digest 를 우리 규칙으로 계산한 event 를 YAML destination 이 무결성 실패 없이
+    # 받아들이면 두 규칙이 같다. private helper 를 들여다보지 않고 행동으로 대조한다.
+    # 규칙이 어긋나면 send 가 OUTBOX_PAYLOAD_INTEGRITY_FAILURE 로 터진다.
+    event = _event()
+    assert yaml_destination.send(event) == f"yaml:1:{event.payload_digest}"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"text": "한글"},
+        {"b": 1, "a": 2},
+        {"nested": {"z": [1, 2], "a": None}},
+        {},
+    ],
+)
+def test_digest_matches_the_yaml_destination_for_awkward_payloads(
+    payload: dict[str, object],
+    tmp_path: Path,
+) -> None:
+    yaml_destination = YamlProjectionDestination(
+        tmp_path / "projection.yaml",
+        destination_ref=DESTINATION_REF,
+    )
+    event = _event(payload=payload)
+    assert yaml_destination.send(event) == f"yaml:1:{event.payload_digest}"
+
+
+# T002 AC-06 — C-1 의무를 어긴 구현이 있어도 분류를 건너뛰지 않는다 (D-020 항목 4).
+def test_unwrapped_transport_exception_is_rewrapped_and_classified() -> None:
+    transport = ExplodingTransport(ConnectionResetError("peer closed"))
+    with pytest.raises(SlackTransportError) as caught:
+        _destination(transport).send(_event())
+    assert not isinstance(caught.value, OutboxReconcileError)
+    assert caught.value.error_code is None
+    assert caught.value.transport_exception == "ConnectionResetError"
+    assert isinstance(caught.value.__cause__, ConnectionResetError)
+
+
+# T002 AC-06 — 재감쌀 때 error_code 를 채우면 allowlist 밖이라 terminal 이 되고, 구현 결함이
+# 되돌릴 수 없는 hold 로 바뀐다. code 없음이 보수적인 쪽이다 (D-020 항목 1).
+@pytest.mark.parametrize(
+    "error",
+    [ValueError("bad"), KeyError("ok"), RuntimeError("boom"), TimeoutError()],
+)
+def test_rewrapped_exceptions_stay_retryable(error: Exception) -> None:
+    transport = ExplodingTransport(error)
+    with pytest.raises(SlackTransportError) as caught:
+        _destination(transport).send(_event())
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+# T002 AC-06 — terminal 신호로 새어 나온 예외도 재감싸진다. 결과는 retryable 이라 attempt 를
+# 소진한 뒤 같은 dead letter 에 도달한다.
+def test_send_never_lets_an_unclassified_exception_escape() -> None:
+    transport = ExplodingTransport(OutboxReconcileError("SOMETHING_ELSE"))
+    with pytest.raises(SlackTransportError) as caught:
+        _destination(transport).send(_event())
+    assert caught.value.transport_exception == (
+        "amplai_foundry_governance_events_OutboxReconcileError"
+    )
+
+
+# T002 AC-06 — 우리 자신의 사전 검증 실패는 재감싸지 않는다. transport 앞에서 나므로 애초에
+# try 블록 밖이다.
+def test_validation_errors_are_not_rewrapped_as_transport_failures() -> None:
+    with pytest.raises(OutboxReconcileError) as caught:
+        _destination(FakeSlackTransport()).send(_event(destination_ref="provider:slack:other"))
+    assert not isinstance(caught.value, SlackTransportError)
+
+
+# T002 AC-09 — D-022. 두 사전 검증 실패는 `OutboxReconcileError` 여야 한다. 부모인
+# `GovernanceEventError` 로 던지면 deliver_next 의 unreconcilable 경로를 못 타
+# (events.py:2856) 원인이 OUTBOX_DELIVERY_FAILED 로 덮인다. 부모 관계 때문에 타입 검사만
+# 하면 통과하므로 여기서 방향을 명시한다.
+@pytest.mark.parametrize(
+    ("event", "code"),
+    [
+        (_event(destination_ref="provider:slack:other"), "OUTBOX_DESTINATION_MISMATCH"),
+        (_event(digest=payload_digest({"text": "다른 내용"})), "OUTBOX_PAYLOAD_INTEGRITY_FAILURE"),
+    ],
+)
+def test_pre_send_validation_failures_are_unreconcilable(
+    event: OutboxEventView,
+    code: str,
+) -> None:
+    with pytest.raises(OutboxReconcileError) as caught:
+        _destination(FakeSlackTransport()).send(event)
+    assert type(caught.value) is OutboxReconcileError
+    assert caught.value.code == code
+
+
+# T002 AC-02 (T001 계약 유지) — terminal Slack code 는 attempt 와 무관하게 즉시 DLQ 다.
+@pytest.mark.parametrize("attempts", [1, MAX_ATTEMPTS])
+def test_terminal_slack_error_dead_letters_regardless_of_attempts(attempts: int) -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="channel_not_found")
+    with pytest.raises(SlackProjectionTerminalError) as caught:
+        _destination(transport).send(_event(attempts=attempts))
+    assert caught.value.code == "SLACK_PROJECTION_TERMINAL_ERROR:channel_not_found"
+
+
+# T002 AC-07 — 마지막 attempt 전에는 원래 예외를 그대로 올린다. dispatcher 의 retry_wait
+# 경로를 타야 한다. 여기서 OutboxReconcileError 를 올리면 재시도를 통째로 없앤다.
+@pytest.mark.parametrize("attempts", range(1, MAX_ATTEMPTS))
+def test_retryable_failure_before_exhaustion_is_raised_as_itself(attempts: int) -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    with pytest.raises(SlackTransportError) as caught:
+        _destination(transport).send(_event(attempts=attempts))
+    assert caught.value is transport.failure
+    assert not isinstance(caught.value, OutboxReconcileError)
+
+
+# T002 AC-08 — D-020 항목 6. 마지막 attempt 는 어차피 dead letter 다 (events.py:2778
+# `exhausted or unreconcilable`). 바뀌는 것은 error_code 뿐이고 재시도는 줄지 않는다.
+# 이것이 없으면 연결 실패, timeout, ratelimited, internal_error 가 전부
+# OUTBOX_DELIVERY_FAILED 한 줄이 된다 (events.py:2864).
+def test_last_attempt_carries_the_slack_cause_into_the_dead_letter() -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="ratelimited", status_code=429)
+    with pytest.raises(SlackProjectionRetryExhaustedError) as caught:
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS))
+    assert isinstance(caught.value, OutboxReconcileError)
+    assert caught.value.code == "SLACK_PROJECTION_RETRY_EXHAUSTED:ratelimited"
+    assert caught.value.__cause__ is transport.failure
+
+
+# T002 AC-08 — transport 층 실패는 Slack code 가 없다. 원인 예외 이름이 그 자리를 채운다.
+# operator 가 network 문제와 Slack 문제를 가르는 유일한 근거다.
+def test_last_attempt_names_the_transport_exception_when_slack_gave_no_code() -> None:
+    transport = ExplodingTransport(ConnectionResetError("peer closed"))
+    with pytest.raises(SlackProjectionRetryExhaustedError) as caught:
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS))
+    assert caught.value.code == "SLACK_PROJECTION_RETRY_EXHAUSTED:transport_connectionreseterror"
+
+
+# T002 AC-08 — code 도 원인 예외도 없으면 no_slack_code 다. terminal 경로의 unknown 과 섞으면
+# 두 사건이 같은 row 가 된다.
+def test_last_attempt_without_any_cause_is_still_distinguishable() -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(status_code=503)
+    with pytest.raises(SlackProjectionRetryExhaustedError) as caught:
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS))
+    assert caught.value.code == "SLACK_PROJECTION_RETRY_EXHAUSTED:no_slack_code"
+    assert "unknown" not in caught.value.code
+
+
+# T002 AC-08 — 저장 대상이 append-only 라 원격 문자열을 그대로 남기지 않는다.
+def test_exhausted_code_is_shaped_for_the_persisted_column() -> None:
+    transport = FakeSlackTransport()
+    # 이 code 는 allowlist 밖이라 terminal 이다. 소진 경로를 보려면 429 를 함께 준다.
+    transport.failure = _transport_failure(
+        error_code="missing_scope: chat:write",
+        status_code=429,
+    )
+    with pytest.raises(SlackProjectionRetryExhaustedError) as caught:
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS))
+    suffix = caught.value.code.split(":", 1)[1]
+    assert suffix.startswith("missing_scope__chat_write_")
+    assert len(suffix) <= 64
+
+
+# T002 AC-08 — max_attempts 를 넘긴 상태도 소진으로 본다. `claim_next` 가 counter 를 상한에서
+# 멈추므로 (events.py:2672 의 CASE WHEN attempts < ?) 실제로는 도달하지 않는다. 방어적
+# 검사다 — 경계를 == 로 쓰면 이 상태가 조용히 재시도로 새기 때문에 >= 를 고정한다.
+def test_attempts_above_the_limit_are_also_treated_as_exhausted() -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    with pytest.raises(SlackProjectionRetryExhaustedError):
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS + 3))
+
+
+# T002 AC-08 — 경계가 dispatcher 의 것과 같아야 한다. fail() 은 attempts >= max_attempts 를
+# 소진으로 본다 (events.py:2778). 한 칸 어긋나면 남은 attempt 를 버리거나 원인을 잃는다.
+def test_exhaustion_boundary_matches_the_dispatcher_rule() -> None:
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    destination = _destination(transport, max_attempts=3)
+    with pytest.raises(SlackTransportError) as retried:
+        destination.send(_event(attempts=2))
+    assert not isinstance(retried.value, OutboxReconcileError)
+    with pytest.raises(SlackProjectionRetryExhaustedError):
+        destination.send(_event(attempts=3))
+
+
+def test_constructor_rejects_a_max_attempts_below_the_dispatcher_floor() -> None:
+    # max_attempts=0 이면 첫 transient 실패가 곧바로 C-3.1 을 타 되돌릴 수 없는 hold 를
+    # 만든다. dispatcher config 와의 일치는 검증 못 하지만 이 하한은 config 없이 검사된다
+    # (OutboxConfig.max_attempts 는 Field(ge=1), events.py:2553).
+    with pytest.raises(ValueError, match="max_attempts"):
+        _destination(FakeSlackTransport(), max_attempts=0)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("destination_ref", " "),
+        ("channel", " "),
+        ("max_history_pages", 0),
+        ("max_attempts", -1),
+    ],
+)
+def test_constructor_rejects_values_that_cannot_be_recovered_from(
+    field: str,
+    value: object,
+) -> None:
+    kwargs: dict[str, object] = {
+        "destination_ref": DESTINATION_REF,
+        "channel": CHANNEL,
+        "max_history_pages": 5,
+        "max_attempts": MAX_ATTEMPTS,
+    }
+    kwargs[field] = value
+    with pytest.raises(ValueError, match=field):
+        SlackProjectionDestination(FakeSlackTransport(), **kwargs)  # type: ignore[arg-type]
+
+
+# T002 AC-10 — 검사만 하고 원본을 쓰면 env var 나 YAML scalar 에서 온 개행이 그대로 Slack
+# 에 나가 channel_not_found 를 부른다. 그 code 는 terminal 이라 hold 가 되돌릴 수 없다.
+# receipt 도 이 값을 쓰므로 정규화 안 하면 reconcile 과 갈린다 (C-2.3).
+def test_constructor_strips_surrounding_whitespace() -> None:
+    destination = SlackProjectionDestination(
+        FakeSlackTransport(),
+        destination_ref=f" {DESTINATION_REF}\n",
+        channel=f"\t{CHANNEL} ",
+        max_history_pages=5,
+        max_attempts=MAX_ATTEMPTS,
+    )
+    assert destination.destination_ref == DESTINATION_REF
+    assert destination.channel == CHANNEL
+    assert destination.send(_event()) == f"slack:{CHANNEL}:1700000000.000001"
+
+
+# Package 4 가 HTTP client 를 넣으면 ConnectError 같은 흔한 이름이 여러 module 에서 나온다.
+# module 을 안 붙이면 서로 다른 원인이 dead letter 에서 한 문자열로 뭉친다.
+def test_non_builtin_exception_names_carry_their_module() -> None:
+    transport = ExplodingTransport(GovernanceEventError("SOMETHING"))
+    with pytest.raises(SlackProjectionRetryExhaustedError) as caught:
+        _destination(transport).send(_event(attempts=MAX_ATTEMPTS))
+    assert caught.value.code.endswith(
+        ":transport_amplai_foundry_governance_events_governanceeventerror"
+    )
+
+
+# --------------------------------------------------------------------------------------
+# 실제 dispatcher 를 통과시키는 검사. D-021 의 논거는 "마지막 attempt 는 어차피 dead
+# letter 라 state 전이가 안 바뀐다" 인데, 그 주장은 exception 객체만 보는 test 로는 증명
+# 되지 않는다. 틀렸을 때의 결과가 되돌릴 수 없는 hold 라 실물로 고정한다.
+# --------------------------------------------------------------------------------------
+
+
+class ReconcilelessSlackDestination(SlackProjectionDestination):
+    """T002 에는 `reconcile` 이 없어 dispatcher 를 못 돈다. test 전용 stub 이다.
+
+    T003 이 진짜 `reconcile` 을 구현하면 이 subclass 를 지운다.
+    """
+
+    def reconcile(self, event: OutboxEventView) -> str | None:
+        return None
+
+
+def _dispatcher_fixture(
+    tmp_path: Path,
+) -> tuple[GovernanceStore, governance_fixtures.MutableClock, str]:
+    store, _active, _draft = governance_fixtures._active_proposal(tmp_path)
+    clock = governance_fixtures.MutableClock()
+    events = GovernanceEventService(store, clock=clock)
+    _audit, outbox = governance_fixtures._append(
+        events,
+        store,
+        command_id="command-1",
+        state_revision=2,
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    return store, clock, provider.destination_ref
+
+
+def _drain(
+    dispatcher: OutboxDispatcher,
+    destination: ProjectionDestination,
+    clock: governance_fixtures.MutableClock,
+    *,
+    rounds: int,
+) -> list[int]:
+    attempts: list[int] = []
+    for _ in range(rounds):
+        event = dispatcher.deliver_next("worker", destination)
+        assert event is not None
+        attempts.append(event.attempts)
+        clock.advance(timedelta(seconds=120))
+    return attempts
+
+
+def _terminal_rows(store: GovernanceStore) -> tuple[list[str], list[str]]:
+    with store.connect() as connection:
+        dead = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT error_code FROM governance_outbox_dead_letters"
+            ).fetchall()
+        ]
+        holds = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT reason_code FROM governance_operator_holds"
+            ).fetchall()
+        ]
+    return dead, holds
+
+
+# T002 AC-08 — D-021 항목 2. 마지막 attempt 에서 OutboxReconcileError 를 올려도 state 전이는
+# 그대로여야 한다. 재시도를 한 번이라도 잃으면 이 test 의 attempts 목록이 짧아진다.
+def test_exhaustion_reaches_the_dead_letter_without_losing_a_retry(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    config = OutboxConfig(lease_seconds=5)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    destination = ReconcilelessSlackDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=config.max_attempts,
+    )
+
+    attempts = _drain(dispatcher, destination, clock, rounds=config.max_attempts)
+    final = dispatcher.deliver_next("worker", destination)
+
+    assert attempts == list(range(1, config.max_attempts + 1))
+    assert final is None
+    dead, holds = _terminal_rows(store)
+    assert dead == ["SLACK_PROJECTION_RETRY_EXHAUSTED:internal_error"]
+    assert holds == ["SLACK_PROJECTION_RETRY_EXHAUSTED:internal_error"]
+
+
+# T002 AC-08 — 대조군. max_attempts 를 dispatcher 보다 크게 주면 C-3.1 이 안 돌고 원인이
+# 사라진다. 두 test 의 차이가 error_code 하나뿐임을 보여 D-021 항목 2 를 고정한다.
+def test_without_the_exhaustion_rule_the_cause_is_lost(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    config = OutboxConfig(lease_seconds=5)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    destination = ReconcilelessSlackDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=config.max_attempts + 1,
+    )
+
+    attempts = _drain(dispatcher, destination, clock, rounds=config.max_attempts)
+
+    assert attempts == list(range(1, config.max_attempts + 1))
+    dead, holds = _terminal_rows(store)
+    assert dead == ["OUTBOX_DELIVERY_FAILED"]
+    assert holds == ["OUTBOX_DELIVERY_FAILED"]
+
+
+# T002 AC-02 — terminal 은 attempt 와 무관하게 첫 실패에서 DLQ 다. 실물로 확인한다.
+def test_terminal_slack_error_dead_letters_on_the_first_attempt(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = FakeSlackTransport()
+    transport.failure = _transport_failure(error_code="invalid_auth")
+    destination = ReconcilelessSlackDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+
+    failed = dispatcher.deliver_next("worker", destination)
+
+    assert failed is not None and failed.state is OutboxState.DEAD_LETTER
+    assert failed.attempts == 1
+    dead, holds = _terminal_rows(store)
+    assert dead == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+    assert holds == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+
+
+# T002 AC-09 — D-022 를 실물로 닫는다. 이전에는 이 event 가 5번 재시도된 뒤
+# OUTBOX_DELIVERY_FAILED 로 남아 payload 손상과 평범한 전달 실패가 같은 row 가 됐다.
+def test_payload_integrity_failure_dead_letters_immediately(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = FakeSlackTransport()
+
+    # payload 가 digest 와 어긋난 상태를 만든다. DB 의 payload column 은 불변이라
+    # destination 이 보는 값을 바꿔 같은 조건을 만든다. destination_ref 불일치는
+    # dispatcher 로는 재현이 안 된다 — claim 자체가 destination_ref 로 걸린다.
+    class CorruptDigestDestination(ReconcilelessSlackDestination):
+        def send(self, event: OutboxEventView) -> str:
+            return super().send(event.model_copy(update={"payload": {"text": "다른 내용"}}))
+
+    destination = CorruptDigestDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+
+    event = dispatcher.deliver_next("worker", destination)
+
+    assert event is not None and event.state is OutboxState.DEAD_LETTER
+    assert event.attempts == 1, "재시도가 확정적으로 무의미하므로 attempt 를 안 쓴다"
+    assert transport.posted == []
+    dead, holds = _terminal_rows(store)
+    assert dead == ["OUTBOX_PAYLOAD_INTEGRITY_FAILURE"]
+    assert holds == ["OUTBOX_PAYLOAD_INTEGRITY_FAILURE"]
+
+
+# T002 AC-03 — 성공 경로도 실물로 닫는다. receipt 가 remote_receipt 에 그대로 저장된다.
+def test_successful_send_records_the_slack_receipt(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = FakeSlackTransport()
+    destination = ReconcilelessSlackDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        max_history_pages=5,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+
+    delivered = dispatcher.deliver_next("worker", destination)
+
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+    assert delivered.remote_receipt == f"slack:{CHANNEL}:{transport.posted[0].ts}"
+    # 실제 event payload 로도 digest 규칙이 통과한다. _event() 가 만든 payload 만
+    # 통과하는 것이 아님을 여기서 확인한다 (AC-05). marker 는 send() 가 자기가 만든 것을
+    # 그대로 넘겼는지만 본다 — 양변이 같은 함수를 쓰므로 marker **내용**은 여기서 안
+    # 잡힌다. 내용을 고정하는 것은 test_marker_carries_the_four_identity_fields 하나뿐이니
+    # 그것을 지우지 않는다.
+    claimed = dispatcher.get(delivered.event_id)
+    assert transport.posted[0].metadata == build_slack_marker(claimed)

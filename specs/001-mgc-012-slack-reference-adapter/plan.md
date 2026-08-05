@@ -129,7 +129,7 @@ specs/001-mgc-012-slack-reference-adapter/
 ```text
 src/amplai_foundry/governance/
 ├── events.py            # 수정 없음 — ProjectionDestination Protocol, OutboxDispatcher
-├── projections.py       # 수정 없음 — YamlProjectionDestination (참조 구현)
+├── projections.py       # 사전 검증 예외 종류만 변경 (D-022) — 나머지는 참조 구현
 ├── slack.py             # 수정 없음 — Package 1·2 의 ingress 인증
 └── slack_projection.py  # 신규 — SlackProjectionDestination, transport Protocol, error 분류
 
