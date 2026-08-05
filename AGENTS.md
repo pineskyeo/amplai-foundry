@@ -60,6 +60,7 @@
 ### Pipeline
 
 ```text
+(/grill-me)       → 계획 심문 (선택)
 /speckit-specify  → spec.md
 /speckit-plan     → plan.md
 /taskify          → task manifest
@@ -70,6 +71,8 @@ subagent review   → contract / failure-recovery / regression 3인
 
 - `/speckit-tasks`는 `/taskify`와 중복이라 **제거했다** (skill 디렉터리 삭제, workflow step은 gate로 대체). 산출물을 두 벌 만들지 않는다.
 - `/speckit-clarify`는 `/speckit-plan` 전에, `/speckit-analyze`는 `/speckit-implement` 전에 선택적으로 쓴다.
+- **`/grill-me`의 후속은 `/speckit-specify`다.** grilling 산출물(다듬어진 계획·결정·확정된 fact)은 spec 입력이다. 심문이 끝나면 손으로 문서를 쓰지 말고 `/speckit-specify`에 넘긴다.
+- **spec·plan 성격 문서는 손으로 쓰지 않는다.** `/speckit-specify`·`/speckit-plan`으로 만든다. `docs/workstreams/`는 **조사 기록**(fact 수집·원본 대조·측정 log) 용이지 spec 대체가 아니다. 손문서로 spec을 대신하면 `specs/`가 안 생겨 `/taskify`·`/speckit-implement`가 소비할 산출물이 없어지고, 그 상태를 근거로 speckit을 건너뛰는 순환이 생긴다. 경위는 [docs/SPECKIT-GRILLME-CHAIN.md](docs/SPECKIT-GRILLME-CHAIN.md).
 
 ### Skill Routing
 
@@ -94,7 +97,7 @@ subagent review   → contract / failure-recovery / regression 3인
 경계가 헷갈리는 짝:
 
 - `/feynman` vs `/eli12` — 개념이면 feynman, 이 repo의 코드면 eli12. eli12는 bug triage·code review에 쓰지 않는다 (skill 자체 선언).
-- `/grill-me` vs `/speckit-clarify` — grill-me는 형식 없는 심문이고 아무 데나 쓴다. speckit-clarify는 spec 파일에 답을 써넣는 파이프라인 단계다.
+- `/grill-me` vs `/speckit-clarify` — grill-me는 형식 없는 심문이고 아무 단계에서나 쓴다. 다만 **산출물은 `/speckit-specify`로 넘긴다** (Pipeline 절). speckit-clarify는 spec 파일에 답을 써넣는 파이프라인 단계다.
 - `/speckit-analyze` vs `/speckit-checklist` — analyze는 artifact 3자 정합성, checklist는 요구사항 자체의 품질.
 
 ### Review Before Gate
