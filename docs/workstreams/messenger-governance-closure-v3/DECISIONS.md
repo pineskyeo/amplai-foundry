@@ -396,3 +396,81 @@
   destination 변경 / 수용 후 기록)을 제시하고 사용자가 둘째를 골랐다. review 산출물은
   근거이지 승인 주체가 아니다 (D-004). 기록은
   `CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md`다.
+
+## D-023 — First Delivery Needs A Not-Sent Proof That Reconcile Cannot Read From Slack
+
+- Status: accepted
+- Decision: `reconcile()` 의 판정 규칙을 셋에서 넷으로 늘리고, 첫 시도에는 Slack 을 아예
+  조회하지 않는다. `plan.md` P-001을 좁힌다.
+
+  **문제.** C-2.2의 세 규칙으로는 destination의 첫 Card가 나가지 못한다. `deliver_next`는
+  첫 시도를 포함해 매번 `reconcile`을 먼저 부른다 (`events.py:2841`). `destination_sequence`
+  가 1이면 "더 낮은 sequence marker"가 존재할 수 없어 규칙 2가 절대 안 맞고, 아직 안
+  보냈으니 규칙 1도 안 맞는다. 그래서 규칙 3으로 떨어져 되돌릴 수 없는 hold가 된다.
+  `YamlProjectionDestination`은 같은 자리를 file 부재 → `None`으로 처리한다
+  (`projections.py:44`). Slack 쪽에는 그 대응물이 없었다.
+
+  첫 시도를 건너뛰는 것만으로는 부족하다. 첫 Card가 일시적 transport 오류를 한 번만
+  만나도 두 번째 시도에서 같은 자리에 떨어진다 — 재시도하라고 만든 분류가 재시도
+  순간에 죽는다.
+
+  **결정 넷.**
+
+  1. **`reconcile()`이 local outbox state를 판정에 써도 된다.** D-018 항목 3의 "remote가
+     유일한 진실 원천"을 이렇게 좁힌다 — *무엇이 실제로 나갔는지는 Slack만 안다. 보낼
+     시도를 한 적이 있는지는 outbox row가 안다.* R-003이 기각한 것은 "local에 ts를 저장해
+     그것으로 판정" 이었고 그 함정은 저장이 send **뒤에** 일어나는 데서 온다. `attempts`는
+     `claim_next`가 자기 transaction에서 commit하므로 send보다 **먼저** durable하다. 방향이
+     반대라 같은 함정이 아니다. `deliver_next` 자신도 이미 `last_error_code`와 `attempts`로
+     판정을 가른다 (`events.py:2843`).
+  2. **첫 시도면 Slack을 조회하지 않고 곧바로 `None`을 반환한다.** 판정 조건은
+     `attempts == 1` **이고** `last_error_code is None` 둘 다다. 전자만 보면
+     `max_attempts == 1` 구성에서 두 번째 claim이 1로 보인다 — `claim_next`의 증가가
+     `CASE WHEN attempts < max_attempts` 라 상한에서 멈추기 때문이다 (`events.py:2671`).
+     그 재claim은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'`를 요구하므로 (`events.py:2643`)
+     둘을 함께 보면 원천적으로 막힌다. Outbox row는 언제나 `attempts=0`,
+     `last_error_code=NULL`로 생성되고 (`events.py:2358`) 이 값을 되돌리는 코드는 없다.
+
+     조회를 건너뛰는 것은 부수 효과가 아니라 의도다. 첫 시도에 찾을 marker는 정의상
+     존재하지 않고, `conversations.history`는 Tier 2다 (research S4). 대부분의 Card는 첫
+     시도에 성공하므로 평상시 history 조회가 0회가 된다 (R-002의 비용 우려를 닫는다).
+  3. **"채널을 끝까지 훑었는데 없음"을 미전송의 증거로 인정한다.** 규칙이 넷이 된다.
+
+     | 발견한 것 | 판정 |
+     |---|---|
+     | 이 event의 marker | 전달 완료 |
+     | 같은 destination_ref의 더 낮은 destination_sequence marker | 미전송 |
+     | **`next_cursor`가 없어 history가 소진됨, 둘 다 없음** | **미전송** |
+     | 상한까지 훑고 멈춤, 둘 다 없음 | 판정 불가 → hold |
+
+     P-001이 막으려던 사고는 "Card가 채널에 **실제로 있는데** 조회 범위 밖이라 못 찾고
+     재전송해 **두 장**이 되는 것"이다. 그 사고는 **범위를 다 못 본 경우**에만 성립한다.
+     history가 소진됐다면 없는 것이 확정이고 두 장이 될 수 없다. Slack은 이 둘을
+     `next_cursor` 유무로 구분해 준다 (C-1.2).
+  4. **`limit=999`, `max_history_pages=5`.** limit은 상한을 그대로 쓴다 — Slack이 세는
+     것은 message 수가 아니라 호출 수라 한 번에 꽉 채우는 쪽이 손해가 없다 (S2, S4).
+
+     **5는 판단이지 측정이 아니다.** 근거로 쓸 수 있는 fact는 셋뿐이다 — page당 999 상한,
+     Tier 2 분당 20+, 그리고 항목 2로 이 조회가 재시도 때만 일어난다는 것. 정작 필요한
+     숫자인 "Card 한 장과 다음 Card 사이에 쌓이는 message 수"는 workspace에 달렸고
+     **모른다.** 그래서 값 옆에 판단임을 명시하고, 상한에 걸려 생긴 hold는 다른 원인의
+     hold와 error code로 구분되게 한다. 구분이 없으면 5가 작았다는 것을 알 방법이 없다.
+     실측은 Package 4 몫이다.
+
+  **P-001과의 관계.** P-001("사람이 지운 Card는 다시 보내지 않는다")을 폐기하지 않고
+  좁힌다. history를 소진할 수 있는 작은 채널에서는 지워진 Card가 다시 나타난다. 큰
+  채널에서는 상한에 걸려 종전대로 hold다. 저울은 한쪽으로 크게 기운다 — 좁히지 않으면
+  정상적인 일시 오류 한 번이 되돌릴 수 없는 hold를 만들고, 좁히면 사람이 일부러 지운
+  Card가 다시 뜬다. 후자는 다시 지우면 되고 전자는 되돌릴 수 없다. Card가 **두 장**이
+  되는 일은 어느 쪽에서도 없다.
+
+  `deliver_next`의 마지막 안전망은 그대로 남는다 — 최종 시도에서 `reconcile`이 `None`을
+  반환하고 `last_error_code`가 `OUTBOX_LEASE_EXPIRED`면 send 없이
+  `OUTBOX_POST_SEND_RECONCILE_REQUIRED`로 끝난다 (`events.py:2843`-`2853`).
+
+  **`events.py`는 고치지 않는다.** 네 결정 전부 destination 안에서 닫힌다.
+- Source: 2026-08-05 사용자 결정. `/speckit-analyze` 후속으로 T003 manifest를 고치던 중
+  발견했고 OQ-004로 등록한 뒤 `/grill-me`로 네 갈래를 순서대로 물어 확정했다. 후보였던
+  "destination row의 `delivered_sequence`를 본다"는 기각했다 — `OutboxEventView`에 그
+  필드가 없어 `events.py`를 고쳐야 하고 (T003 `forbidden_paths`), 그 값은 **이전** event를
+  말할 뿐 이 event가 posted됐는지에 답하지 못한다. OQ-001과 OQ-004를 함께 닫는다.

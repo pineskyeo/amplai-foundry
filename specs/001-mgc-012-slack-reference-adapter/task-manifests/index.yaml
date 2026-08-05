@@ -100,6 +100,7 @@ coverage:
       status: covered
       tasks:
         - MGC-012-T002
+        - MGC-012-T003
     - id: FR-002
       status: covered
       tasks:
@@ -171,15 +172,6 @@ coverage:
   uncovered: []
 
 open_questions:
-  - id: OQ-001
-    question: >-
-      max_history_pages 의 확정 값은 얼마인가. 너무 작으면 정상 상황이 hold 로 떨어지고
-      너무 크면 conversations.history Tier 2 rate limit 을 민다.
-    owner: MGC-012-T003
-    blocking: false
-    note: >-
-      task 경계를 바꾸지 않는 구현 상수라 blocked 로 두지 않는다. T003 이 값을 정하고 근거를
-      남긴다.
   - id: OQ-003
     question: >-
       Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다
@@ -189,6 +181,26 @@ open_questions:
     note: >-
       marker 에 payload 본문을 넣지 않는 것으로 회피한다. 실측은 실제 workspace 가 있는
       Package 4 몫이다.
+
+resolved_questions:
+  - id: OQ-001
+    question: >-
+      max_history_pages 의 확정 값은 얼마인가.
+    resolved_by: D-023 항목 4
+    resolution: >-
+      page 당 limit 999, max_history_pages 5. limit 은 S2 의 상한을 그대로 쓴다 — Slack 은
+      호출 수를 세므로 한 번에 꽉 채우는 쪽이 손해가 없다. 5 는 판단이지 측정이 아니고 그
+      사실을 코드에 적는다. 실측은 Package 4 몫이다.
+  - id: OQ-004
+    question: >-
+      destination 의 첫 전달에서 reconcile 은 무엇을 반환하는가. C-2.2 의 세 규칙으로는
+      destination_sequence 가 1 인 event 가 규칙 3 (판정 불가) 로만 떨어져 모든
+      destination 의 첫 Card 가 되돌릴 수 없는 hold 가 됐다.
+    resolved_by: D-023
+    resolution: >-
+      첫 시도(attempts == 1 이고 last_error_code is None)는 조회 없이 None 을 반환한다.
+      그리고 판정 규칙에 "history 소진" 을 더해 넷으로 늘린다. 2026-08-05 grill-me 로
+      네 갈래를 순서대로 확정했다. spec.md 의 관련 Edge Case 도 함께 해소됐다.
 
 update_history:
   - date: 2026-08-03
@@ -234,6 +246,15 @@ update_history:
       밀어낸 projections.py 인용 11곳, allowed_paths 누락, 계약에 없던 생성자 검증.
       C-2 에 거부 조건을 적고 AC-10 을 추가했다. advisory 로 생성자가 공백을 strip 하도록
       바꿨다. gate 는 아직이다 — round 2 처리에서 production code 가 한 줄 더 바뀌었다.
+    source_revision: uncommitted
+  - date: 2026-08-05
+    summary: >-
+      D-023 으로 OQ-001 과 OQ-004 를 함께 닫았다. speckit-analyze 후속으로 T003 manifest 를
+      고치다 reconcile 계약의 구멍을 발견했다 — C-2.2 의 세 규칙으로는 destination 의 첫
+      Card 가 나가지 못한다. grill-me 로 네 갈래를 확정했다. 첫 시도는 조회를 건너뛰고,
+      판정 규칙에 history 소진을 더해 넷으로 늘리고, limit 999 / max_history_pages 5 로
+      정했다. P-001 이 좁아졌다. T003 에 FR-001 을 넣고 AC-08~13 을 추가했다.
+      contracts C-2.2·C-2.2.1, research R-004, plan P-001, spec Edge Case 를 함께 고쳤다.
     source_revision: uncommitted
   - date: 2026-08-05
     summary: >-

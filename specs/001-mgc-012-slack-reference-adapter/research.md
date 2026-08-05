@@ -105,7 +105,13 @@ special tier 로 **channel 당 초당 1 message** 다 (S4). read 가 write 보�
 |---|---|
 | 이 event 의 marker | 전달 완료 — 그 receipt 를 반환한다 |
 | 같은 `destination_ref` 의 **더 낮은** `destination_sequence` marker 를 먼저 만남 | 미전송 — `None` 을 반환해 send 로 간다 |
-| 상한까지 훑어도 둘 다 못 만남 | **판정 불가 — `OutboxReconcileError` 를 던진다** |
+| `next_cursor` 가 없어 history 가 소진됐고 둘 다 못 만남 | 미전송 — `None` |
+| 상한까지 훑고 멈췄는데 둘 다 못 만남 | **판정 불가 — `OutboxReconcileError` 를 던진다** |
+
+**갱신 (D-023, 2026-08-05)**: 이 표는 원래 셋이었다. 세 번째 줄(history 소진)을 나중에
+더했고, 조회 자체를 건너뛰는 첫 시도 규칙이 앞에 붙었다. 셋만으로는 `destination_sequence`
+가 1 인 event 가 두 번째 규칙을 만족할 수 없어 **모든 destination 의 첫 Card 가 hold** 로
+떨어졌다. 확정 계약은 contracts C-2.2 다.
 
 **Rationale**: 세 번째가 핵심이다. "못 찾았으니 안 보낸 것" 으로 단정하면 조회 범위 밖에
 있던 메시지를 중복 발행한다. SPEC.md `Outbox Ordering` 은 "Reconcile 불가 시 DLQ와

@@ -65,6 +65,13 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 
 ### P-001 — Deleted Card Falls To Hold
 
+> **좁혀짐 (D-023, 2026-08-05).** 아래 결정은 **조회 범위를 다 못 본 경우로 한정된다.**
+> `next_cursor` 가 없어 history 를 끝까지 훑었는데도 marker 가 없으면 미전송으로 보고
+> 보낸다. 좁히지 않으면 `destination_sequence` 가 1 인 event 가 판정 근거를 댈 수 없어
+> **모든 destination 의 첫 Card 가 영구 hold** 가 된다. 아래 근거의 "중복 Card" 는 범위를
+> 다 못 본 경우에만 성립한다 — history 가 소진됐다면 없는 것이 확정이라 두 장이 될 수
+> 없다. 확정 계약은 contracts C-2.2 다.
+
 **결정**: 사람이 Card 를 지워 marker 를 못 찾으면 hold 로 떨어뜨린다. 다시 보내지 않는다.
 
 **근거**: reconcile 이 불리는 구간은 좁다. 이미 `delivered` 로 mark 된 event 는 다시 claim

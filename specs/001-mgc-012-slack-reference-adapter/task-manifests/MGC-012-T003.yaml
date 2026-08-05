@@ -7,9 +7,9 @@ status: ready
 
 goal:
   outcome: >-
-    reconcile() 이 channel 을 최신부터 역순으로 상한까지 훑어 세 갈래로 판정한다 —
-    marker 발견은 receipt, 하위 sequence marker 선발견은 None, 상한 초과는
-    OutboxReconcileError.
+    reconcile() 이 첫 시도를 조회 없이 미전송으로 가른 뒤, 그 밖의 경우에만 channel 을
+    최신부터 역순으로 상한까지 훑어 네 갈래로 판정한다 — marker 발견은 receipt, 하위
+    sequence marker 선발견은 None, history 소진은 None, 상한 도달은 OutboxReconcileError.
   user_value: >-
     send 성공 후 mark 전에 죽어도 중복 Card 가 생기지 않는다. 판정할 수 없으면 조용히
     추측하지 않고 operator 를 부른다.
@@ -24,19 +24,31 @@ source:
     - path: specs/001-mgc-012-slack-reference-adapter/plan.md
       section: P-001
   requirements:
+    # FR-001 은 destination_ref·reconcile()·send() 셋 전부를 요구한다. T002 가 send 만
+    # 닫았으므로 reconcile 절은 이 task 가 소유한다. T002 의 test 가 reconcile 부재를
+    # 단언하고 있어 여기서 뒤집힌다 (wave 2 review round 1 항목 2).
+    - FR-001
     - FR-003
     - FR-006
   decisions:
     - D-018
     - D-019
     - D-020
+    - D-023
 
 scope:
   include:
-    - reconcile() 의 bounded 역순 조회와 세 갈래 판정
-    - max_history_pages 상한 값 확정과 그 근거 기록
+    - reconcile() 의 첫 시도 분기와 bounded 역순 조회, 네 갈래 판정 (D-023)
+    - >-
+      OQ-001 은 D-023 항목 4 로 닫혔다 — page 당 limit 999, max_history_pages 5.
+      이름 있는 상수로 두고 "5 는 판단이지 측정이 아니다" 를 근거와 함께 옆에 쓴다.
+      근거 fact 는 셋뿐이다. limit 상한 999 (research S2), Tier 2 분당 20+ (S4),
+      이 조회는 재시도 때만 일어난다 (C-2.2 첫 시도 규칙). 실측은 Package 4 몫이다
     - 다른 app 이 심은 metadata 를 app_id 로 배제
     - event_id 는 같은데 payload_digest 가 다른 marker 를 만났을 때 계속 훑는 동작
+    - >-
+      상한 도달로 생긴 hold 를 다른 원인의 hold 와 error code 로 구분한다 (D-023 항목 4).
+      구분이 없으면 max_history_pages 가 작았다는 것을 사후에 알 방법이 없다
   exclude:
     - dispatcher 를 통한 통합 시나리오 (T005 소유)
     - Slack error 분류 (T001 소유)
@@ -62,9 +74,17 @@ implementation:
       미확정 시 다음 event 를 claim 하지 않는다 (events.py:2648).
     - reconcile 은 매 전송 시도마다 불린다 (events.py:2842). 조회 비용을 상한으로 묶는다.
   invariants:
-    - 판정 불가는 fail-closed 다. 못 찾았다고 미전송으로 단정하지 않는다.
+    - >-
+      판정 불가는 fail-closed 다. 다만 "못 찾았다" 는 둘로 갈린다 — 조회 범위를 다 못
+      본 것은 판정 불가이고, history 를 소진한 것은 미전송이 확정이다 (D-023 항목 3).
+      전자만 hold 로 보낸다.
+    - >-
+      한 번도 안 보낸 것이 확실한 상태는 판정 대상이 아니다. attempts == 1 이고
+      last_error_code 가 None 이면 조회 없이 미전송이다 (D-023 항목 2).
     - reconcile 이 만드는 receipt 와 send 가 만드는 receipt 는 같은 형식이어야 한다.
-    - remote 가 유일한 진실 원천이다. local 에 ts 를 저장해 판정하지 않는다.
+    - >-
+      무엇이 실제로 나갔는지는 remote 만 안다 — local 에 ts 를 저장해 판정하지 않는다.
+      보낼 시도를 한 적이 있는지는 outbox row 가 안다 (D-023 항목 1).
   non_goals:
     - 지워진 Card 를 재전송하는 복구
     - Retry-After 반영
@@ -81,10 +101,11 @@ acceptance:
       when: reconcile() 을 부르면
       then: None 을 반환한다
     - id: AC-03
-      given: max_history_pages 까지 훑어도 이 event 의 marker 도 하위 sequence marker 도
-        없는 상태
+      given: max_history_pages 까지 훑고 멈췄고 next_cursor 가 아직 남아 있으며 이 event
+        의 marker 도 하위 sequence marker 도 없는 상태
       when: reconcile() 을 부르면
-      then: OutboxReconcileError 를 던진다
+      then: OutboxReconcileError 를 던진다. code 로 상한 도달이 원인임을 알 수 있다
+        (D-023 항목 4)
     - id: AC-04
       given: 다른 app_id 가 심은 같은 모양의 metadata 가 history 에 있는 상태
       when: reconcile() 을 부르면
@@ -101,6 +122,39 @@ acceptance:
       given: read_history 가 SlackTransportError 아닌 예외를 던지는 transport
       when: reconcile() 을 부르면
       then: destination 이 그것을 잡아 재감싼 뒤 분류한다. 분류를 건너뛰지 않는다
+    - id: AC-08
+      given: max_history_pages 와 page 당 limit
+      when: 그 값을 읽으면
+      then: limit 은 999, max_history_pages 는 5 다. 둘 다 이름 있는 module 상수이고
+        "5 는 판단이지 측정이 아니다" 가 근거와 함께 옆에 적혀 있다. test 가 두 값을
+        고정한다 — 값을 바꾸면 test 가 깨진다 (D-023 항목 4, OQ-001 닫힘)
+    - id: AC-09
+      given: 정상 상황 — 직전 sequence 의 marker 가 history 에 있으나 그 사이에 무관한
+        message 가 쌓여 있는 상태
+      when: reconcile() 을 부르면
+      then: max_history_pages 안에서 그 marker 를 만나 None 을 반환한다. 정상 상황이
+        상한 때문에 hold 로 떨어지지 않는 것을 이 AC 가 고정한다 (OQ-001 의 한쪽 대가)
+    - id: AC-10
+      given: attempts 가 1 이고 last_error_code 가 None 인 event
+      when: reconcile() 을 부르면
+      then: None 을 반환하고 read_history 를 **한 번도 부르지 않는다** (D-023 항목 2)
+    - id: AC-11
+      given: attempts 가 1 이지만 last_error_code 가 OUTBOX_LEASE_EXPIRED 인 event
+        (max_attempts 가 1 인 구성에서 나온다)
+      when: reconcile() 을 부르면
+      then: 첫 시도로 보지 않고 조회한다. 두 조건을 함께 봐야 하는 이유를 이 AC 가
+        고정한다 (events.py:2671 의 CASE WHEN attempts < max_attempts)
+    - id: AC-12
+      given: destination_sequence 가 1 이고 attempts 가 2 이며 history 가 비어 있고
+        next_cursor 가 없는 상태 (첫 Card 가 일시 오류로 한 번 실패한 뒤)
+      when: reconcile() 을 부르면
+      then: None 을 반환한다. hold 로 떨어지지 않는다. 이것이 없으면 모든 destination 의
+        첫 Card 가 일시 오류 한 번에 영구 hold 가 된다 (D-023 항목 3)
+    - id: AC-13
+      given: history 를 끝까지 훑어 next_cursor 가 없고 상한에는 안 걸렸으며 둘 다 못
+        찾은 상태
+      when: reconcile() 을 부르면
+      then: None 을 반환한다. AC-03 과의 차이는 next_cursor 유무 하나다
   commands:
     - id: unit
       kind: test
@@ -129,6 +183,13 @@ risk:
     - 판정 규칙이 틀리면 중복 Card 또는 부당한 operator hold 가 된다.
     - max_history_pages 가 너무 작으면 정상 상황이 hold 로 떨어진다. 너무 크면 rate limit 을
       민다 (conversations.history Tier 2).
+    - >-
+      OQ-004 는 D-023 으로 닫혔다. 남은 위험은 그 결정의 대가다 — history 를 소진할 수
+      있는 작은 채널에서는 사람이 지운 Card 가 다시 나타난다. P-001 을 좁힌 결과이고
+      수용했다. Card 가 두 장이 되는 경우는 어느 쪽에서도 없다.
+    - >-
+      첫 시도 분기가 틀리면 이미 나간 Card 를 다시 보낸다. attempts 와 last_error_code
+      둘을 함께 보는 것이 그 방어다. AC-10 과 AC-11 이 양쪽을 고정한다.
   approvals:
     - wave 3 종료 시 failure/recovery lens review
 
@@ -152,5 +213,13 @@ handoff:
     - src/amplai_foundry/governance/slack_projection.py 확장
     - tests/test_slack_projection.py 확장
   notes:
-    - max_history_pages 의 확정 값과 근거를 코드 주석 또는 test 에 남긴다. OQ-001 이 여기서
-      닫힌다.
+    - >-
+      OQ-001 과 OQ-004 는 D-023 으로 닫혔다. 이 task 는 그 결정을 구현하고 test 로
+      고정하기만 한다. 값을 다시 정하지 않는다.
+    - >-
+      T002 의 test_destination_implements_the_protocol_members_t002_owns 와
+      ReconcilelessSlackDestination stub 을 지운다. 전자는 reconcile 부재를 단언하므로
+      이 task 가 reconcile 을 붙이는 순간 실패한다.
+    - >-
+      C-2.3 의 나머지 절반(send 와 reconcile 이 같은 receipt 를 만드는가)을 AC-06 이
+      닫는다. T002 에서는 reconcile 이 없어 검사할 수 없었다.

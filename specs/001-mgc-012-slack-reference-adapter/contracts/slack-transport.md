@@ -140,21 +140,65 @@ channel 과 다른 표현을 돌려주면 (이름으로 보내고 ID 를 받는 
 
 ### C-2.2 — `reconcile()` 계약
 
-최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 판정은 셋이다.
+**먼저 첫 시도를 가른다.** 아래 둘이 **모두** 참이면 Slack 을 조회하지 않고 곧바로 `None`
+을 반환한다 (D-023 항목 2).
+
+```text
+event.attempts == 1  AND  event.last_error_code is None
+```
+
+- outbox row 는 언제나 `attempts=0`·`last_error_code=NULL` 로 생성되고 (`events.py:2358`)
+  그 값을 되돌리는 코드가 없다. `claim_next` 는 자기 transaction 을 commit 하므로
+  `attempts=1` 은 `post_message` 보다 **먼저** durable 하다. 그래서 이 조건은 "이 event 로
+  Slack 을 부른 적이 한 번도 없다" 와 같다.
+- **두 조건을 함께 봐야 한다.** `attempts` 증가는 `CASE WHEN attempts < max_attempts` 라
+  상한에서 멈춘다 (`events.py:2671`). `max_attempts == 1` 구성에서는 두 번째 claim 도
+  `attempts == 1` 로 보인다. 그 재claim 은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'` 를
+  요구하므로 (`events.py:2643`) 두 번째 조건이 그것을 막는다.
+- 조회를 건너뛰는 것은 의도다. 찾을 marker 가 정의상 없고 `conversations.history` 는
+  Tier 2 다 (research S4). 대부분의 Card 가 첫 시도에 성공하므로 평상시 history 조회가
+  0회가 된다.
+
+그 밖의 경우에만 최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 판정은 넷이다.
 
 | 먼저 만난 것 | 반환 |
 |---|---|
 | 이 event 의 marker (`event_id` 일치 + `destination_ref` 일치 + `payload_digest` 일치) | `"slack:{channel}:{ts}"` |
 | 같은 `destination_ref` 의 **더 낮은** `destination_sequence` marker | `None` |
-| 상한까지 훑어도 둘 다 없음 | `OutboxReconcileError` |
+| `next_cursor` 가 없어 **history 가 소진**됐고 위 둘 다 없음 | `None` |
+| 상한까지 훑고 멈췄는데 위 둘 다 없음 | `OutboxReconcileError` |
 
 - 다른 app 이 심은 metadata 는 `app_id` 로 배제한다 (research S3).
 - 두 번째 규칙이 "아직 안 보냈다"의 증거다. `claim_next` 가 이전 sequence 미확정 시 다음
   event 를 claim 하지 않으므로 (`events.py:2648`) 역순 조회에서 N-1 을 N 보다 먼저 만나면
   N 은 아직 없다.
-- 세 번째가 fail-closed 다. `deliver_next` 가 `OutboxReconcileError` 를
+- **세 번째 규칙이 첫 Card 를 살린다** (D-023 항목 3). `destination_sequence` 가 1 이면
+  두 번째 규칙이 성립할 수 없어 — 더 낮은 sequence 가 존재하지 않는다 — 그 규칙만으로는
+  첫 Card 가 일시 오류를 한 번만 만나도 영구 hold 가 된다. P-001 이 막으려던 사고는
+  "Card 가 채널에 **실제로 있는데** 조회 범위 밖이라 못 찾고 재전송해 **두 장**이 되는
+  것" 이고, 그 사고는 범위를 다 못 본 경우에만 성립한다. history 가 소진됐으면 없는 것이
+  확정이라 두 장이 될 수 없다.
+- **세 번째와 네 번째를 구분하는 것은 `next_cursor` 하나다** (C-1.2). 마지막 page 를 받고도
+  못 찾았으면 소진, `next_cursor` 가 남았는데 page 상한에 걸려 멈췄으면 판정 불가다.
+- 네 번째가 fail-closed 다. `deliver_next` 가 `OutboxReconcileError` 를
   `fail(..., unreconcilable=True)` 로 보내고 (`events.py:2856`–`2863`), 그것이 attempts 와
   무관하게 DLQ + operator hold 를 만든다 (`events.py:2780`, `events.py:2903`).
+- **네 번째의 code 는 다른 hold 원인과 구분돼야 한다** (D-023 항목 4). `max_history_pages`
+  가 작아서 생긴 hold 인지 아닌지를 그 문자열로 알 수 있어야 한다. 구분이 없으면 값이
+  작았다는 것을 사후에 알 방법이 없다.
+
+### C-2.2.1 — Search Bounds
+
+| 값 | 확정값 | 근거 |
+|---|---|---|
+| page 당 `limit` | **999** | S2 의 상한. Slack 은 message 수가 아니라 호출 수를 세므로 (S4) 한 번에 꽉 채우는 쪽이 손해가 없다 |
+| `max_history_pages` | **5** | 판단이다. 아래 참조 |
+
+**5 는 측정이 아니라 판단이다.** 근거로 쓸 수 있는 fact 는 셋뿐이다 — page 당 999 상한
+(S2), Tier 2 분당 20+ 요청 (S4), 그리고 이 조회가 재시도 때만 일어난다는 것 (위 첫 시도
+규칙). 정작 필요한 숫자인 "Card 한 장과 다음 Card 사이에 쌓이는 message 수" 는 workspace
+에 달렸고 **모른다.** 최악 5회 호출은 Tier 2 예산의 4분의 1이다. 실측은 Package 4 몫이다
+(D-023 항목 4).
 - **`event_id` 는 같은데 `payload_digest` 가 다른 marker 를 만나면 판정하지 않고 계속
   훑는다.** 같은 event 의 다른 내용이 이미 나갔다는 뜻이라 정상 경로에서 나올 수 없다.
   상한까지 못 찾으면 세 번째 규칙으로 hold 가 걸린다.

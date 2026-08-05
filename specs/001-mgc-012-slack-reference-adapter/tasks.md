@@ -49,5 +49,4 @@
 
 ## Open questions
 
-- **OQ-001** max_history_pages 의 확정 값은 얼마인가. 너무 작으면 정상 상황이 hold 로 떨어지고 너무 크면 conversations.history Tier 2 rate limit 을 민다.
 - **OQ-003** Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다 (research.md R-003 미확인).

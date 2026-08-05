@@ -135,7 +135,10 @@ attempts 전이를 확인한다.
 
 - destination 의 첫 event 인데 `destination_sequence` 가 1 이 아니면 어떻게 되나 —
   `YamlProjectionDestination` 은 `YAML_SEQUENCE_CAS_CONFLICT` 로 거부한다
-  (`projections.py:72`). Slack 쪽 대응 동작을 정의해야 한다.
+  (`projections.py:72`). **Slack 쪽은 거부하지 않고 그냥 보낸다** (D-023). 첫 시도면
+  reconcile 이 조회 없이 미전송으로 답하고, 순서 보장은 reconcile 이 아니라 `claim_next`
+  가 한다 — 앞 sequence 가 `delivered` 나 `superseded` 가 아니면 다음 event 를 claim 하지
+  않는다 (`events.py:2648`). 그래서 Slack 쪽에는 CAS 대응물이 필요 없다.
 - payload digest 가 event 의 `payload_digest` 와 다르면 —
   `OUTBOX_PAYLOAD_INTEGRITY_FAILURE` 로 전송 전에 멈춘다 (`projections.py:61` 대응).
   재시도하지 않고 곧바로 DLQ + operator hold 다 (D-022).
