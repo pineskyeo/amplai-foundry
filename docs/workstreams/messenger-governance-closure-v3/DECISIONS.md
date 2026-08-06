@@ -296,7 +296,7 @@
      Package 4가 `OutboxConfig`를 만들 때 이 schedule과 실제 관측한 `Retry-After`를 함께
      입력으로 쓴다. R-007의 dispatcher 계약 변경 금지는 유지한다.
 
-  6. **retryable 경로의 원인 소실은 wave 2로 넘긴다.** terminal은 3에서 닫혔으나
+  6. **retryable 경로의 원인 소실은 wave 2로 넘긴다.** (**닫힘 — D-021**.) terminal은 3에서 닫혔으나
      retryable로 분류된 실패가 attempt를 소진하면 `deliver_next`의 generic handler가
      예외를 버리고 `OUTBOX_DELIVERY_FAILED` 상수만 남긴다 (`events.py:2864`). 항목 1의
      결정이 이 경로를 넓혔으므로 같은 Package 안에서 닫아야 한다. 고치려면 `events.py`를

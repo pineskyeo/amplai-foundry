@@ -51,6 +51,7 @@ tasks:
     depends_on:
       - MGC-012-T002
     requirements:
+      - FR-001
       - FR-003
       - FR-006
   - id: MGC-012-T004
@@ -149,6 +150,53 @@ coverage:
       status: covered
       tasks:
         - MGC-012-T001
+  success_criteria:
+    # /speckit-analyze C2 (2026-08-05) — FR 만 추적하고 SC 는 안 하고 있었다. 실질은
+    # 덮여 있었지만 매핑이 없어 회귀 추적이 안 됐다.
+    - id: SC-001
+      status: covered
+      tasks:
+        - MGC-012-T004
+    - id: SC-002
+      status: covered
+      tasks:
+        - MGC-012-T004
+    - id: SC-003
+      status: covered
+      tasks:
+        - MGC-012-T004
+    - id: SC-004
+      status: covered
+      tasks:
+        - MGC-012-T005
+    - id: SC-005
+      status: covered
+      tasks:
+        - MGC-012-T005
+    - id: SC-006
+      status: covered
+      tasks:
+        - MGC-012-T004
+        - MGC-012-T005
+      note: >-
+        두 task 의 regression command (python -m pytest) 가 이 기준이다. spec 이 고정
+        숫자를 쓰고 있었으나 갱신 장치가 없어 뺐다 (analyze I1).
+    - id: SC-007
+      status: covered
+      tasks:
+        - MGC-012-T005
+      note: T005 의 verify command (amplai-foundry verify) 하나가 덮는다.
+    - id: SC-008
+      status: covered
+      tasks:
+        - MGC-012-T001
+        - MGC-012-T002
+        - MGC-012-T003
+        - MGC-012-T004
+        - MGC-012-T005
+      note: >-
+        task 가 아니라 wave 마다 도는 3 lens review 가 충족한다. 근거는 CHECKPOINTS 의
+        wave 별 review 기록이다.
   deferred:
     - id: A15-package-4
       reason: >-
@@ -166,6 +214,48 @@ coverage:
     - id: R-008
       reason: >-
         이미 전달된 Card 를 chat.update 로 갱신하는 기능은 A11 에 근거가 없다.
+    # 아래는 wave 2·3 review 가 넘긴 것이다. CHECKPOINTS 에만 있어 owner 가 없었다
+    # (/speckit-analyze C3, 2026-08-05).
+    - id: W2-outbox-config-wiring
+      owner: Package 4
+      reason: >-
+        SlackProjectionDestination 이 max_attempts 를 int 로 받아 dispatcher config 와
+        어긋날 수 있다. 과소 설정이면 남은 attempt 를 버리고 되돌릴 수 없는 hold 를
+        만든다. T003 이 read 실패에도 그 규칙을 적용해 표면이 넓어졌다. 생성자가
+        OutboxConfig 를 받게 하면 닫힌다. D-021·D-024 가 대가로 수용했다.
+    - id: W2-yaml-divergence-asymmetry
+      owner: 미정
+      reason: >-
+        projections.py 의 YAML_PROJECTION_DIVERGED 가 reconcile 에서는
+        OutboxReconcileError, send 에서는 GovernanceEventError 다. 같은 divergence 가
+        발견 위치에 따라 즉시 hold 와 5회 재시도로 갈린다. D-022 의 논거가 그대로
+        적용되지만 AC-09 가 지목한 두 code 밖이다.
+    - id: W2-pytest-import-mode
+      owner: 미정
+      reason: >-
+        tests/test_slack_projection.py 가 test_governance_events 를 top-level 로
+        import 한다. pytest 의 prepend import mode 에 의존해서 --import-mode=importlib
+        이나 tests/__init__.py 가 생기면 깨진다. pyproject.toml 에 pythonpath 를 넣어야
+        하는데 그 파일이 forbidden_paths 라 별도 item 이다.
+    - id: W3-transport-readback-selfcheck
+      owner: Package 4
+      reason: >-
+        adapter 가 기동 전에 자기가 보낸 message 를 read_history 로 되읽어 marker 가
+        복원되는지 확인해야 한다. 값이 틀린 app_id, metadata 매핑 누락, event_type 개명을
+        한 번에 잡는 유일한 검사다. destination 은 그중 일부만 지문으로 잡고, 못 잡는
+        경우의 결과는 hold 가 아니라 조용한 중복 Card 다. contracts C-1.2, D-024 항목 2.
+    - id: W3-history-ordering-unverified
+      owner: Package 4
+      reason: >-
+        conversations.history 가 최신 message 부터 돌려주는지 Slack 문서에서 확인하지
+        못했다. page 사이의 순서가 뒤집히면 중복 Card 가 난다. destination 은 page 안에서만
+        그 의존을 없앴다. contracts C-1, research R-004 미확인.
+    - id: W3-history-oauth-scope
+      owner: Package 4
+      reason: >-
+        conversations.history 에 필요한 OAuth scope 가 C-1.2 에 없다. chat:write 만 있는
+        배포는 send 는 성공하고 첫 재시도의 read 에서 missing_scope → terminal →
+        되돌릴 수 없는 hold 가 된다.
   excluded:
     - id: A1-A10
       reason: Package 1·2 에서 이미 충족했다. gate PASS at ef35201, 2dcf663.
@@ -255,6 +345,16 @@ update_history:
       판정 규칙에 history 소진을 더해 넷으로 늘리고, limit 999 / max_history_pages 5 로
       정했다. P-001 이 좁아졌다. T003 에 FR-001 을 넣고 AC-08~13 을 추가했다.
       contracts C-2.2·C-2.2.1, research R-004, plan P-001, spec Edge Case 를 함께 고쳤다.
+    source_revision: uncommitted
+  - date: 2026-08-06
+    summary: >-
+      2026-08-05 /speckit-analyze 의 미처리 항목을 정리했다. SC-001~008 매핑을
+      coverage.success_criteria 로 추가하고 (C2), wave 2·3 review 가 넘긴 여섯을
+      coverage.deferred 에 owner 와 함께 등록했다 (C3). SC-006 의 "709 test" 를 빼고
+      전량 통과 기준으로 바꿨다 (I1) — 숫자는 wave 마다 늘고 갱신 장치가 없다.
+      plan 의 Scale/Scope·source tree·--out 설명, spec 의 SC-005 문구와 해소된
+      Assumptions, Message marker 가 type 이 아니라는 것을 고쳤다. D-020 항목 6 에
+      D-021 forward pointer 를 달았다. 코드 변경 없음.
     source_revision: uncommitted
   - date: 2026-08-05
     summary: >-

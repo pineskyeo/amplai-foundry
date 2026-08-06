@@ -28,7 +28,7 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 
 **Storage**: SQLite governance store. Package 3 는 schema 를 바꾸지 않는다
 
-**Testing**: `python -m pytest`. 기존 709 test 가 baseline
+**Testing**: `python -m pytest` 전량. 숫자를 baseline 으로 고정하지 않는다 (SC-006)
 
 **Target Platform**: local CLI / worker process
 
@@ -40,7 +40,8 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 **Constraints**: `destination_ref` 형식 `provider:{provider}:{channel_digest}` 불변
 (D-018 항목 1). `OutboxDispatcher` 계약 불변 (MGC-008 gate PASS at `e989566`)
 
-**Scale/Scope**: 신규 module 1개, 신규 test file 1개. 기존 파일 수정은 export 추가 수준
+**Scale/Scope**: 신규 module 1개, 신규 test file 1개. 기존 파일은 `projections.py` 의 사전
+검증 예외 종류와 그 test 만 바뀐다 (D-022)
 
 ## Constitution Check
 
@@ -123,13 +124,15 @@ specs/001-mgc-012-slack-reference-adapter/
 │   └── slack-transport.md   # transport Protocol 과 destination 계약
 └── tasks.md             # /taskify manifest 에서 생성한다. 손으로 쓰지 않는다
                          # python3 .specify/scripts/taskify_to_tasks_md.py \
-                         #     specs/001-mgc-012-slack-reference-adapter/task-manifests \
-                         #     --out specs/001-mgc-012-slack-reference-adapter/tasks.md
+                         #     specs/001-mgc-012-slack-reference-adapter/task-manifests
 ```
 
 설계 소스가 `specs/` 안에 있으므로 taskify 출력 위치는 `.amplai/tasks/` 가 아니라
 `<feature-directory>/task-manifests/` 다 (`.claude/skills/taskify/SKILL.md:59-60`).
-`--out` 은 그래도 필요하다 — manifest 디렉터리와 `tasks.md` 위치가 다르다.
+`--out` 은 **필요 없다.** script 기본값이 `<manifest-dir>/../tasks.md` 인데 manifest 가
+`specs/<feature>/task-manifests/` 안에 있어 그 값이 정확히 맞는다. 생성된 `tasks.md` 의
+header 가 출력하는 재생성 명령에도 `--out` 이 없다. `--out` 이 필요한 것은 manifest 가
+`.amplai/tasks/` 아래 있을 때다.
 
 ### Source Code (repository root)
 
@@ -141,7 +144,8 @@ src/amplai_foundry/governance/
 └── slack_projection.py  # 신규 — SlackProjectionDestination, transport Protocol, error 분류
 
 tests/
-└── test_slack_projection.py   # 신규
+├── test_slack_projection.py   # 신규
+└── test_governance_events.py  # D-022 의 projections.py 변경에 대한 test 추가
 ```
 
 **Structure Decision**: 기존 단일 package 구조를 그대로 쓴다. `slack.py` 에 넣지 않고
