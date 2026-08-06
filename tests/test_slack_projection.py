@@ -30,12 +30,17 @@ from amplai_foundry.governance.models import ProposalRef
 from amplai_foundry.governance.projections import YamlProjectionDestination
 from amplai_foundry.governance.slack_projection import (
     RETRYABLE_SLACK_ERROR_CODES,
+    SLACK_HISTORY_PAGE_LIMIT,
+    SLACK_MAX_HISTORY_PAGES,
     SLACK_PROJECTION_EVENT_TYPE,
     SlackFailureClass,
     SlackHistoryMessage,
     SlackHistoryPage,
     SlackProjectionDestination,
+    SlackProjectionMarkerDigestMismatchError,
+    SlackProjectionMetadataUnreadableError,
     SlackProjectionRetryExhaustedError,
+    SlackProjectionSearchCapError,
     SlackProjectionTerminalError,
     SlackSendResult,
     SlackTransport,
@@ -45,6 +50,7 @@ from amplai_foundry.governance.slack_projection import (
     payload_digest,
     persisted_code_suffix,
     raise_for_slack_failure,
+    read_slack_marker,
 )
 from amplai_foundry.governance.store import GovernanceStore
 
@@ -460,6 +466,9 @@ def test_unreadable_status_code_does_not_trigger_the_rate_limit_rule(status_code
 
 DESTINATION_REF = "provider:slack:sha256:" + "ab" * 32
 CHANNEL = "C0SLACK01"
+# FakeSlackTransport 가 post 할 때 쓰는 값과 같아야 한다. reconcile 이 app_id 로 남의
+# metadata 를 배제하므로 어긋나면 우리 marker 도 못 읽는다.
+APP_ID = "A123"
 MAX_ATTEMPTS = OutboxConfig().max_attempts
 PROPOSAL = ProposalRef(
     project_ref=ProjectRef(project_id="amplai", namespace="org/default/project/amplai"),
@@ -478,7 +487,9 @@ def _event(
 ) -> OutboxEventView:
     body = dict(PAYLOAD if payload is None else payload)
     return OutboxEventView(
-        event_id="EVT-0000000000000001",
+        # 순번이 다르면 다른 event 다. 하나로 고정하면 "직전 카드" 와 "현재 카드" 가
+        # 같은 event 가 되어 reconcile test 가 조용히 무의미해진다.
+        event_id=f"EVT-{destination_sequence:016d}",
         proposal_ref=PROPOSAL,
         aggregate_sequence=destination_sequence,
         destination_ref=destination_ref,
@@ -497,12 +508,14 @@ def _destination(
     transport: FakeSlackTransport,
     *,
     max_attempts: int = MAX_ATTEMPTS,
+    max_history_pages: int = SLACK_MAX_HISTORY_PAGES,
 ) -> SlackProjectionDestination:
     return SlackProjectionDestination(
         transport,
         destination_ref=DESTINATION_REF,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=max_history_pages,
         max_attempts=max_attempts,
     )
 
@@ -524,17 +537,19 @@ class ExplodingTransport(FakeSlackTransport):
         raise self.error
 
 
-# T002 는 send 만 연다. `reconcile` 은 T003 이라 지금은 Protocol 을 **만족하지 않는다**.
-# annotation 으로 적으면 runtime 에 아무것도 증명되지 않고 mypy 는 tests/ 를 안 본다
-# (pyproject.toml packages = ["amplai_foundry"]) — 초록불이 거짓말이 된다. 구성원을
-# 직접 대조해 T003 이 붙는 순간 이 test 가 뒤집히게 둔다.
-def test_destination_implements_the_protocol_members_t002_owns() -> None:
+# T003 이 reconcile 을 붙여 이제 Protocol 을 실제로 만족한다. annotation 으로 적으면
+# runtime 에 아무것도 증명되지 않고 mypy 는 tests/ 를 안 본다
+# (pyproject.toml packages = ["amplai_foundry"]) — 구성원과 signature 를 직접 대조한다.
+def test_destination_satisfies_the_projection_destination_protocol() -> None:
     required = {n for n in vars(ProjectionDestination) if not n.startswith("_")}
     assert required == {"reconcile", "send"}
     destination = _destination(FakeSlackTransport())
     assert destination.destination_ref == DESTINATION_REF
-    assert callable(destination.send)
-    assert not hasattr(destination, "reconcile"), "T003 이 붙었으면 이 test 를 갱신한다"
+    for name in required:
+        protocol = _resolved_signature(ProjectionDestination, name)
+        actual = _resolved_signature(SlackProjectionDestination, name)
+        assert list(protocol.parameters) == list(actual.parameters)
+        assert protocol.return_annotation == actual.return_annotation
 
 
 # T002 AC-01 — 검증이 transport 앞이라는 것이 계약이다. 뒤로 가면 손상된 payload 가 사람에게
@@ -605,7 +620,7 @@ def test_marker_carries_the_four_identity_fields() -> None:
     marker = build_slack_marker(_event(destination_sequence=7))
     assert marker["event_type"] == SLACK_PROJECTION_EVENT_TYPE
     assert marker["event_payload"] == {
-        "event_id": "EVT-0000000000000001",
+        "event_id": "EVT-0000000000000007",
         "destination_ref": DESTINATION_REF,
         "destination_sequence": 7,
         "payload_digest": payload_digest(PAYLOAD),
@@ -858,6 +873,7 @@ def test_constructor_rejects_a_max_attempts_below_the_dispatcher_floor() -> None
     [
         ("destination_ref", " "),
         ("channel", " "),
+        ("app_id", " "),
         ("max_history_pages", 0),
         ("max_attempts", -1),
     ],
@@ -869,6 +885,7 @@ def test_constructor_rejects_values_that_cannot_be_recovered_from(
     kwargs: dict[str, object] = {
         "destination_ref": DESTINATION_REF,
         "channel": CHANNEL,
+        "app_id": APP_ID,
         "max_history_pages": 5,
         "max_attempts": MAX_ATTEMPTS,
     }
@@ -885,11 +902,13 @@ def test_constructor_strips_surrounding_whitespace() -> None:
         FakeSlackTransport(),
         destination_ref=f" {DESTINATION_REF}\n",
         channel=f"\t{CHANNEL} ",
+        app_id=f" {APP_ID} ",
         max_history_pages=5,
         max_attempts=MAX_ATTEMPTS,
     )
     assert destination.destination_ref == DESTINATION_REF
     assert destination.channel == CHANNEL
+    assert destination.app_id == APP_ID
     assert destination.send(_event()) == f"slack:{CHANNEL}:1700000000.000001"
 
 
@@ -909,16 +928,6 @@ def test_non_builtin_exception_names_carry_their_module() -> None:
 # letter 라 state 전이가 안 바뀐다" 인데, 그 주장은 exception 객체만 보는 test 로는 증명
 # 되지 않는다. 틀렸을 때의 결과가 되돌릴 수 없는 hold 라 실물로 고정한다.
 # --------------------------------------------------------------------------------------
-
-
-class ReconcilelessSlackDestination(SlackProjectionDestination):
-    """T002 에는 `reconcile` 이 없어 dispatcher 를 못 돈다. test 전용 stub 이다.
-
-    T003 이 진짜 `reconcile` 을 구현하면 이 subclass 를 지운다.
-    """
-
-    def reconcile(self, event: OutboxEventView) -> str | None:
-        return None
 
 
 def _dispatcher_fixture(
@@ -978,11 +987,12 @@ def test_exhaustion_reaches_the_dead_letter_without_losing_a_retry(tmp_path: Pat
     dispatcher = OutboxDispatcher(store, config=config, clock=clock)
     transport = FakeSlackTransport()
     transport.failure = _transport_failure(error_code="internal_error")
-    destination = ReconcilelessSlackDestination(
+    destination = SlackProjectionDestination(
         transport,
         destination_ref=provider_ref,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
         max_attempts=config.max_attempts,
     )
 
@@ -1004,11 +1014,12 @@ def test_without_the_exhaustion_rule_the_cause_is_lost(tmp_path: Path) -> None:
     dispatcher = OutboxDispatcher(store, config=config, clock=clock)
     transport = FakeSlackTransport()
     transport.failure = _transport_failure(error_code="internal_error")
-    destination = ReconcilelessSlackDestination(
+    destination = SlackProjectionDestination(
         transport,
         destination_ref=provider_ref,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
         max_attempts=config.max_attempts + 1,
     )
 
@@ -1026,11 +1037,12 @@ def test_terminal_slack_error_dead_letters_on_the_first_attempt(tmp_path: Path) 
     dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
     transport = FakeSlackTransport()
     transport.failure = _transport_failure(error_code="invalid_auth")
-    destination = ReconcilelessSlackDestination(
+    destination = SlackProjectionDestination(
         transport,
         destination_ref=provider_ref,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
         max_attempts=OutboxConfig().max_attempts,
     )
 
@@ -1053,7 +1065,7 @@ def test_payload_integrity_failure_dead_letters_immediately(tmp_path: Path) -> N
     # payload 가 digest 와 어긋난 상태를 만든다. DB 의 payload column 은 불변이라
     # destination 이 보는 값을 바꿔 같은 조건을 만든다. destination_ref 불일치는
     # dispatcher 로는 재현이 안 된다 — claim 자체가 destination_ref 로 걸린다.
-    class CorruptDigestDestination(ReconcilelessSlackDestination):
+    class CorruptDigestDestination(SlackProjectionDestination):
         def send(self, event: OutboxEventView) -> str:
             return super().send(event.model_copy(update={"payload": {"text": "다른 내용"}}))
 
@@ -1061,7 +1073,8 @@ def test_payload_integrity_failure_dead_letters_immediately(tmp_path: Path) -> N
         transport,
         destination_ref=provider_ref,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
         max_attempts=OutboxConfig().max_attempts,
     )
 
@@ -1080,11 +1093,12 @@ def test_successful_send_records_the_slack_receipt(tmp_path: Path) -> None:
     store, clock, provider_ref = _dispatcher_fixture(tmp_path)
     dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
     transport = FakeSlackTransport()
-    destination = ReconcilelessSlackDestination(
+    destination = SlackProjectionDestination(
         transport,
         destination_ref=provider_ref,
         channel=CHANNEL,
-        max_history_pages=5,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
         max_attempts=OutboxConfig().max_attempts,
     )
 
@@ -1099,3 +1113,489 @@ def test_successful_send_records_the_slack_receipt(tmp_path: Path) -> None:
     # 그것을 지우지 않는다.
     claimed = dispatcher.get(delivered.event_id)
     assert transport.posted[0].metadata == build_slack_marker(claimed)
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T003 — SlackProjectionDestination.reconcile()
+# --------------------------------------------------------------------------------------
+
+
+def _marker_message(
+    event: OutboxEventView,
+    *,
+    ts: str,
+    app_id: str = APP_ID,
+    digest: str | None = None,
+) -> SlackHistoryMessage:
+    marker = build_slack_marker(event)
+    if digest is not None:
+        body = dict(cast("Mapping[str, object]", marker["event_payload"]))
+        body["payload_digest"] = digest
+        marker = {"event_type": marker["event_type"], "event_payload": body}
+    return SlackHistoryMessage(ts=ts, metadata=marker, app_id=app_id)
+
+
+def _noise(ts: str) -> SlackHistoryMessage:
+    """사람이 채널에서 떠든 message. marker 가 없다."""
+    return SlackHistoryMessage(ts=ts, metadata=None, app_id="AHUMAN")
+
+
+def _seed(transport: FakeSlackTransport, *messages: SlackHistoryMessage) -> None:
+    """오래된 것부터 넣는다. read_history 가 뒤집어 최신부터 돌려준다."""
+    transport.posted.extend(messages)
+
+
+def _retried(event: OutboxEventView) -> OutboxEventView:
+    """첫 시도 분기를 지나 실제로 조회하게 만든 event."""
+    return event.model_copy(update={"attempts": 2})
+
+
+# T003 AC-01
+def test_reconcile_returns_the_receipt_when_the_marker_is_present() -> None:
+    transport = FakeSlackTransport()
+    event = _event(destination_sequence=2)
+    _seed(transport, _noise("1700000000.000001"), _marker_message(event, ts="1700000000.000002"))
+
+    assert (
+        _destination(transport).reconcile(_retried(event)) == f"slack:{CHANNEL}:1700000000.000002"
+    )
+
+
+# T003 AC-02 — 하위 sequence marker 선발견이 "아직 안 보냈다" 의 증거다. claim_next 가
+# 이전 sequence 미확정 시 다음 event 를 claim 하지 않으므로 (events.py:2648) 역순 조회에서
+# N-1 을 N 보다 먼저 만나면 N 은 아직 없다.
+def test_reconcile_returns_none_when_a_lower_sequence_marker_comes_first() -> None:
+    # page 가 남아 있어야 이 규칙이 실제로 판정한다. history 를 소진시키면 "소진 → 미전송"
+    # 규칙이 대신 None 을 만들어 이 test 가 규칙 2 를 지워도 통과한다.
+    transport = FakeSlackTransport(page_size=1)
+    previous = _event(destination_sequence=1)
+    current = _event(destination_sequence=2)
+    _seed(transport, _noise("1700000000.000001"), _marker_message(previous, ts="1700000000.000002"))
+
+    assert _destination(transport, max_history_pages=1).reconcile(_retried(current)) is None
+    assert len(transport.history_calls) == 1, "page 1 에서 판정해야 한다"
+
+
+# T003 AC-02 — 다른 channel 의 marker 는 sequence counter 가 별개다. 그것을 하위 sequence
+# 증거로 읽으면 아직 안 나간 Card 를 나갔다고 하거나 그 반대가 된다.
+def test_foreign_destination_marker_is_not_evidence_of_anything() -> None:
+    transport = FakeSlackTransport(page_size=1)
+    foreign = _event(destination_ref="provider:slack:other", destination_sequence=1)
+    ours = _event(destination_sequence=5)
+    # 우리 marker 가 더 오래됐다. foreign 이 page 1, 우리 것이 page 2 다.
+    _seed(transport, _marker_message(ours, ts="1700000000.000001"))
+    _seed(transport, _marker_message(foreign, ts="1700000000.000002"))
+
+    receipt = _destination(transport, max_history_pages=2).reconcile(_retried(ours))
+
+    assert receipt == "slack:C0SLACK01:1700000000.000001"
+
+
+# T003 AC-03 — 상한에 걸려 멈췄고 next_cursor 가 아직 남아 있다. 판정 불가라 fail-closed 다.
+def test_reconcile_raises_when_the_page_cap_is_reached() -> None:
+    transport = FakeSlackTransport(page_size=1)
+    _seed(transport, *(_noise(f"1700000000.00000{n}") for n in range(1, 6)))
+
+    with pytest.raises(SlackProjectionSearchCapError) as caught:
+        _destination(transport, max_history_pages=2).reconcile(_retried(_event()))
+
+    assert isinstance(caught.value, OutboxReconcileError)
+    # 상한이 원인임이 code 로 드러나야 한다. 다른 hold 원인과 같은 문자열이면
+    # max_history_pages 를 올려야 하는지 판단할 근거가 없다 (D-023 항목 4).
+    assert caught.value.code == "SLACK_PROJECTION_RECONCILE_SEARCH_CAP_REACHED"
+    assert len(transport.history_calls) == 2
+
+
+# T003 AC-04 — 다른 app 이 심은 같은 모양의 metadata 를 우리 marker 로 읽으면 남의
+# message 를 우리 Card 로 확정한다 (research S3).
+def test_reconcile_ignores_markers_planted_by_another_app() -> None:
+    transport = FakeSlackTransport()
+    event = _event()
+    _seed(transport, _marker_message(event, ts="1700000000.000001", app_id="AOTHER"))
+
+    assert _destination(transport).reconcile(_retried(event)) is None
+
+
+# T003 AC-05 (부분) — page 수가 상한을 넘지 않고 limit 은 999 로 나간다.
+# `include_all_metadata` 는 이 계층에서 검사할 수 없다. C-1.2 가 transport **구현체**의
+# 의무로 규정했고 Protocol signature 에 그 인자가 없다. Package 4 몫이다.
+def test_reconcile_bounds_its_reads() -> None:
+    transport = FakeSlackTransport(page_size=1)
+    _seed(transport, *(_noise(f"1700000000.00000{n}") for n in range(1, 9)))
+
+    with pytest.raises(SlackProjectionSearchCapError):
+        _destination(transport, max_history_pages=3).reconcile(_retried(_event()))
+
+    assert len(transport.history_calls) == 3
+    assert {limit for _, limit in transport.history_calls} == {SLACK_HISTORY_PAGE_LIMIT}
+
+
+# T003 AC-06 — C-2.3 의 나머지 절반. T002 에는 reconcile 이 없어 검사할 수 없었다.
+# 두 경로가 다른 문자열을 만들면 mark_delivered 가 OUTBOX_DELIVERY_RESULT_CONFLICT 를
+# 던진다 (events.py:2717).
+def test_send_and_reconcile_agree_on_the_receipt() -> None:
+    transport = FakeSlackTransport()
+    destination = _destination(transport)
+    event = _event()
+
+    sent = destination.send(event)
+
+    assert destination.reconcile(_retried(event)) == sent
+
+
+# T003 AC-07 — read 경로도 C-1 의무 위반에 대한 방어선을 갖는다 (D-020 항목 4).
+def test_reconcile_rewraps_an_unwrapped_read_exception() -> None:
+    class ExplodingReader(FakeSlackTransport):
+        def read_history(
+            self,
+            *,
+            channel: str,
+            cursor: str | None,
+            limit: int,
+        ) -> SlackHistoryPage:
+            raise ConnectionResetError("peer closed")
+
+    with pytest.raises(SlackTransportError) as caught:
+        _destination(ExplodingReader()).reconcile(_retried(_event()))
+
+    assert not isinstance(caught.value, OutboxReconcileError)
+    assert caught.value.transport_exception == "ConnectionResetError"
+
+
+# T003 AC-07 — 분류된 terminal read 실패는 즉시 DLQ 다.
+def test_reconcile_classifies_a_terminal_read_failure() -> None:
+    transport = FakeSlackTransport()
+    transport.read_failure = _transport_failure(error_code="channel_not_found")
+
+    with pytest.raises(SlackProjectionTerminalError) as caught:
+        _destination(transport).reconcile(_retried(_event()))
+
+    assert caught.value.code == "SLACK_PROJECTION_TERMINAL_ERROR:channel_not_found"
+
+
+# T003 AC-08 — D-023 항목 4 가 확정한 값. 바꾸면 이 test 가 깨진다.
+def test_search_bounds_are_pinned() -> None:
+    assert SLACK_HISTORY_PAGE_LIMIT == 999
+    assert SLACK_MAX_HISTORY_PAGES == 5
+    # 999 는 conversations.history 의 문서화된 상한이다 (research S2). 넘으면 Slack 이 거부한다.
+    assert SLACK_HISTORY_PAGE_LIMIT <= 999
+
+
+# T003 AC-09 — 정상 상황이 상한 때문에 hold 로 떨어지지 않는다. OQ-001 의 한쪽 대가다.
+def test_normal_gap_between_cards_stays_inside_the_bound() -> None:
+    transport = FakeSlackTransport(page_size=10)
+    previous = _event(destination_sequence=1)
+    current = _event(destination_sequence=2)
+    # 오래된 noise → 직전 Card → 그 뒤에 쌓인 무관한 message. 최신부터 읽으므로 marker 는
+    # page 2 에 있고, 그 page 에는 next_cursor 가 남아 있다. 이렇게 두지 않으면 history
+    # 소진이 대신 None 을 만들어 이 test 가 하위 sequence 규칙을 지워도 통과한다.
+    _seed(transport, *(_noise(f"1700000000.{n:06d}") for n in range(1, 20)))
+    _seed(transport, _marker_message(previous, ts="1700000000.000020"))
+    _seed(transport, *(_noise(f"1700000000.{n:06d}") for n in range(21, 40)))
+
+    assert _destination(transport).reconcile(_retried(current)) is None
+    calls = len(transport.history_calls)
+    assert calls == 2, "page 2 에서 판정해야 한다"
+    assert calls < SLACK_MAX_HISTORY_PAGES, "정상 상황이 상한에 닿으면 안 된다"
+
+
+# T003 AC-10 — 첫 시도면 조회 자체를 안 한다 (D-023 항목 2). 찾을 marker 가 정의상 없고
+# conversations.history 는 Tier 2 다. 대부분의 Card 가 첫 시도에 성공하므로 평상시 조회가
+# 0회가 된다.
+def test_first_attempt_skips_the_read_entirely() -> None:
+    transport = FakeSlackTransport()
+    event = _event(attempts=1)
+    assert event.last_error_code is None
+
+    assert _destination(transport).reconcile(event) is None
+    assert transport.history_calls == []
+
+
+# T003 AC-11 — attempts 만 보면 안 되는 이유. max_attempts 가 1 인 구성에서는 증가가
+# 상한에서 멈춰 (events.py:2672) 두 번째 claim 도 attempts == 1 로 보인다. 그 재claim 은
+# last_error_code = OUTBOX_LEASE_EXPIRED 를 요구한다 (events.py:2644).
+def test_lease_expired_replay_is_not_treated_as_a_first_attempt() -> None:
+    transport = FakeSlackTransport()
+    event = _event(attempts=1).model_copy(update={"last_error_code": "OUTBOX_LEASE_EXPIRED"})
+
+    assert _destination(transport).reconcile(event) is None
+    assert transport.history_calls != [], "조회를 건너뛰면 이미 나간 Card 를 다시 보낸다"
+
+
+# T003 AC-12 — 이 test 가 없으면 모든 destination 의 첫 Card 가 일시 오류 한 번에 영구
+# hold 가 된다. D-023 이 닫은 구멍의 회귀 방어다.
+def test_first_card_survives_one_transient_failure() -> None:
+    transport = FakeSlackTransport()
+    first_card = _event(destination_sequence=1, attempts=2)
+
+    assert _destination(transport).reconcile(first_card) is None
+
+
+# T003 AC-13 — history 소진과 상한 도달의 차이는 next_cursor 하나다 (D-023 항목 3).
+def test_exhausted_history_is_not_undecidable() -> None:
+    transport = FakeSlackTransport(page_size=10)
+    _seed(transport, *(_noise(f"1700000000.00000{n}") for n in range(1, 4)))
+
+    assert _destination(transport).reconcile(_retried(_event())) is None
+    assert transport.history_calls == [(None, SLACK_HISTORY_PAGE_LIMIT)]
+
+
+# T003 — event_id 는 같은데 payload_digest 가 다른 marker 를 만나면 즉시 멈춘다. 지나가면
+# 뒤에서 하위 sequence 를 만나거나 history 가 소진되어 미전송으로 판정하고, 이미 나간
+# Card 옆에 한 장을 더 만든다 (wave 3 review). D-023 이 두 장은 없다고 약속했다.
+def test_same_event_with_a_different_digest_fails_closed() -> None:
+    transport = FakeSlackTransport(page_size=10)
+    event = _event(destination_sequence=2)
+    previous = _event(destination_sequence=1)
+    _seed(transport, _marker_message(previous, ts="1700000000.000001"))
+    _seed(
+        transport,
+        _marker_message(event, ts="1700000000.000002", digest=payload_digest({"other": True})),
+    )
+
+    with pytest.raises(SlackProjectionMarkerDigestMismatchError) as caught:
+        _destination(transport).reconcile(_retried(event))
+
+    assert isinstance(caught.value, OutboxReconcileError)
+    # 원인이 상한 부족이나 지워진 Card 와 구분돼야 한다.
+    assert caught.value.code == "SLACK_PROJECTION_MARKER_DIGEST_MISMATCH"
+
+
+# T003 — 하위 sequence 규칙이 `<` 인 것을 고정한다. `<=` 로 바꾸면 같은 sequence 의
+# 미판정 marker 가 미전송으로 읽혀 fail-closed 가 fail-open 이 된다.
+def test_sequence_comparison_is_strict() -> None:
+    transport = FakeSlackTransport(page_size=1)
+    same_sequence_other_event = _event(destination_sequence=2).model_copy(
+        update={"event_id": "EVT-0000000000009999"}
+    )
+    _seed(transport, _noise("1700000000.000001"))
+    _seed(transport, _marker_message(same_sequence_other_event, ts="1700000000.000002"))
+
+    with pytest.raises(SlackProjectionSearchCapError):
+        _destination(transport, max_history_pages=1).reconcile(
+            _retried(_event(destination_sequence=2))
+        )
+
+
+# T003 — marker 되읽기는 방어적이다. 한 message 의 모양이 이상하다고 예외를 던지면 그
+# 뒤에 있는 진짜 marker 를 못 읽고 판정 불가로 떨어진다. 그 결과는 되돌릴 수 없는 hold 다.
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        None,
+        {},
+        {"event_type": "someone_elses_type", "event_payload": {}},
+        # event_type 하나만 어긋난 완전한 body. 이게 없으면 event_type 검사를 지워도
+        # 아무 test 가 안 깨진다 — 남의 message 를 우리 Card 로 확정하는 변이다.
+        {
+            "event_type": "amplai_something_else",
+            "event_payload": {
+                "event_id": "EVT-0000000000000001",
+                "destination_ref": DESTINATION_REF,
+                "destination_sequence": 1,
+                "payload_digest": payload_digest(PAYLOAD),
+            },
+        },
+        {"event_type": SLACK_PROJECTION_EVENT_TYPE, "event_payload": "not-a-mapping"},
+        {"event_type": SLACK_PROJECTION_EVENT_TYPE, "event_payload": {"event_id": 1}},
+        {
+            "event_type": SLACK_PROJECTION_EVENT_TYPE,
+            "event_payload": {
+                "event_id": "EVT-1",
+                "destination_ref": DESTINATION_REF,
+                "destination_sequence": True,
+                "payload_digest": payload_digest({}),
+            },
+        },
+    ],
+)
+def test_malformed_metadata_is_skipped_not_raised(metadata: dict[str, object] | None) -> None:
+    message = SlackHistoryMessage(ts="1700000000.000001", metadata=metadata, app_id=APP_ID)
+    assert read_slack_marker(message, app_id=APP_ID) is None
+
+
+# T003 — 우리가 심은 marker 는 그대로 되읽힌다. send 와 reconcile 이 같은 형식을 쓴다는
+# 것을 왕복으로 고정한다.
+def test_marker_round_trips_through_history() -> None:
+    event = _event(destination_sequence=7)
+    recovered = read_slack_marker(_marker_message(event, ts="1.0"), app_id=APP_ID)
+
+    assert recovered is not None
+    assert recovered.event_id == event.event_id
+    assert recovered.destination_ref == event.destination_ref
+    assert recovered.destination_sequence == 7
+    assert recovered.payload_digest == event.payload_digest
+
+
+# T003 — page 안에서는 message 순서에 기대지 않는다. C-1.2 가 transport 에 최신-우선
+# 순서를 요구하지만 signature 로 강제할 수 없다. 구현체가 오래된 것부터 돌려주면 하위
+# sequence marker 를 우리 marker 보다 먼저 만나 "미전송" 으로 판정하고 이미 나간 Card 를
+# 한 장 더 만든다. 그래서 우리 marker 가 page 안에서 이긴다.
+@pytest.mark.parametrize("oldest_first", [False, True])
+def test_our_marker_wins_inside_a_page_whatever_the_order(oldest_first: bool) -> None:
+    previous = _event(destination_sequence=1)
+    current = _event(destination_sequence=2)
+    mine = _marker_message(current, ts="1700000000.000002")
+    lower = _marker_message(previous, ts="1700000000.000001")
+
+    transport = FakeSlackTransport(page_size=10)
+    transport.posted.extend([mine, lower] if oldest_first else [lower, mine])
+
+    assert (
+        _destination(transport).reconcile(_retried(current)) == "slack:C0SLACK01:1700000000.000002"
+    )
+
+
+# T003 — 모양이 이상한 message 하나가 뒤에 있는 진짜 marker 를 가리면 안 된다. helper 만
+# 부르는 test 는 "예외를 안 던진다" 만 증명하고 "계속 훑는다" 는 증명하지 못한다.
+def test_reconcile_scans_past_a_malformed_marker_from_our_own_app() -> None:
+    transport = FakeSlackTransport(page_size=1)
+    event = _event(destination_sequence=3)
+    _seed(transport, _marker_message(event, ts="1700000000.000001"))
+    _seed(
+        transport,
+        SlackHistoryMessage(
+            ts="1700000000.000002",
+            metadata={"event_type": SLACK_PROJECTION_EVENT_TYPE, "event_payload": "broken"},
+            app_id=APP_ID,
+        ),
+    )
+
+    receipt = _destination(transport, max_history_pages=2).reconcile(_retried(event))
+
+    assert receipt == "slack:C0SLACK01:1700000000.000001"
+
+
+# T003 — 보이지 않는 문자는 strip 이 안 지운다. app_id 에 섞이면 우리 marker 를 하나도
+# 못 알아보고 history 소진을 미전송으로 읽어 중복 Card 를 만든다 (wave 3 review).
+@pytest.mark.parametrize("field", ["destination_ref", "channel", "app_id"])
+@pytest.mark.parametrize("invisible", ["​", "﻿", "‎"])
+def test_constructor_rejects_invisible_characters(field: str, invisible: str) -> None:
+    kwargs: dict[str, object] = {
+        "destination_ref": DESTINATION_REF,
+        "channel": CHANNEL,
+        "app_id": APP_ID,
+        "max_attempts": MAX_ATTEMPTS,
+    }
+    kwargs[field] = f"{invisible}{kwargs[field]}"
+    with pytest.raises(ValueError, match=field):
+        SlackProjectionDestination(FakeSlackTransport(), **kwargs)  # type: ignore[arg-type]
+
+
+# T003 — 그 값이 통과했을 때 실제로 벌어지는 일을 고정한다. 이 test 가 있어야 위 검사가
+# 왜 필요한지가 회귀에서 드러난다.
+def test_an_unrecognised_app_id_would_resend_the_card() -> None:
+    transport = FakeSlackTransport()
+    event = _event()
+    _seed(transport, _marker_message(event, ts="1700000000.000001"))
+    stranger = SlackProjectionDestination(
+        transport,
+        destination_ref=DESTINATION_REF,
+        channel=CHANNEL,
+        app_id="ADIFFERENT",
+        max_attempts=MAX_ATTEMPTS,
+    )
+
+    # 우리 marker 가 채널에 있는데도 미전송으로 읽는다. 생성자 검사가 막는 것이 이것이다.
+    assert stranger.reconcile(_retried(event)) is None
+
+
+# T003 — max_history_pages 기본값이 D-023 확정값이다. 호출자가 안 주면 5 다.
+def test_max_history_pages_defaults_to_the_decided_value() -> None:
+    destination = SlackProjectionDestination(
+        FakeSlackTransport(),
+        destination_ref=DESTINATION_REF,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_attempts=MAX_ATTEMPTS,
+    )
+    assert destination.max_history_pages == SLACK_MAX_HISTORY_PAGES
+
+
+# T003 — transport 가 include_all_metadata 를 빠뜨리면 event_type 만 오고 event_payload 가
+# 안 온다 (research S3). 그냥 넘기면 모든 marker 가 안 읽혀 history 소진이 미전송으로
+# 판정되고 **매 재시도마다 Card 가 한 장씩 는다.** hold 가 아니라 중복이라 조용하다.
+def test_missing_event_payload_is_read_as_a_transport_defect() -> None:
+    message = SlackHistoryMessage(
+        ts="1700000000.000001",
+        metadata={"event_type": SLACK_PROJECTION_EVENT_TYPE},
+        app_id=APP_ID,
+    )
+    with pytest.raises(SlackProjectionMetadataUnreadableError) as caught:
+        read_slack_marker(message, app_id=APP_ID)
+    assert caught.value.code == "SLACK_PROJECTION_METADATA_UNREADABLE"
+
+
+# T003 — 그 지문이 reconcile 을 통과해 dispatcher 까지 간다. 중복 Card 대신 hold 다.
+def test_reconcile_fails_closed_when_metadata_comes_back_stripped() -> None:
+    transport = FakeSlackTransport()
+    _seed(
+        transport,
+        SlackHistoryMessage(
+            ts="1700000000.000001",
+            metadata={"event_type": SLACK_PROJECTION_EVENT_TYPE},
+            app_id=APP_ID,
+        ),
+    )
+    with pytest.raises(SlackProjectionMetadataUnreadableError) as caught:
+        _destination(transport).reconcile(_retried(_event()))
+    assert isinstance(caught.value, OutboxReconcileError)
+
+
+# T003 — 오탐이 없어야 한다. 다른 app 이 보낸 같은 모양은 우리 문제가 아니다.
+def test_stripped_metadata_from_another_app_is_not_our_defect() -> None:
+    message = SlackHistoryMessage(
+        ts="1700000000.000001",
+        metadata={"event_type": SLACK_PROJECTION_EVENT_TYPE},
+        app_id="AOTHER",
+    )
+    assert read_slack_marker(message, app_id=APP_ID) is None
+
+
+# T003 — 이전 event 가 전부 superseded 라 우리 message 가 아예 없는 정상 흐름은 그대로
+# 미전송이다. 위 지문 검사가 이 경우를 hold 로 만들면 안 된다.
+def test_channel_with_no_message_from_us_is_still_not_sent() -> None:
+    transport = FakeSlackTransport(page_size=10)
+    _seed(transport, _noise("1700000000.000001"), _noise("1700000000.000002"))
+
+    assert _destination(transport).reconcile(_retried(_event(destination_sequence=2))) is None
+
+
+# T003 AC-14 — adapter 가 app_id 를 안 옮기면 marker 를 하나도 못 읽는다. Slack 은 app 이
+# 보낸 message 에 app_id 를 서버에서 붙이므로 None 은 adapter 결함뿐이다. 그냥 넘기면
+# hold 가 아니라 **중복 Card** 다 (wave 3 round 2 review).
+def test_missing_app_id_on_our_own_message_is_a_transport_defect() -> None:
+    event = _event()
+    stripped = SlackHistoryMessage(
+        ts="1700000000.000001",
+        metadata=build_slack_marker(event),
+        app_id=None,
+    )
+    with pytest.raises(SlackProjectionMetadataUnreadableError):
+        read_slack_marker(stripped, app_id=APP_ID)
+
+
+# T003 AC-14 — event_payload 가 None 으로 채워져 와도 같은 결함이다. adapter 가
+# md.get("event_payload") 로 dataclass 를 만들면 없는 key 가 None 이 된다. key 부재만
+# 보면 이 경로로 샌다.
+def test_null_event_payload_is_read_as_a_transport_defect() -> None:
+    message = SlackHistoryMessage(
+        ts="1700000000.000001",
+        metadata={"event_type": SLACK_PROJECTION_EVENT_TYPE, "event_payload": None},
+        app_id=APP_ID,
+    )
+    with pytest.raises(SlackProjectionMetadataUnreadableError):
+        read_slack_marker(message, app_id=APP_ID)
+
+
+# T003 AC-15 — 지문은 우리 event_type 을 단 message 에만 발화한다. 사람이 쓴 글은
+# app_id 가 없어도 우리 결함이 아니다.
+def test_a_human_message_without_an_app_id_is_not_our_defect() -> None:
+    human = SlackHistoryMessage(ts="1700000000.000001", metadata=None, app_id=None)
+    assert read_slack_marker(human, app_id=APP_ID) is None
+    other_app_type = SlackHistoryMessage(
+        ts="1700000000.000002",
+        metadata={"event_type": "someone_elses_type", "event_payload": {}},
+        app_id=None,
+    )
+    assert read_slack_marker(other_app_type, app_id=APP_ID) is None

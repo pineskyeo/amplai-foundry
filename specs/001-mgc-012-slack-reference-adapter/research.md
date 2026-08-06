@@ -99,7 +99,7 @@ special tier 로 **channel 당 초당 1 message** 다 (S4). read 가 write 보�
 ## R-004 — Reconcile Search Is Bounded And Fail-Closed
 
 **Decision**: reconcile 은 `conversations.history` 를 최신부터 역순으로 훑되 조회 상한
-(page 수)을 갖는다. 판정 규칙은 셋이다.
+(page 수)을 갖는다. 판정 규칙은 넷이다 (원래 셋이었다 — 아래 갱신 참조).
 
 | 발견한 것 | 판정 |
 |---|---|
@@ -124,11 +124,19 @@ operator hold를 생성한다" 고 못박았고, `deliver_next` 는 `OutboxRecon
 먼저 만났다면 N 은 아직 없다.
 
 **Alternatives considered**: 못 찾으면 미전송으로 보는 안. 중복 Card 를 만든다. User Story 2
-가 막으려는 바로 그 결과다. 기각한다.
+가 막으려는 바로 그 결과다. 기각한다. (D-023 이 이 중 **history 소진** 경우만 떼어 인정했다.
+범위를 다 못 본 경우와 구분되기 때문이다.)
+
+**미확인 (wave 3 review)**: `conversations.history` 가 **최신 message 부터** 돌려준다는 것을
+S2 에서 확인하지 못했다. 위 "역순으로 훑되" 는 그 가정 위에 서 있다. 순서가 뒤집히면 하위
+sequence marker 를 우리 marker 보다 먼저 만나 중복 Card 가 난다. destination 은 page 안에서만
+그 의존을 없앴고 page 사이는 못 막는다. contracts C-1 이 이것을 구현체 의무로 적었고 Package 4
+가 확정한다.
 
 **미확인**: 사람이 Card 를 지웠다가 다시 만든 경우 (SPEC.md 검증 항목 "deleted/recreated
-Provider message"). 지워진 message 는 `conversations.history` 에 없으므로 위 표의 세 번째
-줄로 떨어져 hold 가 걸린다. 이게 맞는 동작인지는 판단이 필요했고 `plan.md` P-001 이 hold 로 닫았다.
+Provider message"). 지워진 message 는 `conversations.history` 에 없으므로 위 표의 **네 번째**
+줄(상한 도달)로만 hold 가 걸린다. history 를 소진할 수 있는 작은 채널에서는 세 번째 줄로
+떨어져 재전송된다 — D-023 이 P-001 을 그렇게 좁혔다.
 
 ## R-005 — Receipt String Format
 

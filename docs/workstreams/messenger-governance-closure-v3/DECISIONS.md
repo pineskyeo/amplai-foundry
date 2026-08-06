@@ -404,7 +404,7 @@
   조회하지 않는다. `plan.md` P-001을 좁힌다.
 
   **문제.** C-2.2의 세 규칙으로는 destination의 첫 Card가 나가지 못한다. `deliver_next`는
-  첫 시도를 포함해 매번 `reconcile`을 먼저 부른다 (`events.py:2841`). `destination_sequence`
+  첫 시도를 포함해 매번 `reconcile`을 먼저 부른다 (`events.py:2842`). `destination_sequence`
   가 1이면 "더 낮은 sequence marker"가 존재할 수 없어 규칙 2가 절대 안 맞고, 아직 안
   보냈으니 규칙 1도 안 맞는다. 그래서 규칙 3으로 떨어져 되돌릴 수 없는 hold가 된다.
   `YamlProjectionDestination`은 같은 자리를 file 부재 → `None`으로 처리한다
@@ -426,10 +426,11 @@
   2. **첫 시도면 Slack을 조회하지 않고 곧바로 `None`을 반환한다.** 판정 조건은
      `attempts == 1` **이고** `last_error_code is None` 둘 다다. 전자만 보면
      `max_attempts == 1` 구성에서 두 번째 claim이 1로 보인다 — `claim_next`의 증가가
-     `CASE WHEN attempts < max_attempts` 라 상한에서 멈추기 때문이다 (`events.py:2671`).
-     그 재claim은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'`를 요구하므로 (`events.py:2643`)
+     `CASE WHEN attempts < max_attempts` 라 상한에서 멈추기 때문이다 (`events.py:2672`).
+     그 재claim은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'`를 요구하므로 (`events.py:2644`)
      둘을 함께 보면 원천적으로 막힌다. Outbox row는 언제나 `attempts=0`,
-     `last_error_code=NULL`로 생성되고 (`events.py:2358`) 이 값을 되돌리는 코드는 없다.
+     `last_error_code=NULL`로 생성되고 (`events.py:2358`-`2359`) 이 값을 되돌리는 곳은 `mark_delivered` 하나뿐인데 (`events.py:2729`) 그 row 는 `delivered`라
+     `claim_next`가 다시 claim 하지 않는다.
 
      조회를 건너뛰는 것은 부수 효과가 아니라 의도다. 첫 시도에 찾을 marker는 정의상
      존재하지 않고, `conversations.history`는 Tier 2다 (research S4). 대부분의 Card는 첫
@@ -474,3 +475,64 @@
   "destination row의 `delivered_sequence`를 본다"는 기각했다 — `OutboxEventView`에 그
   필드가 없어 `events.py`를 고쳐야 하고 (T003 `forbidden_paths`), 그 값은 **이전** event를
   말할 뿐 이 event가 posted됐는지에 답하지 못한다. OQ-001과 OQ-004를 함께 닫는다.
+
+## D-024 — Reconcile Needs Our App Identity, And Unreadable Metadata Is Fail-Closed
+
+- Status: accepted
+- Decision: MGC-012-T003 구현과 wave 3 review 결과를 아래 둘로 고정한다.
+
+  1. **`SlackProjectionDestination` 생성자가 `app_id`를 받는다.** C-2에 자리를 만든다.
+
+     AC-04는 "다른 app이 심은 metadata를 배제하라"고 요구하는데 C-2에 우리 app id를 받을
+     자리가 없었다. 배제는 그 값 없이는 원리적으로 불가능하다 — `SlackHistoryMessage`는
+     `ts`·`metadata`·`app_id` 셋뿐이고, marker의 모양은 공개된 구조라 다른 app이 같은
+     모양을 심을 수 있다 (research S3). 배제를 못 하면 남의 message를 우리 Card로
+     확정하고 진짜 Card는 영영 안 나간다.
+
+     D-018 항목 1은 어기지 않는다. 그것은 `provider:{provider}:{channel_digest}` 형식의
+     동결이고 `destination_ref`는 그대로다.
+
+     **절차 지적을 수용한다.** T002는 같은 종류의 contract 변경(`max_attempts`)을 D-021로
+     남기고 사용자 선택을 받았다. 이번에는 구현 중에 넣고 manifest scope에만 적었다.
+     wave 3 contract review가 Blocking-P2로 지적했고 맞다. 이 항목이 그 기록이다.
+
+  2. **`event_payload`가 통째로 없는 우리 message를 만나면 fail-closed한다** —
+     `SLACK_PROJECTION_METADATA_UNREADABLE`.
+
+     C-1.2는 `read_history` 구현체가 `include_all_metadata=true`를 붙이도록 요구하지만
+     signature로 강제할 수 없다. 안 붙이면 `event_type`만 오고 `event_payload`가 안 온다
+     (research S3). 그러면 모든 marker가 안 읽히고, D-023 항목 3이 history 소진을
+     미전송으로 판정하므로 **매 재시도마다 Card가 한 장씩 는다.** hold가 아니라 중복이라
+     조용하다. wave 3 failure/recovery review가 P1로 지적했다.
+
+     **지문으로 잡는다** — 우리 `app_id`가 보냈고 `event_type`도 우리 것인데
+     `event_payload` 키가 없는 message. `build_slack_marker`는 그 키를 항상 넣으므로
+     오탐이 없다. 사람이 Card를 지웠거나 이전 event가 전부 superseded인 경우와도 겹치지
+     않는다 — 그 경우엔 우리 app의 message 자체가 없다.
+
+     **기각한 대안**: "소진 시점에 우리 marker를 하나도 못 봤고 `destination_sequence > 1`
+     이면 판정 불가로 본다" (review 제안). 정상 흐름에 부당한 hold를 만든다.
+     `supersession_key`는 proposal 단위이고 destination은 channel 단위라, 어떤 채널의 첫
+     proposal 결정이 dispatcher가 돌기 전에 superseded되면 sequence 2가 그 채널의 실제 첫
+     전달이고 history에 우리 marker가 하나도 없다. 정상인데 되돌릴 수 없는 hold가 된다.
+
+  함께 고친 것 셋. 전부 wave 3 review 반영이고 계약 변경이라 여기 적는다.
+
+  - **`read_history`의 최신-우선 정렬을 C-1의 세 번째 의무로 명시한다.** 그 순서가 계약에
+    없었고, 뒤집히면 하위 sequence marker를 우리 marker보다 먼저 만나 중복 Card가 난다.
+    **Slack 공식 문서에서 이 사실을 확인하지 못했다** — 그래서 계약으로 적고 Package 4
+    확인 항목으로 남긴다. destination은 page **안**에서는 우리 marker를 먼저 찾는 방식으로
+    이 의존을 없앴다. page **사이**는 cursor를 우리가 만들지 않아 막을 수 없다.
+  - **`event_id`는 같은데 `payload_digest`가 다른 marker를 만나면 즉시 멈춘다** —
+    `SLACK_PROJECTION_MARKER_DIGEST_MISMATCH`. 계약은 원래 "상한까지 못 찾으면 hold"였는데
+    D-023이 history 소진을 미전송으로 인정하면서 그 경로가 재전송으로 샜다. D-023이 "Card가
+    두 장이 되는 일은 어느 쪽에서도 없다"고 약속했으므로 코드를 계약에 맞췄다.
+  - **lease 예산 기준을 호출당에서 `reconcile()` + `send()` 전체로 바꾼다.** 한 번의
+    `deliver_next`는 `read_history`를 최대 5회 부른 뒤 `post_message`를 한 번 부른다.
+    호출 하나하나가 lease 안에 들어와도 합이 넘으면 `mark_delivered`가 lease conflict로
+    터져 receipt를 잃는다.
+- Source: 2026-08-05 MGC-012-T003 구현과 wave 3 review round 1. 항목 1은 구현 중 발견해
+  넣은 뒤 review 지적을 받아 사후 기록한 것이다. 항목 2는 review가 P1로 제기한 문제에
+  대해 review 제안을 기각하고 다른 해법을 택했다 — 기각 근거는 위에 적었다. review
+  산출물은 근거이지 승인 주체가 아니다 (D-004). 기록은
+  `CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md`다.

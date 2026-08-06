@@ -171,8 +171,8 @@ regression 3 lens review 를 돌린다 (D-019 항목 4).
 
 ### Wave 3 — Reconcile Path
 
-- `reconcile()` — bounded 역순 조회, 세 갈래 판정 (R-004), 판정 불가 시
-  `OutboxReconcileError`
+- `reconcile()` — 첫 시도 분기, bounded 역순 조회, 네 갈래 판정 (R-004, D-023), 판정 불가
+  시 `OutboxReconcileError`
 - 검증: marker 발견 / 하위 sequence 선발견 / 상한 초과 세 경우
 
 ### Wave 4 — Dispatcher Integration And Failure Matrix

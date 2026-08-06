@@ -47,7 +47,7 @@ tasks:
       - FR-009
   - id: MGC-012-T003
     title: Bounded fail-closed reconcile by message marker read-back
-    status: ready
+    status: done
     depends_on:
       - MGC-012-T002
     requirements:
@@ -255,6 +255,16 @@ update_history:
       판정 규칙에 history 소진을 더해 넷으로 늘리고, limit 999 / max_history_pages 5 로
       정했다. P-001 이 좁아졌다. T003 에 FR-001 을 넣고 AC-08~13 을 추가했다.
       contracts C-2.2·C-2.2.1, research R-004, plan P-001, spec Edge Case 를 함께 고쳤다.
+    source_revision: uncommitted
+  - date: 2026-08-05
+    summary: >-
+      T003 구현과 wave 3 review 2라운드. D-024 를 추가했다 — 생성자 app_id, 조회 결함
+      지문(SLACK_PROJECTION_METADATA_UNREADABLE), read_history 최신-우선 정렬 의무,
+      digest 불일치 fail-closed, lease 예산을 reconcile+send 합으로. T003 에 AC-14·AC-15 를
+      넣고 allowed_paths 를 넓혔다. contracts C-1·C-1.2·C-2·C-2.2, research R-004,
+      plan, quickstart 를 함께 고쳤다. wave 3 gate PASS — round 2 에서 3 lens 전부
+      blocker 0건이고, round 2 의 code 수정은 regression lens 가 그 뒤에 단독으로 mutation
+      44개를 돌려 확인했다. T003 을 done 으로 옮긴다. wave 4 는 T004·T005 다.
     source_revision: uncommitted
   - date: 2026-08-05
     summary: >-

@@ -41,10 +41,20 @@ read-back 으로 판정하므로 read 가 없으면 계약이 성립하지 않�
   terminal 이어야 할 `invalid_auth` 가 조용히 재시도된 뒤 attempt 소진으로만 멈춘다.
   `SlackProjectionDestination` 도 새어 나온 예외를 재감싸지만 (T002) 그건 **두 번째
   방어선**이지 이 의무의 대체가 아니다. 구현체가 code 를 실어 보내야 원인이 남는다.
-- **호출 시간을 `OutboxConfig.lease_seconds` 보다 확실히 짧게 묶는다.** lease 만료 뒤에
+- **호출 시간을 묶는다. 기준은 `reconcile()` + `send()` 전체다.** lease 만료 뒤에
   실패하면 dispatcher 의 `fail()` 이 `_require_lease` 에서 `OutboxLeaseConflictError` 로
   터져 **terminal 판정이 통째로 버려진다** — dead letter 도 hold 도 안 생기고, 나중에
-  sweep 이 `OUTBOX_LEASE_EXPIRED` 로 되돌려 영구 실패를 다시 시도한다.
+  sweep 이 `OUTBOX_LEASE_EXPIRED` 로 되돌려 영구 실패를 다시 시도한다. 한 번의
+  `deliver_next` 는 `read_history` 를 최대 `max_history_pages` 회 부른 뒤 `post_message`
+  를 한 번 부른다. **호출 하나하나가 lease 안에 들어와도 합이 넘으면 같은 결과다**
+  (wave 3 review). 예산은 호출당이 아니라 그 합에 걸어야 한다.
+- **`read_history` 는 최신 message 부터 돌려준다.** page 안에서도, page 사이에서도
+  그렇다. C-2.2 의 판정은 "먼저 만난 것이 이긴다" 이므로 순서가 뒤집히면 하위 sequence
+  marker 를 우리 marker 보다 먼저 만나 이미 나간 Card 를 한 장 더 만든다. **이 사실을
+  Slack 공식 문서에서 확인하지 못했다** — research S2 에 근거가 없다. 그래서 계약으로
+  적고 Package 4 의 확인 항목으로 남긴다. destination 은 page **안**에서는 우리 marker 를
+  먼저 찾는 방식으로 이 의존을 없앴지만 (T003), page **사이**는 cursor 를 우리가 만들지
+  않아 막을 수 없다.
 
 ### C-1.1 — `post_message`
 
@@ -62,7 +72,13 @@ read-back 으로 판정하므로 read 가 없으면 계약이 성립하지 않�
   불가능하다.
 - `limit` 상한은 999 다 (research S2).
 - 반환은 message 목록과 `next_cursor` 를 갖는 page 다. `next_cursor` 가 없으면 마지막 page 다.
-- 각 message 는 `ts`, `metadata`, `app_id` 를 갖는다 (data-model.md).
+- 각 message 는 `ts`, `metadata`, `app_id` 를 갖는다 (data-model.md). **Slack 응답의
+  `metadata` object 를 그대로 옮긴다. 없는 key 를 `None` 으로 채우지 않는다.**
+- **기동 전에 readback 자가검사를 한다.** 자기가 방금 보낸 message 를 `read_history` 로
+  되읽어 marker 가 복원되는지 확인하고, 실패하면 기동을 거부한다. 이것이 유일하게
+  `app_id` 오설정·metadata 매핑 누락·`event_type` 개명을 **전부** 한 번에 잡는 검사다
+  (wave 3 round 2 review). destination 은 그중 일부만 지문으로 잡을 수 있고, 못 잡는
+  경우의 결과는 hold 가 아니라 **조용한 중복 Card** 다. Package 4 의 exit criteria 다.
 
 ## C-2 — `SlackProjectionDestination`
 
@@ -76,8 +92,9 @@ class SlackProjectionDestination:
         *,
         destination_ref: str,
         channel: str,
-        max_history_pages: int,
+        app_id: str,
         max_attempts: int,
+        max_history_pages: int = SLACK_MAX_HISTORY_PAGES,
     ) -> None: ...
 
     destination_ref: str
@@ -91,22 +108,37 @@ class SlackProjectionDestination:
 
 `channel` 은 별도로 받는다. `channel_digest` 는 digest 라 역산이 안 된다.
 
+`app_id` 는 **우리 app 의 Slack app id** 다. `reconcile()` 이 history message 의 `app_id` 와
+대조해 다른 app 이 심은 metadata 를 배제한다 (research S3, T003 AC-04). 이 값이 없으면 그
+배제를 할 수 없다 — marker 의 모양은 공개된 구조라 다른 app 이 같은 모양을 심을 수 있고,
+그것을 우리 marker 로 읽으면 남의 message 를 우리 Card 로 확정한다. **T003 구현 중에
+추가했다** — AC-04 가 요구하는데 C-2 에 자리가 없었다. 빈 문자열은 생성자가 거부한다.
+어긋나면 어떤 marker 도 우리 것으로 인정되지 않는데, 그 결과는 **hold 가 아니라 중복 Card**
+다 — history 소진이 미전송으로 판정되어 (D-023 항목 3) 매 재시도마다 Card 가 한 장씩 는다.
+조용히 일어나므로 더 나쁘다.
+
 `max_attempts` 는 C-3.1 이 쓴다. **호출자는 이 값을 그 destination 을 도는
 `OutboxDispatcher` 의 `OutboxConfig.max_attempts` 와 같게 준다.** 더 크면 C-3.1 이 안 돌아
 retryable 원인이 그대로 사라지고, 더 작으면 아직 남은 attempt 를 두고 되돌릴 수 없는 hold 를
-만든다. destination 은 dispatcher config 를 읽을 경로가 없어 검증하지 못한다.
+만든다. destination 은 dispatcher config 를 읽을 경로가 없어 검증하지 못한다. **T003 이
+그 표면을 넓혔다** — `reconcile` 의 read 실패도 C-3.1 을 타므로 일시적 read 실패 하나가
+남은 attempt 를 버리고 hold 를 만든다 (wave 3 round 2 review).
 
-**생성자가 거부하는 값 넷.** dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이
-안 되는 값은 막는다. 넷 다 `ValueError` 다.
+**생성자가 거부하는 값 다섯.** dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이
+안 되는 값은 막는다. 다섯 다 `ValueError` 다.
 
 | 조건 | 막는 이유 |
 |---|---|
-| `destination_ref` 가 공백뿐 | 어떤 event 도 claim 되지 않아 조용히 멈춘다 |
-| `channel` 이 공백뿐 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |
+| `destination_ref` 가 공백뿐이거나 보이지 않는 문자를 포함 | 어떤 event 도 claim 되지 않아 조용히 멈춘다 |
+| `channel` 이 공백뿐이거나 보이지 않는 문자를 포함 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |
+| `app_id` 가 공백뿐이거나 보이지 않는 문자를 포함 | 어떤 marker 도 못 읽어 매 재시도마다 중복 Card 가 난다 |
 | `max_history_pages < 1` | reconcile 이 아무것도 안 훑어 첫 전달부터 판정불가로 떨어진다 |
 | `max_attempts < 1` | 첫 transient 실패가 곧바로 C-3.1 을 타 되돌릴 수 없는 hold 를 만든다 |
 
-`destination_ref` 와 `channel` 은 앞뒤 공백을 **지워서 저장한다.** 검사만 하면 env var 나
+`destination_ref`·`channel`·`app_id` 는 앞뒤 공백을 **지워서 저장한다.** 그리고 지운 뒤에도
+보이지 않는 문자(`\u200b`, `\ufeff`, `\u200e`)가 남으면 거부한다 — `str.strip()` 이 그것들을
+지우지 않는다. `app_id` 에 섞이면 `reconcile` 이 우리 marker 를 하나도 못 알아보고 history
+소진을 미전송으로 읽어 **중복 Card** 를 만든다 (wave 3 review). 검사만 하면 env var 나
 YAML scalar 에서 온 개행이 그대로 Slack 에 나가 `channel_not_found` (allowlist 밖 → terminal
 → 되돌릴 수 없는 hold) 를 부르고, `reconcile()` 이 정규화된 config 로 만든 receipt 와 갈린다.
 
@@ -147,19 +179,21 @@ channel 과 다른 표현을 돌려주면 (이름으로 보내고 ID 를 받는 
 event.attempts == 1  AND  event.last_error_code is None
 ```
 
-- outbox row 는 언제나 `attempts=0`·`last_error_code=NULL` 로 생성되고 (`events.py:2358`)
-  그 값을 되돌리는 코드가 없다. `claim_next` 는 자기 transaction 을 commit 하므로
+- outbox row 는 언제나 `attempts=0`·`last_error_code=NULL` 로 생성되고 (`events.py:2358`-`2359`)
+  그 값을 되돌리는 곳은 `mark_delivered` 하나뿐인데 (`events.py:2729`) 그 row 는
+  `delivered` 라 `claim_next` 가 다시 claim 하지 않는다. `claim_next` 는 자기 transaction 을 commit 하므로
   `attempts=1` 은 `post_message` 보다 **먼저** durable 하다. 그래서 이 조건은 "이 event 로
   Slack 을 부른 적이 한 번도 없다" 와 같다.
 - **두 조건을 함께 봐야 한다.** `attempts` 증가는 `CASE WHEN attempts < max_attempts` 라
-  상한에서 멈춘다 (`events.py:2671`). `max_attempts == 1` 구성에서는 두 번째 claim 도
+  상한에서 멈춘다 (`events.py:2672`). `max_attempts == 1` 구성에서는 두 번째 claim 도
   `attempts == 1` 로 보인다. 그 재claim 은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'` 를
-  요구하므로 (`events.py:2643`) 두 번째 조건이 그것을 막는다.
+  요구하므로 (`events.py:2644`) 두 번째 조건이 그것을 막는다.
 - 조회를 건너뛰는 것은 의도다. 찾을 marker 가 정의상 없고 `conversations.history` 는
   Tier 2 다 (research S4). 대부분의 Card 가 첫 시도에 성공하므로 평상시 history 조회가
   0회가 된다.
 
-그 밖의 경우에만 최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 판정은 넷이다.
+그 밖의 경우에만 최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 표의 판정은
+넷이고, 아래 bullet 이 규정하는 두 가지 fail-closed 가 그보다 앞선다.
 
 | 먼저 만난 것 | 반환 |
 |---|---|
@@ -199,9 +233,29 @@ event.attempts == 1  AND  event.last_error_code is None
 규칙). 정작 필요한 숫자인 "Card 한 장과 다음 Card 사이에 쌓이는 message 수" 는 workspace
 에 달렸고 **모른다.** 최악 5회 호출은 Tier 2 예산의 4분의 1이다. 실측은 Package 4 몫이다
 (D-023 항목 4).
-- **`event_id` 는 같은데 `payload_digest` 가 다른 marker 를 만나면 판정하지 않고 계속
-  훑는다.** 같은 event 의 다른 내용이 이미 나갔다는 뜻이라 정상 경로에서 나올 수 없다.
-  상한까지 못 찾으면 세 번째 규칙으로 hold 가 걸린다.
+- **`event_id` 는 같은데 `payload_digest` 가 다른 marker 를 만나면 즉시 멈춘다** —
+  `SlackProjectionMarkerDigestMismatchError`. 같은 event 의 다른 내용이 이미 나갔다는
+  뜻이라 정상 경로에서 나올 수 없다. 이 문서의 이전 판은 "계속 훑는다" 였는데, D-023 이
+  history 소진을 미전송으로 인정하면서 그 경로가 **재전송으로 새게 됐다** (wave 3
+  review). D-023 이 "Card 가 두 장이 되는 일은 어느 쪽에서도 없다" 고 약속했으므로
+  fail-closed 로 고쳤다. code 를 따로 두는 이유는 원인이 상한 부족이나 지워진 Card 와
+  전혀 다르기 때문이다.
+- **우리 `event_type` 을 단 message 인데 `app_id` 나 `event_payload` 가 없으면 즉시
+  멈춘다** — `SLACK_PROJECTION_METADATA_UNREADABLE` (D-024 항목 2). 이것은 한 message 의
+  문제가 아니라 **조회 방식**의 결함이다. `include_all_metadata` 를 안 붙이면 `event_type`
+  만 오고 (research S3), adapter 가 `app_id` 를 안 옮기면 대조가 전부 실패한다. 어느 쪽이든
+  marker 를 하나도 못 읽고, 그러면 history 소진이 미전송으로 판정되어 **매 재시도마다 Card
+  가 한 장씩 는다.** hold 가 아니라 중복이라 조용하다. `event_payload` 는 key 부재와 `None`
+  을 함께 본다 — adapter 가 `md.get(...)` 로 채우면 없는 key 가 `None` 이 된다.
+
+  **수용한 오탐이 하나 있다.** 제3의 app 이 우리 `event_type` 을 쓰면서 `app_id` 없이
+  보내면 이 규칙에 걸려 되돌릴 수 없는 hold 가 된다. Slack 이 app message 에 `app_id` 를
+  **항상** 붙이는지는 research S2·S3 에서 확인하지 못했다 — 확인된 것은 "각 message 는
+  `app_id` 를 갖고 있어 어느 app 이 보냈는지 구분할 수 있다" 까지다. 방향 때문에
+  수용한다: 안 막으면 조용한 중복 Card, 막으면 시끄러운 hold 다. 확정은 Package 4 다.
+- **page 안에서는 우리 marker 가 이긴다.** 위 표는 "먼저 만난 것" 이라고 쓰지만, 한 page
+  안에서는 순서에 기대지 않고 우리 marker 를 먼저 찾는다. C-1 의 정렬 의무를 signature
+  로 강제할 수 없어 만든 방어선이다 (wave 3 review).
 
 ### C-2.3 — Receipt Stability
 

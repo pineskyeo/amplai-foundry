@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T003
 title: Bounded fail-closed reconcile by message marker read-back
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -35,6 +35,7 @@ source:
     - D-019
     - D-020
     - D-023
+    - D-024
 
 scope:
   include:
@@ -45,16 +46,32 @@ scope:
       근거 fact 는 셋뿐이다. limit 상한 999 (research S2), Tier 2 분당 20+ (S4),
       이 조회는 재시도 때만 일어난다 (C-2.2 첫 시도 규칙). 실측은 Package 4 몫이다
     - 다른 app 이 심은 metadata 를 app_id 로 배제
-    - event_id 는 같은데 payload_digest 가 다른 marker 를 만났을 때 계속 훑는 동작
+    - >-
+      event_id 는 같은데 payload_digest 가 다른 marker 를 만나면 즉시 멈춘다
+      (SLACK_PROJECTION_MARKER_DIGEST_MISMATCH, D-024). 계속 훑으면 뒤에서 미전송으로
+      판정해 중복 Card 가 난다
     - >-
       상한 도달로 생긴 hold 를 다른 원인의 hold 와 error code 로 구분한다 (D-023 항목 4).
       구분이 없으면 max_history_pages 가 작았다는 것을 사후에 알 방법이 없다
+    - >-
+      생성자에 app_id 를 더한다. AC-04 가 다른 app 의 metadata 를 배제하라고 요구하는데
+      C-2 에 그 값을 받을 자리가 없었다. 구현 중 발견해 contracts C-2 를 함께 고쳤다
   exclude:
     - dispatcher 를 통한 통합 시나리오 (T005 소유)
     - Slack error 분류 (T001 소유)
   allowed_paths:
     - src/amplai_foundry/governance/slack_projection.py
     - tests/test_slack_projection.py
+    # app_id 추가와 wave 3 review 반영이 contract 를 바꿨다. T002 가 D-021 에서 같은
+    # 방식으로 열었다. 코드 경로는 위 둘뿐이다.
+    - specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+    - specs/001-mgc-012-slack-reference-adapter/research.md
+    - specs/001-mgc-012-slack-reference-adapter/quickstart.md
+    - specs/001-mgc-012-slack-reference-adapter/plan.md
+    - specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml
+    - specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml
+    - docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+    - docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md
   forbidden_paths:
     - src/amplai_foundry/governance/events.py
     - src/amplai_foundry/governance/projections.py
@@ -113,7 +130,9 @@ acceptance:
     - id: AC-05
       given: read_history 호출을 기록하는 fake transport
       when: reconcile() 이 조회하면
-      then: include_all_metadata 를 켜서 부르고 page 수가 max_history_pages 를 넘지 않는다
+      then: page 수가 max_history_pages 를 넘지 않고 limit 은 999 로 나간다.
+        **include_all_metadata 는 이 계층에서 검사할 수 없다** — C-1.2 가 그것을 transport
+        구현체의 의무로 규정했고 Protocol signature 에 인자가 없다. Package 4 몫이다
     - id: AC-06
       given: 같은 message 에 대한 send 결과와 reconcile 결과
       when: 두 receipt 를 비교하면
@@ -143,13 +162,25 @@ acceptance:
         (max_attempts 가 1 인 구성에서 나온다)
       when: reconcile() 을 부르면
       then: 첫 시도로 보지 않고 조회한다. 두 조건을 함께 봐야 하는 이유를 이 AC 가
-        고정한다 (events.py:2671 의 CASE WHEN attempts < max_attempts)
+        고정한다 (events.py:2672 의 CASE WHEN attempts < max_attempts)
     - id: AC-12
       given: destination_sequence 가 1 이고 attempts 가 2 이며 history 가 비어 있고
         next_cursor 가 없는 상태 (첫 Card 가 일시 오류로 한 번 실패한 뒤)
       when: reconcile() 을 부르면
       then: None 을 반환한다. hold 로 떨어지지 않는다. 이것이 없으면 모든 destination 의
         첫 Card 가 일시 오류 한 번에 영구 hold 가 된다 (D-023 항목 3)
+    - id: AC-14
+      given: 우리 app_id 가 보냈고 event_type 도 우리 것인데 event_payload 키가 없는
+        history message (include_all_metadata 를 안 붙인 조회의 지문)
+      when: reconcile() 을 부르면
+      then: SLACK_PROJECTION_METADATA_UNREADABLE 로 fail-closed 한다. 그냥 넘기면 모든
+        marker 가 안 읽혀 history 소진이 미전송으로 판정되고 매 재시도마다 Card 가 는다
+        (D-024 항목 2)
+    - id: AC-15
+      given: 우리 app 의 message 가 history 에 아예 없는 채널 (이전 event 가 전부
+        superseded 인 정상 흐름)
+      when: reconcile() 을 부르면
+      then: 미전송으로 판정한다. AC-14 의 검사가 이 경우를 hold 로 만들지 않는다
     - id: AC-13
       given: history 를 끝까지 훑어 next_cursor 가 없고 상한에는 안 걸렸으며 둘 다 못
         찾은 상태
@@ -203,10 +234,16 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
+  # AC-05 의 include_all_metadata 절반은 이 계층에서 검사 불가다 (위 AC-05 참조). 나머지는
+  # 전부 test 로 통과했다. 통과하지 않은 것을 통과했다고 적지 않는다.
   all_acceptance_passed: false
-  required_evidence_present: false
+  required_evidence_present: true
+  # gate 는 아직이다. wave 3 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
+  # 채운다.
   completed_at: null
-  evidence_paths: []
+  evidence_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - tests/test_slack_projection.py
 
 handoff:
   expected_changes:
