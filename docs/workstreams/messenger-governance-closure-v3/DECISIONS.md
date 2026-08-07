@@ -618,3 +618,44 @@
   이 항목 초판에서 거짓 3건과 범위 축소 1건, 누락된 선택지 1건을 찾아 위와 같이 고쳤고,
   자가 승인이라는 지적을 받아 `proposed`로 내린 뒤 결정을 받았다. **review는 근거이지
   승인 주체가 아니다 (D-004).**
+
+## D-026 — Package 4 Gets A Real Slack Test Workspace, And Activation Isolation Stays A Check
+
+- Status: accepted
+- Decision: D-019 항목 8이 Package 3 gate 후로 미룬 두 가지를 여기서 정한다.
+
+  **1. 테스트용 Slack workspace와 app을 새로 만든다.** 회사 workspace를 쓰지 않는다.
+  그래서 Package 4는 fake transport가 아니라 **실제 Slack을 치는 reference E2E**를 갖는다.
+  A15의 "Slack reference E2E"를 문언 그대로 충족한다.
+
+  D-019 항목 8이 task를 안 만든 이유가 "acceptance를 추정으로 써야 한다"였고, 그 전제가
+  이 결정으로 없어졌다. 다만 **workspace는 아직 만들어지지 않았다.** 존재가 acceptance의
+  선행 조건이므로 plan 단계에서 그 생성을 external dependency로 잡는다.
+
+  **2. Package 4의 "activation isolation"은 격리 검증뿐이다.** `ActivationEvidence`
+  구조와 `Global Core → Provider → Project-Provider → Feature` 4단계 Gate machinery는
+  **MGC-015 Activation Control**이 만든다. Package 4는 A14 — Slack adapter가 Telegram
+  또는 다른 Provider의 상태를 바꾸지 않는 것 — 만 검증한다.
+
+  근거는 queue다. `MGC-015 — Activation Control`이 별도 item으로 이미 서 있고,
+  `CURRENT_ITEM.md` Out Of Scope가 "Slack activation rollout"을 뺀다. Gate machinery를
+  Package 4로 당기면 두 item이 겹쳐 queue를 재정렬해야 한다.
+
+  **결과 하나를 미리 적는다.** MGC-012-T005 AC-07은 activation state를 담는 table이 없어
+  provider별 outbox destination row와 event state라는 **proxy**로 검증했다. 그 proxy는
+  MGC-015가 activation state를 만들 때까지 유효하고, 만들어지면 그때 진짜 state를 읽는
+  검증으로 바꾼다. Package 4가 아니라 MGC-015의 일이다.
+
+  **미확인 하나가 남는다.** `conversations.history`에 필요한 OAuth scope를 공식 문서에서
+  아직 확인하지 못했다 (`index.yaml` coverage.deferred `W3-history-oauth-scope`).
+  `chat:write`만 있는 설치는 send는 성공하고 첫 재시도의 read에서 `missing_scope` →
+  terminal → 되돌릴 수 없는 hold가 된다. **추측해서 적지 않는다.** `/speckit-plan`
+  Phase 0에서 `research.md`에 공식 문서로 고정한 뒤 app 설치 절차에 넣는다.
+
+  credential이 프로세스에 도달하는 경로도 아직 없다 — repo 전체에 Slack 설정을 읽는
+  `os.environ`이 한 줄도 없고 `SlackInstallationPolicy`를 코드에서 직접 만들어 넘긴다.
+  그 경로 설계는 plan의 몫이고 이 결정에서 정하지 않는다.
+
+- Source: **사용자 결정.** 두 질문에 각각 "만들 수 있다"와 "격리 검증만"을 골랐다
+  (2026-08-07). Package 3 gate `b0858c1` 직후 `/taskify` 시도에서 설계 원본 부재가 드러나
+  물었다.

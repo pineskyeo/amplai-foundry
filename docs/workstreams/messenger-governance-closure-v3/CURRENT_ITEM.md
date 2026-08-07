@@ -45,7 +45,10 @@ message projection과 retry는 background path에서 수행한다.
   으로 닫았다. wave 4는 2 round 진행 — round 1 고유 blocker 6건, round 2 5건 해소.
   round 2의 5건 중 둘은 round 1 수정이 만든 새 결함이다. mutation 16종 survivor 0
 - Next: Package 4 — Slack reference E2E, activation isolation and closure review.
-  **Slack test workspace 구성과 credential 경로는 아직 확인 안 됐다** (D-019 항목 8)
+  D-026이 D-019 항목 8을 닫았다 — 테스트용 workspace와 app을 새로 만들어 실제 Slack을
+  치는 E2E를 갖고, activation isolation은 A14 격리 검증뿐이며 Gate machinery는 MGC-015다.
+  **workspace는 아직 만들어지지 않았고 credential 주입 경로도 없다.** 둘 다 plan의 몫이다.
+  `conversations.history`의 OAuth scope는 여전히 미확인이다 — plan Phase 0에서 고정한다
 
 ## Out Of Scope
 

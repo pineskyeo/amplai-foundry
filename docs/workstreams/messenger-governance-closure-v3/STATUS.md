@@ -30,9 +30,16 @@
 isolation과 closure review로 간다. Package 3 ordered Slack message projection은
 `5b2024b`에서 gate PASS다.
 
-다음 단계는 `/taskify`로 Package 4 task manifest를 만드는 것이다. **Slack test
-workspace 구성과 credential 경로는 아직 확인 안 됐다** (D-019 항목 8). 그 둘이 정해지기
-전에는 E2E acceptance를 쓸 수 없다.
+다음 단계는 `/speckit-plan`이다. `/taskify`는 Package 4용 plan이 없어 돌릴 수 없다 —
+기존 `plan.md`는 Package 3 범위다.
+
+D-026이 D-019 항목 8을 닫았다. 테스트용 Slack workspace와 app을 새로 만들어 실제 Slack을
+치는 reference E2E를 갖는다. activation isolation은 A14 격리 검증뿐이고 `ActivationEvidence`
+와 4단계 Gate machinery는 MGC-015가 만든다.
+
+**아직 없는 것 셋.** workspace 자체(생성 전), credential이 프로세스에 도달하는 경로(repo에
+Slack 설정을 읽는 `os.environ`이 한 줄도 없다), `conversations.history`의 OAuth scope
+(공식 문서 미확인). 앞의 둘은 plan이 설계하고 마지막은 plan Phase 0 research가 고정한다.
 
 D-014의 provider outbox destination granularity는 Package 4에도 넣지 않는다.
 `destination_ref` 형식을 바꾸면 `reconcile_connection`이 기존 durable row를 digest
