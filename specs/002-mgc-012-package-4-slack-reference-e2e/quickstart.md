@@ -52,9 +52,24 @@ scope 를 빠뜨리면 send 는 성공하고 **첫 재시도의 read 에서** `m
 
 채널을 하나 만들고 app 을 초대한다 (`/invite @앱이름`). channel ID (`C` 로 시작) 를 기록한다.
 
-### A-6. Verify The Setup
+### A-6. Set The Environment Variables
 
-환경변수를 설정한 뒤 아래를 돌린다. 변수 이름은 구현이 확정하면 여기에 채운다.
+이름은 T007 이 확정했다. 값 하나에 변수 하나다.
+
+```bash
+export AMPLAI_SLACK_BOT_TOKEN='xoxb-...'
+```
+
+```bash
+export AMPLAI_SLACK_SIGNING_SECRET='...'
+```
+
+**둘 다 넣어야 한다.** 하나만 넣으면 "구성 안 됨" 이 아니라 **오류**다 — 빠뜨린 변수
+이름을 알려준다. 조용히 skip 되면 뭘 빠뜨렸는지 모른 채 지나간다.
+
+두 값 다 `SecretStr` 로 감싸여 들어오고 repr·log·예외 message 어디에도 안 나온다.
+
+### A-7. Verify The Setup
 
 ```bash
 python -m pytest tests/test_slack_http.py -m slack_e2e

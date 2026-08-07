@@ -12,6 +12,7 @@
 | P3 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-07 |
 | P4 | `https://docs.slack.dev/changelog/2025/05/29/rate-limit-changes-for-non-marketplace-apps/` | 2026-08-07 |
 | P5 | `https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/` | 2026-08-07 |
+| P6 | `https://docs.slack.dev/apis/web-api/` | 2026-08-07 |
 
 001 의 `research.md` S1–S4 를 대체하지 않는다. 같은 문서를 다시 조회한 것은 P1–P3 이고,
 아래 R-010 이 그 재조회에서 나온 **정정**이다.
@@ -140,8 +141,9 @@ bot token 도 같은 처리를 받는다. A2·A7 이 요구하는 "저장·로�
 환경변수는 프로세스 경계에서 끝난다. keychain 류는 platform 종속이라 clean clone 계약
 (SC-014) 과 안 맞는다.
 
-**미확정**: 환경변수 이름과 개수는 `contracts/` 가 정한다. 이 결정은 "어디서 읽는가" 만
-고정한다.
+**확정 (2026-08-07, T007)**: 변수는 둘이다 — `AMPLAI_SLACK_BOT_TOKEN` 과
+`AMPLAI_SLACK_SIGNING_SECRET`. 부분 구성은 미구성이 아니라 **오류**다. `None` 으로
+뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 skip 만 보고 뭘 빠뜨렸는지 모른다.
 
 ## R-015 — E2E Runs Outside The Default Suite (closes U-004)
 
@@ -177,3 +179,29 @@ marker 를 다시 구현하는 것이다.
   workspace." 우리 marker 는 `event_id`·`destination_ref`·`destination_sequence`·
   `payload_digest` 넷이고 credential 은 없다. 그래도 `destination_ref` 는 channel digest
   이고 `payload_digest` 는 내용 지문이라 노출 판단이 필요하다. Package 4 가 답한다.
+
+## R-016 — Content Type Differs By Method Kind (T006 구현 중 확인)
+
+**Decision**: `chat.postMessage` 는 **JSON**, `conversations.history` 는 **form-encoded** 로
+보낸다. token 은 두 경우 다 `Authorization: Bearer` header 다.
+
+**Rationale**: P6 가 둘을 나눠 적는다.
+
+- JSON: "For write methods that support JSON, you may alternatively send your HTTP POST
+  data as `Content-type: application/json`" 이고, 그때 token 은 "as a bearer token in the
+  `Authorization` HTTP header" 다.
+- 복잡한 인자를 가진 method 에 대해서는 "these methods can be difficult to properly
+  construct when using a `application/x-www-form-urlencoded` Content-type, so we strongly
+  recommend using JSON-encoded bodies instead" 로 **권장**한다. `metadata` 와 `blocks` 가
+  정확히 그 경우다.
+- 그런데 JSON 지원 범위를 **"Most write methods allow arguments with
+  `application/json`"** 로 한정한다. `conversations.history` 는 **read** method 다.
+  문서가 보장하지 않는 것에 기대지 않는다 — form-encoded 는 모든 method 가 받는다.
+
+**Alternatives considered**: 둘 다 form-encoded 로 통일하는 안. `metadata` 를 JSON 문자열로
+직렬화해 form field 에 넣어야 하는데 P6 가 그 방식을 권하지 않고, 중첩 구조를 form 으로
+어떻게 보내는지도 명시하지 않는다. 확인 안 된 인코딩으로 marker 를 보내면 실패가
+T010 에서야 드러난다.
+
+**남은 위험**: fake server 는 우리가 보낸 것을 그대로 관측할 뿐 Slack 이 그것을 받아들이는지
+모른다. 실제 확인은 T010 이다.

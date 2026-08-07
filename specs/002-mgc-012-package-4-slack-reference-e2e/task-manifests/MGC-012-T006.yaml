@@ -158,10 +158,16 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
+  # AC-01~08 여덟 다 통과했다. mutation 5종 (include_all_metadata 제거, ok:false 검사
+  # 제거, marker 미첨부, 예약 key 검사 제거, 빈 cursor 통과) 이 전부 죽는 것을 확인했다.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # gate 는 아직이다. wave 5 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
+  # 채운다. status 도 그때 done 으로 바꾼다.
   completed_at: null
-  evidence_paths: []
+  evidence_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
 
 handoff:
   expected_changes:

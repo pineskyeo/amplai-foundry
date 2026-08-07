@@ -122,11 +122,24 @@ history 소진이 미전송으로 판정되어 **매 재시도마다 Card 가 �
 받는다 (R-014). repo 전체에 Slack 설정을 읽는 `os.environ` 이 지금 한 줄도 없고, 그 구조가
 test 가능성을 만들었으므로 유지한다.
 
-**변수 이름은 구현이 정한다.** 이 계약이 요구하는 것은 성질 셋이다.
+**변수 이름은 T006·T007 구현이 확정했다** (2026-08-07).
+
+| 변수 | 값 |
+|---|---|
+| `AMPLAI_SLACK_BOT_TOKEN` | Bot User OAuth Token (`xoxb-` 로 시작) |
+| `AMPLAI_SLACK_SIGNING_SECRET` | Signing Secret |
+
+`AMPLAI_` 접두는 같은 환경에 있는 다른 Slack 도구와 섞이지 않게 한다.
+
+성질 셋을 지킨다.
 
 - 값 하나에 변수 하나. 합쳐 담지 않는다
 - 부재와 빈 문자열을 같게 다룬다 — 둘 다 "구성 안 됨"
 - 읽는 지점이 하나
+
+**부분 구성은 미구성이 아니다.** 둘 중 하나만 있으면 `ValueError` 다. `None` 으로
+뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만 보고 자기가 뭘 빠뜨렸는지 모른다.
+조용한 skip 은 조용한 pass 만큼 나쁘다.
 
 ### H-4.2 — Secrets Never Persist
 

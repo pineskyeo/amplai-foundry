@@ -349,3 +349,25 @@ update_history:
       transport 를 send 와 read 로 쪼개지 않았다 — 둘 다 있어야 Protocol 을 만족하므로
       한쪽만 끝난 상태가 ambiguous partial state 다.
     source_revision: 88b2a66
+  - date: 2026-08-07
+    summary: >-
+      T006·T007 구현. 둘 다 acceptance command 4개가 통과했고 status 는 ready 로 둔다 —
+      wave 5 의 3 lens review 와 gate 가 아직이다.
+      T006 은 urllib 기반 HttpSlackTransport 다. dependency 셋을 유지했고 그것을
+      sys.stdlib_module_names 로 판정하는 test 가 지킨다 — stdlib 목록을 손으로 세면
+      import 를 더할 때마다 test 를 고치게 되고 그 사이 third-party 가 섞여도 안 보인다.
+      구현 중 계약에 없던 위험을 하나 막았다. event payload 가 metadata 나 channel key 를
+      갖고 있으면 우리가 세우는 값을 덮는데, metadata 가 덮이면 marker 가 안 나가고
+      reconcile 이 영원히 못 찾아 매 재시도마다 Card 가 한 장씩 는다. hold 가 아니라 조용한
+      중복이라 전송 전에 막았다.
+      FR-016 의 "호출 합계" 는 validate_call_budget 으로 구성 시점에 검증한다. 호출 시점에
+      막으면 이미 lease 를 쥔 뒤라 그 event 가 실패로 기록된다.
+      T007 은 환경변수 이름을 AMPLAI_SLACK_BOT_TOKEN 과 AMPLAI_SLACK_SIGNING_SECRET 으로
+      확정했다. 부분 구성은 미구성이 아니라 오류로 뒀다 — None 으로 뭉뚱그리면 token 만
+      넣고 E2E 를 돌린 사람이 skip 만 보고 뭘 빠뜨렸는지 모른다.
+      mutation 5종 (include_all_metadata 제거, ok:false 검사 제거, marker 미첨부, 예약 key
+      검사 제거, 빈 cursor 통과) 이 전부 죽는 것을 확인했다.
+      pytest 957 (+59). Slack content type 을 research P6 로 확인했다 — 복잡한 인자를 가진
+      write method 는 JSON 권장이고 read method 의 JSON 지원은 문서가 보장하지 않아
+      conversations.history 는 form-encoded 로 보낸다.
+    source_revision: f94364e
