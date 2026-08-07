@@ -75,7 +75,7 @@ python -m mypy
 ```
 
 ```bash
-amplai-foundry lint
+amplai-foundry lint vault
 ```
 
 ```bash
@@ -87,7 +87,8 @@ amplai-foundry verify
 
 ## Expected Baseline
 
-- 기존 test 709건이 회귀 없이 통과한다 (Package 2 gate at `2dcf663` 기준)
+- 기존 test 가 **전량** 회귀 없이 통과한다. 숫자를 고정하지 않는다 — wave 마다 늘고
+  갱신 장치가 없다 (SC-006, `/speckit-analyze` I1)
 - `amplai-foundry verify` 7 stage 통과
 - 위 명령 중 **실제로 돌린 것만** gate 기록에 쓴다. 안 돌린 것을 통과했다고 쓰지 않는다
   (constitution 원칙 III)

@@ -26,7 +26,7 @@ from amplai_foundry.governance.events import (
     OutboxState,
     ProjectionDestination,
 )
-from amplai_foundry.governance.models import ProposalRef
+from amplai_foundry.governance.models import ChannelProvider, ChannelRef, ProposalRef
 from amplai_foundry.governance.projections import YamlProjectionDestination
 from amplai_foundry.governance.slack_projection import (
     RETRYABLE_SLACK_ERROR_CODES,
@@ -52,7 +52,7 @@ from amplai_foundry.governance.slack_projection import (
     raise_for_slack_failure,
     read_slack_marker,
 )
-from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.governance.store import GovernanceStore, governance_transaction
 
 MODULE_PATH = Path(inspect.getfile(slack_projection))
 
@@ -979,6 +979,23 @@ def _terminal_rows(store: GovernanceStore) -> tuple[list[str], list[str]]:
     return dead, holds
 
 
+def _hold_scopes(store: GovernanceStore) -> list[tuple[str, str]]:
+    """Read which destination each operator hold actually landed on.
+
+    `_terminal_rows` 는 `reason_code` 만 읽어 **어디에** 걸렸는지를 안 본다. hold 는
+    되돌릴 수 없고 그 destination 의 이후 event 를 전부 멈추므로, 엉뚱한 destination 에
+    걸리는 것은 원인 code 가 틀린 것보다 나쁘다. `scope_kind` 는 `CHECK` 제약이 구조로
+    보장하지만 (`migrations.py:623`) `scope_ref` 는 아니다.
+    """
+    with store.connect() as connection:
+        return [
+            (str(row[0]), str(row[1]))
+            for row in connection.execute(
+                "SELECT scope_kind, scope_ref FROM governance_operator_holds"
+            ).fetchall()
+        ]
+
+
 # T002 AC-08 — D-021 항목 2. 마지막 attempt 에서 OutboxReconcileError 를 올려도 state 전이는
 # 그대로여야 한다. 재시도를 한 번이라도 잃으면 이 test 의 attempts 목록이 짧아진다.
 def test_exhaustion_reaches_the_dead_letter_without_losing_a_retry(tmp_path: Path) -> None:
@@ -1599,3 +1616,766 @@ def test_a_human_message_without_an_app_id_is_not_our_defect() -> None:
         app_id=None,
     )
     assert read_slack_marker(other_app_type, app_id=APP_ID) is None
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T004 — 실제 OutboxDispatcher.deliver_next 와 물린 순서 보장
+#
+# 여기까지의 test 는 destination 하나를 직접 부른다. 순서·직렬화·supersession 은 destination
+# 혼자서는 증명되지 않는다 — 그 계약은 dispatcher 의 claim 조건에 있고, destination 이
+# 그것을 우회하면 (별도 전송 경로, 자체 retry) 사람이 낡은 Card 를 보고 결정한다.
+# dispatcher 코드는 고치지 않는다. 통합이 깨지면 destination 쪽이 계약을 어긴 것이다.
+# --------------------------------------------------------------------------------------
+
+
+def _ordered_fixture(
+    tmp_path: Path,
+    *,
+    count: int,
+) -> tuple[GovernanceStore, governance_fixtures.MutableClock, tuple[OutboxEventView, ...]]:
+    """같은 provider destination 에 pending event 를 `count` 개 쌓는다.
+
+    `_dispatcher_fixture` 는 event 가 하나라 순서를 검사할 수 없다. decision 을 여러 번
+    append 하면 같은 destination 에 `destination_sequence` 가 1 부터 이어 붙는다 —
+    destination_ref 는 decision authority 의 channel 에서 나오므로 append 마다 같다.
+    """
+    store, _active, _draft = governance_fixtures._active_proposal(tmp_path)
+    clock = governance_fixtures.MutableClock()
+    events = GovernanceEventService(store, clock=clock)
+    providers: list[OutboxEventView] = []
+    for index in range(1, count + 1):
+        _audit, outbox = governance_fixtures._append(
+            events,
+            store,
+            command_id=f"command-{index}",
+            state_revision=index + 1,
+        )
+        providers.append(next(event for event in outbox if event.supersession_key is not None))
+    assert [event.destination_sequence for event in providers] == list(range(1, count + 1))
+    assert len({event.destination_ref for event in providers}) == 1
+    return store, clock, tuple(providers)
+
+
+def _bound_destination(
+    transport: FakeSlackTransport,
+    destination_ref: str,
+    *,
+    max_attempts: int = MAX_ATTEMPTS,
+) -> SlackProjectionDestination:
+    return SlackProjectionDestination(
+        transport,
+        destination_ref=destination_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        max_attempts=max_attempts,
+    )
+
+
+class RecordingTransport(FakeSlackTransport):
+    """`post_message` 호출을 **실패해도** 기록한다.
+
+    `posted` 는 성공한 전송만 남는다. 순서 계약이 막는 것은 "보냈다" 가 아니라 "보내려
+    했다" 다 — 실패한 시도도 Slack 에 도달했을 수 있고, 낮은 sequence 가 확정되기 전에
+    높은 sequence 를 시도한 것 자체가 위반이다.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.attempted: list[int] = []
+
+    def post_message(
+        self,
+        *,
+        channel: str,
+        payload: Mapping[str, object],
+        marker: Mapping[str, object],
+    ) -> SlackSendResult:
+        body = cast("Mapping[str, object]", marker["event_payload"])
+        self.attempted.append(cast("int", body["destination_sequence"]))
+        return super().post_message(channel=channel, payload=payload, marker=marker)
+
+
+def _delivered_sequence(store: GovernanceStore, destination_ref: str) -> int:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT delivered_sequence FROM governance_outbox_destinations "
+            "WHERE destination_ref = ?",
+            (destination_ref,),
+        ).fetchone()
+    assert row is not None
+    return int(row[0])
+
+
+def _states(dispatcher: OutboxDispatcher, events: Sequence[OutboxEventView]) -> list[OutboxState]:
+    return [dispatcher.get(event.event_id).state for event in events]
+
+
+# T004 AC-01 / SC-001 — sequence 1 이 확정되기 전에는 sequence 2 가 transport 에 닿지
+# 않는다. 첫 event 를 재시도 상태로 붙잡아 두고 dispatcher 를 계속 돌린다.
+def test_next_sequence_is_not_sent_until_the_previous_one_is_delivered(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    config = OutboxConfig(lease_seconds=5)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    destination = _bound_destination(
+        transport,
+        providers[0].destination_ref,
+        max_attempts=config.max_attempts,
+    )
+
+    dispatcher.deliver_next("worker", destination)
+
+    # **시계를 밀기 전에 한 번 더 부른다.** 이 창이 앞 sequence gate 가 실제로 지키는
+    # 구간이다 — sequence 1 은 retry_wait 인데 retry_at 이 아직 안 지났다. 여기서 dispatcher
+    # 는 아무것도 안 준다. 시계를 밀고 나면 sequence 1 이 다시 claim 가능해져
+    # `ORDER BY ... destination_sequence` 만으로도 1 이 먼저 나오므로, gate 를 지워도
+    # 관측 순서가 안 바뀐다 (wave 4 regression lens F2).
+    assert dispatcher.deliver_next("worker", destination) is None
+    assert transport.attempted == [1]
+
+    clock.advance(timedelta(seconds=120))
+    dispatcher.deliver_next("worker", destination)
+    clock.advance(timedelta(seconds=120))
+
+    # 두 번 실패하는 동안 dispatcher 는 sequence 1 만 재시도한다. sequence 2 는 손도 안
+    # 댄다 — claim 조건이 앞 sequence 의 확정을 요구하기 때문이다 (events.py:2648).
+    assert transport.attempted == [1, 1]
+    assert _states(dispatcher, providers) == [OutboxState.RETRY_WAIT, OutboxState.PENDING]
+
+    transport.failure = None
+    dispatcher.deliver_next("worker", destination)
+    clock.advance(timedelta(seconds=120))
+    dispatcher.deliver_next("worker", destination)
+
+    assert transport.attempted == [1, 1, 1, 2]
+    assert _states(dispatcher, providers) == [OutboxState.DELIVERED, OutboxState.DELIVERED]
+    assert dispatcher.deliver_next("worker", destination) is None
+
+
+# T004 AC-01 대조 — 한 번에 다 돌려도 순서가 뒤집히지 않는다. 위 test 는 실패를 끼워
+# 넣어 만든 상태라, 아무 방해 없는 평상시 경로도 같은 순서인지 따로 고정한다.
+def test_three_cards_leave_in_sequence_order(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=3)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    for _ in range(3):
+        delivered = dispatcher.deliver_next("worker", destination)
+        assert delivered is not None and delivered.state is OutboxState.DELIVERED
+
+    assert transport.attempted == [1, 2, 3]
+    # 각 Card 의 receipt 가 자기 순번의 전송에서 나왔는지 본다. `posted` 의 ts 가 오름차순
+    # 인지 묻는 것은 무의미하다 — FakeSlackTransport 가 counter 로 만들어 순서가 뒤집혀도
+    # 항상 참이다 (wave 4 contract lens A1).
+    receipts = [dispatcher.get(event.event_id).remote_receipt for event in providers]
+    assert receipts == [f"slack:{CHANNEL}:{message.ts}" for message in transport.posted]
+
+
+# T004 AC-02 / SC-002 — 같은 destination 을 두 dispatcher 가 동시에 잡으면 한쪽만
+# 전송한다. `deliver_next` 는 동기라 순차로 부르면 경쟁이 재현되지 않는다. 경쟁 dispatcher
+# 를 **lease 를 쥔 send 안에서** 돌려 실제로 겹치는 창을 만든다.
+def test_a_competing_dispatcher_gets_no_lease_while_the_first_is_sending(
+    tmp_path: Path,
+) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    config = OutboxConfig(lease_seconds=5)
+    first = OutboxDispatcher(store, config=config, clock=clock)
+    second = OutboxDispatcher(store, config=config, clock=clock)
+    rival_transport = RecordingTransport()
+    rival_destination = _bound_destination(rival_transport, providers[0].destination_ref)
+    rival_results: list[OutboxEventView | None] = []
+
+    class CompetingDestination(SlackProjectionDestination):
+        """send 중에 경쟁 dispatcher 를 돌린다. lease 가 살아 있는 유일한 구간이다."""
+
+        def send(self, event: OutboxEventView) -> str:
+            rival_results.append(second.deliver_next("worker-b", rival_destination))
+            return super().send(event)
+
+    transport = RecordingTransport()
+    destination = CompetingDestination(
+        transport,
+        destination_ref=providers[0].destination_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        max_attempts=config.max_attempts,
+    )
+
+    delivered = first.deliver_next("worker-a", destination)
+
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+    # 경쟁 dispatcher 는 lease 를 얻지 못했다. sequence 2 도 못 가져간다 — 앞 event 가
+    # 아직 leased 라 확정 전이기 때문이다.
+    assert rival_results == [None]
+    assert rival_transport.attempted == []
+    assert transport.attempted == [1]
+    assert _states(first, providers) == [OutboxState.DELIVERED, OutboxState.PENDING]
+
+    # 대조군. 같은 dispatcher·destination 이 lease 밖에서는 sequence 2 를 가져간다.
+    # 이것이 없으면 위의 None 이 lease 때문인지 fixture 가 틀린 것인지 못 가른다.
+    after = second.deliver_next("worker-b", rival_destination)
+    assert after is not None and after.destination_sequence == 2
+    assert rival_transport.attempted == [2]
+
+
+# T004 AC-03 / SC-003 — supersede 된 event 는 Slack 으로 나가지 않는다. 낡은 Card 를
+# 사람에게 보이지 않는 것이 이 계약의 목적이다.
+def test_a_superseded_event_never_reaches_the_transport(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    superseded = dispatcher.supersede_pending(
+        providers[0].event_id,
+        replacement_event_id=providers[1].event_id,
+    )
+    assert superseded.state is OutboxState.SUPERSEDED
+
+    delivered = dispatcher.deliver_next("worker", destination)
+
+    assert delivered is not None and delivered.event_id == providers[1].event_id
+    assert transport.attempted == [2]
+    assert _states(dispatcher, providers) == [OutboxState.SUPERSEDED, OutboxState.DELIVERED]
+    assert dispatcher.deliver_next("worker", destination) is None
+
+
+# T004 AC-03 경계 — supersede 는 pending event 만 대상이다 (events.py:2797). 이미 전달된
+# Card 를 되돌리는 요구는 A11 에 없다.
+#
+# **이 test 가 지는 것은 dispatcher 의 guard 하나다** (events.py:2830). destination 을 어떤
+# ProjectionDestination 으로 바꿔도 통과한다 — destination 은 이 경로에 관여하지 않는다.
+# 경계를 못박는 용도이지 destination 계약의 증거가 아니다 (wave 4 contract lens A2).
+def test_supersede_does_not_reach_a_card_already_delivered(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    assert dispatcher.deliver_next("worker", destination) is not None
+    with pytest.raises(GovernanceEventError, match="OUTBOX_SUPERSEDE_INVALID"):
+        dispatcher.supersede_pending(
+            providers[0].event_id,
+            replacement_event_id=providers[1].event_id,
+        )
+
+    assert dispatcher.get(providers[0].event_id).state is OutboxState.DELIVERED
+    assert transport.attempted == [1]
+
+
+# T004 AC-04 — destination row 의 delivered_sequence 가 마지막으로 전달한
+# destination_sequence 와 같다. 이 값이 어긋나면 재기동 시 어디까지 나갔는지 모른다.
+def test_delivered_sequence_tracks_the_last_delivered_card(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=3)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination_ref = providers[0].destination_ref
+    destination = _bound_destination(transport, destination_ref)
+
+    assert _delivered_sequence(store, destination_ref) == 0
+    for expected in (1, 2, 3):
+        delivered = dispatcher.deliver_next("worker", destination)
+        assert delivered is not None and delivered.destination_sequence == expected
+        assert _delivered_sequence(store, destination_ref) == expected
+
+    assert _delivered_sequence(store, destination_ref) == providers[-1].destination_sequence
+
+
+# T004 AC-04 — supersede 한 event 는 delivered_sequence 를 올리지 않는다. 건너뛴 sequence
+# 가 값에 남으면 "1 까지 나갔다" 와 "1 은 취소됐다" 가 구분되지 않는다.
+def test_delivered_sequence_skips_the_superseded_event(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination_ref = providers[0].destination_ref
+    destination = _bound_destination(transport, destination_ref)
+
+    dispatcher.supersede_pending(
+        providers[0].event_id,
+        replacement_event_id=providers[1].event_id,
+    )
+    assert dispatcher.deliver_next("worker", destination) is not None
+
+    assert _delivered_sequence(store, destination_ref) == 2
+
+
+# T004 FR-007 — retry, DLQ 와 operator hold 는 dispatcher 계약을 그대로 쓴다. destination
+# 이 자기 재시도 loop 를 갖고 있으면 이 test 의 attempt 수가 어긋난다.
+def test_the_destination_adds_no_retry_path_of_its_own(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    config = OutboxConfig(lease_seconds=5)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(error_code="internal_error")
+    destination = _bound_destination(
+        transport,
+        providers[0].destination_ref,
+        max_attempts=config.max_attempts,
+    )
+
+    for _ in range(config.max_attempts):
+        dispatcher.deliver_next("worker", destination)
+        clock.advance(timedelta(seconds=120))
+
+    # deliver_next 한 번에 post_message 도 정확히 한 번이다.
+    assert transport.attempted == [1] * config.max_attempts
+    assert dispatcher.get(providers[0].event_id).state is OutboxState.DEAD_LETTER
+    dead, holds = _terminal_rows(store)
+    assert dead == ["SLACK_PROJECTION_RETRY_EXHAUSTED:internal_error"]
+    assert holds == ["SLACK_PROJECTION_RETRY_EXHAUSTED:internal_error"]
+    # operator hold 가 걸린 destination 은 다음 Card 를 내보내지 않는다 (events.py:2634).
+    assert dispatcher.deliver_next("worker", destination) is None
+    assert dispatcher.get(providers[1].event_id).state is OutboxState.PENDING
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T005 — crash recovery, 판정 불가 hold, 실패 행렬
+#
+# T004 는 정상 순서를 고정한다. 여기서는 순서가 깨질 수 있는 지점을 본다 — send 는
+# 성공했는데 mark 가 없는 구간, 판정 불가, terminal 실패, 그리고 hold 가 destination 을
+# 멈추는 것. dispatcher 코드는 여기서도 안 고친다.
+# --------------------------------------------------------------------------------------
+
+# Telegram decision 하나로 다른 Provider destination 을 만든다. destination_ref 는 production
+# 파생 규칙이 만든다 (`events.py:_decision_destinations`) — row 를 손으로 넣으면 실제로
+# 생기지 않는 모양을 검사하게 된다.
+TELEGRAM_CHANNEL = ChannelRef(
+    provider=ChannelProvider.TELEGRAM,
+    chat_id="-1001234567890",
+    message_id="4242",
+)
+
+# crash 재현용 config. lease 와 backoff 를 짧게 잡아 clock 조작을 한눈에 보이게 한다.
+_CRASH_CONFIG = OutboxConfig(lease_seconds=5, retry_base_seconds=1, retry_cap_seconds=1)
+
+
+def _crashed_after_send(
+    tmp_path: Path,
+    *,
+    count: int = 1,
+    max_history_pages: int = SLACK_MAX_HISTORY_PAGES,
+    config: OutboxConfig = _CRASH_CONFIG,
+) -> tuple[
+    GovernanceStore,
+    governance_fixtures.MutableClock,
+    OutboxDispatcher,
+    RecordingTransport,
+    SlackProjectionDestination,
+    tuple[OutboxEventView, ...],
+]:
+    """post_message 는 성공했는데 mark_delivered 가 없는 상태를 만든다.
+
+    예외를 던져 만들지 않는다 — 그건 실패 경로이고 `fail()` 이 상태를 정리한다. crash 는
+    아무도 정리하지 않는 것이라서 위험하다. `claim_next` 는 자기 transaction 을 commit
+    하므로 lease 를 쥔 채 죽은 row 가 durable 하게 남는다.
+
+    `config` 를 여는 이유는 `max_attempts` 다. 재개 시점의 `attempts` 가 상한에 닿았는지가
+    "재전송" 과 "영구 hold" 를 가른다 (`events.py:2844`-`2854`). 기본값으로는 그 경계에
+    닿지 못한다.
+    """
+    store, clock, providers = _ordered_fixture(tmp_path, count=count)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = RecordingTransport()
+    destination = SlackProjectionDestination(
+        transport,
+        destination_ref=providers[0].destination_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=max_history_pages,
+        max_attempts=config.max_attempts,
+    )
+    claimed = dispatcher.claim_next("crashed", destination_ref=destination.destination_ref)
+    assert claimed is not None and claimed.destination_sequence == 1
+    assert destination.send(claimed) == f"slack:{CHANNEL}:{transport.posted[0].ts}"
+    assert transport.attempted == [1]
+    return store, clock, dispatcher, transport, destination, providers
+
+
+def _resume_after_the_lease_expires(
+    dispatcher: OutboxDispatcher,
+    destination: SlackProjectionDestination,
+    clock: governance_fixtures.MutableClock,
+) -> OutboxEventView | None:
+    """Restart the dead worker's event.
+
+    만료 처리와 재claim 은 한 호출에 같이 일어나지 않는다. 첫 호출은 lease 를 거둬
+    `retry_wait` 로 내리면서 `retry_at` 을 미래로 잡고 (`events.py:2594`), 그 시각이 지나야
+    두 번째 호출이 claim 한다.
+
+    시간은 `dispatcher.config` 에서 읽는다. module 상수를 읽으면 호출자가 config 를 바꿨을
+    때 조용히 어긋난다. `_backoff_seconds` 는 `min(base * 2^(n-1), cap)` 이라
+    (events.py:2980) backoff 는 언제나 cap 이하다. **cap + 1 을 민다** — cap 만큼만 밀면
+    `base == cap` 구성에서 `retry_at == now` 로 정확히 착지하고, 통과하는 이유가 query 의
+    `<=` 하나가 된다 (wave 4 round 2 failure-recovery lens A2).
+    """
+    clock.advance(timedelta(seconds=dispatcher.config.lease_seconds + 1))
+    assert dispatcher.deliver_next("recovery", destination) is None
+    clock.advance(timedelta(seconds=dispatcher.config.retry_cap_seconds + 1))
+    return dispatcher.deliver_next("recovery", destination)
+
+
+# T005 AC-01 / SC-004 — send 뒤 mark 전에 죽어도 Card 는 한 장이다. reconcile 이 marker 를
+# 찾아 확정한다. 이 test 가 깨지면 재기동마다 Card 가 한 장씩 는다.
+def test_a_card_sent_before_the_crash_is_not_sent_twice(tmp_path: Path) -> None:
+    _store, clock, dispatcher, transport, destination, providers = _crashed_after_send(tmp_path)
+    sent_ts = transport.posted[0].ts
+
+    recovered = _resume_after_the_lease_expires(dispatcher, destination, clock)
+
+    assert recovered is not None and recovered.state is OutboxState.DELIVERED
+    # 두 번째 post 가 없다. 시도조차 없어야 한다 — 실패한 시도도 Slack 에 닿을 수 있다.
+    assert transport.attempted == [1]
+    assert len(transport.posted) == 1
+    # receipt 는 send 가 만든 것과 같은 문자열이어야 한다. 다르면 mark_delivered 가
+    # OUTBOX_DELIVERY_RESULT_CONFLICT 를 던진다 (C-2.3).
+    assert recovered.remote_receipt == f"slack:{CHANNEL}:{sent_ts}"
+    assert dispatcher.get(providers[0].event_id).state is OutboxState.DELIVERED
+
+
+# T005 AC-02 (D-023 으로 좁혀진 판) — 지워진 Card 가 hold 가 되는 것은 **조회 범위를 다 못
+# 본 경우뿐**이다. `next_cursor` 가 남은 채 page 상한에 걸리면 "없다" 를 확정할 수 없다.
+#
+# manifest 의 AC-02 원문은 지워진 Card 를 무조건 hold 로 적었다. 그것은 D-023 이전 판이다
+# (contracts C-2.2 표의 셋째 줄, spec SC-005). 아래 두 test 가 좁혀진 계약을 양쪽으로
+# 고정한다.
+def test_a_deleted_card_holds_when_the_search_range_was_not_exhausted(tmp_path: Path) -> None:
+    store, clock, dispatcher, transport, destination, providers = _crashed_after_send(
+        tmp_path,
+        count=2,
+        max_history_pages=1,
+    )
+
+    # 사람이 Card 를 지웠고 그 뒤로 채널에 다른 message 가 쌓였다. page 상한에 걸릴 때까지
+    # 우리 marker 도 하위 sequence marker 도 안 나온다.
+    transport.posted.clear()
+    transport.page_size = 1
+    _seed(transport, _noise("1700000000.000101"), _noise("1700000000.000102"))
+
+    held = _resume_after_the_lease_expires(dispatcher, destination, clock)
+
+    assert held is not None and held.state is OutboxState.DEAD_LETTER
+    # attempts 를 소진하지 않았는데도 DLQ 다. 판정 불가는 재시도로 나아지지 않는다.
+    assert held.attempts < _CRASH_CONFIG.max_attempts
+    assert transport.attempted == [1]
+    dead, holds = _terminal_rows(store)
+    # 상한 부족은 다른 hold 원인과 구분되는 code 를 쓴다 (D-023 항목 4). 이 code 가 없으면
+    # max_history_pages 가 작았다는 것을 사후에 알 방법이 없다.
+    assert dead == ["SLACK_PROJECTION_RECONCILE_SEARCH_CAP_REACHED"]
+    assert holds == ["SLACK_PROJECTION_RECONCILE_SEARCH_CAP_REACHED"]
+    # AC-02 는 "outbox_destination scope 의" hold 를 요구한다. code 만 보면 어느
+    # destination 이 멈췄는지 모른다.
+    assert _hold_scopes(store) == [("outbox_destination", providers[0].destination_ref)]
+    assert dispatcher.get(providers[1].event_id).state is OutboxState.PENDING
+
+
+# T005 AC-02 반대쪽 / SC-005 — 채널이 작아 history 를 끝까지 훑을 수 있으면 없는 것이
+# **확정**이라 재전송한다. Card 가 두 장이 될 수 없다. D-023 항목 3 이 이 갈래를 열었고,
+# 열지 않으면 모든 destination 의 첫 Card 가 영구 hold 가 된다.
+def test_a_deleted_card_is_resent_when_the_channel_history_is_exhausted(tmp_path: Path) -> None:
+    store, clock, dispatcher, transport, destination, providers = _crashed_after_send(tmp_path)
+
+    # 우리 Card 만 지운다. 채널을 통째로 비우면 "message 가 없다" 와 "우리 것만 없다" 가
+    # 구분되지 않는다. AC-08 이 말하는 것은 후자다 — 사람들이 떠들고 있는 작은 채널.
+    transport.posted.clear()
+    _seed(transport, _noise("1700000000.000101"), _noise("1700000000.000102"))
+
+    resent = _resume_after_the_lease_expires(dispatcher, destination, clock)
+
+    assert resent is not None and resent.state is OutboxState.DELIVERED
+    # 중복 부재를 지는 것은 이 한 줄이다. 두 번째 시도가 있고 그것이 전부다.
+    assert transport.attempted == [1, 1]
+    dead, holds = _terminal_rows(store)
+    assert (dead, holds) == ([], [])
+    assert dispatcher.get(providers[0].event_id).state is OutboxState.DELIVERED
+
+
+# T005 AC-09 — 같은 "지워진 Card" 인데 여기서는 재전송하지 않는다. `deliver_next` 가
+# `send()` 앞에서 가로채 `OUTBOX_POST_SEND_RECONCILE_REQUIRED` 로 떨어뜨린다
+# (events.py:2844-2854). D-023 이 "마지막 안전망" 이라고 부른 branch 다.
+#
+# 이 갈래가 없으면 attempt 를 다 쓴 event 가 "없으니 보낸다" 를 반복한다. guard 가
+# 지워져도 나머지 test 는 전부 초록이라 여기서 실물로 고정한다. wave 4 review 의 P1-1 이다.
+#
+# **경계는 두 조건의 AND 다.** 다른 한쪽은 아래 AC-10 test 가 진다.
+def test_the_last_attempt_holds_instead_of_resending_a_deleted_card(tmp_path: Path) -> None:
+    # max_attempts=1 이라 재claim 시점의 attempts 가 곧바로 상한이다. 이 구성은 D-023
+    # 항목 2 가 `_never_attempted` 를 두 조건으로 만든 이유이기도 하다 — attempts 만 보면
+    # 이 재claim 이 첫 시도로 보인다.
+    config = OutboxConfig(
+        lease_seconds=5,
+        max_attempts=1,
+        retry_base_seconds=1,
+        retry_cap_seconds=1,
+    )
+    store, clock, dispatcher, transport, destination, providers = _crashed_after_send(
+        tmp_path,
+        config=config,
+    )
+
+    transport.posted.clear()
+    _seed(transport, _noise("1700000000.000101"))
+
+    held = _resume_after_the_lease_expires(dispatcher, destination, clock)
+
+    assert held is not None and held.state is OutboxState.DEAD_LETTER
+    # 재전송하지 않았다. 시도조차 없어야 한다.
+    assert transport.attempted == [1]
+    dead, holds = _terminal_rows(store)
+    assert dead == ["OUTBOX_POST_SEND_RECONCILE_REQUIRED"]
+    assert holds == ["OUTBOX_POST_SEND_RECONCILE_REQUIRED"]
+    assert _hold_scopes(store) == [("outbox_destination", providers[0].destination_ref)]
+
+
+# T005 AC-10 — 경계의 반대쪽. attempts 가 상한에 닿아도 **lease 만료 replay 가 아니면**
+# guard 가 안 걸리고 재전송한다. guard 는 두 조건의 AND 다 (events.py:2844-2847).
+#
+# round 1 은 이 경계를 attempts 단독으로 적었고 그것은 거짓이다 (wave 4 round 2 contract
+# lens NEW-1). 여기 없으면 다음 사람이 AC-09 를 읽고 attempts 하나로 이해한다.
+def test_a_max_attempt_failure_that_is_not_a_lease_replay_still_resends(tmp_path: Path) -> None:
+    config = OutboxConfig(
+        lease_seconds=5,
+        max_attempts=2,
+        retry_base_seconds=1,
+        retry_cap_seconds=1,
+    )
+    store, clock, providers = _ordered_fixture(tmp_path, count=1)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = RecordingTransport()
+    destination = _bound_destination(
+        transport,
+        providers[0].destination_ref,
+        max_attempts=config.max_attempts,
+    )
+
+    # send 는 성공했는데 응답을 못 읽어 retryable 실패로 기록된 경로다. crash 와 달리
+    # lease 를 반납하므로 last_error_code 가 OUTBOX_LEASE_EXPIRED 가 아니다.
+    claimed = dispatcher.claim_next("worker", destination_ref=destination.destination_ref)
+    assert claimed is not None
+    destination.send(claimed)
+    dispatcher.fail(
+        claimed.event_id,
+        dispatcher_id="worker",
+        generation=claimed.claim_generation,
+        error_code="OUTBOX_DELIVERY_FAILED",
+    )
+    # 사람이 Card 를 지운다.
+    transport.posted.clear()
+    clock.advance(timedelta(seconds=120))
+
+    before = dispatcher.get(providers[0].event_id)
+    assert before.last_error_code == "OUTBOX_DELIVERY_FAILED"
+
+    resent = dispatcher.deliver_next("worker", destination)
+
+    # attempts 가 상한에 닿았는데도 guard 가 안 걸린다. 조건 하나가 빠졌기 때문이다.
+    assert resent is not None and resent.attempts == config.max_attempts
+    assert resent.state is OutboxState.DELIVERED
+    assert transport.attempted == [1, 1]
+    assert _terminal_rows(store) == ([], [])
+
+
+# T005 AC-03 — hold 가 걸린 destination 은 다음 event 를 claim 하지 않는다. deliver_next
+# 가 아니라 claim_next 로 본다 — 멈추는 지점이 destination 이 아니라 claim 조건이라는 것이
+# 계약이다.
+#
+# **이 test 는 두 gate 중 어느 쪽이 막았는지 가리지 않는다.** dead_letter 된 event 는
+# `operator_hold = 0` (events.py:2634) 과 앞 sequence gate (events.py:2648) 양쪽에 걸린다.
+# production 에서 hold 는 언제나 dead letter 와 함께 생기므로 (events.py:_dead_letter) 두
+# 조건이 늘 같이 성립한다. hold gate 단독의 teeth 는 아래 synthetic test 가 준다
+# (wave 4 regression lens F1).
+def test_a_held_destination_stops_claiming_its_next_event(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(error_code="channel_not_found")
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    held = dispatcher.deliver_next("worker", destination)
+    assert held is not None and held.state is OutboxState.DEAD_LETTER
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT operator_hold FROM governance_outbox_destinations WHERE destination_ref = ?",
+            (providers[0].destination_ref,),
+        ).fetchone() == (1,)
+    assert dispatcher.claim_next("worker", destination_ref=providers[0].destination_ref) is None
+    assert dispatcher.get(providers[1].event_id).state is OutboxState.PENDING
+    # hold 를 자동으로 푸는 경로는 없다 (T005 non_goals). 시간이 지나도 그대로다.
+    clock.advance(timedelta(seconds=3600))
+    assert dispatcher.claim_next("worker", destination_ref=providers[0].destination_ref) is None
+
+
+# T005 AC-03 — hold gate 단독의 teeth.
+#
+# **이 상태는 synthetic 이다.** production 에서 hold 는 `_dead_letter` 가 dead letter 와
+# 함께 만들므로 (events.py:2903-2960) 앞 event 가 전부 delivered 인 채 hold 만 서 있는
+# destination 은 지금 경로로는 안 생긴다. 그래서 SQL 로 세운다.
+#
+# 더 정확히는 repo 가 이 상태를 **능동적으로 거부한다** — `reconcile_connection` 이
+# dead_letter/recovery_hold event 없는 `operator_hold = 1` 을 `OUTBOX_OPERATOR_HOLD_MISMATCH`
+# 로 튕긴다 (events.py:2251-2261). 그 검사는 이 test 안에서 안 돌므로 충돌하지 않는다.
+#
+# 그래도 두는 이유는 `WHERE d.operator_hold = 0` (events.py:2634) 이 지금 **아무 test 도
+# 죽이지 않는 gate** 라서다 — 그 조건을 `IN (0, 1)` 로 바꿔도 repo 전체 test 가 통과한다
+# (wave 4 regression lens F1). 지금은 앞 sequence gate 에 가려 잉여지만, hold 해소나
+# dead_letter event 의 supersession 이 생기면 그 순간 이 gate 가 유일한 방어선이 된다.
+# 잉여인 채로 조용히 사라지는 것을 막는다.
+def test_the_hold_gate_alone_stops_a_destination_whose_prior_events_are_delivered(
+    tmp_path: Path,
+) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=2)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    destination = _bound_destination(RecordingTransport(), providers[0].destination_ref)
+
+    delivered = dispatcher.deliver_next("worker", destination)
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+    # 앞 sequence gate 는 이제 통과한다. 남은 것은 hold gate 하나다.
+    assert dispatcher.claim_next("probe", destination_ref=destination.destination_ref) is not None
+
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            "UPDATE governance_outbox_events SET state = 'pending', lease_owner = NULL, "
+            "lease_expires_at = NULL, attempts = 0, claim_generation = 0 WHERE event_id = ?",
+            (providers[1].event_id,),
+        )
+        connection.execute(
+            "UPDATE governance_outbox_destinations SET operator_hold = 1 WHERE destination_ref = ?",
+            (destination.destination_ref,),
+        )
+
+    assert dispatcher.claim_next("worker", destination_ref=destination.destination_ref) is None
+    assert dispatcher.deliver_next("worker", destination) is None
+    assert dispatcher.get(providers[1].event_id).state is OutboxState.PENDING
+
+
+# T005 AC-04 — ratelimited 는 allowlist 안이라 재시도다. 사람을 부르지 않는다.
+def test_ratelimited_goes_to_retry_wait_and_raises_attempts(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=1)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(error_code="ratelimited")
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    failed = dispatcher.deliver_next("worker", destination)
+
+    assert failed is not None and failed.state is OutboxState.RETRY_WAIT
+    assert failed.attempts == 1
+    assert failed.last_error_code == "OUTBOX_DELIVERY_FAILED"
+    assert _terminal_rows(store) == ([], [])
+
+
+# T005 AC-05 — channel_not_found 는 allowlist 밖이라 terminal 이다. attempts 소진을
+# 기다리지 않는다. 잘못 지목한 channel 을 5번 더 두드려도 답은 안 바뀐다.
+def test_channel_not_found_dead_letters_without_waiting_for_attempts(tmp_path: Path) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=1)
+    config = OutboxConfig(lease_seconds=5)
+    dispatcher = OutboxDispatcher(store, config=config, clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(error_code="channel_not_found")
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    failed = dispatcher.deliver_next("worker", destination)
+
+    assert failed is not None and failed.state is OutboxState.DEAD_LETTER
+    assert failed.attempts == 1 < config.max_attempts
+    assert transport.attempted == [1]
+    dead, holds = _terminal_rows(store)
+    assert dead == ["SLACK_PROJECTION_TERMINAL_ERROR:channel_not_found"]
+    assert holds == ["SLACK_PROJECTION_TERMINAL_ERROR:channel_not_found"]
+
+
+# T005 AC-06 — Slack code 없는 HTTP 실패는 전부 transport 층이라 재시도다 (plan P-002,
+# D-020 항목 1). 5xx 를 terminal 로 두면 일시 장애가 되돌릴 수 없는 hold 를 만든다.
+@pytest.mark.parametrize("status_code", [500, 502, 503, 504])
+def test_a_server_error_without_a_slack_code_goes_to_retry_wait(
+    tmp_path: Path,
+    status_code: int,
+) -> None:
+    store, clock, providers = _ordered_fixture(tmp_path, count=1)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    transport.failure = _transport_failure(status_code=status_code)
+    destination = _bound_destination(transport, providers[0].destination_ref)
+
+    failed = dispatcher.deliver_next("worker", destination)
+
+    assert failed is not None and failed.state is OutboxState.RETRY_WAIT
+    assert _terminal_rows(store) == ([], [])
+
+
+def _destination_row(store: GovernanceStore, destination_ref: str) -> tuple[object, ...]:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT next_sequence, delivered_sequence, operator_hold, updated_at "
+            "FROM governance_outbox_destinations WHERE destination_ref = ?",
+            (destination_ref,),
+        ).fetchone()
+    assert row is not None
+    return tuple(row)
+
+
+# T005 AC-07 / FR-011 / A14 — Slack 경로를 성공과 hold 양쪽으로 끝까지 돌려도 다른
+# Provider 의 destination 은 그대로다.
+#
+# **읽는 대상을 좁혔다.** manifest 는 "다른 Provider 의 activation state" 라고 쓰지만 이
+# repo 에 provider activation 을 담는 table 은 없다 (governance_* table 목록 확인). Package 3
+# 범위에서 실재하고 관측 가능한 것은 provider 별 outbox destination row 와 그 event 다.
+# 그것으로 좁혀 검사한다. activation rollout 자체는 Package 4 이고 CURRENT_ITEM 의
+# Out Of Scope 다.
+def test_the_slack_path_leaves_another_provider_destination_untouched(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, _active, _draft = governance_fixtures._active_proposal(tmp_path)
+    clock = governance_fixtures.MutableClock()
+    events = GovernanceEventService(store, clock=clock)
+    monkeypatch.setattr(governance_fixtures, "CHANNEL", TELEGRAM_CHANNEL)
+    _telegram_audit, telegram_outbox = governance_fixtures._append(
+        events,
+        store,
+        command_id="command-telegram",
+        state_revision=2,
+    )
+    monkeypatch.undo()
+    # Slack 쪽은 둘이다. 하나로는 성공 뒤에 claim 할 event 가 없어 실패 경로를 못 돈다.
+    slack_batches = [
+        governance_fixtures._append(
+            events,
+            store,
+            command_id=f"command-slack-{index}",
+            state_revision=index + 2,
+        )[1]
+        for index in (1, 2)
+    ]
+    telegram = next(event for event in telegram_outbox if event.supersession_key is not None)
+    slack = next(event for event in slack_batches[0] if event.supersession_key is not None)
+    assert telegram.destination_ref.startswith("provider:telegram:")
+    assert slack.destination_ref.startswith("provider:slack:")
+    before = _destination_row(store, telegram.destination_ref)
+
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    transport = RecordingTransport()
+    destination = _bound_destination(transport, slack.destination_ref)
+    delivered = dispatcher.deliver_next("worker", destination)
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+
+    # 성공만 보면 부족하다. hold 는 destination 전체를 멈추므로 번지면 피해가 크다.
+    transport.failure = _transport_failure(error_code="invalid_auth")
+    failed = dispatcher.deliver_next("worker", destination)
+    assert failed is not None and failed.state is OutboxState.DEAD_LETTER
+
+    assert _destination_row(store, telegram.destination_ref) == before
+    assert dispatcher.get(telegram.event_id).state is OutboxState.PENDING
+    dead, holds = _terminal_rows(store)
+    assert dead == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+    assert holds == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+    # hold 가 Slack destination 에만 걸렸다. provider 가 둘인 유일한 fixture 라 여기서
+    # scope 를 안 보면 hold 가 번지는 것을 code 문자열로만 판정하게 된다.
+    assert _hold_scopes(store) == [("outbox_destination", slack.destination_ref)]
+    # Telegram destination 은 여전히 자기 event 를 claim 할 수 있다.
+    claimed = dispatcher.claim_next("telegram-worker", destination_ref=telegram.destination_ref)
+    assert claimed is not None and claimed.event_id == telegram.event_id

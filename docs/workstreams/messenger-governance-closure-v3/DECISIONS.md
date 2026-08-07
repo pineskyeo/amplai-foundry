@@ -536,3 +536,85 @@
   대해 review 제안을 기각하고 다른 해법을 택했다 — 기각 근거는 위에 적었다. review
   산출물은 근거이지 승인 주체가 아니다 (D-004). 기록은
   `CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md`다.
+
+## D-025 — Wave 4 Rewrote Two Stale Acceptance Behaviours And Added Three More
+
+- Status: accepted
+- Decision: `MGC-012-T005`의 acceptance를 구현 중에 고쳐 쓰고 진행한 것을 사후 승인한다.
+  loop stop_condition `acceptance_conflicts_with_approved_spec`에 해당하는 상태였으나
+  멈추지 않았다.
+
+  **실제로 바꾼 것은 다섯이다.** 제목이 "둘"이라고만 쓰면 범위를 축소하는 것이다.
+  AC-02 재작성, AC-07 재작성, AC-08·AC-09·AC-10 신설, 그리고 `scope.include`와
+  `implementation.guidance` 재작성.
+
+  **왜 stop_condition이 성립했나.** 두 acceptance가 approved source와 어긋나 있었다.
+
+  1. **AC-02 원문은 "지워진 Card는 무조건 hold"였다.** D-023 항목 3이 history 소진을
+     미전송의 증거로 인정하면서 갈래가 둘로 갈렸는데 (`contracts/slack-transport.md` C-2.2
+     표 3·4행, `spec.md` SC-005) manifest만 그 이전 판으로 남아 있었다.
+
+     **결과는 조건부다.** D-023 항목 3은 이미 `slack_projection.py`에 들어가 있고
+     (`test_exhausted_history_is_not_undecidable`) T005는 production code를 한 줄도 안
+     고쳤다. 원문 AC-02를 문자 그대로 구현하면 당장 일어나는 일은 **test 하나가 실패하는
+     것**이다. "모든 destination의 첫 Card가 영구 hold"는 구현자가 그 실패를 근거로
+     `slack_projection.py`까지 되돌렸을 때 성립한다. 초판은 이 조건문을 무조건문으로
+     격상해 썼다 (round 2 contract lens A-3).
+  2. **AC-07 원문은 존재하지 않는 state를 읽으라고 적혀 있었다.** "다른 Provider의
+     activation state"를 담는 table이 이 repo에 없다 — `governance_*` table을 훑어
+     확인했다. `activation`이라는 이름이 붙은 것은 셋이고 전부 다른 것이다:
+     legacy migration lifecycle, `governance_definition_revisions`의
+     `activated_from_status`·`activated_at` (proposal activation), 그리고 actor permission
+     `activation.manage`. 초판은 이것을 "legacy migration 도메인뿐"이라고 썼고 그건
+     거짓이다 (round 2 contract lens A-1). 결론은 그대로다 — provider activation은 없다.
+     Slack activation rollout은 `spec.md`가 Out Of Scope로 두고 Package 4로 미룬 것이다.
+
+  **수정이 acceptance를 낮췄나.** 한 방향으로만 말할 수 없다. 정확히는 **주고받았다.**
+
+  - **늘어난 것**: D-023 항목 4의 "구분되는 error_code"를 acceptance로 승격했다. 원문에
+    없던 요구다. AC-08·AC-09·AC-10이 원문에 없던 갈래 셋을 덮는다.
+  - **줄어든 것**: 원문 AC-02의 given은 "history의 그 message를 지운 상태"라 소진 갈래를
+    **포함**했고 그 갈래도 hold를 요구했다. 새 AC-02는 상한 도달만 hold로 두고 소진
+    갈래는 AC-08에서 재전송이다. **hold 요구 하나가 빠졌다.** 초판은 "원문이 요구하던
+    hold 갈래는 하나도 빠지지 않았다"고 썼고 그건 거짓이다 (round 2 contract lens A-2).
+
+    빠진 것이 정당한 이유는 D-023이 그렇게 결정했기 때문이다. 그러나 "요구가 늘기만
+    했다"는 서술은 사실이 아니다.
+
+  **선택지는 둘이 아니라 셋이었다.** 초판은 "멈춘다 vs 고친다"로 논증했는데 같은 repo에
+  세 번째 선례가 있다 — `MGC-012-T003`은 검사 불가한 AC-05를 **고쳐 쓰지 않고** AC 안에
+  caveat을 붙인 뒤 `completion.all_acceptance_passed: false`로 기록했다. 특히 AC-07에는
+  그대로 적용할 수 있었다 (round 2 contract lens A-5).
+
+  **왜 사용자 결정이 필요했나.** D-021과 D-022의 Source는 "**사용자 결정.** 선택지 셋을
+  제시하고 사용자가 N번째를 골랐다"이고, D-022는 "**review 산출물은 근거이지 승인 주체가
+  아니다 (D-004)**"를 명시한다. D-024가 지적받은 결함은 "기록이 없다"가 아니라 "사용자
+  선택 없이 구현 중에 넣었다"였다. 초판 D-025는 그 문장을 인용해 놓고 `Status: accepted`로
+  자가 승인했고, Source에 contract lens의 판정을 정당화 근거로 들었다 — D-004가 금지한
+  바로 그것이다 (round 2 contract lens BP2-4-residual). 그래서 `proposed`로 내린 뒤
+  선택지 셋을 제시해 결정을 받았다. 제시한 셋은 아래다.
+
+  1. 사후 승인 — 정정을 그대로 두고 gate로 간다.
+  2. AC-07만 T003 방식으로 — AC-02 정정은 승인하되 AC-07은 원문을 남기고 caveat만 붙인 뒤
+     `all_acceptance_passed: false`로 기록한다.
+  3. 전부 되돌리고 멈춘다 — acceptance를 원문으로 복원하고 stop_condition을 따른다.
+     `slack_projection.py`의 D-023 구현까지 되돌려야 성립하므로 Package 3 재설계가 된다.
+
+  **사용자가 1번을 골랐다.**
+
+  **함께 닫은 것과, 그 과정에서 낸 새 결함.** wave 4 round 1 review가 낸 P1은
+  `OUTBOX_POST_SEND_RECONCILE_REQUIRED`에 repo 전체 test가 없다는 것이었다. AC-09를
+  추가해 닫았다.
+
+  그런데 round 1은 그 경계를 **`attempts` 단독**으로 적었고 그것은 거짓이다. guard는
+  `last_error_code == 'OUTBOX_LEASE_EXPIRED'` **AND** `attempts >= max_attempts` 둘의
+  AND다 (`events.py:2844`-`2847`). round 2가 probe로 반증했다 — `max_attempts=2`에서
+  send 성공 후 `OUTBOX_DELIVERY_FAILED`로 실패를 기록하고 Card를 지우면
+  `attempts == max_attempts`인데도 guard가 안 걸리고 재전송한다. AC-08·AC-09 문언을
+  고치고 반대쪽 경계를 AC-10과 test로 고정했다 (round 2 contract lens NEW-1).
+
+- Source: **사용자 결정.** 선택지 셋을 제시하고 사용자가 첫째를 골랐다 (2026-08-07).
+  근거는 2026-08-07 MGC-012-T004·T005 구현과 wave 4 three-lens review 2라운드다. round 2가
+  이 항목 초판에서 거짓 3건과 범위 축소 1건, 누락된 선택지 1건을 찾아 위와 같이 고쳤고,
+  자가 승인이라는 지적을 받아 `proposed`로 내린 뒤 결정을 받았다. **review는 근거이지
+  승인 주체가 아니다 (D-004).**

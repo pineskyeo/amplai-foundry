@@ -146,6 +146,11 @@ coverage:
       status: covered
       tasks:
         - MGC-012-T005
+      note: >-
+        간접 coverage 다. FR-011 의 문언은 "다른 Provider 의 activation state" 인데 이
+        repo 에 그 state 를 담는 table 이 없다. T005 AC-07 이 확인하는 것은 provider 별
+        outbox destination row 와 event state 라는 proxy 다. 직접 확인은 activation
+        rollout 이 생기는 Package 4 몫이다.
     - id: FR-012
       status: covered
       tasks:
@@ -372,4 +377,69 @@ update_history:
       round 3 처리는 docstring·주석·checkpoint 문구뿐이라 production code 가 안 바뀌었고
       4라운드를 돌리지 않는다. T002 를 done 으로 옮긴다. 근거는
       CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md 다. wave 3 은 T003 부터다.
+    source_revision: uncommitted
+  - date: 2026-08-07
+    summary: >-
+      T004 구현. AC-01~04 넷을 실제 OutboxDispatcher.deliver_next 와 물린 통합 test 8개로
+      닫았다 — 순차 전달, 경쟁 dispatcher 직렬화, supersession, delivered_sequence 추적.
+      production code 는 한 줄도 안 바뀌었다. destination 이 기존 계약만으로 dispatcher 와
+      물린다는 것이 이 wave 의 결과다. acceptance command 4개 (pytest 884, 전체 pytest,
+      ruff, mypy) 가 통과했으나 status 는 ready 로 둔다 — wave 4 의 3 lens review 와 gate 가
+      아직이다. T005 는 같은 test file 을 쓰므로 T004 다음에 단독으로 돈다.
+    source_revision: uncommitted
+  - date: 2026-08-07
+    summary: >-
+      T005 구현. crash recovery, 판정 불가 hold, 실패 행렬을 dispatcher 통합 test 11개로
+      닫았다. production code 는 여기서도 안 바뀌었다 — Package 3 의 계약이 T001~T003 에서
+      이미 닫혀 있었다는 뜻이다. acceptance 둘을 정정했다. AC-02 원문은 지워진 Card 를
+      무조건 hold 로 적었는데 D-023 항목 3 이 history 소진을 미전송 증거로 인정하면서
+      갈래가 둘로 갈렸다 (contracts C-2.2, spec SC-005) — 원문대로면
+      acceptance_conflicts_with_approved_spec 이라 AC-02 를 상한 도달 갈래로 좁히고
+      AC-08 로 소진 갈래를 추가했다. AC-07 의 "activation state" 는 이 repo 에 담는 table 이
+      없어 provider 별 destination row 와 event state 로 좁혔다. 6개 verify command
+      (pytest 895, ruff, mypy, amplai-foundry lint vault, amplai-foundry verify 7/7) 가
+      통과했다. status 는 ready 로 둔다 — wave 4 의 3 lens review 와 gate 가 아직이다.
+    source_revision: uncommitted
+  - date: 2026-08-07
+    summary: >-
+      wave 4 three-lens review round 1 반영. contract P0·P1 0 / BP2 4, failure-recovery
+      P1 1 / BP2 1, regression 0 (Advisory 5). 처리한 것 여섯.
+      P1 — OUTBOX_POST_SEND_RECONCILE_REQUIRED 가 repo 전체에 test 가 없었다. 마지막
+      attempt 의 지워진 Card 는 재전송이 아니라 hold 다. AC-09 를 추가하고 test 로
+      고정했다. guard 를 지우면 event 가 DELIVERED 로 새는 것을 mutation 으로 확인했다.
+      BP2 — hold 의 scope_ref 미검증 (_hold_scopes 추가), T005 guidance·scope 가 D-023
+      이전 문장이던 것, knowledge_lint command 가 VAULT 인자 없이 실행 불가였던 것,
+      index 의 FR-011 이 간접 coverage note 없이 covered 였던 것, acceptance 자기 수정에
+      decision 기록이 없던 것 (D-025 신설).
+      Advisory 로 고친 것 넷 — operator_hold gate 가 repo 전체에서 아무 test 도 안 죽이던
+      것에 synthetic test 로 teeth 부여, AC-01 순서 test 가 앞 sequence gate 를 지워도
+      통과하던 것 (clock 을 밀기 전 창을 추가), 동어반복 assertion 교체, 과장된 주석 정정.
+      새 test 3개가 events.py mutation 3종을 죽이는 것을 확인하고 원상 복구했다.
+      pytest 897, verify 7/7 PASS. status 는 여전히 ready 다 — round 1 처리가 test 를
+      바꿨으므로 round 2 review 가 남았다.
+    source_revision: uncommitted
+  - date: 2026-08-07
+    summary: >-
+      wave 4 review round 2. failure-recovery 와 regression 은 P0·P1·BP2 0건이다 —
+      mutation 16종이 전부 죽고 round 1 생존자 둘도 죽는다. contract 가 BP2 5건을 냈고
+      그중 넷을 닫았다.
+      NEW-1 이 제일 크다. round 1 이 AC-08·AC-09 의 경계를 attempts 단독으로 적었는데
+      거짓이다 — deliver_next 의 guard 는 last_error_code == 'OUTBOX_LEASE_EXPIRED' 와
+      attempts >= max_attempts 의 AND 다 (events.py:2844-2847). probe 로 반증했고
+      (max_attempts=2, send 성공 후 OUTBOX_DELIVERY_FAILED, Card 삭제 → attempts 가
+      상한인데 재전송) AC-08·AC-09 문언을 고친 뒤 반대쪽 경계를 AC-10 과 test 로 고정했다.
+      NEW-2 는 scope.include 에 남은 activation state 문구가 AC-07 note 를 부정하던 것,
+      BP2-2-residual 은 quickstart.md 에 남은 실행 불가 command 다. quickstart 의 709
+      고정 숫자도 SC-006 에 맞춰 뺐다.
+      D-025 는 초판에서 거짓 3건과 범위 축소 1건, 누락된 선택지 1건이 나와 다시 썼다.
+      BP2-4 는 문서로 못 닫아 proposed 로 내리고 선택지 셋을 사용자에게 제시했다.
+      사용자가 첫째(사후 승인)를 골라 accepted 로 올렸다. 이로써 round 2 BP2 5건이 전부
+      닫혔다.
+      Advisory 로 고친 것 셋 — 두 provider test 의 hold scope 미검증, retry_at 경계에
+      여유 0 으로 착지하던 resume helper (cap + 1 로), synthetic test 주석이
+      reconcile_connection 의 능동 거부를 안 적던 것.
+      NEW-4 (hold gate test 1회 실패) 는 격리 100회 반복 0 실패로 재현 안 됐다.
+      regression lens 가 원인 후보를 실증했다 — AC-05 의 dependency 검사가 source 를
+      runtime 에 읽어 동시 writer 에 깨진다. mutation testing 은 격리 worktree 필수다.
+      pytest 898, verify 7/7 PASS. status 는 ready 다.
     source_revision: uncommitted

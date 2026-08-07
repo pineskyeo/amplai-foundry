@@ -29,7 +29,7 @@
   - verify: `python -m pytest`
   - verify: `python -m ruff check .`
   - verify: `python -m mypy`
-  - verify: `amplai-foundry lint`
+  - verify: `amplai-foundry lint vault`
   - verify: `amplai-foundry verify`
 
 ## Not scheduled
