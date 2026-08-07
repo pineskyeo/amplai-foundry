@@ -192,10 +192,13 @@
 
 ## D-019 — Package 3 Pipeline Binding
 
-- Status: accepted
+- Status: accepted (**항목 1은 superseded**)
+- superseded_by: D-027 (항목 1만. 나머지 여덟은 유효하다)
 - Decision: D-018의 미결을 닫고 파이프라인 실행 형태를 아래로 고정한다.
 
-  1. **feature 디렉터리는 MGC-012 전체를 담는다.** `spec.md`는 A1–A15를 전부 싣고
+  1. ~~**feature 디렉터리는 MGC-012 전체를 담는다.**~~ **D-027이 뒤집었다.** Package 4는
+     `specs/002-mgc-012-package-4-slack-reference-e2e/`를 쓴다. 아래 원문은 기록으로
+     남긴다. **`spec.md`는 A1–A15를 전부 싣고**
      plan·taskify 대상은 Package 3다. Package 1·2는 완료 상태로 표시만 한다.
      slice 4가 slice 3의 transport Protocol을 실제 호출로 채우므로 같은 계약을 두
      디렉터리로 쪼개지 않는다.
@@ -659,3 +662,41 @@
 - Source: **사용자 결정.** 두 질문에 각각 "만들 수 있다"와 "격리 검증만"을 골랐다
   (2026-08-07). Package 3 gate `b0858c1` 직후 `/taskify` 시도에서 설계 원본 부재가 드러나
   물었다.
+
+## D-027 — Package 4 Gets Its Own Feature Directory
+
+- Status: accepted
+- supersedes: D-019 항목 1 (나머지 여덟 항목은 유효하다)
+- Decision: Package 4의 plan과 설계 산출물은 새 feature 디렉터리
+  `specs/002-mgc-012-package-4-slack-reference-e2e/`에 둔다. `.specify/feature.json`을
+  거기로 옮긴다. `specs/001-mgc-012-slack-reference-adapter/`는 Package 3의 기록으로
+  그대로 얼린다.
+
+  **왜 뒤집나.** D-019 항목 1은 "slice 4가 slice 3의 transport Protocol을 실제 호출로
+  채우므로 같은 계약을 두 디렉터리로 쪼개지 않는다"였다. 그 걱정 자체는 지금도 옳다.
+  뒤집는 이유는 다른 축이다 — **도구 정합성**이다.
+
+  `plan.md`는 Package 3 전용이고 (`# Implementation Plan: MGC-012 Package 3`) 파일 바깥
+  24곳이 참조한다. manifest 다섯이 `section: P-001`·`P-002`로 인용하고 gate·review
+  checkpoint와 `quickstart.md`·`research.md`·`spec.md`도 인용한다. 덮어쓰면 gate 기록의
+  추적성이 끊기고, 이름을 바꾸면 24곳을 고쳐야 한다.
+
+  남는 선택은 같은 디렉터리에 `plan-package-4.md`를 두는 것인데, `check-prerequisites.sh`
+  와 `setup-plan.sh`는 `plan.md`만 찾는다. 그러면 `/speckit-analyze`와 `/taskify`가
+  **조용히 Package 3 plan을 읽는다.** 이 repo는 같은 함정을 이미 세 번 밟았다 — 존재하지
+  않는 `/pinesky-workstream-gate`, 인자가 없어 실행조차 안 되던 `amplai-foundry lint`,
+  그리고 Package 3 범위인 줄 모르고 시도한 2026-08-07의 `/taskify`. 문서가 도구보다
+  앞서가면 조용히 틀린 것을 읽는다.
+
+  **계약은 여전히 쪼개지 않는다.** `002/contracts/`는 `slack-transport.md`의 C-1을 다시
+  쓰지 않는다. 001을 권위로 **참조**하고, Package 4 고유 계약(credential 주입 경로, E2E
+  harness)만 새로 쓴다. 이 repo는 파생·참조 문서를 이미 그렇게 쓴다 —
+  `AGENTS.md ↔ constitution.md`, `spec.md ↔ 외부 SPEC`. D-019 항목 1의 의도는 지켜진다.
+
+  **유지되는 것 둘.** task ID prefix는 계속 `MGC-012`다 (D-019 항목 3). 002의 manifest는
+  `MGC-012-T006`부터 이어 쓴다. 그리고 spec.md의 "Package 3 gate 통과 후 같은 manifest에
+  새 ID로 append한다"는 문장은 이 결정과 어긋나므로 002 디렉터리를 가리키도록 고친다.
+
+- Source: **사용자 결정.** 2026-08-07 `/speckit-plan` 실행 중 `IMPL_PLAN`이 Package 3
+  plan을 가리키는 것이 드러나 물었다. 선택지 둘을 제시했고 사용자가 002를 골랐다.
+  D-019 항목 1이 이를 뒤집는다는 사실을 뒤늦게 발견해 다시 확인했고 같은 답을 받았다.

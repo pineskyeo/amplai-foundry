@@ -58,6 +58,13 @@ DLQ 를 두 벌 유지하게 되어 기각한다.
 (`events.py:2842`). `YamlProjectionDestination.reconcile` 은 local file read 라 비용이
 없지만 Slack 은 network read 다.
 
+> **정정 (2026-08-07, Package 4 research R-010).** 아래 "Tier 2 (S4)" 는 **틀렸다.**
+> S4 (rate-limits 문서) 는 어느 method 가 어느 tier 인지 적지 않는다 — Tier 1~4 의 정의만
+> 싣는다. tier 를 적는 것은 method 문서인 S2 이고 값은 **Tier 3 (분당 50+)** 다.
+> 영향은 안전한 쪽이다 — `SLACK_MAX_HISTORY_PAGES = 5` 가 필요보다 보수적일 뿐이라 값은
+> 바꾸지 않는다. 근거는 `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`
+> R-010 이다. 이 문서는 Package 3 gate 증거라 원문을 지우지 않고 위에 정정을 단다.
+
 `conversations.history` 는 Web API Tier 2 (분당 20+ 요청)다 (S4). `chat.postMessage` 는
 special tier 로 **channel 당 초당 1 message** 다 (S4). read 가 write 보다 먼저 조이는
 구조이므로 reconcile 의 조회 범위를 제한해야 한다 (R-004).
