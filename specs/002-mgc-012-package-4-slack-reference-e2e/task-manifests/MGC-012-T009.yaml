@@ -1,0 +1,147 @@
+schema_version: "1.0"
+
+id: MGC-012-T009
+title: E2E harness skips loudly and stays out of the default suite
+type: feature
+status: ready
+
+goal:
+  outcome: >-
+    E2E 가 marker 로 분리되어 기본 실행에서 빠지고, credential 이 없으면 skip 하되 그
+    사실이 출력된다. amplai-foundry verify 는 network 없이 계속 통과한다.
+  user_value: >-
+    조용한 통과가 gate 를 무효로 만든다. "안 돌았다" 가 보이면서 clean clone 은 초록이다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      section: FR-019, FR-020
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md
+      section: P-003
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
+      section: H-5
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md
+      section: R-015
+  requirements:
+    - FR-019
+    - FR-020
+  decisions: []
+
+scope:
+  include:
+    - pytest marker 등록과 기본 deselect
+    - credential 부재 시 skip 과 그 이유 출력
+    - amplai-foundry verify 가 network 없이 통과하는 것 확인
+  exclude:
+    - 실제 Slack 호출 (T010 소유)
+    - verify 에 stage 추가
+  allowed_paths:
+    - pyproject.toml
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/slack.py
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+    - src/amplai_foundry/verification/runner.py
+
+dependencies:
+  tasks:
+    - MGC-012-T006
+    - MGC-012-T007
+  external: []
+
+implementation:
+  guidance:
+    - skip 이지 fail 이 아니다 (plan P-003). credential 없는 clean clone 에서 기본 suite 가
+      빨간색이 되면 개발자가 그 실패를 일상적으로 무시하게 되어 진짜 회귀를 가린다.
+    - pass 로 조용히 넘기지도 않는다. Constitution III 위반이다.
+    - pyproject.toml 을 연다. Package 3 가 그 파일을 forbidden 에 뒀던 것은 Package 3
+      task 의 scope 였고 전역 금지가 아니다.
+  invariants:
+    - amplai-foundry verify 는 network 를 요구하지 않는다.
+    - skip 은 이유와 함께 출력된다.
+  non_goals:
+    - verify 에 8번째 stage 추가.
+    - 별도 CLI 명령 신설.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: credential 환경변수가 없는 상태
+      when: E2E marker 를 지정해 pytest 를 돌리면
+      then: skip 으로 보고되고 그 이유가 출력된다. pass 로 집계되지 않는다
+    - id: AC-02
+      given: credential 이 없는 상태
+      when: 인자 없이 python -m pytest 를 돌리면
+      then: E2E 가 아예 선택되지 않고 전체가 통과한다
+    - id: AC-03
+      given: network 가 없는 환경
+      when: amplai-foundry verify 를 돌리면
+      then: 7 stage 가 모두 통과한다
+    - id: AC-04
+      given: 등록된 marker 목록을 조회하는 상태
+      when: 확인하면
+      then: E2E marker 가 등록돼 있어 unknown marker 경고가 나지 않는다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_http.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: amplai-foundry verify
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - skip 을 pass 로 적는 실수가 gate 기록에서 일어날 수 있다. quickstart D 절이 그것을
+      금지한다.
+    - pyproject.toml 변경이 W2-pytest-import-mode 와 겹칠 수 있다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - pyproject.toml 에 marker 등록
+    - tests/test_slack_http.py 확장
+  notes:
+    - pyproject.toml 을 여는 김에 index.yaml 의 W2-pytest-import-mode 를 함께 볼지
+      판단한다. 강제하지는 않는다.
+    - network 없이 돈다.

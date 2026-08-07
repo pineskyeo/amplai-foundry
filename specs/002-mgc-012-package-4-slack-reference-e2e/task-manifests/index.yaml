@@ -1,0 +1,351 @@
+schema_version: "1.0"
+
+feature:
+  id: MGC-012
+  title: Slack Reference Adapter — Package 4 reference E2E, isolation and closure
+  source_status: approved
+
+source:
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      revision: 88b2a66
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md
+      revision: 88b2a66
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md
+      revision: 88b2a66
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
+      revision: 88b2a66
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md
+      revision: 88b2a66
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      revision: 88b2a66
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      revision: 88b2a66
+  generated_from:
+    - spec
+    - plan
+    - research
+    - contracts
+  generated_at: 2026-08-07
+
+# task ID 는 001 에서 이어 쓴다 (D-019 항목 3). FR·SC 번호도 이어 붙였다 —
+# FR-013 부터, SC-009 부터다. 근거는 spec.md Numbering 절이다.
+tasks:
+  - id: MGC-012-T006
+    title: Real Slack HTTP transport over the standard library
+    status: ready
+    depends_on: []
+    requirements:
+      - FR-013
+      - FR-014
+      - FR-015
+      - FR-016
+  - id: MGC-012-T007
+    title: Credentials enter at one composition root and never persist
+    status: ready
+    depends_on: []
+    requirements:
+      - FR-017
+  - id: MGC-012-T008
+    title: Readback self-check refuses to start on a silent marker defect
+    status: ready
+    depends_on:
+      - MGC-012-T006
+      - MGC-012-T007
+    requirements:
+      - FR-018
+  - id: MGC-012-T009
+    title: E2E harness skips loudly and stays out of the default suite
+    status: ready
+    depends_on:
+      - MGC-012-T006
+      - MGC-012-T007
+    requirements:
+      - FR-019
+      - FR-020
+  - id: MGC-012-T010
+    title: Reference E2E against a real Slack workspace
+    status: blocked
+    depends_on:
+      - MGC-012-T008
+      - MGC-012-T009
+    requirements:
+      - FR-013
+      - FR-014
+      - FR-018
+  - id: MGC-012-T011
+    title: The real transport leaves other providers untouched
+    status: ready
+    depends_on:
+      - MGC-012-T006
+    requirements:
+      - FR-021
+  - id: MGC-012-T012
+    title: MGC-012 closure on a clean clone across both Python versions
+    status: blocked
+    depends_on:
+      - MGC-012-T010
+      - MGC-012-T011
+    requirements:
+      - FR-022
+
+execution:
+  waves:
+    - wave: 5
+      tasks:
+        - MGC-012-T006
+        - MGC-012-T007
+    - wave: 6
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T009
+        - MGC-012-T011
+    - wave: 7
+      tasks:
+        - MGC-012-T010
+    - wave: 8
+      tasks:
+        - MGC-012-T012
+  # wave 번호는 001 에서 이어 쓴다. Package 3 가 wave 1~4 였다.
+  #
+  # **같은 wave 라고 병렬 안전이 아니다.** T006~T011 이 전부
+  # tests/test_slack_http.py 를 쓰고 T006~T008 은 slack_http.py 도 함께 쓴다.
+  # 파일 소유가 겹치므로 순차로 돈다. Package 3 의 T004·T005 와 같은 상황이다.
+  critical_path:
+    - MGC-012-T006
+    - MGC-012-T008
+    - MGC-012-T010
+    - MGC-012-T012
+
+coverage:
+  requirements:
+    - id: FR-013
+      status: covered
+      tasks:
+        - MGC-012-T006
+        - MGC-012-T010
+    - id: FR-014
+      status: covered
+      tasks:
+        - MGC-012-T006
+        - MGC-012-T010
+    - id: FR-015
+      status: covered
+      tasks:
+        - MGC-012-T006
+    - id: FR-016
+      status: covered
+      tasks:
+        - MGC-012-T006
+      note: >-
+        T006 은 호출 단위 timeout 을 건다. 한 deliver_next 안의 합계 보장은 구성 시점
+        검증이고 그 위치는 구현이 정한다 (contracts H-2.3). 합계 쪽이 test 로 안 잡히면
+        wave 6 review 가 지적해야 한다.
+    - id: FR-017
+      status: covered
+      tasks:
+        - MGC-012-T007
+    - id: FR-018
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T010
+    - id: FR-019
+      status: covered
+      tasks:
+        - MGC-012-T009
+        - MGC-012-T010
+    - id: FR-020
+      status: covered
+      tasks:
+        - MGC-012-T009
+    - id: FR-021
+      status: covered
+      tasks:
+        - MGC-012-T011
+    - id: FR-022
+      status: covered
+      tasks:
+        - MGC-012-T012
+  success_criteria:
+    - id: SC-009
+      status: covered
+      tasks:
+        - MGC-012-T010
+    - id: SC-010
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T010
+    - id: SC-011
+      status: covered
+      tasks:
+        - MGC-012-T010
+      note: >-
+        research R-011 이 공식 문서로 이미 닫았다. T010 은 실측으로 확인한다.
+    - id: SC-012
+      status: covered
+      tasks:
+        - MGC-012-T011
+    - id: SC-013
+      status: covered
+      tasks:
+        - MGC-012-T009
+        - MGC-012-T010
+    - id: SC-014
+      status: covered
+      tasks:
+        - MGC-012-T012
+      note: Python 3.12 가 없어 external dependency E-5 다.
+    - id: SC-015
+      status: covered
+      tasks:
+        - MGC-012-T012
+      note: 모든 task 의 regression command 가 함께 받친다. 숫자를 고정하지 않는다.
+    - id: SC-016
+      status: covered
+      tasks:
+        - MGC-012-T012
+      note: >-
+        task 가 아니라 wave 마다 도는 3 lens review 가 충족한다. 근거는 CHECKPOINTS 의
+        wave 별 review 기록이다.
+  deferred:
+    - id: MGC-015-activation-gate
+      owner: MGC-015
+      reason: >-
+        ActivationEvidence 구조와 4단계 Activation Gate machinery. Package 4 는 A14 의
+        격리 검증만 한다. T005 AC-07 과 T011 의 proxy 검증은 MGC-015 가 activation state
+        를 만들 때까지 유효하고, 만들어지면 진짜 state 를 읽는 검증으로 바꾼다. D-026.
+    - id: MGC-013-telegram-adapter
+      owner: MGC-013
+      reason: >-
+        A14 검증에는 Telegram destination 만 필요하고 adapter 는 필요 없다.
+    - id: http-ingress-layer
+      owner: 미정
+      reason: >-
+        Slack 이 우리에게 보내는 요청을 받는 web server. D-012 가 Package 2 에서 이미
+        범위 밖으로 뒀다. Package 4 는 egress 만 채운다.
+    - id: D-014
+      owner: 미정
+      reason: >-
+        provider outbox destination granularity 변경은 evidence migration 이 필요해 별도
+        item 이다. D-018 항목 1.
+    - id: R-007
+      owner: 미정
+      reason: >-
+        Retry-After 를 backoff 에 주입하려면 MGC-008 에서 gate PASS 한 OutboxDispatcher
+        계약을 바꿔야 한다. 별도 item 이다.
+    - id: R-012-distribution-cliff
+      owner: 미정
+      reason: >-
+        비-Marketplace 배포 시 conversations.history 가 분당 1회, 요청당 15건이 되어
+        reconcile 설계가 성립하지 않는다. internal app 은 면제라 지금은 blocker 가 아니다.
+        배포 형태를 정할 때 판단한다. 미리 고치는 것은 speculative work 다.
+    - id: W2-yaml-divergence-asymmetry
+      owner: 미정
+      reason: >-
+        001 에서 이월. projections.py 의 YAML_PROJECTION_DIVERGED 가 reconcile 과 send
+        에서 다른 예외 종류다.
+    - id: W2-pytest-import-mode
+      owner: MGC-012-T009
+      reason: >-
+        001 에서 이월. tests 가 test_governance_events 를 top-level 로 import 해
+        pytest 의 prepend import mode 에 의존한다. pyproject.toml 에 pythonpath 가
+        필요한데 T009 가 그 파일을 여므로 함께 볼지 판단한다. 강제하지 않는다.
+    - id: lease-expiry-during-reconcile
+      owner: 미정
+      reason: >-
+        Package 3 wave 4 review 이월. lease 가 reconcile 도중 만료되면 terminal 판정이
+        DLQ 에도 hold 에도 안 남는다. 고치려면 events.py 를 건드려야 해서 별도 item 이다.
+    - id: page-ordering-between-pages
+      owner: 미정
+      reason: >-
+        destination 은 page 안에서만 우리 marker 를 먼저 찾는다. page 사이 순서는 cursor
+        를 우리가 만들지 않아 막을 수 없다. research R-011 이 Slack 의 최신-우선 보장을
+        확인했으므로 위험은 줄었지만 계약 의존은 남는다.
+  excluded:
+    - id: A1-A13
+      reason: >-
+        Package 1·2·3 에서 이미 충족했다. gate PASS at ef35201, 2dcf663, 5b2024b.
+        Package 4 는 그것들을 실제 Slack 으로 한 번 관통시킬 뿐 재구현하지 않는다.
+  uncovered: []
+
+open_questions:
+  - id: OQ-003
+    question: >-
+      Slack message metadata 의 크기 상한은 얼마인가. research P1 은 metadata 지원만
+      적고 상한을 말하지 않는다.
+    owner: MGC-012-T010
+    blocking: false
+    note: >-
+      marker 에 payload 본문을 넣지 않는 것으로 계속 회피한다. 실측은 실제 workspace 가
+      생긴 뒤 가능하다. 001 에서 이월했다.
+  - id: OQ-005
+    question: >-
+      marker 를 workspace 구성원 누구나 읽을 수 있다는 사실이 수용 가능한가.
+      research P1 이 명시한다 — "Metadata you post to Slack is accessible to any app or
+      user who is a member of that workspace."
+    owner: MGC-012-T010
+    blocking: false
+    note: >-
+      우리 marker 는 event_id·destination_ref·destination_sequence·payload_digest 넷이고
+      credential 은 없다. 다만 destination_ref 는 channel digest 이고 payload_digest 는
+      내용 지문이다. 노출 판단이 필요하다.
+  - id: OQ-006
+    question: >-
+      T011 이 Package 3 의 T005 AC-07 과 실질적으로 다른 것을 검사하는가.
+    owner: MGC-012-T011
+    blocking: false
+    note: >-
+      차이는 전송 계층이 fake 가 아니라 실제 HTTP 구현이라는 것뿐이다. 그 차이가
+      무의미하다고 판정되면 T011 을 접고 FR-021 을 T010 으로 옮긴다. wave 6 review 가
+      판단한다.
+
+resolved_questions:
+  - id: U-001
+    question: chat.postMessage 와 conversations.history 에 필요한 OAuth scope 는 무엇인가.
+    resolved_by: research R-009
+    resolution: >-
+      bot scope 로 chat:write, channels:history (public), groups:history (private) 다.
+      chat:write.public 은 주지 않는다 — app 을 대상 channel 에 초대해 쓴다.
+      001 index.yaml 의 W3-history-oauth-scope 가 이것으로 닫힌다.
+  - id: U-002
+    question: HTTP client 를 무엇으로 하는가.
+    resolved_by: research R-013
+    resolution: >-
+      stdlib urllib.request 다. runtime dependency 셋을 유지한다. 호출량이 작고
+      (channel 당 초당 1건), 필요한 기능(POST·header·timeout)이 stdlib 에 다 있고,
+      재시도는 이미 OutboxDispatcher 가 소유한다.
+  - id: U-003
+    question: credential 이 프로세스에 어떻게 도달하는가.
+    resolved_by: research R-014
+    resolution: >-
+      환경변수를 entrypoint 한 곳에서만 읽어 SecretStr 로 감싸 주입한다. core 는 계속
+      주입만 받는다. 변수 이름은 T007 이 확정한다.
+  - id: U-004
+    question: E2E 를 어디서 어떻게 돌리는가.
+    resolved_by: research R-015, plan P-003
+    resolution: >-
+      pytest marker 로 분리하고 기본 실행에서 deselect 한다. credential 이 없으면 skip
+      하되 이유를 출력한다. amplai-foundry verify 는 건드리지 않는다 — clean clone·
+      offline 계약을 유지한다.
+  - id: U-005
+    question: conversations.history 가 최신 message 부터 돌려주는가.
+    resolved_by: research R-011
+    resolution: >-
+      그렇다. 공식 문서가 "The most recent messages in the time range are returned
+      first" 로 명시한다. 001 index.yaml 의 W3-history-ordering-unverified 가 닫힌다.
+      다만 C-1.2 의 계약 문장은 유지한다 — page 사이 순서는 여전히 계약 의존이다.
+
+update_history:
+  - date: 2026-08-07
+    summary: >-
+      Package 4 최초 taskification. plan 의 wave 5~8 을 task 7개로 쪼갰다. task ID 는
+      001 에서 이어 MGC-012-T006 부터다 (D-019 항목 3).
+      wave 5 는 network 없이 도는 transport 와 credential 이고, wave 6 은 자가검사·
+      E2E harness·격리다. wave 7 만 실제 workspace 를 요구하고 wave 8 이 closure 다.
+      T010 과 T012 를 blocked 로 둔다. T010 은 external E-1~E-4 (workspace·app·채널·
+      credential) 가, T012 는 E-5 (Python 3.12 toolchain) 가 없다. 나머지 다섯은 ready 다.
+      transport 를 send 와 read 로 쪼개지 않았다 — 둘 다 있어야 Protocol 을 만족하므로
+      한쪽만 끝난 상태가 ambiguous partial state 다.
+    source_revision: 88b2a66
