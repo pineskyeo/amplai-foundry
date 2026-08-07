@@ -56,7 +56,7 @@ tasks:
       - FR-006
   - id: MGC-012-T004
     title: Ordered delivery and supersession through the real dispatcher
-    status: ready
+    status: done
     depends_on:
       - MGC-012-T003
     requirements:
@@ -65,7 +65,7 @@ tasks:
       - FR-007
   - id: MGC-012-T005
     title: Crash recovery, hold on undecidable reconcile and failure matrix
-    status: ready
+    status: done
     depends_on:
       - MGC-012-T003
     requirements:

@@ -37,12 +37,15 @@ message projection과 retry는 background path에서 수행한다.
   `PASS` at `ef35201`
 - Package 2 — durable ingress ack boundary and background decision handoff:
   `PASS` at `2dcf663`
-- Tests: `709/709 PASS`
+- Package 3 — ordered Slack message projection, retry and recovery:
+  `PASS` at `5b2024b`
+- Tests: `898/898 PASS`
 - Verification: `7/7 PASS`
-- Review: 5 round 진행. round 1–3 고유 blocker 16건, round 5 blocker 1건 해소.
-  round 4 three-lens blocker 0 at `f3f7a98`, round 5 post-gate regression blocker 0
-  at `2dcf663`
-- Next: Package 3 — ordered Slack message projection, retry and recovery
+- Review: Package 3는 wave 4개로 나눠 wave마다 three-lens review를 돌렸고 전부 blocker 0
+  으로 닫았다. wave 4는 2 round 진행 — round 1 고유 blocker 6건, round 2 5건 해소.
+  round 2의 5건 중 둘은 round 1 수정이 만든 새 결함이다. mutation 16종 survivor 0
+- Next: Package 4 — Slack reference E2E, activation isolation and closure review.
+  **Slack test workspace 구성과 credential 경로는 아직 확인 안 됐다** (D-019 항목 8)
 
 ## Out Of Scope
 

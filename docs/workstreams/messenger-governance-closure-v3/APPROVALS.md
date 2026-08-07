@@ -16,5 +16,7 @@
 | `APR-010` | MGC-011 A1–A17 final acceptance gate | PASS | `c3d635f`, 611 tests, all seven verify stages, three final subagent reviews with zero blockers | 2026-07-31 |
 | `APR-011` | MGC-012 Package 1 Slack raw authentication gate | PASS | `ef35201`, 649 tests, all seven verify stages, three subagent reviews with zero blockers | 2026-07-31 |
 | `APR-012` | MGC-012 Package 2 durable ack and background handoff gate | PASS | gate at `2dcf663`, 709 tests, all seven verify stages. Three-lens review blocker 0 at `f3f7a98`; post-gate delta regression review blocker 0 at `2dcf663` | 2026-08-03 |
+| `APR-013` | MGC-012 Package 3 ordered Slack message projection gate | PASS | `5b2024b`, 898 tests, all seven verify stages, wave 1–4 three subagent reviews with zero blockers. Wave 4 mutation 16종 survivor 0 | 2026-08-07 |
+| `APR-014` | D-025 wave 4 acceptance amendment | approved by user | 선택지 셋 제시 후 첫째(사후 승인) 선택. `DECISIONS.md` D-025 | 2026-08-07 |
 
 Item gate approval은 각 checkpoint 후 추가한다.
