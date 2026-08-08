@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import cast
 
 import pytest
 from pydantic import SecretStr
@@ -25,8 +26,10 @@ from amplai_foundry.governance.slack_http import (
     SLACK_SIGNING_SECRET_ENV,
     HttpSlackTransport,
     SlackCredentials,
+    SlackReadbackError,
     load_slack_credentials,
     validate_call_budget,
+    verify_marker_readback,
     worst_case_call_seconds,
 )
 from amplai_foundry.governance.slack_projection import (
@@ -41,6 +44,8 @@ from amplai_foundry.governance.slack_projection import (
 MODULE_PATH = Path(inspect.getfile(slack_http))
 TOKEN = SecretStr("xoxb-test-token")
 CHANNEL = "C0SLACK01"
+# app ID 다. bot ID (B...) 와 다른 값이고, reconcile 이 이것으로 남의 message 를 배제한다.
+APP_ID = "A0SLACKAPP"
 MARKER: dict[str, object] = {
     "event_type": "amplai_proposal_card",
     "event_payload": {
@@ -1074,3 +1079,164 @@ def test_a_slack_envelope_without_a_code_is_not_labelled(slack: _FakeSlack) -> N
 
     assert caught.value.transport_exception is None
     assert exhausted_cause_suffix(caught.value) == "no_slack_code"
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T008 — readback 자가검사
+#
+# 이 검사가 잡는 넷은 destination 안에서 판정할 수 없다. 못 잡으면 결과가 hold 가 아니라
+# **조용한 중복 Card** 다 — marker 를 하나도 못 읽으면 history 소진이 미전송으로 판정되고
+# 매 재시도마다 Card 가 한 장씩 는다.
+# --------------------------------------------------------------------------------------
+
+PROBE_TS = "1700000000.009000"
+
+
+def _probe_reply() -> _Reply:
+    return _Reply.ok({"channel": CHANNEL, "ts": PROBE_TS})
+
+
+def _history_with(message: dict[str, object]) -> _Reply:
+    return _Reply.ok({"messages": [message]})
+
+
+def _check(slack: _FakeSlack) -> None:
+    verify_marker_readback(
+        _transport(slack),
+        channel=CHANNEL,
+        app_id=APP_ID,
+        probe_marker=MARKER,
+    )
+
+
+# T008 AC-01
+def test_a_marker_that_round_trips_lets_startup_proceed(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": APP_ID}),
+    )
+
+    _check(slack)
+
+    # probe 가 실제로 나갔고 marker 를 달고 나갔다.
+    assert slack.requests[0].json_body()["metadata"] == MARKER
+
+
+# T008 AC-02 — include_all_metadata 를 안 붙이는 구현이면 event_type 만 오고
+# event_payload 가 안 온다. 그 상태로 기동하면 조용한 중복 Card 다.
+def test_stripped_metadata_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with(
+            {"ts": PROBE_TS, "metadata": {"event_type": MARKER["event_type"]}, "app_id": APP_ID}
+        ),
+    )
+
+    with pytest.raises(SlackReadbackError, match="metadata"):
+        _check(slack)
+
+
+# T008 AC-03 — app_id 가 안 오면 reconcile 이 우리 marker 를 하나도 우리 것으로
+# 인정하지 않는다.
+def test_a_missing_app_id_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue("conversations.history", _history_with({"ts": PROBE_TS, "metadata": MARKER}))
+
+    with pytest.raises(SlackReadbackError, match="app_id"):
+        _check(slack)
+
+
+# T008 AC-03 — 값이 틀린 app_id 도 같다. 구성 오류가 조용한 중복 Card 로 이어진다.
+def test_a_mismatched_app_id_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": "A_SOMEONE_ELSE"}),
+    )
+
+    with pytest.raises(SlackReadbackError, match="app_id"):
+        _check(slack)
+
+
+# T008 AC-04 — event_payload 의 필드 하나가 왕복에서 바뀌면 reconcile 판정이 틀린다.
+@pytest.mark.parametrize(
+    "field",
+    ["event_id", "destination_ref", "destination_sequence", "payload_digest"],
+)
+def test_a_field_changed_in_transit_refuses_startup(slack: _FakeSlack, field: str) -> None:
+    body = dict(cast("Mapping[str, object]", MARKER["event_payload"]))
+    body[field] = 999 if field == "destination_sequence" else "바뀐 값"
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with(
+            {
+                "ts": PROBE_TS,
+                "metadata": {"event_type": MARKER["event_type"], "event_payload": body},
+                "app_id": APP_ID,
+            }
+        ),
+    )
+
+    with pytest.raises(SlackReadbackError, match="바뀌었습니다"):
+        _check(slack)
+
+
+# T008 — event_type 을 개명하면 marker 를 아예 못 알아본다.
+def test_a_renamed_event_type_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with(
+            {
+                "ts": PROBE_TS,
+                "metadata": {"event_type": "renamed", "event_payload": MARKER["event_payload"]},
+                "app_id": APP_ID,
+            }
+        ),
+    )
+
+    with pytest.raises(SlackReadbackError, match="복원"):
+        _check(slack)
+
+
+# T008 — probe 를 아예 못 찾는 경우. 조회 범위나 scope 문제다.
+def test_a_probe_that_cannot_be_found_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue("conversations.history", _Reply.ok({"messages": []}))
+
+    with pytest.raises(SlackReadbackError, match="찾지 못했습니다"):
+        _check(slack)
+
+
+# T008 AC-05 — scope 가 모자라면 read 에서 missing_scope 가 난다. H-1.1 이 경고한
+# 상황이고, 이 검사가 그것을 **첫 재시도가 아니라 기동 시점**으로 앞당긴다.
+def test_a_missing_scope_surfaces_at_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue("conversations.history", _Reply.slack_error("missing_scope"))
+
+    # transport 실패는 그대로 올린다. marker 결함이 아니라 network·권한 문제이고,
+    # 둘을 섞으면 operator 가 무엇을 고칠지 모른다.
+    with pytest.raises(SlackTransportError) as caught:
+        _check(slack)
+
+    assert caught.value.error_code == "missing_scope"
+    assert classify_slack_failure(caught.value) is SlackFailureClass.TERMINAL
+
+
+# T008 — 자가검사가 실제 계약대로 조회하는지. include_all_metadata 를 빼면 이 검사
+# 자체가 무의미해진다.
+def test_the_self_check_reads_with_all_metadata(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": APP_ID}),
+    )
+
+    _check(slack)
+
+    form = slack.requests[1].form_body()
+    assert form["include_all_metadata"] == "true"
+    assert form["channel"] == CHANNEL

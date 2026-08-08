@@ -28,8 +28,11 @@ from pydantic import SecretStr
 from amplai_foundry.governance.slack_projection import (
     SlackHistoryMessage,
     SlackHistoryPage,
+    SlackProjectionMetadataUnreadableError,
     SlackSendResult,
+    SlackTransport,
     SlackTransportError,
+    read_slack_marker,
 )
 
 SLACK_API_BASE: Final = "https://slack.com/api"
@@ -545,3 +548,91 @@ def _read_next_cursor(raw: object) -> str | None:
     if not isinstance(cursor, str) or not cursor.strip():
         return None
     return cursor
+
+
+class SlackReadbackError(RuntimeError):
+    """The probe marker did not survive the round trip. **Refuse to start.**
+
+    이 검사가 잡는 것은 `SlackProjectionDestination` 안에서 판정할 수 없는 것들이다 —
+    값이 틀린 `app_id`, `metadata` 를 안 옮기는 구현, `event_type` 개명, 그리고
+    `conversations.history` scope 부족.
+
+    **그 넷의 결과는 hold 가 아니라 조용한 중복 Card 다.** marker 를 하나도 못 읽으면
+    reconcile 이 history 소진을 미전송으로 판정하고 (D-023 항목 3) 매 재시도마다 Card 가
+    한 장씩 는다. 아무도 모른다.
+
+    그래서 기동 시점의 시끄러운 거부로 바꾼다. 운영 중에 알아채는 것보다 싸다.
+    """
+
+
+# 자가검사가 보내는 probe message 의 본문. 사람이 보고 무엇인지 알아야 한다.
+_PROBE_TEXT: Final = "AMPLAI marker readback self-check. 이 message 는 지워도 된다."
+
+# probe 를 되찾을 때 훑는 page 수. 자가검사는 기동 시점이라 채널이 조용하다고 가정하지
+# 않는다 — 다른 사람이 방금 떠들었을 수 있다. 다만 우리가 방금 보낸 것이므로 첫 page 를
+# 크게 잡으면 충분하다.
+_PROBE_HISTORY_LIMIT: Final = 100
+
+
+def verify_marker_readback(
+    transport: SlackTransport,
+    *,
+    channel: str,
+    app_id: str,
+    probe_marker: Mapping[str, object],
+) -> None:
+    """Post one probe and prove its marker comes back intact (H-3, FR-018).
+
+    `probe_marker` 는 호출자가 `build_slack_marker` 로 만든다. 여기서 새로 만들지 않는
+    이유는 **실제로 나가는 것과 같은 것**을 검사해야 하기 때문이다. 자가검사 전용 모양을
+    만들면 그 모양만 검증된다.
+
+    실패는 전부 `SlackReadbackError` 다. transport 자체가 실패하면 그 예외
+    (`SlackTransportError`) 를 그대로 올린다 — 그것은 network 문제이지 marker 결함이
+    아니고, 둘을 섞으면 operator 가 무엇을 고쳐야 할지 모른다.
+    """
+    result = transport.post_message(
+        channel=channel,
+        payload={"text": _PROBE_TEXT},
+        marker=probe_marker,
+    )
+    page = transport.read_history(channel=channel, cursor=None, limit=_PROBE_HISTORY_LIMIT)
+    probe = next((message for message in page.messages if message.ts == result.ts), None)
+    if probe is None:
+        raise SlackReadbackError(
+            "방금 보낸 probe message 를 conversations.history 에서 찾지 못했습니다. "
+            "scope 또는 조회 방식을 확인하십시오."
+        )
+    if probe.app_id != app_id:
+        # 여기서 못 맞으면 reconcile 이 우리 marker 를 하나도 우리 것으로 인정하지 않는다.
+        # 값을 message 에 적는다 — credential 이 아니고, 무엇을 고칠지 알려면 필요하다.
+        raise SlackReadbackError(
+            f"probe message 의 app_id 가 구성값과 다릅니다: 응답 {probe.app_id!r}, 구성 {app_id!r}"
+        )
+    try:
+        recovered = read_slack_marker(probe, app_id=app_id)
+    except SlackProjectionMetadataUnreadableError as error:
+        raise SlackReadbackError(
+            "probe message 의 metadata 가 복원되지 않습니다. "
+            "include_all_metadata 를 붙이는지, adapter 가 metadata 를 옮기는지 확인하십시오."
+        ) from error
+    if recovered is None:
+        raise SlackReadbackError(
+            "probe message 에서 marker 를 복원하지 못했습니다. event_type 또는 "
+            "event_payload 의 모양이 build_slack_marker 와 다릅니다."
+        )
+    expected = probe_marker.get("event_payload")
+    if not isinstance(expected, Mapping):
+        raise SlackReadbackError("probe_marker 에 event_payload 가 없습니다.")
+    mismatched = [
+        name
+        for name, actual in (
+            ("event_id", recovered.event_id),
+            ("destination_ref", recovered.destination_ref),
+            ("destination_sequence", recovered.destination_sequence),
+            ("payload_digest", recovered.payload_digest),
+        )
+        if expected.get(name) != actual
+    ]
+    if mismatched:
+        raise SlackReadbackError(f"probe marker 의 필드가 왕복에서 바뀌었습니다: {mismatched}")
