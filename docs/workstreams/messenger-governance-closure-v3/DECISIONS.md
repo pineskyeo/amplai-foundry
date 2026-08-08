@@ -700,3 +700,41 @@
 - Source: **사용자 결정.** 2026-08-07 `/speckit-plan` 실행 중 `IMPL_PLAN`이 Package 3
   plan을 가리키는 것이 드러나 물었다. 선택지 둘을 제시했고 사용자가 002를 골랐다.
   D-019 항목 1이 이를 뒤집는다는 사실을 뒤늦게 발견해 다시 확인했고 같은 답을 받았다.
+
+## D-028 — The E2E Target Enters Through The Same Door As The Secrets
+
+- Status: accepted
+- Decision: T009가 두 가지를 함께 한다. 둘 다 원래 manifest의 `allowed_paths` 밖이라
+  scope 확장이고, 사용자가 명시 승인했다.
+
+  **1. channel ID와 app ID를 환경변수로 확정한다.** 이름은 `AMPLAI_SLACK_APP_ID`와
+  `AMPLAI_SLACK_CHANNEL_ID`다. contracts H-4.1 표에 넣는다.
+
+  T010의 선행 조건이었다 — `reconcile`이 `app_id`로 남의 message를 배제하므로
+  (`slack_projection.py:495`) 값 없이는 실제 workspace를 칠 수 없고, `auth.test`가 주는
+  `bot_id`는 **다른 값이라 대체할 수 없다**. T009가 여는 이유는 E2E fixture가 그 값을
+  조립하는 자리이기 때문이다. T010에 미루면 harness가 credential 둘만 보고 "구성됨"으로
+  판정해, 대상 없이 skip이 아니라 통과처럼 보이는 상태가 생긴다.
+
+  **네 변수를 한 tri-state로 묶는다.** 넷 다 없으면 미구성(skip), 넷 다 있으면 구성,
+  하나라도 빠지면 `ValueError`에 빠진 이름 전부. credential만 두 변수로 묶고 대상을
+  따로 두면 token만 넣은 사람이 "skip"만 보고 뭘 빠뜨렸는지 모른다 — H-4.1이 이미
+  금지한 상태다.
+
+  **형식은 검사하지 않는다.** `A`·`C` 접두를 강제하지 않는다. Slack ID 형식을 공식
+  문서로 확인하지 않았고, 확인 안 된 가정을 오류로 굳히면 private channel처럼 다른
+  접두를 쓰는 경우를 막는다. 값이 틀린 `app_id`는 H-3의 기동 자가검사가 잡는다.
+
+  **`load_slack_settings`는 `environ`을 요구한다.** 기본값을 주면 `os.environ`을 만지는
+  지점이 둘이 되고, T007 AC-05가 AST로 지키는 "읽는 지점 하나"가 깨진다. 부르는
+  쪽(composition root, E2E fixture)이 넘긴다. R-014의 "entrypoint 한 곳에서만 읽는다"와
+  같은 말이다.
+
+  **2. `W2-pytest-import-mode`를 같이 닫는다.** `pyproject.toml`에 `pythonpath = ["tests"]`
+  를 넣는다. `test_slack_projection.py`가 `test_governance_events`를 top-level로 import
+  하는데, 그 의존이 pytest의 prepend import mode 부수효과에 기대고 있었다. 같은 파일을
+  여는 김에 명시로 바꾼다. `index.yaml` deferred에서 뺀다.
+
+- Source: **사용자 결정.** 2026-08-08 T009 착수 전 `/speckit-implement` 직전에 선택지
+  둘씩 제시했고, "같이 닫는다"와 "T009에서 더한다"를 골랐다. 후자는
+  `loop.stop_conditions`의 `scope_boundary_must_expand`를 여는 승인이다.

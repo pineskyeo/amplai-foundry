@@ -4,9 +4,12 @@ import ast
 import contextlib
 import inspect
 import json
+import os
+import subprocess
 import sys
 import threading
 import time
+import tomllib
 import urllib.parse
 import urllib.request
 from collections.abc import Iterator, Mapping
@@ -19,15 +22,29 @@ from typing import cast
 import pytest
 from pydantic import SecretStr
 
+# dispatcher 를 실물로 돌리는 fixture 는 test_governance_events 에 이미 있다. 복제하면 두
+# 벌이 어긋난다. top-level import 는 pyproject 의 `pythonpath = ["tests"]` 가 받친다 (T009).
+import test_governance_events as governance_fixtures
 from amplai_foundry.governance import slack_http
+from amplai_foundry.governance.events import (
+    GovernanceEventService,
+    OutboxConfig,
+    OutboxDispatcher,
+    OutboxState,
+)
+from amplai_foundry.governance.models import ChannelProvider, ChannelRef
 from amplai_foundry.governance.slack_http import (
     SLACK_API_BASE,
+    SLACK_APP_ID_ENV,
     SLACK_BOT_TOKEN_ENV,
+    SLACK_CHANNEL_ID_ENV,
     SLACK_SIGNING_SECRET_ENV,
     HttpSlackTransport,
     SlackCredentials,
     SlackReadbackError,
+    SlackSettings,
     load_slack_credentials,
+    load_slack_settings,
     validate_call_budget,
     verify_marker_readback,
     worst_case_call_seconds,
@@ -35,11 +52,14 @@ from amplai_foundry.governance.slack_http import (
 from amplai_foundry.governance.slack_projection import (
     SLACK_MAX_HISTORY_PAGES,
     SlackFailureClass,
+    SlackProjectionDestination,
     SlackTransport,
     SlackTransportError,
     classify_slack_failure,
     exhausted_cause_suffix,
 )
+from amplai_foundry.governance.store import GovernanceStore
+from amplai_foundry.verification.runner import VerificationRunner
 
 MODULE_PATH = Path(inspect.getfile(slack_http))
 TOKEN = SecretStr("xoxb-test-token")
@@ -1240,3 +1260,417 @@ def test_the_self_check_reads_with_all_metadata(slack: _FakeSlack) -> None:
     form = slack.requests[1].form_body()
     assert form["include_all_metadata"] == "true"
     assert form["channel"] == CHANNEL
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T009 — E2E 는 기본 실행에서 빠지고, credential 이 없으면 시끄럽게 skip 한다
+# --------------------------------------------------------------------------------------
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# 이 이름을 subprocess 실행의 stdout 에서 찾아 선택·비선택을 확인한다. 이름을 바꾸면
+# 아래 두 test 가 함께 깨진다 — 그것이 의도다. 조용히 안 도는 것보다 낫다.
+E2E_TEST_NAME = "test_the_harness_hands_over_a_configured_target"
+
+E2E_ENV_NAMES = (
+    SLACK_BOT_TOKEN_ENV,
+    SLACK_SIGNING_SECRET_ENV,
+    SLACK_APP_ID_ENV,
+    SLACK_CHANNEL_ID_ENV,
+)
+
+_ALL_FOUR: dict[str, str] = {
+    SLACK_BOT_TOKEN_ENV: "xoxb-real-token",
+    SLACK_SIGNING_SECRET_ENV: "0123456789abcdef",
+    SLACK_APP_ID_ENV: APP_ID,
+    SLACK_CHANNEL_ID_ENV: CHANNEL,
+}
+
+
+def _pytest_ini() -> Mapping[str, object]:
+    parsed = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    return cast(Mapping[str, object], parsed["tool"]["pytest"]["ini_options"])
+
+
+def _run_pytest(*args: str, drop_slack_env: bool = False) -> subprocess.CompletedProcess[str]:
+    """Run pytest in a child process so the **real** ini options apply.
+
+    marker 등록과 deselect 는 `pyproject.toml` 이 하는 일이라 in-process 로는 확인할 수
+    없다. 실제로 그 설정이 도는지 보려면 그 설정을 읽는 pytest 를 한 번 더 띄워야 한다.
+    """
+    environment = dict(os.environ)
+    if drop_slack_env:
+        for name in E2E_ENV_NAMES:
+            environment.pop(name, None)
+    return subprocess.run(
+        [sys.executable, "-m", "pytest", *args],
+        cwd=REPO_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+
+
+@pytest.fixture
+def slack_e2e_settings() -> SlackSettings:
+    """Hand the E2E its configuration, or skip **with the reason printed**.
+
+    **collection 이 아니라 setup 에서 부른다.** `skipif` 표현식에서 부르면 부분 구성 환경의
+    기본 suite 가 collection error 로 빨개진다 (wave 5 contract review A-9).
+
+    부분 구성은 여기서 `ValueError` 로 터진다. skip 이 아니다 — 무엇을 빠뜨렸는지 모른 채
+    지나가는 것이 조용한 pass 만큼 나쁘다 (contracts H-4.1).
+    """
+    settings = load_slack_settings(os.environ)
+    if settings is None:
+        pytest.skip(
+            "Slack E2E 미구성 — 다음 환경변수를 설정하십시오 (quickstart A-6): "
+            + ", ".join(E2E_ENV_NAMES)
+        )
+    return settings
+
+
+# T009 — 실제 호출은 T010 이 여기에 붙인다. 지금 확인하는 것은 harness 배선이다.
+# 비어 있는 test 를 두지 않는 이유는 credential 이 **있는** 환경에서 통과가 아무것도
+# 뜻하지 않게 되기 때문이다.
+@pytest.mark.slack_e2e
+def test_the_harness_hands_over_a_configured_target(slack_e2e_settings: SlackSettings) -> None:
+    transport = HttpSlackTransport(
+        bot_token=slack_e2e_settings.credentials.bot_token,
+        timeout_seconds=1.0,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=60,
+    )
+
+    # Protocol 적합성은 mypy 가 이 대입에서 본다. `SlackTransport` 는 runtime_checkable 이
+    # 아니라 isinstance 로는 못 본다.
+    live: SlackTransport = transport
+
+    assert live is transport
+    assert slack_e2e_settings.app_id
+    assert slack_e2e_settings.channel_id
+
+
+# T009 AC-04 — marker 가 등록돼 있어야 unknown mark 경고가 안 나고, 오타 난 marker 가
+# 조용히 아무것도 선택하지 않는 상태를 막는다.
+def test_the_e2e_marker_is_registered() -> None:
+    markers = _pytest_ini()["markers"]
+
+    assert isinstance(markers, list)
+    assert any(entry.startswith("slack_e2e:") for entry in markers)
+
+
+# T009 AC-02 — 기본 실행이 E2E 를 고르지 않는다는 것을 ini 설정으로 고정한다.
+def test_the_default_options_deselect_the_marker() -> None:
+    assert "not slack_e2e" in str(_pytest_ini()["addopts"])
+
+
+# W2-pytest-import-mode — tests/ 를 sys.path 에 넣는 것을 import mode 의 부수효과가 아니라
+# 명시 설정으로 만든다. test_slack_projection.py 가 test_governance_events 를 top-level 로
+# import 하고, 그 의존이 조용히 깨지면 collection error 로만 보인다.
+def test_the_tests_directory_is_on_the_configured_path() -> None:
+    assert _pytest_ini()["pythonpath"] == ["tests"]
+
+
+# T009 AC-02·AC-04 — 설정이 아니라 **실제 실행**으로 확인한다. 인자 없이 돌린 pytest 가
+# E2E 를 고르지 않고, unknown mark 경고도 내지 않는다.
+def test_the_default_run_does_not_collect_the_e2e_test() -> None:
+    # `-q` 를 더 주지 않는다. addopts 에 이미 있어서 `-qq` 가 되면 test id 가 아니라 개수만
+    # 나오고, 그러면 이 test 가 아무것도 확인하지 못한다.
+    completed = _run_pytest("tests/test_slack_http.py", "--collect-only")
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert E2E_TEST_NAME not in completed.stdout
+    assert "deselected" in completed.stdout
+    assert "PytestUnknownMarkWarning" not in completed.stdout + completed.stderr
+
+
+# T009 — 명령줄의 `-m` 이 addopts 를 이긴다. 이기지 않으면 E2E 를 돌릴 방법이 없다.
+def test_selecting_the_marker_collects_the_e2e_test() -> None:
+    completed = _run_pytest("tests/test_slack_http.py", "--collect-only", "-m", "slack_e2e")
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert E2E_TEST_NAME in completed.stdout
+
+
+# T009 AC-01 — credential 이 없으면 **skip 이고 pass 가 아니다.** 조용한 통과는
+# Constitution III 위반이고 gate 기록을 거짓으로 만든다 (contracts H-5.2).
+def test_missing_credentials_report_as_a_skip_with_a_reason() -> None:
+    completed = _run_pytest(
+        "tests/test_slack_http.py",
+        "-m",
+        "slack_e2e",
+        "-rs",
+        drop_slack_env=True,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "skipped" in completed.stdout
+    assert "passed" not in completed.stdout
+    assert SLACK_BOT_TOKEN_ENV in completed.stdout
+    assert SLACK_CHANNEL_ID_ENV in completed.stdout
+
+
+# T009 AC-03 / FR-020 — verify 는 7 stage 이고 network 를 부르는 stage 가 없다. E2E 를
+# 여기 넣으면 clean clone·offline 계약이 깨진다 (SC-014).
+def test_verify_has_no_network_stage() -> None:
+    commands = VerificationRunner().commands()
+    names = [name for name, _ in commands]
+
+    assert len(names) == 7
+    assert not [name for name in names if "slack" in name or "e2e" in name]
+    pytest_command = next(command for name, command in commands if name == "pytest")
+    # `-m pytest` 뒤에 marker 선택이 붙지 않는다. 붙으면 verify 가 network 를 요구하게 된다.
+    assert list(pytest_command[3:]) == []
+
+
+# T009 — 넷이 다 있으면 하나로 모인다. secret 은 계속 SecretStr 이다.
+def test_all_four_variables_assemble_into_settings() -> None:
+    settings = load_slack_settings(_ALL_FOUR)
+
+    assert settings is not None
+    assert settings.credentials.bot_token.get_secret_value() == "xoxb-real-token"
+    assert settings.app_id == APP_ID
+    assert settings.channel_id == CHANNEL
+
+
+# T009 — 부재와 빈 문자열이 같은 "구성 안 됨" 이다. 다르면 빈 변수를 export 한 환경이
+# skip 이 아니라 오류로 떨어진다.
+@pytest.mark.parametrize(
+    "environ",
+    [
+        {},
+        dict.fromkeys(E2E_ENV_NAMES, ""),
+        dict.fromkeys(E2E_ENV_NAMES, "  \n"),
+    ],
+)
+def test_an_unconfigured_environment_has_no_settings(environ: dict[str, str]) -> None:
+    assert load_slack_settings(environ) is None
+
+
+# T009 — 부분 구성은 미구성이 아니라 실수다. 빠진 **이름**을 전부 알려준다.
+@pytest.mark.parametrize(
+    ("environ", "expected"),
+    [
+        (
+            {name: value for name, value in _ALL_FOUR.items() if name != SLACK_APP_ID_ENV},
+            (SLACK_APP_ID_ENV,),
+        ),
+        (
+            {name: value for name, value in _ALL_FOUR.items() if name != SLACK_CHANNEL_ID_ENV},
+            (SLACK_CHANNEL_ID_ENV,),
+        ),
+        (
+            {SLACK_APP_ID_ENV: APP_ID, SLACK_CHANNEL_ID_ENV: CHANNEL},
+            (SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV),
+        ),
+        (
+            {SLACK_CHANNEL_ID_ENV: CHANNEL},
+            (SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV, SLACK_APP_ID_ENV),
+        ),
+        (
+            {**_ALL_FOUR, SLACK_APP_ID_ENV: "   "},
+            (SLACK_APP_ID_ENV,),
+        ),
+    ],
+)
+def test_partial_settings_name_every_missing_variable(
+    environ: dict[str, str], expected: tuple[str, ...]
+) -> None:
+    with pytest.raises(ValueError, match="불완전") as caught:
+        load_slack_settings(environ)
+
+    for name in expected:
+        assert name in str(caught.value)
+
+
+# T009 — 실수 message 에 값이 들어가면 안 된다. 이름만 적는다.
+def test_the_settings_error_names_variables_not_values() -> None:
+    with pytest.raises(ValueError) as caught:
+        load_slack_settings({SLACK_BOT_TOKEN_ENV: "xoxb-real-token"})
+
+    assert "xoxb-real-token" not in str(caught.value)
+
+
+# T009 — settings 도 secret 을 찍지 않는다. 한 겹 감싸면 repr 이 되살아나는 것이 흔하다.
+def test_settings_never_render_their_secrets() -> None:
+    settings = load_slack_settings(_ALL_FOUR)
+    assert settings is not None
+
+    for rendered in (repr(settings), str(settings), f"{settings}"):
+        assert "xoxb-real-token" not in rendered
+        assert "0123456789abcdef" not in rendered
+
+
+# T009 — loader 를 우회해 빈 대상으로 만들 수도 없어야 한다.
+@pytest.mark.parametrize(
+    ("app_id", "channel_id"), [("", "C1"), ("  ", "C1"), ("A1", ""), ("A1", " ")]
+)
+def test_settings_reject_blank_targets(app_id: str, channel_id: str) -> None:
+    with pytest.raises(ValueError):
+        SlackSettings(
+            credentials=SlackCredentials(bot_token=TOKEN, signing_secret=SecretStr("s")),
+            app_id=app_id,
+            channel_id=channel_id,
+        )
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T011 — 실제 transport 로 돌아도 다른 Provider 는 그대로다 (A14, FR-021)
+# --------------------------------------------------------------------------------------
+
+TELEGRAM_CHANNEL = ChannelRef(
+    provider=ChannelProvider.TELEGRAM,
+    chat_id="-1001234567890",
+    message_id="4242",
+)
+
+# dispatcher 와 transport 가 **같은 lease 숫자**를 본다. 다르면 예산 검증이 실제로 쥐는
+# lease 가 아닌 값을 검사해 아무것도 막지 못한다 (contracts C-1 의무 2).
+_LEASE_SECONDS = 5
+
+# 2 x timeout x (pages + 1) 이 lease 안에 들어와야 transport 를 만들 수 있다
+# (`validate_call_budget`). 5초 lease 에 6회분이면 timeout 은 0.4초 미만이어야 한다.
+_E2E_TIMEOUT_SECONDS = 0.2
+
+
+def _destination_row(store: GovernanceStore, destination_ref: str) -> tuple[object, ...]:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT next_sequence, delivered_sequence, operator_hold, updated_at "
+            "FROM governance_outbox_destinations WHERE destination_ref = ?",
+            (destination_ref,),
+        ).fetchone()
+    assert row is not None
+    return tuple(row)
+
+
+def _terminal_rows(store: GovernanceStore) -> tuple[list[str], list[str]]:
+    with store.connect() as connection:
+        dead = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT error_code FROM governance_outbox_dead_letters"
+            ).fetchall()
+        ]
+        holds = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT reason_code FROM governance_operator_holds"
+            ).fetchall()
+        ]
+    return dead, holds
+
+
+def _hold_scopes(store: GovernanceStore) -> list[tuple[str, str]]:
+    """Read **which destination** each hold landed on, not just why.
+
+    hold 는 되돌릴 수 없고 그 destination 의 이후 event 를 전부 멈춘다. 원인 code 만 보면
+    엉뚱한 destination 이 멈춘 것을 못 잡는다.
+    """
+    with store.connect() as connection:
+        return [
+            (str(row[0]), str(row[1]))
+            for row in connection.execute(
+                "SELECT scope_kind, scope_ref FROM governance_operator_holds"
+            ).fetchall()
+        ]
+
+
+# T011 AC-01·AC-02·AC-03 / FR-021 / A14 — Package 3 의 T005 AC-07 이 같은 격리를 fake
+# transport 로 확인했다. 여기서 다른 것은 **실패가 만들어지는 경로**다.
+#
+# T005 는 `SlackTransportError` 를 손으로 만들어 주입한다. 그러면 응답 판별과 code 추출
+# (`slack_http.py` 의 `_slack_error_code`·`_decode`) 을 안 탄다. 여기서는 fake server 가
+# 돌려준 `ok:false` JSON 에서 그 예외가 **생성**되고, 그 뒤 분류·DLQ·hold 까지 간다.
+# 전송 계층이 실물로 바뀌어도 hold 가 Slack destination 밖으로 안 번지는지가 질문이다.
+def test_the_real_transport_leaves_another_provider_untouched(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    slack: _FakeSlack,
+) -> None:
+    store, _active, _view = governance_fixtures._active_proposal(tmp_path)
+    clock = governance_fixtures.MutableClock()
+    events = GovernanceEventService(store, clock=clock)
+    # Telegram destination 을 production 파생 규칙이 만들게 한다. row 를 손으로 넣으면
+    # 실제로는 생기지 않는 모양을 검사하게 된다 (T005 선례).
+    monkeypatch.setattr(governance_fixtures, "CHANNEL", TELEGRAM_CHANNEL)
+    _telegram_audit, telegram_outbox = governance_fixtures._append(
+        events,
+        store,
+        command_id="command-telegram",
+        state_revision=2,
+    )
+    monkeypatch.undo()
+    # Slack 쪽은 둘이다. 하나로는 성공 뒤에 claim 할 event 가 없어 실패 경로를 못 돈다.
+    slack_batches = [
+        governance_fixtures._append(
+            events,
+            store,
+            command_id=f"command-slack-{index}",
+            state_revision=index + 2,
+        )[1]
+        for index in (1, 2)
+    ]
+    telegram = next(event for event in telegram_outbox if event.supersession_key is not None)
+    slack_event = next(event for event in slack_batches[0] if event.supersession_key is not None)
+    assert telegram.destination_ref.startswith("provider:telegram:")
+    assert slack_event.destination_ref.startswith("provider:slack:")
+    before = _destination_row(store, telegram.destination_ref)
+
+    # 첫 전송은 성공, 두 번째는 wire 에서 온 terminal 오류다. Slack 은 application error 를
+    # HTTP 200 + ok:false 로 준다.
+    slack.queue(
+        "chat.postMessage",
+        _Reply.ok({"channel": CHANNEL, "ts": "1700000000.000100"}),
+        _Reply.slack_error("invalid_auth"),
+    )
+    transport = HttpSlackTransport(
+        bot_token=TOKEN,
+        timeout_seconds=_E2E_TIMEOUT_SECONDS,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_LEASE_SECONDS,
+        base_url=slack.base_url,
+    )
+    destination = SlackProjectionDestination(
+        transport,
+        destination_ref=slack_event.destination_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+    dispatcher = OutboxDispatcher(
+        store,
+        config=OutboxConfig(lease_seconds=_LEASE_SECONDS),
+        clock=clock,
+    )
+
+    delivered = dispatcher.deliver_next("worker", destination)
+    assert delivered is not None and delivered.state is OutboxState.DELIVERED
+
+    # 성공만 보면 부족하다. hold 는 destination 전체를 멈추므로 번지면 피해가 크다.
+    failed = dispatcher.deliver_next("worker", destination)
+    assert failed is not None and failed.state is OutboxState.DEAD_LETTER
+
+    # 두 호출 다 실제 HTTP 로 나갔다. 이것이 없으면 fake transport 로도 통과하는 test 다.
+    assert [record.path for record in slack.requests] == [
+        "/chat.postMessage",
+        "/chat.postMessage",
+    ]
+    dead, holds = _terminal_rows(store)
+    # code 에 wire 에서 온 `invalid_auth` 가 실려 있다. 손으로 만든 예외가 아니라 응답
+    # 판별을 거쳐 나온 것이라는 증거다.
+    assert dead == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+    assert holds == ["SLACK_PROJECTION_TERMINAL_ERROR:invalid_auth"]
+
+    # AC-01 — Telegram destination row 가 통째로 그대로다.
+    assert _destination_row(store, telegram.destination_ref) == before
+    assert dispatcher.get(telegram.event_id).state is OutboxState.PENDING
+    # AC-02 — hold 가 Slack destination 에만 걸렸다.
+    assert _hold_scopes(store) == [("outbox_destination", slack_event.destination_ref)]
+    # AC-03 — Telegram 은 계속 자기 event 를 가져간다.
+    claimed = dispatcher.claim_next("telegram-worker", destination_ref=telegram.destination_ref)
+    assert claimed is not None and claimed.event_id == telegram.event_id

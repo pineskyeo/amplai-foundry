@@ -118,10 +118,28 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
+  # AC-01~03 셋 다 통과한다. test 하나가 셋을 한 시나리오로 덮는다 — 성공과 hold 를 같은
+  # store 에서 이어 돌려야 격리가 시간축을 건너 유지되는지 보인다.
+  #
+  # AC-01: Telegram destination row 넷(next_sequence, delivered_sequence, operator_hold,
+  #        updated_at)이 통째로 그대로이고 event 는 PENDING 이다.
+  # AC-02: hold 가 ("outbox_destination", Slack destination_ref) 하나뿐이다.
+  # AC-03: Telegram destination 을 claim 하면 자기 event 를 가져간다.
+  #
+  # **T005 AC-07 과 겹치지 않는 부분을 명시한다** (OQ-006). T005 는 SlackTransportError 를
+  # 손으로 만들어 주입해 응답 판별 경로를 안 탄다. 여기서는 fake server 의 ok:false JSON
+  # 에서 예외가 생성되고 분류·DLQ·hold 까지 간다. 두 호출이 실제 HTTP 로 나간 것을
+  # 요청 기록으로 확인한다 — 그 assertion 이 없으면 fake transport 로도 통과한다.
+  #
+  # mutation 3종이 전부 죽는다 — _slack_error_code 가 None 을 돌려주기, 응답을 무조건
+  # 성공으로 보기, 불변을 주장하는 대상을 Telegram 에서 Slack row 로 바꾸기.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # gate 는 아직이다. wave 6 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
+  # 채운다. status 도 그때 done 으로 바꾼다.
   completed_at: null
-  evidence_paths: []
+  evidence_paths:
+    - tests/test_slack_http.py
 
 handoff:
   expected_changes:

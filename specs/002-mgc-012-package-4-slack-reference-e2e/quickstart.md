@@ -52,9 +52,12 @@ scope 를 빠뜨리면 send 는 성공하고 **첫 재시도의 read 에서** `m
 
 채널을 하나 만들고 app 을 초대한다 (`/invite @앱이름`). channel ID (`C` 로 시작) 를 기록한다.
 
+app ID (`A` 로 시작) 도 기록한다. **Basic Information → App Credentials** 에 있다.
+`auth.test` 가 주는 `bot_id` (`B` 로 시작) 는 **다른 값이라 대체할 수 없다.**
+
 ### A-6. Set The Environment Variables
 
-이름은 T007 이 확정했다. 값 하나에 변수 하나다.
+이름은 T007 이 secret 둘을, T009 가 대상 둘을 확정했다 (D-028). 값 하나에 변수 하나다.
 
 ```bash
 export AMPLAI_SLACK_BOT_TOKEN='xoxb-...'
@@ -64,10 +67,19 @@ export AMPLAI_SLACK_BOT_TOKEN='xoxb-...'
 export AMPLAI_SLACK_SIGNING_SECRET='...'
 ```
 
-**둘 다 넣어야 한다.** 하나만 넣으면 "구성 안 됨" 이 아니라 **오류**다 — 빠뜨린 변수
-이름을 알려준다. 조용히 skip 되면 뭘 빠뜨렸는지 모른 채 지나간다.
+```bash
+export AMPLAI_SLACK_APP_ID='A...'
+```
 
-두 값 다 `SecretStr` 로 감싸여 들어오고 repr·log·예외 message 어디에도 안 나온다.
+```bash
+export AMPLAI_SLACK_CHANNEL_ID='C...'
+```
+
+**넷 다 넣어야 한다.** 하나라도 빠지면 "구성 안 됨" 이 아니라 **오류**다 — 빠뜨린 변수
+이름을 전부 알려준다. 조용히 skip 되면 뭘 빠뜨렸는지 모른 채 지나간다.
+
+secret 둘은 `SecretStr` 로 감싸여 들어오고 repr·log·예외 message 어디에도 안 나온다.
+app ID 와 channel ID 는 secret 이 아니다.
 
 ### A-7. Verify The Setup
 

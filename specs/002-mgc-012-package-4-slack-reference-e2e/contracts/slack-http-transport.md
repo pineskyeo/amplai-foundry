@@ -122,24 +122,35 @@ history 소진이 미전송으로 판정되어 **매 재시도마다 Card 가 �
 받는다 (R-014). repo 전체에 Slack 설정을 읽는 `os.environ` 이 지금 한 줄도 없고, 그 구조가
 test 가능성을 만들었으므로 유지한다.
 
-**변수 이름은 T006·T007 구현이 확정했다** (2026-08-07).
+**변수 이름은 T006·T007 구현이 확정했고, T009 가 대상 둘을 더했다** (2026-08-08, D-028).
 
-| 변수 | 값 |
-|---|---|
-| `AMPLAI_SLACK_BOT_TOKEN` | Bot User OAuth Token (`xoxb-` 로 시작) |
-| `AMPLAI_SLACK_SIGNING_SECRET` | Signing Secret |
+| 변수 | 값 | secret |
+|---|---|---|
+| `AMPLAI_SLACK_BOT_TOKEN` | Bot User OAuth Token (`xoxb-` 로 시작) | 예 |
+| `AMPLAI_SLACK_SIGNING_SECRET` | Signing Secret | 예 |
+| `AMPLAI_SLACK_APP_ID` | app ID (`A` 로 시작) | 아니오 |
+| `AMPLAI_SLACK_CHANNEL_ID` | 대상 channel ID (`C` 로 시작) | 아니오 |
 
 `AMPLAI_` 접두는 같은 환경에 있는 다른 Slack 도구와 섞이지 않게 한다.
+
+`app_id` 를 환경에서 받는 이유는 `reconcile` 이 이 값으로 남의 message 를 배제하기
+때문이다 (`slack_projection.py:495`). **`auth.test` 가 주는 `bot_id` 는 다른 값이라 대체할 수
+없다.** 값이 틀린 경우는 형식 검사로 못 잡고 H-3 의 자가검사가 기동 시점에 잡는다 — 그래서
+loader 는 접두 문자를 **검사하지 않는다.** 확인하지 않은 형식 가정을 계약으로 굳히지 않는다.
 
 성질 셋을 지킨다.
 
 - 값 하나에 변수 하나. 합쳐 담지 않는다
 - 부재와 빈 문자열을 같게 다룬다 — 둘 다 "구성 안 됨"
-- 읽는 지점이 하나
+- 읽는 지점이 하나. `load_slack_settings` 는 `environ` 을 **요구한다** — 기본값을 주면
+  `os.environ` 을 만지는 지점이 둘이 된다. 부르는 쪽이 넘긴다
 
-**부분 구성은 미구성이 아니다.** 둘 중 하나만 있으면 `ValueError` 다. `None` 으로
-뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만 보고 자기가 뭘 빠뜨렸는지 모른다.
-조용한 skip 은 조용한 pass 만큼 나쁘다.
+**부분 구성은 미구성이 아니다.** 넷 중 하나라도 빠지면 `ValueError` 이고 빠진 변수
+**이름**을 전부 적는다. `None` 으로 뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만
+보고 자기가 뭘 빠뜨렸는지 모른다. 조용한 skip 은 조용한 pass 만큼 나쁘다.
+
+secret 둘은 `SlackCredentials` 에, 대상 둘은 그것을 감싸는 `SlackSettings` 에 담는다.
+나눠 두면 `repr=False` 같은 secret 처리 규칙이 secret 에만 붙는다.
 
 ### H-4.2 — Secrets Never Persist
 
@@ -154,6 +165,15 @@ test 가능성을 만들었으므로 유지한다.
 
 E2E 는 marker 로 분리하고 기본 실행에서 deselect 한다. `amplai-foundry verify` 는
 건드리지 않는다 — 그것은 clean clone·offline 에서 도는 계약이다 (SC-014, FR-020).
+
+**T009 가 확정한 이름과 방법이다** (2026-08-08).
+
+- marker 이름은 `slack_e2e` 다. `pyproject.toml` 의 `markers` 에 등록해 unknown mark 경고와
+  오타 난 marker 가 조용히 아무것도 고르지 않는 상태를 막는다
+- `addopts = "-q -m \"not slack_e2e\""` 가 기본 실행에서 뺀다. `verify` 는 인자 없이
+  `python -m pytest` 를 부르므로 (`verification/runner.py:37`) 이 한 줄이 verify 를 offline
+  으로 유지한다. verify 에 stage 를 더하지 않는다
+- 명령줄의 `-m` 이 `addopts` 를 이긴다. `python -m pytest -m slack_e2e` 로 E2E 만 돌린다
 
 ### H-5.2 — Missing Credentials Skip Loudly
 

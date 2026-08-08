@@ -173,6 +173,73 @@ def load_slack_credentials(
     )
 
 
+# credential 이 **누구에게** 말하는지를 정하는 둘이다. secret 이 아니지만 같은 규칙을 받는다
+# (contracts H-4.1) — 값 하나에 변수 하나, 부재와 빈 문자열은 같은 "구성 안 됨", 부분 구성은
+# 오류다.
+#
+# `app_id` 를 환경에서 받는 이유는 `reconcile` 이 이 값으로 남의 message 를 배제하기
+# 때문이다 (`slack_projection.py:495`). `auth.test` 가 주는 `bot_id` 는 **다른 값**이라
+# 대체할 수 없다. 값이 틀린 경우는 형식 검사로 못 잡고 `verify_marker_readback` 이 기동
+# 시점에 잡는다 (H-3) — 그래서 여기서 접두 문자를 검사하지 않는다. 검사하면 확인하지 않은
+# 형식 가정을 계약으로 굳히게 된다.
+SLACK_APP_ID_ENV: Final = "AMPLAI_SLACK_APP_ID"
+SLACK_CHANNEL_ID_ENV: Final = "AMPLAI_SLACK_CHANNEL_ID"
+
+
+@dataclass(frozen=True, slots=True)
+class SlackSettings:
+    """Everything one process needs to talk to one Slack channel.
+
+    `SlackCredentials` 는 secret 만 담는다. 여기는 그 secret 이 가리키는 **대상**까지 담는
+    한 단계 위다. 둘을 나눠 두면 secret 처리 규칙(`repr=False`)이 secret 에만 붙는다.
+    """
+
+    credentials: SlackCredentials
+    app_id: str
+    channel_id: str
+
+    def __post_init__(self) -> None:
+        if not self.app_id.strip():
+            raise ValueError("app_id는 비어 있을 수 없습니다.")
+        if not self.channel_id.strip():
+            raise ValueError("channel_id는 비어 있을 수 없습니다.")
+
+
+def load_slack_settings(environ: Mapping[str, str]) -> SlackSettings | None:
+    """Assemble the four variables, or say which ones are missing (contracts H-4.1).
+
+    **`environ` 을 요구한다.** 기본값을 주지 않는 이유는 `os.environ` 을 읽는 지점을 하나로
+    유지하기 위해서다 — 이 module 에서 환경을 만지는 함수는 `load_slack_credentials` 뿐이고
+    그 성질을 test 가 AST 로 지킨다. 부르는 쪽(composition root, E2E fixture)이 `os.environ`
+    을 넘긴다. R-014 의 "entrypoint 한 곳에서만 읽는다" 와 같은 말이다.
+
+    반환은 `load_slack_credentials` 와 같은 tri-state 다.
+
+    - 넷 다 없거나 비어 있으면 `None` — E2E 가 그때 skip 한다 (plan P-003).
+    - 넷 다 있으면 `SlackSettings`.
+    - **하나라도 빠지면 `ValueError`.** 빠진 변수 **이름**을 적는다. token 만 넣고 E2E 를
+      돌린 사람이 "skip" 만 보면 자기가 뭘 빠뜨렸는지 모른다 (H-4.1).
+    """
+    app_id = (environ.get(SLACK_APP_ID_ENV) or "").strip()
+    channel_id = (environ.get(SLACK_CHANNEL_ID_ENV) or "").strip()
+    # 부분 credential 은 여기서 먼저 터진다. 그 판정은 T007 이 이미 소유한다.
+    credentials = load_slack_credentials(environ)
+    targets_missing = [
+        name
+        for name, value in ((SLACK_APP_ID_ENV, app_id), (SLACK_CHANNEL_ID_ENV, channel_id))
+        if not value
+    ]
+    if credentials is None:
+        if not app_id and not channel_id:
+            return None
+        # credential 없이 대상만 있는 상태다. 빠진 것은 credential 둘 **과** 나머지 대상이다.
+        missing = [SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV, *targets_missing]
+        raise ValueError(f"Slack 구성이 불완전합니다. 빠진 변수: {missing}")
+    if targets_missing:
+        raise ValueError(f"Slack 구성이 불완전합니다. 빠진 변수: {targets_missing}")
+    return SlackSettings(credentials=credentials, app_id=app_id, channel_id=channel_id)
+
+
 def worst_case_call_seconds(timeout_seconds: float, max_history_pages: int) -> float:
     """Bound one `deliver_next` in wall clock.
 

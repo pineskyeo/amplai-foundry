@@ -24,7 +24,7 @@
 - [ ] MGC-012-T009 E2E harness skips loudly and stays out of the default suite
   - manifest: `task-manifests/MGC-012-T009.yaml`
   - depends on: MGC-012-T006, MGC-012-T007
-  - files: `pyproject.toml`, `tests/test_slack_http.py`
+  - files: `pyproject.toml`, `tests/test_slack_http.py`, `src/amplai_foundry/governance/slack_http.py`, `specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md`
   - verify: `python -m pytest tests/test_slack_http.py`
   - verify: `python -m pytest`
   - verify: `python -m ruff check .`

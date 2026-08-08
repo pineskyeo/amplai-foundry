@@ -31,8 +31,19 @@ amplai-foundry = "amplai_foundry.cli:app"
 packages = ["src/amplai_foundry"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+# `-m "not slack_e2e"` 가 E2E 를 기본 실행에서 뺀다. `amplai-foundry verify` 는 인자 없이
+# `python -m pytest` 를 부르므로 (verification/runner.py:37) 이 한 줄이 verify 를 network
+# 없이 유지한다 — verify 에 stage 를 더하지 않는다 (FR-020, SC-014).
+# 명령줄의 `-m` 이 이것을 이긴다. `python -m pytest -m slack_e2e` 로 E2E 만 돌린다.
+addopts = "-q -m \"not slack_e2e\""
 testpaths = ["tests"]
+markers = [
+  "slack_e2e: 실제 Slack workspace 를 치는 test. 기본 실행에서 deselect 된다 (contracts H-5.1)",
+]
+# tests/test_slack_projection.py 가 test_governance_events 를 top-level 로 import 한다.
+# 이것 없이는 pytest 의 prepend import mode 가 tests/ 를 sys.path 에 넣어 주는 것에 의존하고,
+# import mode 를 바꾸면 조용히 깨진다. 의존을 명시로 바꾼다 (index.yaml W2-pytest-import-mode).
+pythonpath = ["tests"]
 
 [tool.ruff]
 target-version = "py311"

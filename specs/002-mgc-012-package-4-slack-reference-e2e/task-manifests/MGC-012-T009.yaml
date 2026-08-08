@@ -28,17 +28,25 @@ source:
     - FR-020
   decisions: []
 
+# 2026-08-08 scope 확장. 사용자가 명시 승인했고 D-028 이 근거다. `loop.stop_conditions` 의
+# `scope_boundary_must_expand` 를 조용히 넘기지 않고 결정으로 남긴다.
+# 더한 것 둘 — (1) channel ID·app ID 환경변수를 계약 H-4.1 에 확정하고 loader 를 만든다,
+# (2) W2-pytest-import-mode 를 같은 파일을 여는 김에 닫는다.
 scope:
   include:
     - pytest marker 등록과 기본 deselect
     - credential 부재 시 skip 과 그 이유 출력
     - amplai-foundry verify 가 network 없이 통과하는 것 확인
+    - channel ID·app ID 환경변수 확정과 네 변수 tri-state loader (D-028)
+    - W2-pytest-import-mode 를 pythonpath 명시로 닫기 (D-028)
   exclude:
     - 실제 Slack 호출 (T010 소유)
     - verify 에 stage 추가
   allowed_paths:
     - pyproject.toml
     - tests/test_slack_http.py
+    - src/amplai_foundry/governance/slack_http.py
+    - specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
   forbidden_paths:
     - src/amplai_foundry/governance/slack_projection.py
     - src/amplai_foundry/governance/slack.py
@@ -132,10 +140,27 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
+  # AC-01~04 넷 다 통과한다. 설정 assertion 만으로 끝내지 않고 child process 로 pytest 를
+  # 한 번 더 띄워 실제 선택·비선택·skip 을 봤다 — marker 와 addopts 는 pyproject.toml 이
+  # 하는 일이라 in-process 로는 확인할 수 없다.
+  #
+  # AC-01: credential 을 지운 환경에서 `-m slack_e2e` 가 skip 1건과 이유를 출력한다.
+  #        pass 는 0건이다.
+  # AC-02: 인자 없는 실행이 E2E 를 고르지 않는다 (1021 passed, 1 deselected).
+  # AC-03: `amplai-foundry verify` 7 stage 가 network 없이 통과한다.
+  # AC-04: marker 가 등록돼 있어 PytestUnknownMarkWarning 이 없다.
+  #
+  # 부분 구성은 skip 이 아니라 오류다 — token·secret 만 준 실행이 빠진 두 변수 이름을
+  # 적고 error 로 떨어지는 것을 확인했다 (H-4.1).
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # gate 는 아직이다. wave 6 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
+  # 채운다. status 도 그때 done 으로 바꾼다.
   completed_at: null
-  evidence_paths: []
+  evidence_paths:
+    - pyproject.toml
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
 
 handoff:
   expected_changes:
