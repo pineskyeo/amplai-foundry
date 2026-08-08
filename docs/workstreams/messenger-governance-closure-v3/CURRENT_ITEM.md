@@ -39,16 +39,22 @@ message projection과 retry는 background path에서 수행한다.
   `PASS` at `2dcf663`
 - Package 3 — ordered Slack message projection, retry and recovery:
   `PASS` at `5b2024b`
-- Tests: `898/898 PASS`
+- Package 4 wave 5 — real Slack HTTP transport and credential path:
+  `PASS` at `dfbcd15`
+- Tests: `987/987 PASS`
 - Verification: `7/7 PASS`
 - Review: Package 3는 wave 4개로 나눠 wave마다 three-lens review를 돌렸고 전부 blocker 0
   으로 닫았다. wave 4는 2 round 진행 — round 1 고유 blocker 6건, round 2 5건 해소.
   round 2의 5건 중 둘은 round 1 수정이 만든 새 결함이다. mutation 16종 survivor 0
-- Next: Package 4 — Slack reference E2E, activation isolation and closure review.
+- Next: Package 4 wave 6 — T008 readback 자가검사, T009 E2E harness, T011 Provider 격리.
+  셋 다 network 없이 돌고 같은 test file을 쓰므로 순차로 돈다.
   D-026이 D-019 항목 8을 닫았다 — 테스트용 workspace와 app을 새로 만들어 실제 Slack을
   치는 E2E를 갖고, activation isolation은 A14 격리 검증뿐이며 Gate machinery는 MGC-015다.
-  **workspace는 아직 만들어지지 않았고 credential 주입 경로도 없다.** 둘 다 plan의 몫이다.
-  `conversations.history`의 OAuth scope는 여전히 미확인이다 — plan Phase 0에서 고정한다
+  **workspace와 app은 만들어졌다** — `auth.test`로 확인했고 scope가 `chat:write`와
+  `channels:history`로 H-1.1과 일치한다. credential 경로도 T007이 닫았다
+  (`AMPLAI_SLACK_BOT_TOKEN`, `AMPLAI_SLACK_SIGNING_SECRET`).
+  `conversations.history`의 OAuth scope는 research R-009가 공식 문서로 고정했다.
+  **아직 없는 것은 T010이 쓸 channel ID와 app ID다** — 계약에 변수가 없다
 
 ## Out Of Scope
 

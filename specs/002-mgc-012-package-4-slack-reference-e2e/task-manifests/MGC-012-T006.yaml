@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T006
 title: Real Slack HTTP transport over the standard library
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -172,7 +172,8 @@ completion:
   required_evidence_present: true
   # gate 는 아직이다. wave 5 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
   # 채운다. status 도 그때 done 으로 바꾼다.
-  completed_at: null
+  # wave 5 gate PASS at dfbcd15. review 2 라운드에서 P0·P1·Blocking-P2 0건이다.
+  completed_at: "2026-08-08"
   evidence_paths:
     - src/amplai_foundry/governance/slack_http.py
     - tests/test_slack_http.py

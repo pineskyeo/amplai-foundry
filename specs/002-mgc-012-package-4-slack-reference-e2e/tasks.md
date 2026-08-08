@@ -13,23 +13,6 @@
 
 ## Phase 1
 
-- [ ] MGC-012-T006 Real Slack HTTP transport over the standard library
-  - manifest: `task-manifests/MGC-012-T006.yaml`
-  - files: `src/amplai_foundry/governance/slack_http.py`, `tests/test_slack_http.py`
-  - verify: `python -m pytest tests/test_slack_http.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-- [ ] MGC-012-T007 Credentials enter at one composition root and never persist
-  - manifest: `task-manifests/MGC-012-T007.yaml`
-  - files: `src/amplai_foundry/governance/slack_http.py`, `tests/test_slack_http.py`
-  - verify: `python -m pytest tests/test_slack_http.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-
-## Phase 2
-
 - [ ] MGC-012-T008 Readback self-check refuses to start on a silent marker defect
   - manifest: `task-manifests/MGC-012-T008.yaml`
   - depends on: MGC-012-T006, MGC-012-T007
@@ -69,6 +52,11 @@
 - MGC-012-T012 MGC-012 closure on a clean clone across both Python versions
   - manifest: `task-manifests/MGC-012-T012.yaml`
   - blocked by E-5: Python 3.12 toolchain
+
+## Not scheduled
+
+- MGC-012-T006 (done) Real Slack HTTP transport over the standard library
+- MGC-012-T007 (done) Credentials enter at one composition root and never persist
 
 ## Open questions
 

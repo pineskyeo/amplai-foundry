@@ -43,7 +43,7 @@ spec_sha256: e20876c8f51e1b155a54404c64c7bca3b4cf2498319c8116ed8f12d75ca975e3
 - [~] MGC-012 — Slack Reference Adapter
   class: code
   acceptance: `CURRENT_ITEM.md#Frozen-Acceptance`
-  progress: Package 1 raw-body verification PASS at `ef35201`; Package 2 durable ack/background handoff PASS at `2dcf663`; Package 3 ordered Slack message projection PASS at `5b2024b`; Package 4 Slack reference E2E/activation isolation/closure review next
+  progress: Package 1 raw-body verification PASS at `ef35201`; Package 2 durable ack/background handoff PASS at `2dcf663`; Package 3 ordered Slack message projection PASS at `5b2024b`; Package 4 wave 5 HTTP transport/credential PASS at `dfbcd15`; wave 6 readback/harness/isolation next
 - [ ] MGC-013 — Telegram Reference Adapter
   class: code
 - [ ] MGC-014 — Hermes Skill

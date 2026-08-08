@@ -33,7 +33,7 @@ source:
 tasks:
   - id: MGC-012-T006
     title: Real Slack HTTP transport over the standard library
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-013
@@ -42,7 +42,7 @@ tasks:
       - FR-016
   - id: MGC-012-T007
     title: Credentials enter at one composition root and never persist
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-017
@@ -138,9 +138,11 @@ coverage:
       tasks:
         - MGC-012-T006
       note: >-
-        T006 은 호출 단위 timeout 을 건다. 한 deliver_next 안의 합계 보장은 구성 시점
-        검증이고 그 위치는 구현이 정한다 (contracts H-2.3). 합계 쪽이 test 로 안 잡히면
-        wave 6 review 가 지적해야 한다.
+        2026-08-08 갱신. wave 5 review 가 두 결함을 잡았다. validate_call_budget 을
+        production 에서 아무도 안 불렀고 (아무도 안 부르는 validator 는 FR-016 을 안
+        닫는다), 공식의 전제였던 "urlopen(timeout=) 이 호출 전체를 묶는다" 도 거짓이었다.
+        지금은 생성자가 max_history_pages 와 lease_seconds 를 요구하고 예산을 검증하므로
+        넘는 transport 를 만들 수조차 없고, 공식도 2 x timeout x (pages+1) 로 고쳤다.
     - id: FR-017
       status: covered
       tasks:
@@ -371,3 +373,25 @@ update_history:
       write method 는 JSON 권장이고 read method 의 JSON 지원은 문서가 보장하지 않아
       conversations.history 는 form-encoded 로 보낸다.
     source_revision: f94364e
+  - date: 2026-08-08
+    summary: >-
+      wave 5 gate PASS at dfbcd15. T006·T007 을 done 으로 옮긴다. review 2 라운드에서
+      round 1 이 고유 blocker 8건, round 2 가 2건을 해소했고 종료 시점 P0·P1·Blocking-P2
+      가 0건이다.
+      round 1 의 P0 가 제일 컸다. proxy·WAF 의 {"error": ...} JSON 을 Slack code 로 실어
+      transient 실패가 terminal 이 됐고, terminal 은 그 destination 의 이후 Card 를 전부
+      멈추는 되돌릴 수 없는 hold 다. 계약(H-2.1 표)도 같은 오류를 갖고 있었고 구현이 그것을
+      따랐다. ok:false 를 판별자로 쓰도록 고쳤다.
+      P1 넷 — json.dumps 와 Request 가 try 밖이라 raw 예외가 샜고 (AC-07 이 거짓이었다),
+      urlopen(timeout=) 이 호출 deadline 이 아니었으며 (실측 timeout 1초에 body 10초),
+      redirect 가 bot token 을 다른 host 로 보냈고, validate_call_budget 을 아무도 안 불렀다.
+      Blocking-P2 로 예약 key guard 를 제거했다 — 근거가 거짓이었다. dict literal 은 뒤
+      key 가 이기므로 그 hazard 는 발생할 수 없었다.
+      round 2 는 mutation 37개로 test gap 둘을 찾았다. _require_text 의 공백 검사를 빼면
+      SlackSendResult 구성이 try 밖이라 raw ValueError 가 샌다 — round 1 의 예외 유출
+      수정이 미완이었다. add_unredirected_header 도 고정돼 있지 않았다.
+      process 발견 하나. 이 repo 에서 git worktree 격리는 기본으로 안 된다 — editable
+      install 의 .pth 가 main tree 를 가리켜 worktree pytest 가 main tree source 를
+      import 한다. 전용 venv 나 PYTHONPATH 가 필요하다.
+      pytest 987, verify 7/7 PASS. 다음은 wave 6 (T008·T009·T011) 이다.
+    source_revision: dfbcd15
