@@ -34,10 +34,12 @@ from amplai_foundry.governance.events import (
 )
 from amplai_foundry.governance.models import ChannelProvider, ChannelRef
 from amplai_foundry.governance.slack_http import (
+    PROBE_DESTINATION_REF,
     SLACK_API_BASE,
     SLACK_APP_ID_ENV,
     SLACK_BOT_TOKEN_ENV,
     SLACK_CHANNEL_ID_ENV,
+    SLACK_SETTINGS_ENV_NAMES,
     SLACK_SIGNING_SECRET_ENV,
     HttpSlackTransport,
     SlackCredentials,
@@ -1111,21 +1113,31 @@ def test_a_slack_envelope_without_a_code_is_not_labelled(slack: _FakeSlack) -> N
 
 PROBE_TS = "1700000000.009000"
 
+# probe 는 진짜 marker 와 **destination_ref 만** 다르다. 나머지는 실제로 나가는 것과 같은
+# 모양이어야 자가검사가 진짜 경로를 검증한다. 그 하나로 reconcile 의 시야에서 빠진다.
+PROBE_MARKER: dict[str, object] = {
+    "event_type": MARKER["event_type"],
+    "event_payload": {
+        **cast("dict[str, object]", MARKER["event_payload"]),
+        "destination_ref": PROBE_DESTINATION_REF,
+    },
+}
+
 
 def _probe_reply() -> _Reply:
     return _Reply.ok({"channel": CHANNEL, "ts": PROBE_TS})
 
 
-def _history_with(message: dict[str, object]) -> _Reply:
-    return _Reply.ok({"messages": [message]})
+def _history_with(*messages: dict[str, object]) -> _Reply:
+    return _Reply.ok({"messages": list(messages)})
 
 
-def _check(slack: _FakeSlack) -> None:
+def _check(slack: _FakeSlack, *, probe_marker: Mapping[str, object] | None = None) -> None:
     verify_marker_readback(
         _transport(slack),
         channel=CHANNEL,
         app_id=APP_ID,
-        probe_marker=MARKER,
+        probe_marker=PROBE_MARKER if probe_marker is None else probe_marker,
     )
 
 
@@ -1134,13 +1146,17 @@ def test_a_marker_that_round_trips_lets_startup_proceed(slack: _FakeSlack) -> No
     slack.queue("chat.postMessage", _probe_reply())
     slack.queue(
         "conversations.history",
-        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": APP_ID}),
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
 
     _check(slack)
 
     # probe 가 실제로 나갔고 marker 를 달고 나갔다.
-    assert slack.requests[0].json_body()["metadata"] == MARKER
+    body = slack.requests[0].json_body()
+    assert body["metadata"] == PROBE_MARKER
+    # 사람이 채널에서 보고 무엇인지 알아야 한다. 빈 message 는 정체불명의 흔적만 남긴다.
+    assert isinstance(body["text"], str)
+    assert "AMPLAI" in body["text"]
 
 
 # T008 AC-02 — include_all_metadata 를 안 붙이는 구현이면 event_type 만 오고
@@ -1150,7 +1166,11 @@ def test_stripped_metadata_refuses_startup(slack: _FakeSlack) -> None:
     slack.queue(
         "conversations.history",
         _history_with(
-            {"ts": PROBE_TS, "metadata": {"event_type": MARKER["event_type"]}, "app_id": APP_ID}
+            {
+                "ts": PROBE_TS,
+                "metadata": {"event_type": PROBE_MARKER["event_type"]},
+                "app_id": APP_ID,
+            }
         ),
     )
 
@@ -1162,7 +1182,7 @@ def test_stripped_metadata_refuses_startup(slack: _FakeSlack) -> None:
 # 인정하지 않는다.
 def test_a_missing_app_id_refuses_startup(slack: _FakeSlack) -> None:
     slack.queue("chat.postMessage", _probe_reply())
-    slack.queue("conversations.history", _history_with({"ts": PROBE_TS, "metadata": MARKER}))
+    slack.queue("conversations.history", _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER}))
 
     with pytest.raises(SlackReadbackError, match="app_id"):
         _check(slack)
@@ -1173,7 +1193,7 @@ def test_a_mismatched_app_id_refuses_startup(slack: _FakeSlack) -> None:
     slack.queue("chat.postMessage", _probe_reply())
     slack.queue(
         "conversations.history",
-        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": "A_SOMEONE_ELSE"}),
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
     )
 
     with pytest.raises(SlackReadbackError, match="app_id"):
@@ -1186,7 +1206,7 @@ def test_a_mismatched_app_id_refuses_startup(slack: _FakeSlack) -> None:
     ["event_id", "destination_ref", "destination_sequence", "payload_digest"],
 )
 def test_a_field_changed_in_transit_refuses_startup(slack: _FakeSlack, field: str) -> None:
-    body = dict(cast("Mapping[str, object]", MARKER["event_payload"]))
+    body = dict(cast("Mapping[str, object]", PROBE_MARKER["event_payload"]))
     body[field] = 999 if field == "destination_sequence" else "바뀐 값"
     slack.queue("chat.postMessage", _probe_reply())
     slack.queue(
@@ -1194,7 +1214,7 @@ def test_a_field_changed_in_transit_refuses_startup(slack: _FakeSlack, field: st
         _history_with(
             {
                 "ts": PROBE_TS,
-                "metadata": {"event_type": MARKER["event_type"], "event_payload": body},
+                "metadata": {"event_type": PROBE_MARKER["event_type"], "event_payload": body},
                 "app_id": APP_ID,
             }
         ),
@@ -1212,7 +1232,10 @@ def test_a_renamed_event_type_refuses_startup(slack: _FakeSlack) -> None:
         _history_with(
             {
                 "ts": PROBE_TS,
-                "metadata": {"event_type": "renamed", "event_payload": MARKER["event_payload"]},
+                "metadata": {
+                    "event_type": "renamed",
+                    "event_payload": PROBE_MARKER["event_payload"],
+                },
                 "app_id": APP_ID,
             }
         ),
@@ -1252,7 +1275,7 @@ def test_the_self_check_reads_with_all_metadata(slack: _FakeSlack) -> None:
     slack.queue("chat.postMessage", _probe_reply())
     slack.queue(
         "conversations.history",
-        _history_with({"ts": PROBE_TS, "metadata": MARKER, "app_id": APP_ID}),
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
 
     _check(slack)
@@ -1260,6 +1283,53 @@ def test_the_self_check_reads_with_all_metadata(slack: _FakeSlack) -> None:
     form = slack.requests[1].form_body()
     assert form["include_all_metadata"] == "true"
     assert form["channel"] == CHANNEL
+    # 조회 범위도 고정한다. 이 값이 작아지면 조용한 채널을 전제하게 되고, 남이 방금 떠든
+    # 채널에서 probe 를 놓쳐 기동이 엉뚱한 이유로 거부된다.
+    assert form["limit"] == "100"
+
+
+# T008 round 2 — **probe 는 진짜 destination 의 marker 를 달면 안 된다.**
+#
+# 달면 reconcile 이 probe 를 Card 로 오인한다. 결과는 조용한 미전송(DELIVERED 로 기록되는데
+# Card 는 안 나감) 이거나 중복 Card 다. wave 6 failure-recovery review 의 P0 다.
+def test_a_probe_marked_for_a_real_destination_is_refused_before_sending(
+    slack: _FakeSlack,
+) -> None:
+    real = {
+        "event_type": MARKER["event_type"],
+        "event_payload": dict(cast("Mapping[str, object]", MARKER["event_payload"])),
+    }
+
+    with pytest.raises(SlackReadbackError, match="probe 전용"):
+        _check(slack, probe_marker=real)
+
+    # **보내기 전에** 막는다. 보낸 뒤에 알면 이미 채널에 남아 reconcile 이 그것을 본다.
+    assert slack.requests == []
+
+
+# T008 round 2 — event_payload 가 아예 없는 probe_marker 도 보내기 전에 막는다. 이 분기는
+# round 1 까지 어떤 test 도 안 밟아서 mutation 이 살아남았다 (regression lens M13).
+def test_a_probe_marker_without_a_payload_is_refused_before_sending(slack: _FakeSlack) -> None:
+    with pytest.raises(SlackReadbackError, match="event_payload"):
+        _check(slack, probe_marker={"event_type": MARKER["event_type"]})
+
+    assert slack.requests == []
+
+
+# T008 round 2 — 채널이 조용하다고 가정하지 않는다. probe 가 첫 message 가 아니어도
+# **ts 로** 찾아야 한다. 첫 message 를 집으면 남의 message 를 검사하고 엉뚱하게 거부한다.
+def test_the_probe_is_found_by_timestamp_not_by_position(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with(
+            {"ts": "1700000000.009900", "text": "남이 방금 떠들었다", "app_id": "A_SOMEONE_ELSE"},
+            {"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID},
+            {"ts": "1700000000.008000", "text": "그 전에도 떠들었다", "app_id": "A_SOMEONE_ELSE"},
+        ),
+    )
+
+    _check(slack)
 
 
 # --------------------------------------------------------------------------------------
@@ -1272,12 +1342,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # 아래 두 test 가 함께 깨진다 — 그것이 의도다. 조용히 안 도는 것보다 낫다.
 E2E_TEST_NAME = "test_the_harness_hands_over_a_configured_target"
 
-E2E_ENV_NAMES = (
-    SLACK_BOT_TOKEN_ENV,
-    SLACK_SIGNING_SECRET_ENV,
-    SLACK_APP_ID_ENV,
-    SLACK_CHANNEL_ID_ENV,
-)
+# 구성 이름은 production 이 소유한다. 여기서 다시 세면 두 벌이 어긋난다.
+E2E_ENV_NAMES = SLACK_SETTINGS_ENV_NAMES
 
 _ALL_FOUR: dict[str, str] = {
     SLACK_BOT_TOKEN_ENV: "xoxb-real-token",
@@ -1320,10 +1386,24 @@ def slack_e2e_settings() -> SlackSettings:
     **collection 이 아니라 setup 에서 부른다.** `skipif` 표현식에서 부르면 부분 구성 환경의
     기본 suite 가 collection error 로 빨개진다 (wave 5 contract review A-9).
 
-    부분 구성은 여기서 `ValueError` 로 터진다. skip 이 아니다 — 무엇을 빠뜨렸는지 모른 채
-    지나가는 것이 조용한 pass 만큼 나쁘다 (contracts H-4.1).
+    부분 구성은 skip 이 아니라 **실패**다 — 무엇을 빠뜨렸는지 모른 채 지나가는 것이 조용한
+    pass 만큼 나쁘다 (contracts H-4.1).
+
+    **그 실패를 `pytest.fail` 로 바꾸고 원래 traceback 을 버린다.** `ValueError` 를 그대로
+    올리면 traceback 에 `os.environ` 을 인자로 받은 frame 이 남고, `--showlocals` 를 붙인
+    실행이 그 frame 의 local 을 찍으면서 **환경 전체를 출력한다** — bot token 이 거기
+    들어 있다 (wave 6 failure-recovery review P1). `pytest.fail` 을 `except` **밖에서**
+    부르는 이유도 같다. 안에서 부르면 원래 예외가 context 로 함께 출력된다.
     """
-    settings = load_slack_settings(os.environ)
+    reason: str | None = None
+    settings: SlackSettings | None = None
+    try:
+        settings = load_slack_settings(os.environ)
+    except ValueError as error:
+        # message 에는 변수 **이름**만 들어 있다. 값은 안 들어간다 (H-4.1).
+        reason = str(error)
+    if reason is not None:
+        pytest.fail(reason)
     if settings is None:
         pytest.skip(
             "Slack E2E 미구성 — 다음 환경변수를 설정하십시오 (quickstart A-6): "
@@ -1363,8 +1443,11 @@ def test_the_e2e_marker_is_registered() -> None:
 
 
 # T009 AC-02 — 기본 실행이 E2E 를 고르지 않는다는 것을 ini 설정으로 고정한다.
+#
+# **정확 일치로 본다.** 부분 문자열로 보면 `not slack_e2ee` 같은 오타가 이 검사를 통과한다
+# (regression lens M21). 그 오타는 아무것도 deselect 하지 않는다.
 def test_the_default_options_deselect_the_marker() -> None:
-    assert "not slack_e2e" in str(_pytest_ini()["addopts"])
+    assert '-m "not slack_e2e"' in str(_pytest_ini()["addopts"])
 
 
 # W2-pytest-import-mode — tests/ 를 sys.path 에 넣는 것을 import mode 의 부수효과가 아니라
@@ -1413,6 +1496,38 @@ def test_missing_credentials_report_as_a_skip_with_a_reason() -> None:
     assert SLACK_CHANNEL_ID_ENV in completed.stdout
 
 
+# T009 round 2 — **부분 구성 실행이 token 을 출력하지 않는다.**
+#
+# fixture 가 `os.environ` 을 loader 에 넘기는 repo 유일 경로다. 그 경로에서 예외가 그대로
+# 올라가면 `--showlocals` 가 환경 전체를 찍고 token 이 CI log 로 나간다 (wave 6
+# failure-recovery review P1). `-l` 을 **일부러 붙여서** 본다.
+def test_a_partial_configuration_fails_without_printing_the_token() -> None:
+    canary = "xoxb-LEAK-CANARY-must-not-appear"
+    environment = dict(os.environ)
+    for name in E2E_ENV_NAMES:
+        environment.pop(name, None)
+    environment[SLACK_BOT_TOKEN_ENV] = canary
+    environment[SLACK_CHANNEL_ID_ENV] = CHANNEL
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/test_slack_http.py", "-m", "slack_e2e", "-l"],
+        cwd=REPO_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+
+    output = completed.stdout + completed.stderr
+    # 실패는 해야 한다. 조용히 skip 되면 뭘 빠뜨렸는지 모른다.
+    assert completed.returncode != 0, output
+    assert canary not in output
+    # 대신 빠진 이름은 전부 보인다.
+    assert SLACK_SIGNING_SECRET_ENV in output
+    assert SLACK_APP_ID_ENV in output
+
+
 # T009 AC-03 / FR-020 — verify 는 7 stage 이고 network 를 부르는 stage 가 없다. E2E 를
 # 여기 넣으면 clean clone·offline 계약이 깨진다 (SC-014).
 def test_verify_has_no_network_stage() -> None:
@@ -1450,7 +1565,11 @@ def test_an_unconfigured_environment_has_no_settings(environ: dict[str, str]) ->
     assert load_slack_settings(environ) is None
 
 
-# T009 — 부분 구성은 미구성이 아니라 실수다. 빠진 **이름**을 전부 알려준다.
+# T009 — 부분 구성은 미구성이 아니라 실수다. 빠진 **이름을 전부** 알려준다.
+#
+# round 2 에서 아래 셋을 더했다. round 1 의 다섯은 credential 이 둘 다 있거나 둘 다 없는
+# 조합뿐이라, credential 이 **부분**일 때 대상 누락이 message 에서 빠지는 결함을 못 잡았다
+# (wave 6 contract·failure lens 가 독립으로 잡았다).
 @pytest.mark.parametrize(
     ("environ", "expected"),
     [
@@ -1474,6 +1593,21 @@ def test_an_unconfigured_environment_has_no_settings(environ: dict[str, str]) ->
             {**_ALL_FOUR, SLACK_APP_ID_ENV: "   "},
             (SLACK_APP_ID_ENV,),
         ),
+        # round 2 — token 만 넣은 사람. 빠진 셋을 한 번에 봐야 한다.
+        (
+            {SLACK_BOT_TOKEN_ENV: "xoxb-real-token"},
+            (SLACK_SIGNING_SECRET_ENV, SLACK_APP_ID_ENV, SLACK_CHANNEL_ID_ENV),
+        ),
+        # round 2 — token 과 channel 만. credential 이 부분이면서 대상도 부분인 경우다.
+        (
+            {SLACK_BOT_TOKEN_ENV: "xoxb-real-token", SLACK_CHANNEL_ID_ENV: CHANNEL},
+            (SLACK_SIGNING_SECRET_ENV, SLACK_APP_ID_ENV),
+        ),
+        # round 2 — secret 만.
+        (
+            {SLACK_SIGNING_SECRET_ENV: "0123456789abcdef"},
+            (SLACK_BOT_TOKEN_ENV, SLACK_APP_ID_ENV, SLACK_CHANNEL_ID_ENV),
+        ),
     ],
 )
 def test_partial_settings_name_every_missing_variable(
@@ -1487,11 +1621,25 @@ def test_partial_settings_name_every_missing_variable(
 
 
 # T009 — 실수 message 에 값이 들어가면 안 된다. 이름만 적는다.
-def test_the_settings_error_names_variables_not_values() -> None:
+#
+# round 2 에서 입력을 넓혔다. round 1 은 `{token}` 하나만 줬는데 그 입력은
+# `load_slack_credentials` 에서 먼저 터져서 **T009 가 새로 만든 raise 를 한 번도 안 탔다.**
+# 그 자리에 token 을 흘리는 mutation 두 종이 살아남았다 (regression lens M30·M41).
+@pytest.mark.parametrize(
+    "environ",
+    [
+        {SLACK_BOT_TOKEN_ENV: "xoxb-real-token"},
+        {**_ALL_FOUR, SLACK_APP_ID_ENV: ""},
+        {**_ALL_FOUR, SLACK_SIGNING_SECRET_ENV: ""},
+        {SLACK_BOT_TOKEN_ENV: "xoxb-real-token", SLACK_CHANNEL_ID_ENV: CHANNEL},
+    ],
+)
+def test_the_settings_error_names_variables_not_values(environ: dict[str, str]) -> None:
     with pytest.raises(ValueError) as caught:
-        load_slack_settings({SLACK_BOT_TOKEN_ENV: "xoxb-real-token"})
+        load_slack_settings(environ)
 
     assert "xoxb-real-token" not in str(caught.value)
+    assert "0123456789abcdef" not in str(caught.value)
 
 
 # T009 — settings 도 secret 을 찍지 않는다. 한 겹 감싸면 repr 이 되살아나는 것이 흔하다.
@@ -1647,6 +1795,10 @@ def test_the_real_transport_leaves_another_provider_untouched(
         config=OutboxConfig(lease_seconds=_LEASE_SECONDS),
         clock=clock,
     )
+    # 배선이 선언한 예산과 실제로 읽는 page 수가 같다. 다르면 예산 검증이 실제로 안 도는
+    # 숫자를 검사하고, 넘겨도 dead letter 도 hold 도 안 남는다 (wave 6 failure lens P1).
+    assert transport.max_history_pages == destination.max_history_pages
+    assert transport.lease_seconds == _LEASE_SECONDS
 
     delivered = dispatcher.deliver_next("worker", destination)
     assert delivered is not None and delivered.state is OutboxState.DELIVERED
@@ -1674,3 +1826,25 @@ def test_the_real_transport_leaves_another_provider_untouched(
     # AC-03 — Telegram 은 계속 자기 event 를 가져간다.
     claimed = dispatcher.claim_next("telegram-worker", destination_ref=telegram.destination_ref)
     assert claimed is not None and claimed.event_id == telegram.event_id
+
+
+# T011 round 2 — transport 가 **선언한 예산을 보관한다.** 검증에만 쓰고 버리면 그 숫자가
+# 실제로 읽는 page 수와 묶이지 않는다. `pages=1` 로 통과시킨 transport 를 기본 destination
+# (5 page) 에 물리면 실제 최악이 lease 를 넘고, 그 결과는 `validate_call_budget` 자신이 적은
+# 대로 dead letter 도 hold 도 안 남는다 (wave 6 failure-recovery review P1).
+#
+# destination 이 이 값과 다르면 **거부**하게 만드는 것은 slack_projection.py 를 열어야 해서
+# 별도 item 이다 (index.yaml transport-destination-page-binding). 여기서는 배선하는 쪽이
+# 대조할 수 있게 값을 노출하는 것까지 고정한다.
+def test_the_transport_keeps_the_budget_it_declared() -> None:
+    transport = HttpSlackTransport(
+        bot_token=TOKEN,
+        timeout_seconds=0.2,
+        max_history_pages=3,
+        lease_seconds=_LEASE_SECONDS,
+    )
+
+    assert transport.max_history_pages == 3
+    assert transport.lease_seconds == _LEASE_SECONDS
+    # 보관한 값으로 최악 예산을 다시 셀 수 있다. 셀 수 없으면 대조가 불가능하다.
+    assert worst_case_call_seconds(0.2, transport.max_history_pages) < _LEASE_SECONDS

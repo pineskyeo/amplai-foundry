@@ -92,6 +92,29 @@ acceptance:
       given: 등록된 marker 목록을 조회하는 상태
       when: 확인하면
       then: E2E marker 가 등록돼 있어 unknown marker 경고가 나지 않는다
+    # 2026-08-08 추가. D-028 이 scope 를 넓혔는데 대응 AC 가 없었다 — 그래서 loader 의
+    # 결함(빠진 이름을 전부 안 적음)을 대조할 지점이 없었고 round 1 review 가 그것을 P1 로
+    # 잡았다. scope 를 넓히면 acceptance 도 함께 넓힌다 (wave 6 contract review).
+    - id: AC-05
+      given: 네 환경변수가 다 있는 상태
+      when: 구성을 읽으면
+      then: SlackSettings 하나로 모이고 secret 둘은 SecretStr 이다
+    - id: AC-06
+      given: 네 환경변수가 다 없거나 다 비어 있는 상태
+      when: 구성을 읽으면
+      then: 구성 안 됨으로 읽는다. 오류가 아니다
+    - id: AC-07
+      given: 넷 중 하나라도 빠진 상태
+      when: 구성을 읽으면
+      then: >-
+        오류이고 빠진 변수 **이름을 전부** 적는다. credential 이 부분일 때도 대상 둘의
+        누락이 함께 실린다. 값은 message 에 안 들어간다
+    - id: AC-08
+      given: 부분 구성 상태에서 --showlocals 를 붙여 E2E 를 돌리는 상태
+      when: 실행하면
+      then: >-
+        실패하고 빠진 이름을 보여주되 bot token 은 출력에 안 나온다. os.environ 을 받은
+        frame 이 traceback 에 남으면 그 repr 이 환경 전체를 찍는다
   commands:
     - id: unit
       kind: test
@@ -140,6 +163,11 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
+  # 2026-08-08 round 2 갱신. AC-05~08 을 더했고 넷 다 통과한다. round 1 review 가 P1 둘과
+  # Blocking-P2 하나를 냈다 — 빠진 이름을 전부 안 적는 결함, 그 오류 경로를 test 가 안 타서
+  # token 유출 mutation 이 살아남은 것, 그리고 D-028 scope 에 AC 가 없던 것. 셋 다 닫았다.
+  # --showlocals 로 token 이 새던 것도 fixture 가 pytest.fail 로 바꿔 닫았다.
+  #
   # AC-01~04 넷 다 통과한다. 설정 assertion 만으로 끝내지 않고 child process 로 pytest 를
   # 한 번 더 띄워 실제 선택·비선택·skip 을 봤다 — marker 와 addopts 는 pyproject.toml 이
   # 하는 일이라 in-process 로는 확인할 수 없다.

@@ -103,14 +103,38 @@ history 소진이 미전송으로 판정되어 **매 재시도마다 Card 가 �
 
 절차:
 
-1. test 채널에 marker 를 단 message 를 하나 보낸다.
+1. 대상 채널에 marker 를 단 message 를 하나 보낸다 (probe).
 2. `conversations.history` 를 `include_all_metadata=true` 로 조회한다.
-3. 그 message 의 `app_id` 와 `metadata` 네 필드가 모두 복원되는지 본다.
+3. 방금 보낸 `ts` 로 그 message 를 찾고, `app_id` 와 `metadata` 네 필드가 모두 복원되는지
+   본다. **위치로 찾지 않는다** — 채널이 조용하다고 가정하지 않는다.
 4. 하나라도 안 맞으면 **기동을 거부한다.**
 
 **이것이 잡는 것**은 destination 안에서 판정할 수 없는 것들이다 — 값이 틀린 `app_id`,
-`metadata` 를 안 옮기는 구현, `event_type` 개명, 그리고 H-1.1 의 scope 부족. 셋 다 없으면
+`metadata` 를 안 옮기는 구현, `event_type` 개명, 그리고 H-1.1 의 scope 부족. 넷 다 없으면
 결과가 hold 가 아니라 **조용한 중복 Card** 다.
+
+### H-3.1 — The Probe Must Not Belong To Any Destination
+
+**probe 의 `destination_ref` 는 `PROBE_DESTINATION_REF` 여야 한다.** 진짜 destination 의
+값을 쓰면 **보내기 전에** 거부한다 (2026-08-08, D-029).
+
+probe 는 진짜 채널에 우리 `event_type` 과 `app_id` 를 달고 남는다. 그 상태로 진짜 marker 와
+같은 `destination_ref` 를 달면 `reconcile` 이 둘을 구분하지 못한다. 결과가 둘 다 나쁘다 —
+wave 6 failure-recovery review 가 실측했다.
+
+- probe 를 event N 의 marker 로 만들면, N 의 재시도에서 `reconcile` 이 probe 를 N 의 Card 로
+  읽는다. **Card 는 한 장도 안 나갔는데 DELIVERED 로 기록된다.**
+- probe 의 sequence 가 더 낮으면 "하위 sequence 를 먼저 만났다 → 미전송" 판정이 돈다.
+  probe 는 재시작마다 새로 올라가므로 **오래된 sequence 를 가진 가장 새로운 message** 이고,
+  이것이 `reconcile` 이 기대는 순서 불변을 정확히 깬다. 결과는 **중복 Card** 다.
+
+`_our_marker` 가 `destination_ref` 불일치 marker 를 두 loop 모두에서 배제하므로
+(`slack_projection.py:708`) 이 값 하나로 probe 가 `reconcile` 에 안 보인다. 나머지는 진짜와
+같은 모양을 유지하므로 "실제로 나가는 것과 같은 것을 검사한다" 는 근거도 산다.
+
+**충돌할 수 없다.** 진짜 값은 `provider:{provider}:{sha256 hexdigest}` 이고
+(`events.py:1442`) hexdigest 는 소문자 hex 64자다. `PROBE_DESTINATION_REF` 는 hex 가 아닌
+문자를 갖고 길이도 다르다.
 
 `index.yaml` 의 `W3-transport-readback-selfcheck` 가 이 항목이다.
 
@@ -146,7 +170,9 @@ loader 는 접두 문자를 **검사하지 않는다.** 확인하지 않은 형�
   `os.environ` 을 만지는 지점이 둘이 된다. 부르는 쪽이 넘긴다
 
 **부분 구성은 미구성이 아니다.** 넷 중 하나라도 빠지면 `ValueError` 이고 빠진 변수
-**이름**을 전부 적는다. `None` 으로 뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만
+**이름**을 전부 적는다. 그 판정을 `load_slack_credentials` 에 위임하지 않는다 — 위임하면
+credential 이 부분일 때 그 함수가 먼저 터져서 대상 둘의 누락이 message 에 안 실리고,
+고치고 다시 돌려야 나머지를 본다 (wave 6 review round 1). `None` 으로 뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만
 보고 자기가 뭘 빠뜨렸는지 모른다. 조용한 skip 은 조용한 pass 만큼 나쁘다.
 
 secret 둘은 `SlackCredentials` 에, 대상 둘은 그것을 감싸는 `SlackSettings` 에 담는다.
@@ -158,6 +184,12 @@ secret 둘은 `SlackCredentials` 에, 대상 둘은 그것을 감싸는 `SlackSe
 - payload·marker·receipt·log·DB·Audit 어디에도 안 들어간다
 - 예외 메시지에도 안 들어간다. `SlackTransportError` 의 message 를 만들 때 요청 header 를
   넣지 않는다
+- **평문을 이름 있는 local 에 담지 않는다.** 값은 임시식으로만 존재하고 곧바로 `SecretStr`
+  이 된다. frame local 을 찍는 도구(`pytest --showlocals`, 예외 보고기)가 그 이름을 그대로
+  출력한다 (2026-08-08, wave 6 review)
+- **`os.environ` 을 받은 frame 이 traceback 에 남지 않게 한다.** 남으면 그 local 의 repr 이
+  환경 전체를 출력하고 token 이 거기 들어 있다. E2E fixture 는 loader 의 `ValueError` 를
+  잡아 message 만 꺼내 `pytest.fail` 로 바꾼다
 
 ## H-5 — E2E Harness
 

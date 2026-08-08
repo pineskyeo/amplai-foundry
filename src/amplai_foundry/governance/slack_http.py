@@ -108,6 +108,24 @@ SLACK_BOT_TOKEN_ENV: Final = "AMPLAI_SLACK_BOT_TOKEN"
 SLACK_SIGNING_SECRET_ENV: Final = "AMPLAI_SLACK_SIGNING_SECRET"
 
 
+def _read_secret(source: Mapping[str, str], name: str) -> SecretStr:
+    """Read one value and wrap it **before it becomes a named local**.
+
+    평문을 이름 있는 local 에 담지 않는다. `pytest --showlocals` 나 예외 보고 도구가 frame
+    local 을 찍으면 그 값이 그대로 나간다 (wave 6 failure-recovery review P1-5 가 실측).
+    여기서는 값이 임시식으로만 존재하고 곧바로 `SecretStr` 이 된다.
+    """
+    return SecretStr((source.get(name) or "").strip())
+
+
+def _missing_names(source: Mapping[str, str], names: Sequence[str]) -> list[str]:
+    """Return the **names** that are absent or blank. Never a value.
+
+    부재와 빈 문자열을 같게 다룬다 (contracts H-4.1). 값은 어떤 local 에도 남기지 않는다.
+    """
+    return [name for name in names if not (source.get(name) or "").strip()]
+
+
 @dataclass(frozen=True, slots=True)
 class SlackCredentials:
     """The two secrets one process needs to talk to Slack. **Never durable.**
@@ -152,24 +170,16 @@ def load_slack_credentials(
     부른다 (wave 5 contract review A-9).
     """
     source = os.environ if environ is None else environ
-    bot_token = (source.get(SLACK_BOT_TOKEN_ENV) or "").strip()
-    signing_secret = (source.get(SLACK_SIGNING_SECRET_ENV) or "").strip()
-    if not bot_token and not signing_secret:
+    names = (SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV)
+    missing = _missing_names(source, names)
+    if len(missing) == len(names):
         return None
-    missing = [
-        name
-        for name, value in (
-            (SLACK_BOT_TOKEN_ENV, bot_token),
-            (SLACK_SIGNING_SECRET_ENV, signing_secret),
-        )
-        if not value
-    ]
     if missing:
         # 값을 message 에 넣지 않는다. 이름만 적는다.
         raise ValueError(f"Slack credential 구성이 불완전합니다. 빠진 변수: {missing}")
     return SlackCredentials(
-        bot_token=SecretStr(bot_token),
-        signing_secret=SecretStr(signing_secret),
+        bot_token=_read_secret(source, SLACK_BOT_TOKEN_ENV),
+        signing_secret=_read_secret(source, SLACK_SIGNING_SECRET_ENV),
     )
 
 
@@ -184,6 +194,17 @@ def load_slack_credentials(
 # 형식 가정을 계약으로 굳히게 된다.
 SLACK_APP_ID_ENV: Final = "AMPLAI_SLACK_APP_ID"
 SLACK_CHANNEL_ID_ENV: Final = "AMPLAI_SLACK_CHANNEL_ID"
+
+# 한 구성에 필요한 전부다. **넷을 한 목록으로 두는 이유**는 빠진 이름을 한 번에 모으기
+# 위해서다. credential 둘을 따로 판정하면 token 만 넣은 사람이 secret 이름만 받고, 그것을
+# 고친 뒤에야 대상 둘이 빠진 것을 안다. 왕복이 두 번이 되고 H-4.1 이 약속한
+# "빠진 이름을 전부" 가 거짓이 된다 (wave 6 review 에서 두 lens 가 독립으로 잡았다).
+SLACK_SETTINGS_ENV_NAMES: Final = (
+    SLACK_BOT_TOKEN_ENV,
+    SLACK_SIGNING_SECRET_ENV,
+    SLACK_APP_ID_ENV,
+    SLACK_CHANNEL_ID_ENV,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,27 +238,26 @@ def load_slack_settings(environ: Mapping[str, str]) -> SlackSettings | None:
 
     - 넷 다 없거나 비어 있으면 `None` — E2E 가 그때 skip 한다 (plan P-003).
     - 넷 다 있으면 `SlackSettings`.
-    - **하나라도 빠지면 `ValueError`.** 빠진 변수 **이름**을 적는다. token 만 넣고 E2E 를
-      돌린 사람이 "skip" 만 보면 자기가 뭘 빠뜨렸는지 모른다 (H-4.1).
+    - **하나라도 빠지면 `ValueError`.** 빠진 변수 **이름을 전부** 적는다. token 만 넣고
+      E2E 를 돌린 사람이 "skip" 만 보면 자기가 뭘 빠뜨렸는지 모른다 (H-4.1).
+
+    **판정을 `load_slack_credentials` 에 위임하지 않는다.** 위임하면 credential 이 부분일
+    때 그 함수가 먼저 터져서 대상 둘의 누락이 message 에 안 실린다 — 고치고 다시 돌려야
+    나머지를 본다. 넷을 한 번에 센다.
     """
-    app_id = (environ.get(SLACK_APP_ID_ENV) or "").strip()
-    channel_id = (environ.get(SLACK_CHANNEL_ID_ENV) or "").strip()
-    # 부분 credential 은 여기서 먼저 터진다. 그 판정은 T007 이 이미 소유한다.
-    credentials = load_slack_credentials(environ)
-    targets_missing = [
-        name
-        for name, value in ((SLACK_APP_ID_ENV, app_id), (SLACK_CHANNEL_ID_ENV, channel_id))
-        if not value
-    ]
-    if credentials is None:
-        if not app_id and not channel_id:
-            return None
-        # credential 없이 대상만 있는 상태다. 빠진 것은 credential 둘 **과** 나머지 대상이다.
-        missing = [SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV, *targets_missing]
+    missing = _missing_names(environ, SLACK_SETTINGS_ENV_NAMES)
+    if len(missing) == len(SLACK_SETTINGS_ENV_NAMES):
+        return None
+    if missing:
         raise ValueError(f"Slack 구성이 불완전합니다. 빠진 변수: {missing}")
-    if targets_missing:
-        raise ValueError(f"Slack 구성이 불완전합니다. 빠진 변수: {targets_missing}")
-    return SlackSettings(credentials=credentials, app_id=app_id, channel_id=channel_id)
+    return SlackSettings(
+        credentials=SlackCredentials(
+            bot_token=_read_secret(environ, SLACK_BOT_TOKEN_ENV),
+            signing_secret=_read_secret(environ, SLACK_SIGNING_SECRET_ENV),
+        ),
+        app_id=(environ.get(SLACK_APP_ID_ENV) or "").strip(),
+        channel_id=(environ.get(SLACK_CHANNEL_ID_ENV) or "").strip(),
+    )
 
 
 def worst_case_call_seconds(timeout_seconds: float, max_history_pages: int) -> float:
@@ -317,6 +337,16 @@ class HttpSlackTransport:
         self._timeout_seconds = timeout_seconds
         self._base_url = base_url.rstrip("/")
         self._opener = urllib.request.build_opener(_NoRedirect())
+        # **선언한 예산을 보관한다.** 검증에만 쓰고 버리면 그 숫자가 실제로 읽는 page 수와
+        # 묶이지 않는다 — `SlackProjectionDestination` 은 자기 기본값을 쓰므로 `pages=1` 로
+        # 통과시킨 transport 를 기본 destination 에 물리면 실제 최악이 lease 를 넘고,
+        # `validate_call_budget` 자신이 적은 대로 dead letter 도 hold 도 안 남는다
+        # (wave 6 failure-recovery review P1). 배선하는 쪽이 이 값을 읽어 대조한다.
+        #
+        # destination 이 이 값과 다르면 **거부**하게 만드는 것은 `slack_projection.py` 를
+        # 열어야 해서 별도 item 이다 (index.yaml `transport-destination-page-binding`).
+        self.max_history_pages = max_history_pages
+        self.lease_seconds = lease_seconds
 
     def post_message(
         self,
@@ -635,6 +665,26 @@ class SlackReadbackError(RuntimeError):
 # 자가검사가 보내는 probe message 의 본문. 사람이 보고 무엇인지 알아야 한다.
 _PROBE_TEXT: Final = "AMPLAI marker readback self-check. 이 message 는 지워도 된다."
 
+# **probe 는 어느 destination 의 것도 아니어야 한다.**
+#
+# probe 는 진짜 채널에 우리 `event_type` 과 `app_id` 를 달고 남는다. 그 상태로 진짜
+# marker 와 같은 `destination_ref` 를 달면 `reconcile` 이 둘을 구분하지 못한다. 결과가 둘
+# 다 나쁘다 (wave 6 failure-recovery review P0 가 실측).
+#
+# - probe 를 event N 의 marker 로 만들면 N 의 재시도에서 `reconcile` 이 probe 를 N 의
+#   Card 로 읽는다. Card 는 한 장도 안 나갔는데 DELIVERED 로 기록된다.
+# - probe 의 sequence 가 더 낮으면 "하위 sequence 를 먼저 만났다 → 미전송" 판정이 돈다.
+#   probe 는 재시작마다 새로 올라가므로 **오래된 sequence 를 가진 가장 새로운 message**
+#   이고, 이것이 `reconcile` 이 기대는 순서 불변을 정확히 깬다. 결과는 중복 Card 다.
+#
+# `_our_marker` 가 `destination_ref` 불일치 marker 를 두 loop 모두에서 배제하므로
+# (`slack_projection.py:708`) 이 값 하나로 probe 가 `reconcile` 에 안 보이게 된다.
+#
+# **충돌할 수 없다.** 진짜 값은 `provider:{provider}:{sha256 hexdigest}` 이고
+# (`events.py:1442`) hexdigest 는 소문자 hex 64자다. 아래 값은 hex 가 아닌 문자를 갖고
+# 길이도 다르다.
+PROBE_DESTINATION_REF: Final = "provider:slack:readback-probe"
+
 # probe 를 되찾을 때 훑는 page 수. 자가검사는 기동 시점이라 채널이 조용하다고 가정하지
 # 않는다 — 다른 사람이 방금 떠들었을 수 있다. 다만 우리가 방금 보낸 것이므로 첫 page 를
 # 크게 잡으면 충분하다.
@@ -654,10 +704,23 @@ def verify_marker_readback(
     이유는 **실제로 나가는 것과 같은 것**을 검사해야 하기 때문이다. 자가검사 전용 모양을
     만들면 그 모양만 검증된다.
 
+    **단 `destination_ref` 만은 `PROBE_DESTINATION_REF` 여야 한다.** 그 하나로 probe 가
+    `reconcile` 의 시야에서 빠진다. 이유는 그 상수에 적었다. 호출자가 진짜 destination 의
+    값을 넣으면 **보내기 전에** 거부한다 — 보낸 뒤에 알면 이미 채널에 남는다.
+
     실패는 전부 `SlackReadbackError` 다. transport 자체가 실패하면 그 예외
     (`SlackTransportError`) 를 그대로 올린다 — 그것은 network 문제이지 marker 결함이
     아니고, 둘을 섞으면 operator 가 무엇을 고쳐야 할지 모른다.
     """
+    expected = probe_marker.get("event_payload")
+    if not isinstance(expected, Mapping):
+        raise SlackReadbackError("probe_marker 에 event_payload 가 없습니다.")
+    if expected.get("destination_ref") != PROBE_DESTINATION_REF:
+        raise SlackReadbackError(
+            "probe_marker 의 destination_ref 가 probe 전용 값이 아닙니다: "
+            f"{expected.get('destination_ref')!r}. {PROBE_DESTINATION_REF!r} 를 쓰십시오 — "
+            "진짜 destination 의 값을 쓰면 reconcile 이 probe 를 Card 로 오인합니다."
+        )
     result = transport.post_message(
         channel=channel,
         payload={"text": _PROBE_TEXT},
@@ -688,9 +751,6 @@ def verify_marker_readback(
             "probe message 에서 marker 를 복원하지 못했습니다. event_type 또는 "
             "event_payload 의 모양이 build_slack_marker 와 다릅니다."
         )
-    expected = probe_marker.get("event_payload")
-    if not isinstance(expected, Mapping):
-        raise SlackReadbackError("probe_marker 에 event_payload 가 없습니다.")
     mismatched = [
         name
         for name, actual in (

@@ -738,3 +738,49 @@
 - Source: **사용자 결정.** 2026-08-08 T009 착수 전 `/speckit-implement` 직전에 선택지
   둘씩 제시했고, "같이 닫는다"와 "T009에서 더한다"를 골랐다. 후자는
   `loop.stop_conditions`의 `scope_boundary_must_expand`를 여는 승인이다.
+
+## D-029 — The Readback Probe Gets An Address No Destination Owns
+
+- Status: accepted
+- Decision: `verify_marker_readback`이 보내는 probe의 `destination_ref`를
+  `PROBE_DESTINATION_REF`(`provider:slack:readback-probe`)로 **강제한다.** 진짜 destination의
+  값을 넘기면 보내기 전에 거부한다. 계약은 H-3.1이다.
+
+  **왜 필요한가.** T008은 기동 시점에 probe를 실제 채널로 보내고 되읽어 marker 왕복을
+  확인한다. 그 probe는 지워지지 않고 채널에 남는다. round 1 구현은 docstring이 호출자에게
+  `build_slack_marker`로 만들라고 **적극적으로 지시**했고, 그러면 probe가 진짜 Card와
+  구분되지 않는 marker를 달게 된다. wave 6 failure-recovery lens가 결과 둘을 실측했다.
+
+  1. probe를 event N의 marker로 만들면 N의 재시도에서 `reconcile`이 probe를 N의 Card로
+     읽는다. Card는 한 장도 안 나갔는데 outbox는 DELIVERED다. 사람이 보는 것은 자가검사
+     문구뿐이다.
+  2. probe의 `destination_sequence`가 더 낮으면 `_page_verdict`의 두 번째 loop이 "하위
+     sequence를 먼저 만났다 → 미전송"으로 판정한다. probe는 재시작마다 새로 올라가므로
+     **오래된 sequence를 가진 가장 새로운 message**이고, 이것이 `reconcile`이 기대는 순서
+     불변을 정확히 깬다. 결과는 중복 Card다.
+
+  **자가검사가 막으려던 실패를 자가검사가 만드는 상태였다.** production caller가 아직
+  없어 latent였고, T010이 배선을 붙이는 순간 실현된다.
+
+  **왜 이 방법인가.** `_our_marker`가 `destination_ref` 불일치 marker를 두 loop 모두에서
+  배제한다(`slack_projection.py:708`). 그러니 이 한 값으로 probe가 `reconcile`의 시야에서
+  빠지고, 나머지(`event_type`, 네 필드 모양)는 진짜와 같게 유지되므로 T008의 근거인
+  "실제로 나가는 것과 같은 것을 검사한다"가 산다.
+
+  **기각한 둘.** probe 전용 `event_type`은 확실히 격리되지만 H-3이 잡기로 한 결함 넷 중
+  "`event_type` 개명"을 못 잡게 된다 — 자가검사 전용 모양을 만들면 그 모양만 검증된다.
+  별도 probe 채널은 정작 쓰는 채널이 아닌 다른 채널의 왕복을 검사하게 되고 설정 변수가
+  다섯으로 는다.
+
+  **충돌할 수 없다.** 진짜 값은 `provider:{provider}:{sha256 hexdigest}`이고
+  (`events.py:1442`) hexdigest는 소문자 hex 64자다. sentinel은 hex가 아닌 문자를 갖고
+  길이도 다르다. 추정이 아니라 생성 코드에서 읽은 사실이다.
+
+  **함께 미룬 것.** probe가 기동 실패마다 한 장씩 쌓이는 문제는 격리 뒤에도 남는다. 다만
+  남는 피해가 채널 소음과 rate limit이고 정합성은 안 깨지므로 owner 있는 deferred로 둔다
+  (`index.yaml` `probe-accumulation`). `chat.delete`로 지우는 안은 그 method의 OAuth scope를
+  공식 문서로 확인하지 않아 지금 넣으면 추정으로 계약을 쓰게 된다.
+
+- Source: **사용자 결정.** 2026-08-08 wave 6 review round 1의 P0를 놓고 선택지 셋을
+  제시했고 "쓰지 않는 destination 번호"를 골랐다. probe 누적은 같은 자리에서 "P0 격리로
+  충분, Advisory로 내림"을 골랐다.

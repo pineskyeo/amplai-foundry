@@ -79,14 +79,30 @@ acceptance:
       given: fake server 가 app_id 를 안 싣는 상태
       when: 자가검사를 돌리면
       then: 기동을 거부한다
+    # 2026-08-08 정정. 원문은 "필드 하나를 빠뜨린" 이었는데 대응 test 는 값을 **바꾼다**.
+    # 누락도 거부되지만 그것은 "복원 실패" 라는 다른 경로이고 message 도 다르다.
+    # 문장을 test 에 맞춘다 (wave 6 contract review Advisory).
     - id: AC-04
-      given: fake server 가 event_payload 의 필드 하나를 빠뜨린 상태
+      given: fake server 가 event_payload 의 필드 하나를 바꿔서 돌려주는 상태
       when: 자가검사를 돌리면
       then: 기동을 거부한다
     - id: AC-05
       given: fake server 가 read 에 missing_scope 를 돌려주는 상태
       when: 자가검사를 돌리면
       then: 기동을 거부한다. 첫 재시도까지 기다리지 않는다
+    # 2026-08-08 추가. wave 6 review round 1 의 P0 다. D-029 와 contracts H-3.1 이 근거다.
+    - id: AC-06
+      given: 호출자가 진짜 destination 의 destination_ref 를 단 probe_marker 를 넘긴 상태
+      when: 자가검사를 돌리면
+      then: >-
+        message 를 **보내기 전에** 거부한다. 보낸 뒤에 알면 probe 가 채널에 남아
+        reconcile 이 그것을 Card 로 오인한다
+    - id: AC-07
+      given: 채널에 남의 message 가 probe 앞뒤로 있는 상태
+      when: 자가검사를 돌리면
+      then: >-
+        방금 보낸 ts 로 probe 를 찾아 통과한다. 위치로 찾으면 남의 message 를 검사해
+        엉뚱한 이유로 기동을 거부한다
   commands:
     - id: unit
       kind: test
@@ -130,6 +146,11 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
+  # 2026-08-08 round 2 갱신. AC-06·AC-07 을 더했고 둘 다 통과한다. round 1 review 의 P0
+  # (probe 가 진짜 marker 를 달면 reconcile 이 Card 로 오인) 를 D-029 로 닫았다.
+  # mutation 넷을 더 죽였다 — destination_ref 검사 무력화, sentinel 을 진짜 형식으로 교체,
+  # probe 를 위치로 찾기, event_payload 검사 무력화.
+  #
   # AC-01~05 다섯 다 통과한다. H-3 이 잡기로 한 결함 넷을 각각 fake server 로 재현했다 —
   # metadata 누락, app_id 부재·불일치, 필드 왕복 변조, event_type 개명, 그리고 probe 를
   # 못 찾는 경우. missing_scope 는 SlackTransportError 로 그대로 올린다 (marker 결함이
