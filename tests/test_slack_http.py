@@ -5,9 +5,11 @@ import inspect
 import json
 import sys
 import threading
+import time
 import urllib.parse
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -23,8 +25,10 @@ from amplai_foundry.governance.slack_http import (
     SlackCredentials,
     load_slack_credentials,
     validate_call_budget,
+    worst_case_call_seconds,
 )
 from amplai_foundry.governance.slack_projection import (
+    SLACK_MAX_HISTORY_PAGES,
     SlackFailureClass,
     SlackTransport,
     SlackTransportError,
@@ -76,6 +80,10 @@ class _Reply:
     body: bytes | None = None
     headers: dict[str, str] = field(default_factory=dict)
     delay_seconds: float = 0.0
+    # header 를 준 뒤 body 를 찔끔씩 흘린다. urlopen(timeout=) 은 recv 마다 timer 를
+    # 되돌리므로 이 모양을 못 막는다 — deadline 을 보는 read loop 만 끊을 수 있다.
+    dribble_seconds: float = 0.0
+    dribble_chunks: int = 0
 
     @staticmethod
     def ok(payload: Mapping[str, object]) -> _Reply:
@@ -127,6 +135,18 @@ class _FakeSlack:
                 reply = outer._next(method)
                 if reply.delay_seconds:
                     threading.Event().wait(reply.delay_seconds)
+                if reply.dribble_chunks:
+                    self.send_response(reply.status)
+                    self.send_header("Content-Length", str(reply.dribble_chunks))
+                    self.end_headers()
+                    for _ in range(reply.dribble_chunks):
+                        try:
+                            self.wfile.write(b"a")
+                            self.wfile.flush()
+                        except OSError:
+                            return
+                        threading.Event().wait(reply.dribble_seconds)
+                    return
                 payload = reply.body if reply.body is not None else b'{"ok":true}'
                 self.send_response(reply.status)
                 for key, value in reply.headers.items():
@@ -138,7 +158,13 @@ class _FakeSlack:
             def log_message(self, *args: object) -> None:
                 """test 출력을 더럽히지 않는다."""
 
-        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        class QuietServer(ThreadingHTTPServer):
+            """client 가 먼저 끊는 것은 정상이다. traceback 으로 출력을 더럽히지 않는다."""
+
+            def handle_error(self, request: object, client_address: object) -> None:
+                return
+
+        self._server = QuietServer(("127.0.0.1", 0), Handler)
         threading.Thread(target=self._server.serve_forever, daemon=True).start()
 
     def stop(self) -> None:
@@ -155,12 +181,19 @@ def slack() -> Iterator[_FakeSlack]:
     fake.stop()
 
 
-def _transport(fake: _FakeSlack, *, timeout_seconds: float = 5.0) -> HttpSlackTransport:
+def _transport(fake: _FakeSlack, *, timeout_seconds: float = 1.0) -> HttpSlackTransport:
     return HttpSlackTransport(
         bot_token=TOKEN,
         timeout_seconds=timeout_seconds,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_lease_for(timeout_seconds),
         base_url=fake.base_url,
     )
+
+
+def _lease_for(timeout_seconds: float) -> int:
+    """이 timeout 으로 transport 를 만들 수 있는 최소 lease. 예산 검증을 우회하지 않는다."""
+    return int(worst_case_call_seconds(timeout_seconds, SLACK_MAX_HISTORY_PAGES)) + 1
 
 
 def _resolved_signature(owner: type, name: str) -> inspect.Signature:
@@ -221,24 +254,25 @@ def test_post_message_uses_json_and_a_bearer_header(slack: _FakeSlack) -> None:
     assert "?" not in recorded.path
 
 
-# T006 — payload 가 metadata 를 덮으면 marker 가 안 나간다. 조용한 중복 Card 라 전송 전에
-# 막는다. 시도 자체가 없어야 한다.
+# wave 5 review A-1 — dict literal 은 **뒤 key 가 이긴다.** payload 가 무엇을 담고 있든
+# 우리 channel 과 marker 가 나간다. 이전 판은 반대로 알고 guard 를 넣었는데 그 hazard 는
+# 이 구성에서 발생할 수 없었다.
 @pytest.mark.parametrize("key", ["metadata", "channel"])
-def test_a_payload_that_would_overwrite_our_fields_never_leaves(
+def test_our_fields_win_over_anything_the_payload_carries(
     slack: _FakeSlack,
     key: str,
 ) -> None:
-    with pytest.raises(SlackTransportError) as caught:
-        _transport(slack).post_message(
-            channel=CHANNEL,
-            payload={**PAYLOAD, key: "덮어쓰기"},
-            marker=MARKER,
-        )
+    slack.queue("chat.postMessage", _Reply.ok({"channel": CHANNEL, "ts": "1700000000.000100"}))
 
-    assert slack.requests == []
-    # code 를 비운다 — 채우면 allowlist 밖이라 terminal 이 되어 되돌릴 수 없는 hold 다.
-    assert caught.value.error_code is None
-    assert caught.value.transport_exception == "reserved_payload_key"
+    _transport(slack).post_message(
+        channel=CHANNEL,
+        payload={**PAYLOAD, key: "덮어쓰기"},
+        marker=MARKER,
+    )
+
+    body = slack.requests[0].json_body()
+    assert body["channel"] == CHANNEL
+    assert body["metadata"] == MARKER
 
 
 # T006 AC-05 — include_all_metadata 를 빼면 event_payload 가 안 와서 marker 를 하나도 못
@@ -456,6 +490,8 @@ def test_an_unreachable_host_is_wrapped_not_raised_raw() -> None:
     transport = HttpSlackTransport(
         bot_token=TOKEN,
         timeout_seconds=1.0,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_lease_for(1.0),
         # 예약된 discard port. 연결이 즉시 거부된다.
         base_url="http://127.0.0.1:9",
     )
@@ -489,11 +525,11 @@ def test_no_failure_ever_names_the_credential(slack: _FakeSlack) -> None:
 @pytest.mark.parametrize(
     ("token", "timeout", "base_url"),
     [
-        (SecretStr(""), 5.0, SLACK_API_BASE),
-        (SecretStr("   "), 5.0, SLACK_API_BASE),
+        (SecretStr(""), 1.0, SLACK_API_BASE),
+        (SecretStr("   "), 1.0, SLACK_API_BASE),
         (TOKEN, 0.0, SLACK_API_BASE),
         (TOKEN, -1.0, SLACK_API_BASE),
-        (TOKEN, 5.0, "  "),
+        (TOKEN, 1.0, "  "),
     ],
 )
 def test_the_constructor_rejects_unusable_configuration(
@@ -502,17 +538,44 @@ def test_the_constructor_rejects_unusable_configuration(
     base_url: str,
 ) -> None:
     with pytest.raises(ValueError):
-        HttpSlackTransport(bot_token=token, timeout_seconds=timeout, base_url=base_url)
+        HttpSlackTransport(
+            bot_token=token,
+            timeout_seconds=timeout,
+            max_history_pages=SLACK_MAX_HISTORY_PAGES,
+            lease_seconds=60,
+            base_url=base_url,
+        )
+
+
+# wave 5 review P1-3 — 예산 검증이 아무도 안 부르는 함수면 FR-016 은 안 닫힌다.
+# 생성자가 부르므로 예산을 넘는 transport 는 **만들 수조차 없다**.
+def test_the_constructor_enforces_the_call_budget() -> None:
+    with pytest.raises(ValueError, match="lease"):
+        HttpSlackTransport(
+            bot_token=TOKEN,
+            timeout_seconds=10.0,
+            max_history_pages=SLACK_MAX_HISTORY_PAGES,
+            lease_seconds=30,
+        )
 
 
 # C-1 의무 2 는 호출 하나가 아니라 **한 deliver_next 안의 합계**를 묶으라고 한다.
 # 호출 시점이 아니라 구성 시점에 막는다 — 그때는 이미 lease 를 쥐고 있다.
 def test_the_call_budget_must_fit_inside_the_lease() -> None:
-    # 5 page + send 1 회 = 6 회. 6 x 5s = 30s 는 lease 30s 안에 안 들어간다.
+    # 5 page + send 1 회 = 6 호출. 호출당 상한은 2 x timeout 이다 (아래 test 참조).
+    # 2 x 2.5s x 6 = 30s 는 lease 30s 안에 안 들어간다.
     with pytest.raises(ValueError, match="lease"):
-        validate_call_budget(timeout_seconds=5.0, max_history_pages=5, lease_seconds=30)
-    # 같은 구성에서 timeout 을 줄이면 통과한다.
-    validate_call_budget(timeout_seconds=4.0, max_history_pages=5, lease_seconds=30)
+        validate_call_budget(timeout_seconds=2.5, max_history_pages=5, lease_seconds=30)
+    validate_call_budget(timeout_seconds=2.0, max_history_pages=5, lease_seconds=30)
+
+
+# wave 5 review P1-1 — urlopen(timeout=) 은 socket 연산 하나마다 걸리는 값이라 호출
+# 전체를 묶지 않는다. 상한이 timeout 이 아니라 2 x timeout 인 이유가 그것이다. 공식이
+# 1배로 돌아가면 예산이 거짓이 된다.
+def test_the_worst_case_accounts_for_a_stall_after_the_deadline() -> None:
+    # 호출 6회 x (2 x 3s) = 36s
+    assert worst_case_call_seconds(3.0, 5) == 36.0
+    assert worst_case_call_seconds(1.0, 1) == 4.0
 
 
 @pytest.mark.parametrize(
@@ -688,4 +751,233 @@ def test_the_transport_does_not_read_the_environment(monkeypatch: pytest.MonkeyP
     monkeypatch.setenv(SLACK_BOT_TOKEN_ENV, "xoxb-should-not-be-used")
 
     with pytest.raises(ValueError):
-        HttpSlackTransport(bot_token=SecretStr(""), timeout_seconds=5.0)
+        HttpSlackTransport(
+            bot_token=SecretStr(""),
+            timeout_seconds=1.0,
+            max_history_pages=SLACK_MAX_HISTORY_PAGES,
+            lease_seconds=60,
+        )
+
+
+# --------------------------------------------------------------------------------------
+# wave 5 review 가 낸 gap 들. 전부 통과하는 suite 안에서 재현됐던 것이라 여기 고정한다.
+# --------------------------------------------------------------------------------------
+
+
+# wave 5 review P0-1 — proxy·WAF·gateway 가 {"error": ...} 모양 JSON 을 준다. 그것을
+# Slack code 로 실으면 allowlist 밖이라 terminal 이 되고, terminal 은 그 destination 의
+# 이후 Card 를 전부 멈추는 **되돌릴 수 없는 hold** 다. Slack 의 error 는 언제나 ok:false
+# 를 달고 오고 중간 장비의 봉투는 안 단다 — 그 차이가 판별자다.
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        (503, b'{"error": "upstream connect error or disconnect/reset before headers"}'),
+        (502, b'{"error": "Bad Gateway"}'),
+        (500, b'{"error": "internal server error"}'),
+        (200, b'{"error": "authentication required"}'),
+        (200, b'{"error": "quota exceeded, retry later"}'),
+    ],
+)
+def test_a_non_slack_error_envelope_never_becomes_terminal(
+    slack: _FakeSlack,
+    status: int,
+    body: bytes,
+) -> None:
+    slack.queue("chat.postMessage", _Reply(status=status, body=body))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    assert caught.value.error_code is None
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+# 반대쪽 — 진짜 Slack 봉투는 code 를 그대로 싣는다. 위 test 만 있으면 code 를 통째로
+# 버리는 구현도 통과한다.
+@pytest.mark.parametrize("status", [200, 429, 503])
+def test_a_real_slack_envelope_keeps_its_code(slack: _FakeSlack, status: int) -> None:
+    slack.queue(
+        "conversations.history",
+        _Reply(status=status, body=b'{"ok":false,"error":"service_unavailable"}'),
+    )
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).read_history(channel=CHANNEL, cursor=None, limit=999)
+
+    assert caught.value.error_code == "service_unavailable"
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+# wave 5 review A-5 — ok:false 인데 error key 가 없는 응답. code 없이 retryable 로
+# 흘러야 한다.
+def test_a_slack_failure_without_a_code_stays_retryable(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply(body=b'{"ok":false}'))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    assert caught.value.error_code is None
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+# wave 5 review P1-2 (contract) — 이전 판의 AC-04 test 는 timeout 과 무관한 이유로
+# 통과했다. delay 응답이 body 를 안 줘서 missing_success_field 로 떨어졌고, timeout=
+# 인자를 통째로 지워도 초록이었다. **경과 시간을 잰다.**
+def test_a_stalled_response_fails_within_the_deadline(slack: _FakeSlack) -> None:
+    slack.queue(
+        "chat.postMessage",
+        _Reply(
+            body=json.dumps({"ok": True, "channel": CHANNEL, "ts": "1.0"}).encode("utf-8"),
+            delay_seconds=5.0,
+        ),
+    )
+
+    started = time.monotonic()
+    with pytest.raises(SlackTransportError):
+        _transport(slack, timeout_seconds=0.3).post_message(
+            channel=CHANNEL, payload=PAYLOAD, marker=MARKER
+        )
+    elapsed = time.monotonic() - started
+
+    # timeout 이 없으면 5초를 기다린 뒤 **성공**한다. 여기서 실패하고 빨리 돌아오는 것이
+    # 두 사실을 동시에 고정한다.
+    assert elapsed < 3.0
+
+
+# wave 5 review P1-1 (failure-recovery) — header 를 준 뒤 body 를 찔끔씩 보내는 상대.
+# urlopen(timeout=) 은 recv 마다 timer 를 되돌리므로 이 경우를 못 막는다. 조각마다
+# deadline 을 보는 read loop 가 있어야 끊긴다.
+def test_a_dribbling_body_is_cut_off_by_the_deadline(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply(dribble_seconds=0.2, dribble_chunks=30))
+
+    started = time.monotonic()
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack, timeout_seconds=0.5).post_message(
+            channel=CHANNEL, payload=PAYLOAD, marker=MARKER
+        )
+    elapsed = time.monotonic() - started
+
+    # 상대는 6초어치를 흘리려 한다. deadline 이 없으면 끝까지 받는다.
+    assert elapsed < 3.0
+    assert caught.value.transport_exception == "deadline_exceeded"
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+# wave 5 review P1-1 (contract) — body 를 만드는 것과 Request 를 세우는 것이 try 밖이면
+# raw 예외가 샌다. C-1 의무 1 이 깨지고, H-3 의 readback 자가검사는 destination 의
+# 두 번째 방어선을 안 거치므로 거기서 raw 예외로 죽는다.
+def test_an_unserializable_payload_is_wrapped_not_leaked(slack: _FakeSlack) -> None:
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(
+            channel=CHANNEL,
+            payload={"text": datetime(2026, 8, 7, tzinfo=UTC)},
+            marker=MARKER,
+        )
+
+    assert caught.value.error_code is None
+    assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+
+
+def test_an_unserializable_marker_is_wrapped_not_leaked(slack: _FakeSlack) -> None:
+    with pytest.raises(SlackTransportError):
+        _transport(slack).post_message(
+            channel=CHANNEL,
+            payload=PAYLOAD,
+            marker={"event_type": "x", "event_payload": {"bad": {1, 2}}},
+        )
+
+
+def test_a_base_url_without_a_scheme_is_wrapped_not_leaked() -> None:
+    transport = HttpSlackTransport(
+        bot_token=TOKEN,
+        timeout_seconds=1.0,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_lease_for(1.0),
+        base_url="slack.com/api",
+    )
+
+    with pytest.raises(SlackTransportError) as caught:
+        transport.read_history(channel=CHANNEL, cursor=None, limit=999)
+
+    assert caught.value.error_code is None
+
+
+# wave 5 review P1-2 (failure-recovery) — stdlib 의 기본 redirect handler 는
+# Authorization 을 안 떼고 host 도 안 본다. 302 를 준 쪽이 지정한 아무 host 로 token 이
+# 간다. redirect 를 아예 따라가지 않고, header 도 unredirected 로 단다.
+def test_a_redirect_is_refused_and_never_carries_the_token(slack: _FakeSlack) -> None:
+    victim = _FakeSlack()
+    victim.start()
+    try:
+        slack.queue(
+            "chat.postMessage",
+            _Reply(
+                status=302,
+                body=b"",
+                headers={"Location": f"{victim.base_url}/api/chat.postMessage"},
+            ),
+        )
+
+        with pytest.raises(SlackTransportError) as caught:
+            _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+        # redirect 를 안 따라갔다. 상대 server 는 요청을 한 번도 못 받는다.
+        assert victim.requests == []
+        assert caught.value.status_code == 302
+        assert caught.value.error_code is None
+        assert classify_slack_failure(caught.value) is SlackFailureClass.RETRYABLE
+    finally:
+        victim.stop()
+
+
+# wave 5 review A-2 — read() 에 상한이 없으면 고장난 상대가 memory 를 먹는다.
+def test_an_oversized_response_is_cut_off(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply(body=b'{"ok":true,"x":"' + b"a" * (17 * 1024 * 1024)))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack, timeout_seconds=10.0).post_message(
+            channel=CHANNEL, payload=PAYLOAD, marker=MARKER
+        )
+
+    assert caught.value.transport_exception == "response_too_large"
+
+
+# wave 5 review A-4 — 이전 판은 ok:false 경로 하나만 봤다. 실패 경로 전부에서 token 이
+# 안 나오는 것을 본다. __cause__ 체인까지 훑는다.
+@pytest.mark.parametrize(
+    "reply",
+    [
+        _Reply.slack_error("invalid_auth"),
+        _Reply(status=500, body=b"<html>proxy</html>"),
+        _Reply(status=502, body=b'{"error":"Bad Gateway"}'),
+        _Reply(body=b"not json"),
+        _Reply.ok({}),
+    ],
+)
+def test_no_failure_path_ever_names_the_credential(slack: _FakeSlack, reply: _Reply) -> None:
+    slack.queue("chat.postMessage", reply)
+    secret = TOKEN.get_secret_value()
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    rendered = [str(caught.value), repr(caught.value), str(caught.value.transport_exception)]
+    cause = caught.value.__cause__
+    while cause is not None:
+        rendered.extend([str(cause), repr(cause)])
+        cause = cause.__cause__
+    for text in rendered:
+        assert secret not in text
+
+
+# wave 5 review A-3 — T007 AC-05 의 "core 경로에는 없다" 절을 어떤 test 도 안 지켰다.
+# slack_http.py 한 파일만 훑으면 다음 commit 이 다른 파일에서 읽어도 안 보인다.
+def test_no_other_module_reads_slack_configuration_from_the_environment() -> None:
+    offenders: list[str] = []
+    for path in Path("src/amplai_foundry").rglob("*.py"):
+        if path.name == "slack_http.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "SLACK" in text and ("os.environ" in text or "from os import environ" in text):
+            offenders.append(str(path))
+    assert offenders == []

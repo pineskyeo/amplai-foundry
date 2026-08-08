@@ -158,8 +158,16 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  # AC-01~08 여덟 다 통과했다. mutation 5종 (include_all_metadata 제거, ok:false 검사
-  # 제거, marker 미첨부, 예약 key 검사 제거, 빈 cursor 통과) 이 전부 죽는 것을 확인했다.
+  # AC-01~08 여덟 다 통과한다. **wave 5 review round 1 이 AC-04 와 AC-07 을 거짓으로
+  # 판정했고 그것을 고친 뒤의 상태다.**
+  #
+  # AC-07 (예외가 안 샌다) — json.dumps 와 Request 생성이 try 밖이라 raw TypeError·
+  # ValueError 가 샜다. try 안으로 옮겼고 세 경로를 test 로 고정했다.
+  # AC-04 (timeout) — 이전 test 는 timeout 인자를 통째로 지워도 초록이었다. 경과 시간을
+  # 재고 dribble body 를 흘리는 test 로 바꿨다.
+  #
+  # mutation 은 round 2 regression lens 가 다시 돌린다. round 1 이 센 5종 중
+  # "예약 key 검사 제거" 는 그 guard 를 뺐으므로 더 이상 해당하지 않는다.
   all_acceptance_passed: true
   required_evidence_present: true
   # gate 는 아직이다. wave 5 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
