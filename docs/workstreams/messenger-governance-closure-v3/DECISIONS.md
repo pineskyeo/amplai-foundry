@@ -784,3 +784,49 @@
 - Source: **사용자 결정.** 2026-08-08 wave 6 review round 1의 P0를 놓고 선택지 셋을
   제시했고 "쓰지 않는 destination 번호"를 골랐다. probe 누적은 같은 자리에서 "P0 격리로
   충분, Advisory로 내림"을 골랐다.
+
+## D-030 — The Self-Check Removes Its Own Probe
+
+- Status: accepted
+- supersedes: D-029의 "함께 미룬 것" 문단 (나머지 D-029는 유효하다)
+- Decision: `verify_marker_readback`이 검사를 마치면 `chat.delete`로 probe를 지운다.
+  **성공과 실패 양쪽에서 지운다.** 지우지 못하면 기동을 거부한다. 계약은 H-3.2다.
+
+  **D-029에서 내가 쓴 근거가 틀렸다.** 그 문서는 "격리로 정합성 위험은 없어졌고 남는 것은
+  채널 소음과 rate limit"이라고 적었고, 사용자가 그 근거로 deferral을 골랐다. 사실이
+  아니다. wave 6 review round 2에서 **두 lens가 독립으로** 같은 결함을 잡고 재현했다.
+
+  `_our_marker`의 배제는 **판정에서만** 빼는 것이고 조회 예산에서는 못 뺀다. probe도
+  `conversations.history` page를 그대로 차지한다. `reconcile`은
+  `SLACK_MAX_HISTORY_PAGES(5) × SLACK_HISTORY_PAGE_LIMIT(999) = 4995`건까지만 훑고, 넘으면
+  `SlackProjectionSearchCapError`로 판정 불가가 된다. 그것은 dead letter + **되돌릴 수 없는
+  operator hold**다.
+
+  실패 경로가 구체적이다. Card를 보낸 뒤 `mark_delivered` 전에 죽는다 → 자가검사가 실패하는
+  상태라 supervisor가 재시작 loop을 돈다 → 재시작마다 probe가 한 장씩 쌓인다 → 원인을 고치고
+  기동에 성공했을 때 진짜 Card가 probe 아래 묻혀 있다 → page cap → 그 destination 전체가
+  hold다. `chat.postMessage`가 channel당 초당 1건이므로 4995장은 시간 단위다 (이 시간
+  계산만 추정이고, 4995 상한과 그때의 판정은 reviewer가 실측했다).
+
+  **`chat.delete`는 새 scope를 요구하지 않는다.** Slack 공식 문서가 bot token scope를
+  `chat:write`로 적고, 같은 문서가 "this method may delete only messages posted by that
+  bot"으로 대상을 우리 message로 한정한다. D-029가 이 안을 미룬 이유가 "scope를 확인하지
+  않아 추정으로 계약을 쓰게 된다"였는데, 그 확인이 끝났다. 설치 절차는 안 바뀐다.
+
+  **지우기 실패를 조용히 넘기지 않는다.** 검사가 통과했는데 삭제만 실패하면
+  `SlackReadbackError`다 — 남은 probe가 나중에 판정 불가를 만든다. 검사도 실패하고 삭제도
+  실패하면 **원래 원인이 이긴다.** 삭제 실패는 그 예외에 note로 덧붙인다. 삭제 실패가 원인을
+  가리면 operator가 엉뚱한 곳을 고친다.
+
+  **`build_probe_marker`를 함께 둔다.** D-029는 호출자가 `build_slack_marker`의 결과에서
+  `destination_ref`만 바꾸도록 안내문으로 요구했다. round 1의 P0가 정확히 그런 안내문에서
+  나왔으므로 안내가 아니라 함수로 준다. 보내기 전 거부 guard는 그대로 둔다 — 두 겹이다.
+
+  **sentinel의 길이를 진짜와 맞춘다.** `provider:slack:` + `z` 64자다. 짧게 두면 probe의
+  metadata가 진짜보다 작아지고, metadata 크기 상한이 두 값 사이에 있으면 자가검사는
+  통과하는데 첫 진짜 Card가 `metadata_too_large`로 terminal이 된다. 그 상한은 아직 모른다
+  (OQ-003) — 모르는 값을 사이에 두지 않는다. hex가 아니므로 충돌 불가 근거는 그대로다.
+
+- Source: **사용자 결정.** 2026-08-08 round 2 결과를 보고 D-029의 근거가 틀렸다는 것을
+  알린 뒤 다시 물었고, "chat.delete로 지우되 scope를 먼저 공식 문서로 확인"을 골랐다.
+  확인 결과 새 scope가 필요 없었다.

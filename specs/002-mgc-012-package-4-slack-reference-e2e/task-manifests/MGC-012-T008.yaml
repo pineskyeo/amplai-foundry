@@ -103,6 +103,28 @@ acceptance:
       then: >-
         방금 보낸 ts 로 probe 를 찾아 통과한다. 위치로 찾으면 남의 message 를 검사해
         엉뚱한 이유로 기동을 거부한다
+    # 2026-08-08 round 2 추가. D-030 과 contracts H-3.2 가 근거다. 격리만으로는 부족했다 —
+    # probe 가 조회 예산을 먹어 진짜 Card 를 묻으면 판정 불가로 되돌릴 수 없는 hold 가 된다.
+    - id: AC-08
+      given: 자가검사가 통과한 상태
+      when: 끝나면
+      then: probe message 를 지운다
+    - id: AC-09
+      given: 자가검사가 실패한 상태
+      when: 끝나면
+      then: >-
+        그래도 probe 를 지운다. 실패하는 상태가 곧 재시작 loop 이 도는 상태이고 거기서
+        누적이 가장 빨리 쌓인다
+    - id: AC-10
+      given: 자가검사는 통과했지만 지우기가 실패하는 상태
+      when: 자가검사를 돌리면
+      then: 기동을 거부한다. 남은 probe 가 나중에 판정 불가를 만든다
+    - id: AC-11
+      given: 자가검사도 실패하고 지우기도 실패하는 상태
+      when: 자가검사를 돌리면
+      then: >-
+        원래 원인을 올린다. 삭제 실패는 그 예외에 덧붙인다. 가리면 operator 가 엉뚱한
+        곳을 고친다
   commands:
     - id: unit
       kind: test

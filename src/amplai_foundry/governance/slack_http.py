@@ -21,10 +21,11 @@ import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from email.message import Message as HTTPMessage
-from typing import IO, Final, NoReturn
+from typing import IO, Final, NoReturn, Protocol, cast
 
 from pydantic import SecretStr
 
+from amplai_foundry.governance.events import OutboxEventView
 from amplai_foundry.governance.slack_projection import (
     SlackHistoryMessage,
     SlackHistoryPage,
@@ -32,6 +33,7 @@ from amplai_foundry.governance.slack_projection import (
     SlackSendResult,
     SlackTransport,
     SlackTransportError,
+    build_slack_marker,
     read_slack_marker,
 )
 
@@ -39,6 +41,11 @@ SLACK_API_BASE: Final = "https://slack.com/api"
 
 _POST_MESSAGE: Final = "chat.postMessage"
 _CONVERSATIONS_HISTORY: Final = "conversations.history"
+# 자가검사가 남긴 probe 를 치우는 데만 쓴다 (H-3.2). 필요한 scope 는 `chat:write` 하나이고
+# 이미 갖고 있다 — Slack 공식 문서가 bot token 에 대해 그렇게 적고, 같은 문서가
+# "this method may delete only messages posted by that bot" 으로 대상을 우리 message 로
+# 한정한다. 새 scope 를 요구하지 않으므로 설치 절차가 안 바뀐다.
+_DELETE_MESSAGE: Final = "chat.delete"
 
 # `chat.postMessage` 는 JSON 으로 보낸다. Slack 문서가 복잡한 인자를 가진 method 에 대해
 # "these methods can be difficult to properly construct when using a
@@ -372,6 +379,22 @@ class HttpSlackTransport:
             ts=_require_text(response, "ts"),
         )
 
+    def delete_message(self, *, channel: str, ts: str) -> None:
+        """Delete one message this bot posted (H-3.2).
+
+        **자가검사가 남긴 probe 를 치우는 데만 쓴다.** Card 를 지우는 데 쓰지 않는다 —
+        Card 의 수명은 Outbox 계약이 갖는다.
+
+        scope 는 `chat:write` 하나이고 이미 갖고 있다. Slack 문서가 bot token 에 대해
+        "this method may delete only messages posted by that bot" 으로 한정하므로 남의
+        message 를 지울 수단이 되지 않는다.
+        """
+        self._call(
+            _DELETE_MESSAGE,
+            lambda: json.dumps({"channel": channel, "ts": ts}).encode("utf-8"),
+            _JSON_CONTENT_TYPE,
+        )
+
     def read_history(
         self,
         *,
@@ -681,9 +704,12 @@ _PROBE_TEXT: Final = "AMPLAI marker readback self-check. 이 message 는 지워�
 # (`slack_projection.py:708`) 이 값 하나로 probe 가 `reconcile` 에 안 보이게 된다.
 #
 # **충돌할 수 없다.** 진짜 값은 `provider:{provider}:{sha256 hexdigest}` 이고
-# (`events.py:1442`) hexdigest 는 소문자 hex 64자다. 아래 값은 hex 가 아닌 문자를 갖고
-# 길이도 다르다.
-PROBE_DESTINATION_REF: Final = "provider:slack:readback-probe"
+# (`events.py:1442`) hexdigest 는 소문자 hex 64자다. 아래 접미는 `z` 64자라 hex 가 아니다.
+#
+# **길이를 진짜와 맞춘다.** 짧게 두면 probe 의 metadata 가 진짜보다 작아지고, metadata 크기
+# 상한이 두 값 사이에 있으면 자가검사는 통과하는데 첫 진짜 Card 가 `metadata_too_large` 로
+# terminal 이 된다. 그 상한은 아직 모른다 (OQ-003) — 모르는 값을 사이에 두지 않는다.
+PROBE_DESTINATION_REF: Final = "provider:slack:" + "z" * 64
 
 # probe 를 되찾을 때 훑는 page 수. 자가검사는 기동 시점이라 채널이 조용하다고 가정하지
 # 않는다 — 다른 사람이 방금 떠들었을 수 있다. 다만 우리가 방금 보낸 것이므로 첫 page 를
@@ -691,22 +717,53 @@ PROBE_DESTINATION_REF: Final = "provider:slack:readback-probe"
 _PROBE_HISTORY_LIMIT: Final = 100
 
 
+def build_probe_marker(event: OutboxEventView) -> dict[str, object]:
+    """Build the probe marker the self-check requires (H-3.1).
+
+    `build_slack_marker` 는 event 의 진짜 `destination_ref` 를 심으므로 그대로 쓰면
+    `verify_marker_readback` 이 거부한다. 여기서 그 한 필드만 바꿔 준다.
+
+    **손으로 조립하게 두지 않는 이유**는 round 1 의 P0 가 정확히 그 안내에서 나왔기
+    때문이다. 안내문이 아니라 함수로 준다. 거부 guard 는 그대로 둔다 — 두 겹이다.
+    """
+    marker = build_slack_marker(event)
+    payload = dict(cast("Mapping[str, object]", marker["event_payload"]))
+    payload["destination_ref"] = PROBE_DESTINATION_REF
+    return {**marker, "event_payload": payload}
+
+
+class ProbeTransport(SlackTransport, Protocol):
+    """`SlackTransport` plus the one call the self-check needs to clean up after itself.
+
+    `SlackTransport` 를 안 늘린다 — 그 Protocol 은 Package 3 에서 gate PASS 했고 H-6 이
+    변경을 금지한다. 자가검사만 쓰는 능력이므로 여기서 좁게 더한다.
+    """
+
+    def delete_message(self, *, channel: str, ts: str) -> None: ...
+
+
 def verify_marker_readback(
-    transport: SlackTransport,
+    transport: ProbeTransport,
     *,
     channel: str,
     app_id: str,
     probe_marker: Mapping[str, object],
 ) -> None:
-    """Post one probe and prove its marker comes back intact (H-3, FR-018).
+    """Post one probe, prove its marker comes back intact, then remove it (H-3, FR-018).
 
-    `probe_marker` 는 호출자가 `build_slack_marker` 로 만든다. 여기서 새로 만들지 않는
+    `probe_marker` 는 호출자가 `build_probe_marker` 로 만든다. 여기서 새로 만들지 않는
     이유는 **실제로 나가는 것과 같은 것**을 검사해야 하기 때문이다. 자가검사 전용 모양을
     만들면 그 모양만 검증된다.
 
     **단 `destination_ref` 만은 `PROBE_DESTINATION_REF` 여야 한다.** 그 하나로 probe 가
-    `reconcile` 의 시야에서 빠진다. 이유는 그 상수에 적었다. 호출자가 진짜 destination 의
+    `reconcile` 의 판정에서 빠진다. 이유는 그 상수에 적었다. 호출자가 진짜 destination 의
     값을 넣으면 **보내기 전에** 거부한다 — 보낸 뒤에 알면 이미 채널에 남는다.
+
+    **끝나면 probe 를 지운다. 성공·실패 양쪽에서 지운다** (H-3.2). 판정에서 빠지는 것만으로
+    부족하기 때문이다 — probe 는 `conversations.history` 의 조회 예산을 그대로 먹고,
+    재시작 loop 이 그 예산(`SLACK_MAX_HISTORY_PAGES` x `SLACK_HISTORY_PAGE_LIMIT`)을 채우면
+    진짜 Card 가 probe 아래 묻혀 `reconcile` 이 판정 불가로 떨어진다. 그 결과는 되돌릴 수
+    없는 hold 다 (wave 6 review round 2 가 실측, D-030).
 
     실패는 전부 `SlackReadbackError` 다. transport 자체가 실패하면 그 예외
     (`SlackTransportError`) 를 그대로 올린다 — 그것은 network 문제이지 marker 결함이
@@ -726,6 +783,34 @@ def verify_marker_readback(
         payload={"text": _PROBE_TEXT},
         marker=probe_marker,
     )
+    failure: BaseException | None = None
+    try:
+        _inspect_probe(transport, result, channel=channel, app_id=app_id, expected=expected)
+    except BaseException as error:
+        failure = error
+    try:
+        transport.delete_message(channel=channel, ts=result.ts)
+    except SlackTransportError as error:
+        if failure is None:
+            raise SlackReadbackError(
+                "자가검사는 통과했지만 probe message 를 지우지 못했습니다. "
+                "남은 probe 는 reconcile 의 조회 예산을 먹어 판정 불가를 만들 수 있습니다."
+            ) from error
+        # 원래 원인을 가리지 않는다. 삭제 실패는 그 예외에 덧붙여 보고한다.
+        failure.add_note(f"probe message 도 지우지 못했습니다: {error}")
+    if failure is not None:
+        raise failure
+
+
+def _inspect_probe(
+    transport: ProbeTransport,
+    result: SlackSendResult,
+    *,
+    channel: str,
+    app_id: str,
+    expected: Mapping[str, object],
+) -> None:
+    """Read the probe back and compare it. Raises `SlackReadbackError` on any mismatch."""
     page = transport.read_history(channel=channel, cursor=None, limit=_PROBE_HISTORY_LIMIT)
     probe = next((message for message in page.messages if message.ts == result.ts), None)
     if probe is None:

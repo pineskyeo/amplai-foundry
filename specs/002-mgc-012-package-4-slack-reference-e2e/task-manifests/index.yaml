@@ -263,14 +263,6 @@ coverage:
         안 남는 조용한 실패다. round 2 에서 transport 가 값을 보관·노출하게 해 배선하는
         쪽이 대조할 수 있게 했다. destination 이 불일치를 **거부**하게 만들려면
         slack_projection.py 를 열어야 해서 별도 item 이다.
-    - id: probe-accumulation
-      owner: 미정
-      reason: >-
-        wave 6 review 이월. verify_marker_readback 은 post 를 먼저 하고 그 뒤 모든 실패
-        분기가 SlackReadbackError 를 던진다. 그래서 기동 실패마다 probe 가 채널에 한 장씩
-        쌓이고 supervisor 재시작 loop 은 rate limit 까지 만든다. D-029 의 격리로 정합성
-        위험은 없어졌고 남는 것은 채널 소음과 rate limit 이다. chat.delete 로 지우는 안은
-        그 method 의 OAuth scope 를 공식 문서로 확인하지 않아 미룬다.
     - id: readback-selfcheck-wiring
       owner: 미정
       reason: >-
@@ -497,4 +489,27 @@ update_history:
       deferred 셋을 새로 등록했다 — transport-destination-page-binding, probe-accumulation,
       readback-selfcheck-wiring. 앞의 둘은 사용자가 선택지에서 미루기로 결정했다.
       pytest 1033 (+11), verify 7/7 PASS.
-    source_revision: a0d85e6
+    source_revision: 44b73ad
+  - date: 2026-08-08
+    summary: >-
+      wave 6 review round 2 와 그 수정. round 1 수정(44b73ad)을 대상으로 읽기 lens 둘을
+      다시 돌렸다. P0 격리는 두 lens 가 fake server 로 counterfactual 까지 돌려 닫힌 것을
+      확인했다. 그러나 고유 blocker 5건이 새로 나왔다.
+      **가장 큰 것은 내가 D-029 에 쓴 근거가 틀렸다는 것이다.** "격리로 정합성 위험은
+      없어졌다" 가 거짓이었다. probe 는 판정에서만 빠지고 conversations.history 의 조회
+      예산은 그대로 먹는다. 재시작 loop 이 4995건을 채우면 진짜 Card 가 묻혀 판정 불가가
+      되고 그것은 되돌릴 수 없는 hold 다. 두 lens 가 독립으로 잡고 재현했다.
+      사용자에게 정정을 알리고 다시 물어 chat.delete 로 지우기로 했다. Slack 공식 문서로
+      scope 를 확인했고 chat:write 하나면 되며 우리 message 만 지울 수 있다 — 새 scope 가
+      필요 없어 설치 절차가 안 바뀐다. D-030 이 D-029 의 그 문단을 supersede 한다.
+      round 1 의 token 유출 수정도 미완이었다. loader 경로만 고쳤는데 _run_pytest 가
+      dict(os.environ) 을 들고 있었고, 그 test 둘은 기본 suite 에서 돈다. 더 깊은 사실도
+      나왔다 — env= 로 넘긴 mapping 은 subprocess.run **자신의** local 에 담기므로 부르는
+      쪽을 아무리 깨끗이 해도 안 닫힌다. 자식에게 진짜 credential 을 안 주는 것으로 닫았고
+      그 방어를 잡는 test 도 넣었다.
+      나머지 셋 — sentinel 길이가 진짜보다 짧아 metadata 크기 상한이 그 사이에 있으면
+      자가검사만 통과하는 문제 (64자로 맞췄다), build_probe_marker 부재 (round 1 P0 가
+      안내문 요구에서 나왔으므로 함수로 준다), 그리고 transport 공개 속성에 acceptance 가
+      없던 것 (T009 AC-10).
+      pytest 1040 (+7), verify 7/7 PASS.
+    source_revision: 44b73ad

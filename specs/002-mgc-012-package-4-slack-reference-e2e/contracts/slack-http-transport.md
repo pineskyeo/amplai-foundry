@@ -133,8 +133,38 @@ wave 6 failure-recovery review 가 실측했다.
 같은 모양을 유지하므로 "실제로 나가는 것과 같은 것을 검사한다" 는 근거도 산다.
 
 **충돌할 수 없다.** 진짜 값은 `provider:{provider}:{sha256 hexdigest}` 이고
-(`events.py:1442`) hexdigest 는 소문자 hex 64자다. `PROBE_DESTINATION_REF` 는 hex 가 아닌
-문자를 갖고 길이도 다르다.
+(`events.py:1442`) hexdigest 는 소문자 hex 64자다. `PROBE_DESTINATION_REF` 의 접미는 hex 가
+아니다. **길이는 진짜와 맞춘다** — 짧게 두면 probe 의 metadata 가 진짜보다 작아지고,
+metadata 크기 상한이 두 값 사이에 있으면 자가검사는 통과하는데 첫 진짜 Card 가
+`metadata_too_large` 로 terminal 이 된다. 그 상한은 아직 모른다 (OQ-003).
+
+**호출자가 손으로 조립하지 않는다.** `build_probe_marker(event)` 가 `build_slack_marker` 의
+결과에서 `destination_ref` 만 바꿔 준다. round 1 의 P0 가 "안내문으로 요구하기" 에서 나왔다.
+보내기 전 거부 guard 는 그대로 둔다 — 두 겹이다.
+
+### H-3.2 — The Probe Is Removed, Always
+
+**자가검사는 끝나면 probe 를 지운다. 성공·실패 양쪽에서 지운다** (2026-08-08, D-030).
+
+판정에서 빼는 것(H-3.1)만으로 부족하다. probe 는 `conversations.history` 의 **조회 예산**을
+그대로 먹는다. `reconcile` 은 `SLACK_MAX_HISTORY_PAGES` x `SLACK_HISTORY_PAGE_LIMIT` =
+4995건까지만 훑고, 넘으면 `SlackProjectionSearchCapError` 로 판정 불가가 된다. 그것은 dead
+letter 와 **되돌릴 수 없는 hold** 다.
+
+재시작 loop 이 그 예산을 채운다. Card 를 보낸 뒤 기록 전에 죽고, 자가검사가 실패하는 상태라
+supervisor 가 재시작을 반복하면, 원인을 고친 뒤에는 진짜 Card 가 probe 아래 묻혀 있다.
+
+- `chat.delete` 를 쓴다. **새 scope 가 필요 없다** — 공식 문서가 bot token scope 를
+  `chat:write` 로 적고, 같은 문서가 "this method may delete only messages posted by that
+  bot" 으로 대상을 우리 message 로 한정한다
+- 검사는 통과했는데 삭제만 실패하면 `SlackReadbackError` 다. 남은 probe 가 나중에 판정
+  불가를 만든다
+- 검사도 실패하고 삭제도 실패하면 **원래 원인이 이긴다.** 삭제 실패는 그 예외에 덧붙인다.
+  가리면 operator 가 엉뚱한 곳을 고친다
+
+**남는 구멍 하나.** post 가 Slack 에 닿았는데 응답을 못 읽으면 (timeout) probe 의 `ts` 를
+모르므로 지울 수 없다. 그 경우는 `SlackTransportError` 로 기동이 거부되고 probe 한 장이
+남는다. transport 계층에서 막을 수 없다.
 
 `index.yaml` 의 `W3-transport-readback-selfcheck` 가 이 항목이다.
 
@@ -169,7 +199,7 @@ loader 는 접두 문자를 **검사하지 않는다.** 확인하지 않은 형�
 - 읽는 지점이 하나. `load_slack_settings` 는 `environ` 을 **요구한다** — 기본값을 주면
   `os.environ` 을 만지는 지점이 둘이 된다. 부르는 쪽이 넘긴다
 
-**부분 구성은 미구성이 아니다.** 넷 중 하나라도 빠지면 `ValueError` 이고 빠진 변수
+**부분 구성은 미구성이 아니다.** 넷 중 **일부만** 빠지면 `ValueError` 이고 빠진 변수
 **이름**을 전부 적는다. 그 판정을 `load_slack_credentials` 에 위임하지 않는다 — 위임하면
 credential 이 부분일 때 그 함수가 먼저 터져서 대상 둘의 누락이 message 에 안 실리고,
 고치고 다시 돌려야 나머지를 본다 (wave 6 review round 1). `None` 으로 뭉뚱그리면 token 만 넣고 E2E 를 돌린 사람이 "skip" 만
@@ -190,6 +220,10 @@ secret 둘은 `SlackCredentials` 에, 대상 둘은 그것을 감싸는 `SlackSe
 - **`os.environ` 을 받은 frame 이 traceback 에 남지 않게 한다.** 남으면 그 local 의 repr 이
   환경 전체를 출력하고 token 이 거기 들어 있다. E2E fixture 는 loader 의 `ValueError` 를
   잡아 message 만 꺼내 `pytest.fail` 로 바꾼다
+- **자식 process 에 진짜 credential 을 넘기지 않는다.** `env=` 로 넘긴 mapping 은
+  `subprocess.run` **자신의 local** 에 담기므로, 그것이 던지면 부르는 쪽이 아무리 깨끗해도
+  `--showlocals` 가 그 안의 token 을 찍는다. 네 변수를 빼고 넘기고, 값이 필요한 test 는
+  자기가 만든 가짜 값을 넣는다
 
 ## H-5 — E2E Harness
 

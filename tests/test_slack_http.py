@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import MappingProxyType
 from typing import cast
 
 import pytest
@@ -25,14 +26,16 @@ from pydantic import SecretStr
 # dispatcher 를 실물로 돌리는 fixture 는 test_governance_events 에 이미 있다. 복제하면 두
 # 벌이 어긋난다. top-level import 는 pyproject 의 `pythonpath = ["tests"]` 가 받친다 (T009).
 import test_governance_events as governance_fixtures
+from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance import slack_http
 from amplai_foundry.governance.events import (
     GovernanceEventService,
     OutboxConfig,
     OutboxDispatcher,
+    OutboxEventView,
     OutboxState,
 )
-from amplai_foundry.governance.models import ChannelProvider, ChannelRef
+from amplai_foundry.governance.models import ChannelProvider, ChannelRef, ProposalRef
 from amplai_foundry.governance.slack_http import (
     PROBE_DESTINATION_REF,
     SLACK_API_BASE,
@@ -45,6 +48,7 @@ from amplai_foundry.governance.slack_http import (
     SlackCredentials,
     SlackReadbackError,
     SlackSettings,
+    build_probe_marker,
     load_slack_credentials,
     load_slack_settings,
     validate_call_budget,
@@ -1132,6 +1136,28 @@ def _history_with(*messages: dict[str, object]) -> _Reply:
     return _Reply.ok({"messages": list(messages)})
 
 
+def _probe_event() -> OutboxEventView:
+    """A real event view, so `build_probe_marker` is exercised on a real input."""
+    payload: dict[str, object] = {"text": "제안 카드"}
+    return OutboxEventView(
+        event_id="EVT-0000000000000042",
+        proposal_ref=ProposalRef(
+            project_ref=ProjectRef(project_id="amplai", namespace="org/default/project/amplai"),
+            proposal_id="PROP-20260730-ABCDEF12",
+        ),
+        aggregate_sequence=1,
+        destination_ref="provider:slack:" + "ab" * 32,
+        destination_sequence=1,
+        source_state_revision=1,
+        payload_digest="sha256:" + "cd" * 32,
+        payload=payload,
+        state=OutboxState.LEASED,
+        attempts=1,
+        claim_generation=1,
+        created_at=datetime(2026, 8, 8, tzinfo=UTC),
+    )
+
+
 def _check(slack: _FakeSlack, *, probe_marker: Mapping[str, object] | None = None) -> None:
     verify_marker_readback(
         _transport(slack),
@@ -1332,6 +1358,107 @@ def test_the_probe_is_found_by_timestamp_not_by_position(slack: _FakeSlack) -> N
     _check(slack)
 
 
+# T008 round 2 — **끝나면 probe 를 지운다.** 판정에서 빠지는 것만으로 부족하다. probe 는
+# conversations.history 의 조회 예산을 그대로 먹고, 재시작 loop 이 그 예산을 채우면 진짜
+# Card 가 probe 아래 묻혀 reconcile 이 판정 불가로 떨어진다. 그 결과는 되돌릴 수 없는
+# hold 다 (wave 6 review round 2 가 실측, D-030).
+def test_the_probe_is_deleted_after_a_successful_check(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
+    )
+
+    _check(slack)
+
+    assert [record.path for record in slack.requests] == [
+        "/chat.postMessage",
+        "/conversations.history",
+        "/chat.delete",
+    ]
+    assert slack.requests[2].json_body() == {"channel": CHANNEL, "ts": PROBE_TS}
+
+
+# T008 round 2 — 검사가 실패해도 지운다. 실패하는 상태가 바로 재시작 loop 이 도는 상태이고,
+# 거기서 안 지우면 누적이 가장 빨리 쌓인다.
+def test_the_probe_is_deleted_even_when_the_check_fails(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
+    )
+
+    with pytest.raises(SlackReadbackError, match="app_id"):
+        _check(slack)
+
+    assert slack.requests[2].path == "/chat.delete"
+
+
+# T008 round 2 — 지우기가 실패하면 통과로 넘기지 않는다. 남은 probe 가 나중에 판정 불가를
+# 만든다.
+def test_a_probe_that_cannot_be_deleted_refuses_startup(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
+    )
+    slack.queue("chat.delete", _Reply.slack_error("cant_delete_message"))
+
+    with pytest.raises(SlackReadbackError, match="지우지 못했습니다"):
+        _check(slack)
+
+
+# T008 round 2 — 검사도 실패하고 지우기도 실패하면 **원래 원인이 이긴다.** 삭제 실패가
+# 원인을 가리면 operator 가 엉뚱한 곳을 고친다.
+def test_a_failed_delete_does_not_mask_the_readback_failure(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _probe_reply())
+    slack.queue(
+        "conversations.history",
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
+    )
+    slack.queue("chat.delete", _Reply.slack_error("cant_delete_message"))
+
+    with pytest.raises(SlackReadbackError, match="app_id") as caught:
+        _check(slack)
+
+    # 삭제 실패는 버리지 않고 원래 예외에 덧붙인다.
+    assert any("지우지 못했습니다" in note for note in caught.value.__notes__)
+
+
+# T008 round 2 — probe marker 를 손으로 조립하지 않는다. round 1 의 P0 가 정확히 그 안내에서
+# 나왔다. 안내문이 아니라 함수로 준다.
+def test_the_probe_marker_helper_produces_the_isolated_ref() -> None:
+    event = _probe_event()
+
+    marker = build_probe_marker(event)
+
+    payload = cast("Mapping[str, object]", marker["event_payload"])
+    assert payload["destination_ref"] == PROBE_DESTINATION_REF
+    # 나머지는 진짜와 같은 모양이다. 그래야 실제로 나가는 것을 검사한 것이 된다.
+    assert payload["event_id"] == event.event_id
+    assert payload["destination_sequence"] == event.destination_sequence
+    assert payload["payload_digest"] == event.payload_digest
+    assert marker["event_type"] == MARKER["event_type"]
+
+
+# T008 round 2 — sentinel 은 진짜 destination_ref 와 **충돌할 수 없고 길이가 같다.**
+#
+# 충돌하면 격리가 무너진다. 길이가 다르면 probe 의 metadata 가 진짜보다 작아지고, metadata
+# 크기 상한이 두 값 사이에 있으면 자가검사는 통과하는데 첫 진짜 Card 가 terminal 이 된다.
+# 그 상한은 아직 모른다 (OQ-003).
+def test_the_probe_ref_cannot_collide_with_a_real_one() -> None:
+    real = _probe_event().destination_ref
+    prefix, _, probe_suffix = PROBE_DESTINATION_REF.rpartition(":")
+    _, _, real_suffix = real.rpartition(":")
+
+    assert prefix == "provider:slack"
+    # 진짜 접미는 sha256 hexdigest 다 (events.py:1442). hex 가 아니면 절대 안 겹친다.
+    assert len(real_suffix) == 64
+    assert all(char in "0123456789abcdef" for char in real_suffix)
+    assert len(probe_suffix) == len(real_suffix)
+    assert not any(char in "0123456789abcdef" for char in probe_suffix)
+
+
 # --------------------------------------------------------------------------------------
 # MGC-012-T009 — E2E 는 기본 실행에서 빠지고, credential 이 없으면 시끄럽게 skip 한다
 # --------------------------------------------------------------------------------------
@@ -1358,20 +1485,34 @@ def _pytest_ini() -> Mapping[str, object]:
     return cast(Mapping[str, object], parsed["tool"]["pytest"]["ini_options"])
 
 
-def _run_pytest(*args: str, drop_slack_env: bool = False) -> subprocess.CompletedProcess[str]:
+def _child_environment(extra: Mapping[str, str] = MappingProxyType({})) -> dict[str, str]:
+    """Build the child's environment. **Real Slack credentials never go in.**
+
+    자식에게 진짜 credential 을 주지 않는 것이 유일하게 확실한 방법이다. `env=` 로 넘긴
+    mapping 은 `subprocess.run` **자신의 local** (`kwargs`) 에 담기므로, 그것이
+    `TimeoutExpired` 나 fork 실패를 던지면 `--showlocals` 가 그 안의 token 을 찍는다
+    (wave 6 review round 2 P1, 실측). 부르는 쪽에서 local 을 없애는 것만으로는 안 닫힌다.
+
+    그래서 네 변수를 **항상** 뺀다. 값이 필요한 test 는 `extra` 로 자기가 만든 가짜 값을
+    넣는다 — 그러면 유출되더라도 진짜가 아니다.
+    """
+    environment = dict(os.environ)
+    for name in E2E_ENV_NAMES:
+        environment.pop(name, None)
+    environment.update(extra)
+    return environment
+
+
+def _run_pytest(*args: str) -> subprocess.CompletedProcess[str]:
     """Run pytest in a child process so the **real** ini options apply.
 
     marker 등록과 deselect 는 `pyproject.toml` 이 하는 일이라 in-process 로는 확인할 수
     없다. 실제로 그 설정이 도는지 보려면 그 설정을 읽는 pytest 를 한 번 더 띄워야 한다.
     """
-    environment = dict(os.environ)
-    if drop_slack_env:
-        for name in E2E_ENV_NAMES:
-            environment.pop(name, None)
     return subprocess.run(
         [sys.executable, "-m", "pytest", *args],
         cwd=REPO_ROOT,
-        env=environment,
+        env=_child_environment(),
         capture_output=True,
         text=True,
         check=False,
@@ -1486,7 +1627,6 @@ def test_missing_credentials_report_as_a_skip_with_a_reason() -> None:
         "-m",
         "slack_e2e",
         "-rs",
-        drop_slack_env=True,
     )
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
@@ -1496,6 +1636,26 @@ def test_missing_credentials_report_as_a_skip_with_a_reason() -> None:
     assert SLACK_CHANNEL_ID_ENV in completed.stdout
 
 
+# T009 round 2 — **자식은 진짜 credential 을 물려받지 않는다.**
+#
+# `env=` 로 넘긴 mapping 은 `subprocess.run` 자신의 local 에 담기므로 그것이 던지면
+# `--showlocals` 가 그 안의 token 을 찍는다. 부르는 쪽 local 만 없애서는 안 닫힌다.
+# 자식에게 진짜 값을 안 주는 것이 유일하게 확실한 방법이다 (wave 6 review round 2 P1).
+def test_the_child_process_never_inherits_real_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    canary = "canary-must-not-reach-the-child"
+    for name in E2E_ENV_NAMES:
+        monkeypatch.setenv(name, canary)
+
+    completed = _run_pytest("tests/test_slack_http.py", "-m", "slack_e2e", "-rs")
+
+    # 물려받았다면 자식이 구성됨으로 보고 E2E 를 **돌린다** — skip 이 아니라 pass 다.
+    assert "skipped" in completed.stdout
+    assert "passed" not in completed.stdout
+    assert canary not in completed.stdout + completed.stderr
+
+
 # T009 round 2 — **부분 구성 실행이 token 을 출력하지 않는다.**
 #
 # fixture 가 `os.environ` 을 loader 에 넘기는 repo 유일 경로다. 그 경로에서 예외가 그대로
@@ -1503,16 +1663,11 @@ def test_missing_credentials_report_as_a_skip_with_a_reason() -> None:
 # failure-recovery review P1). `-l` 을 **일부러 붙여서** 본다.
 def test_a_partial_configuration_fails_without_printing_the_token() -> None:
     canary = "xoxb-LEAK-CANARY-must-not-appear"
-    environment = dict(os.environ)
-    for name in E2E_ENV_NAMES:
-        environment.pop(name, None)
-    environment[SLACK_BOT_TOKEN_ENV] = canary
-    environment[SLACK_CHANNEL_ID_ENV] = CHANNEL
 
     completed = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/test_slack_http.py", "-m", "slack_e2e", "-l"],
         cwd=REPO_ROOT,
-        env=environment,
+        env=_child_environment({SLACK_BOT_TOKEN_ENV: canary, SLACK_CHANNEL_ID_ENV: CHANNEL}),
         capture_output=True,
         text=True,
         check=False,

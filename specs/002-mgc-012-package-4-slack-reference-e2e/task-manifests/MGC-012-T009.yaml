@@ -115,6 +115,22 @@ acceptance:
       then: >-
         실패하고 빠진 이름을 보여주되 bot token 은 출력에 안 나온다. os.environ 을 받은
         frame 이 traceback 에 남으면 그 repr 이 환경 전체를 찍는다
+    # 2026-08-08 round 2 추가.
+    - id: AC-09
+      given: 부모 환경에 진짜 credential 이 있는 상태
+      when: harness 가 자식 pytest 를 띄우면
+      then: >-
+        자식은 그것을 물려받지 않는다. env= 로 넘긴 mapping 은 subprocess.run 자신의
+        local 에 담기므로 그것이 던지면 --showlocals 가 그 안의 token 을 찍는다
+    - id: AC-10
+      given: transport 를 예산과 함께 만든 상태
+      when: 배선하는 쪽이 확인하면
+      then: >-
+        transport 가 선언한 max_history_pages 와 lease_seconds 를 읽을 수 있다.
+        검증에만 쓰고 버리면 실제로 읽는 page 수와 안 묶인다.
+        **destination 이 불일치를 거부하게 만드는 것은 이 task 가 아니다** —
+        slack_projection.py 를 열어야 해서 index.yaml
+        transport-destination-page-binding 으로 미뤘다
   commands:
     - id: unit
       kind: test
