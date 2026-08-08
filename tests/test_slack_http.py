@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import inspect
 import json
 import sys
 import threading
 import time
 import urllib.parse
+import urllib.request
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -33,6 +35,7 @@ from amplai_foundry.governance.slack_projection import (
     SlackTransport,
     SlackTransportError,
     classify_slack_failure,
+    exhausted_cause_suffix,
 )
 
 MODULE_PATH = Path(inspect.getfile(slack_http))
@@ -120,7 +123,17 @@ class _FakeSlack:
 
         class Handler(BaseHTTPRequestHandler):
             # BaseHTTPRequestHandler 규약이라 이름을 바꿀 수 없다.
+            #
+            # GET 도 받는다. urllib 의 기본 redirect handler 는 301/302/303 을 만나면
+            # POST 를 GET 으로 바꾸므로, GET 을 안 받으면 redirect 뒤의 요청이 기록되지
+            # 않아 token 유출 test 가 아무것도 증명하지 못한다.
+            def do_GET(self) -> None:
+                self._handle()
+
             def do_POST(self) -> None:
+                self._handle()
+
+            def _handle(self) -> None:
                 length = int(self.headers.get("Content-Length", "0"))
                 body = self.rfile.read(length)
                 method = self.path.rsplit("/", 1)[-1]
@@ -165,7 +178,12 @@ class _FakeSlack:
                 return
 
         self._server = QuietServer(("127.0.0.1", 0), Handler)
-        threading.Thread(target=self._server.serve_forever, daemon=True).start()
+        # poll_interval 기본값 0.5초는 stop() 마다 그만큼 기다린다. test 83개면
+        # 그것만 20초가 넘는다 (wave 5 regression lens A-3).
+        threading.Thread(
+            target=lambda: self._server.serve_forever(poll_interval=0.01) if self._server else None,
+            daemon=True,
+        ).start()
 
     def stop(self) -> None:
         if self._server is not None:
@@ -458,7 +476,21 @@ def test_a_non_json_success_body_is_a_retryable_failure(slack: _FakeSlack) -> No
 
 
 # T006 — ok:true 인데 필수 필드가 없다. receipt 를 만들 수 없으므로 실패다.
-@pytest.mark.parametrize("payload", [{"ts": "1.0"}, {"channel": CHANNEL}, {}])
+# **공백 값도 포함한다.** SlackSendResult 구성은 _call 의 try 밖이라
+# (post_message), 공백이 통과하면 SlackSendResult.__post_init__ 의 raw ValueError 가
+# 그대로 샌다 — C-1 의무 1 이 깨진다. _require_text 의 공백 검사가 그것을 막는 유일한
+# 장치인데 wave 5 regression lens BP2-2 전까지 test 가 없었다.
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"ts": "1.0"},
+        {"channel": CHANNEL},
+        {},
+        {"channel": "", "ts": "1.0"},
+        {"channel": CHANNEL, "ts": "  "},
+        {"channel": "   ", "ts": "   "},
+    ],
+)
 def test_a_success_response_missing_identity_fields_fails(
     slack: _FakeSlack,
     payload: dict[str, object],
@@ -974,10 +1006,71 @@ def test_no_failure_path_ever_names_the_credential(slack: _FakeSlack, reply: _Re
 # slack_http.py 한 파일만 훑으면 다음 commit 이 다른 파일에서 읽어도 안 보인다.
 def test_no_other_module_reads_slack_configuration_from_the_environment() -> None:
     offenders: list[str] = []
-    for path in Path("src/amplai_foundry").rglob("*.py"):
+    # **절대 경로다.** 상대 경로면 다른 CWD 에서 0개를 훑고 조용히 통과한다
+    # (wave 5 regression lens A-2). MODULE_PATH 는 inspect 가 준 절대 경로다.
+    package_root = MODULE_PATH.parents[1]
+    for path in package_root.rglob("*.py"):
         if path.name == "slack_http.py":
             continue
         text = path.read_text(encoding="utf-8")
         if "SLACK" in text and ("os.environ" in text or "from os import environ" in text):
             offenders.append(str(path))
     assert offenders == []
+
+
+# wave 5 regression lens BP2-1 — commit ec3b8fa 는 "방어선을 둘 둔다" 고 적었는데
+# 첫째 줄(_NoRedirect)만 고정돼 있었다. 둘째 줄을 add_header 로 되돌려도 전부 초록이었다.
+#
+# **둘째 줄은 실제로 값이 있다.** redirect handler 를 기본값으로 되돌린 상태에서
+# add_unredirected_header 면 token 이 안 가고 add_header 면 간다 — lens 가 실측했다.
+# 그래서 _NoRedirect 를 일부러 뺀 opener 로 그 줄만 검사한다.
+def test_the_authorization_header_does_not_survive_a_redirect(slack: _FakeSlack) -> None:
+    victim = _FakeSlack()
+    victim.start()
+    try:
+        slack.queue(
+            "chat.postMessage",
+            _Reply(
+                status=302,
+                body=b"",
+                headers={"Location": f"{victim.base_url}/api/chat.postMessage"},
+            ),
+        )
+        victim.queue("chat.postMessage", _Reply.ok({"channel": CHANNEL, "ts": "1.0"}))
+        transport = _transport(slack)
+        # redirect 를 막는 첫째 방어선을 뺀다. 남는 것은 unredirected header 하나다.
+        transport._opener = urllib.request.build_opener()
+
+        with contextlib.suppress(SlackTransportError):
+            transport.post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+        # redirect 는 따라갔지만 token 은 안 따라갔다.
+        assert victim.requests, "redirect 를 안 따라갔으면 이 test 는 아무것도 증명하지 않는다"
+        assert all(recorded.authorization == "" for recorded in victim.requests)
+    finally:
+        victim.stop()
+
+
+# wave 5 regression lens A-1 — 이 표지는 진단 문자열이 아니라 append-only column 에
+# 저장되는 code 다. exhausted_cause_suffix 가 transport_{...} 로 만든다. 빠지면
+# "Slack 이 code 없이 거절" 과 "애초에 Slack 이 아님" 이 같은 row 로 뭉개진다.
+def test_a_non_slack_envelope_is_labelled_for_the_dead_letter(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply(body=b'{"error":"authentication required"}'))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    assert caught.value.transport_exception == "not_a_slack_envelope"
+    assert exhausted_cause_suffix(caught.value) == "transport_not_a_slack_envelope"
+
+
+# 반대쪽 — 진짜 Slack 이 code 없이 거절한 것은 그 표지를 안 단다. 위 test 만 있으면
+# 모든 실패에 표지를 다는 구현도 통과한다.
+def test_a_slack_envelope_without_a_code_is_not_labelled(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply(body=b'{"ok":false}'))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    assert caught.value.transport_exception is None
+    assert exhausted_cause_suffix(caught.value) == "no_slack_code"
