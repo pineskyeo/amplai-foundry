@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T009
 title: E2E harness skips loudly and stays out of the default suite
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -58,6 +58,7 @@ dependencies:
   tasks:
     - MGC-012-T006
     - MGC-012-T007
+    - MGC-012-T008
   external: []
 
 implementation:
@@ -152,6 +153,10 @@ acceptance:
       kind: integration
       run: amplai-foundry verify
       required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault/
+      required: true
   manual_checks: []
   evidence:
     - type: command_output
@@ -167,7 +172,8 @@ risk:
     - skip 을 pass 로 적는 실수가 gate 기록에서 일어날 수 있다. quickstart D 절이 그것을
       금지한다.
     - pyproject.toml 변경이 W2-pytest-import-mode 와 겹칠 수 있다.
-  approvals: []
+  approvals:
+    - Wave 6R 이후 contract·failure-recovery·regression 3 lens revalidation
 
 loop:
   max_attempts: 5
@@ -198,9 +204,9 @@ completion:
   # 적고 error 로 떨어지는 것을 확인했다 (H-4.1).
   all_acceptance_passed: true
   required_evidence_present: true
-  # gate 는 아직이다. wave 6 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
-  # 채운다. status 도 그때 done 으로 바꾼다.
-  completed_at: null
+  # 2026-08-12 final shared-file regression: full 1087 passed, 1 slack_e2e deselected;
+  # verify 7/7 PASS. Three-lens blocker/advisory count is 0.
+  completed_at: "2026-08-12T11:27:46+09:00"
   evidence_paths:
     - pyproject.toml
     - src/amplai_foundry/governance/slack_http.py

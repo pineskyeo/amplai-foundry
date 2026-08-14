@@ -13,20 +13,27 @@ runtime dependency 를 늘리지 않는다. `urllib.request` 로 충분하다 �
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
+import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from email.message import Message as HTTPMessage
+from enum import StrEnum
 from typing import IO, Final, NoReturn, Protocol, cast
 
-from pydantic import SecretStr
+from pydantic import SecretStr, TypeAdapter, ValidationError
 
 from amplai_foundry.governance.events import OutboxEventView
+from amplai_foundry.governance.ingress import IngressCommandView
+from amplai_foundry.governance.ingress_worker import SafeInteractionOutcome
+from amplai_foundry.governance.models import ChannelProvider, Digest
 from amplai_foundry.governance.slack_projection import (
+    SLACK_PROJECTION_EVENT_TYPE,
     SlackHistoryMessage,
     SlackHistoryPage,
     SlackProjectionMetadataUnreadableError,
@@ -35,17 +42,21 @@ from amplai_foundry.governance.slack_projection import (
     SlackTransportError,
     build_slack_marker,
     read_slack_marker,
+    safe_slack_error_code,
+    safe_transport_exception,
 )
 
 SLACK_API_BASE: Final = "https://slack.com/api"
 
 _POST_MESSAGE: Final = "chat.postMessage"
+_POST_EPHEMERAL: Final = "chat.postEphemeral"
 _CONVERSATIONS_HISTORY: Final = "conversations.history"
 # 자가검사가 남긴 probe 를 치우는 데만 쓴다 (H-3.2). 필요한 scope 는 `chat:write` 하나이고
 # 이미 갖고 있다 — Slack 공식 문서가 bot token 에 대해 그렇게 적고, 같은 문서가
 # "this method may delete only messages posted by that bot" 으로 대상을 우리 message 로
 # 한정한다. 새 scope 를 요구하지 않으므로 설치 절차가 안 바뀐다.
 _DELETE_MESSAGE: Final = "chat.delete"
+_DIGEST_ADAPTER: Final = TypeAdapter(Digest)
 
 # `chat.postMessage` 는 JSON 으로 보낸다. Slack 문서가 복잡한 인자를 가진 method 에 대해
 # "these methods can be difficult to properly construct when using a
@@ -294,8 +305,8 @@ def validate_call_budget(
     예산을 넘는 transport 는 **만들 수조차 없다** — 아무도 안 부르는 validator 로 두면
     FR-016 이 실제로는 안 닫힌다 (wave 5 review P1-3).
     """
-    if timeout_seconds <= 0:
-        raise ValueError("timeout_seconds는 0보다 커야 합니다.")
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ValueError("timeout_seconds는 유한한 양수여야 합니다.")
     if max_history_pages < 1:
         raise ValueError("max_history_pages는 1 이상이어야 합니다.")
     if lease_seconds < 1:
@@ -367,17 +378,56 @@ class HttpSlackTransport:
         `channel` 과 `metadata` 를 payload **뒤에** 둔다. dict literal 은 뒤 key 가 이기므로
         payload 가 무엇을 담고 있든 우리 값이 나간다.
         """
-        response = self._call(
-            _POST_MESSAGE,
-            lambda: json.dumps(
-                {**dict(payload), "channel": channel, "metadata": dict(marker)}
-            ).encode("utf-8"),
-            _JSON_CONTENT_TYPE,
-        )
-        return SlackSendResult(
-            channel=_require_text(response, "channel"),
-            ts=_require_text(response, "ts"),
-        )
+        failure: SlackTransportError | None = None
+        interruption_kind: str | None = None
+        try:
+            response = self._call(
+                _POST_MESSAGE,
+                lambda: json.dumps(
+                    {
+                        **_json_object(payload),
+                        "channel": channel,
+                        "metadata": _json_object(marker),
+                    }
+                ).encode("utf-8"),
+                _JSON_CONTENT_TYPE,
+            )
+            # `ts` 를 먼저 뽑는다. `channel` 만 없는 응답에서도 `ts` 를 손에 쥐어야 자가검사가
+            # 방금 보낸 probe 를 지울 수 있다 — `channel` 은 우리가 넘긴 값이라 이미 안다.
+            ts = _require_text(response, "ts")
+            response_channel = _require_text(response, "channel")
+        except SlackTransportError as error:
+            failure = _sanitized_transport_error(error)
+        except BaseException as error:
+            interruption_kind = _interruption_kind(error)
+            _clear_exception_frames(error)
+        if failure is not None:
+            payload = {}
+            marker = {}
+            raise failure from None
+        if interruption_kind is not None:
+            payload = {}
+            marker = {}
+            _raise_sanitized_interruption(interruption_kind)
+        return SlackSendResult(channel=response_channel, ts=ts)
+
+    def post_ephemeral(self, *, channel: str, user: str, text: str) -> None:
+        """Send one fixed, non-authoritative interaction outcome."""
+
+        failure: SlackTransportError | None = None
+        try:
+            self._call(
+                _POST_EPHEMERAL,
+                lambda: json.dumps({"channel": channel, "user": user, "text": text}).encode(
+                    "utf-8"
+                ),
+                _JSON_CONTENT_TYPE,
+            )
+        except SlackTransportError as error:
+            failure = _sanitized_transport_error(error)
+        if failure is not None:
+            text = ""
+            raise failure from None
 
     def delete_message(self, *, channel: str, ts: str) -> None:
         """Delete one message this bot posted (H-3.2).
@@ -471,6 +521,101 @@ class HttpSlackTransport:
             _fail(error)
 
 
+class EphemeralSlackTransport(Protocol):
+    def post_ephemeral(self, *, channel: str, user: str, text: str) -> None: ...
+
+
+_SAFE_INTERACTION_MESSAGES: Final[Mapping[SafeInteractionOutcome, str]] = {
+    SafeInteractionOutcome.ALREADY_COMPLETED: "This Proposal action was already completed.",
+    SafeInteractionOutcome.EXPIRED: "This Proposal action expired. Request a new Review Card.",
+    SafeInteractionOutcome.STALE: "This Review Card is no longer current.",
+    SafeInteractionOutcome.DENIED: "This Proposal action is not available to you here.",
+    SafeInteractionOutcome.UNAVAILABLE: "This Proposal action could not be completed safely.",
+}
+
+
+class SlackInteractionFeedback:
+    """Map a closed outcome to one Slack ephemeral message without durable secrets."""
+
+    def __init__(self, transport: EphemeralSlackTransport) -> None:
+        self._transport = transport
+
+    def send(
+        self,
+        command: IngressCommandView,
+        outcome: SafeInteractionOutcome,
+    ) -> None:
+        if command.provider is not ChannelProvider.SLACK:
+            return
+        channel = command.channel_ref.channel_id
+        if channel is None:
+            raise ValueError("Slack feedback channel is unavailable.")
+        self._transport.post_ephemeral(
+            channel=channel,
+            user=command.external_actor_key,
+            text=_SAFE_INTERACTION_MESSAGES[outcome],
+        )
+
+
+def _sanitized_transport_error(error: SlackTransportError) -> SlackTransportError:
+    safe = SlackTransportError(
+        "Slack API request failed.",
+        error_code=safe_slack_error_code(error.error_code),
+        status_code=error.status_code,
+        retry_after_seconds=error.retry_after_seconds,
+        transport_exception=safe_transport_exception(error.transport_exception),
+    )
+    _clear_exception_frames(error)
+    return safe
+
+
+def _clear_exception_frames(error: BaseException) -> None:
+    seen: set[int] = set()
+    current: BaseException | None = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if current.__traceback__ is not None:
+            traceback.clear_frames(current.__traceback__)
+            current.__traceback__ = None
+        next_error = current.__cause__ or current.__context__
+        current.__cause__ = None
+        current.__context__ = None
+        current = next_error
+
+
+def _interruption_kind(error: BaseException) -> str:
+    if isinstance(error, KeyboardInterrupt):
+        return "keyboard_interrupt"
+    if isinstance(error, SystemExit):
+        return "system_exit"
+    if isinstance(error, GeneratorExit):
+        return "generator_exit"
+    return "base_exception"
+
+
+def _raise_sanitized_interruption(kind: str) -> NoReturn:
+    if kind == "keyboard_interrupt":
+        raise KeyboardInterrupt("Slack message delivery interrupted.") from None
+    if kind == "system_exit":
+        raise SystemExit("Slack message delivery interrupted.") from None
+    if kind == "generator_exit":
+        raise GeneratorExit from None
+    raise BaseException("Slack message delivery interrupted.") from None
+
+
+def _json_value(value: object) -> object:
+    """Copy an immutable presentation tree into JSON-native containers."""
+    if isinstance(value, Mapping):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    return value
+
+
+def _json_object(value: Mapping[str, object]) -> dict[str, object]:
+    return {str(key): _json_value(item) for key, item in value.items()}
+
+
 def _read_within(response: object, deadline: float) -> bytes:
     """Read one body under a wall-clock deadline and a size cap.
 
@@ -538,7 +683,7 @@ def _decode(raw: bytes, *, status_code: int) -> Mapping[str, object]:
     if decoded.get("ok") is True:
         return decoded
     raise SlackTransportError(
-        f"Slack이 성공을 반환하지 않았습니다: {decoded.get('error')!r}",
+        "Slack이 성공을 반환하지 않았습니다.",
         error_code=_slack_error_code(decoded),
         status_code=status_code,
         transport_exception=None if decoded.get("ok") is False else "not_a_slack_envelope",
@@ -670,19 +815,129 @@ def _read_next_cursor(raw: object) -> str | None:
     return cursor
 
 
-class SlackReadbackError(RuntimeError):
-    """The probe marker did not survive the round trip. **Refuse to start.**
+class ReadbackOutcomeStatus(StrEnum):
+    """Closed startup decision returned by the readback layer (D-031)."""
 
-    이 검사가 잡는 것은 `SlackProjectionDestination` 안에서 판정할 수 없는 것들이다 —
-    값이 틀린 `app_id`, `metadata` 를 안 옮기는 구현, `event_type` 개명, 그리고
-    `conversations.history` scope 부족.
+    READY = "READY"
+    DEGRADED_CLEANUP = "DEGRADED_CLEANUP"
+    READBACK_FAILED = "READBACK_FAILED"
+    HARD_BLOCKED_NO_POST = "HARD_BLOCKED_NO_POST"
 
-    **그 넷의 결과는 hold 가 아니라 조용한 중복 Card 다.** marker 를 하나도 못 읽으면
-    reconcile 이 history 소진을 미전송으로 판정하고 (D-023 항목 3) 매 재시도마다 Card 가
-    한 장씩 는다. 아무도 모른다.
 
-    그래서 기동 시점의 시끄러운 거부로 바꾼다. 운영 중에 알아채는 것보다 싸다.
+class ReadbackFailureCode(StrEnum):
+    """Closed readback failure taxonomy from FR-035."""
+
+    PROBE_INPUT_INVALID = "PROBE_INPUT_INVALID"
+    HISTORY_READ_FAILED = "HISTORY_READ_FAILED"
+    PROBE_NOT_FOUND = "PROBE_NOT_FOUND"
+    APP_ID_MISMATCH = "APP_ID_MISMATCH"
+    MARKER_UNREADABLE = "MARKER_UNREADABLE"
+    MARKER_MISMATCH = "MARKER_MISMATCH"
+    RESPONSE_CHANNEL_MISMATCH = "RESPONSE_CHANNEL_MISMATCH"
+
+
+class ReadbackLifecycleCause(StrEnum):
+    """Supplied durable cause that requires a no-post startup outcome.
+
+    This is deliberately not an outcome enum.  In particular,
+    `HARD_BLOCKED_NO_POST` cannot be persisted as a lifecycle cause (FR-026).
+    T013 will own the repository that supplies these values.
     """
+
+    POST_INTENT_RECORDED = "POST_INTENT_RECORDED"
+    AMBIGUOUS_POST = "AMBIGUOUS_POST"
+    CLEANUP_PENDING = "CLEANUP_PENDING"
+    CLAIM_FAILED = "CLAIM_FAILED"
+    RESOLUTION_COMMIT_FAILED = "RESOLUTION_COMMIT_FAILED"
+
+
+class SafeSlackProviderErrorCode(StrEnum):
+    """Provider codes approved for the typed diagnostic boundary.
+
+    Unknown provider text is discarded instead of being copied into logs, metrics, exceptions,
+    or persisted diagnostics.  This is a closed contract, not a pattern-based sanitizer.
+    """
+
+    CANT_DELETE_MESSAGE = "cant_delete_message"
+    CHANNEL_NOT_FOUND = "channel_not_found"
+    MESSAGE_NOT_FOUND = "message_not_found"
+    MISSING_SCOPE = "missing_scope"
+    NOT_AUTHED = "not_authed"
+    INVALID_AUTH = "invalid_auth"
+    TOKEN_REVOKED = "token_revoked"
+    ACCOUNT_INACTIVE = "account_inactive"
+    NO_PERMISSION = "no_permission"
+    RATELIMITED = "ratelimited"
+    RATE_LIMITED = "rate_limited"
+    REQUEST_TIMEOUT = "request_timeout"
+    SERVICE_UNAVAILABLE = "service_unavailable"
+    INTERNAL_ERROR = "internal_error"
+    FATAL_ERROR = "fatal_error"
+
+
+@dataclass(frozen=True, slots=True)
+class CleanupFailureDetail:
+    """One immutable, safe cleanup failure detail (FR-034)."""
+
+    cleanup_failure_count: int
+    provider_error_code: SafeSlackProviderErrorCode | None
+
+    def __post_init__(self) -> None:
+        if self.cleanup_failure_count < 1:
+            raise ValueError("cleanup_failure_count는 1 이상이어야 합니다.")
+
+
+@dataclass(frozen=True, slots=True)
+class ReadbackDiagnosticData:
+    """Closed safe-field surface shared with the future composition root (FR-030)."""
+
+    diagnostic_code: str
+    channel_id: str
+    app_id: str
+    probe_id: str | None = None
+    message_ts: str | None = None
+    cleanup_failure_count: int | None = None
+    provider_error_code: SafeSlackProviderErrorCode | None = None
+    operator_action: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadbackOutcome:
+    """Immutable startup decision; this layer never logs or activates a worker."""
+
+    status: ReadbackOutcomeStatus
+    primary_failure_code: ReadbackFailureCode | None
+    secondary_cleanup_failure: CleanupFailureDetail | None
+    diagnostic_data: ReadbackDiagnosticData
+    lifecycle_cause: ReadbackLifecycleCause | None = None
+
+    def __post_init__(self) -> None:
+        if self.status in {
+            ReadbackOutcomeStatus.READY,
+            ReadbackOutcomeStatus.DEGRADED_CLEANUP,
+        }:
+            if self.primary_failure_code is not None or self.lifecycle_cause is not None:
+                raise ValueError("activation 허용 outcome은 failure code/cause를 가질 수 없습니다.")
+            if self.secondary_cleanup_failure is not None:
+                raise ValueError("activation 허용 outcome은 secondary failure를 가질 수 없습니다.")
+            return
+        if self.status is ReadbackOutcomeStatus.READBACK_FAILED:
+            if self.primary_failure_code is None:
+                raise ValueError("READBACK_FAILED는 primary_failure_code가 필요합니다.")
+            if self.lifecycle_cause is not None:
+                raise ValueError("READBACK_FAILED는 lifecycle cause를 가질 수 없습니다.")
+            return
+        if self.primary_failure_code is not None or self.secondary_cleanup_failure is not None:
+            raise ValueError("HARD_BLOCKED_NO_POST는 readback failure를 가질 수 없습니다.")
+        if self.lifecycle_cause is None:
+            raise ValueError("HARD_BLOCKED_NO_POST는 lifecycle cause가 필요합니다.")
+
+    @property
+    def allows_activation(self) -> bool:
+        return self.status in {
+            ReadbackOutcomeStatus.READY,
+            ReadbackOutcomeStatus.DEGRADED_CLEANUP,
+        }
 
 
 # 자가검사가 보내는 probe message 의 본문. 사람이 보고 무엇인지 알아야 한다.
@@ -711,9 +966,8 @@ _PROBE_TEXT: Final = "AMPLAI marker readback self-check. 이 message 는 지워�
 # terminal 이 된다. 그 상한은 아직 모른다 (OQ-003) — 모르는 값을 사이에 두지 않는다.
 PROBE_DESTINATION_REF: Final = "provider:slack:" + "z" * 64
 
-# probe 를 되찾을 때 훑는 page 수. 자가검사는 기동 시점이라 채널이 조용하다고 가정하지
-# 않는다 — 다른 사람이 방금 떠들었을 수 있다. 다만 우리가 방금 보낸 것이므로 첫 page 를
-# 크게 잡으면 충분하다.
+# 방금 게시해 Slack이 `ts`를 확인한 probe를 되읽는 한 page의 크기다. 위치나 최근 message
+# 개수로 identity를 추정하지 않고, 오직 confirmed `ts`로 찾는다 (FR-026).
 _PROBE_HISTORY_LIMIT: Final = 100
 
 
@@ -748,8 +1002,9 @@ def verify_marker_readback(
     channel: str,
     app_id: str,
     probe_marker: Mapping[str, object],
-) -> None:
-    """Post one probe, prove its marker comes back intact, then remove it (H-3, FR-018).
+    lifecycle_cause: ReadbackLifecycleCause | None = None,
+) -> ReadbackOutcome:
+    """Return a typed startup outcome without operator output (H-3, FR-018).
 
     `probe_marker` 는 호출자가 `build_probe_marker` 로 만든다. 여기서 새로 만들지 않는
     이유는 **실제로 나가는 것과 같은 것**을 검사해야 하기 때문이다. 자가검사 전용 모양을
@@ -759,83 +1014,252 @@ def verify_marker_readback(
     `reconcile` 의 판정에서 빠진다. 이유는 그 상수에 적었다. 호출자가 진짜 destination 의
     값을 넣으면 **보내기 전에** 거부한다 — 보낸 뒤에 알면 이미 채널에 남는다.
 
-    **끝나면 probe 를 지운다. 성공·실패 양쪽에서 지운다** (H-3.2). 판정에서 빠지는 것만으로
-    부족하기 때문이다 — probe 는 `conversations.history` 의 조회 예산을 그대로 먹고,
-    재시작 loop 이 그 예산(`SLACK_MAX_HISTORY_PAGES` x `SLACK_HISTORY_PAGE_LIMIT`)을 채우면
-    진짜 Card 가 probe 아래 묻혀 `reconcile` 이 판정 불가로 떨어진다. 그 결과는 되돌릴 수
-    없는 hold 다 (wave 6 review round 2 가 실측, D-030).
-
-    실패는 전부 `SlackReadbackError` 다. transport 자체가 실패하면 그 예외
-    (`SlackTransportError`) 를 그대로 올린다 — 그것은 network 문제이지 marker 결함이
-    아니고, 둘을 섞으면 operator 가 무엇을 고쳐야 할지 모른다.
+    History scan으로 이전 probe를 추정하지 않는다. T013의 durable lifecycle이 supplied cause를
+    제공하면 network 호출 전에 `HARD_BLOCKED_NO_POST`를 반환한다. Cause가 없을 때만 fresh
+    unit self-check를 실행한다. Cleanup-only 실패는 `DEGRADED_CLEANUP`; readback 실패는 closed
+    primary code와 optional safe cleanup detail을 가진 `READBACK_FAILED`다 (D-031).
     """
     expected = probe_marker.get("event_payload")
-    if not isinstance(expected, Mapping):
-        raise SlackReadbackError("probe_marker 에 event_payload 가 없습니다.")
-    if expected.get("destination_ref") != PROBE_DESTINATION_REF:
-        raise SlackReadbackError(
-            "probe_marker 의 destination_ref 가 probe 전용 값이 아닙니다: "
-            f"{expected.get('destination_ref')!r}. {PROBE_DESTINATION_REF!r} 를 쓰십시오 — "
-            "진짜 destination 의 값을 쓰면 reconcile 이 probe 를 Card 로 오인합니다."
+    if lifecycle_cause is not None:
+        return _readback_outcome(
+            status=ReadbackOutcomeStatus.HARD_BLOCKED_NO_POST,
+            channel=channel,
+            app_id=app_id,
+            # T008 has no separately validated durable ProbeIdentity.  Marker input is not a
+            # trusted substitute, so no marker value crosses this diagnostic short-circuit.
+            probe_id=None,
+            lifecycle_cause=lifecycle_cause,
+        )
+    safe_probe_id = _probe_id(expected)
+    if not _valid_probe_marker(probe_marker):
+        return _readback_failure(
+            ReadbackFailureCode.PROBE_INPUT_INVALID,
+            channel=channel,
+            app_id=app_id,
+            probe_id=safe_probe_id,
+        )
+    expected_payload = cast("Mapping[str, object]", expected)
+    if not callable(getattr(transport, "delete_message", None)):
+        return _readback_failure(
+            ReadbackFailureCode.PROBE_INPUT_INVALID,
+            channel=channel,
+            app_id=app_id,
+            probe_id=safe_probe_id,
         )
     result = transport.post_message(
         channel=channel,
         payload={"text": _PROBE_TEXT},
         marker=probe_marker,
     )
-    failure: BaseException | None = None
+    primary_failure: ReadbackFailureCode | None = None
+    primary_provider_code: SafeSlackProviderErrorCode | None = None
+    if result.channel != channel:
+        # A confirmed response identity contradicts the configured target.  Do not claim a
+        # history absence that was never observed; fail with the dedicated FR-035 code and clean
+        # only Slack's confirmed identity.
+        primary_failure = ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH
+    else:
+        try:
+            page = transport.read_history(
+                channel=result.channel,
+                cursor=None,
+                limit=_PROBE_HISTORY_LIMIT,
+            )
+        except Exception as error:
+            primary_failure = ReadbackFailureCode.HISTORY_READ_FAILED
+            primary_provider_code = _safe_provider_error_code(error)
+        else:
+            primary_failure = _inspect_probe(
+                page,
+                result,
+                app_id=app_id,
+                expected=expected_payload,
+            )
+    cleanup_failure: CleanupFailureDetail | None = None
     try:
-        _inspect_probe(transport, result, channel=channel, app_id=app_id, expected=expected)
-    except BaseException as error:
-        failure = error
-    try:
-        transport.delete_message(channel=channel, ts=result.ts)
-    except SlackTransportError as error:
-        if failure is None:
-            raise SlackReadbackError(
-                "자가검사는 통과했지만 probe message 를 지우지 못했습니다. "
-                "남은 probe 는 reconcile 의 조회 예산을 먹어 판정 불가를 만들 수 있습니다."
-            ) from error
-        # 원래 원인을 가리지 않는다. 삭제 실패는 그 예외에 덧붙여 보고한다.
-        failure.add_note(f"probe message 도 지우지 못했습니다: {error}")
-    if failure is not None:
-        raise failure
+        transport.delete_message(channel=result.channel, ts=result.ts)
+    except Exception as error:
+        cleanup_failure = CleanupFailureDetail(
+            cleanup_failure_count=1,
+            provider_error_code=_safe_provider_error_code(error),
+        )
+    if primary_failure is not None:
+        return _readback_failure(
+            primary_failure,
+            channel=channel,
+            app_id=app_id,
+            probe_id=safe_probe_id,
+            message_ts=result.ts,
+            cleanup_failure=cleanup_failure,
+            provider_error_code=primary_provider_code,
+        )
+    if cleanup_failure is not None:
+        return _readback_outcome(
+            status=ReadbackOutcomeStatus.DEGRADED_CLEANUP,
+            channel=channel,
+            app_id=app_id,
+            probe_id=safe_probe_id,
+            message_ts=result.ts,
+            cleanup_failure=cleanup_failure,
+        )
+    return _readback_outcome(
+        status=ReadbackOutcomeStatus.READY,
+        channel=channel,
+        app_id=app_id,
+        probe_id=safe_probe_id,
+        message_ts=result.ts,
+    )
 
 
-def _inspect_probe(
-    transport: ProbeTransport,
-    result: SlackSendResult,
+def _probe_id(payload: object) -> str | None:
+    if not isinstance(payload, Mapping):
+        return None
+    event_id = payload.get("event_id")
+    return event_id if isinstance(event_id, str) and event_id.strip() else None
+
+
+def _valid_probe_marker(marker: Mapping[str, object]) -> bool:
+    """Validate the complete locally-produced marker before any remote side effect."""
+    if set(marker) != {"event_type", "event_payload"}:
+        return False
+    if marker.get("event_type") != SLACK_PROJECTION_EVENT_TYPE:
+        return False
+    payload = marker.get("event_payload")
+    if not isinstance(payload, Mapping):
+        return False
+    if set(payload) != {
+        "event_id",
+        "destination_ref",
+        "destination_sequence",
+        "payload_digest",
+    }:
+        return False
+    event_id = payload.get("event_id")
+    sequence = payload.get("destination_sequence")
+    digest = payload.get("payload_digest")
+    return (
+        isinstance(event_id, str)
+        and bool(event_id.strip())
+        and payload.get("destination_ref") == PROBE_DESTINATION_REF
+        and isinstance(sequence, int)
+        and not isinstance(sequence, bool)
+        and sequence >= 1
+        and _valid_digest(digest)
+    )
+
+
+def _valid_digest(value: object) -> bool:
+    """Reuse the canonical governance Digest contract instead of duplicating its pattern."""
+    if not isinstance(value, str):
+        return False
+    try:
+        _DIGEST_ADAPTER.validate_python(value)
+    except ValidationError:
+        return False
+    return True
+
+
+def _safe_provider_error_code(error: Exception) -> SafeSlackProviderErrorCode | None:
+    if not isinstance(error, SlackTransportError) or error.error_code is None:
+        return None
+    try:
+        return SafeSlackProviderErrorCode(error.error_code)
+    except ValueError:
+        return None
+
+
+def _readback_failure(
+    code: ReadbackFailureCode,
     *,
     channel: str,
     app_id: str,
+    probe_id: str | None,
+    message_ts: str | None = None,
+    cleanup_failure: CleanupFailureDetail | None = None,
+    provider_error_code: SafeSlackProviderErrorCode | None = None,
+) -> ReadbackOutcome:
+    return _readback_outcome(
+        status=ReadbackOutcomeStatus.READBACK_FAILED,
+        channel=channel,
+        app_id=app_id,
+        probe_id=probe_id,
+        message_ts=message_ts,
+        primary_failure_code=code,
+        cleanup_failure=cleanup_failure,
+        provider_error_code=provider_error_code,
+    )
+
+
+def _readback_outcome(
+    *,
+    status: ReadbackOutcomeStatus,
+    channel: str,
+    app_id: str,
+    probe_id: str | None,
+    message_ts: str | None = None,
+    primary_failure_code: ReadbackFailureCode | None = None,
+    cleanup_failure: CleanupFailureDetail | None = None,
+    provider_error_code: SafeSlackProviderErrorCode | None = None,
+    lifecycle_cause: ReadbackLifecycleCause | None = None,
+) -> ReadbackOutcome:
+    diagnostic_code = (
+        primary_failure_code.value
+        if primary_failure_code is not None
+        else "SLACK_PROBE_CLEANUP_DEGRADED"
+        if status is ReadbackOutcomeStatus.DEGRADED_CLEANUP
+        else status.value
+    )
+    diagnostic_provider_code = provider_error_code
+    if cleanup_failure is not None and diagnostic_provider_code is None:
+        diagnostic_provider_code = cleanup_failure.provider_error_code
+    return ReadbackOutcome(
+        status=status,
+        primary_failure_code=primary_failure_code,
+        secondary_cleanup_failure=cleanup_failure if primary_failure_code is not None else None,
+        diagnostic_data=ReadbackDiagnosticData(
+            diagnostic_code=diagnostic_code,
+            channel_id=channel,
+            app_id=app_id,
+            probe_id=probe_id,
+            message_ts=message_ts,
+            cleanup_failure_count=(
+                cleanup_failure.cleanup_failure_count if cleanup_failure is not None else None
+            ),
+            provider_error_code=diagnostic_provider_code,
+        ),
+        lifecycle_cause=lifecycle_cause,
+    )
+
+
+def _inspect_probe(
+    page: SlackHistoryPage,
+    result: SlackSendResult,
+    *,
+    app_id: str,
     expected: Mapping[str, object],
-) -> None:
-    """Read the probe back and compare it. Raises `SlackReadbackError` on any mismatch."""
-    page = transport.read_history(channel=channel, cursor=None, limit=_PROBE_HISTORY_LIMIT)
+) -> ReadbackFailureCode | None:
+    """Compare one confirmed probe without raising or retaining raw provider data."""
     probe = next((message for message in page.messages if message.ts == result.ts), None)
     if probe is None:
-        raise SlackReadbackError(
-            "방금 보낸 probe message 를 conversations.history 에서 찾지 못했습니다. "
-            "scope 또는 조회 방식을 확인하십시오."
-        )
+        return ReadbackFailureCode.PROBE_NOT_FOUND
     if probe.app_id != app_id:
-        # 여기서 못 맞으면 reconcile 이 우리 marker 를 하나도 우리 것으로 인정하지 않는다.
-        # 값을 message 에 적는다 — credential 이 아니고, 무엇을 고칠지 알려면 필요하다.
-        raise SlackReadbackError(
-            f"probe message 의 app_id 가 구성값과 다릅니다: 응답 {probe.app_id!r}, 구성 {app_id!r}"
-        )
+        return ReadbackFailureCode.APP_ID_MISMATCH
+    metadata = probe.metadata
+    if not isinstance(metadata, Mapping):
+        return ReadbackFailureCode.MARKER_UNREADABLE
+    event_type = metadata.get("event_type")
+    if not isinstance(event_type, str):
+        return ReadbackFailureCode.MARKER_UNREADABLE
+    if event_type != SLACK_PROJECTION_EVENT_TYPE:
+        return ReadbackFailureCode.MARKER_MISMATCH
+    if not isinstance(metadata.get("event_payload"), Mapping):
+        return ReadbackFailureCode.MARKER_UNREADABLE
     try:
         recovered = read_slack_marker(probe, app_id=app_id)
-    except SlackProjectionMetadataUnreadableError as error:
-        raise SlackReadbackError(
-            "probe message 의 metadata 가 복원되지 않습니다. "
-            "include_all_metadata 를 붙이는지, adapter 가 metadata 를 옮기는지 확인하십시오."
-        ) from error
+    except SlackProjectionMetadataUnreadableError:
+        return ReadbackFailureCode.MARKER_UNREADABLE
     if recovered is None:
-        raise SlackReadbackError(
-            "probe message 에서 marker 를 복원하지 못했습니다. event_type 또는 "
-            "event_payload 의 모양이 build_slack_marker 와 다릅니다."
-        )
+        return ReadbackFailureCode.MARKER_UNREADABLE
     mismatched = [
         name
         for name, actual in (
@@ -847,4 +1271,5 @@ def _inspect_probe(
         if expected.get(name) != actual
     ]
     if mismatched:
-        raise SlackReadbackError(f"probe marker 의 필드가 왕복에서 바뀌었습니다: {mismatched}")
+        return ReadbackFailureCode.MARKER_MISMATCH
+    return None

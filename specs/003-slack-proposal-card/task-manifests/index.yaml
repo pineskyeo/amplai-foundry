@@ -1,0 +1,302 @@
+schema_version: "1.0"
+
+feature:
+  id: MGC-012-P5
+  title: Slack Proposal Cards
+  source_status: approved
+
+source:
+  files:
+    - path: specs/003-slack-proposal-card/spec.md
+      revision: sha256:8cee3887fc4df7b978ac117fa624715dd6f567637a4cf955dbd71bc90b05120b
+    - path: specs/003-slack-proposal-card/plan.md
+      revision: sha256:8b718144b88701dc1deb4003ae57f418a8a9a44b51c2dfa26789f33947c1d00f
+    - path: specs/003-slack-proposal-card/research.md
+      revision: sha256:a64ae9d7ac2c79c0cc75ec1129a22063ea09383176d3c8b616f0f21f67fe6535
+    - path: specs/003-slack-proposal-card/data-model.md
+      revision: sha256:56fa62cc1be8a90e84a7256b143bc6a360c788737430b4bf4a359b5dc9f2dd03
+  generated_from:
+    - approved-grilling-decisions
+    - spec
+    - plan
+    - research
+    - data-model
+    - contracts
+  generated_at: 2026-08-12T00:00:00+09:00
+
+tasks:
+  - id: MGC-012-P5-T001
+    title: Deliver production-shaped Slack Result Cards
+    status: done
+    depends_on: []
+    requirements:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-020
+      - FR-021
+      - FR-022
+      - FR-023
+      - SC-001
+      - SC-006
+      - SC-007
+      - SC-008
+  - id: MGC-012-P5-T002
+    title: Deliver one governed Review Card with recoverable action sets
+    status: done
+    depends_on:
+      - MGC-012-P5-T001
+    requirements:
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-011
+      - FR-013
+      - FR-014
+      - FR-016
+      - FR-017
+      - FR-018
+      - FR-019
+      - FR-020
+      - FR-021
+      - FR-025
+      - SC-002
+      - SC-003
+      - SC-005
+      - SC-006
+  - id: MGC-012-P5-T003
+    title: Complete signed interaction feedback and end-to-end validation
+    status: done
+    depends_on:
+      - MGC-012-P5-T002
+    requirements:
+      - FR-010
+      - FR-011
+      - FR-012
+      - FR-013
+      - FR-014
+      - FR-015
+      - FR-018
+      - FR-022
+      - FR-023
+      - FR-024
+      - SC-002
+      - SC-003
+      - SC-004
+      - SC-005
+      - SC-007
+      - SC-008
+  - id: MGC-012-P5-T004
+    title: Classify ordinary delivery exceptions as recoverable outbox failures
+    status: done
+    depends_on: []
+    requirements:
+      - FR-021
+      - SC-003
+  - id: MGC-012-P5-T005
+    title: Hold the five credential and authorization boundaries with tests
+    status: done
+    depends_on: []
+    requirements:
+      - FR-008
+      - FR-009
+      - FR-010
+      - FR-014
+      - FR-018
+      - SC-004
+      - SC-005
+  - id: MGC-012-P5-T006
+    title: Hold the remaining renderer, payload and integrity guards with tests
+    status: done
+    depends_on: []
+    requirements:
+      - FR-003
+      - FR-005
+      - FR-006
+      - FR-007
+      - FR-015
+      - FR-020
+      - SC-003
+      - SC-006
+  - id: MGC-012-P5-T007
+    title: Align the safe outcome contract and reference docs to the implemented behavior
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T008
+    title: Recover the unmeasured regression evidence
+    status: done
+    depends_on:
+      - MGC-012-P5-T005
+      - MGC-012-P5-T006
+    requirements:
+      - SC-003
+      - SC-004
+      - SC-005
+
+execution:
+  waves:
+    - wave: 1
+      tasks:
+        - MGC-012-P5-T001
+      note: Result presentation closes the current test-only message gap first.
+    - wave: 2
+      tasks:
+        - MGC-012-P5-T002
+      note: Review intent and authority-bearing delivery build on the frozen renderer boundary.
+    - wave: 3
+      tasks:
+        - MGC-012-P5-T003
+      note: Signed interaction, safe feedback, live E2E, and full gates validate the integrated flow.
+    - wave: 4
+      tasks:
+        - MGC-012-P5-T004
+        - MGC-012-P5-T005
+        - MGC-012-P5-T006
+        - MGC-012-P5-T007
+      note: >-
+        Convergence wave from the round 10 three-lens review. T004 is the only behavioral fix;
+        T005 and T006 add regression protection without touching src; T007 aligns the contract
+        to the implemented behavior under D-034. File ownership does not overlap between T004
+        and T005/T006 except tests/test_review_cards.py and tests/test_slack_projection.py, so
+        run T004 before or after those two rather than concurrently with them.
+    - wave: 5
+      tasks:
+        - MGC-012-P5-T008
+      note: Re-measures regression protection after the new tests land. Meaningless before wave 4.
+  critical_path:
+    - MGC-012-P5-T001
+    - MGC-012-P5-T002
+    - MGC-012-P5-T003
+    - MGC-012-P5-T005
+    - MGC-012-P5-T008
+
+coverage:
+  requirements:
+    - id: FR-001
+      status: covered
+      tasks: [MGC-012-P5-T001]
+    - id: FR-002
+      status: covered
+      tasks: [MGC-012-P5-T001]
+    - id: FR-003
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T006]
+    - id: FR-004
+      status: covered
+      tasks: [MGC-012-P5-T001]
+    - id: FR-005
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T006]
+    - id: FR-006
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T006]
+    - id: FR-007
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T006]
+    - id: FR-008
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T005]
+    - id: FR-009
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T005]
+    - id: FR-010
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003, MGC-012-P5-T005]
+    - id: FR-011
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003]
+    - id: FR-012
+      status: covered
+      tasks: [MGC-012-P5-T003]
+    - id: FR-013
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003]
+    - id: FR-014
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003, MGC-012-P5-T005]
+    - id: FR-015
+      status: covered
+      tasks: [MGC-012-P5-T003, MGC-012-P5-T006]
+    - id: FR-016
+      status: covered
+      tasks: [MGC-012-P5-T002]
+    - id: FR-017
+      status: covered
+      tasks: [MGC-012-P5-T002]
+    - id: FR-018
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003, MGC-012-P5-T005]
+    - id: FR-019
+      status: covered
+      tasks: [MGC-012-P5-T002]
+    - id: FR-020
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T002, MGC-012-P5-T006]
+    - id: FR-021
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T002, MGC-012-P5-T004]
+    - id: FR-022
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T003]
+    - id: FR-023
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T003]
+    - id: FR-024
+      status: covered
+      tasks: [MGC-012-P5-T003, MGC-012-P5-T007]
+    - id: FR-025
+      status: covered
+      tasks: [MGC-012-P5-T002]
+    - id: SC-001
+      status: covered
+      tasks: [MGC-012-P5-T001]
+    - id: SC-002
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003]
+    - id: SC-003
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003, MGC-012-P5-T004, MGC-012-P5-T006, MGC-012-P5-T008]
+    - id: SC-004
+      status: covered
+      tasks: [MGC-012-P5-T003, MGC-012-P5-T005, MGC-012-P5-T008]
+    - id: SC-005
+      status: covered
+      tasks: [MGC-012-P5-T002, MGC-012-P5-T003, MGC-012-P5-T005, MGC-012-P5-T008]
+    - id: SC-006
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T002, MGC-012-P5-T006]
+    - id: SC-007
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T003]
+    - id: SC-008
+      status: covered
+      tasks: [MGC-012-P5-T001, MGC-012-P5-T003]
+  deferred: []
+  excluded:
+    - id: EX-001
+      reason: Message editing/deletion, thread-only delivery, modal reason collection, multi-reviewer, quorum, web UI, central server, and production rollout are approved non-goals.
+  uncovered: []
+
+open_questions: []
+
+update_history:
+  - date: 2026-08-12
+    summary: Initial taskification from approved spec-kit design artifacts.
+    source_revision: working-tree at b93be7722a82f2e86347af9e84e8e02e5199c50c
+  - date: 2026-08-13
+    summary: >-
+      Convergence wave added as T004-T008 from the round 10 three-lens review
+      (evidence/3lens-review.md) and D-034. T001-T003 keep their done status,
+      IDs, and evidence. No surviving task was renumbered or rewritten. T004 is
+      the only behavioral fix; T005 and T006 add regression protection without
+      touching src; T007 aligns the contract to the implemented behavior; T008
+      recovers the unmeasured regression evidence and stays blocked until T005
+      and T006 land.
+    source_revision: >-
+      review target aggregate 89c44faaf9c637227d834c6d09a39389fb5dbb76205bfdf338655416cf9994e0

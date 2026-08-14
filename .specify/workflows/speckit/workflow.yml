@@ -47,9 +47,25 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
+  # 2026-08-13 (D-037): clarify 를 필수 단계로 넣었다. skill 자신이 `/speckit-plan` 앞에
+  # 완료돼 있어야 한다고 쓴다 (SKILL.md:62). 모호한 곳이 없으면 질문하지 않고 coverage map
+  # 만 보고하므로 (:75, :127) 억지 질문이 생기지 않는다.
+  #
+  # `specify` 바로 뒤에 둔다. 아래 review-spec gate 가 **정리된** spec 을 보게 하려는 것이다.
+  # clarify 가 사람에게 묻고 멈추는 것은 D-033 이 없앤 승인 관문이 아니다 — 모델이 갖고 있지
+  # 않은 사실을 받는 단계다.
+  #
+  # engine 의 `speckit.clarify` dispatch 는 analyze 와 같은 이유로 확인하지 못했다. 실패하면
+  # step 을 지우지 말고 손으로 `/speckit-clarify` 를 돌린다. AGENTS.md 가 유일한 출처다.
+  - id: clarify
+    command: speckit.clarify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
   - id: review-spec
     type: gate
-    message: "Review the generated spec before planning."
+    message: "Review the clarified spec before planning."
     options: [approve, reject]
     on_reject: abort
 
@@ -74,36 +90,30 @@ steps:
   # (.claude/skills/speckit-implement/SKILL.md:180 -> check-prerequisites.sh
   #  --require-tasks). 그 skill 의 복구 안내는 삭제된 /speckit-tasks 를 가리켜서
   # 빠져나갈 수도 없었다. 아래 3단계로 닫았다.
-  - id: tasks
-    type: gate
-    message: |
-      1. /taskify 로 task manifest 를 만든다.
-
-           /taskify <spec.md 또는 plan.md 경로와 범위>
-
-         산출물: <manifest-dir>/index.yaml + <FEATURE>-T001.yaml …
-         설계 소스가 specs/ 밖이면 <manifest-dir> 는 .amplai/tasks/<slug>/ 다.
-
-      2. validator 를 돌린다. 통과해야 다음으로 간다.
-
-           python3 .claude/skills/taskify/scripts/validate_task_manifest.py <manifest-dir>
-
-      3. speckit 이 읽을 tasks.md 를 **생성**한다. 손으로 쓰지 않는다.
-
-           python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> \
-               --out <feature-dir>/tasks.md
-
-         **--out 을 반드시 준다.** manifest 는 .amplai/tasks/ 아래 있고 speckit 은
-         feature dir 에서 tasks.md 를 찾는다 — 서로 다른 디렉터리다. 기본값으로
-         돌리면 .amplai/tasks/tasks.md 에 써서 speckit 이 못 찾는다.
-
-         생성된 tasks.md 는 순서·파일소유만 담은 목차다. 계약(acceptance,
-         invariants, forbidden_paths)은 manifest YAML 에 그대로 있다.
-         blocked task 는 실행 단계에서 빠진다.
-
-      셋 다 끝났으면 approve 한다.
-    options: [approve, reject]
-    on_reject: abort
+  # 2026-08-13 (D-033): 여기 있던 `tasks` gate 를 걷어냈다. implement 앞의 사람 승인을
+  # 없애는 것이 목적이다. gate 가 담고 있던 필수 3단계(/taskify → validator →
+  # taskify_to_tasks_md.py)는 사라진 것이 아니라 AGENTS.md 의 "Pre-Implement Procedure"
+  # 절로 옮겼다. 그 절이 이제 유일한 출처다.
+  #
+  # 이 workflow engine 이 shell 을 돌리는 step type 을 지원하는지 확인하지 못했다.
+  # 확인 안 된 type 을 지어내는 대신 gate 를 지우고 절차를 규칙으로 옮겼다.
+  # **결과: 세 단계를 engine 이 더는 강제하지 않는다. AGENTS.md 규칙만이 강제한다.**
+  # tasks.md 가 없으면 speckit.implement 가 check-prerequisites.sh --require-tasks 에서
+  # 멈춘다 (.claude/skills/speckit-implement/SKILL.md:60). 그것이 마지막 안전망이다.
+  #
+  # 2026-08-13 (D-036): analyze 를 필수 단계로 넣었다. spec/plan/tasks 세 artifact 를 서로
+  # 대조해 task 없는 요구사항과 요구사항 없는 task 를 구현 **전에** 잡는다. CRITICAL 또는
+  # HIGH 가 있으면 구현하지 않는다.
+  #
+  # 이 engine 이 `speckit.analyze` 를 실제로 dispatch 하는지는 확인하지 못했다. 위 세
+  # command step 과 같은 이름 규칙을 따르고 `.claude/skills/speckit-analyze/` 가 존재하지만
+  # command registry 를 직접 읽지는 않았다. dispatch 가 실패하면 이 step 을 지우지 말고
+  # AGENTS.md 의 Pre-Implement Procedure 4단계를 손으로 돌린다 — 그 절이 유일한 출처다.
+  - id: analyze
+    command: speckit.analyze
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
 
   # tasks.md 는 생성물이다. implement 는 task 마다 tasks.md 의 `manifest:` 줄이
   # 가리키는 YAML 을 열어 acceptance·invariants·forbidden_paths 를 계약으로 삼는다.

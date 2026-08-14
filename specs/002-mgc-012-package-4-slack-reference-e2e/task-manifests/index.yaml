@@ -8,25 +8,27 @@ feature:
 source:
   files:
     - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
-      revision: 88b2a66
+      revision: sha256:5a6557aa46bf6ca85b9c8854d12b08cf9b3448526e68ee2e9691686800e63696
     - path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md
-      revision: 88b2a66
+      revision: sha256:37f22de4766106dc9a6e9e6b7cfa6d4ea84741a0712a9f02f1a57da37c4dc4f6
     - path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md
-      revision: 88b2a66
+      revision: sha256:0c57c16df086f6143216921f4c28602d0afa50f614a4693198e7f6eef44807e1
     - path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
-      revision: 88b2a66
+      revision: sha256:cfbc86210cc3496095b64c169ab7bcb141a18056b2cc1ba6728475f49b741cb3
     - path: specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md
-      revision: 88b2a66
+      revision: sha256:5a49295fe39fda0f1b331be5d4d7fb54501e9d3c12f8a305c3ecfc6375268d0e
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md
+      revision: sha256:2f02c37775dd14341af17f25521e73d9be304556ca46ae1fb8214fc6eee3827a
     - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
-      revision: 88b2a66
+      revision: b93be77
     - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
-      revision: 88b2a66
+      revision: sha256:ae9eca09226260b4379c30d4a9787d66b399a7622f74d99773bd8b0e5e4308ad
   generated_from:
     - spec
     - plan
     - research
     - contracts
-  generated_at: 2026-08-07
+  generated_at: 2026-08-12
 
 # task ID 는 001 에서 이어 쓴다 (D-019 항목 3). FR·SC 번호도 이어 붙였다 —
 # FR-013 부터, SC-009 부터다. 근거는 spec.md Numbering 절이다.
@@ -47,19 +49,27 @@ tasks:
     requirements:
       - FR-017
   - id: MGC-012-T008
-    title: Readback self-check refuses to start on a silent marker defect
-    status: ready
+    title: Readback self-check returns a typed startup outcome without heuristic recovery
+    status: done
     depends_on:
       - MGC-012-T006
       - MGC-012-T007
     requirements:
       - FR-018
+      - FR-023
+      - FR-024
+      - FR-025
+      - FR-029
+      - FR-032
+      - FR-034
+      - FR-035
   - id: MGC-012-T009
     title: E2E harness skips loudly and stays out of the default suite
-    status: ready
+    status: done
     depends_on:
       - MGC-012-T006
       - MGC-012-T007
+      - MGC-012-T008
     requirements:
       - FR-019
       - FR-020
@@ -75,9 +85,10 @@ tasks:
       - FR-018
   - id: MGC-012-T011
     title: The real transport leaves other providers untouched
-    status: ready
+    status: done
     depends_on:
       - MGC-012-T006
+      - MGC-012-T008
     requirements:
       - FR-021
   - id: MGC-012-T012
@@ -86,8 +97,30 @@ tasks:
     depends_on:
       - MGC-012-T010
       - MGC-012-T011
+      - MGC-012-T013
     requirements:
       - FR-022
+  - id: MGC-012-T013
+    title: Production startup enforces durable probe lifecycle before Slack claim
+    status: blocked
+    depends_on:
+      - MGC-012-T010
+    requirements:
+      - FR-018
+      - FR-023
+      - FR-024
+      - FR-025
+      - FR-026
+      - FR-027
+      - FR-028
+      - FR-029
+      - FR-030
+      - FR-031
+      - FR-033
+      - FR-034
+      - FR-035
+      - FR-036
+      - FR-037
 
 execution:
   waves:
@@ -95,15 +128,23 @@ execution:
       tasks:
         - MGC-012-T006
         - MGC-012-T007
-    - wave: 6
+    - wave: 6R
       tasks:
         - MGC-012-T008
+      note: D-031 ledger sync 완료. Typed outcome revalidation을 T008 단독으로 실행한다.
+    - wave: 6-validation
+      tasks:
         - MGC-012-T009
         - MGC-012-T011
+      note: T008 rework 뒤 shared slack_http regression을 순차 재검증한다.
     - wave: 7
       tasks:
         - MGC-012-T010
     - wave: 8
+      tasks:
+        - MGC-012-T013
+      note: T010 completion과 E-7~E-10이 모두 닫힐 때까지 실행 금지. E-5는 기존 Python 3.12 blocker로 보존한다.
+    - wave: 9
       tasks:
         - MGC-012-T012
   # wave 번호는 001 에서 이어 쓴다. Package 3 가 wave 1~4 였다.
@@ -114,8 +155,11 @@ execution:
   critical_path:
     - MGC-012-T006
     - MGC-012-T008
+    - MGC-012-T009
     - MGC-012-T010
+    - MGC-012-T013
     - MGC-012-T012
+  converging_blockers: []
 
 coverage:
   requirements:
@@ -152,11 +196,11 @@ coverage:
       tasks:
         - MGC-012-T008
         - MGC-012-T010
+        - MGC-012-T013
     - id: FR-019
       status: covered
       tasks:
         - MGC-012-T009
-        - MGC-012-T010
     - id: FR-020
       status: covered
       tasks:
@@ -169,6 +213,72 @@ coverage:
       status: covered
       tasks:
         - MGC-012-T012
+    - id: FR-023
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-024
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-025
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-026
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-027
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-028
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-029
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-030
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-031
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-032
+      status: covered
+      tasks:
+        - MGC-012-T008
+    - id: FR-033
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-034
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-035
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: FR-036
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: FR-037
+      status: covered
+      tasks:
+        - MGC-012-T013
   success_criteria:
     - id: SC-009
       status: covered
@@ -211,6 +321,58 @@ coverage:
       note: >-
         task 가 아니라 wave 마다 도는 3 lens review 가 충족한다. 근거는 CHECKPOINTS 의
         wave 별 review 기록이다.
+    - id: SC-017
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-018
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-019
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-020
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: SC-021
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-022
+      status: covered
+      tasks:
+        - MGC-012-T013
+        - MGC-012-T012
+    - id: SC-023
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: SC-024
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-025
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-026
+      status: covered
+      tasks:
+        - MGC-012-T008
+        - MGC-012-T013
+    - id: SC-027
+      status: covered
+      tasks:
+        - MGC-012-T013
+    - id: SC-028
+      status: covered
+      tasks:
+        - MGC-012-T013
   deferred:
     - id: MGC-015-activation-gate
       owner: MGC-015
@@ -263,19 +425,23 @@ coverage:
         안 남는 조용한 실패다. round 2 에서 transport 가 값을 보관·노출하게 해 배선하는
         쪽이 대조할 수 있게 했다. destination 이 불일치를 **거부**하게 만들려면
         slack_projection.py 를 열어야 해서 별도 item 이다.
-    - id: readback-selfcheck-wiring
-      owner: 미정
-      reason: >-
-        wave 6 review 이월. verify_marker_readback 을 부르는 production 경로가 없다 —
-        caller 는 test 뿐이다. T008 의 "검사가 실패하면 기동하지 않는다" 는 아직 어떤 실행
-        경로에서도 성립하지 않는다. 붙일 entrypoint 자체가 repo 에 없고 (D-026 이 credential
-        도달 경로 부재를 명시한다) http-ingress-layer 와 같은 자리에서 정해진다.
     - id: page-ordering-between-pages
       owner: 미정
       reason: >-
         destination 은 page 안에서만 우리 marker 를 먼저 찾는다. page 사이 순서는 cursor
         를 우리가 만들지 않아 막을 수 없다. research R-011 이 Slack 의 최신-우선 보장을
         확인했으므로 위험은 줄었지만 계약 의존은 남는다.
+    - id: governed-probe-recovery
+      owner: 별도 work item 미정
+      reason: >-
+        명시적 provider identity가 없는 lifecycle의 operator 해제, 권한, 감사, evidence
+        계약이다. Package 4와 T013은 강제 해제를 구현하지 않는다.
+  superseded:
+    - id: readback-selfcheck-wiring
+      superseded_by: MGC-012-T013
+      reason: >-
+        기존 deferred를 삭제하지 않고 blocked production wiring task로 승격했다. T013이
+        production entrypoint, durable lifecycle, diagnostic과 pre-claim evidence를 소유한다.
   excluded:
     - id: A1-A13
       reason: >-
@@ -318,6 +484,38 @@ open_questions:
       **손으로 만들어** 주입한다. 그래서 slack_http.py 의 응답 판별과 code 추출을 한 줄도
       안 탄다. T011 은 fake server 의 ok:false JSON 에서 그 예외가 생성되는 구간부터
       hold 까지를 덮으므로 겹치지 않는 부분이 있다. 판정은 여전히 review 몫이다.
+  - id: U-008
+    question: >-
+      Slack worker를 실제로 활성화하고 readback outcome을 소비할 production composition
+      root의 경로와 owner는 무엇인가.
+    owner: 사용자
+    blocking: true
+    blocks:
+      - MGC-012-T013
+    note: >-
+      R-019 repository 조사에서 production caller를 찾지 못했다. 승인 전에는 entrypoint를
+      새로 추정하거나 T013 allowed_paths에 넣지 않는다.
+  - id: OQ-008
+    question: >-
+      D-031 전용 additive lifecycle schema와 GovernanceStore repository 경계를 승인할 것인가.
+    owner: 사용자
+    blocking: true
+    blocks:
+      - MGC-012-T013
+    note: >-
+      R-018과 P-005가 narrow table과 atomic claim을 제안했다. 기존 outbox, ingress,
+      operator-hold table이나 범용 write API를 재사용하지 않는다.
+  - id: OQ-009
+    question: >-
+      explicit provider identity가 없는 lifecycle을 다룰 별도 governed recovery work item의
+      owner, 권한, 감사와 evidence 계약은 무엇인가.
+    owner: 사용자와 governed decision workflow
+    blocking: true
+    blocks:
+      - MGC-012-T013
+    note: >-
+      Package 4에는 force-unlock이나 operator-supplied identity mutation을 넣지 않는다.
+      별도 work item 승인 없이는 unresolved state를 자동으로 resolved로 추정하지 않는다.
 
 resolved_questions:
   - id: U-001
@@ -354,6 +552,86 @@ resolved_questions:
       그렇다. 공식 문서가 "The most recent messages in the time range are returned
       first" 로 명시한다. 001 index.yaml 의 W3-history-ordering-unverified 가 닫힌다.
       다만 C-1.2 의 계약 문장은 유지한다 — page 사이 순서는 여전히 계약 의존이다.
+  - id: U-007
+    question: >-
+      Probe intent와 cleanup lifecycle을 어느 runtime boundary가 소유해야 process crash 뒤에도
+      HARD_BLOCKED_NO_POST를 판정할 수 있는가.
+    resolved_by: research R-018, plan P-005
+    resolution: >-
+      GovernanceStore의 전용 operational state가 소유한다. Network 전에 durable intent를
+      atomic claim하고 channel/app별 unresolved row를 최대 1개로 제한한다. Markdown 공식
+      지식, process memory, 기존 outbox·ingress·operator-hold table은 재사용하지 않는다.
+  - id: OQ-007
+    question: >-
+      D-031을 workstream decision ledger에 언제 기록하고 D-030의 delete-only startup refusal
+      clause를 어떤 supersedes relation으로 연결할 것인가.
+    resolved_by: D-031, APR-016
+    resolution: >-
+      2026-08-11 D-031을 APPROVED authoritative revision으로 기록했다. D-030은
+      status: superseded와 superseded_by: D-031로 연결했고, 실질 변경은 delete-only startup
+      refusal에 한정하며 유지 의무는 D-031이 다시 수용했다.
+  - id: U-010
+    question: HARD_BLOCKED_NO_POST를 durable lifecycle state로 저장할 것인가.
+    resolved_by: 2026-08-11 clarification, research R-021
+    resolution: >-
+      Startup outcome으로만 사용한다. Persistence에는 POST_INTENT_RECORDED, AMBIGUOUS_POST,
+      CLEANUP_PENDING 같은 원인 state를 보존한다.
+  - id: U-011
+    question: >-
+      이전 CLEANUP_PENDING에 confirmed channel + ts가 있을 때 새 startup은 언제 fresh
+      self-check를 시작할 수 있는가.
+    resolved_by: 2026-08-11 clarification, research R-021
+    resolution: >-
+      Stored exact identity cleanup과 durable RESOLVED commit이 모두 성공한 뒤에만 fresh
+      atomic claim과 self-check를 시작한다. 어느 단계든 실패하면 원인 state를 보존하고
+      HARD_BLOCKED_NO_POST outcome으로 새 post와 activation을 막는다.
+  - id: U-006
+    question: >-
+      chat.postMessage 응답을 받기 전에 caller가 정할 수 있고, 응답 유실 뒤 exact lookup에
+      쓸 수 있는 provider-supported identity가 있는가.
+    resolved_by: research R-017, 2026-08-12 analysis remediation
+    resolution: >-
+      Official contract에서 지원을 확인하지 못했다. 이 negative fact는 automatic remote lookup과
+      provider-side global cap만 막고, E-8 review와 E-9 approval 뒤 local fail-closed T013은 막지 않는다.
+  - id: U-009
+    question: >-
+      post가 성공했지만 response identity를 잃은 상태의 exact remote recovery와 global
+      probe 상한을 어떤 provider 계약으로 증명할 것인가.
+    resolved_by: research R-020, 2026-08-12 analysis remediation
+    resolution: >-
+      Package 4는 local additional post 0건만 증명한다. Remote recovery와 global cap은 blocked로
+      남기고 E-9 governed recovery 승인 뒤 local fail-closed startup을 구현한다.
+  - id: U-012
+    question: malformed 또는 unsupported lifecycle record를 어떻게 판정하는가.
+    resolved_by: 2026-08-12 clarification, research R-022
+    resolution: >-
+      LIFECYCLE_STATE_INVALID typed failure로 판정하고 row mutation, readback, post와 activation을
+      모두 금지한다.
+  - id: U-013
+    question: readback primary와 secondary cleanup failure의 data shape와 security boundary는 무엇인가.
+    resolved_by: 2026-08-12 clarification, research R-023
+    resolution: >-
+      Closed primary enum과 CleanupFailureDetail 0..1을 사용한다. Raw exception/provider data는
+      모든 diagnostic surface에서 금지한다.
+  - id: U-014
+    question: SC-020의 모든 validation을 어떤 finite taxonomy로 증명하는가.
+    resolved_by: 2026-08-12 clarification and response-channel taxonomy approval, research R-023
+    resolution: >-
+      일곱 primary code를 고정하고 post 뒤 여섯 code를 cleanup 성공·실패와 조합한 12개 case를
+      검증한다. PROBE_INPUT_INVALID는 post/cleanup 0회다. RESPONSE_CHANNEL_MISMATCH는 configured
+      history를 조회하지 않고 provider-confirmed channel + ts로 cleanup한다.
+  - id: U-015
+    question: probe post 전후 네 crash boundary를 어떻게 판정하는가.
+    resolved_by: 2026-08-12 clarification, research R-024
+    resolution: >-
+      Durable knowledge만 사용해 fail closed한다. Current process에 confirmed identity가 있을 때만
+      exact delete 1회와 durable resolution을 시도한다.
+  - id: U-016
+    question: T013 readiness와 production completion evidence는 무엇인가.
+    resolved_by: 2026-08-12 clarification, research R-025
+    resolution: >-
+      E-7~E-10 user-approved record가 readiness 조건이다. Completion은 same-revision
+      CompositionRootIntegrationResult와 ConfiguredStartupTrace를 모두 요구한다.
 
 update_history:
   - date: 2026-08-07
@@ -513,3 +791,123 @@ update_history:
       없던 것 (T009 AC-10).
       pytest 1040 (+7), verify 7/7 PASS.
     source_revision: 44b73ad
+  - date: 2026-08-11
+    summary: >-
+      D-031 approved spec과 replanned design을 기존 task set에 재-taskification했다. T006·T007의
+      done 상태와 T009·T011의 구현 evidence·history를 보존했다. 기존 T008 AC-10과 dirty
+      implementation은 cleanup-only failure를 startup refusal로 고정해 새 계약과 충돌하므로
+      T008을 blocked로 되돌리고 acceptance를 typed DEGRADED_CLEANUP, primary cause 보존,
+      no-heuristic recovery로 교체했다. D-031 ledger sync 전에는 실행하지 않는다.
+      Production persistence, restart, concurrency, diagnostic과 pre-claim wiring은 새 T013으로
+      분리하고 production root와 recovery 계약이 없어 blocked로 뒀다. 기존 E-5 Python 3.12
+      blocker는 의미를 바꾸지 않고 보존했으며 새 blocker는 E-6~E-10으로 배정했다.
+      FR-013~FR-032와 SC-009~SC-024는 모두 task acceptance에 연결했고 uncovered는 0건이다.
+      구현 코드는 수정하지 않았다.
+    source_revision: sha256:391249c6b12bdbf2e3c61067f35e2b086ffc15ad51e91feb43c0d67dd4f1b741
+  - date: 2026-08-11
+    summary: >-
+      Governed decision sync로 D-031과 APR-016이 기록되어 E-6을 닫았다. T008은 blocked에서
+      ready로 전환하고 T008/T013의 resolved E-6 external dependency를 제거했다. T013은
+      production entrypoint, provider exact recovery, governed recovery work item과 lifecycle
+      schema/repository approval인 E-7~E-10 때문에 계속 blocked다. 구현 코드는 수정하지 않았다.
+    source_revision: sha256:ae9eca09226260b4379c30d4a9787d66b399a7622f74d99773bd8b0e5e4308ad
+  - date: 2026-08-11
+    summary: >-
+      Clarification U-010·U-011을 spec, plan과 design artifact에 동기화했다.
+      HARD_BLOCKED_NO_POST는 persisted state가 아닌 startup outcome으로 고정했고, durable
+      cause state를 보존한다. 이전 CLEANUP_PENDING은 confirmed channel + ts exact cleanup과
+      durable RESOLVED commit 뒤에만 fresh self-check를 허용한다. T008은 typed outcome
+      boundary를, T013은 durable recovery sequence와 production wiring을 소유한다. T010의
+      완료된 E-1 workspace와 E-2 app/scope/install dependency는 active blocker에서 제거하고
+      남은 E-3 target IDs와 E-4 네 환경변수만 보존했다. 구현 코드는 수정하지 않았다.
+    source_revision: sha256:8edfbfcb63cbab0cd6f19a94d655c1204c02304c7a4458b662d400322d921231
+  - date: 2026-08-12
+    summary: >-
+      Clarification U-012~U-016을 plan과 design artifact에 동기화하고 기존 task ID/status/evidence를
+      보존해 재-taskification했다. T008에 FR-034~FR-035 closed failure types와 10개 cleanup
+      combination acceptance를 추가했다. T013에 FR-033/FR-036/FR-037 lifecycle validation,
+      crash compensation, readiness approval와 dual production evidence를 추가했다. T013은 E-7~E-10
+      named approval record가 없으므로 blocked를 유지한다. FR-013~FR-037과 SC-009~SC-028은
+      모두 manifest acceptance에 연결했고 uncovered는 0건이다. 구현 코드는 수정하지 않았다.
+    source_revision: sha256:ec0bec4339b1ac57d275e7722b89f0ed9889a5be23a105c590b553874c6d601d
+  - date: 2026-08-12
+    summary: >-
+      speckit-analyze I1/D1 remediation. U-006/U-009는 provider exact recovery 기능 부재라는
+      negative fact로 resolved 처리하고 automatic remote cleanup/global cap만 blocked로 좁혔다.
+      E-8 official review와 E-9 governed recovery가 승인되면 local fail-closed T013 구현은 가능하다.
+      T013 configured startup trace가 실제 target/config를 요구하므로 MGC-012-T010을 direct internal
+      dependency로 추가하고 critical path를 T010 → T013 → T012로 고쳤다. 기존 task ID/status와
+      completion evidence는 보존했고 구현 코드는 수정하지 않았다.
+    source_revision: sha256:a52bf18055143597162dc4e9dec1f609ca71d34d12eebdf21930d0ad79f57872
+  - date: 2026-08-12
+    summary: >-
+      speckit-implement T008/T009/T011 verification. D-031 typed ReadbackOutcome, closed
+      ReadbackFailureCode, optional CleanupFailureDetail과 supplied lifecycle no-post boundary를
+      구현했다. _reclaim_probes history heuristic을 제거했다. 첫 3-lens round의 failure reviewer가
+      malformed marker 일부가 post 전에 막히지 않는 Blocking-P2를 재현해 complete local marker
+      validation과 zero-network parameterized coverage로 닫았다. Contract reviewer가 지적한 stale
+      D-030 completion narrative를 current AC-01~16 evidence와 frozen source/test hashes로 교체했다.
+      두 번째 round의 event_type taxonomy와 confirmed response channel cleanup blocker도 closed
+      enum 분류와 exact result.channel + ts cleanup으로 닫았다. T008/T009/T011은 final 3-lens
+      closure 전 verification 상태를 유지한다.
+    source_revision: sha256:e0072af85a02bd02b6daad967e1c12da415e30af6f86992d1f3027dfb7dbb9ea
+  - date: 2026-08-12
+    summary: >-
+      Third contract review found that mapping a Slack response-channel mismatch to
+      PROBE_NOT_FOUND claimed a history absence that was never observed. User-approved
+      speckit specify/plan/taskify remediation adds RESPONSE_CHANNEL_MISMATCH as the seventh
+      closed primary code. T008 acceptance now covers six post-readback codes across cleanup
+      success/failure (12 cases), with zero configured-channel history reads and exact cleanup
+      against the provider-confirmed channel + ts for the new code. Implementation evidence and
+      final review closure remain pending; T008/T009/T011 stay verification.
+    source_revision: sha256:ee986e017bd8496d0754cd52360982b50450bd2b65c6ed7f95ee9d5488cd2365
+  - date: 2026-08-12
+    summary: >-
+      RESPONSE_CHANNEL_MISMATCH remediation implementation evidence. ReadbackFailureCode is
+      asserted as an exact seven-value closed set and the six post-failure values are proven to
+      equal the full enum minus PROBE_INPUT_INVALID before running the 12-case cleanup matrix.
+      Complete pre-network validation now reuses the canonical governance Digest validator and
+      rejects malformed format, uppercase hex, wrong length and invalid characters with zero
+      network requests. AC-16 wording distinguishes six cleanup successes from six cleanup
+      failures. Frozen commands on the bound source/test hashes produced targeted 189 passed and
+      1 deselected, full 1087 passed and 1 deselected, Ruff/mypy/Vault lint exit 0 and verify 7/7
+      PASS. Final three-lens closure remains pending; T008/T009/T011 stay verification.
+    source_revision: sha256:0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f
+  - date: 2026-08-12
+    summary: >-
+      Final T008/T009/T011 three-lens closure on frozen source/test revision
+      0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f.
+      Contract and failure/recovery lenses reported P0/P1/Blocking-P2/Advisory 0. The isolated
+      regression lens resolved imports from its disposable copy, killed 10 requested mutations
+      with 0 survivors, rechecked shared hashes unchanged and deleted the copy. T008/T009/T011
+      are done. T010/T012/T013 remain blocked and were not claimed by this closure.
+    source_revision: sha256:0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f
+  - date: 2026-08-12
+    summary: >-
+      T010 external readiness. The user confirmed the test channel/app invite and target IDs (E-3)
+      and explicitly approved speckit implementation. Sourcing the protected external env file let
+      the configured harness assemble all four Slack settings with 1 passed/189 deselected (E-4),
+      without recording values. T010 moves from blocked to ready; T012/T013 remain blocked.
+    source_revision: working-tree-pre-implementation
+  - date: 2026-08-12
+    summary: >-
+      T010 live Slack E2E test implementation added actual probe readback, Card send, same-receipt
+      reconcile, app_id and four-field metadata restoration, newest-first ordering, and an interactive
+      human-delete recovery check. Local test_slack_http regression passed 189 with 3 E2E deselected and
+      file Ruff passed. The configured live run reached Slack but failed closed at conversations.history:
+      provider evidence reported needed=groups:history while provided scopes were channels:history and
+      chat:write. T010 returns to blocked on E-11 until the private-channel scope is added and the app is
+      reinstalled. No credential value was recorded; T012/T013 remain blocked and no review gate opened.
+    source_revision: working-tree-live-scope-blocked
+  - date: 2026-08-12
+    summary: >-
+      T010 private-channel scope recovery and presentation-gap discovery. The user added groups:history,
+      reinstalled the app and refreshed the protected bot token. Safe API evidence confirmed the scope;
+      automated live E2E passed 2 with 190 deselected, and interactive human deletion proved history
+      exhaustion, unsent reconciliation, resend and one remaining marker. E-11 is resolved. However, the
+      observed one-line test message exposed that DecisionProjectionPayload has no Slack text/blocks,
+      SlackProjectionDestination forwards event.payload unchanged, and T010 constructs a test-only
+      section block. This does not prove a real Proposal Card presentation path. T010 remains blocked on
+      E-12 pending an approved renderer contract/scope and production-shaped E2E re-taskification. No
+      completion or three-lens gate opened.
+    source_revision: working-tree-presentation-gap

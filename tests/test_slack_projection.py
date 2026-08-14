@@ -591,11 +591,10 @@ def test_send_returns_a_slack_receipt() -> None:
     assert receipt == f"slack:{CHANNEL}:{transport.posted[0].ts}"
 
 
-# T002 AC-03 / C-2.3 — receipt 의 channel 은 생성자 값이다. reconcile 은 history message 에서
-# channel 을 못 얻으므로 (ts·metadata·app_id 셋뿐) transport 가 다른 표현을 돌려줘도
-# 두 경로가 같은 문자열을 만들어야 한다. 갈라지면 mark_delivered 가
-# OUTBOX_DELIVERY_RESULT_CONFLICT 를 던진다 (events.py:2717).
-def test_receipt_uses_the_configured_channel_not_the_response_channel() -> None:
+# T002 AC-03 / C-2.3 — receipt channel 은 생성자 값이지만 provider-confirmed channel과 먼저
+# 같아야 한다. 다르면 구성된 history에서 marker를 찾을 수 없고, 특히 Review Card라면 raw
+# action credential이 다른 channel에 보인다. receipt를 합성하지 않고 hold로 닫는다.
+def test_response_channel_mismatch_fails_closed_before_receipt() -> None:
     class RenamingTransport(FakeSlackTransport):
         def post_message(
             self,
@@ -608,7 +607,8 @@ def test_receipt_uses_the_configured_channel_not_the_response_channel() -> None:
             return SlackSendResult(channel="C_RENAMED_BY_SLACK", ts=result.ts)
 
     transport = RenamingTransport()
-    assert _destination(transport).send(_event()).startswith(f"slack:{CHANNEL}:")
+    with pytest.raises(OutboxReconcileError, match="SLACK_RESPONSE_CHANNEL_MISMATCH"):
+        _destination(transport).send(_event())
 
 
 # C-2.3 의 나머지 절반 — send 와 reconcile 이 같은 문자열을 만드는지 — 는 reconcile 이
@@ -1023,9 +1023,9 @@ def test_exhaustion_reaches_the_dead_letter_without_losing_a_retry(tmp_path: Pat
     assert holds == ["SLACK_PROJECTION_RETRY_EXHAUSTED:internal_error"]
 
 
-# T002 AC-08 — 대조군. max_attempts 를 dispatcher 보다 크게 주면 C-3.1 이 안 돌고 원인이
-# 사라진다. 두 test 의 차이가 error_code 하나뿐임을 보여 D-021 항목 2 를 고정한다.
-def test_without_the_exhaustion_rule_the_cause_is_lost(tmp_path: Path) -> None:
+# T002 AC-08 — dispatcher/destination의 attempt budget이 갈리면 C-3.1 원인이 사라진다.
+# Event를 claim하기 전에 배선을 거부해 그 상태 자체를 만들지 않는다.
+def test_dispatcher_rejects_a_mismatched_attempt_budget_before_claim(tmp_path: Path) -> None:
     store, clock, provider_ref = _dispatcher_fixture(tmp_path)
     config = OutboxConfig(lease_seconds=5)
     dispatcher = OutboxDispatcher(store, config=config, clock=clock)
@@ -1040,12 +1040,55 @@ def test_without_the_exhaustion_rule_the_cause_is_lost(tmp_path: Path) -> None:
         max_attempts=config.max_attempts + 1,
     )
 
-    attempts = _drain(dispatcher, destination, clock, rounds=config.max_attempts)
+    with pytest.raises(ValueError, match="max_attempts"):
+        dispatcher.deliver_next("worker", destination)
 
-    assert attempts == list(range(1, config.max_attempts + 1))
-    dead, holds = _terminal_rows(store)
-    assert dead == ["OUTBOX_DELIVERY_FAILED"]
-    assert holds == ["OUTBOX_DELIVERY_FAILED"]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state, attempts FROM governance_outbox_events "
+            "WHERE destination_ref = ? AND supersession_key IS NOT NULL",
+            (provider_ref,),
+        ).fetchone() == ("pending", 0)
+    assert _terminal_rows(store) == ([], [])
+
+
+def test_constructor_rejects_a_transport_page_budget_mismatch() -> None:
+    transport = FakeSlackTransport()
+    transport.max_history_pages = 1
+    transport.lease_seconds = 30
+
+    with pytest.raises(ValueError, match="max_history_pages"):
+        _destination(transport, max_history_pages=SLACK_MAX_HISTORY_PAGES)
+
+
+def test_dispatcher_rejects_a_transport_lease_mismatch_before_claim(tmp_path: Path) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    transport = FakeSlackTransport()
+    transport.max_history_pages = SLACK_MAX_HISTORY_PAGES
+    transport.lease_seconds = 30
+    destination = SlackProjectionDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+    dispatcher = OutboxDispatcher(
+        store,
+        config=OutboxConfig(lease_seconds=5),
+        clock=clock,
+    )
+
+    with pytest.raises(ValueError, match="lease_seconds"):
+        dispatcher.deliver_next("worker", destination)
+
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT state, attempts FROM governance_outbox_events "
+            "WHERE destination_ref = ? AND supersession_key IS NOT NULL",
+            (provider_ref,),
+        ).fetchone() == ("pending", 0)
 
 
 # T002 AC-02 — terminal 은 attempt 와 무관하게 첫 실패에서 DLQ 다. 실물로 확인한다.

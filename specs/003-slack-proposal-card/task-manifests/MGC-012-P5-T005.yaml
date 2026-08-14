@@ -1,0 +1,177 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T005
+title: Hold the five credential and authorization boundaries with tests
+type: test
+status: done
+
+goal:
+  outcome: >-
+    credential 유출과 권한 우회를 막는 다섯 fail-closed 경계가 각각 test 로 고정된다.
+    그 guard 를 없애거나 약화하면 test 가 실패한다.
+  user_value: >-
+    지금은 다섯 경계 전부 회귀로부터 무방비다. 코드는 맞게 동작하지만 다음 변경에서
+    조용히 깨져도 아무도 모른다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review.md
+      section: C-2, C-3, C-5, C-10, C-12
+    - path: specs/003-slack-proposal-card/contracts/slack-card-payloads.md
+      section: Validation
+    - path: specs/003-slack-proposal-card/spec.md
+      section: FR-008, FR-009, FR-010, FR-014, FR-018
+  requirements:
+    - FR-008
+    - FR-009
+    - FR-010
+    - FR-014
+    - FR-018
+    - SC-004
+    - SC-005
+  decisions: []
+
+scope:
+  include:
+    - render_review 의 실제 scrub 경로를 타는 credential test. renderer stub 을 쓰지 않는다.
+    - _validate_action_set 의 state, reviewer actor, bound channel 거부 test.
+    - 같은 호출의 raw ActionToken 이 idempotency_key 에 섞이는 경우의 거부 test.
+    - action set 발급 직전 command/payload digest 무결성 거부 test.
+    - 정확히 만료 시각에 도착한 action 의 거부 test.
+  exclude:
+    - 위 다섯 경계의 구현 변경. 코드는 오늘 맞게 동작한다.
+    - P1 과 Blocking-P2 등급의 test 공백. MGC-012-P5-T006 이 맡는다.
+    - mutation 재측정. MGC-012-P5-T008 이 맡는다.
+  allowed_paths:
+    - tests/test_slack_cards.py
+    - tests/test_review_cards.py
+    - tests/test_decisions.py
+    - tests/test_governance_events.py
+  forbidden_paths:
+    - src/amplai_foundry/
+    - vault/
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - 기존 scrub test 는 전부 render_review 를 통째로 override 하는 FailingReviewRenderer 를
+      쓴다. 그래서 실제 scrub 경로가 한 번도 실행되지 않는다. 새 test 는 실제 renderer 를
+      구동하고 card 가 완성된 뒤에 실패하는 지점을 골라야 한다.
+    - 기존 idempotency test 는 sibling token 의 raw 값만 넣는다. 같은 token 의 raw 값을 넣는
+      경우가 비어 있다.
+    - 기존 만료 test 는 TTL 15분에 16분으로 점프해 경계 등호 순간을 치지 않는다.
+    - sentinel credential 값을 써서 노출 검사를 모호하지 않게 만든다.
+  invariants:
+    - 이 task 는 src/ 를 수정하지 않는다. test 만 추가한다.
+    - 추가한 test 자체가 raw credential 을 evidence 로 남기지 않는다.
+    - 기존 test 를 삭제하거나 약화하지 않는다.
+  non_goals:
+    - 구현 결함 수정.
+    - 계약 문서 변경.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 실제 renderer 가 raw action credential 을 담은 card 를 완성한 뒤 실패하는 상태.
+      when: 그 예외의 traceback frame 과 f_locals 를 검사한다.
+      then: raw credential 이 어느 frame 에서도 발견되지 않는다.
+    - id: AC-02
+      given: state 가 issued 가 아닌 action set.
+      when: Review Card 를 렌더한다.
+      then: 렌더가 거부된다.
+    - id: AC-03
+      given: payload 의 reviewer 와 다른 actor 에 묶인 action set, 그리고 payload 와 다른 channel 에 묶인 action set.
+      when: Review Card 를 렌더한다.
+      then: 각각 거부된다.
+    - id: AC-04
+      given: 이번 호출의 raw ActionToken 값을 부분 문자열로 포함하는 idempotency key.
+      when: 결정을 시도한다.
+      then: 거부되고 그 key 가 durable state 에 저장되지 않는다.
+    - id: AC-05
+      given: command row 의 digest 또는 canonical payload 가 event 와 어긋난 상태.
+      when: action set 준비를 시도한다.
+      then: raw credential 을 발급하기 전에 거부된다.
+    - id: AC-06
+      given: 처리 시각이 action 만료 시각과 정확히 같은 상태.
+      when: 결정을 시도한다.
+      then: 만료로 거부되고 Proposal state 가 바뀌지 않는다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_slack_cards.py tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - scrub test 가 raw credential 을 evidence 에 남기면 그 자체가 FR-018 위반이다.
+    - 실제 renderer 를 실패시키는 지점을 잘못 고르면 card 완성 전에 raise 되어 검사가 무의미해진다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - test_would_require_changing_src
+    - raw_secret_appears_in_any_evidence
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-13T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T005.md
+
+handoff:
+  expected_changes:
+    - tests/ 아래 다섯 경계의 거부·비노출 test.
+  notes:
+    - 이 task 의 대상은 round 10 의 P0 다섯이다. 전부 동작 결함이 아니라 회귀 방어 부재다.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import contextlib
+import hashlib
 import inspect
 import json
 import os
@@ -12,13 +13,14 @@ import time
 import tomllib
 import urllib.parse
 import urllib.request
-from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from collections.abc import Callable, Iterator, Mapping
+from dataclasses import dataclass, field, fields
+from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import MappingProxyType
 from typing import cast
+from uuid import uuid4
 
 import pytest
 from pydantic import SecretStr
@@ -27,7 +29,20 @@ from pydantic import SecretStr
 # 벌이 어긋난다. top-level import 는 pyproject 의 `pythonpath = ["tests"]` 가 받친다 (T009).
 import test_governance_events as governance_fixtures
 from amplai_foundry.domain.identity import ProjectRef
-from amplai_foundry.governance import slack_http
+from amplai_foundry.governance import (
+    ActionTokenState,
+    ActionTokenView,
+    ActorRef,
+    ActorType,
+    DecisionAction,
+    DecisionProjectionPayload,
+    IssuedActionToken,
+    PreparedReviewActionSet,
+    ReviewActionSetService,
+    ReviewActionSetView,
+    ReviewProjectionPayload,
+    slack_http,
+)
 from amplai_foundry.governance.events import (
     GovernanceEventService,
     OutboxConfig,
@@ -35,6 +50,8 @@ from amplai_foundry.governance.events import (
     OutboxEventView,
     OutboxState,
 )
+from amplai_foundry.governance.ingress import IngressCommandView
+from amplai_foundry.governance.ingress_worker import SafeInteractionOutcome
 from amplai_foundry.governance.models import ChannelProvider, ChannelRef, ProposalRef
 from amplai_foundry.governance.slack_http import (
     PROBE_DESTINATION_REF,
@@ -44,9 +61,16 @@ from amplai_foundry.governance.slack_http import (
     SLACK_CHANNEL_ID_ENV,
     SLACK_SETTINGS_ENV_NAMES,
     SLACK_SIGNING_SECRET_ENV,
+    CleanupFailureDetail,
     HttpSlackTransport,
+    ReadbackDiagnosticData,
+    ReadbackFailureCode,
+    ReadbackLifecycleCause,
+    ReadbackOutcome,
+    ReadbackOutcomeStatus,
+    SafeSlackProviderErrorCode,
     SlackCredentials,
-    SlackReadbackError,
+    SlackInteractionFeedback,
     SlackSettings,
     build_probe_marker,
     load_slack_credentials,
@@ -61,8 +85,10 @@ from amplai_foundry.governance.slack_projection import (
     SlackProjectionDestination,
     SlackTransport,
     SlackTransportError,
+    build_slack_marker,
     classify_slack_failure,
     exhausted_cause_suffix,
+    payload_digest,
 )
 from amplai_foundry.governance.store import GovernanceStore
 from amplai_foundry.verification.runner import VerificationRunner
@@ -82,6 +108,13 @@ MARKER: dict[str, object] = {
     },
 }
 PAYLOAD: dict[str, object] = {"text": "제안 카드", "blocks": [{"type": "section"}]}
+
+
+@dataclass(frozen=True)
+class _FeedbackCommand:
+    provider: ChannelProvider
+    channel_ref: ChannelRef
+    external_actor_key: str
 
 
 # --------------------------------------------------------------------------------------
@@ -301,6 +334,265 @@ def test_post_message_uses_json_and_a_bearer_header(slack: _FakeSlack) -> None:
     assert recorded.content_type.startswith("application/json")
     assert recorded.authorization == f"Bearer {TOKEN.get_secret_value()}"
     assert "?" not in recorded.path
+
+
+def test_http_failure_traceback_locals_contain_no_button_or_bot_credential(
+    slack: _FakeSlack,
+) -> None:
+    raw_canary = "traceback-action-credential-canary"
+    slack.queue("chat.postMessage", _Reply.slack_error("invalid_auth"))
+    payload = {
+        "text": "Review Card",
+        "blocks": [
+            {
+                "type": "card",
+                "actions": [
+                    {
+                        "type": "button",
+                        "action_id": "approve",
+                        "value": f"TOK-0123456789ABCDEF.{raw_canary}",
+                    }
+                ],
+            }
+        ],
+    }
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=payload, marker=MARKER)
+
+    rendered: list[str] = [str(caught.value), repr(caught.value)]
+    current: BaseException | None = caught.value
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        traceback_cursor = current.__traceback__
+        while traceback_cursor is not None:
+            if "/src/amplai_foundry/" in traceback_cursor.tb_frame.f_code.co_filename:
+                rendered.append(repr(traceback_cursor.tb_frame.f_locals))
+            traceback_cursor = traceback_cursor.tb_next
+        current = current.__cause__ or current.__context__
+    diagnostics = "\n".join(rendered)
+    assert raw_canary not in diagnostics
+    assert TOKEN.get_secret_value() not in diagnostics
+
+
+def test_http_interruption_traceback_contains_no_button_or_bot_credential(
+    slack: _FakeSlack,
+) -> None:
+    raw_canary = "interrupt-action-credential-canary"
+    payload = {
+        "text": "Review Card",
+        "blocks": [
+            {
+                "type": "card",
+                "actions": [
+                    {
+                        "type": "button",
+                        "action_id": "approve",
+                        "value": f"TOK-0123456789ABCDEF.{raw_canary}",
+                    }
+                ],
+            }
+        ],
+    }
+    transport = _transport(slack)
+
+    class InterruptingOpener:
+        def open(self, request: object, *, timeout: float) -> object:
+            del request, timeout
+            raise KeyboardInterrupt("interrupted after serialization")
+
+    transport._opener = InterruptingOpener()  # type: ignore[assignment]
+
+    with pytest.raises(KeyboardInterrupt, match="Slack message delivery interrupted") as caught:
+        transport.post_message(channel=CHANNEL, payload=payload, marker=MARKER)
+
+    rendered: list[str] = [str(caught.value), repr(caught.value)]
+    current: BaseException | None = caught.value
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        traceback_cursor = current.__traceback__
+        while traceback_cursor is not None:
+            if "/src/amplai_foundry/" in traceback_cursor.tb_frame.f_code.co_filename:
+                rendered.append(repr(traceback_cursor.tb_frame.f_locals))
+            traceback_cursor = traceback_cursor.tb_next
+        current = current.__cause__ or current.__context__
+    diagnostics = "\n".join(rendered)
+    assert raw_canary not in diagnostics
+    assert TOKEN.get_secret_value() not in diagnostics
+
+
+def test_http_interruption_showlocals_child_is_secret_free() -> None:
+    if os.environ.get("AMPLAI_HTTP_INTERRUPT_TRACEBACK_CHILD") != "1":
+        return
+    payload: Mapping[str, object] = {
+        "text": "Review Card",
+        "blocks": [
+            {
+                "type": "card",
+                "actions": [
+                    {
+                        "type": "button",
+                        "action_id": "approve",
+                        "value": "TOK-0123456789ABCDEF." + "cafed00d" * 3 + "00000001",
+                    }
+                ],
+            }
+        ],
+    }
+    transport = HttpSlackTransport(
+        bot_token=TOKEN,
+        timeout_seconds=1.0,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_lease_for(1.0),
+        base_url="https://example.invalid",
+    )
+
+    class InterruptingOpener:
+        def open(self, request: object, *, timeout: float) -> object:
+            del request, timeout
+            raise KeyboardInterrupt("interrupted after serialization")
+
+    transport._opener = InterruptingOpener()  # type: ignore[assignment]
+    try:
+        transport.post_message(channel=CHANNEL, payload=payload, marker=MARKER)
+    except BaseException as error:
+        payload = {}
+        raise AssertionError("intentional sanitized HTTP interruption") from error
+    raise AssertionError("HTTP interruption was expected")
+
+
+def test_http_interruption_pytest_showlocals_contains_no_button_credential() -> None:
+    environment = os.environ.copy()
+    environment["AMPLAI_HTTP_INTERRUPT_TRACEBACK_CHILD"] = "1"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            str(Path(__file__)),
+            "-k",
+            "http_interruption_showlocals_child_is_secret_free",
+            "--showlocals",
+            "-q",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert completed.returncode == 1
+    assert "cafed00d" * 3 not in completed.stdout + completed.stderr
+    assert TOKEN.get_secret_value() not in completed.stdout + completed.stderr
+
+
+def test_provider_controlled_error_text_cannot_echo_a_button_credential(
+    slack: _FakeSlack,
+) -> None:
+    raw_canary = "provider-echo-action-credential-canary"
+    slack.queue("chat.postMessage", _Reply.slack_error(raw_canary))
+    payload = {
+        "text": "Review Card",
+        "blocks": [
+            {
+                "type": "card",
+                "actions": [
+                    {
+                        "type": "button",
+                        "action_id": "approve",
+                        "value": f"TOK-0123456789ABCDEF.{raw_canary}",
+                    }
+                ],
+            }
+        ],
+    }
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=payload, marker=MARKER)
+
+    diagnostics = "\n".join(
+        (
+            str(caught.value),
+            repr(caught.value),
+            str(caught.value.raw_error_code),
+            str(caught.value.transport_exception),
+        )
+    )
+    assert raw_canary not in diagnostics
+    assert caught.value.error_code is not None
+    assert caught.value.error_code.startswith("unrecognized_")
+
+
+def test_post_ephemeral_uses_fixed_destination_fields_and_bearer_auth(
+    slack: _FakeSlack,
+) -> None:
+    slack.queue("chat.postEphemeral", _Reply.ok({"message_ts": "1700000000.000200"}))
+
+    _transport(slack).post_ephemeral(
+        channel=CHANNEL,
+        user="U0REVIEWER",
+        text="This Review Card is no longer current.",
+    )
+
+    recorded = slack.requests[0]
+    assert recorded.path.endswith("/chat.postEphemeral")
+    assert recorded.content_type.startswith("application/json")
+    assert recorded.authorization == f"Bearer {TOKEN.get_secret_value()}"
+    assert recorded.json_body() == {
+        "channel": CHANNEL,
+        "user": "U0REVIEWER",
+        "text": "This Review Card is no longer current.",
+    }
+
+
+def test_slack_feedback_maps_only_the_closed_safe_message(slack: _FakeSlack) -> None:
+    slack.queue("chat.postEphemeral", _Reply.ok({"message_ts": "1700000000.000200"}))
+    command = cast(
+        IngressCommandView,
+        _FeedbackCommand(
+            provider=ChannelProvider.SLACK,
+            channel_ref=ChannelRef(
+                provider=ChannelProvider.SLACK,
+                workspace_id="T0WORKSPACE",
+                channel_id=CHANNEL,
+                message_id="1700000000.000100",
+            ),
+            external_actor_key="U0REVIEWER",
+        ),
+    )
+
+    SlackInteractionFeedback(_transport(slack)).send(
+        command,
+        SafeInteractionOutcome.EXPIRED,
+    )
+
+    assert slack.requests[0].json_body()["text"] == (
+        "This Proposal action expired. Request a new Review Card."
+    )
+
+
+def test_slack_feedback_ignores_non_slack_commands(slack: _FakeSlack) -> None:
+    command = cast(
+        IngressCommandView,
+        _FeedbackCommand(
+            provider=ChannelProvider.TELEGRAM,
+            channel_ref=ChannelRef(
+                provider=ChannelProvider.TELEGRAM,
+                chat_id="chat-1",
+                message_id="message-1",
+            ),
+            external_actor_key="telegram-user",
+        ),
+    )
+
+    SlackInteractionFeedback(_transport(slack)).send(
+        command,
+        SafeInteractionOutcome.DENIED,
+    )
+
+    assert slack.requests == []
 
 
 # wave 5 review A-1 — dict literal 은 **뒤 key 가 이긴다.** payload 가 무엇을 담고 있든
@@ -592,6 +884,8 @@ def test_no_failure_ever_names_the_credential(slack: _FakeSlack) -> None:
         (SecretStr("   "), 1.0, SLACK_API_BASE),
         (TOKEN, 0.0, SLACK_API_BASE),
         (TOKEN, -1.0, SLACK_API_BASE),
+        (TOKEN, float("nan"), SLACK_API_BASE),
+        (TOKEN, float("inf"), SLACK_API_BASE),
         (TOKEN, 1.0, "  "),
     ],
 )
@@ -643,7 +937,14 @@ def test_the_worst_case_accounts_for_a_stall_after_the_deadline() -> None:
 
 @pytest.mark.parametrize(
     ("timeout", "pages", "lease"),
-    [(0.0, 5, 30), (-1.0, 5, 30), (5.0, 0, 30), (5.0, 5, 0)],
+    [
+        (0.0, 5, 30),
+        (-1.0, 5, 30),
+        (float("nan"), 5, 30),
+        (float("inf"), 5, 30),
+        (5.0, 0, 30),
+        (5.0, 5, 0),
+    ],
 )
 def test_the_call_budget_rejects_meaningless_inputs(
     timeout: float,
@@ -1136,6 +1437,19 @@ def _history_with(*messages: dict[str, object]) -> _Reply:
     return _Reply.ok({"messages": list(messages)})
 
 
+# 자가검사는 방금 Slack이 확인한 `ts`만 되읽는다. 이전 probe history scan은 금지다.
+# 요청 순서가 곧 계약이므로 index를 이름으로 고정한다.
+PROBE_POST = 0
+PROBE_READ = 1
+PROBE_DELETE = 2
+
+
+def _queue_probe_flow(slack: _FakeSlack, history: _Reply) -> None:
+    """Queue the post and exact confirmed-ts readback replies."""
+    slack.queue("conversations.history", history)
+    slack.queue("chat.postMessage", _probe_reply())
+
+
 def _probe_event() -> OutboxEventView:
     """A real event view, so `build_probe_marker` is exercised on a real input."""
     payload: dict[str, object] = {"text": "제안 카드"}
@@ -1158,27 +1472,37 @@ def _probe_event() -> OutboxEventView:
     )
 
 
-def _check(slack: _FakeSlack, *, probe_marker: Mapping[str, object] | None = None) -> None:
-    verify_marker_readback(
+def _check(
+    slack: _FakeSlack,
+    *,
+    probe_marker: Mapping[str, object] | None = None,
+    lifecycle_cause: ReadbackLifecycleCause | None = None,
+) -> ReadbackOutcome:
+    return verify_marker_readback(
         _transport(slack),
         channel=CHANNEL,
         app_id=APP_ID,
         probe_marker=PROBE_MARKER if probe_marker is None else probe_marker,
+        lifecycle_cause=lifecycle_cause,
     )
 
 
 # T008 AC-01
 def test_a_marker_that_round_trips_lets_startup_proceed(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
 
-    _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READY
+    assert outcome.allows_activation
+    assert outcome.primary_failure_code is None
+    assert outcome.secondary_cleanup_failure is None
 
     # probe 가 실제로 나갔고 marker 를 달고 나갔다.
-    body = slack.requests[0].json_body()
+    body = slack.requests[PROBE_POST].json_body()
     assert body["metadata"] == PROBE_MARKER
     # 사람이 채널에서 보고 무엇인지 알아야 한다. 빈 message 는 정체불명의 흔적만 남긴다.
     assert isinstance(body["text"], str)
@@ -1188,9 +1512,8 @@ def test_a_marker_that_round_trips_lets_startup_proceed(slack: _FakeSlack) -> No
 # T008 AC-02 — include_all_metadata 를 안 붙이는 구현이면 event_type 만 오고
 # event_payload 가 안 온다. 그 상태로 기동하면 조용한 중복 Card 다.
 def test_stripped_metadata_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with(
             {
                 "ts": PROBE_TS,
@@ -1200,30 +1523,35 @@ def test_stripped_metadata_refuses_startup(slack: _FakeSlack) -> None:
         ),
     )
 
-    with pytest.raises(SlackReadbackError, match="metadata"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READBACK_FAILED
+    assert outcome.primary_failure_code is ReadbackFailureCode.MARKER_UNREADABLE
+    assert not outcome.allows_activation
 
 
 # T008 AC-03 — app_id 가 안 오면 reconcile 이 우리 marker 를 하나도 우리 것으로
 # 인정하지 않는다.
 def test_a_missing_app_id_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue("conversations.history", _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER}))
+    _queue_probe_flow(slack, _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER}))
 
-    with pytest.raises(SlackReadbackError, match="app_id"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.APP_ID_MISMATCH
+    assert not outcome.allows_activation
 
 
 # T008 AC-03 — 값이 틀린 app_id 도 같다. 구성 오류가 조용한 중복 Card 로 이어진다.
 def test_a_mismatched_app_id_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
     )
 
-    with pytest.raises(SlackReadbackError, match="app_id"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.APP_ID_MISMATCH
+    assert not outcome.allows_activation
 
 
 # T008 AC-04 — event_payload 의 필드 하나가 왕복에서 바뀌면 reconcile 판정이 틀린다.
@@ -1234,9 +1562,8 @@ def test_a_mismatched_app_id_refuses_startup(slack: _FakeSlack) -> None:
 def test_a_field_changed_in_transit_refuses_startup(slack: _FakeSlack, field: str) -> None:
     body = dict(cast("Mapping[str, object]", PROBE_MARKER["event_payload"]))
     body[field] = 999 if field == "destination_sequence" else "바뀐 값"
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with(
             {
                 "ts": PROBE_TS,
@@ -1246,15 +1573,16 @@ def test_a_field_changed_in_transit_refuses_startup(slack: _FakeSlack, field: st
         ),
     )
 
-    with pytest.raises(SlackReadbackError, match="바뀌었습니다"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.MARKER_MISMATCH
+    assert not outcome.allows_activation
 
 
 # T008 — event_type 을 개명하면 marker 를 아예 못 알아본다.
 def test_a_renamed_event_type_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with(
             {
                 "ts": PROBE_TS,
@@ -1267,46 +1595,65 @@ def test_a_renamed_event_type_refuses_startup(slack: _FakeSlack) -> None:
         ),
     )
 
-    with pytest.raises(SlackReadbackError, match="복원"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.MARKER_MISMATCH
+    assert not outcome.allows_activation
+
+
+def test_a_missing_event_type_is_structurally_unreadable(slack: _FakeSlack) -> None:
+    _queue_probe_flow(
+        slack,
+        _history_with(
+            {
+                "ts": PROBE_TS,
+                "metadata": {"event_payload": PROBE_MARKER["event_payload"]},
+                "app_id": APP_ID,
+            }
+        ),
+    )
+
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.MARKER_UNREADABLE
+    assert not outcome.allows_activation
 
 
 # T008 — probe 를 아예 못 찾는 경우. 조회 범위나 scope 문제다.
 def test_a_probe_that_cannot_be_found_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue("conversations.history", _Reply.ok({"messages": []}))
+    _queue_probe_flow(slack, _Reply.ok({"messages": []}))
 
-    with pytest.raises(SlackReadbackError, match="찾지 못했습니다"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.primary_failure_code is ReadbackFailureCode.PROBE_NOT_FOUND
+    assert not outcome.allows_activation
 
 
 # T008 AC-05 — scope 가 모자라면 read 에서 missing_scope 가 난다. H-1.1 이 경고한
 # 상황이고, 이 검사가 그것을 **첫 재시도가 아니라 기동 시점**으로 앞당긴다.
 def test_a_missing_scope_surfaces_at_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue("conversations.history", _Reply.slack_error("missing_scope"))
+    _queue_probe_flow(slack, _Reply.slack_error("missing_scope"))
 
-    # transport 실패는 그대로 올린다. marker 결함이 아니라 network·권한 문제이고,
-    # 둘을 섞으면 operator 가 무엇을 고칠지 모른다.
-    with pytest.raises(SlackTransportError) as caught:
-        _check(slack)
+    outcome = _check(slack)
 
-    assert caught.value.error_code == "missing_scope"
-    assert classify_slack_failure(caught.value) is SlackFailureClass.TERMINAL
+    assert outcome.primary_failure_code is ReadbackFailureCode.HISTORY_READ_FAILED
+    assert outcome.diagnostic_data.provider_error_code is SafeSlackProviderErrorCode.MISSING_SCOPE
+    assert not outcome.allows_activation
 
 
 # T008 — 자가검사가 실제 계약대로 조회하는지. include_all_metadata 를 빼면 이 검사
 # 자체가 무의미해진다.
 def test_the_self_check_reads_with_all_metadata(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
 
-    _check(slack)
+    outcome = _check(slack)
 
-    form = slack.requests[1].form_body()
+    assert outcome.status is ReadbackOutcomeStatus.READY
+
+    form = slack.requests[PROBE_READ].form_body()
     assert form["include_all_metadata"] == "true"
     assert form["channel"] == CHANNEL
     # 조회 범위도 고정한다. 이 값이 작아지면 조용한 채널을 전제하게 되고, 남이 방금 떠든
@@ -1326,28 +1673,81 @@ def test_a_probe_marked_for_a_real_destination_is_refused_before_sending(
         "event_payload": dict(cast("Mapping[str, object]", MARKER["event_payload"])),
     }
 
-    with pytest.raises(SlackReadbackError, match="probe 전용"):
-        _check(slack, probe_marker=real)
+    outcome = _check(slack, probe_marker=real)
 
     # **보내기 전에** 막는다. 보낸 뒤에 알면 이미 채널에 남아 reconcile 이 그것을 본다.
+    assert outcome.primary_failure_code is ReadbackFailureCode.PROBE_INPUT_INVALID
+    assert not outcome.allows_activation
     assert slack.requests == []
 
 
 # T008 round 2 — event_payload 가 아예 없는 probe_marker 도 보내기 전에 막는다. 이 분기는
 # round 1 까지 어떤 test 도 안 밟아서 mutation 이 살아남았다 (regression lens M13).
 def test_a_probe_marker_without_a_payload_is_refused_before_sending(slack: _FakeSlack) -> None:
-    with pytest.raises(SlackReadbackError, match="event_payload"):
-        _check(slack, probe_marker={"event_type": MARKER["event_type"]})
+    outcome = _check(slack, probe_marker={"event_type": MARKER["event_type"]})
 
+    assert outcome.primary_failure_code is ReadbackFailureCode.PROBE_INPUT_INVALID
+    assert not outcome.allows_activation
+    assert slack.requests == []
+
+
+# T008 AC-15 — local input의 전체 shape와 type을 post 전에 검사한다. destination_ref 하나만
+# 맞는 malformed marker가 remote side effect를 만들면 PROBE_INPUT_INVALID 계약이 거짓이다.
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda marker: marker.update(event_type="renamed"),
+        lambda marker: marker.update(extra="not-approved"),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).pop("event_id"),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(event_id=1),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(event_id=" "),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            destination_sequence=True
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            destination_sequence=0
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            payload_digest=None
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            payload_digest="not-a-digest"
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            payload_digest="sha256:" + "A" * 64
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            payload_digest="sha256:" + "a" * 63
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(
+            payload_digest="sha256:" + "g" * 64
+        ),
+        lambda marker: cast("dict[str, object]", marker["event_payload"]).update(extra="nope"),
+    ],
+)
+def test_every_malformed_probe_input_is_rejected_without_network(
+    slack: _FakeSlack,
+    mutate: Callable[[dict[str, object]], object],
+) -> None:
+    marker = {
+        "event_type": PROBE_MARKER["event_type"],
+        "event_payload": dict(cast("Mapping[str, object]", PROBE_MARKER["event_payload"])),
+    }
+    mutate(marker)
+
+    outcome = _check(slack, probe_marker=marker)
+
+    assert outcome.status is ReadbackOutcomeStatus.READBACK_FAILED
+    assert outcome.primary_failure_code is ReadbackFailureCode.PROBE_INPUT_INVALID
+    assert not outcome.allows_activation
     assert slack.requests == []
 
 
 # T008 round 2 — 채널이 조용하다고 가정하지 않는다. probe 가 첫 message 가 아니어도
 # **ts 로** 찾아야 한다. 첫 message 를 집으면 남의 message 를 검사하고 엉뚱하게 거부한다.
 def test_the_probe_is_found_by_timestamp_not_by_position(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with(
             {"ts": "1700000000.009900", "text": "남이 방금 떠들었다", "app_id": "A_SOMEONE_ELSE"},
             {"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID},
@@ -1355,7 +1755,9 @@ def test_the_probe_is_found_by_timestamp_not_by_position(slack: _FakeSlack) -> N
         ),
     )
 
-    _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READY
 
 
 # T008 round 2 — **끝나면 probe 를 지운다.** 판정에서 빠지는 것만으로 부족하다. probe 는
@@ -1363,66 +1765,368 @@ def test_the_probe_is_found_by_timestamp_not_by_position(slack: _FakeSlack) -> N
 # Card 가 probe 아래 묻혀 reconcile 이 판정 불가로 떨어진다. 그 결과는 되돌릴 수 없는
 # hold 다 (wave 6 review round 2 가 실측, D-030).
 def test_the_probe_is_deleted_after_a_successful_check(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
 
-    _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READY
 
     assert [record.path for record in slack.requests] == [
         "/chat.postMessage",
         "/conversations.history",
         "/chat.delete",
     ]
-    assert slack.requests[2].json_body() == {"channel": CHANNEL, "ts": PROBE_TS}
+    assert slack.requests[PROBE_DELETE].json_body() == {"channel": CHANNEL, "ts": PROBE_TS}
 
 
 # T008 round 2 — 검사가 실패해도 지운다. 실패하는 상태가 바로 재시작 loop 이 도는 상태이고,
 # 거기서 안 지우면 누적이 가장 빨리 쌓인다.
 def test_the_probe_is_deleted_even_when_the_check_fails(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
     )
 
-    with pytest.raises(SlackReadbackError, match="app_id"):
-        _check(slack)
+    outcome = _check(slack)
 
-    assert slack.requests[2].path == "/chat.delete"
+    assert outcome.primary_failure_code is ReadbackFailureCode.APP_ID_MISMATCH
+    assert not outcome.allows_activation
+    assert slack.requests[PROBE_DELETE].path == "/chat.delete"
 
 
-# T008 round 2 — 지우기가 실패하면 통과로 넘기지 않는다. 남은 probe 가 나중에 판정 불가를
-# 만든다.
-def test_a_probe_that_cannot_be_deleted_refuses_startup(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
+# Slack success response의 channel+ts가 exact remote identity다. Configured target과 모순되면
+# READY로 진행하지 않고, cleanup은 confirmed channel을 사용한다.
+def test_a_mismatched_response_channel_fails_closed_and_cleans_the_confirmed_identity(
+    slack: _FakeSlack,
+) -> None:
+    confirmed_channel = "C_CONFIRMED_OTHER"
     slack.queue(
-        "conversations.history",
+        "chat.postMessage",
+        _Reply.ok({"channel": confirmed_channel, "ts": PROBE_TS}),
+    )
+
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READBACK_FAILED
+    assert outcome.primary_failure_code is ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH
+    assert not outcome.allows_activation
+    assert [request.path for request in slack.requests] == [
+        "/chat.postMessage",
+        "/chat.delete",
+    ]
+    assert slack.requests[1].json_body() == {
+        "channel": confirmed_channel,
+        "ts": PROBE_TS,
+    }
+
+
+# T008 AC-10 — readback 성공 뒤 cleanup만 실패하면 degraded로 진행한다.
+def test_a_probe_that_cannot_be_deleted_returns_degraded(slack: _FakeSlack) -> None:
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
     )
     slack.queue("chat.delete", _Reply.slack_error("cant_delete_message"))
 
-    with pytest.raises(SlackReadbackError, match="지우지 못했습니다"):
-        _check(slack)
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.DEGRADED_CLEANUP
+    assert outcome.allows_activation
+    assert outcome.primary_failure_code is None
+    assert outcome.secondary_cleanup_failure is None
+    assert outcome.diagnostic_data.cleanup_failure_count == 1
+    assert (
+        outcome.diagnostic_data.provider_error_code
+        is SafeSlackProviderErrorCode.CANT_DELETE_MESSAGE
+    )
 
 
 # T008 round 2 — 검사도 실패하고 지우기도 실패하면 **원래 원인이 이긴다.** 삭제 실패가
 # 원인을 가리면 operator 가 엉뚱한 곳을 고친다.
 def test_a_failed_delete_does_not_mask_the_readback_failure(slack: _FakeSlack) -> None:
-    slack.queue("chat.postMessage", _probe_reply())
-    slack.queue(
-        "conversations.history",
+    _queue_probe_flow(
+        slack,
         _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"}),
     )
     slack.queue("chat.delete", _Reply.slack_error("cant_delete_message"))
 
-    with pytest.raises(SlackReadbackError, match="app_id") as caught:
-        _check(slack)
+    outcome = _check(slack)
 
-    # 삭제 실패는 버리지 않고 원래 예외에 덧붙인다.
-    assert any("지우지 못했습니다" in note for note in caught.value.__notes__)
+    assert outcome.status is ReadbackOutcomeStatus.READBACK_FAILED
+    assert outcome.primary_failure_code is ReadbackFailureCode.APP_ID_MISMATCH
+    assert outcome.secondary_cleanup_failure == CleanupFailureDetail(
+        cleanup_failure_count=1,
+        provider_error_code=SafeSlackProviderErrorCode.CANT_DELETE_MESSAGE,
+    )
+    assert not outcome.allows_activation
+
+
+# T008 AC-12 — supplied durable cause는 post보다 먼저 판정한다. Outcome을 cause state로
+# 재사용하지 않으며 실제 persistence/recovery는 T013 소유다.
+@pytest.mark.parametrize("cause", list(ReadbackLifecycleCause))
+def test_a_supplied_lifecycle_cause_hard_blocks_without_network(
+    slack: _FakeSlack,
+    cause: ReadbackLifecycleCause,
+) -> None:
+    outcome = _check(slack, lifecycle_cause=cause)
+
+    assert outcome.status is ReadbackOutcomeStatus.HARD_BLOCKED_NO_POST
+    assert outcome.lifecycle_cause is cause
+    assert not outcome.allows_activation
+    assert slack.requests == []
+    assert "HARD_BLOCKED_NO_POST" not in {item.value for item in ReadbackLifecycleCause}
+
+
+@pytest.mark.parametrize("cause", list(ReadbackLifecycleCause))
+def test_a_lifecycle_short_circuit_never_exposes_unvalidated_marker_data(
+    slack: _FakeSlack,
+    cause: ReadbackLifecycleCause,
+) -> None:
+    canary = "xoxb-secret-canary-must-not-survive"
+    marker = {
+        "event_type": "not-approved",
+        "event_payload": {
+            **cast("Mapping[str, object]", PROBE_MARKER["event_payload"]),
+            "event_id": canary,
+        },
+    }
+
+    outcome = _check(slack, probe_marker=marker, lifecycle_cause=cause)
+
+    assert outcome.status is ReadbackOutcomeStatus.HARD_BLOCKED_NO_POST
+    assert outcome.diagnostic_data.probe_id is None
+    assert canary not in repr(outcome)
+    assert slack.requests == []
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        ReadbackOutcome(
+            status=ReadbackOutcomeStatus.READY,
+            primary_failure_code=None,
+            secondary_cleanup_failure=None,
+            diagnostic_data=ReadbackDiagnosticData("READY", CHANNEL, APP_ID),
+        ),
+    ],
+)
+def test_a_valid_readback_outcome_constructs(outcome: ReadbackOutcome) -> None:
+    assert outcome.allows_activation
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "status": ReadbackOutcomeStatus.READY,
+            "primary_failure_code": ReadbackFailureCode.HISTORY_READ_FAILED,
+            "secondary_cleanup_failure": None,
+            "lifecycle_cause": None,
+        },
+        {
+            "status": ReadbackOutcomeStatus.DEGRADED_CLEANUP,
+            "primary_failure_code": None,
+            "secondary_cleanup_failure": CleanupFailureDetail(1, None),
+            "lifecycle_cause": None,
+        },
+        {
+            "status": ReadbackOutcomeStatus.READBACK_FAILED,
+            "primary_failure_code": None,
+            "secondary_cleanup_failure": None,
+            "lifecycle_cause": None,
+        },
+        {
+            "status": ReadbackOutcomeStatus.READBACK_FAILED,
+            "primary_failure_code": ReadbackFailureCode.PROBE_NOT_FOUND,
+            "secondary_cleanup_failure": None,
+            "lifecycle_cause": ReadbackLifecycleCause.AMBIGUOUS_POST,
+        },
+        {
+            "status": ReadbackOutcomeStatus.HARD_BLOCKED_NO_POST,
+            "primary_failure_code": None,
+            "secondary_cleanup_failure": None,
+            "lifecycle_cause": None,
+        },
+        {
+            "status": ReadbackOutcomeStatus.HARD_BLOCKED_NO_POST,
+            "primary_failure_code": ReadbackFailureCode.HISTORY_READ_FAILED,
+            "secondary_cleanup_failure": None,
+            "lifecycle_cause": ReadbackLifecycleCause.AMBIGUOUS_POST,
+        },
+    ],
+)
+def test_contradictory_readback_outcomes_are_rejected(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        ReadbackOutcome(
+            **kwargs,  # type: ignore[arg-type]
+            diagnostic_data=ReadbackDiagnosticData("test", CHANNEL, APP_ID),
+        )
+
+
+# T008 AC-13 — 이전 probe를 찾는 history scan은 없다. Fresh check의 첫 network side effect는
+# post이며, 이후 read는 Slack이 확인한 ts만 exact match한다.
+def test_the_self_check_does_not_guess_previous_probes_from_history(slack: _FakeSlack) -> None:
+    _queue_probe_flow(
+        slack,
+        _history_with(
+            {"ts": "old", "metadata": PROBE_MARKER, "app_id": APP_ID},
+            {"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID},
+        ),
+    )
+
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READY
+    assert slack.requests[0].path == "/chat.postMessage"
+    assert not hasattr(slack_http, "_reclaim_probes")
+    assert [request.path for request in slack.requests] == [
+        "/chat.postMessage",
+        "/conversations.history",
+        "/chat.delete",
+    ]
+
+
+def _readback_failure_reply(code: ReadbackFailureCode) -> _Reply:
+    if code is ReadbackFailureCode.HISTORY_READ_FAILED:
+        return _Reply.slack_error("missing_scope")
+    if code is ReadbackFailureCode.PROBE_NOT_FOUND:
+        return _history_with()
+    if code is ReadbackFailureCode.APP_ID_MISMATCH:
+        return _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": "A_SOMEONE_ELSE"})
+    if code is ReadbackFailureCode.MARKER_UNREADABLE:
+        return _history_with(
+            {
+                "ts": PROBE_TS,
+                "metadata": {"event_type": PROBE_MARKER["event_type"]},
+                "app_id": APP_ID,
+            }
+        )
+    if code is ReadbackFailureCode.MARKER_MISMATCH:
+        payload = dict(cast("Mapping[str, object]", PROBE_MARKER["event_payload"]))
+        payload["payload_digest"] = "changed"
+        return _history_with(
+            {
+                "ts": PROBE_TS,
+                "metadata": {
+                    "event_type": PROBE_MARKER["event_type"],
+                    "event_payload": payload,
+                },
+                "app_id": APP_ID,
+            }
+        )
+    raise AssertionError(f"post-readback failure가 아닙니다: {code}")
+
+
+POST_READBACK_FAILURE_CODES = (
+    ReadbackFailureCode.HISTORY_READ_FAILED,
+    ReadbackFailureCode.PROBE_NOT_FOUND,
+    ReadbackFailureCode.APP_ID_MISMATCH,
+    ReadbackFailureCode.MARKER_UNREADABLE,
+    ReadbackFailureCode.MARKER_MISMATCH,
+    ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH,
+)
+
+
+def test_readback_failure_taxonomy_is_exact_and_the_matrix_is_exhaustive() -> None:
+    expected = {
+        ReadbackFailureCode.PROBE_INPUT_INVALID,
+        ReadbackFailureCode.HISTORY_READ_FAILED,
+        ReadbackFailureCode.PROBE_NOT_FOUND,
+        ReadbackFailureCode.APP_ID_MISMATCH,
+        ReadbackFailureCode.MARKER_UNREADABLE,
+        ReadbackFailureCode.MARKER_MISMATCH,
+        ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH,
+    }
+
+    assert set(ReadbackFailureCode) == expected
+    assert set(POST_READBACK_FAILURE_CODES) == expected - {ReadbackFailureCode.PROBE_INPUT_INVALID}
+
+
+# T008 AC-15·16 — post 뒤 여섯 failure x cleanup 성공/실패 12개 조합이다.
+@pytest.mark.parametrize("primary_code", POST_READBACK_FAILURE_CODES)
+@pytest.mark.parametrize("cleanup_fails", [False, True])
+def test_post_readback_failure_matrix_preserves_the_primary_code(
+    slack: _FakeSlack,
+    primary_code: ReadbackFailureCode,
+    cleanup_fails: bool,
+) -> None:
+    confirmed_channel = "C_CONFIRMED_OTHER"
+    if primary_code is ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH:
+        slack.queue(
+            "chat.postMessage",
+            _Reply.ok({"channel": confirmed_channel, "ts": PROBE_TS}),
+        )
+    else:
+        _queue_probe_flow(slack, _readback_failure_reply(primary_code))
+    if cleanup_fails:
+        slack.queue("chat.delete", _Reply.slack_error("cant_delete_message"))
+
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.READBACK_FAILED
+    assert outcome.primary_failure_code is primary_code
+    assert not outcome.allows_activation
+    assert (outcome.secondary_cleanup_failure is not None) is cleanup_fails
+    if cleanup_fails:
+        assert outcome.secondary_cleanup_failure == CleanupFailureDetail(
+            cleanup_failure_count=1,
+            provider_error_code=SafeSlackProviderErrorCode.CANT_DELETE_MESSAGE,
+        )
+    if primary_code is ReadbackFailureCode.RESPONSE_CHANNEL_MISMATCH:
+        assert [request.path for request in slack.requests] == [
+            "/chat.postMessage",
+            "/chat.delete",
+        ]
+        assert slack.requests[1].json_body() == {
+            "channel": confirmed_channel,
+            "ts": PROBE_TS,
+        }
+    else:
+        assert [request.path for request in slack.requests] == [
+            "/chat.postMessage",
+            "/conversations.history",
+            "/chat.delete",
+        ]
+
+
+# T008 AC-14·16 — typed boundary 자체가 닫혀 있고 판정 계층은 아무것도 출력하지 않는다.
+def test_diagnostic_data_has_only_the_approved_safe_fields_and_no_output(
+    slack: _FakeSlack,
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _queue_probe_flow(
+        slack,
+        _history_with({"ts": PROBE_TS, "metadata": PROBE_MARKER, "app_id": APP_ID}),
+    )
+    slack.queue("chat.delete", _Reply.slack_error("raw-secret=must-not-survive"))
+
+    outcome = _check(slack)
+
+    assert outcome.status is ReadbackOutcomeStatus.DEGRADED_CLEANUP
+    assert {item.name for item in fields(ReadbackDiagnosticData)} == {
+        "diagnostic_code",
+        "channel_id",
+        "app_id",
+        "probe_id",
+        "message_ts",
+        "cleanup_failure_count",
+        "provider_error_code",
+        "operator_action",
+    }
+    assert {item.name for item in fields(CleanupFailureDetail)} == {
+        "cleanup_failure_count",
+        "provider_error_code",
+    }
+    assert outcome.diagnostic_data.provider_error_code is None
+    assert "raw-secret" not in repr(outcome)
+    assert caplog.records == []
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 # T008 round 2 — probe marker 를 손으로 조립하지 않는다. round 1 의 P0 가 정확히 그 안내에서
@@ -1572,6 +2276,374 @@ def test_the_harness_hands_over_a_configured_target(slack_e2e_settings: SlackSet
     assert live is transport
     assert slack_e2e_settings.app_id
     assert slack_e2e_settings.channel_id
+
+
+# --------------------------------------------------------------------------------------
+# MGC-012-T010 — live Slack transport, readback, ordering, and human-delete recovery
+# --------------------------------------------------------------------------------------
+
+_LIVE_SLACK_TIMEOUT_SECONDS = 4.0
+_LIVE_SLACK_LEASE_SECONDS = 60
+_LIVE_SLACK_MAX_ATTEMPTS = 3
+# Slack의 channel별 chat.postMessage 제한은 대략 초당 한 건이다. self-check와 두 Card를
+# 연달아 보내는 test가 provider limit 자체를 검사하는 test로 변질되지 않게 간격을 둔다.
+_LIVE_SLACK_POST_INTERVAL_SECONDS = 1.1
+
+
+def _live_slack_transport(settings: SlackSettings) -> HttpSlackTransport:
+    return HttpSlackTransport(
+        bot_token=settings.credentials.bot_token,
+        timeout_seconds=_LIVE_SLACK_TIMEOUT_SECONDS,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_LIVE_SLACK_LEASE_SECONDS,
+    )
+
+
+def _live_destination(
+    settings: SlackSettings,
+    transport: HttpSlackTransport,
+    *,
+    destination_ref: str,
+) -> SlackProjectionDestination:
+    # transport의 budget 검사에 쓴 page 수와 destination의 실제 scan page 수를 같은 값으로
+    # 명시한다. 둘이 갈라지면 lease 안에서 끝난다는 보장이 사라진다.
+    assert transport.max_history_pages == SLACK_MAX_HISTORY_PAGES
+    return SlackProjectionDestination(
+        transport,
+        destination_ref=destination_ref,
+        channel=settings.channel_id,
+        app_id=settings.app_id,
+        max_attempts=_LIVE_SLACK_MAX_ATTEMPTS,
+        max_history_pages=transport.max_history_pages,
+    )
+
+
+def _live_destination_ref(run_id: str) -> str:
+    # run마다 다른 destination을 쓴다. 이전 test run의 lower-sequence marker가 이번
+    # human-delete reconcile의 결론에 영향을 주지 않게 하는 격리 경계다.
+    suffix = hashlib.sha256(run_id.encode("utf-8")).hexdigest()
+    return f"provider:slack:{suffix}"
+
+
+def _live_event(
+    *,
+    run_id: str,
+    destination_ref: str,
+    destination_sequence: int,
+) -> OutboxEventView:
+    payload = DecisionProjectionPayload(
+        action="approve",
+        active_definition_digest="sha256:" + "1" * 64,
+        aggregate_ref=ProposalRef(
+            project_ref=ProjectRef(
+                project_id="amplai",
+                namespace="org/default/project/amplai",
+            ),
+            proposal_id=f"PROP-20260812-{run_id[:8].upper()}",
+        ),
+        content_revision=destination_sequence,
+        decision_epoch=1,
+        proposal_status="approved",
+        state_revision=destination_sequence + 1,
+    ).model_dump(mode="json")
+    return OutboxEventView(
+        event_id=f"EVT-{run_id.upper()}-{destination_sequence}",
+        proposal_ref=ProposalRef(
+            project_ref=ProjectRef(project_id="amplai", namespace="org/default/project/amplai"),
+            proposal_id="PROP-20260730-ABCDEF12",
+        ),
+        aggregate_sequence=destination_sequence,
+        destination_ref=destination_ref,
+        destination_sequence=destination_sequence,
+        source_state_revision=destination_sequence,
+        payload_digest=payload_digest(payload),
+        payload=payload,
+        state=OutboxState.LEASED,
+        attempts=1,
+        claim_generation=1,
+        created_at=datetime.now(UTC),
+    )
+
+
+class _LiveReviewActionSets:
+    def __init__(self, prepared: PreparedReviewActionSet) -> None:
+        self.prepared = prepared
+
+    def prepare(self, event: OutboxEventView) -> PreparedReviewActionSet:
+        return self.prepared
+
+    def abandon(self, event_id: str, generation: int) -> None:
+        return None
+
+
+def _live_review_event(
+    *,
+    settings: SlackSettings,
+    run_id: str,
+    destination_ref: str,
+) -> tuple[OutboxEventView, PreparedReviewActionSet]:
+    now = datetime.now(UTC)
+    expires_at = now.replace(microsecond=0) + timedelta(hours=24)
+    proposal = ProposalRef(
+        project_ref=ProjectRef(
+            project_id="amplai",
+            namespace="org/default/project/amplai",
+        ),
+        proposal_id=f"PROP-20260812-{run_id[:8].upper()}",
+    )
+    channel = ChannelRef(
+        provider=ChannelProvider.SLACK,
+        workspace_id="AMPLAI-LIVE-E2E",
+        channel_id=settings.channel_id,
+        message_id=f"e2e-request-{run_id[:8]}",
+    )
+    payload_model = ReviewProjectionPayload(
+        aggregate_ref=proposal,
+        active_definition_digest="sha256:" + "2" * 64,
+        content_revision=1,
+        state_revision=2,
+        decision_epoch=1,
+        reviewer_actor_id="ACT-LIVE-E2E-REVIEWER",
+        reviewer_external_key=settings.app_id,
+        bound_channel_ref=channel,
+        expires_at=expires_at,
+        operation_count=4,
+        operation_counts={"CREATE": 2, "IGNORE": 2},
+        operation_titles=("Create Proposal Card UI", "Keep governed decision", "Add E2E"),
+        remaining_operation_count=1,
+    )
+    actor = ActorRef(actor_id=payload_model.reviewer_actor_id, actor_type=ActorType.HUMAN)
+    token_specs = (
+        (DecisionAction.APPROVE, "A", "a" * 32),
+        (DecisionAction.REQUEST_CHANGES, "B", "b" * 32),
+        (DecisionAction.REJECT, "C", "c" * 32),
+    )
+    issued = tuple(
+        IssuedActionToken(
+            record=ActionTokenView(
+                token_id=f"TOK-{suffix * 16}",
+                proposal_ref=proposal,
+                active_definition_digest=payload_model.active_definition_digest,
+                content_revision=payload_model.content_revision,
+                state_revision=payload_model.state_revision,
+                decision_epoch=payload_model.decision_epoch,
+                allowed_action=action,
+                allowed_actor_ref=actor,
+                bound_channel_ref=channel,
+                issued_at=now,
+                expires_at=expires_at,
+                state=ActionTokenState.ISSUED,
+            ),
+            raw_token=raw,
+        )
+        for action, suffix, raw in token_specs
+    )
+    event_id = f"EVT-{run_id.upper()}-REVIEW"
+    prepared = PreparedReviewActionSet(
+        view=ReviewActionSetView(
+            event_id=event_id,
+            generation=1,
+            approve_token_id=issued[0].record.token_id,
+            request_changes_token_id=issued[1].record.token_id,
+            reject_token_id=issued[2].record.token_id,
+            state="issued",
+            issued_at=now,
+            expires_at=expires_at,
+        ),
+        issued=issued,
+    )
+    payload = payload_model.model_dump(mode="json")
+    event = OutboxEventView(
+        event_id=event_id,
+        proposal_ref=proposal,
+        aggregate_sequence=1,
+        destination_ref=destination_ref,
+        destination_sequence=1,
+        source_state_revision=2,
+        payload_digest=payload_digest(payload),
+        payload=payload,
+        state=OutboxState.LEASED,
+        attempts=1,
+        claim_generation=1,
+        created_at=now,
+    )
+    return event, prepared
+
+
+def _receipt_ts(receipt: str, *, channel: str) -> str:
+    prefix = f"slack:{channel}:"
+    assert receipt.startswith(prefix)
+    timestamp = receipt.removeprefix(prefix)
+    assert timestamp
+    return timestamp
+
+
+def _wait_for_next_slack_post() -> None:
+    time.sleep(_LIVE_SLACK_POST_INTERVAL_SECONDS)
+
+
+@pytest.mark.slack_e2e
+def test_live_result_card_send_reconcile_metadata_and_newest_first(
+    slack_e2e_settings: SlackSettings,
+) -> None:
+    """Exercise the configured Slack app without printing any credential value."""
+    run_id = uuid4().hex
+    destination_ref = _live_destination_ref(run_id)
+    first = _live_event(
+        run_id=run_id,
+        destination_ref=destination_ref,
+        destination_sequence=1,
+    )
+    second = _live_event(
+        run_id=run_id,
+        destination_ref=destination_ref,
+        destination_sequence=2,
+    )
+    transport = _live_slack_transport(slack_e2e_settings)
+    destination = _live_destination(
+        slack_e2e_settings,
+        transport,
+        destination_ref=destination_ref,
+    )
+
+    # 실제 Card와 같은 marker 모양이 app_id를 포함해 되읽히는지 먼저 확인한다. probe는
+    # transport가 지우며 Card cleanup에는 이 API를 사용하지 않는다.
+    readback = verify_marker_readback(
+        transport,
+        channel=slack_e2e_settings.channel_id,
+        app_id=slack_e2e_settings.app_id,
+        probe_marker=build_probe_marker(first),
+    )
+    assert readback.status is ReadbackOutcomeStatus.READY
+    _wait_for_next_slack_post()
+
+    first_receipt = destination.send(first)
+    first_ts = _receipt_ts(first_receipt, channel=slack_e2e_settings.channel_id)
+
+    # 재시도 event만 history를 읽는다. 같은 logical event가 같은 remote receipt로 복원되어
+    # 두 번째 Card가 생기지 않는 것이 핵심 계약이다.
+    retried_first = first.model_copy(update={"attempts": 2})
+    assert destination.reconcile(retried_first) == first_receipt
+
+    first_page = transport.read_history(
+        channel=slack_e2e_settings.channel_id,
+        cursor=None,
+        limit=999,
+    )
+    first_message = next(message for message in first_page.messages if message.ts == first_ts)
+    assert first_message.app_id == slack_e2e_settings.app_id
+    assert first_message.metadata is not None
+    assert dict(first_message.metadata) == build_slack_marker(first)
+
+    _wait_for_next_slack_post()
+    second_receipt = destination.send(second)
+    second_ts = _receipt_ts(second_receipt, channel=slack_e2e_settings.channel_id)
+
+    newest_page = transport.read_history(
+        channel=slack_e2e_settings.channel_id,
+        cursor=None,
+        limit=999,
+    )
+    timestamps = [message.ts for message in newest_page.messages]
+    assert timestamps.index(second_ts) < timestamps.index(first_ts)
+
+
+@pytest.mark.slack_e2e
+def test_live_review_card_send_and_reconcile_marker(
+    slack_e2e_settings: SlackSettings,
+) -> None:
+    run_id = uuid4().hex
+    destination_ref = _live_destination_ref(run_id)
+    event, prepared = _live_review_event(
+        settings=slack_e2e_settings,
+        run_id=run_id,
+        destination_ref=destination_ref,
+    )
+    transport = _live_slack_transport(slack_e2e_settings)
+    destination = SlackProjectionDestination(
+        transport,
+        destination_ref=destination_ref,
+        channel=slack_e2e_settings.channel_id,
+        app_id=slack_e2e_settings.app_id,
+        max_attempts=_LIVE_SLACK_MAX_ATTEMPTS,
+        max_history_pages=transport.max_history_pages,
+        review_action_sets=cast(
+            ReviewActionSetService,
+            _LiveReviewActionSets(prepared),
+        ),
+    )
+
+    _wait_for_next_slack_post()
+    receipt = destination.send(event)
+    timestamp = _receipt_ts(receipt, channel=slack_e2e_settings.channel_id)
+    retried = event.model_copy(update={"attempts": 2})
+    assert destination.reconcile(retried) == receipt
+
+    page = transport.read_history(
+        channel=slack_e2e_settings.channel_id,
+        cursor=None,
+        limit=999,
+    )
+    message = next(candidate for candidate in page.messages if candidate.ts == timestamp)
+    assert message.app_id == slack_e2e_settings.app_id
+    assert message.metadata is not None
+    assert dict(message.metadata) == build_slack_marker(event)
+
+
+@pytest.mark.slack_e2e
+def test_a_human_deleted_card_reconciles_as_unsent(
+    slack_e2e_settings: SlackSettings,
+) -> None:
+    """Interactive AC-05; run with ``pytest -s`` and delete the named Card in Slack."""
+    if not sys.stdin.isatty():
+        pytest.skip(
+            "수동 Slack 삭제 검증 — -s와 이 test 이름으로 실행하고 안내된 Card를 삭제해야 합니다."
+        )
+
+    run_id = uuid4().hex
+    destination_ref = _live_destination_ref(run_id)
+    event = _live_event(
+        run_id=run_id,
+        destination_ref=destination_ref,
+        destination_sequence=1,
+    )
+    transport = _live_slack_transport(slack_e2e_settings)
+    destination = _live_destination(
+        slack_e2e_settings,
+        transport,
+        destination_ref=destination_ref,
+    )
+
+    original_receipt = destination.send(event)
+    original_ts = _receipt_ts(original_receipt, channel=slack_e2e_settings.channel_id)
+    input(
+        "Slack에서 방금 전송한 Proposal approved Result Card "
+        f"({run_id[:8]})를 직접 삭제한 뒤 Enter를 누르십시오: "
+    )
+
+    retried = event.model_copy(update={"attempts": 2})
+    assert destination.reconcile(retried) is None
+    _wait_for_next_slack_post()
+
+    replacement_receipt = destination.send(retried)
+    replacement_ts = _receipt_ts(replacement_receipt, channel=slack_e2e_settings.channel_id)
+    assert replacement_ts != original_ts
+    assert destination.reconcile(retried) == replacement_receipt
+
+    page = transport.read_history(
+        channel=slack_e2e_settings.channel_id,
+        cursor=None,
+        limit=999,
+    )
+    expected_marker = build_slack_marker(event)
+    remaining = [
+        message
+        for message in page.messages
+        if message.app_id == slack_e2e_settings.app_id
+        and message.metadata is not None
+        and dict(message.metadata) == expected_marker
+    ]
+    assert [message.ts for message in remaining] == [replacement_ts]
 
 
 # T009 AC-04 — marker 가 등록돼 있어야 unknown mark 경고가 안 나고, 오타 난 marker 가
@@ -1988,9 +3060,8 @@ def test_the_real_transport_leaves_another_provider_untouched(
 # (5 page) 에 물리면 실제 최악이 lease 를 넘고, 그 결과는 `validate_call_budget` 자신이 적은
 # 대로 dead letter 도 hold 도 안 남는다 (wave 6 failure-recovery review P1).
 #
-# destination 이 이 값과 다르면 **거부**하게 만드는 것은 slack_projection.py 를 열어야 해서
-# 별도 item 이다 (index.yaml transport-destination-page-binding). 여기서는 배선하는 쪽이
-# 대조할 수 있게 값을 노출하는 것까지 고정한다.
+# destination constructor와 dispatcher pre-claim hook이 이 값을 실제 runtime 구성과 대조한다.
+# 여기서는 transport가 대조 가능한 선언을 보존하는 절반을 고정한다.
 def test_the_transport_keeps_the_budget_it_declared() -> None:
     transport = HttpSlackTransport(
         bot_token=TOKEN,

@@ -1,0 +1,222 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T002
+title: Deliver one governed Review Card with recoverable action sets
+type: feature
+status: done
+
+goal:
+  outcome: One reviewed Proposal snapshot produces at most one usable Slack Review Card bound to one reviewer, channel, and 24-hour action set across retries and restarts.
+  user_value: The designated reviewer can understand and decide the Proposal without weakening one-time authorization or creating duplicate Cards.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/spec.md
+      section: User Stories 2 and 3; FR-005..FR-011; FR-013..FR-021; FR-025
+    - path: specs/003-slack-proposal-card/plan.md
+      section: Review Card Request Path; Review Card Delivery Path; Phase 2
+    - path: specs/003-slack-proposal-card/data-model.md
+      section: Review Card Command; Review Action Set
+    - path: specs/003-slack-proposal-card/contracts/review-card-lifecycle.md
+      section: Request; Destination; Crash Matrix
+  requirements:
+    - FR-005
+    - FR-006
+    - FR-007
+    - FR-008
+    - FR-009
+    - FR-010
+    - FR-011
+    - FR-013
+    - FR-014
+    - FR-016
+    - FR-017
+    - FR-018
+    - FR-019
+    - FR-020
+    - FR-021
+    - FR-025
+    - SC-002
+    - SC-003
+    - SC-005
+    - SC-006
+  decisions:
+    - research.md#D-004
+    - research.md#D-005
+    - research.md#D-006
+    - research.md#D-007
+    - research.md#D-008
+    - research.md#D-009
+
+scope:
+  include:
+    - Schema versions 31-32 for immutable Review Card command, one-snapshot uniqueness, and secret-free action-set generations.
+    - Idempotent reviewed-snapshot request service with reviewer authority and operation-safe projection.
+    - Audit/outbox integrity for one Slack ReviewProjectionPayload.
+    - Transaction-scoped action-token issue, sibling revoke, and replacement generation handling.
+    - Review Card renderer with exact confirmed actions and recovery-aware Slack delivery.
+    - Crash, retry, race, expiry, stale snapshot, and credential leak tests.
+  exclude:
+    - New Proposal submit API or automatic submit-and-card transaction.
+    - Multi-reviewer, quorum, modal reason, message update/delete, or production server.
+    - Human-readable terminal interaction feedback.
+  allowed_paths:
+    - src/amplai_foundry/governance/review_cards.py
+    - src/amplai_foundry/governance/decisions.py
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/migrations.py
+    - src/amplai_foundry/governance/slack_cards.py
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/__init__.py
+    - tests/test_review_cards.py
+    - tests/test_decisions.py
+    - tests/test_governance_events.py
+    - tests/test_governance_migrations.py
+    - tests/test_governance_store.py
+    - tests/test_slack_cards.py
+    - tests/test_slack_projection.py
+  forbidden_paths:
+    - vault/
+    - src/amplai_foundry/memory/
+    - src/amplai_foundry/proposals/apply.py
+    - src/amplai_foundry/cli.py
+    - .github/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T001
+  external: []
+
+implementation:
+  guidance:
+    - Add one migration after current schema version 30 and exact verify_schema coverage.
+    - Keep raw credentials inside PreparedReviewActionSet and make its repr and serialization unavailable or redacted.
+    - Call action-set prepare only after remote absence is confirmed by existing reconcile semantics.
+    - Use the existing DecisionService authority and ActionToken checks rather than copying them.
+  invariants:
+    - Durable state contains token IDs and hashes but no raw credential.
+    - One outbox event has at most one issued action-set generation.
+    - Replacement revokes the old generation before issuing the next generation in one transaction.
+    - Remote ambiguity never creates a replacement Card.
+    - Review payload includes titles and counts only, with no reason, evidence, draft content, or path.
+    - One successful action revokes unresolved sibling tokens.
+    - One snapshot cannot create another Review Card by changing reviewer or Slack channel.
+    - Slack destination sequencing is channel-wide while source revisions remain Proposal-scoped.
+    - A provider response channel mismatch revokes the prepared action set and enters a hold.
+    - Cleanup is generation-bound so a stale attempt cannot revoke a newer replacement.
+    - Transport, destination, and dispatcher delivery budgets are bound before an event is claimed.
+  non_goals:
+    - General-purpose write API or new authority model.
+    - Response URL persistence, message editing, or interaction endpoint hosting.
+    - Production rollout or more than one designated reviewer.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: A reviewed Proposal, one bound Slack reviewer with current decision permission, and a stable definition.
+      when: ReviewCardService receives a new idempotent request.
+      then: It records one secret-free command, audit event, and Slack outbox event containing bounded operation counts and the first three titles.
+    - id: AC-02
+      given: A first Review Card delivery attempt.
+      when: The destination prepares and sends the Card.
+      then: Three 24-hour action-specific tokens are issued atomically and exactly three confirmed buttons are posted without persisting raw values.
+    - id: AC-03
+      given: Tokens were issued but remote acceptance did not occur and the process lost their raw values.
+      when: Retry reconciliation confirms the Card is absent.
+      then: The prior generation is revoked and one fresh generation is issued before one replacement post.
+    - id: AC-04
+      given: Slack accepted the Review Card but local receipt persistence did not complete.
+      when: A restarted worker retries.
+      then: Marker reconciliation returns the existing receipt, keeps its token generation usable, and posts no duplicate.
+    - id: AC-05
+      given: Reconciliation cannot prove presence or absence.
+      when: The delivery attempt runs.
+      then: It enters the existing fail-closed hold path without changing action generations or posting a replacement.
+    - id: AC-06
+      given: SQLite rows, exception text, repr output, captured logs, and test output from every recovery boundary.
+      when: A raw-token canary scan runs.
+      then: The canary is absent from every durable and diagnostic surface.
+    - id: AC-07
+      given: A Review Card command already exists for one immutable Proposal snapshot.
+      when: Another authorized request changes reviewer or Slack channel.
+      then: It is rejected without another command, outbox event, Card, or action set.
+    - id: AC-08
+      given: Slack reports accepting a Review Card in a channel other than the configured destination.
+      when: Delivery validates the provider response.
+      then: The action set is revoked and the event enters a secret-free hold without a replacement.
+    - id: AC-09
+      given: A stale delivery attempt prepared generation 1 and a reclaimed attempt already issued generation 2.
+      when: The stale attempt reaches terminal cleanup.
+      then: Cleanup targets generation 1 only and generation 2 remains issued.
+    - id: AC-10
+      given: Transport, destination, and dispatcher page, lease, or attempt budgets differ.
+      when: The worker is wired or begins delivery.
+      then: Construction or pre-claim validation rejects the mismatch and the outbox event remains pending with zero attempts.
+  commands:
+    - id: focused-tests
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py tests/test_governance_migrations.py tests/test_governance_store.py tests/test_slack_cards.py tests/test_slack_projection.py
+      required: true
+    - id: schema-check
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli schema check
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check src/amplai_foundry/governance tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py tests/test_governance_migrations.py tests/test_slack_cards.py tests/test_slack_projection.py
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy src
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: focused-tests
+      required: true
+    - type: command_output
+      source: schema-check
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - Migration and audit integrity affect durable governance state.
+    - Crash recovery around authority-bearing button values can leak or duplicate usable Cards.
+    - Token replacement must not revoke credentials for a remotely accepted Card.
+  approvals:
+    - User approved the grilled one-reviewer, 24-hour, no-durable-raw design on 2026-08-12.
+    - Repository governed-mutation and independent-review gates remain mandatory.
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - schema_migration_requires_rewriting_existing_history
+    - raw_credential_requires_durable_storage
+    - remote_reconciliation_cannot_precede_replacement
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-12T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T002.md
+
+handoff:
+  expected_changes:
+    - Schema 31 lifecycle tables plus schema 32 one-snapshot uniqueness.
+    - One idempotent Review Card request service and Review projection event.
+    - Recovery-aware action-set preparation and Review Card rendering.
+  notes:
+    - Inspect all modified SQL through GovernanceEventService.verify_integrity and MigrationRunner.verify_schema.

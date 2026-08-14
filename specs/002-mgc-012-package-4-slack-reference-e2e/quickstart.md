@@ -1,7 +1,7 @@
 # Quickstart: MGC-012 Package 4
 
 두 부분이다. **A** 는 사람이 한 번 하는 Slack 준비이고 (plan 의 external dependency
-E-1~E-4), **B** 는 반복해서 도는 검증이다.
+E-1~E-4; E-1·E-2는 완료), **B** 는 반복해서 도는 검증이다.
 
 ## A. Slack Workspace And App Setup
 
@@ -129,7 +129,8 @@ python -m pytest -m slack_e2e
 
 ## C. Scenario Matrix
 
-wave 7 이 실제 workspace 에서 확인하는 것들이다.
+Scenario 1~8은 wave 7 실제 workspace 검증이다. Scenario 9~25는 D-031 offline contract 또는
+blocked production evidence다.
 
 | # | 상황 | 기대 | 근거 |
 |---|---|---|---|
@@ -141,11 +142,95 @@ wave 7 이 실제 workspace 에서 확인하는 것들이다.
 | 6 | scope 없는 설치로 read | `missing_scope` → terminal | H-1.1 |
 | 7 | Telegram destination 이 있는 store 로 Slack 경로 완주 | Telegram row·event 불변 | SC-012, A14 |
 | 8 | credential 없이 E2E 실행 | **skip 으로 보고.** pass 아님 | SC-013, H-5.2 |
+| 9 | Readback 성공, cleanup 실패 | `DEGRADED_CLEANUP`, worker activation 허용 | SC-017, H-3.2 |
+| 10 | Readback과 cleanup 동시 실패 | 원래 readback cause 유지, worker activation 0회 | SC-020, H-3.2 |
+| 11 | 이전 unresolved lifecycle 존재 (`CLEANUP_PENDING` recovery 대상 제외) | 원인 state 보존, `HARD_BLOCKED_NO_POST`, post 0회 | SC-018, H-3.3 |
+| 12 | 같은 unresolved state로 startup 10회 | 추가 post 0회 | SC-018, FR-028 |
+| 13 | Post 응답 유실, `ts` 미확인 | Durable block 유지, history search 미사용 | R-017, R-020 |
+| 14 | Cleanup-only operator diagnostic | 각 startup 평가에서 1건, FR-030 allowlist 밖 field 0건 | SC-017, SC-021 |
+| 15 | 같은 channel/app의 concurrent startup | atomic claim 1건, post 최대 1건, 패자는 hard block | SC-019, H-3.3 |
+| 16 | Slack delete 성공, `RESOLVED` commit 실패 | `HARD_BLOCKED_NO_POST`, worker activation 0회 | SC-024, H-3.2 |
+| 17 | Degraded 상태에서 process 재기동 | 새 startup 평가마다 diagnostic 1건 | SC-017, H-3.5 |
+| 18 | 이전 `CLEANUP_PENDING`에 confirmed `channel + ts` 존재 | exact delete와 durable `RESOLVED` commit 뒤 fresh self-check 허용 | FR-027, H-3.3 |
+| 19 | 18번의 cleanup 또는 resolution commit 실패 | cause state 보존, `HARD_BLOCKED_NO_POST`, 새 post·activation 0회 | FR-027, SC-018 |
+| 20 | malformed record, unknown state 또는 unsupported version | `LIFECYCLE_STATE_INVALID`, row mutation/readback/post/activation 0회 | FR-033, SC-025 |
+| 21 | post 뒤 여섯 readback failure × cleanup 성공·실패 | 12개 case에서 primary code 보존, activation 0회. Response channel mismatch는 configured history 0회, confirmed identity cleanup | FR-035, SC-020 |
+| 22 | readback과 cleanup 동시 실패의 diagnostic surface | secondary detail 최대 1개, raw exception/provider data 0건 | FR-034, SC-026 |
+| 23 | intent 전/후와 response loss crash | durable knowledge만 사용하고 unauthorized lookup/post 0회 | FR-036, SC-027 |
+| 24 | success response 뒤 identity commit 실패 | current process exact delete 1회 이하; durable resolution 뒤 후속 startup만 fresh claim | FR-036, SC-027 |
+| 25 | T013 production wiring 완료 판정 | T010 완료 + E-7~E-10 승인 + same-revision dual evidence 필요 | FR-037, SC-028 |
 
-## D. Expected Baseline
+## D. D-031 Validation Boundary
+
+### D-1. Offline Unit Evidence
+
+`MGC-012-T008`은 fake transport와 주입된 lifecycle state double로 아래 판정만 검증한다.
+
+- outcome matrix 네 경로
+- FR-035 일곱 primary code와 post 뒤 여섯 code × cleanup 성공·실패 12개 조합
+- response channel mismatch의 configured history 0회와 provider-confirmed identity cleanup
+- optional `CleanupFailureDetail` cardinality 0..1과 safe field 두 개
+- unresolved, ambiguous, claim 실패 또는 resolution commit 실패 입력 시 원인 state를
+  보존하고 startup outcome으로 `HARD_BLOCKED_NO_POST`
+- `HARD_BLOCKED_NO_POST`를 persisted lifecycle state로 쓰지 않음
+- confirmed `channel + ts`만 cleanup에 사용
+- heuristic history scan 0회
+- typed outcome의 FR-030 closed diagnostic field allowlist
+- readback/lifecycle 계층의 operator logging 0회
+- exception chain, free-form error, raw provider data와 disallowed metrics label 0건
+
+실제 `GovernanceStore` record validation/commit, previous `CLEANUP_PENDING` recovery, crash
+persistence, production output과 worker activation은 T008 완료 증거가 아니다.
+
+### D-2. Blocked Production Evidence
+
+`MGC-012-T013`은 아래 blocker가 모두 닫힐 때까지 실행하지 않는다.
+
+- MGC-012-T010 live target/config evidence 완료
+- E-7 entrypoint path/owner/pre-claim point의 user-approved workstream decision
+- E-8 dated/versioned official provider contract review와 user approval
+- E-9 governed recovery actor/permission/token/audit/transition work item 승인
+- E-10 lifecycle version/migration/uniqueness/repository owner schema decision 승인
+
+Blocker가 닫힌 뒤 T013은 실제 `GovernanceStore`로 아래를 검증한다.
+
+- post 전 intent commit
+- channel/app별 unresolved state 최대 1개
+- concurrent startup의 atomic claim 성공 최대 1건과 loser post 0건
+- state read/write 실패 시 post 0회
+- malformed/unknown/unsupported lifecycle record의 mutation/readback/post/activation 0회
+- 네 crash boundary와 success-response/identity-commit failure exact compensation
+- delete 성공 뒤 `RESOLVED` commit 실패 시 worker activation 0회
+- 이전 `CLEANUP_PENDING` exact recovery 성공 뒤에만 fresh claim/post 허용
+- hard block에서 원인 lifecycle state 보존
+- restart 10회 추가 post 0회
+- production root의 cleanup-only diagnostic은 각 startup 평가에서 정확히 1건
+- diagnostic은 `diagnostic_code`, `channel_id`, `app_id`, `probe_id`, confirmed
+  `message_ts`, `cleanup_failure_count`, `provider_error_code`, `operator_action`만 포함
+- 같은 revision의 composition-root integration result와 configured startup trace를 manifest와
+  Package 4 checkpoint에 연결
+
+실제 Slack E2E가 통과해도 production startup wiring 증거를 대체하지 않는다. T013 evidence가
+없으면 FR-018, `readback-selfcheck-wiring`, Package 4 gate를 PASS로 기록하지 않는다.
+
+### D-3. Forbidden Recovery Checks
+
+Operator guide와 test에 아래 절차를 쓰지 않는다.
+
+- channel history에서 probe text 검색
+- prefix, metadata sentinel, app ID 조합 검색
+- 첫 message 또는 최근 N건 선택
+- 시간 window로 후보 선택
+- undocumented `client_msg_id` 사용
+- operator 입력으로 unresolved lifecycle 강제 해제
+
+Stored exact `channel + ts`가 없으면 automatic cleanup을 시도하지 않는다.
+
+## E. Expected Baseline
 
 - 기존 test 가 **전량** 회귀 없이 통과한다. **숫자를 고정하지 않는다** — wave 마다 늘고
   갱신 장치가 없다 (SC-015)
 - `amplai-foundry verify` 7 stage 통과. clean clone Python 3.11·3.12 에서도 통과 (SC-014)
 - 위 명령 중 **실제로 돌린 것만** gate 기록에 쓴다. 안 돌린 것을 통과했다고 쓰지 않는다
 - **skip 을 pass 로 적지 않는다.** E2E 가 skip 됐으면 gate 기록에 skip 이라고 쓴다
+- `MGC-012-T013` blocked를 Package 4 PASS로 적지 않는다

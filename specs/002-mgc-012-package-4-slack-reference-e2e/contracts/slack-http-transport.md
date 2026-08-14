@@ -98,16 +98,33 @@ history 소진이 미전송으로 판정되어 **매 재시도마다 Card 가 �
 
 ## H-3 — Readback Self-Check
 
-**adapter 는 기동 전에 자기가 보낸 message 를 되읽어 marker 가 복원되는지 확인한다**
-(FR-018, 001 D-024 항목 2).
+**adapter는 Slack event claim 전에 자기가 보낸 message를 되읽어 marker가 복원되는지
+확인한다** (FR-018, 001 D-024 항목 2). Production wiring 증거가 없으면 이 계약은 완료가
+아니다.
 
 절차:
 
-1. 대상 채널에 marker 를 단 message 를 하나 보낸다 (probe).
-2. `conversations.history` 를 `include_all_metadata=true` 로 조회한다.
-3. 방금 보낸 `ts` 로 그 message 를 찾고, `app_id` 와 `metadata` 네 필드가 모두 복원되는지
+1. Durable lifecycle state를 읽고 schema version, required field와 closed state enum을 검증한다.
+   Malformed/unknown/unsupported record는 기존 row를 수정하지 않고
+   `LIFECYCLE_STATE_INVALID`를 반환한다. Readback, post와 activation은 0회다.
+2. 이전 `CLEANUP_PENDING`에 confirmed `channel + ts`가 있으면 그 identity로 exact delete를
+   수행하고 durable `RESOLVED`를 commit한다. 둘 다 성공한 뒤에만 fresh self-check로 간다.
+   Cleanup 또는 commit 실패면 원인 state를 보존하고 `HARD_BLOCKED_NO_POST`를 반환한다.
+3. 그 밖의 unresolved/unknown state면 원인 state를 보존한 채
+   `HARD_BLOCKED_NO_POST`를 반환한다.
+4. Channel/app별 local probe intent를 atomic claim으로 commit한다. Concurrent startup 중
+   claim 승자 하나만 다음 단계로 간다. 나머지는 post 없이 `HARD_BLOCKED_NO_POST`다.
+5. 대상 채널에 marker를 단 message를 하나 보낸다 (probe).
+6. 성공 응답의 `channel + ts`를 lifecycle state에 저장한다. 이 commit이 실패하면 현재
+   process의 confirmed identity로 exact delete를 최대 한 번 시도하고 durable `RESOLVED`를
+   기록한다. 둘 다 성공한 후속 startup만 fresh claim할 수 있다.
+7. `conversations.history` 를 `include_all_metadata=true` 로 조회한다.
+8. 방금 받은 `ts` 로 그 message 를 찾고, `app_id` 와 `metadata` 네 필드가 모두 복원되는지
    본다. **위치로 찾지 않는다** — 채널이 조용하다고 가정하지 않는다.
-4. 하나라도 안 맞으면 **기동을 거부한다.**
+9. 성공·실패 양쪽에서 exact `channel + ts`로 삭제를 시도한다.
+10. 삭제 성공은 lifecycle의 durable `RESOLVED` commit까지 성공해야 완료다. Commit 실패는
+   `HARD_BLOCKED_NO_POST`이며 worker activation을 거부한다.
+11. Typed outcome을 composition root에 반환한다. 이 계층은 logging하지 않는다.
 
 **이것이 잡는 것**은 destination 안에서 판정할 수 없는 것들이다 — 값이 틀린 `app_id`,
 `metadata` 를 안 옮기는 구현, `event_type` 개명, 그리고 H-1.1 의 scope 부족. 넷 다 없으면
@@ -142,31 +159,134 @@ metadata 크기 상한이 두 값 사이에 있으면 자가검사는 통과하�
 결과에서 `destination_ref` 만 바꿔 준다. round 1 의 P0 가 "안내문으로 요구하기" 에서 나왔다.
 보내기 전 거부 guard 는 그대로 둔다 — 두 겹이다.
 
-### H-3.2 — The Probe Is Removed, Always
+### H-3.2 — Cleanup Is Attempted On Both Paths
 
-**자가검사는 끝나면 probe 를 지운다. 성공·실패 양쪽에서 지운다** (2026-08-08, D-030).
+자가검사는 성공·실패 양쪽에서 confirmed `channel + ts`로 probe 삭제를 시도한다. 이 부분은
+D-030을 유지한다.
 
-판정에서 빼는 것(H-3.1)만으로 부족하다. probe 는 `conversations.history` 의 **조회 예산**을
-그대로 먹는다. `reconcile` 은 `SLACK_MAX_HISTORY_PAGES` x `SLACK_HISTORY_PAGE_LIMIT` =
-4995건까지만 훑고, 넘으면 `SlackProjectionSearchCapError` 로 판정 불가가 된다. 그것은 dead
-letter 와 **되돌릴 수 없는 hold** 다.
+Probe는 `conversations.history` 조회 예산을 먹는다. `reconcile`은 최대 4995건을 훑고,
+넘으면 판정 불가와 operator hold로 간다. Cleanup을 생략하지 않는다.
 
-재시작 loop 이 그 예산을 채운다. Card 를 보낸 뒤 기록 전에 죽고, 자가검사가 실패하는 상태라
-supervisor 가 재시작을 반복하면, 원인을 고친 뒤에는 진짜 Card 가 probe 아래 묻혀 있다.
+Outcome은 다음과 같다.
 
-- `chat.delete` 를 쓴다. **새 scope 가 필요 없다** — 공식 문서가 bot token scope 를
-  `chat:write` 로 적고, 같은 문서가 "this method may delete only messages posted by that
-  bot" 으로 대상을 우리 message 로 한정한다
-- 검사는 통과했는데 삭제만 실패하면 `SlackReadbackError` 다. 남은 probe 가 나중에 판정
-  불가를 만든다
-- 검사도 실패하고 삭제도 실패하면 **원래 원인이 이긴다.** 삭제 실패는 그 예외에 덧붙인다.
-  가리면 operator 가 엉뚱한 곳을 고친다
+| Readback | Cleanup | Outcome | Worker activation |
+|---|---|---|---:|
+| 성공 | 성공 | `READY` | 허용 |
+| 성공 | 실패 | `DEGRADED_CLEANUP` | 허용 |
+| 실패 | 성공 | typed readback failure | 거부 |
+| 실패 | 실패 | typed readback failure + secondary cleanup data | 거부 |
 
-**남는 구멍 하나.** post 가 Slack 에 닿았는데 응답을 못 읽으면 (timeout) probe 의 `ts` 를
-모르므로 지울 수 없다. 그 경우는 `SlackTransportError` 로 기동이 거부되고 probe 한 장이
-남는다. transport 계층에서 막을 수 없다.
+D-031은 D-030의 "readback 성공 + cleanup 실패도 startup 거부"만 supersede한다. Readback과
+cleanup이 함께 실패하면 readback 원인이 primary다.
 
-`index.yaml` 의 `W3-transport-readback-selfcheck` 가 이 항목이다.
+Primary failure는 closed enum이다.
+
+- `PROBE_INPUT_INVALID` — post 전 input/isolation failure; cleanup 비적용
+- `HISTORY_READ_FAILED`
+- `PROBE_NOT_FOUND`
+- `APP_ID_MISMATCH`
+- `MARKER_UNREADABLE`
+- `MARKER_MISMATCH`
+- `RESPONSE_CHANNEL_MISMATCH`
+
+Post 뒤 여섯 failure는 cleanup 성공·실패 양쪽과 조합한다. `RESPONSE_CHANNEL_MISMATCH`는
+Slack 성공 응답의 confirmed channel이 configured target과 다를 때 사용한다. 이 경우 configured
+channel history를 조회하지 않고 cleanup은 provider-confirmed `channel + ts`로만 시도한다.
+Cleanup 성공·실패 양쪽에서 primary code를 보존한다. Cleanup failure는 optional immutable
+`CleanupFailureDetail` 하나로만 전달하고 `cleanup_failure_count`와 allowlisted
+`provider_error_code`만 가진다. Primary code를 감싸거나 바꾸지 않는다.
+
+Slack cleanup 성공 뒤 durable `RESOLVED` commit이 실패하면 위 4행 matrix의 `READY` 또는
+`DEGRADED_CLEANUP`을 사용하지 않는다. 결과는 `HARD_BLOCKED_NO_POST`이며 worker activation은
+거부다. Remote 삭제 성공만으로 lifecycle 완료를 추정하지 않는다.
+
+### H-3.3 — Durable State Precedes Network
+
+Network post 전에 `GovernanceStore`의 전용 lifecycle state에 local probe intent를 commit한다.
+Channel/app별 unresolved intent는 최대 1개다.
+
+- unresolved state가 없을 때만 atomic claim으로 새 intent를 만든다
+- 같은 channel/app의 concurrent startup은 claim 승자 하나만 post한다
+- claim을 확보하지 못한 startup은 post 0회와 `HARD_BLOCKED_NO_POST`다
+- state read/write/commit 실패는 `HARD_BLOCKED_NO_POST`다
+- post 성공 응답을 받은 뒤 `channel + ts`를 저장한다
+- stored `channel + ts`가 있는 cleanup만 exact recovery 가능하다
+- 이전 `CLEANUP_PENDING`은 exact delete와 durable `RESOLVED` commit을 먼저 완료한다
+- 그 recovery가 완료된 뒤에만 fresh atomic claim과 새 self-check post를 허용한다
+- 그 밖의 unresolved state 또는 recovery 실패가 있으면 다음 startup은 새 probe를 보내지 않는다
+- delete 성공 뒤 `RESOLVED` commit이 실패하면 마지막 committed state를 유지하고 worker를
+  활성화하지 않는다
+- intent commit 전 crash는 post 0회이며 다음 startup의 fresh claim을 막지 않는다
+- 다음 startup이 기존 `POST_INTENT_RECORDED`를 발견하면 post 여부를 추정하지 않고 hard block한다
+- response loss는 가능한 경우 `AMBIGUOUS_POST`를 commit하며 실패하면 마지막 intent를 보존한다
+- success response 뒤 identity commit 실패는 current process의 confirmed identity로 exact delete
+  1회와 durable resolution을 시도한다. 둘 다 성공한 뒤의 후속 startup만 fresh claim한다
+
+이 state는 outbox event, ingress command, operator hold, Markdown knowledge가 아니다. 전용
+runtime lifecycle이다 (R-018).
+
+### H-3.4 — Ambiguous Post Is Not Recovered By Guessing
+
+Post intent commit 뒤 Slack 응답을 잃으면 `AMBIGUOUS_POST`다. `ts`를 받았다고 가정하지
+않는다. 이후 startup은 durable state를 `AMBIGUOUS_POST`로 보존하고 startup outcome으로
+`HARD_BLOCKED_NO_POST`를 반환하며 post 호출을 0회 수행한다.
+
+금지하는 recovery key:
+
+- message text 또는 prefix
+- shared `PROBE_DESTINATION_REF`
+- metadata/app marker scan
+- history 위치 또는 최근 N건
+- timestamp window
+- search result 후보
+- undocumented `client_msg_id`
+
+Slack 공식 contract는 caller-controlled pre-response identity와 exact lookup을 제공하지 않는다
+(R-017). 따라서 ambiguous message automatic cleanup과 provider-side global cap은
+`BLOCKED`다. Operator recovery mutation은 별도 governed recovery work item 승인 전에는
+추가하지 않는다. T013에서 강제 해제로 blocker를 우회하지 않는다.
+
+### H-3.5 — Outcome And Diagnostic Ownership
+
+Readback/lifecycle 계층은 typed outcome과 safe diagnostic data만 반환한다. Logging과 stderr
+output은 금지한다.
+
+`HARD_BLOCKED_NO_POST`는 persisted lifecycle state가 아닌 startup outcome이다. Durable
+state에는 `POST_INTENT_RECORDED`, `AMBIGUOUS_POST`, `CLEANUP_PENDING` 같은 원인을 보존한다.
+
+Production composition root 한 곳만 각 startup 평가에서
+`SLACK_PROBE_CLEANUP_DEGRADED`를 정확히 한 번 출력한다. Process 재기동은 새 startup
+평가이므로 degraded outcome이면 다시 한 번 출력한다.
+
+허용 field는 `diagnostic_code`, `channel_id`, `app_id`, `probe_id`,
+`cleanup_failure_count`, `provider_error_code`, `operator_action`과 confirmed `message_ts`다.
+`operator_action`은 stable action code다. 목록은 닫혀 있다. 확인되지 않은 `message_ts`,
+credential, HTTP body, request header, exception `repr`과 그 밖의 field는 금지한다.
+
+원본 exception chaining, 자유형 error와 raw provider data는 structured log, exception output,
+metric, persisted failure diagnostic과 operator output 전부에서 금지한다. Metric label은
+`outcome`, `diagnostic_code`, allowlisted `provider_error_code`만 허용한다.
+
+Production composition root가 현재 없으므로 T013과 FR-018 production completion은
+`BLOCKED`다 (R-019). `index.yaml`의 `W3-transport-readback-selfcheck`는 T008 unit evidence와
+T013 production evidence가 모두 있어야 닫힌다.
+
+### H-3.6 — Production Evidence Has Two Parts
+
+T013 `ready` 전 E-7~E-10의 FR-037 named evidence와 user approval record가 manifest에 연결돼야
+한다. T013 실행은 T010 completion 뒤에만 가능하다. 완료 evidence는 같은 revision의 다음 둘이다.
+
+1. Approved production entrypoint를 instrumented dependency로 실행한 composition-root
+   integration result. Outcome이 first claim보다 앞서고 acceptance count matrix를 만족한다.
+2. 실제 production channel/app/`HttpSlackTransport` 구성으로 outcome을 claim 전에 소비한 safe
+   configured startup trace.
+
+Unit command output만 있거나 configured trace만 있으면 충분하지 않다. Trace field와 금지값은
+`data-model.md`의 `StartupWiringEvidence`가 권위다.
+
+E-8 review가 provider exact recovery 미지원을 확인해도 E-9가 승인되면 local fail-closed T013
+구현을 막지 않는다. Automatic ambiguous-message cleanup과 provider-side global cap만 계속
+blocked다.
 
 ## H-4 — Credential Path
 
@@ -266,6 +386,10 @@ E2E 는 실제 message 를 쌓는다. 반복 실행하면 `conversations.history
 - `slack_projection.py` 와 `slack.py` 수정
 - runtime dependency 추가 (R-013)
 - `amplai-foundry verify` 에 network stage 추가
-- durable schema·marker 형식·receipt 형식 변경
+- 기존 outbox/ingress/hold schema 재사용
+- D-031 전용 lifecycle 이외의 durable schema 변경
+- marker 형식·receipt 형식 변경
+- history/text/prefix/time 기반 probe recovery
+- readback/lifecycle 계층의 logging
 - `Retry-After` 를 dispatcher backoff 에 주입 (R-007, 별도 item)
 - app 배포 (H-1.2)

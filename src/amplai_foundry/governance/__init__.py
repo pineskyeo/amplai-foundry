@@ -43,6 +43,7 @@ from amplai_foundry.governance.definitions import (
 )
 from amplai_foundry.governance.events import (
     AuditEventView,
+    DecisionProjectionPayload,
     GovernanceEventError,
     OutboxConfig,
     OutboxDestination,
@@ -52,6 +53,7 @@ from amplai_foundry.governance.events import (
     OutboxReconcileError,
     OutboxState,
     ProjectionDestination,
+    ReviewProjectionPayload,
 )
 from amplai_foundry.governance.git_publish import (
     FencedGitPublishCoordinator,
@@ -80,6 +82,8 @@ from amplai_foundry.governance.ingress_ack import (
 from amplai_foundry.governance.ingress_worker import (
     IngressDecisionWorker,
     IngressWorkerResult,
+    InteractionFeedback,
+    SafeInteractionOutcome,
     WorkerOutcome,
 )
 from amplai_foundry.governance.ledger import FileProposalActionLedger
@@ -169,9 +173,22 @@ from amplai_foundry.governance.publish_resolution import (
     PublishResolutionType,
     PublishResolutionView,
 )
+from amplai_foundry.governance.review_cards import (
+    PreparedReviewActionSet,
+    ReviewActionSetService,
+    ReviewActionSetView,
+    ReviewCardError,
+    ReviewCardRequestResult,
+    ReviewCardService,
+)
 from amplai_foundry.governance.slack import (
     SlackBlockActionAuthenticator,
     SlackInstallationPolicy,
+)
+from amplai_foundry.governance.slack_cards import (
+    SlackCardRenderingError,
+    SlackProposalCardRenderer,
+    slack_presentation_payload,
 )
 
 __all__ = [
@@ -207,6 +224,7 @@ __all__ = [
     "ChannelRef",
     "DecisionAction",
     "DecisionError",
+    "DecisionProjectionPayload",
     "DecisionResult",
     "DecisionService",
     "DefinitionCASConflictError",
@@ -236,6 +254,7 @@ __all__ = [
     "IngressService",
     "IngressState",
     "IngressWorkerResult",
+    "InteractionFeedback",
     "InvalidProposalTransitionError",
     "IssuedActionToken",
     "LegacyApprovalDisposition",
@@ -278,6 +297,7 @@ __all__ = [
     "OutboxLeaseConflictError",
     "OutboxReconcileError",
     "OutboxState",
+    "PreparedReviewActionSet",
     "ProjectPublishGateView",
     "ProjectionDestination",
     "ProposalAction",
@@ -300,8 +320,17 @@ __all__ = [
     "PublishResolutionType",
     "PublishResolutionView",
     "PublishResultView",
+    "ReviewActionSetService",
+    "ReviewActionSetView",
+    "ReviewCardError",
+    "ReviewCardRequestResult",
+    "ReviewCardService",
+    "ReviewProjectionPayload",
+    "SafeInteractionOutcome",
     "SlackBlockActionAuthenticator",
+    "SlackCardRenderingError",
     "SlackInstallationPolicy",
+    "SlackProposalCardRenderer",
     "SubprocessGitCandidateInspector",
     "VerifiedProviderCommand",
     "WorkerOutcome",
@@ -309,5 +338,6 @@ __all__ = [
     "YamlProjectionRecord",
     "canonicalize_definition",
     "sha256_digest",
+    "slack_presentation_payload",
     "state_transition_allowed",
 ]

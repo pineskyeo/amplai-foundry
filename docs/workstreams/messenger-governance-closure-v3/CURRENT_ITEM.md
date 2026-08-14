@@ -41,20 +41,60 @@ message projection과 retry는 background path에서 수행한다.
   `PASS` at `5b2024b`
 - Package 4 wave 5 — real Slack HTTP transport and credential path:
   `PASS` at `dfbcd15`
-- Tests: `987/987 PASS`
-- Verification: `7/7 PASS`
+- Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:
+  `PASS` for `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` under `APR-017` / `D-032`
+- Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):
+  구현 `done`(T001/T002/T003), review **미완**. round 10 three-lens 진행 중. gate 없음
+- Frozen source/test evidence:
+  `0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f`
+- Tests: targeted `189 passed, 1 deselected`; full `1087 passed, 1 deselected`
+- Verification: Ruff check/format, mypy, Vault knowledge lint, `amplai-foundry verify` 7/7,
+  task manifest validator 8/8와 `git diff --check` 모두 PASS
 - Review: Package 3는 wave 4개로 나눠 wave마다 three-lens review를 돌렸고 전부 blocker 0
   으로 닫았다. wave 4는 2 round 진행 — round 1 고유 blocker 6건, round 2 5건 해소.
   round 2의 5건 중 둘은 round 1 수정이 만든 새 결함이다. mutation 16종 survivor 0
-- Next: Package 4 wave 6 — T008 readback 자가검사, T009 E2E harness, T011 Provider 격리.
-  셋 다 network 없이 돌고 같은 test file을 쓰므로 순차로 돈다.
-  D-026이 D-019 항목 8을 닫았다 — 테스트용 workspace와 app을 새로 만들어 실제 Slack을
-  치는 E2E를 갖고, activation isolation은 A14 격리 검증뿐이며 Gate machinery는 MGC-015다.
-  **workspace와 app은 만들어졌다** — `auth.test`로 확인했고 scope가 `chat:write`와
-  `channels:history`로 H-1.1과 일치한다. credential 경로도 T007이 닫았다
-  (`AMPLAI_SLACK_BOT_TOKEN`, `AMPLAI_SLACK_SIGNING_SECRET`).
-  `conversations.history`의 OAuth scope는 research R-009가 공식 문서로 고정했다.
-  **아직 없는 것은 T010이 쓸 channel ID와 app ID다** — 계약에 변수가 없다
+- Review: Wave 6R final contract/failure-recovery blocker와 advisory 0. Isolated regression
+  mutation 10종 killed/0 survived. Wave 6R 전후 source/test combined hash는 동일하다.
+- Remaining: Package 4와 MGC-012는 `ACTIVE`다. `MGC-012-T010`(live Slack target와 네
+  환경값), `MGC-012-T012`(Python 3.12 clean clone 및 dependencies), `MGC-012-T013`
+  (production entrypoint/provider recovery/governed recovery/lifecycle schema 승인)은 모두
+  `blocked`다.
+- Selected next item: **Package 5 wave 5** — round 11의 P1 셋을 닫는다. `R-1`(`slack_http.py`의
+  고쳐지지 않은 사본)이 먼저다.
+- Selected phase: wave 4는 끝났다. T004~T008 여덟 task 전부 `done`이고 round 11 three-lens를
+  돌렸다. **round 11도 FAIL**이지만 P0는 0이고 mutation kill rate가 33% → 67%로 올랐다.
+  기록은 `evidence/3lens-review-round-11.md`다.
+- Sequence: `P5 wave 4 → P5 round 11 review → T010 → T013 → T012`. T013 configured startup
+  trace가 T010의 실제 target/config evidence를 재사용하고, T012는 T010과 T013 완료 뒤
+  closure를 수행한다.
+- Stop rule: Package 5 review가 닫히기 전에는 Package 4 구현을 재개하지 않는다. round 9를
+  assessed로 세지 않는다. drift 이전에 쓰인 P5 evidence 세 건의 command 결과를 round 10
+  근거로 재사용하지 않는다.
+- Stop rule: 결함을 고칠 때 **같은 형태가 저장소에 몇 개 있는지 먼저 센다.** wave 4의 `R-1`이
+  이 규칙이 없어서 생겼다. `slack_projection.py`의 bare `BaseException` 을 고치면서 같은
+  코드가 `slack_http.py`에도 있는 것을 놓쳤고, negative verification도 고친 사본만 확인했다.
+- Stop rule: review 지시를 그대로 구현하기 전에 그 지시가 다른 축을 무너뜨리는지 본다. `R-2`가
+  그 사례다. round 10 `C-1`이 "dead letter + operator hold"를 선언했고 그대로 따랐는데, 그
+  지시가 transient와 terminal을 구분하지 않아 일시 장애가 되돌릴 수 없는 hold가 됐다.
+- Stop rule: test가 무엇을 고정하는지 스스로 증명한다. `R-4`가 동어반복 test였다. 겨냥한
+  guard를 실제로 깨뜨려 실패를 확인하지 않은 test는 evidence에 "고정한다"고 적지 않는다.
+- Stop rule: 계약·spec을 코드에 맞출 때 **양쪽 집합의 크기를 센다.** `R-5`가 4 대 5 불일치를
+  남기고 일치했다고 기록한 사례다.
+- Stop rule: 재freeze → 재review 순서를 지킨다. round 11 aggregate는
+  `36e3923f66599997f2e4eb56d535a63276b7d6b8f8ee93a1bf3d555cdb7ec247`이고 wave 5 완료 후
+  round 12를 새로 얼린다. 이전 aggregate를 baseline으로 재사용하지 않는다.
+- Freeze rule (D-035, round 12부터): frozen target에 **모든 per-task manifest YAML**을 넣고,
+  `task-manifests/index.yaml`·`tasks.md`·`evidence/**`를 뺀다. 얼리기 전에 manifest header의
+  제외 문구와 실제 line 목록을 대조한다.
+
+  경위는 이렇다. round 10과 round 11이 같은 방식으로 drift했다 — review가 끝난 뒤 task status를
+  `done`으로 바꾸면 `index.yaml`과 `tasks.md`가 재생성되어 aggregate가 어긋난다. 둘 다 무해했고
+  둘 다 기록했지만 같은 실수가 두 번 났다. 더 큰 문제는 반대쪽이었다. `T004`~`T008.yaml`은 wave 4
+  가 한 일의 계약 전부인데 target에 없었다. 자주 바뀌는 사무 기록은 얼려두고 검토 기준인
+  계약서는 안 얼린 구성이었다.
+- Stop rule: E-3/E-4가 확인되기 전에는 T010 구현을 시작하지 않는다. 설정 확인용 harness의
+  성공을 live Slack E2E PASS로 보고하지 않는다. P5 `T003`의 live E2E 통과는 T010 acceptance가
+  아니다.
 
 ## Out Of Scope
 

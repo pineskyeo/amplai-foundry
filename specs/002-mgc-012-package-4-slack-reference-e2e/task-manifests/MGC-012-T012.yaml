@@ -48,6 +48,7 @@ dependencies:
   tasks:
     - MGC-012-T010
     - MGC-012-T011
+    - MGC-012-T013
   external:
     - id: E-5
       name: Python 3.12 toolchain

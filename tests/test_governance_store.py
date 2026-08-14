@@ -247,6 +247,8 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (28, "legacy-atomic-exact-root-rollback"),
         (29, "legacy-rollback-hold-provenance"),
         (30, "legacy-forward-recovery-evidence"),
+        (31, "slack-review-card-lifecycle"),
+        (32, "slack-review-card-one-snapshot"),
     ]
     assert INITIAL_MIGRATIONS[19].checksum == (
         "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"

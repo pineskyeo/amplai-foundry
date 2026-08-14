@@ -59,18 +59,31 @@
 
 ### Pipeline
 
+Claude에서는 skill을 `/skill-name`으로, Codex에서는 `$skill-name`으로 명시 호출한다.
+아래 `/...` 표기는 canonical skill 이름의 기존 표기다. Codex adapter는
+`.agents/skills/`에서 같은 Claude workflow를 읽고, `taskify`는 두 환경 모두
+`.ai-team/skills/taskify` 원본을 공유한다.
+
 ```text
 (/grill-me)       → 계획 심문 (선택)
 /speckit-specify  → spec.md
+/speckit-clarify  → spec 모호성 해소 (필수)
 /speckit-plan     → plan.md
 /taskify          → task manifest
+/speckit-analyze  → spec/plan/tasks 정합성 (필수)
 /speckit-implement→ 구현
 subagent review   → contract / failure-recovery / regression 3인
 /pinesky-workstream-gate → PASS 기록
 ```
 
-- `/speckit-tasks`는 `/taskify`와 중복이라 **제거했다** (skill 디렉터리 삭제, workflow step은 gate로 대체). 산출물을 두 벌 만들지 않는다.
-- `/speckit-clarify`는 `/speckit-plan` 전에, `/speckit-analyze`는 `/speckit-implement` 전에 선택적으로 쓴다.
+- `/speckit-tasks`는 `/taskify`와 중복이라 **제거했다** (skill 디렉터리 삭제). 산출물을 두 벌 만들지 않는다. 그 자리를 메우던 workflow gate는 D-033으로 걷어냈고, 필수 3단계는 아래 **Pre-Implement Procedure**로 옮겼다.
+- **`/speckit-implement` 앞에는 사람 승인이 없다** (D-033). 대신 Pre-Implement Procedure를 끝내고 구현 뒤 subagent review를 돌린다. review에서 P0/P1/Blocking-P2가 나오면 gate를 열지 않는다.
+- **`/speckit-clarify`는 필수다** (D-037). `/speckit-specify` 뒤, `/speckit-plan` 앞에 돌린다. skill 자신이 그 순서를 요구한다 (`SKILL.md:62`). 모호한 곳이 없으면 질문하지 않고 coverage map만 보고하므로 (`:75`, `:127`) 억지 질문이 생기지 않는다.
+
+  clarify는 **사람에게 묻고 멈춘다.** 이것은 D-033으로 없앤 승인 관문과 다르다. 승인이 아니라 모델이 갖고 있지 않은 사실을 받는 것이고, No Speculation 원칙과 같은 방향이다. 답 없이 추정으로 채우지 않는다.
+
+  건너뛰려면 사용자가 명시적으로 그렇게 말해야 하고, 그때는 downstream rework 위험을 경고한다 (`SKILL.md:62`).
+- **`/speckit-analyze`는 필수다** (D-036). `/taskify` 뒤, `/speckit-implement` 앞에 반드시 돌린다. 자세한 위치와 차단 규칙은 아래 **Pre-Implement Procedure** 4단계에 있다.
 - **`/grill-me`의 후속은 `/speckit-specify`다.** grilling 산출물(다듬어진 계획·결정·확정된 fact)은 spec 입력이다. 심문이 끝나면 손으로 문서를 쓰지 말고 `/speckit-specify`에 넘긴다.
 - **spec·plan 성격 문서는 손으로 쓰지 않는다.** `/speckit-specify`·`/speckit-plan`으로 만든다. `docs/workstreams/`는 **조사 기록**(fact 수집·원본 대조·측정 log) 용이지 spec 대체가 아니다. 손문서로 spec을 대신하면 `specs/`가 안 생겨 `/taskify`·`/speckit-implement`가 소비할 산출물이 없어지고, 그 상태를 근거로 speckit을 건너뛰는 순환이 생긴다. 경위는 [docs/SPECKIT-GRILLME-CHAIN.md](docs/SPECKIT-GRILLME-CHAIN.md).
 
@@ -115,4 +128,44 @@ subagent review   → contract / failure-recovery / regression 3인
 
 - spec-kit은 `specs/` 아래 문서만 만든다. canonical Vault와 Git state는 Codex Curation Contract를 따른다.
 - spec-kit script는 git branch를 만들지 않는다. `specs/NNN-name/` 디렉터리만 만든다.
-- `/speckit-implement`는 코드를 실제로 수정한다. 사용자가 직접 호출할 때만 실행한다.
+- `/speckit-implement`는 코드를 실제로 수정한다. 사용자 승인 없이 스스로 호출해도 된다 (D-033).
+  대신 아래 **Pre-Implement Procedure**를 먼저 끝내고, 구현 뒤에는 **Review Before Gate**를
+  반드시 돌린다. 이 둘이 승인을 대신하는 통제다.
+
+### Pre-Implement Procedure
+
+`/speckit-implement` 전에 **넷**을 순서대로 끝낸다. 사람 승인은 없앴지만 이 단계는 없애지 않았다.
+2026-08-03에 이 단계가 끊겨 `tasks.md`가 영영 안 생긴 사고가 있었다.
+
+1. `/taskify <spec.md 또는 plan.md 경로와 범위>`로 task manifest를 만든다.
+   산출물은 `<manifest-dir>/index.yaml`과 `<FEATURE>-T001.yaml …`이다.
+   설계 소스가 `specs/` 밖이면 `<manifest-dir>`는 `.amplai/tasks/<slug>/`다.
+2. validator를 돌린다. 통과해야 다음으로 간다.
+
+   ```text
+   python3 .claude/skills/taskify/scripts/validate_task_manifest.py <manifest-dir>
+   ```
+
+3. speckit이 읽을 `tasks.md`를 **생성**한다. 손으로 쓰지 않는다.
+
+   ```text
+   python3 .specify/scripts/taskify_to_tasks_md.py <manifest-dir> --out <feature-dir>/tasks.md
+   ```
+
+   `--out`을 반드시 준다. manifest는 `.amplai/tasks/` 아래 있고 speckit은 feature dir에서
+   `tasks.md`를 찾는다. 기본값으로 돌리면 speckit이 못 찾는다.
+
+4. `/speckit-analyze`로 `spec.md`·`plan.md`·`tasks.md` 정합성을 본다. `tasks.md`가 있어야
+   돌아가므로 3단계 뒤다.
+
+   **CRITICAL 또는 HIGH가 하나라도 있으면 구현을 시작하지 않는다.** MEDIUM과 LOW는 기록하고
+   item별로 판단한다. 판정 기준은 skill의 Severity Assignment 절에 있다.
+
+   analyze는 `spec.md`·`plan.md`·`tasks.md` **세 artifact를 서로** 대조한다. **소스 코드는
+   읽지 않는다.** 그래서 "spec은 A라는데 코드는 B다" 류는 못 잡는다 — 그것은 구현 뒤
+   contract reviewer의 몫이다. analyze가 잡는 것은 task 없는 요구사항, 요구사항 없는 task,
+   중복·모호한 요구사항, 미명세 항목이다. 둘은 서로를 대체하지 않는다.
+
+넷 중 하나라도 실패하면 구현을 시작하지 않는다. 생성된 `tasks.md`는 순서·파일소유만 담은
+목차다. 계약(acceptance, invariants, forbidden_paths)은 manifest YAML에 그대로 있다.
+`blocked` task는 실행 단계에서 빠진다.

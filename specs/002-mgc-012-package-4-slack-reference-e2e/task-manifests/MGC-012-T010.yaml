@@ -56,27 +56,14 @@ dependencies:
     - MGC-012-T008
     - MGC-012-T009
   external:
-    - id: E-1
-      name: 테스트용 Slack workspace 생성
-      description: 테스트용 Slack workspace 생성. 회사 workspace 를 쓰지 않는다 (D-026).
-      owner: 사용자
-      status: pending
-    - id: E-2
-      name: Slack app 생성·scope 부여·설치 (배포하지 않는다)
+    - id: E-12
+      name: Approved Proposal Card presentation contract and renderer scope
       description: >-
-        Slack app 생성. bot scope chat:write 와 channels:history 부여 후 workspace 설치.
-        **배포하지 않는다** — 비-Marketplace 배포는 conversations.history 를 분당 1회로
-        낮춰 reconcile 설계가 성립하지 않는다 (research R-012, contracts H-1.2).
-      owner: 사용자
-      status: pending
-    - id: E-3
-      name: test 채널 생성과 app 초대
-      description: test 채널 생성과 app 초대. channel ID 확보.
-      owner: 사용자
-      status: pending
-    - id: E-4
-      name: signing secret·bot token 을 환경변수로 주입
-      description: signing secret 과 bot token 을 실행 환경의 환경변수로 주입.
+        실제 DecisionProjectionPayload에는 Slack text/blocks가 없고 Slack destination은 그
+        payload를 변환 없이 chat.postMessage에 넘긴다. T010 test는 별도 test-only text와 section
+        block을 만들어 실제 Proposal presentation 경로를 우회했다. Proposal Card의 표시 필드,
+        Block Kit 구조, button/ActionToken 생성 경계와 renderer 소유 경로를 approved spec/plan/task로
+        확정하고 production-shaped E2E가 그 renderer 결과를 보내도록 재-taskification해야 한다.
       owner: 사용자
       status: pending
 
@@ -138,6 +125,10 @@ acceptance:
       kind: typecheck
       run: python -m mypy
       required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault/
+      required: true
   manual_checks:
     - id: MC-01
       observer: 사용자
@@ -162,7 +153,7 @@ risk:
     - 실제 채널에 중복 Card 가 나면 사람이 보는 결과라 되돌리기 어렵다.
     - E2E 가 실제 message 를 쌓아 조회 범위를 오염시킨다.
     - rate limit 을 넘기면 test 가 flaky 해진다.
-    - external dependency 넷이 전부 사람 손에 달려 있다.
+    - test-only Slack payload가 production Proposal presentation 부재를 가릴 수 있다.
   approvals:
     - wave 7 종료 시 3 lens review 전원
 
@@ -186,6 +177,21 @@ handoff:
     - tests/test_slack_http.py 확장
     - research.md 에 R-011 실측 결과 기록
   notes:
-    - E-1~E-4 가 끝나기 전에는 시작할 수 없다. status 를 ready 로 올리는 조건이 그것이다.
+    - E-1 workspace와 E-2 app/scope/install/auth.test는 완료됐다. 2026-08-12 사용자가
+      test channel/app invite와 target ID 준비를 확인하고 구현을 승인했다(E-3).
+      보호된 external env 파일을 source한 configured harness가 1 passed/189 deselected로
+      네 설정값 조립을 확인했다(E-4). 값 자체는 기록하지 않는다.
     - index.yaml 의 W3-history-ordering-unverified 는 research R-011 이 문서로 닫았고
       이 task 가 실측으로 확인한다.
+    - 2026-08-12 T010 live test를 구현했다. 기본 test 189 passed/3 deselected와 해당 파일
+      Ruff는 통과했다. 구성된 live 실행은 harness 1 passed, 수동 check 1 skipped였고 자동
+      실물 시나리오는 conversations.history의 missing_scope로 실패했다. Provider가 요구한
+      scope는 groups:history이며 E-11이 해소되기 전에는 completion과 3-lens review로 넘기지 않는다.
+    - 이후 사용자가 Bot Token Scopes에 groups:history를 반영하고 app을 재설치한 뒤 보호된
+      env token을 갱신했다. API header로 groups:history 활성화를 확인했고 자동 live E2E는
+      2 passed/190 deselected, 사람 삭제 후 reconcile·재전송 수동 check도 통과했다. Secret
+      값은 기록하지 않는다. E-11은 해소됐다.
+    - 수동 관측에서 test Card가 한 줄 메시지로 보인다는 질문이 나와 production path를 대조했다.
+      DecisionProjectionPayload에는 text/blocks가 없고 destination/transport는 이를 변환하지
+      않는다. 현재 E2E의 test-only payload는 실제 Proposal Card renderer 증거가 아니므로 E-12를
+      새 blocker로 기록하고 completion 및 3-lens review를 열지 않는다.

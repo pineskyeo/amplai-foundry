@@ -1,7 +1,7 @@
 # Phase 0 Research: MGC-012 Package 4
 
-`spec.md` 의 U-001~U-005 를 닫는다. Slack 쪽 사실은 공식 문서로만 고정하고, 못 찾은 것은
-**미확인으로 남긴다.** 추정으로 채우지 않는다.
+`spec.md`의 `U-001`~`U-009`를 조사한다. Slack 사실은 공식 문서로만 고정한다. 공식
+계약이 없으면 `BLOCKED`로 남긴다. 추정으로 채우지 않는다.
 
 ## Sources
 
@@ -13,6 +13,11 @@
 | P4 | `https://docs.slack.dev/changelog/2025/05/29/rate-limit-changes-for-non-marketplace-apps/` | 2026-08-07 |
 | P5 | `https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/` | 2026-08-07 |
 | P6 | `https://docs.slack.dev/apis/web-api/` | 2026-08-07 |
+| P7 | `https://docs.slack.dev/reference/methods/chat.delete/` | 2026-08-11 |
+| P8 | `https://docs.slack.dev/tools/node-slack-sdk/reference/web-api/type-aliases/ChatPostMessageArguments/` | 2026-08-11 |
+| P9 | `https://github.com/slackapi/node-slack-sdk/blob/122865134ffa20ad080fcf447cfb93b7252da157/packages/web-api/src/types/response/ConversationsHistoryResponse.ts#L26-L33` | 2026-08-11 |
+| P10 | `https://docs.slack.dev/tools/node-slack-sdk/reference/web-api/interfaces/GenericMessageEvent/` | 2026-08-11 |
+| P11 | `https://docs.slack.dev/reference/methods/search.messages/` | 2026-08-11 |
 
 001 의 `research.md` S1–S4 를 대체하지 않는다. 같은 문서를 다시 조회한 것은 P1–P3 이고,
 아래 R-010 이 그 재조회에서 나온 **정정**이다.
@@ -205,3 +210,220 @@ T010 에서야 드러난다.
 
 **남은 위험**: fake server 는 우리가 보낸 것을 그대로 관측할 뿐 Slack 이 그것을 받아들이는지
 모른다. 실제 확인은 T010 이다.
+
+## R-017 — Slack Has No Documented Pre-Response Probe Identity (U-006: FACT CLOSED)
+
+**Decision**: `chat.postMessage` 응답을 잃은 뒤 probe를 자동으로 다시 찾는 계약은
+`BLOCKED`다. Undocumented field나 history scan을 쓰지 않는다.
+
+**Rationale**:
+
+- P1과 P8의 request argument에는 caller가 정하는 message ID나 idempotency key가 없다.
+- 성공 응답 뒤의 정확한 remote identity는 Slack이 만든 `channel + ts`다.
+- P7의 `chat.delete`도 `channel + ts`를 요구한다.
+- `client_msg_id`는 P9와 P10에서 optional response/event field다. P2는 이 값으로 message를
+  조회하거나 filter하는 argument를 제공하지 않는다.
+- P11의 search는 text query다. Exact identity lookup이 아니다.
+
+`chat.postMessage` error 목록에 `client_msg_id` 관련 이름이 있어도 request argument,
+보존 기간, duplicate 판정 범위, 원본 `ts` 반환이 문서화되지 않았다. 이 단서를 계약으로
+승격하지 않는다.
+
+이 negative finding은 automatic ambiguous-message lookup과 provider-side global remote cap만
+blocked로 둔다. E-8 review가 이 결론을 승인하고 E-9 governed recovery가 승인되면 local
+fail-closed T013 구현 자체는 진행할 수 있다.
+
+**Alternatives considered**:
+
+- raw request에 `client_msg_id`를 추가하는 안. 공식 request contract가 아니므로 기각한다.
+- `conversations.history`를 순회해 optional field를 찾는 안. caller-controlled identity와
+  field 존재 보장이 없어 기각한다.
+- metadata, text, prefix, app ID, 위치, 최근 N건, 시간 window를 조합하는 안. 전부
+  heuristic이므로 금지한다.
+
+## R-018 — Durable Intent Belongs In `GovernanceStore` (closes U-007)
+
+**Decision**: probe lifecycle은 Markdown이나 process memory가 아닌 SQLite
+`GovernanceStore`의 전용 state로 둔다. 기존 outbox/ingress/operator-hold row는 재사용하지
+않는다. D-031 범위의 additive migration이 필요하다.
+
+**Rationale**: `GovernanceStore`는 `.amplai/runtime/governance.db`의 mutable runtime
+authority다. `governance_transaction`은 짧은 write, rollback, ambiguous commit 처리를 이미
+제공한다. Durable publish intent가 external Git CAS 전에 intent를 기록하는 선례도 있다.
+
+Startup probe는 Proposal event, ingress command, outbox delivery, operator hold가 아니다.
+기존 table을 재사용하면 probe에 거짓 domain 의미를 준다. 전용 lifecycle state가 가장 작은
+변경이다.
+
+**Required boundary**:
+
+1. Network post 전에 local probe intent를 commit한다.
+2. Channel/app별 unresolved intent는 최대 1개다. Concurrent startup은 atomic claim을
+   경쟁하고 승자 하나만 post한다.
+3. Unresolved state 조회, atomic claim 또는 commit이 실패하면 post하지 않는다.
+4. Slack `ts`를 받은 뒤에만 exact remote cleanup을 시도한다.
+5. Slack 삭제 성공 뒤 `RESOLVED` commit이 실패하면 완료로 추정하지 않는다.
+6. `ts`가 없는 ambiguous state는 자동 recovery하지 않는다.
+
+이 결정은 기존 plan과 contract의 "durable schema 변경 없음"을 D-031 범위에서 supersede한다.
+범용 write API는 추가하지 않는다.
+
+**Alternatives considered**: 별도 JSON/file state. Filesystem CAS, schema 검증, transaction
+recovery를 다시 만들어야 하므로 기각한다. Process memory는 restart safety를 제공하지
+않는다.
+
+## R-019 — No Production Slack Composition Root Exists (U-008: BLOCKED)
+
+**Decision**: `MGC-012-T013` production wiring은 `BLOCKED`다. Repository에 존재하지 않는
+worker entrypoint를 plan이 임의로 만들지 않는다.
+
+**Rationale**: 설치된 executable은 Typer CLI 하나다. Slack worker command, daemon loop,
+service unit, container entrypoint가 없다. `IngressDecisionWorker`와 `OutboxDispatcher`는
+library service이며 production에서 조립되지 않는다.
+
+향후 composition root는 아래 순서만 고정한다.
+
+1. Settings load
+2. `GovernanceStore.check_startup`
+3. Probe lifecycle 판정
+4. 각 startup 평가에서 operator diagnostic 1회 출력
+5. `READY` 또는 `DEGRADED_CLEANUP`일 때만 Slack event claim
+
+Diagnostic은 FR-030의 닫힌 allowlist만 사용한다. 재기동은 새 startup 평가이므로 degraded
+상태를 다시 1회 출력한다.
+
+CLI subcommand, 별도 executable, external host process 중 무엇을 쓸지는 product/runtime
+결정이다. 이 plan은 선택하지 않는다.
+
+## R-020 — Ambiguous Post Becomes Durable Hard Block (U-009: LOCAL CLOSED/REMOTE BLOCKED)
+
+**Decision**: post intent를 commit한 뒤 Slack `ts`를 받지 못하면 state를 unresolved로
+유지하고 `HARD_BLOCKED_NO_POST`를 반환한다. 이후 startup은 post 호출을 0회 수행한다.
+
+이 결정은 **추가 post 방지**만 증명한다. 이미 Slack에 생겼을 수 있는 message를 찾거나
+삭제했다고 주장하지 않는다. Slack의 공식 idempotency/lookup 계약이 없으므로 remote probe
+수 상한과 automatic recovery는 계속 `BLOCKED`다.
+
+**Rationale**: external post와 local commit은 하나의 atomic transaction으로 묶을 수 없다.
+응답 유실을 "post 실패"로 간주해 재시도하면 중복 가능성이 생긴다. Durable unresolved intent를
+먼저 확인하고 멈추면 적어도 이 application이 두 번째 post를 보내지는 않는다.
+
+**Alternatives considered**:
+
+- 자동 재시도. Provider idempotency 보장이 없어 기각한다.
+- history search 후 cleanup. Exact identity가 없어 기각한다.
+- operator가 `ts`를 명시하는 recovery action. Heuristic은 아니지만 새로운 governed mutation
+  계약이다. 2026-08-11 clarification은 이 기능을 별도 governed recovery work item으로
+  미뤘다. 그 계약이 승인되기 전에는 T013에 추가하지 않는다.
+
+## R-021 — Hard Block Is An Outcome; Exact Cleanup May Reopen Startup
+
+**Decision**: `HARD_BLOCKED_NO_POST`는 durable lifecycle state가 아니라 현재 startup의 typed
+outcome이다. Persistence에는 `POST_INTENT_RECORDED`, `AMBIGUOUS_POST`, `CLEANUP_PENDING` 같은
+원인 state를 보존한다.
+
+이전 실행의 `CLEANUP_PENDING`에 confirmed `channel + ts`가 있으면 새 startup은 fresh probe를
+먼저 게시하지 않는다. Stored exact identity로 cleanup하고 durable `RESOLVED` commit까지
+성공한 뒤에만 fresh self-check를 시작한다. Cleanup 또는 commit 실패면 원인 state를 유지하고
+`HARD_BLOCKED_NO_POST` outcome으로 activation과 새 post를 막는다.
+
+**Rationale**: Outcome을 state로 저장하면 실제 장애 원인을 잃고 recovery 가능성을 판정할 수
+없다. 반대로 exact provider identity가 이미 있는 `CLEANUP_PENDING`까지 영구 차단하면 D-031이
+허용한 bounded recovery를 사용할 수 없다. Remote delete와 local resolution을 둘 다 확인한 뒤
+새 atomic claim으로 넘어가면 heuristic 없이 restart safety와 진전을 함께 보장한다.
+
+**Alternatives considered**:
+
+- 모든 unresolved state를 영구 차단. Exact identity가 있는 cleanup 가능 상태까지 막으므로
+  기각한다.
+- Delete 성공만으로 새 probe 허용. Durable resolution 실패를 clear로 추정하므로 기각한다.
+- `HARD_BLOCKED_NO_POST`를 lifecycle state로 저장. Cause state와 안전한 다음 행동을 잃으므로
+  기각한다.
+
+## R-022 — Invalid Lifecycle Records Fail Closed Without Mutation
+
+**Decision**: malformed record, unknown state value와 unsupported schema/state version은
+`LIFECYCLE_STATE_INVALID` typed failure다. Repository는 기존 row를 보존하고 readback, post,
+automatic repair와 worker activation을 호출하지 않는다.
+
+**Rationale**: remote message 존재 여부를 모르는 operational state를 정상 또는 특정 lifecycle로
+추정하면 one-unresolved invariant와 no-additional-post 보장을 동시에 잃는다. Record 보존은 별도
+governed recovery가 원인을 검토할 evidence도 남긴다.
+
+**Alternatives considered**: unknown state를 `AMBIGUOUS_POST`로 치환하거나 최신 schema로 자동
+migration하는 안. Cause를 변형하고 승인되지 않은 mutation이므로 기각한다.
+
+## R-023 — Readback Failure And Cleanup Detail Are Closed Types
+
+**Decision**: primary readback failure는 `PROBE_INPUT_INVALID`, `HISTORY_READ_FAILED`,
+`PROBE_NOT_FOUND`, `APP_ID_MISMATCH`, `MARKER_UNREADABLE`, `MARKER_MISMATCH`,
+`RESPONSE_CHANNEL_MISMATCH`의 closed enum이다. 마지막 code는 Slack 성공 응답의 confirmed
+channel이 configured target과 다를 때 사용한다. 이 경우 configured history를 조회하지 않고
+cleanup은 provider-confirmed `channel + ts`로만 시도한다.
+Secondary cleanup failure는 optional `CleanupFailureDetail` 하나이며
+`cleanup_failure_count`와 allowlisted `provider_error_code`만 가진다.
+
+**Rationale**: finite taxonomy가 있어야 SC-020의 post 뒤 여섯 failure × cleanup 성공·실패
+12개 조합을 재현할 수 있다. Response channel mismatch를 `PROBE_NOT_FOUND`로 alias하면 history
+absence를 관측하지 않고도 관측했다고 주장하게 된다. 전용 code는 이 거짓 진단을 막는다.
+Primary와 secondary를 별도 field로 두면 cleanup failure가 원래 readback cause를 감싸거나
+대체하지 않는다.
+
+Diagnostic surface도 closed다. Raw exception chain, 자유형 error와 provider body/header는
+structured log, exception output, metrics, persisted failure diagnostic과 operator output에
+전달하지 않는다. Metrics label은 low-cardinality outcome/diagnostic/provider code만 허용한다.
+
+**Alternatives considered**: 자유형 mapping을 output에서 필터링하거나 원본 exception을
+`__cause__`로 연결하는 안. 누락된 surface와 비밀정보 노출을 정적으로 막을 수 없어 기각한다.
+
+## R-024 — Crash Boundaries Preserve Durable Knowledge
+
+**Decision**: intent commit 전 crash는 post 0회이므로 다음 startup의 fresh claim을 허용한다.
+Committed `POST_INTENT_RECORDED`를 다음 startup이 발견하면 실제 post 여부를 추정하지 않고 hard
+block한다. Response loss는 가능한 경우 `AMBIGUOUS_POST`로 기록하고 기록 실패 시 마지막 intent를
+보존한다.
+
+성공 응답 뒤 confirmed identity commit이 실패하면 현재 process에 있는 `channel + ts`로 exact
+delete를 최대 한 번 시도하고 durable `RESOLVED`를 기록한다. 둘 다 성공한 뒤의 후속 startup만
+fresh claim할 수 있다. 그 전 crash나 delete/resolution failure는 마지막 committed cause와
+no-post/no-activation을 유지한다.
+
+**Rationale**: 현재 process의 confirmed identity는 heuristic이 아니지만 crash 뒤에는 사라진다.
+이 짧은 exact compensation window만 사용하면 안전한 cleanup 기회를 살리면서 다음 startup이
+기억에 없는 identity를 추정하는 것은 막는다.
+
+**Alternatives considered**: identity commit 실패 즉시 영구 block은 안전하지만 known exact
+identity를 버린다. 다음 startup의 자동 repost 또는 history scan은 duplicate/heuristic이므로
+기각한다.
+
+## R-025 — T013 Needs Named Readiness And Dual Completion Evidence
+
+**Decision**: E-7~E-10은 각각 FR-037의 내용을 담은 user-approved governed workstream record가
+T013 manifest에 연결돼야 한다. 완료에는 같은 revision의 composition-root integration result와
+configured startup trace가 모두 필요하다.
+
+Configured trace는 실제 target/config 경로를 필요로 하므로 T010 completion을 T013의 internal
+dependency로 둔다. Provider exact recovery 미지원은 E-8의 유효한 review conclusion이며 E-9가
+승인되면 T013 local implementation을 중단시키지 않는다.
+
+**Rationale**: readiness record는 구현할 경계와 승인자를 고정하지만 실행을 증명하지 않는다.
+Instrumented integration은 outcome/ordering/count matrix를 증명하지만 실제 channel/app/transport
+composition을 증명하지 않는다. Configured trace는 실제 wiring을 증명하지만 failure matrix를
+증명하지 않는다. 두 증거가 상호 보완적이다.
+
+**Alternatives considered**: unit command output만으로 완료하거나 configured startup 한 번만으로
+gate를 닫는 안. 각각 production wiring 또는 negative-path evidence가 없어 기각한다.
+
+## D-031 Research Gate
+
+| Unknown | Result | Effect |
+|---|---|---|
+| `U-006` explicit provider identity | `FACT CLOSED: unsupported` | Ambiguous message 자동 lookup과 provider-side global cap만 금지 |
+| `U-007` durable recovery owner | `GovernanceStore` | Additive lifecycle schema 필요 |
+| `U-008` production composition root | `BLOCKED` | E-7 named approval 전 `MGC-012-T013` 구현 금지 |
+| `U-009` ambiguous outcome | Local no-post만 해결 | Remote recovery와 global cap 주장 금지. Operator 강제 해제도 별도 work item |
+
+`MGC-012-T008`의 typed unit contract는 planning 가능하다. `MGC-012-T013`은 T010 completion과
+E-7~E-10 named approval record가 모두 연결될 때까지 구현 금지다. FR-018 production completion,
+`readback-selfcheck-wiring`, Package 4 gate PASS는 추가로 같은 revision의 dual production
+evidence가 모두 연결될 때까지 금지한다.

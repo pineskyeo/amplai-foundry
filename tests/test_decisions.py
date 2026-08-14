@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import secrets
 import sqlite3
+import subprocess
+import sys
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -59,7 +63,7 @@ CHANNEL = ChannelRef(
     channel_id="C456",
     message_id="1710000000.000200",
 )
-OTHER_CHANNEL = CHANNEL.model_copy(update={"message_id": "1710000000.000201"})
+OTHER_CHANNEL = CHANNEL.model_copy(update={"channel_id": "C999", "message_id": "1710000000.000201"})
 NOW = datetime(2026, 7, 30, 9, 0, tzinfo=UTC)
 FINGERPRINT = hashlib.sha256(b"provider-request-1").hexdigest()
 
@@ -309,6 +313,101 @@ def test_disabled_actor_cannot_consume_previously_issued_token(tmp_path: Path) -
     assert service.get_token(approve.record.token_id).state is ActionTokenState.ISSUED
 
 
+def test_direct_decision_failure_traceback_contains_no_raw_action_token(tmp_path: Path) -> None:
+    _store, _objects, _active, service, _clock = _reviewed(tmp_path)
+    request_changes = next(
+        token
+        for token in _issue(service)
+        if token.record.allowed_action is DecisionAction.REQUEST_CHANGES
+    )
+
+    with pytest.raises(DecisionError, match="ACTION_TOKEN_INVALID") as caught:
+        service.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=request_changes.raw_token,
+            idempotency_key="mismatched-direct-action",
+            request_fingerprint=hashlib.sha256(b"mismatched-direct-action").hexdigest(),
+        )
+
+    rendered: list[str] = [str(caught.value), repr(caught.value)]
+    current: BaseException | None = caught.value
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        traceback_cursor = current.__traceback__
+        while traceback_cursor is not None:
+            if "/src/amplai_foundry/" in traceback_cursor.tb_frame.f_code.co_filename:
+                rendered.append(repr(traceback_cursor.tb_frame.f_locals))
+            traceback_cursor = traceback_cursor.tb_next
+        current = current.__cause__ or current.__context__
+    assert request_changes.raw_token not in "\n".join(rendered)
+
+
+def test_direct_decision_showlocals_child_is_secret_free(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if os.environ.get("AMPLAI_DECISION_TRACEBACK_CHILD") != "1":
+        return
+    token_counter = 0
+    raw_counter = 0
+
+    def _token_hex(length: int) -> str:
+        nonlocal token_counter, raw_counter
+        if length == 8:
+            token_counter += 1
+            return f"{token_counter:016x}"
+        raw_counter += 1
+        return "decafbad" * 3 + f"{raw_counter:08x}"
+
+    monkeypatch.setattr(secrets, "token_hex", _token_hex)
+    _store, _objects, _active, service, _clock = _reviewed(tmp_path)
+    request_changes = next(
+        token
+        for token in _issue(service)
+        if token.record.allowed_action is DecisionAction.REQUEST_CHANGES
+    )
+    try:
+        service.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=request_changes.raw_token,
+            idempotency_key="showlocals-mismatched-action",
+            request_fingerprint=hashlib.sha256(b"showlocals-mismatched-action").hexdigest(),
+        )
+    except BaseException as error:
+        request_changes = None  # type: ignore[assignment]
+        raise AssertionError("intentional sanitized decision failure") from error
+    raise AssertionError("decision failure was expected")
+
+
+def test_direct_decision_pytest_showlocals_contains_no_raw_action_token() -> None:
+    environment = os.environ.copy()
+    environment["AMPLAI_DECISION_TRACEBACK_CHILD"] = "1"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            str(Path(__file__)),
+            "-k",
+            "direct_decision_showlocals_child_is_secret_free",
+            "--showlocals",
+            "-q",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert completed.returncode == 1
+    assert "decafbad" * 3 not in completed.stdout + completed.stderr
+
+
 def test_success_consumes_token_and_replay_returns_first_result_before_live_validation(
     tmp_path: Path,
 ) -> None:
@@ -344,6 +443,29 @@ def test_success_consumes_token_and_replay_returns_first_result_before_live_vali
     assert current is not None
     assert current.status is ActiveProposalStatus.APPROVED
     assert current.state_revision == approve.record.state_revision + 1
+
+
+def test_generic_decision_does_not_revoke_independent_token_sets(tmp_path: Path) -> None:
+    _store, _objects, _active, service, _clock = _reviewed(tmp_path)
+    first = _issue(service)
+    independent = _issue(service)
+    approve = next(
+        token for token in first if token.record.allowed_action is DecisionAction.APPROVE
+    )
+
+    service.decide(
+        PROPOSAL,
+        action=DecisionAction.APPROVE,
+        authority_request=_authority_request(),
+        raw_token=approve.raw_token,
+        idempotency_key="independent-token-set-decision",
+        request_fingerprint=FINGERPRINT,
+    )
+
+    assert all(
+        service.get_token(token.record.token_id).state is ActionTokenState.ISSUED
+        for token in independent
+    )
 
 
 def test_idempotency_conflict_precedes_consumed_token_and_changes_nothing(tmp_path: Path) -> None:
@@ -749,3 +871,52 @@ def test_definition_revision_failure_rolls_back_token_revocation(tmp_path: Path)
     }
     assert states[DecisionAction.APPROVE] is ActionTokenState.ISSUED
     assert states[DecisionAction.REJECT] is ActionTokenState.ISSUED
+
+
+def test_a_decision_at_the_exact_expiry_instant_is_rejected(tmp_path: Path) -> None:
+    """만료 시각과 정확히 같은 순간의 결정은 거부된다 (FR-008, SC-004).
+
+    기존 `expired` 케이스는 TTL 15분에 `NOW + 16분`으로 점프해 경계 등호를 치지 않는다.
+    그래서 `processed_at >= expires_at` 을 `>` 로 바꿔도 전 suite 가 초록이었다
+    (round 10 regression `C-5`). 경계가 하나 어긋나면 만료된 token 이 통과한다.
+    """
+    _store, _objects, active, service, clock = _reviewed(tmp_path)
+    approve = next(
+        token for token in _issue(service) if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    before = active.get(PROPOSAL)
+    clock.value = approve.record.expires_at
+
+    with pytest.raises(DecisionError, match="ACTION_TOKEN_EXPIRED"):
+        service.decide(
+            PROPOSAL,
+            raw_token=approve.raw_token,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            idempotency_key="exact-expiry-instant",
+            request_fingerprint=hashlib.sha256(b"exact-expiry-instant").hexdigest(),
+        )
+
+    assert active.get(PROPOSAL) == before
+    assert service.get_token(approve.record.token_id).state is ActionTokenState.ISSUED
+
+
+def test_a_decision_one_microsecond_before_expiry_is_accepted(tmp_path: Path) -> None:
+    """경계 직전은 여전히 유효하다. 만료 판정을 과하게 넓히지 않았음을 고정한다."""
+    _store, _objects, _active, service, clock = _reviewed(tmp_path)
+    approve = next(
+        token for token in _issue(service) if token.record.allowed_action is DecisionAction.APPROVE
+    )
+    clock.value = approve.record.expires_at - timedelta(microseconds=1)
+
+    result = service.decide(
+        PROPOSAL,
+        raw_token=approve.raw_token,
+        action=DecisionAction.APPROVE,
+        authority_request=_authority_request(),
+        idempotency_key="just-before-expiry",
+        request_fingerprint=hashlib.sha256(b"just-before-expiry").hexdigest(),
+    )
+
+    assert result is not None
+    assert service.get_token(approve.record.token_id).state is ActionTokenState.CONSUMED

@@ -9,35 +9,7 @@
 >
 > 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다.
 
-**Design source**: `specs/002-mgc-012-package-4-slack-reference-e2e/spec.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/plan.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md`, `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`, `docs/workstreams/messenger-governance-closure-v3/DECISIONS.md`
-
-## Phase 1
-
-- [ ] MGC-012-T008 Readback self-check refuses to start on a silent marker defect
-  - manifest: `task-manifests/MGC-012-T008.yaml`
-  - depends on: MGC-012-T006, MGC-012-T007
-  - files: `src/amplai_foundry/governance/slack_http.py`, `tests/test_slack_http.py`
-  - verify: `python -m pytest tests/test_slack_http.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-- [ ] MGC-012-T009 E2E harness skips loudly and stays out of the default suite
-  - manifest: `task-manifests/MGC-012-T009.yaml`
-  - depends on: MGC-012-T006, MGC-012-T007
-  - files: `pyproject.toml`, `tests/test_slack_http.py`, `src/amplai_foundry/governance/slack_http.py`, `specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md`
-  - verify: `python -m pytest tests/test_slack_http.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-  - verify: `amplai-foundry verify`
-- [ ] MGC-012-T011 The real transport leaves other providers untouched
-  - manifest: `task-manifests/MGC-012-T011.yaml`
-  - depends on: MGC-012-T006
-  - files: `tests/test_slack_http.py`
-  - verify: `python -m pytest tests/test_slack_http.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
+**Design source**: `specs/002-mgc-012-package-4-slack-reference-e2e/spec.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/plan.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md`, `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`, `docs/workstreams/messenger-governance-closure-v3/DECISIONS.md`
 
 ## Blocked — DO NOT EXECUTE
 
@@ -45,21 +17,30 @@
 
 - MGC-012-T010 Reference E2E against a real Slack workspace
   - manifest: `task-manifests/MGC-012-T010.yaml`
-  - blocked by E-1: 테스트용 Slack workspace 생성
-  - blocked by E-2: Slack app 생성·scope 부여·설치 (배포하지 않는다)
-  - blocked by E-3: test 채널 생성과 app 초대
-  - blocked by E-4: signing secret·bot token 을 환경변수로 주입
+  - blocked by E-12: Approved Proposal Card presentation contract and renderer scope
 - MGC-012-T012 MGC-012 closure on a clean clone across both Python versions
   - manifest: `task-manifests/MGC-012-T012.yaml`
   - blocked by E-5: Python 3.12 toolchain
+- MGC-012-T013 Production startup enforces durable probe lifecycle before Slack claim
+  - manifest: `task-manifests/MGC-012-T013.yaml`
+  - blocked by E-7: Production Slack worker entrypoint approval record
+  - blocked by E-8: Official provider recovery contract review approval
+  - blocked by E-9: Governed probe recovery work item approval record
+  - blocked by E-10: Narrow lifecycle schema and repository approval record
 
 ## Not scheduled
 
 - MGC-012-T006 (done) Real Slack HTTP transport over the standard library
 - MGC-012-T007 (done) Credentials enter at one composition root and never persist
+- MGC-012-T008 (done) Readback self-check returns a typed startup outcome without heuristic recovery
+- MGC-012-T009 (done) E2E harness skips loudly and stays out of the default suite
+- MGC-012-T011 (done) The real transport leaves other providers untouched
 
 ## Open questions
 
 - **OQ-003** Slack message metadata 의 크기 상한은 얼마인가. research P1 은 metadata 지원만 적고 상한을 말하지 않는다.
 - **OQ-005** marker 를 workspace 구성원 누구나 읽을 수 있다는 사실이 수용 가능한가. research P1 이 명시한다 — "Metadata you post to Slack is accessible to any app or user who is a member of that workspace."
 - **OQ-006** T011 이 Package 3 의 T005 AC-07 과 실질적으로 다른 것을 검사하는가.
+- **U-008** Slack worker를 실제로 활성화하고 readback outcome을 소비할 production composition root의 경로와 owner는 무엇인가. — blocks MGC-012-T013
+- **OQ-008** D-031 전용 additive lifecycle schema와 GovernanceStore repository 경계를 승인할 것인가. — blocks MGC-012-T013
+- **OQ-009** explicit provider identity가 없는 lifecycle을 다룰 별도 governed recovery work item의 owner, 권한, 감사와 evidence 계약은 무엇인가. — blocks MGC-012-T013

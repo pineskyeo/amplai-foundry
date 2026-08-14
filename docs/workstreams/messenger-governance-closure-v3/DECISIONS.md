@@ -787,10 +787,14 @@
 
 ## D-030 — The Self-Check Removes Its Own Probe
 
-- Status: accepted
+- Status: superseded
+- superseded_by: D-031 (authoritative revision의 실질 변경은 readback 성공 뒤 delete-only
+  실패의 startup 거부 조항뿐이다. 성공·실패 양쪽의 삭제 시도, readback 실패 시 거부,
+  원래 원인 우선과 probe 격리 의무는 D-031이 다시 수용한다)
 - supersedes: D-029의 "함께 미룬 것" 문단 (나머지 D-029는 유효하다)
 - Decision: `verify_marker_readback`이 검사를 마치면 `chat.delete`로 probe를 지운다.
-  **성공과 실패 양쪽에서 지운다.** 지우지 못하면 기동을 거부한다. 계약은 H-3.2다.
+  **성공과 실패 양쪽에서 지운다.** ~~Readback이 성공했어도 지우지 못하면 기동을
+  거부한다.~~ 이 delete-only 거부만 D-031이 뒤집었다. 계약은 H-3.2다.
 
   **D-029에서 내가 쓴 근거가 틀렸다.** 그 문서는 "격리로 정합성 위험은 없어졌고 남는 것은
   채널 소음과 rate limit"이라고 적었고, 사용자가 그 근거로 deferral을 골랐다. 사실이
@@ -813,10 +817,11 @@
   bot"으로 대상을 우리 message로 한정한다. D-029가 이 안을 미룬 이유가 "scope를 확인하지
   않아 추정으로 계약을 쓰게 된다"였는데, 그 확인이 끝났다. 설치 절차는 안 바뀐다.
 
-  **지우기 실패를 조용히 넘기지 않는다.** 검사가 통과했는데 삭제만 실패하면
-  `SlackReadbackError`다 — 남은 probe가 나중에 판정 불가를 만든다. 검사도 실패하고 삭제도
-  실패하면 **원래 원인이 이긴다.** 삭제 실패는 그 예외에 note로 덧붙인다. 삭제 실패가 원인을
-  가리면 operator가 엉뚱한 곳을 고친다.
+  **지우기 실패를 조용히 넘기지 않는다.** ~~검사가 통과했는데 삭제만 실패하면
+  `SlackReadbackError`로 기동을 거부한다.~~ 이 판정은 D-031에서
+  `DEGRADED_CLEANUP` + activation 허용으로 바뀌었다. 검사도 실패하고 삭제도 실패하면
+  **원래 원인이 이긴다.** 삭제 실패는 안전한 보조 진단으로 보존한다. 삭제 실패가 원인을
+  가리면 operator가 엉뚱한 곳을 고친다는 근거는 유효하다.
 
   **`build_probe_marker`를 함께 둔다.** D-029는 호출자가 `build_slack_marker`의 결과에서
   `destination_ref`만 바꾸도록 안내문으로 요구했다. round 1의 P0가 정확히 그런 안내문에서
@@ -830,3 +835,340 @@
 - Source: **사용자 결정.** 2026-08-08 round 2 결과를 보고 D-029의 근거가 틀렸다는 것을
   알린 뒤 다시 물었고, "chat.delete로 지우되 scope를 먼저 공식 문서로 확인"을 골랐다.
   확인 결과 새 scope가 필요 없었다.
+
+## D-031 — Cleanup-Only Failure Degrades Without Heuristic Recovery
+
+- Status: APPROVED
+- supersedes: D-030 decision record. 실질 변경은 "readback 성공 뒤 probe 삭제만 실패해도
+  startup 거부" 조항과 그에 해당하는 T008 acceptance뿐이며, 아래 Decision이 나머지
+  D-030 의무를 명시적으로 다시 수용한다.
+- Scope: MGC-012 Package 4 startup readback outcome, bounded probe cleanup lifecycle과
+  `MGC-012-T008`·`MGC-012-T013`의 activation/no-post 경계.
+- Decision: Readback이 완전하게 성공하고 현재 probe의 exact delete만 실패하면
+  `DEGRADED_CLEANUP`을 반환하고 Slack worker activation을 허용한다. 정상으로 숨기지 않으며,
+  production composition root 한 곳이 각 startup 평가에서
+  `SLACK_PROBE_CLEANUP_DEGRADED` 진단을 정확히 한 번 출력한다. Readback이 실패하면 기존처럼
+  activation을 거부한다. Readback과 cleanup이 함께 실패하면 원래 readback cause가
+  primary이고 cleanup 실패는 safe secondary data로만 보존한다.
+
+  **Exact durable lifecycle.** Probe lifecycle은 process memory, Markdown, 기존
+  Outbox/ingress/operator-hold row가 아니라 `GovernanceStore`의 전용 operational state로
+  추적한다. 허용 transition은 아래뿐이다.
+
+  ```text
+  none
+    -> POST_INTENT_RECORDED
+        -> POST_CONFIRMED
+            -> RESOLVED
+            -> CLEANUP_PENDING
+        -> AMBIGUOUS_POST
+  CLEANUP_PENDING -> RESOLVED
+  POST_INTENT_RECORDED | AMBIGUOUS_POST -> HARD_BLOCKED_NO_POST
+  ```
+
+  Network post 전 `POST_INTENT_RECORDED` commit이 필수다. Channel/app별 non-resolved row는
+  최대 하나이고 atomic claim 승자 하나만 post한다. `message_ts`는 Slack 성공 응답 뒤에만
+  기록하며 cleanup은 stored exact `channel + ts`로만 한다. `RESOLVED`는 confirmed cleanup과
+  durable commit이 모두 성공한 뒤에만 된다. Slack delete 성공 뒤 `RESOLVED` commit이
+  실패하면 마지막 committed state를 유지하고 current startup을 `HARD_BLOCKED_NO_POST`로
+  판정해 worker activation을 거부한다.
+
+  **Hard-block conditions.** 이전 unresolved lifecycle, `POST_INTENT_RECORDED` 뒤 응답 유실로
+  provider identity가 없는 `AMBIGUOUS_POST`, 잔여 여부 불확정, state read/write 실패,
+  atomic claim 실패 또는 commit ambiguity가 있으면 새 post는 0회이고
+  `HARD_BLOCKED_NO_POST`다. 같은 channel/app의 concurrent startup에서 claim 패자도 같다.
+  Unresolved state가 해소될 때까지 몇 번 재시작해도 추가 probe는 0개다.
+
+  **Heuristic recovery 금지.** Stored exact `channel + ts`가 없으면 automatic lookup이나
+  delete를 하지 않는다. Message text·prefix·metadata sentinel·app ID 조합·위치·최근 N건·
+  시간 window·undocumented `client_msg_id`로 이전 probe를 추정하지 않는다. Operator 입력으로
+  unresolved lifecycle을 강제 해제하지 않는다.
+
+  **남은 approval blocker.** 이 결정 기록은 `MGC-012-T008`의 ledger dependency만 닫는다.
+  `MGC-012-T013`, FR-018 production completion, `readback-selfcheck-wiring`과 Package 4 gate는
+  production Slack worker entrypoint와 owner, provider-supported ambiguous-post recovery
+  계약, 별도 governed probe recovery work item, narrow additive lifecycle schema와 repository
+  scope가 각각 승인·확정될 때까지 BLOCKED다. 특히 schema/API·production activation은 이
+  결정으로 구현 또는 배포 승인된 것이 아니다.
+
+- Reason: Cleanup-only 실패를 startup 거부로 만들면 supervisor restart마다 probe가 늘어
+  D-030이 막으려던 history page-cap 위험을 키운다. Readback 성공을 activation 기준으로
+  유지하고 durable exact lifecycle로 추가 post를 막아 가용성과 누적 상한을 함께 지킨다.
+- Evidence: 2026-08-10~11 사용자 `$grilling` 승인과 2026-08-11 clarification,
+  `specs/002-mgc-012-package-4-slack-reference-e2e/spec.md` FR-023~FR-032,
+  `data-model.md` `ProbeCleanupLifecycle`, `research.md` R-017~R-020.
+- Risks: Durable lifecycle과 production composition root가 구현·검증되기 전에는 degraded
+  activation의 restart safety를 production에서 주장할 수 없다. Ambiguous post를 heuristic으로
+  회수하면 다른 message 삭제 또는 중복 probe 위험이 생긴다.
+- Owner: 사용자 승인 경계는 workstream governor. T008은 MGC-012 Package 4,
+  T013 production entrypoint와 governed recovery owner는 미정.
+- Date: 2026-08-11
+- Affected item: `MGC-012-T008`, `MGC-012-T013`, H-3.2, FR-023~FR-032.
+- Reversal condition: 새 사용자 승인 Decision이 readback 가용성, exact provider identity,
+  durable restart safety와 operator recovery evidence를 함께 제시하고 D-031을 supersede할 때만.
+- Source: **사용자 결정.** 2026-08-10~11 `$grilling`에서 cleanup-only degraded activation과
+  durable exact lifecycle을 승인했고, 2026-08-11 `/speckit-clarify`에서 concurrent claim,
+  `RESOLVED` commit 실패, governed recovery 분리와 diagnostic 경계를 확정했다.
+
+## D-032 — Package 4 Wave 6R Passes Without Closing Package 4
+
+- Status: APPROVED
+- Decision: MGC-012 Package 4 Wave 6R의 `MGC-012-T008`, `MGC-012-T009`,
+  `MGC-012-T011`을 **PASS**한다. 이 판정은 typed startup readback outcome,
+  `RESPONSE_CHANNEL_MISMATCH`, complete local marker validation, heuristic recovery 제거,
+  network-free E2E harness와 provider isolation에만 적용한다.
+
+  사용자 승인 뒤 speckit chain으로 확정한 `RESPONSE_CHANNEL_MISMATCH`는 configured channel의
+  history를 거짓으로 조회하지 않고 provider가 확인한 exact `channel + ts`만 cleanup한다.
+  이것은 승인 없는 backend behavior 변경이 아니므로 automatic block 조건에 해당하지 않는다.
+
+  이 PASS는 **Package 4 또는 MGC-012 완료가 아니다.** 실제 Slack workspace E2E
+  (`MGC-012-T010`), Python 3.12 clean-clone closure (`MGC-012-T012`), production lifecycle와
+  startup wiring (`MGC-012-T013`)은 각각의 외부 dependency와 사용자 승인 blocker가 남아
+  `blocked`를 유지한다. Schema, production entrypoint, release/deployment는 이번 wave에서
+  승인하거나 구현한 범위가 아니다.
+- Reason: T008/T009/T011의 acceptance와 evidence가 모두 완료됐고 repository verification 및
+  독립 세 관점 review가 blocker 없이 닫혔다. 이번 wave는 network-free 범위라 live Slack
+  manual check 부재가 승인 범위의 결손은 아니다.
+- Evidence: Targeted pytest 189 passed/1 deselected; full pytest 1087 passed/1 deselected;
+  Ruff check/format, mypy, Vault knowledge lint exit 0; `amplai-foundry verify` 7/7 PASS;
+  task manifest validator 8/8 PASS; `git diff --check` PASS. Final contract와
+  failure/recovery review는 P0/P1/Blocking-P2/Advisory 0이고, isolated regression review는
+  mutation 10종 killed/0 survived이며 review 전후 combined source/test SHA-256은
+  `0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f`로 같다.
+- Scope audit: Application 변경은 T008/T009/T011의 허용 경로인
+  `src/amplai_foundry/governance/slack_http.py`, `tests/test_slack_http.py`에 한정된다.
+  spec·plan·contract·manifest 변경은 사용자 승인 계약을 speckit chain으로 반영한 것이다.
+  T008/T009/T011의 forbidden application paths는 건드리지 않았다.
+- Remaining risks: Slack 실물 왕복과 실제 channel/app identity는 T010 전까지 검증되지 않는다.
+  Python 3.12 clean clone은 T012 전까지 주장할 수 없다. Durable probe lifecycle persistence,
+  ambiguous-post recovery와 production activation safety는 T013 전까지 production claim으로
+  올릴 수 없다.
+- Owner: Workstream governor. 잔여 blocker 해소는 각 T010/T012/T013 external dependency owner.
+- Date: 2026-08-12
+- Affected item: `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` only.
+- Source: `CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md`, `APR-017`.
+
+## D-033 — Remove The Human Approval Before `/speckit-implement`
+
+- Status: APPROVED
+- Decision: `/speckit-implement` 앞의 사람 승인을 없앤다. AI가 승인 없이 스스로 호출해도 된다.
+  세 곳을 고쳤다.
+
+  1. `AGENTS.md` Scope 절의 "사용자가 직접 호출할 때만 실행한다"를 지웠다
+     (`CLAUDE.md`는 `AGENTS.md`로의 symlink라 함께 반영된다)
+  2. `.specify/workflows/speckit/workflow.yml`의 `tasks` gate step을 삭제했다
+  3. 그 gate가 담고 있던 필수 3단계를 `AGENTS.md`의 새 **Pre-Implement Procedure** 절로
+     옮겼다. `/taskify` → `validate_task_manifest.py` → `taskify_to_tasks_md.py --out`
+
+  **구현 뒤 three-lens subagent review gate(`review-implementation`)는 유지한다.** 이것은
+  승인 절차가 아니라 검증이다. P0/P1/Blocking-P2가 하나라도 있으면 gate를 열지 않는다는
+  Review Before Gate 규칙도 그대로다.
+- Reason: 사용자가 자리를 비운 상태에서 매 구현 전환마다 승인을 기다리면 진행이 멈춘다.
+  승인은 통제 수단 중 약한 쪽이다. 실효 통제는 구현 전 manifest 계약(acceptance,
+  invariants, forbidden_paths)과 구현 후 독립 review다. 둘 다 유지했으므로 승인 제거가
+  통제 총량을 줄이지 않는다.
+- Evidence: 변경 후 `python3 -c "yaml.safe_load(...)"`로 workflow.yml parse 확인.
+  step 목록은 `specify → review-spec → plan → review-plan → implement →
+  review-implementation`이다. `amplai-foundry verify --root .` 7/7 PASS.
+- Scope audit: source code와 test는 건드리지 않았다. Package 5 round 10 review target
+  aggregate `89c44faaf9c637227d834c6d09a39389fb5dbb76205bfdf338655416cf9994e0`는 불변이다.
+  `AGENTS.md`와 `workflow.yml`은 그 target 파일 목록 밖이다.
+- Remaining risks: **workflow engine이 shell을 돌리는 step type을 지원하는지 확인하지
+  못했다.** 확인 안 된 type을 지어내는 대신 gate를 지우고 절차를 규칙으로 옮겼다. 결과로
+  Pre-Implement Procedure 3단계를 engine이 더는 강제하지 않는다. `AGENTS.md` 규칙과,
+  `tasks.md` 부재 시 `check-prerequisites.sh --require-tasks`가 멈추는 것
+  (`.claude/skills/speckit-implement/SKILL.md:60`)이 남은 안전망이다. 2026-08-03에 이
+  단계가 끊겨 `tasks.md`가 영영 안 생긴 사고가 있었으므로 회귀 여부를 관찰한다.
+- Owner: Workstream governor.
+- Date: 2026-08-13
+- Affected item: repository-wide spec-kit 절차. 특정 MGC item에 한정되지 않는다.
+- Source: 사용자 요청과 선택. `AGENTS.md` Scope / Pre-Implement Procedure,
+  `.specify/workflows/speckit/workflow.yml`.
+
+## D-034 — Align The Safe Outcome Contract To The Implemented Behavior
+
+- Status: APPROVED
+- Decision: `contracts/interaction-feedback.md`의 safe outcome mapping table과 `spec.md`
+  FR-024를 **구현 쪽에 맞춘다.** 코드 동작은 바꾸지 않는다.
+
+  1. mapping table에서 `completed ← first successful decision` 행을 뺀다
+  2. mapping table에서 `unavailable ← retry/hold without a more specific public result`의
+     retry 부분을 뺀다. 코드는 `RETRY`에 `None`을 돌려준다
+  3. `spec.md` FR-024의 대상 목록에서 "accepted"를 뺀다
+  4. `SafeInteractionOutcome.COMPLETED` enum 값과 `_SAFE_INTERACTION_MESSAGES`의 도달 불가
+     message를 지운다
+  5. 성공 통지는 Result Card가 담당한다는 것을 계약 본문에 남긴다. 이미
+     `interaction-feedback.md`의 `Delivery` 절이 그렇게 적고 있으므로 그 문장을 mapping
+     table의 근거로 승격한다
+
+- Reason: 세 artifact가 어긋나 있었다. 계약과 spec은 `completed`를 worker의 출력으로
+  선언하는데 `ingress_worker.py:373-374`는 그 경우 `None`을 돌려주고, repo 전체에
+  `SafeInteractionOutcome.COMPLETED`를 만드는 곳이 없다. 도달 불가 문자열이 API에 남아 있다.
+
+  코드에 producer를 붙이는 반대 방향은 택하지 않았다. 같은 계약의 `Delivery` 절이 성공
+  경로를 Result Card로 재배치했고 그것이 실제로 동작한다
+  (`tests/test_review_cards.py:1351-1424`가 decision당 result outbox event 정확히 1건을
+  확인한다). producer를 붙이면 같은 사건을 두 번 알리는 이중 통지가 된다.
+
+  `unavailable`의 retry 조항을 같이 닫는 이유는 같은 table의 같은 성격 불일치이기
+  때문이다. 하나만 고치면 table이 여전히 코드와 어긋난다.
+
+- Evidence: 3lens-review round 10의 `C-7` (contract lens Blocking-P2)과 `A-8`
+  (failure/recovery Advisory). `specs/003-slack-proposal-card/evidence/3lens-review.md`.
+- Scope audit: 이 Decision은 판단만 기록한다. 문서 변경 자체는 `/speckit-converge` →
+  `/taskify` → `/speckit-implement` 경로로 만든다. spec·plan 성격 문서를 손으로 쓰지
+  않는다는 AGENTS.md 규칙을 지킨다.
+- Remaining risks: `contracts/interaction-feedback.md`와 `spec.md`는 round 10 review
+  target aggregate `89c44faaf9c637227d834c6d09a39389fb5dbb76205bfdf338655416cf9994e0`
+  안에 있다. 이 변경은 그 freeze를 깬다. round 10은 이미 FAIL이므로 실질 장애는 아니지만,
+  **수정 → 재freeze → 재review 순서를 지킨다.** round 9가 무효가 된 원인이 바로 freeze 뒤
+  변경이었다.
+- Owner: Workstream governor.
+- Date: 2026-08-13
+- Affected item: `MGC-012-P5`. 후속 task는 converge 산출물에서 확정한다.
+- Source: 사용자 선택. 3lens-review round 10 `C-7`, `A-8`.
+
+## D-035 — Define The Reviewed Set So Bookkeeping Cannot Drift It
+
+- Status: APPROVED
+- Decision: three-lens review 의 frozen target 구성을 다시 정한다. round 12부터 적용한다.
+
+  **포함한다.**
+
+  - `spec.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`
+  - `contracts/*.md`
+  - `checklists/*.md`
+  - `task-manifests/<FEATURE>-T*.yaml` — **모든** per-task manifest. 계약(acceptance,
+    invariants, forbidden_paths)이 여기 있다
+  - review 대상 `src/` 와 `tests/` 파일
+  - `.specify/feature.json`
+
+  **제외한다.**
+
+  - `task-manifests/index.yaml` — 작업 상태·순서·coverage 만 담는다. 계약 내용은 0건이다
+  - `tasks.md` — `index.yaml`에서 자동 생성되는 목차다
+  - `evidence/**` 전부 — per-task evidence, `3lens-review*.md`, `mutation-*.md`,
+    `review-target.txt` 자신
+
+  manifest header의 제외 문구와 실제 line 목록이 반드시 일치해야 한다. 얼리기 전에 둘을
+  대조한다.
+
+- Reason: 세 가지 결함이 같은 뿌리에서 나왔다.
+
+  1. **bookkeeping이 frozen set 안에 쓴다.** review가 끝난 뒤 task status를 `done`으로 바꾸면
+     `index.yaml`과 `tasks.md`가 재생성되어 aggregate가 어긋난다. round 10과 round 11이 같은
+     방식으로 drift했다. 둘 다 무해했고 둘 다 기록했지만, 같은 실수가 두 번 났으면 절차가
+     잘못된 것이다.
+  2. **정작 계약서가 안 얼려 있었다.** `MGC-012-P5-T004`~`T008.yaml`은 wave 4가 한 일의 계약
+     전부인데 target 목록에 없다. contract lens가 `scope.allowed_paths` /
+     `forbidden_paths` 판정에 쓰는 근거가 얼린 범위 밖이었다. round 11 Advisory `A-6`이 이를
+     지적했다.
+  3. **header가 내용과 다르다.** round 11 header는 per-task `MGC-012-P5-T00*.md` 증거를
+     제외한다고 적었으나 목록에는 T001~T003 증거가 들어 있다.
+
+  즉 자주 바뀌는 사무 기록은 얼려두고 검토 기준인 계약서는 안 얼린, 정확히 거꾸로 된 구성이다.
+  잃는 것은 없다. 제외하는 둘은 계약 내용이 0건이고 포함하는 manifest에서 파생된다. 원본을
+  얼리면 파생물은 따라온다.
+
+- Evidence: `grep -c "acceptance\|forbidden_paths\|invariants"` — `index.yaml` 0건,
+  `MGC-012-P5-T004.yaml` 5건. target 목록에 `T004`~`T008.yaml` 부재 확인. round 10과 round 11의
+  drift는 각각 `review-target.txt`의 Round 10 / Round 11 closure 절에 기록돼 있고 두 경우 모두
+  `index.yaml`과 `tasks.md`만 바뀌었다.
+- Scope audit: 이 Decision은 review 절차만 바꾼다. source, test, spec, contract, data-model을
+  수정하지 않는다. round 11 판정(FAIL)은 그대로다 — 세 lens 모두 freeze 시점 aggregate
+  `36e3923f…`를 확인하고 시작했으므로 그 review는 유효하다.
+- Remaining risks: 제외한 `index.yaml`이 task 의존·순서·coverage를 담는다. 그것이 잘못돼도
+  review가 못 잡는다. per-task manifest의 `depends_on`이 같은 정보를 중복으로 갖고 있으므로
+  manifest validator가 대신 잡는다 — 다만 validator는 lens가 아니다. round 12 이후 이 공백이
+  실제로 문제를 만드는지 관찰한다.
+- Owner: Workstream governor.
+- Date: 2026-08-13
+- Affected item: `MGC-012-P5` round 12 이후의 모든 three-lens review.
+- Source: 사용자 승인. round 11 Advisory `A-6`,
+  `evidence/review-target.txt`의 Round 10 / Round 11 closure.
+
+## D-036 — Make `/speckit-analyze` A Required Pre-Implement Step
+
+- Status: APPROVED
+- Decision: `/speckit-analyze`를 선택에서 **필수**로 올린다. `/taskify` 뒤,
+  `/speckit-implement` 앞이다. **CRITICAL 또는 HIGH가 하나라도 있으면 구현을 시작하지
+  않는다.** MEDIUM과 LOW는 기록하고 item별로 판단한다.
+
+  네 곳을 고쳤다.
+
+  1. `AGENTS.md` Pipeline 표기에 `/speckit-analyze` 줄 추가
+  2. `AGENTS.md`의 "선택적으로 쓴다" 문장 분리 — clarify는 선택 유지, analyze는 필수
+  3. `AGENTS.md` **Pre-Implement Procedure**를 3단계에서 4단계로. analyze가 4단계다
+  4. `.specify/workflows/speckit/workflow.yml`에 `analyze` step 추가,
+     `.specify/memory/constitution.md`의 Spec-Driven Workflow 표와 규칙에 반영
+
+- Reason: wave 4에서 `MGC-012-P5-T006`의 AC-06·AC-07이 일부 미충족인 채 구현이 끝났고,
+  그것을 구현 뒤에야 손으로 발견해 기록했다. task와 요구사항의 커버리지 구멍은 구현 전에
+  잡는 것이 맞고 analyze가 그 도구다.
+
+  범위를 정확히 적는다. analyze는 `spec.md`·`plan.md`·`tasks.md` **세 artifact를 서로**
+  대조하고 **소스 코드는 읽지 않는다** (`.claude/skills/speckit-analyze/SKILL.md:60`).
+  잡는 것은 task 없는 요구사항, 요구사항 없는 task, 중복·모호한 요구사항, 미명세 항목이다.
+  round 11의 `R-5`(FR-024가 코드보다 하나 적게 셈) 같은 **spec 대 코드** 불일치는 못 잡는다.
+  그것은 contract reviewer가 잡았다. **analyze는 subagent review를 대체하지 않는다.**
+  앞단에서 다른 종류의 결함을 거를 뿐이다.
+
+- Evidence: `SKILL.md:60`이 대상 artifact 셋을 명시한다. Severity 기준은 같은 파일
+  Severity Assignment 절이다. workflow.yml은 변경 후 `yaml.safe_load`로 parse 확인했고
+  step 순서는 `specify → review-spec → plan → review-plan → analyze → implement →
+  review-implementation`이다.
+- Scope audit: 절차 문서와 workflow 정의만 바꿨다. source, test, spec, contract는 수정하지
+  않았다. `CLAUDE.md`는 `AGENTS.md`로의 symlink라 함께 반영된다.
+- Remaining risks: **이 workflow engine이 `speckit.analyze`를 실제로 dispatch하는지 확인하지
+  못했다.** 위 세 command step과 같은 이름 규칙을 따르고 `.claude/skills/speckit-analyze/`가
+  존재하지만 command registry를 직접 읽지는 않았다. dispatch가 실패하면 step을 지우지 말고
+  `AGENTS.md`의 Pre-Implement Procedure 4단계를 손으로 돌린다. 그 절이 유일한 출처다.
+  D-033에서 shell step type을 확인하지 못해 gate를 규칙으로 옮긴 것과 같은 처리다.
+- Owner: Workstream governor.
+- Date: 2026-08-13
+- Affected item: repository-wide spec-kit 절차. 특정 MGC item에 한정되지 않는다.
+- Source: 사용자 요청. round 11 wave 4 회고.
+
+## D-037 — Make `/speckit-clarify` A Required Step Before `/speckit-plan`
+
+- Status: APPROVED
+- Decision: `/speckit-clarify`를 선택에서 **필수**로 올린다. `/speckit-specify` 뒤,
+  `/speckit-plan` 앞이다.
+
+  네 곳을 고쳤다.
+
+  1. `AGENTS.md` Pipeline 표기에서 괄호(선택) 제거, `/speckit-specify` 뒤로 이동
+  2. `AGENTS.md` 규칙을 선택에서 필수로. 성격과 예외를 함께 기록
+  3. `.specify/workflows/speckit/workflow.yml`에 `clarify` step 추가. `specify` 바로 뒤,
+     `review-spec` gate 앞이다 — gate가 **정리된** spec을 보게 한다. gate message도
+     "Review the clarified spec" 으로 고쳤다
+  4. `.specify/memory/constitution.md`의 Spec-Driven Workflow 표와 규칙에 반영
+
+- Reason: skill 자신이 그 순서를 요구한다. `SKILL.md:62` — "expected to run (and be
+  completed) BEFORE invoking `/speckit-plan`", 건너뛰면 downstream rework 위험을 경고하라고
+  적혀 있다. 선택으로 두면 그 경고가 발동할 자리가 없다.
+
+  필수로 올려도 억지 질문이 생기지 않는다. `SKILL.md:75`와 `:127`이 항목별로
+  Clear/Partial/Missing을 매기고 Partial·Missing인 것만 질문 후보로 올린다. 다 Clear면
+  질문 없이 coverage map만 보고한다.
+
+- 성격: **clarify는 사람에게 묻고 멈춘다.** 이것은 D-033이 없앤 승인 관문과 **다르다.**
+  승인이 아니라 모델이 갖고 있지 않은 사실을 받는 단계이고, 답 없이 추정으로 채우지 않는다는
+  No Speculation 원칙과 같은 방향이다. D-033은 "이미 정해진 일을 시작해도 되는지 묻는 것"을
+  없앴지 "모르는 것을 묻는 것"을 없앤 것이 아니다.
+
+  예외는 하나다. 사용자가 명시적으로 건너뛰라고 하면 진행하되 downstream rework 위험을
+  경고한다 (`SKILL.md:62`).
+
+- Evidence: 변경 후 `yaml.safe_load`로 workflow.yml parse 확인. step 순서는
+  `specify → clarify → review-spec → plan → review-plan → analyze → implement →
+  review-implementation`이다.
+- Scope audit: 절차 문서와 workflow 정의만 바꿨다. source, test, spec, contract는 수정하지
+  않았다. `CLAUDE.md`는 `AGENTS.md`로의 symlink라 함께 반영된다.
+- Remaining risks: D-036과 같다. **engine이 `speckit.clarify`를 실제로 dispatch하는지 확인하지
+  못했다.** 실패하면 step을 지우지 말고 손으로 돌린다. `AGENTS.md`가 유일한 출처다.
+- Owner: Workstream governor.
+- Date: 2026-08-13
+- Affected item: repository-wide spec-kit 절차.
+- Source: 사용자 요청. D-036과 짝을 이룬다.

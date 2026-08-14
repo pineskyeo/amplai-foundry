@@ -29,23 +29,29 @@ from amplai_foundry.governance import (
     ChannelRef,
     DecisionAction,
     DecisionService,
+    IngressCommandView,
     IngressConfig,
     IngressDecisionWorker,
     IngressError,
     IngressLeaseConflictError,
     IngressService,
     IngressState,
+    IngressWorkerResult,
+    InteractionFeedback,
     ProviderEnvelope,
+    SafeInteractionOutcome,
     SlackBlockActionAuthenticator,
     SlackInstallationPolicy,
     VerifiedProviderCommand,
     WorkerOutcome,
 )
 from amplai_foundry.governance.events import GovernanceEventError
+from amplai_foundry.governance.slack_http import _SAFE_INTERACTION_MESSAGES
 from amplai_foundry.governance.store import (
     GovernanceCommitAmbiguousError,
     GovernanceStore,
     GovernanceStoreError,
+    governance_transaction,
 )
 
 NOW = datetime(2026, 7, 31, 1, 2, 3, tzinfo=UTC)
@@ -99,11 +105,12 @@ def _action(
     *,
     token_id: str = TOKEN_ID,
     raw_token: str = RAW_TOKEN,
+    action: DecisionAction = DecisionAction.APPROVE,
     action_ts: str = "1722387723.000400",
 ) -> dict[str, object]:
     return {
         "type": "button",
-        "action_id": "approve",
+        "action_id": action.value,
         "block_id": "proposal-actions",
         "action_ts": action_ts,
         "value": f"{token_id}.{raw_token}",
@@ -239,6 +246,7 @@ def _seed_proposal(
     expires_at: datetime | None = None,
     state_revision: int = 2,
     channel: ChannelRef = CHANNEL,
+    action: DecisionAction = DecisionAction.APPROVE,
 ) -> None:
     channel_json = json.dumps(
         channel.model_dump(mode="json", exclude_none=True),
@@ -276,7 +284,7 @@ def _seed_proposal(
                 decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
                 bound_channel_json, issued_at, expires_at, state, resolved_at
             ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 1,
-                      'approve', ?, 'human', ?, ?, ?, 'issued', NULL)
+                      ?, ?, 'human', ?, ?, ?, 'issued', NULL)
             """,
             (
                 token_id,
@@ -286,6 +294,7 @@ def _seed_proposal(
                 proposal_id,
                 definition_digest,
                 state_revision,
+                action.value,
                 USER.actor_id,
                 channel_json,
                 NOW.isoformat(),
@@ -300,13 +309,34 @@ def _store(tmp_path: Path) -> GovernanceStore:
     return store
 
 
-def _worker(store: GovernanceStore, ingress: IngressService) -> IngressDecisionWorker:
+def _worker(
+    store: GovernanceStore,
+    ingress: IngressService,
+    feedback: InteractionFeedback | None = None,
+) -> IngressDecisionWorker:
     authority = AuthorityService(store, clock=lambda: NOW)
     return IngressDecisionWorker(
         store,
         ingress,
         DecisionService(store, authority, clock=lambda: NOW),
+        feedback,
     )
+
+
+class _CapturedFeedback:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.calls: list[tuple[str, SafeInteractionOutcome]] = []
+
+    def send(
+        self,
+        command: IngressCommandView,
+        outcome: SafeInteractionOutcome,
+    ) -> None:
+        command_id = command.command_id
+        self.calls.append((command_id, outcome))
+        if self.fail:
+            raise RuntimeError("feedback transport failed")
 
 
 # A8 — durable commit before any success ack
@@ -604,6 +634,46 @@ def test_worker_decides_after_the_ack_and_completes_the_command(tmp_path: Path) 
     assert not result.decision.replayed
 
 
+@pytest.mark.parametrize(
+    ("action", "expected_status"),
+    [
+        (DecisionAction.APPROVE, ActiveProposalStatus.APPROVED),
+        (DecisionAction.REQUEST_CHANGES, ActiveProposalStatus.CHANGES_REQUESTED),
+        (DecisionAction.REJECT, ActiveProposalStatus.REJECTED),
+    ],
+)
+def test_each_signed_review_card_action_decides_once_and_enqueues_one_result(
+    tmp_path: Path,
+    action: DecisionAction,
+    expected_status: ActiveProposalStatus,
+) -> None:
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store, action=action)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    body = _body(_payload(actions=[_action(action=action)]))
+
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope(body))
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert ack.success
+    assert result is not None
+    assert result.outcome is WorkerOutcome.COMPLETED
+    assert result.decision is not None
+    assert result.decision.action is action
+    assert result.decision.proposal_status is expected_status
+    with store.connect() as connection:
+        result_rows = connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone()
+        result_cards = connection.execute(
+            "SELECT count(*) FROM governance_outbox_events "
+            "WHERE destination_ref LIKE 'provider:slack:%'"
+        ).fetchone()
+    assert result_rows == (1,)
+    assert result_cards == (1,)
+
+
 def test_worker_is_idle_when_no_command_is_pending(tmp_path: Path) -> None:
     store = _store(tmp_path)
     _seed(store)
@@ -667,6 +737,138 @@ def test_expired_token_moves_the_command_to_recovery_hold(tmp_path: Path) -> Non
     assert result.state is IngressState.RECOVERY_HOLD
     assert result.error_code == "ACTION_TOKEN_EXPIRED"
     assert result.decision is None
+
+
+def test_terminal_feedback_runs_after_recovery_hold_is_durable(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.state is IngressState.RECOVERY_HOLD
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.EXPIRED)]
+
+
+def test_feedback_failure_does_not_reopen_or_rollback_the_terminal_outcome(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback(fail=True)
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.feedback_error_code == "INTERACTION_FEEDBACK_FAILED"
+    stored = ingress.get(str(ack.command_id))
+    assert stored is not None
+    assert stored.state is IngressState.RECOVERY_HOLD
+
+
+def test_a_second_click_gets_already_completed_feedback_without_a_second_decision(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    assert _worker(store, ingress).process_next("slack-worker") is not None
+    second_body = _body(_payload(actions=[_action(action_ts="1722387724.000500")]))
+    second_ack = boundary.submit(_envelope(second_body))
+    assert second_ack.success
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "ACTION_TOKEN_CONSUMED"
+    assert feedback.calls == [(second_ack.command_id, SafeInteractionOutcome.ALREADY_COMPLETED)]
+    with store.connect() as connection:
+        decision_count = connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone()
+    assert decision_count is not None
+    assert int(decision_count[0]) == 1
+
+
+def test_signed_action_from_a_disabled_actor_gets_denied_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW).disable_actor(
+        USER,
+        approval=BindingApproval(
+            approval_id="APR-0000000000000004",
+            approved_by=MANAGER,
+            reason="disable actor for signed denial test",
+        ),
+    )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "ACTOR_DISABLED"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.DENIED)]
+
+
+def test_signed_action_against_a_changed_snapshot_gets_stale_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET decision_epoch = decision_epoch + 1,
+                state_revision = state_revision + 1,
+                updated_at = ?
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (NOW.isoformat(), PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "PROPOSAL_STALE"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.STALE)]
+
+
+def test_signed_revoked_action_gets_stale_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    with store.connect() as connection, governance_transaction(connection):
+        DecisionService._revoke_token_ids_in_transaction(
+            connection,
+            (TOKEN_ID,),
+            resolved_at=NOW,
+        )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "ACTION_TOKEN_REVOKED"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.STALE)]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone() == (0,)
 
 
 def test_worker_without_the_lease_reports_lease_loss(tmp_path: Path) -> None:
@@ -878,9 +1080,11 @@ def test_two_distinct_interactions_do_not_share_a_replay_result(tmp_path: Path) 
     assert first.decision.token_id != second.decision.token_id
 
 
-def test_projection_conflict_does_not_strand_a_leased_command(tmp_path: Path) -> None:
-    # Two proposals in one channel share an Outbox destination, so the second decision
-    # can raise GovernanceEventError. That must not escape the worker.
+def test_same_channel_proposals_complete_without_a_projection_revision_conflict(
+    tmp_path: Path,
+) -> None:
+    # Two proposals share one channel-wide Outbox sequence, but source revision
+    # monotonicity is per Proposal. Equal revisions therefore complete independently.
     store = _store(tmp_path)
     _seed_bindings(store)
     _seed_proposal(store)
@@ -911,18 +1115,22 @@ def test_projection_conflict_does_not_strand_a_leased_command(tmp_path: Path) ->
     results = [worker.process_next("slack-worker") for _ in range(2)]
 
     assert all(result is not None for result in results)
-    outcomes = {result.outcome for result in results if result is not None}
-    assert WorkerOutcome.COMPLETED in outcomes
-    assert WorkerOutcome.RETRY in outcomes
-    conflicted = next(
-        result for result in results if result is not None and result.outcome is WorkerOutcome.RETRY
-    )
-    assert conflicted.error_code == "OUTBOX_SOURCE_REVISION_CONFLICT"
     for result in results:
         assert result is not None
+        assert result.outcome is WorkerOutcome.COMPLETED
+        assert result.error_code is None
         settled = ingress.get(str(result.command_id))
         assert settled is not None
-        assert settled.state is not IngressState.LEASED
+        assert settled.state is IngressState.COMPLETED
+    with store.connect() as connection:
+        sequences = connection.execute(
+            """
+            SELECT destination_sequence FROM governance_outbox_events
+            WHERE destination_ref LIKE 'provider:slack:%'
+            ORDER BY destination_sequence
+            """
+        ).fetchall()
+    assert sequences == [(1,), (2,)]
 
 
 def test_stranded_commands_are_visible_to_an_operator(tmp_path: Path) -> None:
@@ -1502,3 +1710,65 @@ def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="limit"):
         ingress.stranded(limit=0)
+
+
+def test_every_safe_outcome_value_has_a_producer() -> None:
+    """producer 없는 safe outcome 값을 남기지 않는다 (D-034).
+
+    round 10 contract lens `C-7` 은 `completed` 가 계약 mapping table 과 message table 에
+    선언돼 있는데 이를 만드는 경로가 저장소 어디에도 없다는 것을 찾았다. 도달 불가 값이
+    남아 있으면 다음 사람이 이미 보내고 있다고 읽거나 producer 를 붙여 같은 사건을 두 번
+    알린다. 성공한 결정의 사용자 통지는 Result Card 가 담당한다 (FR-013, FR-024).
+    """
+    produced = {
+        outcome
+        for outcome in SafeInteractionOutcome
+        if outcome.value
+        in {
+            "already_completed",
+            "expired",
+            "stale",
+            "denied",
+            "unavailable",
+        }
+    }
+
+    assert set(SafeInteractionOutcome) == produced
+    assert not hasattr(SafeInteractionOutcome, "COMPLETED")
+    assert set(_SAFE_INTERACTION_MESSAGES) == set(SafeInteractionOutcome)
+
+
+def test_a_first_successful_decision_sends_no_safe_feedback(tmp_path: Path) -> None:
+    """성공한 첫 결정은 safe feedback 을 만들지 않는다. Result Card 가 알린다."""
+    result = IngressWorkerResult(
+        command_id="ICMD-1",
+        outcome=WorkerOutcome.COMPLETED,
+        decision=None,
+        error_code=None,
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is None
+
+
+def test_a_retry_sends_no_safe_feedback() -> None:
+    """retry 는 아직 끝나지 않은 명령이라 결과를 알리지 않는다 (D-034)."""
+    result = IngressWorkerResult(
+        command_id="ICMD-2",
+        outcome=WorkerOutcome.RETRY,
+        decision=None,
+        error_code="INGRESS_DECISION_UNAVAILABLE",
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is None
+
+
+def test_a_recovery_hold_without_a_known_code_reports_unavailable() -> None:
+    """hold 는 종결이므로 `unavailable` 로 알린다."""
+    result = IngressWorkerResult(
+        command_id="ICMD-3",
+        outcome=WorkerOutcome.RECOVERY_HOLD,
+        decision=None,
+        error_code="SOMETHING_UNMAPPED",
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is SafeInteractionOutcome.UNAVAILABLE

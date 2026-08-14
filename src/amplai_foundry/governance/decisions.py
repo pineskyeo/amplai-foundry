@@ -6,6 +6,7 @@ import hashlib
 import json
 import secrets
 import sqlite3
+import traceback
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -31,6 +32,7 @@ from amplai_foundry.governance.models import (
     ActorType,
     AuthorityContext,
     AuthorityPermission,
+    ChannelProvider,
     ChannelRef,
     Digest,
     ProposalRef,
@@ -137,56 +139,120 @@ class DecisionService:
         authority_request: DirectAuthorityRequest,
         ttl: timedelta = timedelta(minutes=15),
     ) -> tuple[IssuedActionToken, ...]:
-        issued_at = self._aware(self._clock())
         if ttl <= timedelta(0):
             raise ValueError("Token TTL은 0보다 커야 합니다.")
-        expires_at = issued_at + ttl
+        credentials: tuple[tuple[DecisionAction, str, str], ...] = ()
+        issued: tuple[IssuedActionToken, ...] = ()
+        try:
+            with self.store.connect() as connection, governance_transaction(connection):
+                authority = self._authenticate(authority_request, connection=connection)
+                self._require_decision_authority(authority, ref)
+                credentials = self._issue_tokens_in_transaction(
+                    connection,
+                    ref,
+                    authority=authority,
+                    issued_at=self._aware(self._clock()),
+                    ttl=ttl,
+                )
+                issued = tuple(
+                    IssuedActionToken(
+                        record=self._get_token_in_connection(connection, token_id),
+                        raw_token=raw_token,
+                    )
+                    for _action, token_id, raw_token in credentials
+                )
+            return issued
+        except BaseException as error:
+            self._clear_exception_frames(error)
+            credentials = ()
+            issued = ()
+            raise
+        finally:
+            credentials = ()
+            issued = ()
+
+    def _issue_tokens_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        authority: AuthorityContext,
+        issued_at: datetime,
+        ttl: timedelta | None = None,
+        expires_at: datetime | None = None,
+    ) -> tuple[tuple[DecisionAction, str, str], ...]:
+        """Issue one complete action set inside a caller-owned transaction."""
+
+        if not connection.in_transaction:
+            raise DecisionError("GOVERNANCE_TRANSACTION_REQUIRED")
+        self._require_decision_authority(authority, ref)
+        self._require_no_legacy_approval_hold(connection, ref)
+        resolved_issued_at = self._aware(issued_at)
+        if (ttl is None) == (expires_at is None):
+            raise ValueError("Token ttl 또는 expires_at 중 하나만 필요합니다.")
+        resolved_expiry = (
+            resolved_issued_at + ttl if ttl is not None else self._aware(cast(datetime, expires_at))
+        )
+        if resolved_expiry <= resolved_issued_at:
+            raise ValueError("Token expiry는 issue 시각보다 뒤여야 합니다.")
+        proposal = self._proposal_row(connection, ref)
+        if proposal is None:
+            raise DecisionError("PROPOSAL_NOT_FOUND")
+        if ActiveProposalStatus(str(proposal[4])) is not ActiveProposalStatus.REVIEWED:
+            raise DecisionError("INVALID_PROPOSAL_STATE")
         credentials = tuple(
             (action, self._token_id(), secrets.token_hex(16)) for action in DecisionAction
         )
-        with self.store.connect() as connection, governance_transaction(connection):
-            authority = self._authenticate(authority_request, connection=connection)
-            self._require_decision_authority(authority, ref)
-            self._require_no_legacy_approval_hold(connection, ref)
-            proposal = self._proposal_row(connection, ref)
-            if proposal is None:
-                raise DecisionError("PROPOSAL_NOT_FOUND")
-            if ActiveProposalStatus(str(proposal[4])) is not ActiveProposalStatus.REVIEWED:
-                raise DecisionError("INVALID_PROPOSAL_STATE")
-            channel_json = self._channel_json(authority.source.channel)
-            for action, token_id, raw_token in credentials:
-                connection.execute(
-                    """
-                    INSERT INTO governance_action_tokens(
-                        token_id, token_hash, project_namespace, project_id, proposal_id,
-                        active_definition_digest, content_revision, state_revision,
-                        decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
-                        bound_channel_json, issued_at, expires_at, state, resolved_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'issued', NULL)
-                    """,
-                    (
-                        token_id,
-                        self._token_hash(raw_token),
-                        *self._identity(ref),
-                        proposal[0],
-                        proposal[1],
-                        proposal[2],
-                        proposal[3],
-                        action.value,
-                        authority.actor_ref.actor_id,
-                        authority.actor_ref.actor_type.value,
-                        channel_json,
-                        self._timestamp(issued_at),
-                        self._timestamp(expires_at),
-                    ),
-                )
-        return tuple(
-            IssuedActionToken(
-                record=self.get_token(token_id),
-                raw_token=raw_token,
+        channel_json = self._channel_json(authority.source.channel)
+        for action, token_id, raw_token in credentials:
+            connection.execute(
+                """
+                INSERT INTO governance_action_tokens(
+                    token_id, token_hash, project_namespace, project_id, proposal_id,
+                    active_definition_digest, content_revision, state_revision,
+                    decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
+                    bound_channel_json, issued_at, expires_at, state, resolved_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'issued', NULL)
+                """,
+                (
+                    token_id,
+                    self._token_hash(raw_token),
+                    *self._identity(ref),
+                    proposal[0],
+                    proposal[1],
+                    proposal[2],
+                    proposal[3],
+                    action.value,
+                    authority.actor_ref.actor_id,
+                    authority.actor_ref.actor_type.value,
+                    channel_json,
+                    self._timestamp(resolved_issued_at),
+                    self._timestamp(resolved_expiry),
+                ),
             )
-            for _action, token_id, raw_token in credentials
+        return credentials
+
+    @staticmethod
+    def _revoke_token_ids_in_transaction(
+        connection: sqlite3.Connection,
+        token_ids: tuple[str, ...],
+        *,
+        resolved_at: datetime,
+    ) -> int:
+        if not connection.in_transaction:
+            raise DecisionError("GOVERNANCE_TRANSACTION_REQUIRED")
+        if not token_ids:
+            return 0
+        placeholders = ",".join("?" for _ in token_ids)
+        result = connection.execute(
+            f"""
+            UPDATE governance_action_tokens
+            SET state = 'revoked', resolved_at = ?
+            WHERE state = 'issued' AND token_id IN ({placeholders})
+            """,
+            (DecisionService._timestamp(resolved_at), *token_ids),
         )
+        return result.rowcount
 
     def decide(
         self,
@@ -198,19 +264,33 @@ class DecisionService:
         idempotency_key: str,
         request_fingerprint: str,
     ) -> DecisionResult:
-        self._validate_command(idempotency_key, request_fingerprint, raw_token)
-        with self.store.connect() as connection, governance_transaction(connection):
-            authority = self._authenticate(authority_request, connection=connection)
-            self._require_decision_authority(authority, ref)
-            return self._decide_verified_hash_in_transaction(
-                connection,
-                ref,
-                action=action,
-                authority=authority,
-                credential_hash=self._token_hash(raw_token),
-                idempotency_key=idempotency_key,
-                request_fingerprint=request_fingerprint,
-            )
+        try:
+            self._validate_command(idempotency_key, request_fingerprint, raw_token)
+            credential_hash = self._token_hash(raw_token)
+            # The raw credential has no purpose after hashing. Clear this public frame
+            # before any authority, database, audit, or outbox failure can unwind.
+            raw_token = ""
+            with self.store.connect() as connection, governance_transaction(connection):
+                authority = self._authenticate(authority_request, connection=connection)
+                self._require_decision_authority(authority, ref)
+                return self._decide_verified_hash_in_transaction(
+                    connection,
+                    ref,
+                    action=action,
+                    authority=authority,
+                    credential_hash=credential_hash,
+                    idempotency_key=idempotency_key,
+                    request_fingerprint=request_fingerprint,
+                )
+        except BaseException as error:
+            # `decide()` remains a supported raw-token boundary for direct callers.
+            # Remove all credential-bearing source frames while preserving the public
+            # exception type/code and process-level interruption class.
+            self._clear_exception_frames(error)
+            raw_token = ""
+            raise
+        finally:
+            raw_token = ""
 
     def decide_ingress_in_transaction(
         self,
@@ -319,8 +399,15 @@ class DecisionService:
             raise DecisionError("ACTION_TOKEN_INVALID")
         if tuple(str(value) for value in token[1:4]) != self._identity(ref):
             raise DecisionError("ACTION_TOKEN_INVALID")
-        if str(token[14]) != ActionTokenState.ISSUED.value:
+        token_state = ActionTokenState(str(token[14]))
+        if token_state is ActionTokenState.CONSUMED:
             raise DecisionError("ACTION_TOKEN_CONSUMED")
+        if token_state is ActionTokenState.REVOKED:
+            raise DecisionError("ACTION_TOKEN_REVOKED")
+        if token_state is ActionTokenState.EXPIRED:
+            raise DecisionError("ACTION_TOKEN_EXPIRED")
+        if token_state is not ActionTokenState.ISSUED:
+            raise DecisionError("ACTION_TOKEN_INVALID")
         if processed_at >= self._parse_timestamp(str(token[13])):
             raise DecisionError("ACTION_TOKEN_EXPIRED")
         if str(token[8]) != action.value:
@@ -330,7 +417,7 @@ class DecisionService:
             actor_ref.actor_type.value,
         ):
             raise DecisionError("ACTION_ACTOR_MISMATCH")
-        if str(token[11]) != channel_json:
+        if not self._channel_binding_matches(str(token[11]), authority.source.channel):
             raise DecisionError("ACTION_CHANNEL_MISMATCH")
 
         proposal = self._proposal_row(connection, ref)
@@ -370,6 +457,45 @@ class DecisionService:
         )
         if consumed.rowcount != 1:
             raise DecisionError("ACTION_TOKEN_CONSUMED")
+        # Historical migration fixtures intentionally execute this service against an
+        # older schema. Review action sets were introduced in schema 31, so the
+        # compatibility path must remain a no-op until that table exists.
+        review_sets_exist = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'governance_review_action_sets'"
+        ).fetchone()
+        if review_sets_exist is not None:
+            review_action_set = connection.execute(
+                """
+                SELECT approve_token_id, request_changes_token_id, reject_token_id
+                FROM governance_review_action_sets
+                WHERE state = 'issued' AND (
+                    approve_token_id = ? OR request_changes_token_id = ? OR reject_token_id = ?
+                )
+                """,
+                (token[0], token[0], token[0]),
+            ).fetchone()
+            if review_action_set is not None:
+                sibling_ids = tuple(
+                    str(token_id)
+                    for token_id in review_action_set
+                    if str(token_id) != str(token[0])
+                )
+                self._revoke_token_ids_in_transaction(
+                    connection,
+                    sibling_ids,
+                    resolved_at=processed_at,
+                )
+            connection.execute(
+                """
+                UPDATE governance_review_action_sets
+                SET state = 'consumed', resolved_at = ?
+                WHERE state = 'issued' AND (
+                    approve_token_id = ? OR request_changes_token_id = ? OR reject_token_id = ?
+                )
+                """,
+                (self._timestamp(processed_at), token[0], token[0], token[0]),
+            )
         next_state_revision = int(token[6]) + 1
         connection.execute(
             """
@@ -480,20 +606,27 @@ class DecisionService:
 
     def get_token(self, token_id: str) -> ActionTokenView:
         with self.store.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT project_namespace, project_id, proposal_id,
-                       active_definition_digest, content_revision, state_revision,
-                       decision_epoch, allowed_action, allowed_actor_id,
-                       allowed_actor_type, bound_channel_json, issued_at, expires_at,
-                       state, resolved_at
-                FROM governance_action_tokens WHERE token_id = ?
-                """,
-                (token_id,),
-            ).fetchone()
+            return self._get_token_in_connection(connection, token_id)
+
+    @staticmethod
+    def _get_token_in_connection(
+        connection: sqlite3.Connection,
+        token_id: str,
+    ) -> ActionTokenView:
+        row = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id,
+                   active_definition_digest, content_revision, state_revision,
+                   decision_epoch, allowed_action, allowed_actor_id,
+                   allowed_actor_type, bound_channel_json, issued_at, expires_at,
+                   state, resolved_at
+            FROM governance_action_tokens WHERE token_id = ?
+            """,
+            (token_id,),
+        ).fetchone()
         if row is None:
             raise DecisionError("ACTION_TOKEN_INVALID")
-        ref = self._proposal_ref(row[0], row[1], row[2])
+        ref = DecisionService._proposal_ref(row[0], row[1], row[2])
         return ActionTokenView.model_validate(
             {
                 "token_id": token_id,
@@ -523,6 +656,14 @@ class DecisionService:
             result = connection.execute(
                 """
                 UPDATE governance_action_tokens
+                SET state = 'expired', resolved_at = ?
+                WHERE state = 'issued' AND expires_at <= ?
+                """,
+                (self._timestamp(expired_at), self._timestamp(expired_at)),
+            )
+            connection.execute(
+                """
+                UPDATE governance_review_action_sets
                 SET state = 'expired', resolved_at = ?
                 WHERE state = 'issued' AND expires_at <= ?
                 """,
@@ -631,6 +772,20 @@ class DecisionService:
             raise DecisionError("IDEMPOTENCY_CONFLICT")
 
     @staticmethod
+    def _clear_exception_frames(error: BaseException) -> None:
+        seen: set[int] = set()
+        current: BaseException | None = error
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            if current.__traceback__ is not None:
+                traceback.clear_frames(current.__traceback__)
+                current.__traceback__ = None
+            next_error = current.__cause__ or current.__context__
+            current.__cause__ = None
+            current.__context__ = None
+            current = next_error
+
+    @staticmethod
     def _validate_verified_command(
         idempotency_key: str,
         fingerprint: str,
@@ -676,6 +831,22 @@ class DecisionService:
             separators=(",", ":"),
             sort_keys=True,
         )
+
+    @staticmethod
+    def _channel_binding_matches(bound_json: str, actual: ChannelRef) -> bool:
+        actual_json = DecisionService._channel_json(actual)
+        if bound_json == actual_json:
+            return True
+        try:
+            bound = ChannelRef.model_validate(json.loads(bound_json))
+        except (ValueError, TypeError):
+            return False
+        if (
+            bound.provider is not ChannelProvider.SLACK
+            or actual.provider is not ChannelProvider.SLACK
+        ):
+            return False
+        return bound.workspace_id == actual.workspace_id and bound.channel_id == actual.channel_id
 
     @staticmethod
     def _token_id() -> str:

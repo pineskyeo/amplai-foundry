@@ -95,6 +95,35 @@ def _authority() -> AuthorityContext:
     )
 
 
+def test_non_slack_destinations_remain_distinct_per_chat() -> None:
+    first_channel = ChannelRef(
+        provider=ChannelProvider.TELEGRAM,
+        chat_id="CHAT-1",
+        thread_id="THREAD-1",
+        message_id="MESSAGE-1",
+    )
+    second_channel = first_channel.model_copy(
+        update={"chat_id": "CHAT-2", "message_id": "MESSAGE-2"}
+    )
+    first_authority = _authority().model_copy(
+        update={
+            "source": AuthoritySource(request_id="telegram-1", channel=first_channel),
+        }
+    )
+    second_authority = _authority().model_copy(
+        update={
+            "source": AuthoritySource(request_id="telegram-2", channel=second_channel),
+        }
+    )
+
+    first = GovernanceEventService._decision_destinations(PROPOSAL, first_authority)[1]
+    second = GovernanceEventService._decision_destinations(PROPOSAL, second_authority)[1]
+
+    assert first.destination_ref != second.destination_ref
+    assert first == GovernanceEventService._legacy_provider_destination(PROPOSAL, first_channel)
+    assert second == GovernanceEventService._legacy_provider_destination(PROPOSAL, second_channel)
+
+
 def _approval(index: int) -> BindingApproval:
     return BindingApproval(
         approval_id=f"APR-{index:016X}",
@@ -1246,3 +1275,58 @@ def test_yaml_projection_pre_send_validation_is_unreconcilable(tmp_path: Path) -
     assert type(integrity.value) is OutboxReconcileError
     assert integrity.value.code == "OUTBOX_PAYLOAD_INTEGRITY_FAILURE"
     assert not (tmp_path / "projection/proposal.yaml").exists()
+
+
+def test_the_used_tokens_own_raw_value_is_rejected_as_idempotency_key(tmp_path: Path) -> None:
+    """이번 호출의 raw token 이 idempotency key 에 섞이면 거부된다.
+
+    `test_any_raw_action_token_is_rejected_as_idempotency_key` 는 **sibling** token 의 raw
+    값만 넣는다. 그 test 는 `_contains_persisted_secret` scan 을 지킨다. 같은 token 의 raw
+    값을 넣는 경우는 `decisions.py` 의 `raw_token in idempotency_key` guard 가 막는데,
+    그 guard 를 지워도 아무 test 가 실패하지 않았다 (round 10 regression `C-12`).
+
+    이 guard 가 없으면 raw credential 이 섞인 key 가 그대로
+    `governance_decision_results.idempotency_key` 로 영구 저장된다 (FR-018, SC-005).
+    """
+    store, active, decisions = _decision_fixture(tmp_path)
+    tokens = decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+    approve = next(item for item in tokens if item.record.allowed_action is DecisionAction.APPROVE)
+
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
+        decisions.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=approve.raw_token,
+            idempotency_key=f"prefix-{approve.raw_token}-suffix",
+            request_fingerprint=hashlib.sha256(b"own-raw-token-key").hexdigest(),
+        )
+
+    assert active.get(PROPOSAL).status is ActiveProposalStatus.REVIEWED  # type: ignore[union-attr]
+    assert decisions.get_token(approve.record.token_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_decision_results"
+        ).fetchone() == (0,)
+        stored_keys = connection.execute(
+            "SELECT idempotency_key FROM governance_decision_results"
+        ).fetchall()
+    assert all(approve.raw_token not in str(row[0]) for row in stored_keys)
+
+
+def test_the_raw_token_is_rejected_even_as_the_entire_idempotency_key(tmp_path: Path) -> None:
+    _store, _active, decisions = _decision_fixture(tmp_path)
+    tokens = decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+    approve = next(item for item in tokens if item.record.allowed_action is DecisionAction.APPROVE)
+
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
+        decisions.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=approve.raw_token,
+            idempotency_key=approve.raw_token,
+            request_fingerprint=hashlib.sha256(b"exact-raw-token-key").hexdigest(),
+        )
+
+    assert decisions.get_token(approve.record.token_id).state.value == "issued"

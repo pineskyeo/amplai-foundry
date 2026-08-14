@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T011
 title: The real transport leaves other providers untouched
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -46,6 +46,7 @@ scope:
 dependencies:
   tasks:
     - MGC-012-T006
+    - MGC-012-T008
   external: []
 
 implementation:
@@ -92,6 +93,10 @@ acceptance:
       kind: typecheck
       run: python -m mypy
       required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault/
+      required: true
   manual_checks: []
   evidence:
     - type: command_output
@@ -106,7 +111,8 @@ risk:
   concerns:
     - Package 3 가 검사한 것과 겹쳐 보일 수 있다. 차이는 전송 계층이 실물이라는 것뿐이고
       그 차이가 무의미하다고 판정되면 이 task 를 접는다.
-  approvals: []
+  approvals:
+    - Wave 6R 이후 contract·failure-recovery·regression 3 lens revalidation
 
 loop:
   max_attempts: 5
@@ -135,9 +141,9 @@ completion:
   # 성공으로 보기, 불변을 주장하는 대상을 Telegram 에서 Slack row 로 바꾸기.
   all_acceptance_passed: true
   required_evidence_present: true
-  # gate 는 아직이다. wave 6 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
-  # 채운다. status 도 그때 done 으로 바꾼다.
-  completed_at: null
+  # 2026-08-12 final shared-file regression: full 1087 passed, 1 slack_e2e deselected;
+  # isolated regression lens killed all 10 mutations. Three-lens blocker/advisory count is 0.
+  completed_at: "2026-08-12T11:27:46+09:00"
   evidence_paths:
     - tests/test_slack_http.py
 

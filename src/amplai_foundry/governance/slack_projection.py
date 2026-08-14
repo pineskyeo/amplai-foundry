@@ -10,13 +10,29 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import traceback
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Final, NoReturn, Protocol
 
-from amplai_foundry.governance.events import OutboxEventView, OutboxReconcileError
+from amplai_foundry.governance.events import (
+    OutboxConfig,
+    OutboxEventView,
+    OutboxReconcileError,
+    ReviewProjectionPayload,
+)
+from amplai_foundry.governance.review_cards import (
+    PreparedReviewActionSet,
+    ReviewActionSetService,
+    ReviewCardError,
+)
+from amplai_foundry.governance.slack_cards import (
+    SlackCardRenderingError,
+    SlackProposalCardRenderer,
+    slack_presentation_payload,
+)
 
 # Slack message metadata 의 event_type. 한 번 정하면 바꾸지 않는다 — 바꾸면 이전에 나간
 # marker 를 reconcile 이 못 읽는다 (task manifest MGC-012-T001 invariants, OQ-002).
@@ -32,6 +48,39 @@ RETRYABLE_SLACK_ERROR_CODES: Final = frozenset(
         "ratelimited",
         "request_timeout",
         "service_unavailable",
+    }
+)
+
+# Provider/adapter text is untrusted. Review Card requests carry one-time action
+# credentials, so a failed adapter must never be able to echo an arbitrary string
+# into an exception, dead letter, or diagnostic. Only fixed Slack codes that the
+# application understands remain readable; every other value is represented by an
+# irreversible digest.
+_SAFE_SLACK_ERROR_CODES: Final = RETRYABLE_SLACK_ERROR_CODES | frozenset(
+    {
+        "account_inactive",
+        "cant_delete_message",
+        "channel_not_found",
+        "invalid_auth",
+        "is_archived",
+        "method_not_supported_for_channel_type",
+        "missing_scope",
+        "no_permission",
+        "no_text",
+        "not_authed",
+        "not_in_channel",
+        "restricted_action",
+        "token_revoked",
+    }
+)
+_SAFE_TRANSPORT_EXCEPTIONS: Final = frozenset(
+    {
+        "deadline_exceeded",
+        "missing_success_field",
+        "non_object_response",
+        "not_a_slack_envelope",
+        "response_too_large",
+        "unreadable_response",
     }
 )
 
@@ -271,6 +320,32 @@ def persisted_code_suffix(slack_error_code: str | None) -> str:
     digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:8]
     head = sanitized[: _PERSISTED_CODE_MAX_LENGTH - len(digest) - 1]
     return f"{head}_{digest}"
+
+
+def safe_slack_error_code(slack_error_code: str | None) -> str | None:
+    """Return a classification-preserving, secret-safe provider diagnostic.
+
+    Known fixed Slack codes remain useful to an operator. An arbitrary value is not
+    copied: its digest keeps two unknown failures distinguishable without retaining
+    provider-controlled text that could contain a Review Card credential.
+    """
+    if not slack_error_code:
+        return None
+    normalized = slack_error_code.strip().lower()
+    if normalized in _SAFE_SLACK_ERROR_CODES:
+        return normalized
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
+    return f"unrecognized_{digest}"
+
+
+def safe_transport_exception(transport_exception: str | None) -> str | None:
+    """Irreversibly label adapter-controlled exception metadata."""
+    if not transport_exception:
+        return None
+    if transport_exception in _SAFE_TRANSPORT_EXCEPTIONS:
+        return transport_exception
+    digest = hashlib.sha256(transport_exception.encode("utf-8")).hexdigest()[:12]
+    return f"adapter_{digest}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -582,11 +657,9 @@ class SlackProjectionDestination:
     지우고 형식은 만들지도 해석하지도 않는다 (D-018 항목 1). `channel` 을 따로 받는 이유는
     `channel_digest` 가 digest 라 역산이 안 되기 때문이다.
 
-    `max_attempts` 는 이 destination 을 도는 `OutboxDispatcher` 의
-    `OutboxConfig.max_attempts` 와 **같은 값이어야 한다** (contracts C-2). destination 은
-    dispatcher config 를 읽을 경로가 없어 검증하지 못한다. 더 크면 C-3.1 이 안 돌아
-    retryable 원인이 사라지고, 더 작으면 남은 attempt 를 두고 되돌릴 수 없는 hold 를
-    만든다.
+    `validate_dispatcher_config()`가 실제 claim 전에 dispatcher의 lease/attempt 설정을
+    대조한다. HTTP transport가 선언한 page/lease 예산도 constructor와 같은 hook에서
+    묶는다. 각각 유효하지만 서로 다른 구성이 한 worker에 연결되는 것을 허용하지 않는다.
     """
 
     def __init__(
@@ -598,6 +671,8 @@ class SlackProjectionDestination:
         app_id: str,
         max_attempts: int,
         max_history_pages: int = SLACK_MAX_HISTORY_PAGES,
+        card_renderer: SlackProposalCardRenderer | None = None,
+        review_action_sets: ReviewActionSetService | None = None,
     ) -> None:
         # dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이 안 되는 값은
         # 여기서 막는다. `max_attempts < 1` 이면 첫 transient 실패가 곧바로 C-3.1 을 타
@@ -615,6 +690,14 @@ class SlackProjectionDestination:
             raise ValueError("max_history_pages는 1 이상이어야 합니다.")
         if max_attempts < 1:
             raise ValueError("max_attempts는 1 이상이어야 합니다.")
+        transport_pages = getattr(transport, "max_history_pages", None)
+        if transport_pages is not None and transport_pages != max_history_pages:
+            raise ValueError("Slack transport와 destination의 max_history_pages가 다릅니다.")
+        transport_lease = getattr(transport, "lease_seconds", None)
+        if transport_lease is not None and (
+            isinstance(transport_lease, bool) or not isinstance(transport_lease, int)
+        ):
+            raise ValueError("Slack transport lease_seconds가 올바르지 않습니다.")
         # 앞뒤 공백을 지우고 저장한다. 검사만 하고 원본을 쓰면 env var 나 YAML scalar 에서
         # 온 개행 하나가 그대로 Slack 에 나가 `channel_not_found` 를 부른다. 그 code 는
         # allowlist 밖이라 terminal 이고 hold 는 되돌릴 수 없다. `_receipt` 도 이 값을
@@ -624,7 +707,20 @@ class SlackProjectionDestination:
         self.app_id = app_id.strip()
         self.max_history_pages = max_history_pages
         self.max_attempts = max_attempts
+        self._transport_lease_seconds = transport_lease
         self._transport = transport
+        self._card_renderer = card_renderer or SlackProposalCardRenderer()
+        self._review_action_sets = review_action_sets
+
+    def validate_dispatcher_config(self, config: OutboxConfig) -> None:
+        """Reject split delivery budgets before the dispatcher claims an event."""
+        if config.max_attempts != self.max_attempts:
+            raise ValueError("Slack destination과 dispatcher의 max_attempts가 다릅니다.")
+        if (
+            self._transport_lease_seconds is not None
+            and config.lease_seconds != self._transport_lease_seconds
+        ):
+            raise ValueError("Slack transport와 dispatcher의 lease_seconds가 다릅니다.")
 
     def reconcile(self, event: OutboxEventView) -> str | None:
         """Decide whether this event's Card is already in the channel (C-2.2).
@@ -761,22 +857,165 @@ class SlackProjectionDestination:
             raise OutboxReconcileError("OUTBOX_DESTINATION_MISMATCH")
         if payload_digest(event.payload) != event.payload_digest:
             raise OutboxReconcileError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
-        # try 밖에서 만든다. 안에서 만들면 marker 구성 버그가 `transport_...` 로 기록되어
-        # 우리 결함이 transport 구현자 탓으로 남는다.
-        marker = build_slack_marker(event)
+        is_review = "reviewer_actor_id" in event.payload
+        prepared_review = False
+        prepared_generation: int | None = None
+        action_set: PreparedReviewActionSet | None = None
+        presentation: Mapping[str, object] = {}
+        if is_review:
+            if self._review_action_sets is None:
+                raise OutboxReconcileError("REVIEW_ACTION_SET_SERVICE_REQUIRED")
+            render_failure_code: str | None = None
+            interruption_kind: str | None = None
+            try:
+                review_payload = ReviewProjectionPayload.model_validate(event.payload)
+                if review_payload.bound_channel_ref.channel_id != self.channel:
+                    raise ReviewCardError("REVIEW_CARD_CHANNEL_MISMATCH")
+                action_set = self._review_action_sets.prepare(event)
+                prepared_review = True
+                prepared_generation = action_set.view.generation
+                presentation = self._card_renderer.render_review(review_payload, action_set)
+            except (ReviewCardError, SlackCardRenderingError, ValueError) as error:
+                render_failure_code = str(getattr(error, "code", "SLACK_CARD_RENDER_FAILED"))
+                self._clear_exception_frames(error)
+            except BaseException as error:
+                interruption_kind = self._interruption_kind(error)
+                self._clear_exception_frames(error)
+            if render_failure_code is not None or interruption_kind is not None:
+                # Drop every memory-only credential before cleanup. `abandon()` may
+                # itself fail and its exception may be rendered with `--showlocals`.
+                action_set = None
+                presentation = {}
+                self._abandon_review_closed(event.event_id, prepared_generation)
+                if interruption_kind is not None:
+                    # `_abandon_review_closed` 와 같은 기준이다 (`:983`-`:986`). 위의
+                    # `except BaseException` 은 `sqlite3.OperationalError` 같은 평범한
+                    # Exception 도 잡는다. 그것을 interruption 으로 올리면 `deliver_next` 의
+                    # `except OutboxReconcileError` 와 `except Exception` (`events.py:3231`,
+                    # `:3238`)이 둘 다 놓쳐 dead letter 도 operator hold 도 없이 event 가
+                    # `leased` 로 남고 worker 가 죽는다.
+                    if interruption_kind != "exception":
+                        self._raise_sanitized_interruption(interruption_kind)
+                    raise OutboxReconcileError("REVIEW_CARD_PREPARE_FAILED") from None
+                assert render_failure_code is not None
+                raise OutboxReconcileError(render_failure_code) from None
+        else:
+            try:
+                presentation = slack_presentation_payload(
+                    event.payload,
+                    renderer=self._card_renderer,
+                )
+            except SlackCardRenderingError as error:
+                raise OutboxReconcileError(error.code) from error
+        # Marker 구성부터 post 반환까지 한 interruption 경계로 묶는다. Review presentation이
+        # raw action credential을 가진 뒤에는 이 사이 어느 bytecode에서 중단돼도 아래
+        # `finally`가 credential-bearing local을 비워야 한다. Marker 자체의 결함은 별도
+        # code로 남겨 transport 구현자 탓으로 분류하지 않는다.
+        transport_failure: SlackTransportError | None = None
+        marker_failure = False
+        interruption_kind = None
+        post_started = False
+        result: SlackSendResult | None = None
         try:
+            marker = build_slack_marker(event)
+            post_started = True
             result = self._transport.post_message(
                 channel=self.channel,
-                payload=event.payload,
+                payload=presentation,
                 marker=marker,
             )
         except SlackTransportError as error:
-            self._raise_for_failure(error, event)
+            if post_started:
+                transport_failure = self._sanitized_transport_error(error) if is_review else error
+            else:
+                marker_failure = True
+                self._clear_exception_frames(error)
         except Exception as error:
-            # C-1 의무 위반에 대한 두 번째 방어선이다. 넓게 잡는 것이 의도다 — 좁히면
-            # 새어 나온 예외가 dispatcher 의 generic handler 로 가서 원인 없이 재시도된다.
-            self._raise_for_failure(self._rewrap(error), event)
+            if post_started:
+                # C-1 의무 위반에 대한 두 번째 방어선이다. 넓게 잡는 것이 의도다 — 좁히면
+                # 새어 나온 예외가 dispatcher 의 generic handler 로 가서 원인 없이 재시도된다.
+                transport_failure = self._rewrap(error, preserve_cause=not is_review)
+            else:
+                marker_failure = True
+                self._clear_exception_frames(error)
+        except BaseException as error:
+            if not is_review:
+                raise
+            interruption_kind = self._interruption_kind(error)
+            self._clear_exception_frames(error)
+        finally:
+            if is_review:
+                # This executes for success, classified failures, and process-level
+                # interruptions. The transport traceback is scrubbed above; this
+                # frame must also stop retaining the presentation and raw tokens.
+                action_set = None
+                presentation = {}
+        if marker_failure:
+            if prepared_review:
+                self._abandon_review_closed(event.event_id, prepared_generation)
+            raise OutboxReconcileError("SLACK_MARKER_BUILD_FAILED") from None
+        if interruption_kind is not None:
+            if prepared_review and not post_started:
+                # Marker 단계에서는 remote post가 시작되지 않았으므로 exact generation을
+                # 안전하게 닫는다. Transport 호출 뒤 interruption은 remote acceptance가
+                # 모호하므로 issued 상태를 남겨 reconcile이 판단하게 한다.
+                self._abandon_review_closed(event.event_id, prepared_generation)
+            self._raise_sanitized_interruption(interruption_kind)
+        if transport_failure is not None:
+            if (
+                prepared_review
+                and classify_slack_failure(transport_failure) is SlackFailureClass.TERMINAL
+                and self._review_action_sets is not None
+            ):
+                self._abandon_review_closed(event.event_id, prepared_generation)
+            self._raise_for_failure(transport_failure, event)
+        assert result is not None
+        if result.channel != self.channel:
+            if prepared_review:
+                self._abandon_review_closed(event.event_id, prepared_generation)
+            raise OutboxReconcileError("SLACK_RESPONSE_CHANNEL_MISMATCH")
         return self._receipt(result.ts)
+
+    def _abandon_review_closed(self, event_id: str, generation: int | None) -> None:
+        """Revoke one undelivered action set without exposing cleanup internals."""
+        if generation is None:
+            return
+        if self._review_action_sets is None:
+            raise OutboxReconcileError("REVIEW_ACTION_SET_SERVICE_REQUIRED")
+        cleanup_failure_kind: str | None = None
+        try:
+            self._review_action_sets.abandon(event_id, generation)
+        except BaseException as error:
+            cleanup_failure_kind = self._interruption_kind(error)
+            self._clear_exception_frames(error)
+        if cleanup_failure_kind is not None:
+            if cleanup_failure_kind != "exception":
+                self._raise_sanitized_interruption(cleanup_failure_kind)
+            raise OutboxReconcileError("REVIEW_ACTION_SET_CLEANUP_FAILED") from None
+
+    @staticmethod
+    def _interruption_kind(error: BaseException) -> str:
+        if isinstance(error, KeyboardInterrupt):
+            return "keyboard_interrupt"
+        if isinstance(error, SystemExit):
+            return "system_exit"
+        if isinstance(error, GeneratorExit):
+            return "generator_exit"
+        return "exception"
+
+    @staticmethod
+    def _raise_sanitized_interruption(kind: str) -> NoReturn:
+        if kind == "keyboard_interrupt":
+            raise KeyboardInterrupt("Slack Review Card delivery interrupted.") from None
+        if kind == "system_exit":
+            raise SystemExit("Slack Review Card delivery interrupted.") from None
+        if kind == "generator_exit":
+            raise GeneratorExit from None
+        # 모든 호출자가 `"exception"` 을 먼저 걸러내므로 여기에 도달하지 않는다. 도달한다면
+        # 호출자가 판별을 빠뜨린 것이다. bare `BaseException` 으로 올리면 `deliver_next` 의
+        # 두 handler 를 모두 통과해 조용히 새므로, `except Exception` 이 잡을 수 있는
+        # 예외로 올려 fail-closed 를 유지한다.
+        raise RuntimeError("Slack Review Card delivery interrupted.") from None
 
     def _raise_for_failure(self, error: SlackTransportError, event: OutboxEventView) -> NoReturn:
         """Turn one classified failure into the exception the dispatcher expects.
@@ -796,7 +1035,11 @@ class SlackProjectionDestination:
         raise_for_slack_failure(error)
 
     @staticmethod
-    def _rewrap(error: BaseException) -> SlackTransportError:
+    def _rewrap(
+        error: BaseException,
+        *,
+        preserve_cause: bool = True,
+    ) -> SlackTransportError:
         """Wrap one out-of-contract exception so classification still runs.
 
         C-1 은 transport 가 모든 실패를 `SlackTransportError` 로 감싸도록 요구한다. 그
@@ -820,8 +1063,37 @@ class SlackProjectionDestination:
         # 재시도 경로에서 이 예외가 그대로 올라간다. `__cause__` 를 손으로 붙이지 않으면
         # 원인 예외가 traceback 에서만 보이고 (`__context__`), 그것도 dispatcher 가
         # 예외 객체를 버리는 순간 사라진다.
-        wrapped.__cause__ = error
+        if preserve_cause:
+            wrapped.__cause__ = error
+        else:
+            SlackProjectionDestination._clear_exception_frames(error)
         return wrapped
+
+    @staticmethod
+    def _sanitized_transport_error(error: SlackTransportError) -> SlackTransportError:
+        safe = SlackTransportError(
+            "Slack Review Card delivery failed.",
+            error_code=safe_slack_error_code(error.error_code),
+            status_code=error.status_code,
+            retry_after_seconds=error.retry_after_seconds,
+            transport_exception=safe_transport_exception(error.transport_exception),
+        )
+        SlackProjectionDestination._clear_exception_frames(error)
+        return safe
+
+    @staticmethod
+    def _clear_exception_frames(error: BaseException) -> None:
+        seen: set[int] = set()
+        current: BaseException | None = error
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            if current.__traceback__ is not None:
+                traceback.clear_frames(current.__traceback__)
+                current.__traceback__ = None
+            next_error = current.__cause__ or current.__context__
+            current.__cause__ = None
+            current.__context__ = None
+            current = next_error
 
     def _receipt(self, ts: str) -> str:
         """Build the receipt both `send()` and `reconcile()` must agree on (C-2.3).

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from enum import StrEnum
+from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict
 
@@ -52,6 +53,7 @@ _TERMINAL_CODES: frozenset[str] = frozenset(
         "ACTION_TOKEN_CONSUMED",
         "ACTION_TOKEN_EXPIRED",
         "ACTION_TOKEN_INVALID",
+        "ACTION_TOKEN_REVOKED",
         "ACTOR_DISABLED",
         "ACTOR_UNMAPPED",
         "AUTHORITY_BOOTSTRAP_CLOSED",
@@ -73,6 +75,21 @@ _TERMINAL_CODES: frozenset[str] = frozenset(
     }
 )
 
+_DENIED_CODES: frozenset[str] = frozenset(
+    {
+        "ACTION_ACTOR_MISMATCH",
+        "ACTION_CHANNEL_MISMATCH",
+        "ACTION_TOKEN_INVALID",
+        "ACTOR_DISABLED",
+        "ACTOR_UNMAPPED",
+        "AUTHORITY_BOOTSTRAP_CLOSED",
+        "AUTHORITY_DENIED",
+        "BINDING_STALE",
+        "PROJECT_ACCESS_DENIED",
+        "PROVIDER_INSTALLATION_INVALID",
+    }
+)
+
 
 class WorkerOutcome(StrEnum):
     COMPLETED = "completed"
@@ -81,6 +98,31 @@ class WorkerOutcome(StrEnum):
     LEASE_LOST = "lease_lost"
     FINALIZE_FAILED = "finalize_failed"
     CLAIM_FAILED = "claim_failed"
+
+
+class SafeInteractionOutcome(StrEnum):
+    """Closed user-visible outcomes; internal policy detail never crosses this port.
+
+    성공한 첫 결정은 여기에 없다. 그 결과는 별도 Result Card 가 알린다
+    (`contracts/interaction-feedback.md` Delivery, FR-013). producer 없는 값을 남기면
+    다음 사람이 이미 보내고 있다고 읽거나 producer 를 붙여 같은 사건을 두 번 알린다 (D-034).
+    """
+
+    ALREADY_COMPLETED = "already_completed"
+    EXPIRED = "expired"
+    STALE = "stale"
+    DENIED = "denied"
+    UNAVAILABLE = "unavailable"
+
+
+class InteractionFeedback(Protocol):
+    """Optional non-authoritative feedback sent after durable ingress finalization."""
+
+    def send(
+        self,
+        command: IngressCommandView,
+        outcome: SafeInteractionOutcome,
+    ) -> None: ...
 
 
 class IngressWorkerResult(BaseModel):
@@ -100,6 +142,7 @@ class IngressWorkerResult(BaseModel):
     state: IngressState | None = None
     error_code: str | None = None
     finalize_error_code: str | None = None
+    feedback_error_code: str | None = None
     decision: DecisionResult | None = None
 
 
@@ -111,10 +154,12 @@ class IngressDecisionWorker:
         store: GovernanceStore,
         ingress: IngressService,
         decisions: DecisionService,
+        feedback: InteractionFeedback | None = None,
     ) -> None:
         self.store = store
         self.ingress = ingress
         self.decisions = decisions
+        self.feedback = feedback
 
     def process_next(self, worker_id: str) -> IngressWorkerResult | None:
         """Claim one command and resolve it.
@@ -160,7 +205,10 @@ class IngressDecisionWorker:
                 if error.code in _RETRYABLE_EVENT_CODES
                 else WorkerOutcome.RECOVERY_HOLD
             )
-            return self._finalize(claim, worker_id, outcome, error_code=error.code)
+            return self._with_feedback(
+                claim,
+                self._finalize(claim, worker_id, outcome, error_code=error.code),
+            )
         except (AuthorityResolutionError, DecisionError) as error:
             if error.code == _LEASE_CONFLICT:
                 return IngressWorkerResult(
@@ -173,43 +221,61 @@ class IngressDecisionWorker:
                 if error.code in _TERMINAL_CODES
                 else WorkerOutcome.RETRY
             )
-            return self._finalize(claim, worker_id, outcome, error_code=error.code)
+            return self._with_feedback(
+                claim,
+                self._finalize(claim, worker_id, outcome, error_code=error.code),
+            )
         except sqlite3.DatabaseError as error:
             # A corrupt database fails closed. SPEC requires no further governed
             # mutation attempts once storage integrity is in doubt.
             if _is_corruption(error):
-                return self._finalize(
+                return self._with_feedback(
+                    claim,
+                    self._finalize(
+                        claim,
+                        worker_id,
+                        WorkerOutcome.RECOVERY_HOLD,
+                        error_code="INGRESS_STORE_CORRUPT",
+                    ),
+                )
+            return self._with_feedback(
+                claim,
+                self._finalize(
                     claim,
                     worker_id,
-                    WorkerOutcome.RECOVERY_HOLD,
-                    error_code="INGRESS_STORE_CORRUPT",
-                )
-            return self._finalize(
-                claim,
-                worker_id,
-                WorkerOutcome.RETRY,
-                error_code="INGRESS_DECISION_UNAVAILABLE",
+                    WorkerOutcome.RETRY,
+                    error_code="INGRESS_DECISION_UNAVAILABLE",
+                ),
             )
         except (GovernanceStoreError, sqlite3.Error):
-            return self._finalize(
+            return self._with_feedback(
                 claim,
-                worker_id,
-                WorkerOutcome.RETRY,
-                error_code="INGRESS_DECISION_UNAVAILABLE",
+                self._finalize(
+                    claim,
+                    worker_id,
+                    WorkerOutcome.RETRY,
+                    error_code="INGRESS_DECISION_UNAVAILABLE",
+                ),
             )
         except Exception:
             # Fail closed on an unclassified error rather than abandoning the lease.
-            return self._finalize(
+            return self._with_feedback(
+                claim,
+                self._finalize(
+                    claim,
+                    worker_id,
+                    WorkerOutcome.RETRY,
+                    error_code="INGRESS_DECISION_FAILED",
+                ),
+            )
+        return self._with_feedback(
+            claim,
+            self._finalize(
                 claim,
                 worker_id,
-                WorkerOutcome.RETRY,
-                error_code="INGRESS_DECISION_FAILED",
-            )
-        return self._finalize(
-            claim,
-            worker_id,
-            WorkerOutcome.COMPLETED,
-            decision=decision,
+                WorkerOutcome.COMPLETED,
+                decision=decision,
+            ),
         )
 
     @staticmethod
@@ -281,6 +347,46 @@ class IngressDecisionWorker:
             error_code=error_code,
             decision=decision,
         )
+
+    def _with_feedback(
+        self,
+        claim: IngressCommandView,
+        result: IngressWorkerResult,
+    ) -> IngressWorkerResult:
+        """Send best-effort feedback only after the ingress transition is durable."""
+
+        if self.feedback is None or result.state is None:
+            return result
+        safe_outcome = self._safe_outcome(result)
+        if safe_outcome is None:
+            return result
+        try:
+            self.feedback.send(claim, safe_outcome)
+        except Exception:
+            return result.model_copy(update={"feedback_error_code": "INTERACTION_FEEDBACK_FAILED"})
+        return result
+
+    @staticmethod
+    def _safe_outcome(result: IngressWorkerResult) -> SafeInteractionOutcome | None:
+        if (
+            result.outcome is WorkerOutcome.COMPLETED
+            and result.decision is not None
+            and result.decision.replayed
+        ):
+            return SafeInteractionOutcome.ALREADY_COMPLETED
+        if result.outcome is not WorkerOutcome.RECOVERY_HOLD:
+            return None
+        if result.error_code == "ACTION_TOKEN_CONSUMED":
+            return SafeInteractionOutcome.ALREADY_COMPLETED
+        if result.error_code == "ACTION_TOKEN_EXPIRED":
+            return SafeInteractionOutcome.EXPIRED
+        if result.error_code in {"PROPOSAL_STALE", "INVALID_PROPOSAL_STATE"}:
+            return SafeInteractionOutcome.STALE
+        if result.error_code == "ACTION_TOKEN_REVOKED":
+            return SafeInteractionOutcome.STALE
+        if result.error_code in _DENIED_CODES:
+            return SafeInteractionOutcome.DENIED
+        return SafeInteractionOutcome.UNAVAILABLE
 
     def _transition(
         self,
