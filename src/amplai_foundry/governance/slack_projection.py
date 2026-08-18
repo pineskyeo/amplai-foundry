@@ -21,6 +21,7 @@ from amplai_foundry.governance.events import (
     OutboxConfig,
     OutboxEventView,
     OutboxReconcileError,
+    OutboxRetryableError,
     ReviewProjectionPayload,
 )
 from amplai_foundry.governance.review_cards import (
@@ -33,6 +34,7 @@ from amplai_foundry.governance.slack_cards import (
     SlackProposalCardRenderer,
     slack_presentation_payload,
 )
+from amplai_foundry.governance.store import is_transient_store_failure
 
 # Slack message metadata 의 event_type. 한 번 정하면 바꾸지 않는다 — 바꾸면 이전에 나간
 # marker 를 reconcile 이 못 읽는다 (task manifest MGC-012-T001 invariants, OQ-002).
@@ -346,6 +348,50 @@ def safe_transport_exception(transport_exception: str | None) -> str | None:
         return transport_exception
     digest = hashlib.sha256(transport_exception.encode("utf-8")).hexdigest()[:12]
     return f"adapter_{digest}"
+
+
+_REVIEW_INTERRUPTION_MESSAGE: Final = "Slack Review Card delivery interrupted."
+
+
+def classify_interruption(error: BaseException) -> str:
+    """Name what stopped a delivery so the caller can re-raise it in kind.
+
+    `except BaseException` 은 process 를 멈추는 것과 평범한 Exception 을 함께 잡는다. 둘은
+    결말이 달라야 한다. process interruption 은 그대로 전파돼야 하고, 평범한 Exception 은
+    dispatcher 가 잡아 durable 실패로 닫아야 한다. 이 함수가 그 구분을 만든다.
+
+    **정의는 저장소에 하나만 둔다.** 이 함수와 `raise_sanitized_interruption` 은 원래 이
+    module 과 `slack_http` 에 사본으로 있었고 한쪽만 고쳐졌다. 그 결과 `slack_http` 사본은
+    평범한 Exception 을 `"base_exception"` 으로 부르고 bare `BaseException` 으로 다시 올려
+    `deliver_next` 의 두 handler 를 모두 통과했다 (round 11 `R-1`). 사본을 만들지 않는다.
+    """
+    if isinstance(error, KeyboardInterrupt):
+        return "keyboard_interrupt"
+    if isinstance(error, SystemExit):
+        return "system_exit"
+    if isinstance(error, GeneratorExit):
+        return "generator_exit"
+    return "exception"
+
+
+def raise_sanitized_interruption(kind: str, message: str) -> NoReturn:
+    """Re-raise one classified interruption without its original context.
+
+    원본 예외를 그대로 다시 올리지 않는 이유는 그 traceback 이 credential 을 든 frame 을
+    붙잡고 있을 수 있어서다. 같은 종류의 새 예외를 `from None` 으로 올린다.
+
+    `"exception"` 은 `RuntimeError` 가 된다. bare `BaseException` 으로 올리면 `deliver_next`
+    의 `except OutboxReconcileError` 와 `except Exception` 을 모두 통과해 조용히 새고, event 가
+    `leased` 로 남아 worker 가 매번 죽는다. `except Exception` 이 잡을 수 있는 형으로 올려
+    fail-closed 를 유지한다.
+    """
+    if kind == "keyboard_interrupt":
+        raise KeyboardInterrupt(message) from None
+    if kind == "system_exit":
+        raise SystemExit(message) from None
+    if kind == "generator_exit":
+        raise GeneratorExit from None
+    raise RuntimeError(message) from None
 
 
 @dataclass(frozen=True, slots=True)
@@ -867,6 +913,10 @@ class SlackProjectionDestination:
                 raise OutboxReconcileError("REVIEW_ACTION_SET_SERVICE_REQUIRED")
             render_failure_code: str | None = None
             interruption_kind: str | None = None
+            # 분류는 `except` 블록 안에서 끝낸다. Python 이 블록을 벗어나면서 예외 변수를
+            # 지우므로 뒤에서 다시 볼 수 없다. 예외 객체를 밖으로 들고 나가면 credential 을
+            # 든 frame 을 살려두게 되므로 boolean 하나만 남긴다.
+            prepare_is_transient = False
             try:
                 review_payload = ReviewProjectionPayload.model_validate(event.payload)
                 if review_payload.bound_channel_ref.channel_id != self.channel:
@@ -880,6 +930,7 @@ class SlackProjectionDestination:
                 self._clear_exception_frames(error)
             except BaseException as error:
                 interruption_kind = self._interruption_kind(error)
+                prepare_is_transient = is_transient_store_failure(error)
                 self._clear_exception_frames(error)
             if render_failure_code is not None or interruption_kind is not None:
                 # Drop every memory-only credential before cleanup. `abandon()` may
@@ -888,14 +939,19 @@ class SlackProjectionDestination:
                 presentation = {}
                 self._abandon_review_closed(event.event_id, prepared_generation)
                 if interruption_kind is not None:
-                    # `_abandon_review_closed` 와 같은 기준이다 (`:983`-`:986`). 위의
-                    # `except BaseException` 은 `sqlite3.OperationalError` 같은 평범한
-                    # Exception 도 잡는다. 그것을 interruption 으로 올리면 `deliver_next` 의
-                    # `except OutboxReconcileError` 와 `except Exception` (`events.py:3231`,
-                    # `:3238`)이 둘 다 놓쳐 dead letter 도 operator hold 도 없이 event 가
-                    # `leased` 로 남고 worker 가 죽는다.
+                    # `_abandon_review_closed` 와 같은 기준이다. 위의 `except BaseException`
+                    # 은 `sqlite3.OperationalError` 같은 평범한 Exception 도 잡는다. 그것을
+                    # interruption 으로 올리면 `deliver_next` 의 두 handler 가 둘 다 놓쳐
+                    # dead letter 도 operator hold 도 없이 event 가 `leased` 로 남는다.
                     if interruption_kind != "exception":
                         self._raise_sanitized_interruption(interruption_kind)
+                    # **일시적 store 실패는 예산을 쓴다.** 전부 terminal 로 닫으면 sqlite
+                    # lock 한 번에 destination 전체가 즉시 멈추고 그 hold 는 되돌릴 수 없다
+                    # (round 11 `R-2`). 같은 저장소의 `ingress_worker` 는 같은 예외를
+                    # 재시도로 분류한다. 한 저장소 한 정책으로 맞춘다 — 판별은
+                    # `store.is_transient_store_failure` 하나가 한다.
+                    if prepare_is_transient:
+                        raise OutboxRetryableError("REVIEW_CARD_PREPARE_UNAVAILABLE") from None
                     raise OutboxReconcileError("REVIEW_CARD_PREPARE_FAILED") from None
                 assert render_failure_code is not None
                 raise OutboxReconcileError(render_failure_code) from None
@@ -995,27 +1051,13 @@ class SlackProjectionDestination:
 
     @staticmethod
     def _interruption_kind(error: BaseException) -> str:
-        if isinstance(error, KeyboardInterrupt):
-            return "keyboard_interrupt"
-        if isinstance(error, SystemExit):
-            return "system_exit"
-        if isinstance(error, GeneratorExit):
-            return "generator_exit"
-        return "exception"
+        """Delegate to the single shared classifier. 사본을 만들지 않는다."""
+        return classify_interruption(error)
 
     @staticmethod
     def _raise_sanitized_interruption(kind: str) -> NoReturn:
-        if kind == "keyboard_interrupt":
-            raise KeyboardInterrupt("Slack Review Card delivery interrupted.") from None
-        if kind == "system_exit":
-            raise SystemExit("Slack Review Card delivery interrupted.") from None
-        if kind == "generator_exit":
-            raise GeneratorExit from None
-        # 모든 호출자가 `"exception"` 을 먼저 걸러내므로 여기에 도달하지 않는다. 도달한다면
-        # 호출자가 판별을 빠뜨린 것이다. bare `BaseException` 으로 올리면 `deliver_next` 의
-        # 두 handler 를 모두 통과해 조용히 새므로, `except Exception` 이 잡을 수 있는
-        # 예외로 올려 fail-closed 를 유지한다.
-        raise RuntimeError("Slack Review Card delivery interrupted.") from None
+        """Delegate to the single shared re-raiser with this adapter's message."""
+        raise_sanitized_interruption(kind, _REVIEW_INTERRUPTION_MESSAGE)
 
     def _raise_for_failure(self, error: SlackTransportError, event: OutboxEventView) -> NoReturn:
         """Turn one classified failure into the exception the dispatcher expects.

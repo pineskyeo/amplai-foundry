@@ -41,12 +41,15 @@ from amplai_foundry.governance.slack_projection import (
     SlackTransport,
     SlackTransportError,
     build_slack_marker,
+    classify_interruption,
+    raise_sanitized_interruption,
     read_slack_marker,
     safe_slack_error_code,
     safe_transport_exception,
 )
 
 SLACK_API_BASE: Final = "https://slack.com/api"
+_TRANSPORT_INTERRUPTION_MESSAGE: Final = "Slack message delivery interrupted."
 
 _POST_MESSAGE: Final = "chat.postMessage"
 _POST_EPHEMERAL: Final = "chat.postEphemeral"
@@ -397,10 +400,18 @@ class HttpSlackTransport:
             ts = _require_text(response, "ts")
             response_channel = _require_text(response, "channel")
         except SlackTransportError as error:
-            failure = _sanitized_transport_error(error)
+            # `_call` 이 이미 chain 을 지웠다. 여기서 다시 잡는 것은 아래에서 `payload` 와
+            # `marker` 를 비우기 위해서다 — Card 내용이 이 frame 의 local 로 남는다.
+            failure = error
         except BaseException as error:
-            interruption_kind = _interruption_kind(error)
-            _clear_exception_frames(error)
+            # `_call` 을 거쳐 왔으므로 `error` 는 이미 sanitize 된 새 예외다. frame 을 다시
+            # 지우지 않는다. 여기서 잡는 것은 아래에서 `payload` 와 `marker` 를 비우기
+            # 위해서다 — Card 내용이 이 frame 의 local 로 남는다.
+            #
+            # 사본을 남기면 `_send` 안의 guard 를 **가린다.** 이 사본이 있는 동안
+            # `_send` 의 `_clear_exception_frames` 를 지워도 `post_message` 경로만 통과해서
+            # mutation 이 살아남았다 (round 13 `F-2` 가 이것을 놓쳤다).
+            interruption_kind = classify_interruption(error)
         if failure is not None:
             payload = {}
             marker = {}
@@ -408,7 +419,7 @@ class HttpSlackTransport:
         if interruption_kind is not None:
             payload = {}
             marker = {}
-            _raise_sanitized_interruption(interruption_kind)
+            raise_sanitized_interruption(interruption_kind, _TRANSPORT_INTERRUPTION_MESSAGE)
         return SlackSendResult(channel=response_channel, ts=ts)
 
     def post_ephemeral(self, *, channel: str, user: str, text: str) -> None:
@@ -424,7 +435,9 @@ class HttpSlackTransport:
                 _JSON_CONTENT_TYPE,
             )
         except SlackTransportError as error:
-            failure = _sanitized_transport_error(error)
+            # `_call` 이 이미 chain 을 지웠다. 여기서 다시 잡는 것은 아래에서 `text` 를
+            # 비우기 위해서다.
+            failure = error
         if failure is not None:
             text = ""
             raise failure from None
@@ -481,7 +494,44 @@ class HttpSlackTransport:
         build_body: Callable[[], bytes],
         content_type: str,
     ) -> Mapping[str, object]:
+        """Make one call and let no `SlackTransportError` leave here with a live chain.
+
+        **credential 을 지우는 유일한 출구다.** 호출자마다 두지 않는다. round 13 `F-1` 이
+        `post_message`·`post_ephemeral` 만 sanitize 하고 `read_history`·`delete_message` 는
+        맨몸으로 `_send` 를 부르는 것을 실측했다 — 후자 둘에서 bot token 이 traceback 으로
+        나갔다. 사본을 세는 대신 셀 필요가 없게 만든다.
+
+        지우는 이유는 `_fail` 과 `_fail_http` 가 둘 다 `... from error` 로 올리기 때문이다.
+        그러면 `__cause__` 에 원본 urllib 예외가 붙고, 그 traceback 의 `do_open`·`send`·
+        `_send_output` frame 이 `Authorization: Bearer <token>` 을 든 header dict 와 raw
+        request byte 를 들고 있다. `_send` 의 `finally` 는 **자기 frame 의 local 만** 비우므로
+        그 chain 에는 닿지 못한다.
+
+        `_decode` 가 내는 `SlackTransportError` 는 `from` 이 없어 chain 이 비어 있다. 그래도
+        같은 출구를 지난다 — 예외마다 판단을 나누면 그 판단이 다음 사본이 된다.
+
+        분류에 쓰이는 값(`error_code`, `status_code`, `retry_after_seconds`,
+        `transport_exception`)은 `_sanitized_transport_error` 가 그대로 옮긴다. 재시도 동작은
+        바뀌지 않는다.
+
+        `BaseException` interruption 은 여기 걸리지 않는다. `_send` 가 이미
+        `_clear_exception_frames` 를 거쳐 `SlackTransportError` 가 아닌 것으로 올린다.
+        """
+        try:
+            return self._send(method, build_body, content_type)
+        except SlackTransportError as error:
+            raise _sanitized_transport_error(error) from None
+
+    def _send(
+        self,
+        method: str,
+        build_body: Callable[[], bytes],
+        content_type: str,
+    ) -> Mapping[str, object]:
         """Make one call and turn every failure into `SlackTransportError` (C-1 의무 1).
+
+        **`_call` 을 거치지 않고 직접 부르지 않는다.** 여기서 올라가는 예외는 credential 을
+        든 frame chain 을 갖고 있고, 그것을 지우는 것은 `_call` 이다.
 
         **body 를 만드는 것과 `Request` 를 세우는 것까지 try 안이다.** 둘 다 예외를 낼 수
         있다 — 직렬화 불가 payload 는 `TypeError`, scheme 없는 `base_url` 은 `ValueError`
@@ -493,6 +543,10 @@ class HttpSlackTransport:
         **`except Exception` 이 의도다.** 좁히면 빠뜨린 예외가 분류를 건너뛴다.
         """
         deadline = time.monotonic() + self._timeout_seconds
+        # 실패 경로에서 비우기 위해 미리 이름을 만든다. `build_body()` 가 던지면 아래
+        # `finally` 가 아직 없는 이름을 지우려 할 수 있다.
+        body: bytes | None = None
+        request: urllib.request.Request | None = None
         try:
             body = build_body()
             request = urllib.request.Request(
@@ -519,6 +573,35 @@ class HttpSlackTransport:
             # 연결 실패, timeout, TLS, DNS, 직렬화 — 전부 여기다. code 를 비워 retryable 로
             # 흐르게 한다. 그쪽이 보수적이다 (D-020 항목 1).
             _fail(error)
+        except BaseException as error:
+            # `Exception` 이 아닌 BaseException 만 여기 온다 — 제3자 library 의 timeout,
+            # `pytest.outcomes.Exit`, 그리고 진짜 process interruption.
+            #
+            # **guard 를 호출자마다 두지 않고 여기 둔다.** round 12 `F-2` 는 `post_message`
+            # 에만 guard 가 있고 `read_history`·`post_ephemeral`·`delete_message` 는 맨몸으로
+            # `_call` 을 부르는 것을 실측했다. 그 경로로 bare BaseException 이 나가면
+            # `deliver_next` 의 두 handler 를 모두 통과해 event 가 `leased` 로 남는다.
+            # 공통 통로에 두면 사본을 셀 필요가 없어진다.
+            #
+            # frame 을 먼저 지운다. 이 함수의 `request` local 이 `Authorization: Bearer`
+            # header 를 들고 있어서, traceback 이 살아 있으면 token 이 `--showlocals`
+            # 렌더링과 log 로 새어 나간다 (`F-2` 가 실측했다).
+            kind = classify_interruption(error)
+            _clear_exception_frames(error)
+            raise_sanitized_interruption(kind, _TRANSPORT_INTERRUPTION_MESSAGE)
+        finally:
+            # **이 frame 은 실패해도 traceback 안에 살아남는다.** 위에서 올리는 예외가 여기서
+            # 시작하므로 그 traceback 의 첫 frame 이 이 함수다. `request` 는
+            # `Authorization: Bearer <token>` 을 든 채라서, 비우지 않으면 `--showlocals`
+            # 렌더링과 log 로 token 이 나간다 (round 12 `F-2`).
+            #
+            # 성공 경로에서도 돈다. 반환값은 이미 계산됐으므로 안전하다.
+            #
+            # 그 token 은 `repr(f_locals)` 에는 안 보인다 — `Request` 의 repr 이 header 를
+            # 보여주지 않는다. 문자열만 훑는 검사로는 이 누출을 못 잡으므로 test 는 객체의
+            # header 를 직접 본다.
+            request = None
+            body = None
 
 
 class EphemeralSlackTransport(Protocol):
@@ -581,26 +664,6 @@ def _clear_exception_frames(error: BaseException) -> None:
         current.__cause__ = None
         current.__context__ = None
         current = next_error
-
-
-def _interruption_kind(error: BaseException) -> str:
-    if isinstance(error, KeyboardInterrupt):
-        return "keyboard_interrupt"
-    if isinstance(error, SystemExit):
-        return "system_exit"
-    if isinstance(error, GeneratorExit):
-        return "generator_exit"
-    return "base_exception"
-
-
-def _raise_sanitized_interruption(kind: str) -> NoReturn:
-    if kind == "keyboard_interrupt":
-        raise KeyboardInterrupt("Slack message delivery interrupted.") from None
-    if kind == "system_exit":
-        raise SystemExit("Slack message delivery interrupted.") from None
-    if kind == "generator_exit":
-        raise GeneratorExit from None
-    raise BaseException("Slack message delivery interrupted.") from None
 
 
 def _json_value(value: object) -> object:

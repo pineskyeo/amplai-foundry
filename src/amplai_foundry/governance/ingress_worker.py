@@ -29,9 +29,19 @@ from amplai_foundry.governance.store import (
     GovernanceStore,
     GovernanceStoreError,
     governance_transaction,
+    is_store_corruption,
 )
 
 _LEASE_CONFLICT = "INGRESS_LEASE_CONFLICT"
+
+# 소진됐지만 **결정은 이미 기록된** 종점. 사용자 통지를 만들지 않는다.
+#
+# 그 결정의 Result Card 는 이미 나갔으므로 여기서 실패를 알리면 배달된 Card 와 모순된다.
+# D-034 도 성공한 첫 결정은 safe outcome 을 만들지 않는다고 못박았다. 그래서 침묵이지만
+# **명령은 여전히 recovery hold 로 남아** operator 목록에 보인다 — 결정은 됐는데 장부
+# 정리가 안 된 상태라 사람이 한 번 봐야 한다.
+_DECISION_COMMITTED_UNRECONCILED = "INGRESS_DECISION_COMMITTED_UNRECONCILED"
+_SILENT_HOLD_CODES: frozenset[str] = frozenset({_DECISION_COMMITTED_UNRECONCILED})
 
 # Event errors are integrity assertions by default, so an unlisted code is terminal.
 # Only sequence and revision CAS losses can change on a later attempt.
@@ -228,7 +238,7 @@ class IngressDecisionWorker:
         except sqlite3.DatabaseError as error:
             # A corrupt database fails closed. SPEC requires no further governed
             # mutation attempts once storage integrity is in doubt.
-            if _is_corruption(error):
+            if is_store_corruption(error):
                 return self._with_feedback(
                     claim,
                     self._finalize(
@@ -319,6 +329,7 @@ class IngressDecisionWorker:
         error_code: str | None = None,
         decision: DecisionResult | None = None,
     ) -> IngressWorkerResult:
+        outcome, error_code = self._settle_exhausted_retry(claim, outcome, error_code)
         try:
             view = self._transition(claim, worker_id, outcome, error_code)
         except IngressLeaseConflictError as error:
@@ -376,6 +387,15 @@ class IngressDecisionWorker:
             return SafeInteractionOutcome.ALREADY_COMPLETED
         if result.outcome is not WorkerOutcome.RECOVERY_HOLD:
             return None
+        if result.error_code in _SILENT_HOLD_CODES:
+            # **알리지 않는다. 이유가 둘이고 결과는 같다** (`D-039`, `D-042`).
+            #
+            # 결정이 기록된 것을 확인한 경우 — 이미 알렸다. Result Card 가 했다.
+            # 확인하지 못한 경우 — 알렸는지 모른다. 모르는 채로 실패를 알리면 배달된 Card 와
+            # 모순될 수 있고 그 통지는 되돌릴 수 없다.
+            #
+            # 둘 다 `stranded()` 에 남으므로 operator 가 회수한다.
+            return None
         if result.error_code == "ACTION_TOKEN_CONSUMED":
             return SafeInteractionOutcome.ALREADY_COMPLETED
         if result.error_code == "ACTION_TOKEN_EXPIRED":
@@ -387,6 +407,69 @@ class IngressDecisionWorker:
         if result.error_code in _DENIED_CODES:
             return SafeInteractionOutcome.DENIED
         return SafeInteractionOutcome.UNAVAILABLE
+
+    def _settle_exhausted_retry(
+        self,
+        claim: IngressCommandView,
+        outcome: WorkerOutcome,
+        error_code: str | None,
+    ) -> tuple[WorkerOutcome, str | None]:
+        """Turn the last attempt's retry into a terminal recovery hold.
+
+        재시도로 끝난 마지막 시도를 그대로 두면 그 command 는 영원히 조용해진다.
+        `claim_next` 의 sweep 이 `retry_wait` + 소진을 `dead_letter` 로 옮기고, claim 조건은
+        `attempts < max_attempts` 라 그 row 를 다시 claim 하지 않는다. worker 가 다시 돌지
+        않으므로 feedback 도 돌지 않는다. reviewer 는 HTTP 200 을 받은 뒤 아무것도 못 받는다
+        (round 11 `R-3`).
+
+        **`claim.attempts` 는 이번 시도를 이미 포함한다.** `claim_next` 가 claim 시
+        `attempts = attempts + 1` 하고 그 row 를 다시 읽는다. 그래서 마지막 시도는
+        `attempts >= max_attempts` 로 정확히 판별된다.
+
+        승격해도 새 outcome 값이 필요 없다. 소진된 command 는 **진짜** recovery hold 가
+        되므로 계약의 `recovery hold without a more specific public result` 정의에 그대로
+        맞고 (D-034), `stranded()` 는 `recovery_hold` 도 포함하므로 operator 가시성이
+        유지된다.
+
+        `RETRY` 만 승격한다. `COMPLETED`, `RECOVERY_HOLD`, `LEASE_LOST` 는 이미 종결이다.
+
+        **결정이 이미 기록됐는지 먼저 본다.** 앞선 attempt 가 decision 을 commit 하고 완료
+        도장을 못 찍은 채 죽으면, 마지막 attempt 가 실패해도 그 결정은 살아 있고 Result Card
+        는 이미 나갔다. 거기에 `unavailable` 을 보내면 배달된 Card 와 모순된다 — round 12
+        `F-1` 이 실측한 경우다. 이것은 lease 만료 종점에 통지를 넣지 않은 이유(`D-038`
+        항목 6)와 **같은 이유**이고, 승격 분기가 그것을 보지 않은 것이 결함이었다.
+
+        그때도 승격은 한다. 명령이 recovery hold 로 남아야 `stranded()` 에 보이고, 결정은
+        됐는데 장부가 안 맞는 상태를 사람이 확인할 수 있다. 다만 code 를 바꿔
+        `_safe_outcome` 이 침묵하게 한다.
+
+        **그 읽기가 실패하는 경우도 침묵이다 (`D-042`).** `committed_decision()` 은
+        connection 두 개를 새로 연다. 이 호출은 `_finalize` 의 `try` 밖이라 예외가
+        `process_next` 를 뚫고 나갔고, command 는 `attempts == max_attempts` 인 채 `leased`
+        로 남았다. claim 조건이 `attempts < max_attempts` 라 그 row 는 다시 잡히지 않는다 —
+        reviewer 는 아무것도 못 받고 worker loop 를 도는 caller 도 죽는다 (round 13 `P1-1`).
+
+        **이것은 상관된 실패다.** 재시도를 소진시킨 그 조건(store busy)이 이 읽기도
+        실패시킨다. 드물어서 넘길 수 있는 종류가 아니다.
+
+        모르는 상태에서 `unavailable` 을 보내지 않는 이유는 위와 같다 — 결정이 이미
+        commit 됐으면 배달된 Result Card 와 모순되고, 그 통지는 되돌릴 수 없다. 침묵은
+        `stranded()` 로 회수할 수 있다. 되돌릴 수 있는 쪽을 고른다.
+
+        **`except` 를 넓히지 않는다.** `_finalize` 가 store 실패로 잡는 것과 같은 집합이다.
+        `Exception` 으로 덮으면 프로그래밍 오류까지 침묵이 되어 결함이 durable 하게 숨는다.
+        """
+        if outcome is not WorkerOutcome.RETRY:
+            return outcome, error_code
+        if claim.attempts < self.ingress.config.max_attempts:
+            return outcome, error_code
+        try:
+            committed = self.committed_decision(claim.command_id)
+        except (GovernanceStoreError, IngressError, sqlite3.Error):
+            return WorkerOutcome.RECOVERY_HOLD, _DECISION_COMMITTED_UNRECONCILED
+        if committed is not None:
+            return WorkerOutcome.RECOVERY_HOLD, _DECISION_COMMITTED_UNRECONCILED
+        return WorkerOutcome.RECOVERY_HOLD, error_code
 
     def _transition(
         self,
@@ -415,14 +498,6 @@ class IngressDecisionWorker:
             generation=claim.claim_generation,
             error_code=code,
         )
-
-
-def _is_corruption(error: sqlite3.DatabaseError) -> bool:
-    code = getattr(error, "sqlite_errorcode", None)
-    if not isinstance(code, int):
-        return False
-    # sqlite_errorcode carries the extended code, so compare the primary byte.
-    return code & 0xFF in {sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB}
 
 
 def _error_code(error: Exception, fallback: str) -> str:

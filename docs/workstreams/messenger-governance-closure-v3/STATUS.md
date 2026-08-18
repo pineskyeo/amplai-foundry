@@ -29,10 +29,12 @@
   failure/recovery lens는 P0/P1/Blocking-P2/Advisory 0, isolated regression lens는 mutation
   10종 killed/0 survived다. T010/T012/T013은 review·gate 범위 밖이고 BLOCKED를 유지한다
 - Subagent Review: MGC-012 Package 5 (`specs/003-slack-proposal-card`) — **미완**. round 2–8은
-  전부 not approved, round 9는 not assessed(lens 미실행 + freeze 후 drift), round 10 FAIL,
-  round 11 FAIL이다. **Package 5 gate는 아직 없다.** 상세는 아래 Package 5 절
-- Repository Verification: PASS — **1202 passed/4 deselected**, all seven verify stages,
-  Ruff check/format, mypy, knowledge lint, manifest validator 8/8, diff check PASS
+  전부 not approved, round 9는 not assessed(lens 미실행 + freeze 후 drift), round 10–13은
+  전부 FAIL이다. wave 7이 round 13 blocker 9건을 닫았으나 **round 14 review는 아직 안
+  돌렸다. Package 5 gate는 없다.** 상세는 아래 Next 절
+- Repository Verification: PASS — **1301 passed/4 deselected**, all seven verify stages,
+  Ruff check/format, mypy, knowledge lint, manifest validator 20/20, diff check PASS
+  (2026-08-17, wave 7 종료 시점)
 - Frozen source/test evidence:
   `0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f`
 - Git state: branch `mgc-012-package-3-wave-4`에 커밋했다. **커밋은 gate 통과를 뜻하지
@@ -134,19 +136,115 @@ round 11이 앞선 기록 넷을 정정했다. round 10 `C-12`(P0)와 `C-13`(P1)
 
 ## Next
 
-**Package 5 wave 5**를 다음 세션에서 `/grill-me`로 시작한다. 대상은 round 11의 `R-2`와 `R-3`
-둘뿐이고 나머지 7건은 심문할 것이 없다. resume 절차 전체는 `CONTEXT_PACK.md`에 있다.
+**round 14 three-lens review 는 FAIL 이다. gate 를 열지 않았다.**
+기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-14.md` 다.
+target aggregate `48f79c28051b7798c37d6442fabe367fe05cb24cf39edf1805936c0e5102bbab`.
 
-Package 5 task 여덟 개는 전부 `done`이지만 **gate는 열지 않았다.** round 11이 FAIL이고
-P1 3건 / Blocking-P2 6건이 남아 있다. `APPROVALS.md`와 `DECISIONS.md`에 Package 5 gate를
-기록하지 않았다.
+| Lens | P0 | P1 | Blocking-P2 | Advisory |
+|---|---:|---:|---:|---:|
+| Contract | 0 | 0 | 3 | 6 |
+| Failure / Recovery | 0 | 1 | 2 | 3 |
+| Regression | 1 | 1 | 1 | 2 |
+| **합계(중복 제거)** | **1** | **2** | **5** | **11** |
 
-Package 4의 `MGC-012-T010`·`T013`·`T012`는 그 다음이다. Package 5 review가 닫히기 전에는
-Package 4 구현을 재개하지 않는다.
+round 13 대비 P0 0 → **1**, Blocking-P2 7 → 5.
 
-이번 세션에 절차 결정 셋을 확정했다 — D-035(frozen target 구성), D-036(`/speckit-analyze`
-필수), D-037(`/speckit-clarify` 필수). 셋 다 `AGENTS.md`·`workflow.yml`·
-`.specify/memory/constitution.md`에 반영했다.
+**round 13 blocker 9건의 동작 수정 자체는 사실로 확인됐다** — mutation 11종 전부 재현·killed,
+죽은 test 수까지 정확했다. `F-1` 은 12/12 leak 0 이고 positive control 로 측정 유효성도
+확인됐다. `PBC-3` 은 wave 7 이 옳고 round 13 이 틀렸음이 확정됐다.
+
+**그런데 그 과정에서 P0 을 만들었다.**
+
+round 13 blocker 9건 전부에 대응했다. 기록은 `specs/003-slack-proposal-card/evidence/`
+아래 `MGC-012-P5-T015`~`T019.md` 다.
+
+| id | 등급 | task | 결과 |
+|---|---|---|---|
+| `F-1` | P1 | T015 | 네 진입점 12 경우 전부 leak 0. mutation 4종 killed |
+| `P1-1` | P1 | T016 | 재현 후 `D-042` 로 수정. mutation 7종 killed |
+| `CT-1`·`CT-2` | Blocking-P2 x2 | T017 | `D-041` 로 spec·계약을 종점 셋으로. 코드 변경 없음 |
+| `CT-3` | Blocking-P2 | T019 | wave 6 항목 backfill, `T011` scope 정정, ID 충돌 셋 정정 |
+| `F-2` | Blocking-P2 | T015 | `_send` guard 를 가리던 `post_message` 사본 제거 후 killed |
+| `F-3` | Blocking-P2 | T016 | durable `last_error_code` 를 보는 test 로 killed |
+| `F-4` | Blocking-P2 | T018 | 블록 1 kill rate 3/9 → 9/9 |
+
+측정: full pytest **1301 passed, 4 deselected** (round 13 의 1274 대비 +27),
+`verify` 7/7, manifest validator **20/20**, Ruff check/format·mypy·`git diff --check` PASS.
+
+### Wave 8 대상 — blocker 8건
+
+| id | 등급 | 내용 |
+|---|---|---|
+| `P0-1` | **P0** | `slack_http.py:604` 의 `body = None` 을 지워도 1301건이 전부 통과한다. `body` 는 button credential 을 든 직렬화 payload 다. `request = None` 은 고정됐고 **바로 다음 줄**이 무방비다 |
+| `P1-1` | **P1** | `GovernanceFilesystemError`(RuntimeError)가 잡는 집합 밖이다. `store.connect()` 가 연결마다 filesystem guard 를 두 번 부른다. round 13 `P1-1` 의 피해가 그대로 재현된다 |
+| `P1-2` | **P1** | `..._traceback[post_message]` 가 구조상 통과한다. 형제 셋은 mutation 을 죽이는데 하나가 무력이다 |
+| `BP2-1` | Blocking-P2 | `stranded()` 에 사람이 부를 수 있는 진입점이 없다. `D-042` 의 보상 통제가 실재하지 않는다 |
+| `BP2-2` | Blocking-P2 | 같은 불완전한 `except` 집합이 `_transition`·`claim_next` 에도 있다 |
+| `BP2-3` | Blocking-P2 | `spec.md:102` 에 종점 규칙의 네 번째 사본이 살아 FR-026 과 모순된다 |
+| `BP2-4` | Blocking-P2 | 종점 3 의 조건을 Decision 없이 좁혔다. 사용자 원답변이 옳았다 |
+| `BP2-5` | Blocking-P2 | T018/T020 의 블록·성분 수가 틀렸다. 8블록인데 9로 적었다 |
+
+### 다섯 번째 라운드, 같은 패턴
+
+**형제를 세지 않는다.** 이번엔 세 축에서 동시에 나왔고 세 lens 가 각각 독립으로 짚었다.
+
+| round | 고친 것 | 놓친 것 |
+|---|---|---|
+| 11 `R-1` | `slack_projection` 사본 | `slack_http` 사본 |
+| 12 `F-2` | `post_message` | 나머지 세 진입점 |
+| 12 `RL-3`~`RL-5` | 지목받은 성분 3개 | 같은 `if` 의 나머지 2개 |
+| 13 `F-1` | `BaseException` arm | `SlackTransportError` arm |
+| **14 `P0-1`** | **`request = None`** | **바로 다음 줄 `body = None`** |
+| **14 `BP2-2`** | **`try` 밖 store 접근** | **`try` 안 `except` 의 형제 둘** |
+| **14 `BP2-3`** | **종점 규칙 사본 셋** | **`spec.md:102` 의 네 번째** |
+
+### 내 evidence 주장 여섯이 틀렸다
+
+1. T017 AC-07 "사본 전수" — `spec.md:102`·`:103` 을 놓쳤다. sweep 이 `exhaust`/`retry budget`
+   으로 grep 했는데 그 줄은 "runs out of retries" 다
+2. T017 AC-07 "plan/research 에 enum 사본 없다" — 둘 다 있다
+3. T016 AC-09 예외 type 일반화 — filesystem guard 를 세지 않았다
+4. T016 AC-08 형제 표 — `try` 밖만 물었고 `try` 안 `except` 의 충분성은 안 물었다
+5. T018 블록 수 — 8인데 9로 적었다. `L1712` 는 10성분인데 9로 적었다
+6. `/speckit-analyze` 가 `spec.md` 파일 내 모순을 놓쳤다
+
+**세 라운드 연속 수치를 틀렸다** — round 12 "21종을 19종", 13 "12종을 9종", 14 "8블록을 9블록".
+
+### Review 판정 중 틀린 것 둘을 정정했다
+
+- **`PBC-3` 은 오판이다.** review 는 그 test 를 "동어반복" 으로 보고 삭제를 지시했다. 성분을
+  갈라 재니 두 test 가 **서로 다른 성분**을 잡는다. 지웠으면 `decision is not None` 이
+  무방비가 되고 `None.replayed` 로 worker 가 죽는다. 지우지 않고 이름·docstring 만 고쳤다.
+  그리고 같은 `if` 의 세 번째 성분은 **아무도 잡지 않았다** — review 도 세지 않았다.
+- **`F-4` 는 규모를 크게 축소해 서술했다.** 감사 대조 블록의 형제가 8개 더 있고 전부 같은
+  함수 `reconcile_connection()` 안이다. 성분 69개 중 **66개가 무방비**였다. `F-4` 가 지목한
+  둘은 그 66 중 둘이다.
+
+### 명시적으로 넘긴 것
+
+`MGC-012-P5-T020` — 나머지 8블록 60 성분. 사용자 결정으로 이번 wave 에서 뺐고 wave 13 에
+배치했다. **조용히 줄인 것이 아니다** — 수치와 위치가 T018 evidence, T020 manifest,
+`index.yaml` 세 곳에 있다.
+
+### 새 Decision 둘
+
+- `D-041` — 종점 셋을 코드에서 지우는 대신 계약에 적는다. 실측이 코드가 옳다고 정했다
+- `D-042` — 결정 장부를 읽지 못하면 침묵한다. 모르는 채 보낸 통지는 되돌릴 수 없다
+
+### 열린 질문
+
+`OQ-001` — bot token 이 traceback 에 남는 것을 금지하는 FR 이 `spec.md` 에 없다. 근거는
+`contracts/review-card-lifecycle.md` 뿐이다. FR 신설은 계약 변경이라 Decision 이 필요하고
+이번 wave 밖이다. `blocking: false`.
+
+### 다음
+
+```text
+round 14 three-lens review — 대상은 T015~T019
+```
+
+review 전에 target 을 새로 얼린다. round 13 이후 tree 가 바뀌었다.
+
 ### Package 4 복귀 조건
 
 `MGC-012 — Slack Reference Adapter` Package 4 Wave 6R은 T008 readback 자가검사,

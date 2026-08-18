@@ -25,7 +25,11 @@ from amplai_foundry.governance import (
     ProviderEnvelope,
     VerifiedProviderCommand,
 )
-from amplai_foundry.governance.store import GovernanceStore, GovernanceStoreError
+from amplai_foundry.governance.store import (
+    GovernanceStore,
+    GovernanceStoreError,
+    GovernanceTransactionError,
+)
 
 NOW = datetime(2026, 7, 30, 10, 0, tzinfo=UTC)
 RAW_TOKEN = "raw-secret-action-token"
@@ -581,3 +585,69 @@ def test_hard_killed_worker_is_reclaimed_after_lease_expiry(tmp_path: Path) -> N
     assert reclaimed is not None
     assert reclaimed.command_id == ack.command_id
     assert reclaimed.attempts == 2 and reclaimed.claim_generation == 2
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T010 — 한 저장소 한 정책 (round 11 R-2)
+# ---------------------------------------------------------------------------
+
+
+def _sqlite_error(message: str, errorcode: int | None) -> sqlite3.Error:
+    error = (
+        sqlite3.DatabaseError(message)
+        if errorcode is not None
+        else sqlite3.OperationalError(message)
+    )
+    if errorcode is not None:
+        error.sqlite_errorcode = errorcode
+    return error
+
+
+# T010 AC-04 — ingress 경로와 배달 경로가 같은 판별기를 쓴다.
+#
+# `R-2` 의 본질은 한 저장소에서 같은 예외가 두 정책을 받은 것이다. ingress 는
+# `sqlite3.OperationalError` 를 재시도로 분류하는데 배달 경로는 즉시 되돌릴 수 없는 hold 로
+# 보냈다. 이름이 같은 두 함수를 비교하면 다시 갈라져도 안 잡히므로 **같은 함수 객체인지**
+# 본다.
+def test_both_paths_consult_one_store_failure_classifier() -> None:
+    from amplai_foundry.governance import ingress_worker, slack_projection, store
+
+    assert ingress_worker.is_store_corruption is store.is_store_corruption
+    assert slack_projection.is_transient_store_failure is store.is_transient_store_failure
+    assert not hasattr(ingress_worker, "_is_corruption")
+
+
+# T010 AC-04 — 판별기의 verdict 를 값별로 고정한다. 손상만 terminal 이다.
+@pytest.mark.parametrize(
+    ("error", "transient"),
+    [
+        (_sqlite_error("database is locked", None), True),
+        (_sqlite_error("disk I/O error", None), True),
+        (_sqlite_error("database or disk is full", None), True),
+        (_sqlite_error("attempt to write a readonly database", None), True),
+        # RL-2 — `GovernanceStoreError` 가 빠지면 `R-2` 의 guard 자체가 사라진다. ingress
+        # test 가 실제로 던지는 것이 이 형이다 ("ingress decision connection is busy").
+        (GovernanceStoreError("ingress decision connection is busy"), True),
+        (GovernanceTransactionError("transaction could not complete"), True),
+        (_sqlite_error("database disk image is malformed", sqlite3.SQLITE_CORRUPT), False),
+        (_sqlite_error("file is not a database", sqlite3.SQLITE_NOTADB), False),
+        (RuntimeError("정체 불명"), False),
+    ],
+)
+def test_the_shared_classifier_treats_only_corruption_as_terminal(
+    error: BaseException, transient: bool
+) -> None:
+    from amplai_foundry.governance.store import is_transient_store_failure
+
+    assert is_transient_store_failure(error) is transient
+
+
+# T010 AC-04 — 확장 error code 를 써도 하위 byte 로 손상을 알아본다. 이 계산을 지우면
+# 확장 code 를 든 손상이 재시도로 흘러 destination 이 안전망을 잃는다.
+def test_an_extended_corruption_code_is_still_corruption() -> None:
+    from amplai_foundry.governance.store import is_store_corruption
+
+    extended = sqlite3.DatabaseError("corrupt index")
+    extended.sqlite_errorcode = sqlite3.SQLITE_CORRUPT | (1 << 8)
+
+    assert is_store_corruption(extended) is True

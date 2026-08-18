@@ -1,0 +1,242 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T010
+title: Let a transient store failure spend its retry budget instead of stopping the destination
+type: bugfix
+status: done
+
+goal:
+  outcome: >-
+    Review Card 준비 중 일어난 일시적 store 실패가 재시도 예산을 쓰고, 그 실패의 진짜 원인
+    code 가 재시도 기록과 dead letter 에 남는다. store 손상만 즉시 terminal 로 남는다.
+  user_value: >-
+    지금은 sqlite lock 한 번에 destination 전체가 즉시 영구 정지한다. 같은 저장소가
+    `ingress_worker` 에서는 같은 예외를 재시도로 분류한다. 한 저장소 한 정책으로 맞춘다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-11.md
+      section: R-2
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-038
+    - path: specs/003-slack-proposal-card/spec.md
+      section: FR-027
+  requirements:
+    - FR-021
+    - FR-027
+    - SC-003
+  decisions:
+    - D-038
+
+scope:
+  include:
+    - 손상 판별기를 공유 위치로 올려 `ingress_worker` 와 배달 경로가 같은 것을 쓴다.
+    - 재시도 가능한 outbox 실패를 나타내는 예외 형을 만들고 dispatcher 가 그것을 예산 소비로 처리한다.
+    - Review Card 준비 경로의 store 실패를 그 형으로 올린다.
+    - 두 분류(재시도·terminal) 각각의 회귀 test 를 넣는다.
+    - >-
+      wave 4 가 과잉 수정을 고정해 둔 기존 test 두 건을 새 계약에 맞춘다. 고치지 않으면
+      `R-2` 를 닫을 수 없다. **동작 기대를 지우지 않고 옮긴다** — 일시적 store 실패는
+      재시도로, 손상과 렌더링 결함은 그대로 terminal 로 남는 것을 계속 요구한다.
+  exclude:
+    - "operator hold 를 푸는 governed 경로. D-038 (1) 이 명시적으로 범위 밖으로 뺐다."
+    - schema migration.
+    - retry 예산 크기, backoff, lease 설정 변경.
+    - interruption 분류기 통합. MGC-012-P5-T009 가 맡는다.
+  allowed_paths:
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/store.py
+    - src/amplai_foundry/governance/ingress_worker.py
+    - src/amplai_foundry/governance/slack_projection.py
+    - tests/test_governance_events.py
+    - tests/test_slack_projection.py
+    - tests/test_ingress.py
+    # 구현 중 확인해 넓혔다. `OutboxRetryableError` 를 새로 만들면 governance package 의
+    # 공개 이름에 넣어야 test 와 상위 caller 가 `amplai_foundry.governance` 에서 import 할 수
+    # 있다. 한 줄 export 라 내용은 무해하지만 **파일이 바뀌므로 기록한다.** round 12 `C-1`
+    # 이 이 누락을 잡았다 — "넓힌 범위 두 건" 이라고 적었는데 실제로는 셋이었다.
+    - src/amplai_foundry/governance/__init__.py
+    # 구현 중 확인해 넓혔다. wave 4 의 `T004` 가 이 파일에 과잉 수정을 고정한 test 두 건을
+    # 남겼다 — `test_ordinary_prepare_exception_dead_letters_instead_of_escaping` 과
+    # `test_ordinary_delivery_exception_raises_a_catchable_reconcile_error`. 둘 다 일시적
+    # store 실패가 즉시 dead letter 가 되는 것을 요구하므로 `R-2` 를 고치면 반드시 실패한다.
+    # 고치지 않으면 이 task 를 끝낼 수 없다. `T013` 이 같은 파일을 갖지만 `T013` 이 뒤라
+    # 순서 충돌은 없다.
+    - tests/test_review_cards.py
+  forbidden_paths:
+    - vault/
+    - src/amplai_foundry/memory/
+    - src/amplai_foundry/proposals/apply.py
+    - src/amplai_foundry/cli.py
+    - src/amplai_foundry/governance/migrations.py
+    - .github/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T009
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      정책은 새로 만들지 않는다. `ingress_worker.py:228-259` 가 이미 갖고 있다 —
+      `sqlite3.DatabaseError` 이고 `_is_corruption(error)` 면 terminal, 그 외
+      `(GovernanceStoreError, sqlite3.Error)` 는 재시도. 같은 순서를 쓴다.
+    - >-
+      `_is_corruption`(`ingress_worker.py:420-425`)은 `sqlite_errorcode & 0xFF` 를
+      `{SQLITE_CORRUPT, SQLITE_NOTADB}` 와 비교한다. `store.py` 는 `filesystem` 과
+      `migrations` 만 import 하고 `GovernanceStoreError` 를 정의하므로 그 helper 의 자연스러운
+      자리다. 순환이 생기지 않는 배치를 고른다.
+    - >-
+      `deliver_next` 는 이미 두 부류를 가른다 (`events.py:3230-3243`) —
+      `OutboxReconcileError` 는 `unreconcilable=True` 로 즉시 dead letter, 평범한 `Exception` 은
+      `OUTBOX_DELIVERY_FAILED` 로 예산 소비. 후자는 예외를 보지 않아 원인 code 를 잃는다.
+      round 11 `R-1` 이 원인 아닌 dead letter code 를 결함으로 셌으므로 같은 형태를 만들지 않는다.
+    - >-
+      재시도 가능한 형을 `GovernanceEventError` 형제로 두고 `deliver_next` 에 분기를 더해
+      `unreconcilable=False` 로 `fail()` 을 부르되 `error_code=error.code` 를 넘긴다.
+      `fail()`(`events.py:3148-3151`)이 소진 시 알아서 dead letter 로 보낸다.
+    - >-
+      바꾸는 지점은 `slack_projection.py:881-899` 의 `except BaseException` 블록이다. 거기서
+      평범한 Exception 이 무조건 `OutboxReconcileError("REVIEW_CARD_PREPARE_FAILED")` 가 된다.
+      credential 정리(`_abandon_review_closed`)는 두 분류 모두에서 먼저 돈다 — 순서를 바꾸지 않는다.
+    - >-
+      예외를 올릴 때 `from None` 을 유지한다. chaining 을 살리면 `--showlocals` 렌더링에
+      credential 을 든 frame 이 딸려 갈 수 있다.
+  invariants:
+    - store 손상은 여전히 즉시 terminal 이고 재시도 예산을 쓰지 않는다.
+    - "`ingress_worker` 와 배달 경로가 같은 예외에 같은 분류를 준다."
+    - 예산 소진은 여전히 dead letter 와 operator hold 에 도달한다. 이 task 는 그것을 바꾸지 않는다.
+    - 실패 시 raw ActionToken credential 은 durable state, log, exception, traceback 에 남지 않는다.
+    - 재시도 중간 기록과 최종 dead letter 가 원인 code 를 가진다.
+    - 성공 경로의 동작은 바뀌지 않는다.
+  non_goals:
+    - operator hold 해제.
+    - lease 만료 소진의 통지.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: Review Card 준비가 일시적 store 실패를 던지고 재시도 예산이 남은 상태.
+      when: dispatcher 가 그 event 를 배달한다.
+      then: event 가 재시도 대기로 돌아가고 destination 은 정지하지 않으며 기록된 code 가 그 실패의 원인을 가리킨다.
+    - id: AC-02
+      given: 같은 실패가 예산이 소진될 때까지 반복되는 상태.
+      when: dispatcher 가 계속 배달을 시도한다.
+      then: 소진 후 dead letter 와 operator hold 에 도달하고 그 dead letter 가 원인 code 를 가진다.
+    - id: AC-03
+      given: store 손상 예외가 나는 상태.
+      when: dispatcher 가 그 event 를 배달한다.
+      then: 재시도 예산을 쓰지 않고 즉시 dead letter 와 operator hold 가 생긴다.
+    - id: AC-04
+      given: 같은 store 예외 하나.
+      when: 그것을 ingress worker 경로와 배달 경로 각각에 넣는다.
+      then: 두 경로가 같은 분류(재시도 또는 terminal)를 준다.
+    - id: AC-05
+      given: AC-01 과 AC-03 의 실패 경로.
+      when: 실패 후 durable state, exception, traceback locals 를 검사한다.
+      then: raw ActionToken credential 이 발견되지 않는다.
+    - id: AC-06
+      given: 위 분류를 고정한다고 주장하는 신규 test.
+      when: 분류 경계를 한 쪽씩 되돌려 결함을 재도입한다.
+      then: 해당 test 가 실제로 실패한다. 실패를 확인하지 못한 경계는 evidence 에 고정한다고 적지 않는다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_governance_events.py tests/test_slack_projection.py tests/test_ingress.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-06 의 경계별 negative verification 결과
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      분류를 반대편으로 치우치게 하면 wave 4 와 같은 결함이 난다. 넓게 잡아 재시도로 보내면
+      소진 후 같은 hold 에 도달하므로 손해가 시간뿐이고, 좁게 잡아 terminal 로 보내면 되돌릴 수
+      없는 정지가 된다. 보수적인 쪽은 재시도다.
+    - dispatcher 의 예외 처리 계약을 바꾸므로 다른 destination 구현의 실패 경로에 영향이 갈 수 있다.
+    - helper 를 옮기면 import 순환이 생길 수 있다.
+  approvals:
+    - id: D-038
+      scope: >-
+        transient store 실패를 재시도 예산 소비로 재분류하고, 손상만 terminal 로 남기며,
+        재시도 가능한 outbox 실패 형으로 원인 code 를 보존한다. operator hold 해제는 범위 밖이다.
+      granted_by: Workstream governor
+      granted_at: "2026-08-14"
+      record: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - corruption_would_become_retryable
+    - hold_release_path_would_be_required
+    - import_cycle_would_be_introduced
+    - raw_secret_appears_in_any_evidence
+    - schema_migration_would_be_required
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-14T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T010.md
+
+handoff:
+  expected_changes:
+    - 공유 store 손상 판별기.
+    - 재시도 가능한 outbox 실패 형과 dispatcher 분기.
+    - Review Card 준비 경로의 store 실패 재분류.
+    - 두 분류의 회귀 test.
+  notes:
+    - >-
+      되돌릴 수 없는 operator hold 자체는 남는다. 예산을 써도 소진되면 같은 hold 에 도달하고
+      (`events.py:3148-3151` → `_dead_letter` `:3313-3332`), 해제는 API 부재가 아니라 schema
+      금지다 (`migrations.py:631` 의 `CHECK (resolved_at IS NULL)`, `:701-711` 의 append-only
+      트리거). D-038 이 그것을 별도 item 으로 뺐고 spec Assumptions 에 기록했다.

@@ -1,0 +1,265 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T021
+title: Clear the send-path locals in a finally so nothing masks the frame below
+type: fix
+status: ready
+
+goal:
+  outcome: >-
+    `post_message` 와 `post_ephemeral` 이 예외를 잡아 다시 올리지 않고 `finally` 로 local 을
+    비운다. 원래 예외가 그대로 전파되므로 `_send` frame 이 traceback 에 남고, 그 frame 의
+    credential guard 를 test 가 깨뜨릴 수 있게 된다.
+  user_value: >-
+    지금 `slack_http.py:604` 의 `body = None` 은 **지워도 1301건이 전부 통과한다.** `body` 는
+    button credential 을 든 직렬화 payload 다. 검증할 수 없는 credential guard 는 다음 변경이
+    조용히 없앤다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: P0-1
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: P1-2
+    - path: specs/003-slack-proposal-card/contracts/review-card-lifecycle.md
+      section: Forbidden diagnostic fields
+  requirements:
+    - FR-019
+    - FR-021
+    - SC-003
+    - SC-004
+  decisions:
+    - D-038
+
+scope:
+  include:
+    - >-
+      `post_message`(`slack_http.py:386-421`)와 `post_ephemeral`(`:423-444`)의 예외 arm 을
+      `finally` 로 대체한다. 그 arm 이 하는 일은 `payload`/`marker`/`text` local 을 비우는
+      것뿐인데, 다시 raise 하면서 `_send` frame 을 traceback 에서 떨어뜨린다.
+    - "`body = None`(`:604`)을 깨뜨릴 수 있는 test."
+    - "`..._traceback[post_message]` 가 형제 셋과 같은 힘을 갖게 되는지 확인 (`P1-2`)."
+  exclude:
+    - "`_send` 나 `_call` 의 구조 변경. 출구는 이미 하나다 (round 14 Verified Clean)."
+    - "`_clear_exception_frames` 사본 통합. MGC-012-P5-T022 가 맡는다."
+    - "`ingress_worker.py`. MGC-012-P5-T024 가 맡는다."
+    - "AST 출구 검사의 확장 (round 14 `A-1`, `A-8`). Advisory 이고 이번 wave 밖이다."
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/ingress_worker.py
+    - src/amplai_foundry/governance/events.py
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **먼저 mutation sweep 을 돌려 무방비 목록을 만든다.** 이것이 이번 wave 의 절차
+      변경이다. `T018` 은 그렇게 해서 성공했고 `T015`·`T016` 은 고친 뒤에 돌려서 `P0-1` 을
+      낳았다. `_send` 와 두 진입점의 모든 local 대입(`request = None`, `body = None`,
+      `payload = {}`, `marker = {}`, `text = ""`)을 하나씩 지우고 전 suite 를 돌린다.
+      **그 목록이 이 task 의 acceptance 다.**
+    - >-
+      **masking 의 메커니즘.** `post_message` 의 `except BaseException` arm 이
+      `raise_sanitized_interruption(...)` 을 부르고 그것이 **새 예외를 raise** 한다. 그래서
+      traceback 이 `post_message` 에서 시작하고 `_send` frame 이 들어가지 않는다. 그 frame 의
+      `body` 를 보는 test 가 존재할 수 없다.
+    - >-
+      **`finally` 가 같은 목적을 달성한다.** `finally` 는 예외를 다시 올리지 않으므로 원래
+      예외가 그대로 전파되고 `_send` frame 이 남는다. `_send` 자신이 `finally: request = None`
+      로 이미 그 방식을 쓴다.
+
+      ```python
+      try:
+          response = self._call(...)
+          ts = _require_text(response, "ts")
+          response_channel = _require_text(response, "channel")
+      finally:
+          payload = {}
+          marker = {}
+      return SlackSendResult(channel=response_channel, ts=ts)
+      ```
+
+      `except SlackTransportError` arm 둘, `except BaseException` arm, `failure` 와
+      `interruption_kind` 지역 변수, 그 아래 분기 둘이 전부 사라진다.
+    - >-
+      **`finally` 가 정말로 frame local 을 비우는지 실측한다.** 가정하지 않는다. `_send` 의
+      `finally` 가 그렇게 작동하는 것이 근거이지만, 인자로 받은 이름에 대해서도 같은지 직접
+      확인한다.
+    - >-
+      **`_call` 을 거치면 `SlackTransportError` 는 이미 sanitize 돼 있다.** 그러니 여기서
+      다시 잡을 이유가 credential 이 아니라 Card 내용(`payload`, `marker`, `text`)뿐임을
+      확인하고, `finally` 로 옮겨도 그 보호가 유지되는지 test 로 고정한다.
+    - >-
+      **masking 이 무엇을 더 가렸는지 전수로 센다.** `P0-1` 은 wave 7 이 masking 을
+      문서화해놓고 그 질문을 하지 않아서 났다. arm 을 없앤 뒤 mutation sweep 을 다시 돌려
+      **새로 죽는 mutation 이 무엇인지** 목록으로 적는다. `body = None` 하나만이 아닐 수 있다.
+    - >-
+      **`P1-2` 를 확인한다.** `..._traceback[post_message]` 가 형제 셋과 달리 `request = None`
+      mutation 을 못 죽였다. arm 제거 후 죽는지 본다. 안 죽으면 이유를 찾는다 — 그 test 가
+      다른 이유로 무력할 수 있다.
+    - >-
+      **round 14 `A-11` 도 같이 본다.** button-credential test 셋이 `post_message` 를 거쳐서
+      `_send` frame 에 도달하지 못한다고 기록됐다. arm 제거로 도달하게 되는지 확인한다.
+  invariants:
+    - "네 진입점의 성공 경로 반환값이 바뀌지 않는다."
+    - >-
+      실패 시 `payload`, `marker`, `text` 가 여전히 비워진다. Card 내용이 frame 에 남지
+      않는다.
+    - "`SlackTransportError` 의 분류 필드가 바뀌지 않는다."
+    - "`BaseException` interruption 이 여전히 `except Exception` 이 잡을 수 있는 형으로 나간다."
+    - "round 14 가 확인한 12/12 leak 0 이 유지된다."
+    - "`ingress_worker.py`, `events.py` 를 수정하지 않는다."
+  non_goals:
+    - transport 재시도 정책 변경.
+    - "`_call`/`_send` 분리 구조 변경."
+    - Slack API method 추가.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 착수 전 코드.
+      when: >-
+        `_send` 와 두 진입점의 local 대입을 하나씩 지우고 전 suite 를 돌린다.
+      then: >-
+        무방비 목록을 evidence 에 적는다. `body = None`(`:604`)이 그 안에 있음을 확인한다.
+        **이 목록이 아래 AC 의 대상이다.**
+    - id: AC-02
+      given: arm 을 `finally` 로 바꾼 코드.
+      when: "`body = None` 을 지우고 전 suite 를 돌린다."
+      then: test 가 실패한다.
+    - id: AC-03
+      given: 같은 코드.
+      when: "`request = None` 을 지우고 전 suite 를 돌린다."
+      then: >-
+        test 가 실패하고, **죽는 test 에 `post_message` param 이 포함된다** (`P1-2`).
+    - id: AC-04
+      given: 같은 코드.
+      when: "`payload`, `marker`, `text` 를 비우는 대입을 각각 지운다."
+      then: 각각 적어도 하나의 test 가 실패한다.
+    - id: AC-05
+      given: AC-01 의 목록과 변경 후 재측정.
+      when: 둘을 대조한다.
+      then: >-
+        무방비였다가 고정된 항목을 열거한다. **`body = None` 외에 무엇이 더 드러났는지 적는다**
+        — masking 이 하나만 가렸다고 가정하지 않는다.
+    - id: AC-06
+      given: 변경된 코드.
+      when: 네 진입점 × 세 실패 경로에서 token leak 을 실측한다.
+      then: >-
+        12/12 leak 0 이다. 측정 도구는 자기 frame 을 제외하고 raw request byte 도 본다
+        (round 14 가 확인한 두 함정).
+    - id: AC-07
+      given: 변경된 코드.
+      when: 실패 시 `payload`/`marker`/`text` 가 frame 에 남는지 본다.
+      then: 남지 않는다.
+    - id: AC-08
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: round 14 기준(1301 passed, 4 deselected) 이상으로 통과하고 실패가 없다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_slack_http.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01 의 착수 전 무방비 목록
+      required: true
+    - type: note
+      source: AC-05 의 before/after 대조와 masking 이 가렸던 것 전수
+      required: true
+    - type: note
+      source: AC-06 의 12 경우 leak 실측
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      credential guard 를 다루는 변경이다. `finally` 로 옮기면서 Card 내용 보호가 약해지면
+      다른 방향의 누출을 만든다.
+    - >-
+      masking 이 사라지면 지금까지 통과하던 test 가 새로 실패할 수 있다. 그것은 결함이
+      드러나는 것이지 회귀가 아니다 — 구분해서 기록한다.
+    - >-
+      `finally` 안에서 예외가 나면 원래 예외를 덮는다. 대입만 두고 다른 것을 넣지 않는다.
+  approvals:
+    - >-
+      사용자가 2026-08-18 에 "구조를 먼저 고친다" 를 선택했다. 형제를 세는 대신 형제가
+      생기지 않게 만드는 방향이고 이 task 가 그 첫 항목이다.
+    - >-
+      `P0-1` 은 round 14 가 실측한 P0 이며 credential guard 다. 계약 변경이 아니므로 별도
+      Decision 이 필요하지 않다.
+
+loop:
+  max_attempts: 4
+  replan_after_same_failure: 3
+  stop_conditions:
+    - finally_does_not_clear_the_frame_local
+    - card_content_protection_would_weaken
+    - leak_measurement_regresses_from_twelve_clean
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md
+
+handoff:
+  expected_changes:
+    - "`post_message`·`post_ephemeral` 의 예외 arm 이 `finally` 로 바뀐다."
+    - "`body = None` 을 고정하는 test."
+  notes:
+    - >-
+      **P0 이다.** 오늘 실제 누출은 없으나 보호가 검증 불가능하고 문서화되지 않은 결합에
+      의존한다. 그 결합을 만든 arm 은 wave 7 이 방금 편집한 곳이다.

@@ -3,102 +3,77 @@
 ## Resume State
 
 - Workstream: `messenger-governance-closure-v3`
-- Current: **Package 5 wave 5** — round 11의 P1 3건과 Blocking-P2 6건을 닫는다
+- Current: **Package 5 wave 7** — round 13 이 FAIL 이다. blocker 9건(P1 2건)을 닫는다
 - Active feature pointer: `.specify/feature.json` → `specs/003-slack-proposal-card`
-- Last gate: Wave 6R `PASS` for T008/T009/T011 only (`APR-017`, `D-032`).
-  **Package 5 gate는 아직 없다.** round 2–8 not approved, round 9 not assessed,
-  round 10 FAIL, round 11 FAIL
-- Package 5 task: `MGC-012-P5-T001`~`T008` **여덟 개 전부 `done`**
-- Latest measurement: full pytest `1202 passed, 4 deselected`, `amplai-foundry verify` 7/7,
-  Ruff check/format·mypy·schema check·Vault lint exit 0, manifest validator 8/8,
-  `git diff --check` PASS
-- Worktree: branch `mgc-012-package-3-wave-4`에 커밋했다. **커밋은 gate 통과를 뜻하지 않는다.**
-  round 11은 FAIL이고 Package 5 gate는 없다. 커밋은 세션 인계용 저장일 뿐이다
-- 커밋해도 review target aggregate는 그대로다. `git hash-object`는 commit 여부와 무관하게
-  파일 내용만 본다
+- Package 5 task: `MGC-012-P5-T001`~`T014` 전부 `done`. **wave 6·7 은 manifest 가 없다 —
+  `CT-3` 이 그것을 blocker 로 잡았다**
+- Gate 이력: round 2–8 not approved, round 9 not assessed, round 10 FAIL, round 11 FAIL,
+  round 12 FAIL, **round 13 FAIL**. **Package 5 gate 는 아직 없다**
+- Latest measurement: full pytest `1274 passed, 4 deselected`, `verify` 7/7,
+  Ruff·mypy exit 0, manifest validator 14/14, `git diff --check` PASS
+- Worktree: branch `mgc-012-package-3-wave-4`. **커밋하지 않았다**
 
 ## Next Action — 다음 세션은 여기서 시작한다
 
-```text
-/grill-me
-```
+**`/grill-me`.** 설계 판단이 **둘**이고 나머지 일곱은 기계적이다.
 
-대상은 **`R-2`와 `R-3` 둘뿐이다.** 나머지 7건은 심문할 것이 없다 — 무엇을 할지 이미 확정됐다.
+1. **`CT-1`** — `D-039` 가 만든 세 번째 종점(결정 기록됨 → 침묵)이 FR-026 의
+   `MUST produce the unavailable safe outcome` 을 어긴다. **spec 을 고칠지, 코드를 고칠지**가
+   판단이다. `C-2` 사건의 거울상이라 이번엔 Decision 을 먼저 받아야 한다
+2. **`P1-1`** — `committed_decision()` 읽기가 실패할 때 무엇을 할지. 지금은 예외가 worker
+   밖으로 나가 command 가 `leased` 로 남는다
 
-`R-2`와 `R-3`은 서로 얽힌다. `R-2`에서 재시도를 늘리면 `R-3`의 "소진되면 무엇을 보여주나"가
-더 중요해지고, `R-2`를 terminal로 두면 `R-3`의 무응답 구간이 짧아진다. 한쪽 답이 다른 쪽 답을
-바꾼다. 질문 두 개로 끝날 일이 아니라서 grilling이다.
+그 뒤 **반드시** `/speckit-clarify` → `D-041` → **`/taskify`** → validator → `tasks.md` 생성 →
+`/speckit-analyze` → `/speckit-implement` → round 14 freeze → three-lens.
 
-그 뒤 흐름은 아래 **Wave 5 Plan**이다.
+**`/taskify` 를 건너뛰지 않는다.** `CT-3` 이 wave 6 의 절차 생략을 Blocking-P2 로 잡았다.
 
-## Round 11 Findings — wave 5의 범위
+## Round 13 Blockers — 9건
 
-기록: `specs/003-slack-proposal-card/evidence/3lens-review-round-11.md`
+기록: `specs/003-slack-proposal-card/evidence/3lens-review-round-13.md`
 
-| ID | 등급 | 대상 | 내용 |
+| id | 등급 | 위치 | 내용 |
 |---|---|---|---|
-| `R-1` | P1 | `slack_http.py:596-603` | round 10 `C-1`의 **두 번째 사본**이 안 고쳐졌다. bare `BaseException`이 dispatcher 밖으로 샌다 |
-| `R-2` | P1 | `slack_projection.py:899` | 일시적 store 실패가 재시도 예산을 쓰지 않고 destination 전체를 되돌릴 수 없이 멈춘다 |
-| `R-3` | P1 | `ingress.py:282-301` | ingress 재시도 소진이 영구 무응답이다. 계약이 침묵의 근거로 쓴 전제가 코드에서 거짓 |
-| `R-4` | Blocking-P2 | `tests/test_slack_ack_boundary.py:1723-1738` | producer 계약을 고정한다는 test가 동어반복이다 |
-| `R-5` | Blocking-P2 | `spec.md:120` FR-024 | 공개 outcome 5개 중 4개만 열거한다. `unavailable`이 빠졌다 |
-| `R-6` | Blocking-P2 | `slack_projection.py:1002,1012`, `slack_http.py:591,602` | `generator_exit` 분기가 두 파일 모두 test 0건 |
-| `R-7` | Blocking-P2 | `review_cards.py:634`, `events.py:1247` | 무결성 대조의 `payload_json`·`actor_id` 성분이 무방비 |
-| `R-8` | Blocking-P2 | `review_cards.py:226` | outbox cardinality를 약화해도 안 잡힌다 |
-| `R-9` | Blocking-P2 | `migrations.py:4193,4950` | migration history version 연속성과 `store_kind` 검사가 무방비 |
+| `F-1` | **P1** | `slack_http.py:445`, `:471` | **bot token 이 traceback 에 샌다.** `read_history`·`delete_message` 가 `SlackTransportError` 를 sanitize 하지 않는다. real urllib 로 실측됨 |
+| `P1-1` | **P1** | `ingress_worker.py:444` | `committed_decision()` 읽기가 `try` 밖. 실패하면 예외가 새고 command 가 `leased` 로 남는다. **실패 모드가 상관돼 있다** — 재시도를 만든 조건이 이 읽기도 실패시킨다 |
+| `CT-1` | Blocking-P2 | `spec.md:133` | FR-026 위반, Decision 없음 |
+| `CT-2` | Blocking-P2 | `contracts/interaction-feedback.md:33` | 계약은 종점 둘, 코드는 셋 |
+| `CT-3` | Blocking-P2 | `index.yaml` | wave 6 에 manifest 가 없고 `T011` scope 를 무효화했다 |
+| `F-2` | Blocking-P2 | `slack_http.py:544` | `_clear_exception_frames` 무방비 |
+| `F-3` | Blocking-P2 | `ingress_worker.py:446` | 승격된 hold 의 원인 code 무방비 |
+| `F-4` | Blocking-P2 | `events.py:1261`, `:1262` | 감사 대조 형제 성분 둘 무방비 |
 
-**`R-2`와 `R-3`만 설계 판단이 필요하다.** 나머지 7건은 기계적이다.
+## 세 가지 반복되는 실패 양식
 
-`R-2` 선택지: 재시도 예산을 쓰게 한다 / terminal 유지하되 hold를 푸는 governed 경로를 만든다 /
-그대로 두고 문서에만 적는다. 두 번째를 고르면 **새 기능이라 `/speckit-specify`부터 다시 탄다.**
+**다음 wave 는 이것을 먼저 읽는다.**
 
-`R-3` 선택지: 소진된 명령에 종결 outcome을 준다(**D-034의 `unavailable` 축소를 되돌리는 일이다**) /
-침묵을 유지하되 계약을 사실대로 고친다 / operator 전용으로 둔다(`ingress.stranded()`는 이미 있다).
+1. **형제 위치를 안 센다 — 네 라운드 연속.** round 11 `R-1`, 12 `F-2`, 12 `RL-3~5`,
+   13 `F-1`. 규칙은 이미 적어놨다: **정의 사본 + 호출 지점 + 같은 검사의 모든 성분.**
+   wave 6 이 그 규칙을 적어놓고 스스로 어겼다
+2. **test 가 구조상 통과한다 — 세 라운드 연속.** wave 6 의 token 누출 test 는 fixture 가
+   `del request` 로 검사 대상을 먼저 지운다. **test 를 쓸 때 fixture 가 대상을 없애는지 본다.**
+   mutation 이 살아남으면 코드보다 test 를 먼저 의심한다
+3. **한 방향을 고치며 반대를 만든다.** round 10 `C-1` → `R-2` → `F-1`(12) → `P1-1`(13).
+   **review 지시를 그대로 구현하기 전에 다른 축이 무너지는지 본다**
 
-## Wave 5 Plan
+## Do Not Report As New Findings
 
-```text
-1. /grill-me           — R-2, R-3, 둘의 상호작용
-2. /speckit-clarify    — spec 층위 답을 spec.md 에 기록 (필수, D-037)
-3. DECISIONS.md        — D-038 기록
-4. /taskify            — 9건을 MGC-012-P5-T009~ 로 분해
-5. /speckit-analyze    — 필수 (D-036). CRITICAL/HIGH 있으면 정지
-6. /speckit-implement
-7. round 12 freeze     — D-035 구성대로
-8. three-lens review
-```
+`D-038` 항목 1(operator hold 해제 없음), 항목 6(lease 만료 침묵), 항목 4
+(`_clear_exception_frames` 4사본). round 12·13 의 Advisory 는
+`3lens-review-round-13.md` 의 Remaining Advisory 표에 있다.
 
-`/speckit-specify`와 `/speckit-plan`은 건너뛴다. 새 기능이 아니라 기존 spec 안의 결함 수정이고
-spec 변경은 `R-5` 한 줄뿐이다. 단 `R-2`를 governed 경로 신설로 정하면 이 판단이 뒤집힌다.
-
-## Wave 4 회고 — 같은 실수를 반복하지 않는다
-
-round 11의 P1 셋 중 둘과 Blocking-P2 둘이 wave 4가 만든 것이다. `CURRENT_ITEM.md`의 stop rule로
-옮겼고 요지는 넷이다.
-
-1. **결함을 고칠 때 같은 형태가 저장소에 몇 개 있는지 먼저 센다.** `R-1`이 이 규칙 부재로 생겼다.
-   `slack_projection.py`의 bare `BaseException`을 고치면서 `slack_http.py`의 같은 코드를 놓쳤고,
-   negative verification도 고친 사본만 확인했다
-2. **review 지시를 그대로 구현하기 전에 그것이 다른 축을 무너뜨리는지 본다.** `R-2`가 그 사례다.
-   round 10 `C-1`이 "dead letter + operator hold"를 선언했고 그대로 따랐는데, 그 지시가
-   transient와 terminal을 구분하지 않았다
-3. **test가 무엇을 고정하는지 스스로 증명한다.** 겨냥한 guard를 실제로 깨뜨려 실패를 확인하지
-   않은 test는 evidence에 "고정한다"고 적지 않는다. `R-4`가 동어반복이었다
-4. **계약·spec을 코드에 맞출 때 양쪽 집합의 크기를 센다.** `R-5`가 4 대 5 불일치를 남기고
-   일치했다고 기록한 사례다
-
-## Process Decisions Landed This Session
+## Process Decisions So Far
 
 | ID | 내용 |
 |---|---|
-| `D-033` | `/speckit-implement` 앞의 사람 승인 제거. Pre-Implement Procedure와 구현 후 review가 대신한다 |
-| `D-034` | safe outcome 계약·spec을 구현에 맞춘다. `completed` 제거, `unavailable`을 recovery hold 전용으로 |
-| `D-035` | frozen target 구성 재정의. per-task manifest YAML을 넣고 `index.yaml`·`tasks.md`·`evidence/**`를 뺀다. **round 12부터 적용** |
-| `D-036` | `/speckit-analyze`를 필수로. `/taskify` 뒤, `/speckit-implement` 앞. CRITICAL/HIGH면 정지 |
-| `D-037` | `/speckit-clarify`를 필수로. `/speckit-specify` 뒤, `/speckit-plan` 앞 |
-
-`D-036`·`D-037`의 공통 잔여 위험: **engine이 `speckit.analyze`·`speckit.clarify`를 실제로
-dispatch하는지 확인하지 못했다.** 실패하면 step을 지우지 말고 `AGENTS.md`의 절차를 손으로 돌린다.
+| `D-033` | `/speckit-implement` 앞 사람 승인 제거 |
+| `D-034` | safe outcome 계약을 구현에 맞춤 |
+| `D-035` | frozen target 구성 |
+| `D-036` | `/speckit-analyze` 필수 |
+| `D-037` | `/speckit-clarify` 필수 |
+| `D-038` | round 11 `R-1`·`R-2`·`R-3` 판단 6개 |
+| `D-039` | 결정이 기록된 소진은 침묵 |
+| `D-040` | FR-027 이 재시도 분류에서 FR-021 에 우선 (안 B) |
 
 ## Deferred Phase — Package 4
 

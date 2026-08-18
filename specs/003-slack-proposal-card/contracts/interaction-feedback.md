@@ -25,8 +25,41 @@ The background worker maps every other internal result to a closed public vocabu
 | `denied` | actor, channel, permission, binding, or installation denial |
 | `unavailable` | recovery hold without a more specific public result |
 
-A retry produces no safe outcome. The command is not finished, so announcing a result would be
-premature; the next attempt decides. Only a recovery hold is terminal enough to report.
+A retry with attempts left produces no safe outcome. The command is not finished, so announcing a
+result would be premature; the next attempt decides. Only a recovery hold is terminal enough to
+report.
+
+An exhausted command has no next attempt, so the premise above stops holding and silence would be
+permanent. Three endings are possible and they are not the same. The first two turn on whether the
+worker observed the last attempt; the third splits the observed case by whether an earlier attempt
+already committed a decision.
+
+- **The worker observed the last attempt, it failed, and no decision was committed.** The outcome
+  is known, so the worker ends the command as a recovery hold and the mapping above reports
+  `unavailable`. This adds a producer for an existing outcome; it does not add an outcome.
+- **The worker observed the last attempt, it failed, but an earlier attempt had already committed
+  the decision.** That decision stands and its result Card already went out. Reporting
+  `unavailable` here would contradict a message the reviewer has in hand, and a delivered message
+  cannot be recalled. The worker still ends the command as a recovery hold — the ledger needs
+  reconciling — but carries the error code `INGRESS_DECISION_COMMITTED_UNRECONCILED`, which the
+  outcome mapping answers with silence.
+
+  **The same ending covers a fourth entry**: the worker could not read whether a decision was
+  committed, because the store failure that exhausted the retry budget also failed that read. The
+  result is the same and the reason is different — not *we know a decision landed* but *we cannot
+  tell*. Silence is the recoverable choice; a wrong announcement is not (`D-042`).
+- **No attempt ever completed**, because the worker kept dying and only lease expiry consumed the
+  budget. The outcome is unknown here: a decision may have committed before the worker died, in
+  which case its result Card already went out, and announcing a failure would contradict it. The
+  system announces nothing and the command stays listed for operator recovery.
+
+`INGRESS_DECISION_COMMITTED_UNRECONCILED` is an **error code, not a safe outcome.** It does not
+belong in the safe outcome enum above and must not be added to it. The enum names what the reviewer
+can be told; this code names why the reviewer is told nothing. Adding it would wire a producer for
+an outcome that must never be announced — the exact failure the next paragraph warns about, run in
+reverse.
+
+`stranded()` lists all three endings. It is the operator's entry point for any of them.
 
 Every listed outcome has a producer. An outcome value with no producer must not remain in the
 enum — a later reader takes it for delivered behavior, or wires a producer and announces the same

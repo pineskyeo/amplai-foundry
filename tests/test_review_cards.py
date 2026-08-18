@@ -42,6 +42,7 @@ from amplai_foundry.governance import (
     OutboxConfig,
     OutboxDispatcher,
     OutboxReconcileError,
+    OutboxRetryableError,
     OutboxState,
     PreparedReviewActionSet,
     ProposalDefinitionManifest,
@@ -1500,6 +1501,19 @@ class OperationalErrorPrepareActionSetService(ReviewActionSetService):
         raise sqlite3.OperationalError("database is locked")
 
 
+class CorruptStorePrepareActionSetService(ReviewActionSetService):
+    """`prepare` 가 store 손상을 알린다.
+
+    `sqlite_errorcode` 를 직접 세운다. 손상된 파일을 진짜로 만들 수 없으므로 판별기가 읽는
+    값을 그대로 준다 — 판별기는 그 하위 byte 만 본다.
+    """
+
+    def prepare(self, event: object) -> object:
+        error = sqlite3.DatabaseError("database disk image is malformed")
+        error.sqlite_errorcode = sqlite3.SQLITE_CORRUPT
+        raise error
+
+
 class TypeErrorReviewRenderer(SlackProposalCardRenderer):
     """`render_review` 가 분류되지 않은 Exception 을 던진다."""
 
@@ -1520,13 +1534,21 @@ def _leased_review_event(store: object, event_id: str) -> object:
     )
 
 
-def test_ordinary_prepare_exception_dead_letters_instead_of_escaping(tmp_path: Path) -> None:
-    """`sqlite3.OperationalError` 가 dead letter 와 hold 를 만든다.
+def _destination_hold(store: object, destination_ref: str) -> tuple[int] | None:
+    with store.connect() as connection:  # type: ignore[attr-defined]
+        return connection.execute(
+            "SELECT operator_hold FROM governance_outbox_destinations WHERE destination_ref = ?",
+            (destination_ref,),
+        ).fetchone()
 
-    이전에는 `_interruption_kind` 가 `"exception"` 을 돌려주고
-    `_raise_sanitized_interruption` 이 bare `BaseException` 을 던져
-    `deliver_next` 의 두 handler 를 모두 통과했다. durable 기록 없이 worker 가 죽었다.
-    """
+
+# T010 AC-01 — 일시적 store 실패는 예산을 쓴다.
+#
+# **이 test 는 wave 4 에서 반대를 요구했다.** round 10 `C-1` 이 "dead letter + operator
+# hold" 를 선언했고 그대로 구현·고정한 결과, sqlite lock 한 번에 destination 전체가 즉시
+# 영구 정지했다 (round 11 `R-2`). 같은 저장소의 `ingress_worker` 는 같은 예외를 재시도로
+# 분류한다. 기대를 지우는 것이 아니라 옮긴다 — 아래 AC-02 가 소진 후 결말을 계속 요구한다.
+def test_a_transient_prepare_failure_retries_instead_of_holding(tmp_path: Path) -> None:
     store, _active, authority, clock, raw_result = _review_request(tmp_path)
     event_id = raw_result.outbox_event_id
     pending = OutboxDispatcher(store).get(event_id)
@@ -1541,17 +1563,69 @@ def test_ordinary_prepare_exception_dead_letters_instead_of_escaping(tmp_path: P
     )
     dispatcher = OutboxDispatcher(store, clock=clock, config=OutboxConfig(max_attempts=3))
 
-    failed = dispatcher.deliver_next("ordinary-exception-worker", destination)
+    failed = dispatcher.deliver_next("transient-worker", destination)
+
+    assert failed is not None
+    assert failed.state is OutboxState.RETRY_WAIT, "일시적 실패가 destination 을 멈추면 안 된다"
+    # 원인을 남긴다. generic `OUTBOX_DELIVERY_FAILED` 로 덮이면 dead letter 가 원인을
+    # 가리키지 않는다 — round 11 `R-1` 이 그 형태를 결함으로 셌다.
+    assert failed.last_error_code == "REVIEW_CARD_PREPARE_UNAVAILABLE"
+    assert _destination_hold(store, pending.destination_ref) == (0,)
+
+
+# T010 AC-02 — 예산을 소진하면 여전히 dead letter 와 hold 에 도달하고, 그 dead letter 가
+# 원인 code 를 가진다. 재분류가 안전망을 없애지 않는다는 것이 이 test 의 요지다.
+def test_a_transient_prepare_failure_still_dead_letters_once_the_budget_is_spent(
+    tmp_path: Path,
+) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event_id = raw_result.outbox_event_id
+    pending = OutboxDispatcher(store).get(event_id)
+    action_sets = OperationalErrorPrepareActionSetService(store, authority, clock=clock)
+    destination = SlackProjectionDestination(
+        CapturingTransport(),
+        destination_ref=pending.destination_ref,
+        channel="C456",
+        app_id="APP1",
+        max_attempts=3,
+        review_action_sets=action_sets,
+    )
+    dispatcher = OutboxDispatcher(store, clock=clock, config=OutboxConfig(max_attempts=3))
+
+    failed = None
+    for _ in range(3):
+        clock.value = clock.value + timedelta(minutes=10)
+        failed = dispatcher.deliver_next("transient-worker", destination)
 
     assert failed is not None
     assert failed.state is OutboxState.DEAD_LETTER
+    assert failed.last_error_code == "REVIEW_CARD_PREPARE_UNAVAILABLE"
+    assert _destination_hold(store, pending.destination_ref) == (1,)
+
+
+# T010 AC-03 — store 손상은 예산을 쓰지 않는다. 다시 시도해도 같기 때문이다.
+def test_a_corrupt_store_dead_letters_on_the_first_attempt(tmp_path: Path) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event_id = raw_result.outbox_event_id
+    pending = OutboxDispatcher(store).get(event_id)
+    action_sets = CorruptStorePrepareActionSetService(store, authority, clock=clock)
+    destination = SlackProjectionDestination(
+        CapturingTransport(),
+        destination_ref=pending.destination_ref,
+        channel="C456",
+        app_id="APP1",
+        max_attempts=3,
+        review_action_sets=action_sets,
+    )
+    dispatcher = OutboxDispatcher(store, clock=clock, config=OutboxConfig(max_attempts=3))
+
+    failed = dispatcher.deliver_next("corrupt-worker", destination)
+
+    assert failed is not None
+    assert failed.state is OutboxState.DEAD_LETTER
+    assert failed.attempts == 1, "손상은 재시도가 확정적으로 무의미하다"
     assert failed.last_error_code == "REVIEW_CARD_PREPARE_FAILED"
-    with store.connect() as connection:
-        held = connection.execute(
-            "SELECT operator_hold FROM governance_outbox_destinations WHERE destination_ref = ?",
-            (pending.destination_ref,),
-        ).fetchone()
-    assert held == (1,)
+    assert _destination_hold(store, pending.destination_ref) == (1,)
 
 
 def test_ordinary_render_exception_dead_letters_and_revokes_its_generation(
@@ -1580,11 +1654,32 @@ def test_ordinary_render_exception_dead_letters_and_revokes_its_generation(
     assert action_sets.get(event_id, 1).state == "revoked"
 
 
-def test_ordinary_delivery_exception_raises_a_catchable_reconcile_error(tmp_path: Path) -> None:
-    """`send` 가 던지는 예외가 `Exception` 하위여야 dispatcher 가 잡을 수 있다."""
+# T010 AC-05 — 어느 분류로 가든 `send` 가 던지는 것은 `Exception` 하위여야 하고 원본
+# 메시지를 흘리면 안 된다. 분류가 바뀌어도 이 두 성질은 유지된다.
+@pytest.mark.parametrize(
+    ("service", "expected_type", "expected_code"),
+    [
+        (
+            OperationalErrorPrepareActionSetService,
+            OutboxRetryableError,
+            "REVIEW_CARD_PREPARE_UNAVAILABLE",
+        ),
+        (
+            CorruptStorePrepareActionSetService,
+            OutboxReconcileError,
+            "REVIEW_CARD_PREPARE_FAILED",
+        ),
+    ],
+)
+def test_a_prepare_failure_raises_a_catchable_error_without_leaking_its_cause(
+    tmp_path: Path,
+    service: type,
+    expected_type: type,
+    expected_code: str,
+) -> None:
     store, _active, authority, clock, raw_result = _review_request(tmp_path)
     leased = _leased_review_event(store, raw_result.outbox_event_id)
-    action_sets = OperationalErrorPrepareActionSetService(store, authority, clock=clock)
+    action_sets = service(store, authority, clock=clock)
     destination = SlackProjectionDestination(
         CapturingTransport(),
         destination_ref=leased.destination_ref,
@@ -1594,13 +1689,14 @@ def test_ordinary_delivery_exception_raises_a_catchable_reconcile_error(tmp_path
         review_action_sets=action_sets,
     )
 
-    with pytest.raises(OutboxReconcileError) as caught:
+    with pytest.raises(expected_type) as caught:
         destination.send(leased)
 
-    assert caught.value.code == "REVIEW_CARD_PREPARE_FAILED"
+    assert caught.value.code == expected_code
     assert isinstance(caught.value, Exception)
     assert caught.value.__cause__ is None
     assert "database is locked" not in str(caught.value)
+    assert "database disk image is malformed" not in str(caught.value)
 
 
 def test_process_interruption_during_prepare_still_propagates(tmp_path: Path) -> None:
@@ -1970,3 +2066,290 @@ def test_reconcile_rejects_a_duplicated_review_card_audit(tmp_path: Path) -> Non
         GovernanceEventService(store).reconcile()
 
     assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value)
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T013 — 무결성 대조 성분과 outbox 개수 (round 11 R-7, R-8)
+# ---------------------------------------------------------------------------
+#
+# 세 guard 모두 오늘 맞게 동작한다. 없는 것은 그 정확성을 붙잡는 test 다. round 11 mutation
+# 이 M39, M40, 그리고 개수 검사 약화에서 살아남았다.
+#
+# **성분 하나만 어긋나게 한다.** 여러 곳을 동시에 망가뜨리면 다른 guard 가 먼저 걸려 무엇이
+# 잡았는지 알 수 없고, 그러면 겨냥한 guard 를 고정한 것이 아니다. round 11 이 `T006`
+# evidence 의 "무결성 대조는 전부 도달 불가" 를 부분 오류로 정정한 이유가 이것이다.
+#
+# UPDATE 를 막는 trigger 를 먼저 지운다. trigger 는 정상 경로를 지키고, 무결성 대조는
+# **파일이 밖에서 바뀐 경우**를 지킨다. 후자를 재현하려면 전자를 치워야 한다.
+
+
+def _drop_trigger(connection: object, name: str) -> None:
+    connection.execute(f"DROP TRIGGER {name}")  # type: ignore[attr-defined]
+
+
+# T013 AC-02 — 감사 대조의 actor 성분. 이 성분을 지우면 다른 reviewer 이름으로 기록된
+# review card 요청이 정상으로 통과한다.
+def test_reconcile_rejects_a_review_card_audit_bound_to_another_actor(tmp_path: Path) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+    ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    with store.connect() as connection:
+        _drop_trigger(connection, "governance_audit_events_no_update")
+        changed = connection.execute(
+            "UPDATE governance_audit_events SET actor_id = ? WHERE event_type = ?",
+            ("ACT-someone-else", "proposal.review_card_requested"),
+        )
+        assert changed.rowcount == 1, "전제: 바꿀 audit row 가 정확히 하나다"
+        connection.commit()
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value)
+
+
+# T013 AC-01 — root 대조의 canonical payload 성분.
+#
+# **digest column 은 건드리지 않는다.** digest 는 payload 에서 다시 계산한 값과 비교되므로
+# 저장된 JSON 만 바꾸면 digest 두 성분은 여전히 맞고 이 성분 하나만 어긋난다. 그래서 이
+# test 가 겨냥한 것을 정확히 겨냥한다.
+def test_prepare_rejects_a_tampered_stored_payload_json(tmp_path: Path) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+
+    with store.connect() as connection:
+        stored = connection.execute(
+            "SELECT payload_digest, payload_json FROM governance_review_card_commands"
+        ).fetchone()
+        assert stored is not None
+        _drop_trigger(connection, "governance_review_card_commands_no_update")
+        # 같은 내용, 다른 문자열. canonical form 이 아니게 만든다.
+        connection.execute(
+            "UPDATE governance_review_card_commands SET payload_json = ?",
+            (str(stored[1]) + " ",),
+        )
+        connection.commit()
+        after = connection.execute(
+            "SELECT payload_digest FROM governance_review_card_commands"
+        ).fetchone()
+    assert after == (stored[0],), "digest 성분은 그대로 둔다. 어긋나는 것은 JSON 하나뿐이다"
+
+    with pytest.raises(ReviewCardError) as caught:
+        ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    assert caught.value.code == "REVIEW_CARD_ROOT_MISMATCH"
+
+
+# T013 AC-03 — 요청당 outbox event 는 정확히 하나다.
+#
+# `!= 1` 은 0건뿐 아니라 2건 이상도 막는다. 약화하면 한 review 요청이 두 Card 를 배달할 수
+# 있고, 그러면 reviewer 가 같은 snapshot 에 대해 유효한 Card 를 둘 보게 된다 (FR-013, FR-015).
+def test_request_refuses_when_the_append_produces_more_than_one_outbox_event(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 첫 요청은 정상 경로를 태워 fixture 를 만든다. guard 는 두 번째 요청에서 본다.
+    _review_request(tmp_path)
+    original = GovernanceEventService._append_review_card_in_transaction
+
+    def _two_events(self, connection, ref, *, request_key, authority, payload):  # type: ignore[no-untyped-def]
+        audit, outbox = original(
+            self, connection, ref, request_key=request_key, authority=authority, payload=payload
+        )
+        return audit, (*outbox, outbox[0])
+
+    monkeypatch.setattr(GovernanceEventService, "_append_review_card_in_transaction", _two_events)
+
+    with pytest.raises(ReviewCardError) as caught:
+        _review_request(tmp_path / "second")
+
+    assert caught.value.code == "REVIEW_CARD_OUTBOX_INVALID"
+
+
+# ---------------------------------------------------------------------------
+# round 12 RL-3·RL-4·RL-5 를 닫은 wave (workstream wave 6) — regression lens 가 찾은 공백
+# ---------------------------------------------------------------------------
+#
+# **이 wave 는 task manifest 가 없다** (round 13 `CT-3`). 원래 주석은 `MGC-012-P5-T017` 을
+# 달았는데 그 ID 는 그때 발급된 적이 없고, 지금은 전혀 다른 task 의 ID 다. round 참조로
+# 바꾼다. 존재하지 않는 manifest 를 가리키는 주석은 다음 읽는 사람을 없는 파일로 보낸다.
+#
+# `T013` 이 각 검사의 성분을 **하나씩** 고정하면서 같은 검사의 형제 성분을 세지 않았다.
+# `F-2` 와 같은 실수다 — 세되 끝까지 세지 않았다. 여기서 나머지를 채운다.
+#
+# **그 "나머지" 도 끝이 아니었다.** round 13 `F-4` 가 같은 `if` 의 둘을 더 잡았고, T018 이
+# 전수를 세니 아홉 블록 69 성분 중 66 이 무방비였다. 아래 절이 그 후속이다.
+
+
+# RL-3 — root 대조의 저장된 digest 성분.
+#
+# `T013` 은 저장된 JSON 성분만 고정했다. digest column 만 어긋난 경우는 무방비였다.
+# **JSON 은 그대로 둔다** — digest 하나만 어긋나야 겨냥한 성분이 잡은 것이 증명된다.
+def test_prepare_rejects_a_tampered_stored_payload_digest(tmp_path: Path) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+
+    with store.connect() as connection:
+        before = connection.execute(
+            "SELECT payload_digest, payload_json FROM governance_review_card_commands"
+        ).fetchone()
+        assert before is not None
+        _drop_trigger(connection, "governance_review_card_commands_no_update")
+        connection.execute(
+            "UPDATE governance_review_card_commands SET payload_digest = ?",
+            # 형식 CHECK 를 만족하는 **다른** digest 다. 형식을 깨면 CHECK 가 먼저 잡아
+            # 겨냥한 성분을 고정한 것이 아니게 된다.
+            ("sha256:" + "f" * 64,),
+        )
+        connection.commit()
+        after = connection.execute(
+            "SELECT payload_json FROM governance_review_card_commands"
+        ).fetchone()
+    assert after == (before[1],), "JSON 성분은 그대로 둔다. 어긋나는 것은 digest 하나뿐이다"
+
+    with pytest.raises(ReviewCardError) as caught:
+        ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    assert caught.value.code == "REVIEW_CARD_ROOT_MISMATCH"
+
+
+# RL-4 — 감사 대조의 actor_type 성분. `T013` 이 고정한 actor_id 의 형제다.
+def test_reconcile_rejects_a_review_card_audit_with_a_wrong_actor_type(tmp_path: Path) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+    ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    with store.connect() as connection:
+        _drop_trigger(connection, "governance_audit_events_no_update")
+        changed = connection.execute(
+            "UPDATE governance_audit_events SET actor_type = ? WHERE event_type = ?",
+            ("service", "proposal.review_card_requested"),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value)
+
+
+# RL-5 — 감사 대조의 destination_count 성분.
+#
+# 이 값이 어긋나면 review card 요청이 실제와 다른 수의 destination 을 주장한 것으로 남는다.
+def test_reconcile_rejects_a_review_card_audit_with_a_wrong_destination_count(
+    tmp_path: Path,
+) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+    ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    with store.connect() as connection:
+        _drop_trigger(connection, "governance_audit_events_no_update")
+        changed = connection.execute(
+            "UPDATE governance_audit_events SET destination_count = ? WHERE event_type = ?",
+            (2, "proposal.review_card_requested"),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value)
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T018 — review Card 감사 대조의 **모든** 성분 (round 13 F-4)
+# ---------------------------------------------------------------------------
+#
+# round 12 는 `RL-3`~`RL-5` 로 성분 셋을 지목하고 **공통 뿌리로 명시**했다. wave 6 은 그 셋만
+# 고정했다. round 13 `F-4` 가 남은 둘(`definition_digest`, `destination_manifest_digest`)을
+# 다시 잡았다. **같은 실수가 두 라운드 연속이다.**
+#
+# 이번에는 세지 않고 넘기지 않았다. `events.py:1254-1263` 의 `if` 성분을 전수 세고 하나씩
+# 지워 재니 9개 중 이렇게 갈렸다.
+#
+#     killed   3  actor_id(L1257), actor_type(L1258), destination_count(L1263)
+#     survived 6  event_type(L1255), proposal_ref(L1256), before_state(L1259),
+#                 after_state(L1260), definition_digest(L1261),
+#                 destination_manifest_digest(L1262)
+#
+# 아래가 그 여섯이다. `F-4` 가 지목한 둘은 그중 둘일 뿐이었다.
+#
+# **다른 검사가 먼저 걸리면 고정이 아니다.** audit row 를 고치면 hash chain 도 깨지므로
+# `AUDIT_HASH_CHAIN_INVALID` 가 대신 잡을 수 있다. 그래서 각 test 는 코드가
+# `REVIEW_CARD_AUDIT_MISMATCH` 인지 확인한다 — 겨냥한 대조가 잡았다는 증거다.
+
+
+_REVIEW_AUDIT_COMPONENTS = [
+    ("event_type", "proposal.review_card_rejected"),
+    ("before_state", "draft"),
+    ("after_state", "approved"),
+    ("definition_digest", "sha256:" + "a" * 64),
+    ("destination_manifest_digest", "sha256:" + "b" * 64),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _REVIEW_AUDIT_COMPONENTS,
+    ids=[column for column, _ in _REVIEW_AUDIT_COMPONENTS],
+)
+def test_reconcile_rejects_a_review_card_audit_with_any_wrong_component(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+    ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    with store.connect() as connection:
+        _drop_trigger(connection, "governance_audit_events_no_update")
+        changed = connection.execute(
+            f"UPDATE governance_audit_events SET {column} = ? WHERE event_type = ?",
+            (wrong_value, "proposal.review_card_requested"),
+        )
+        assert changed.rowcount == 1, "겨냥한 감사 row 하나만 바꾼다"
+        connection.commit()
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다면 이 성분을 고정한 것이 아니다: "
+        f"{caught.value}"
+    )
+
+
+# T018 — 같은 `if` 의 `proposal_ref` 성분. 위 parametrize 와 분리한 이유는 저장 형태가
+# 다르기 때문이다. `proposal_ref` 는 한 column 이 아니라 `project_namespace`, `project_id`,
+# `proposal_id` 셋으로 저장되고 그 셋에 외래키가 걸려 있다. 존재하지 않는 proposal 을
+# 가리키게 하려면 외래키를 잠시 꺼야 한다.
+#
+# 이것이 인위적으로 보일 수 있으나 막으려는 상태는 실재한다 — 저장소에 proposal 이 여럿일 때
+# audit row 가 **다른** proposal 을 가리키면 외래키는 만족하면서 대조는 어긋난다. 여기서는
+# 그 상태를 최소로 재현한다.
+def test_reconcile_rejects_a_review_card_audit_pointing_at_another_proposal(
+    tmp_path: Path,
+) -> None:
+    store, _active, authority, clock, raw_result = _review_request(tmp_path)
+    event = OutboxDispatcher(store).get(raw_result.outbox_event_id)
+    ReviewActionSetService(store, authority, clock=clock).prepare(event)
+
+    with store.connect() as connection:
+        _drop_trigger(connection, "governance_audit_events_no_update")
+        connection.execute("PRAGMA foreign_keys = OFF")
+        changed = connection.execute(
+            "UPDATE governance_audit_events SET proposal_id = ? WHERE event_type = ?",
+            ("PROP-20260817-0000BEEF", "proposal.review_card_requested"),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "REVIEW_CARD_AUDIT_MISMATCH" in str(caught.value), (
+        f"proposal_ref 성분을 고정한 것이 아니다: {caught.value}"
+    )

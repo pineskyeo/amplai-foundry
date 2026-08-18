@@ -6,8 +6,10 @@ import hashlib
 import inspect
 import json
 import os
+import socket
 import subprocess
 import sys
+import textwrap
 import threading
 import time
 import tomllib
@@ -3074,3 +3076,375 @@ def test_the_transport_keeps_the_budget_it_declared() -> None:
     assert transport.lease_seconds == _LEASE_SECONDS
     # 보관한 값으로 최악 예산을 다시 셀 수 있다. 셀 수 없으면 대조가 불가능하다.
     assert worst_case_call_seconds(0.2, transport.max_history_pages) < _LEASE_SECONDS
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T009 — 평범한 Exception 이 dispatcher 가 잡을 수 있는 형으로 올라간다
+# (round 11 R-1)
+# ---------------------------------------------------------------------------
+
+
+class _OpenerRaising:
+    """실패하는 opener. **실제 urllib chain 과 같은 깊이로 죽는다.**
+
+    `open` 에서 곧장 raise 하지 않고 `_deliver` 를 한 겹 거친다. 실제 urllib 은
+    `open` → `_open` → `http_open` → `do_open` 을 지나며 그 frame 들이 `Request` 를 든 채
+    죽는다. `_send` 의 `finally` 는 **자기 frame 의 local 만** 비우므로 그보다 깊은 frame 은
+    `_clear_exception_frames` 만 비울 수 있다. 한 겹으로 만들면 그 guard 를 겨냥한 test 가
+    구조상 통과한다.
+
+    **`del request, timeout` 을 하지 않는다.** 그 `request` 가 `Authorization: Bearer` 를 든
+    객체이고, guard 가 traceback 에서 지우려는 대상 **자체**다. fixture 가 먼저 지우면
+    검사 대상이 사라진다 (round 13 `PBC-1`).
+    """
+
+    def __init__(self, error: BaseException) -> None:
+        self.error = error
+
+    def open(self, request: object, *, timeout: float) -> object:
+        return self._deliver(request, timeout)
+
+    def _deliver(self, request: object, timeout: float) -> object:
+        del timeout
+        assert request is not None
+        raise self.error
+
+
+class _NotAnException(BaseException):
+    """`Exception` 을 상속하지 않는 중단. `_call` 의 `except Exception` 이 못 잡는다."""
+
+
+# T009 AC-01 — 이 transport 가 `R-1` 의 발생 지점이다.
+#
+# `_call` 은 `except Exception` 으로 평범한 실패를 전부 `SlackTransportError` 로 바꾼다.
+# 그래서 바깥 `except BaseException` 에 도달하는 것은 **Exception 이 아닌 BaseException**
+# 뿐이고, round 11 이 측정한 `ESCAPED ('BaseException', False)` 가 정확히 그 형태다.
+#
+# 예전 사본은 그것을 `"base_exception"` 으로 부르고 bare `BaseException` 으로 다시 올렸다.
+# 그 값은 `deliver_next` 의 `except OutboxReconcileError` 와 `except Exception` 을 모두
+# 통과해 event 를 `leased` 로 남긴다. `isinstance(..., Exception)` 이 그 mutation 을 죽이는
+# 검사다 — 종류 이름만 보면 다시 갈라져도 안 잡힌다.
+def test_a_non_exception_interruption_surfaces_as_something_except_exception_catches(
+    slack: _FakeSlack,
+) -> None:
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(_NotAnException("소켓이 죽었다"))  # type: ignore[assignment]
+
+    with pytest.raises(BaseException) as caught:
+        transport.post_message(channel=CHANNEL, payload={"text": "x"}, marker=MARKER)
+
+    assert isinstance(caught.value, Exception), (
+        "bare BaseException 으로 올리면 dispatcher 의 두 handler 를 모두 통과해 조용히 샌다"
+    )
+    assert "Slack message delivery interrupted" in str(caught.value)
+    assert "소켓이 죽었다" not in str(caught.value), "원본 메시지를 그대로 흘리지 않는다"
+
+
+# T009 AC-03 — 세 process interruption 은 여전히 같은 종류로 전파된다. `generator_exit` 은
+# round 11 `R-6` 이 test 0건이라고 지목한 분기다.
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        (KeyboardInterrupt("stop"), KeyboardInterrupt),
+        (SystemExit("stop"), SystemExit),
+        (GeneratorExit(), GeneratorExit),
+    ],
+)
+def test_process_interruptions_propagate_from_the_http_transport(
+    slack: _FakeSlack,
+    raised: BaseException,
+    expected: type[BaseException],
+) -> None:
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(raised)  # type: ignore[assignment]
+
+    with pytest.raises(expected):
+        transport.post_message(channel=CHANNEL, payload={"text": "x"}, marker=MARKER)
+
+
+# ---------------------------------------------------------------------------
+# round 12 F-2 를 닫은 wave (workstream wave 6) — guard 를 공통 통로에 둔다
+#
+# **이 wave 는 task manifest 가 없다** (round 13 `CT-3`). 원래 주석은 `MGC-012-P5-T016` 을
+# 달았는데 그 ID 는 그때 발급된 적이 없고, 지금은 전혀 다른 task 의 ID 다. 존재하지 않는 ID
+# 를 남기면 다음 읽는 사람이 없는 manifest 를 찾는다. round 참조로 바꾼다.
+# ---------------------------------------------------------------------------
+#
+# `T009` 는 `_interruption_kind` **정의** 사본을 세어 합쳤지만 그 guard 가 없는 **호출
+# 지점**을 세지 않았다. `post_message` 만 감싸져 있었고 `read_history`·`post_ephemeral`·
+# `delete_message` 는 `_call` 을 맨몸으로 불렀다. 이제 `_call` 안에 두어 호출자를 셀 필요가
+# 없게 만들었다.
+
+
+def _transport_calls(transport: HttpSlackTransport) -> dict[str, object]:
+    """`_call` 을 거치는 모든 공개 진입점."""
+    return {
+        "post_message": lambda: transport.post_message(
+            channel=CHANNEL, payload={"text": "x"}, marker=MARKER
+        ),
+        "read_history": lambda: transport.read_history(channel=CHANNEL, cursor=None, limit=1),
+        "post_ephemeral": lambda: transport.post_ephemeral(channel=CHANNEL, user="U1", text="x"),
+        "delete_message": lambda: transport.delete_message(channel=CHANNEL, ts="1.0"),
+    }
+
+
+# F-2 AC-01 — 어느 진입점에서든 Exception 이 아닌 BaseException 은 catchable 하게 올라간다.
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_every_transport_entry_point_converts_a_non_exception_interruption(
+    slack: _FakeSlack, entry: str
+) -> None:
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(_NotAnException("소켓이 죽었다"))  # type: ignore[assignment]
+
+    with pytest.raises(BaseException) as caught:
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    assert isinstance(caught.value, Exception), (
+        f"{entry} 가 bare BaseException 을 내보내면 dispatcher 의 두 handler 를 모두 통과한다"
+    )
+    assert "Slack message delivery interrupted" in str(caught.value)
+
+
+# F-2 AC-02 — 그 예외의 traceback 이 bot token 을 든 객체를 붙잡지 않는다.
+#
+# `_call` 의 `request` local 은 `Authorization: Bearer <token>` header 를 들고 있다. **그
+# token 은 `repr(f_locals)` 에 안 나온다** — `urllib.request.Request` 의 repr 이 header 를
+# 보여주지 않기 때문이다. round 12 `F-2` 를 실측한 lens 는 `request.headers` 를 직접 봤고,
+# 여기서도 그렇게 본다. 문자열만 훑는 검사는 이 누출을 못 잡는다.
+def _rendered_for_leak(value: object) -> str:
+    """이 local 을 `--showlocals` 가 찍을 때 token 이 보이는가.
+
+    `urllib.request.Request` 의 repr 은 header 를 감춘다. 그래서 header 모음을 직접 편다.
+    **raw byte 도 본다** — `http.client` 의 `send`/`_send_output` frame 이 요청 전체를
+    `msg`/`data` 로 들고 있고 거기에 `Authorization` 줄이 그대로 있다. header dict 만 보면
+    그 절반을 놓친다.
+    """
+    parts = [repr(value)]
+    if isinstance(value, (bytes, bytearray)):
+        parts.append(bytes(value).decode("latin-1", "replace"))
+    for attribute in ("headers", "unredirected_hdrs"):
+        holder = getattr(value, attribute, None)
+        if isinstance(holder, dict):
+            parts.append(repr(holder))
+    return "\n".join(parts)
+
+
+def _bearer_holding_frames(
+    error: BaseException, *, skip_this_module: bool = True
+) -> list[tuple[str, str]]:
+    """traceback 이 아직 붙잡고 있는, bearer token 을 든 local 을 모두 찾는다.
+
+    기본으로 이 test 모듈 자신의 frame 은 뺀다. 여기 local 에 있는 token 은 누출이 아니라
+    측정 도구가 들고 있는 값이고, 그것까지 세면 어떤 구현이든 새는 것으로 나온다.
+
+    `skip_this_module=False` 는 **원본 예외 객체**를 검사할 때만 쓴다. 그 traceback 에는
+    fake opener frame 만 있고 test 함수 frame 은 없으므로 오염이 없다. 그 fake opener 가
+    실제 urllib chain 의 자리를 대신하므로 제외하면 검사 대상 자체가 사라진다.
+    """
+    found: list[tuple[str, str]] = []
+    current: BaseException | None = error
+    seen: set[int] = set()
+    secret = TOKEN.get_secret_value()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        cursor = current.__traceback__
+        while cursor is not None:
+            code = cursor.tb_frame.f_code
+            if not (skip_this_module and code.co_filename == __file__):
+                for name, value in cursor.tb_frame.f_locals.items():
+                    if secret in _rendered_for_leak(value):
+                        found.append((code.co_name, name))
+            cursor = cursor.tb_next
+        current = current.__cause__ or current.__context__
+    return found
+
+
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_no_transport_entry_point_leaks_the_bot_token_in_its_traceback(
+    slack: _FakeSlack, entry: str
+) -> None:
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(_NotAnException("소켓이 죽었다"))  # type: ignore[assignment]
+
+    with pytest.raises(BaseException) as caught:
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    assert _bearer_holding_frames(caught.value) == []
+    assert TOKEN.get_secret_value() not in f"{caught.value!s}{caught.value!r}"
+
+
+# F-2 AC-03 — 진짜 process interruption 은 모든 진입점에서 그대로 전파된다.
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        (KeyboardInterrupt("stop"), KeyboardInterrupt),
+        (SystemExit("stop"), SystemExit),
+        (GeneratorExit(), GeneratorExit),
+    ],
+)
+def test_process_interruptions_propagate_from_every_entry_point(
+    slack: _FakeSlack, entry: str, raised: BaseException, expected: type[BaseException]
+) -> None:
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(raised)  # type: ignore[assignment]
+
+    with pytest.raises(expected):
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T015 — 흔한 실패 arm 에서도 token 이 남지 않는다 (round 13 F-1, PBC-2)
+# ---------------------------------------------------------------------------
+#
+# 위의 세 test 는 `_NotAnException` 하나만 주입해서 `_send` 의 `except BaseException` arm 만
+# 탄다. **실제 누출이 나던 곳은 거기가 아니다.** 연결 거부·타임아웃·DNS·TLS 는
+# `except Exception` 을 타고 `_fail` 로, HTTP 오류는 `except urllib.error.HTTPError` 를 타고
+# `_fail_http` 로 간다. 둘 다 `... from error` 로 올리므로 `__cause__` 에 urllib frame chain
+# 이 붙고 그 frame 이 token 을 든다.
+#
+# round 13 `F-1` 이 unmutated code 에서 실측한 값이다.
+#
+#     read_history   leak=12 frame  (연결 거부)
+#     delete_message leak=12 frame  (연결 거부)
+#     read_history   leak=4  frame  (HTTP 500)
+#     delete_message leak=4  frame  (HTTP 500)
+#
+# `post_message` 와 `post_ephemeral` 은 그때도 0 이었다. 그 둘만 sanitize 를 불렀기 때문이다.
+
+
+_SLACK_METHODS = ("chat.postMessage", "chat.postEphemeral", "conversations.history", "chat.delete")
+
+
+def _dead_port() -> int:
+    """아무도 듣지 않는 loopback port. 연결 거부가 나고 실제 network 를 타지 않는다."""
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    port = int(probe.getsockname()[1])
+    probe.close()
+    return port
+
+
+# T015 AC-01/AC-02/AC-07 — `except Exception` arm. 실제 urllib 로 연결 거부를 만든다.
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_no_entry_point_leaks_the_bot_token_when_the_connection_is_refused(entry: str) -> None:
+    transport = HttpSlackTransport(
+        bot_token=TOKEN,
+        timeout_seconds=1.0,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        lease_seconds=_lease_for(1.0),
+        base_url=f"http://127.0.0.1:{_dead_port()}",
+    )
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    assert _bearer_holding_frames(caught.value) == []
+    assert TOKEN.get_secret_value() not in f"{caught.value!s}{caught.value!r}"
+
+
+# T015 AC-01/AC-02/AC-07 — `except urllib.error.HTTPError` arm. `_fail_http` 도 `from error`
+# 로 올리므로 같은 chain 이 생긴다.
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_no_entry_point_leaks_the_bot_token_when_slack_answers_with_an_http_error(
+    slack: _FakeSlack, entry: str
+) -> None:
+    for method in _SLACK_METHODS:
+        slack.queue(method, _Reply(status=500, body=b"upstream is unwell"))
+    transport = _transport(slack)
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    assert caught.value.status_code == 500, "sanitize 가 분류에 쓰이는 값을 지우면 안 된다"
+    assert _bearer_holding_frames(caught.value) == []
+    assert TOKEN.get_secret_value() not in f"{caught.value!s}{caught.value!r}"
+
+
+# T015 AC-07 — `_decode` 가 내는 실패도 같은 출구를 지난다. 이쪽은 `from` 이 없어 chain 이
+# 원래 비어 있지만, 출구가 하나임을 여기서도 확인한다. 예외마다 판단을 나누면 그 판단이
+# 다음 사본이 된다.
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_no_entry_point_leaks_the_bot_token_when_slack_answers_ok_false(
+    slack: _FakeSlack, entry: str
+) -> None:
+    for method in _SLACK_METHODS:
+        slack.queue(method, _Reply.slack_error("channel_not_found"))
+    transport = _transport(slack)
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    assert caught.value.error_code == "channel_not_found", (
+        "sanitize 가 재시도 분류에 쓰이는 code 를 지우면 안 된다"
+    )
+    assert _bearer_holding_frames(caught.value) == []
+
+
+# T015 AC-08 — `_call` 이 유일한 출구다. 공개 진입점 중 `_send` 를 직접 부르는 것이 하나라도
+# 생기면 그 진입점은 sanitize 를 건너뛴다. round 13 `F-1` 이 정확히 그 모양이었다. 이 검사는
+# **앞으로 추가될 진입점까지** 센다 — 사람이 사본을 세는 것을 대신한다.
+def test_every_public_entry_point_reaches_the_transport_through_the_sanitizing_exit() -> None:
+    tree = ast.parse(textwrap.dedent(inspect.getsource(HttpSlackTransport)))
+    class_def = tree.body[0]
+    assert isinstance(class_def, ast.ClassDef)
+
+    direct_send: list[str] = []
+    for node in class_def.body:
+        if not isinstance(node, ast.FunctionDef) or node.name in {"_call", "_send"}:
+            continue
+        for inner in ast.walk(node):
+            if (
+                isinstance(inner, ast.Call)
+                and isinstance(inner.func, ast.Attribute)
+                and inner.func.attr == "_send"
+            ):
+                direct_send.append(node.name)
+
+    assert direct_send == [], (
+        f"{direct_send} 가 `_send` 를 직접 부른다. 그 경로는 credential 을 지우지 않는다"
+    )
+
+
+# T015 AC-04 — `_send` 의 `except BaseException` arm 이 원본 예외의 frame 을 비운다 (F-2).
+#
+# 올라가는 예외는 `raise ... from None` 이라 원본에 닿지 않는다. 그래서 **올라간 예외만 보는
+# test 로는 이 guard 를 고정할 수 없다** — round 13 `F-2` 가 "지워도 1274건 통과" 라고 적은
+# 이유가 그것이다. guard 가 지키는 것은 원본 예외 객체를 따로 들고 있는 쪽이다. 미리 만든
+# 예외를 재사용하거나 예외를 캐시하는 library 가 그런 참조를 만든다.
+#
+# 그리고 원본 traceback 의 frame 중 `_send` 자신은 `finally` 가 비운다. 남는 것은 그보다
+# **깊은** opener chain frame 이고, 그것을 비우는 것은 이 guard 하나뿐이다.
+#
+# guard 를 지우고 실측한 값:
+#     보관된 원본으로 도달 : [('open', 'request'), ('_deliver', 'request')]
+@pytest.mark.parametrize(
+    "entry", ["post_message", "read_history", "post_ephemeral", "delete_message"]
+)
+def test_a_held_interruption_keeps_no_bot_token_in_the_frames_below_the_transport(
+    slack: _FakeSlack, entry: str
+) -> None:
+    held = _NotAnException("전송 중 끊겼다")
+    transport = _transport(slack)
+    transport._opener = _OpenerRaising(held)  # type: ignore[assignment]
+
+    # `_NotAnException` 은 세 process interruption 중 어느 것도 아니므로 sanitize 된 형은
+    # `RuntimeError` 다. 넓게 잡으면 이 test 가 무엇을 확인하는지 흐려진다.
+    with pytest.raises(RuntimeError):
+        _transport_calls(transport)[entry]()  # type: ignore[operator]
+
+    # 원본 예외를 여전히 들고 있는 쪽에서 본다. 올라간 예외는 `from None` 이라 여기 못 온다.
+    assert _bearer_holding_frames(held, skip_this_module=False) == []
+    assert held.__traceback__ is None, "traceback 을 남기면 그 frame 이 credential 을 붙잡는다"

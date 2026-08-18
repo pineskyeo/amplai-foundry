@@ -1,0 +1,242 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T011
+title: End an exhausted ingress command instead of leaving the reviewer in permanent silence
+type: bugfix
+status: done
+
+goal:
+  outcome: >-
+    worker 가 마지막 시도임을 알고 실패로 끝낸 command 는 recovery hold 로 종결되어 기존 safe
+    feedback 경로가 `unavailable` 을 보낸다. 결과를 모르는 종점은 아무것도 선언하지 않고
+    operator 복구 목록에 남는다. 계약이 그 둘을 사실대로 적는다.
+  user_value: >-
+    지금 reviewer 는 버튼을 누르고 HTTP 200 을 받은 뒤 기본 설정에서 약 75초 동안 재시도가 돌다가
+    영원히 아무것도 못 받는다. 눌렀는지 아닌지 알 방법이 없다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-11.md
+      section: R-3
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-038
+    - path: specs/003-slack-proposal-card/spec.md
+      section: FR-026
+    - path: specs/003-slack-proposal-card/contracts/interaction-feedback.md
+      section: Safe Outcomes
+  requirements:
+    - FR-024
+    - FR-026
+    - SC-004
+  decisions:
+    - D-038
+    - D-034
+
+scope:
+  include:
+    - worker 가 관측한 마지막 시도의 재시도 결말을 recovery hold 로 승격한다.
+    - >-
+      **정정 (2026-08-17, round 13 `CT-3`).** 원문은 "그 결말이 기존 `_with_feedback` 경로를
+      타고 `unavailable` 을 내는지 고정한다" 였다. **더 이상 무조건 참이 아니다.** 이 task 가
+      `done` 이 된 뒤 두 Decision 이 그 결말을 부분집합으로 나눴다.
+
+      `D-039` — 앞선 attempt 가 결정을 이미 commit 했으면 `unavailable` 대신 침묵한다.
+      배달된 Result Card 와 모순되기 때문이다 (round 12 `F-1` 이 실측).
+      `D-042` — 결정 기록 여부를 읽지 못한 경우도 같은 이유로 침묵한다.
+
+      그 변경(workstream wave 6)은 **task manifest 없이** 이뤄져 이 문장이 정정되지 않았다.
+      그것이 round 13 `CT-3` 이다. 원문을 지우지 않고 여기 남긴다.
+
+      **지금도 참인 부분**: 결정이 commit 되지 않은 관측된 소진은 여전히 `_with_feedback`
+      경로를 타고 `unavailable` 을 낸다. 이 task 의 acceptance 는 그 경우를 검사하므로
+      **여전히 유효하다** — `needs_revalidation` 이 아니다. 근거는
+      `tests/test_slack_ack_boundary.py::test_a_worker_observed_exhaustion_ends_as_a_recovery_hold_with_feedback`
+      이 지금도 통과한다는 것이다.
+    - 결과 미지 종점(lease 만료 소진)이 통지를 내지 않는 것을 고정한다.
+    - "계약의 `A retry produces no safe outcome` 문단을 소진 종결과 미지 종점 둘로 나눠 사실대로 쓴다."
+  exclude:
+    - "safe outcome 집합 자체의 정렬. MGC-012-P5-T012 가 맡는다."
+    - schema migration. 통지 여부를 기록하는 column 을 만들지 않는다.
+    - "`claim_next` 의 claim 술어 변경."
+    - 재시도 예산 크기, backoff, lease 설정 변경.
+    - lease 만료 소진에 대한 자동 통지 신설.
+  allowed_paths:
+    - src/amplai_foundry/governance/ingress_worker.py
+    - tests/test_ingress.py
+    - tests/test_slack_ack_boundary.py
+    - specs/003-slack-proposal-card/contracts/interaction-feedback.md
+  forbidden_paths:
+    - vault/
+    - src/amplai_foundry/memory/
+    - src/amplai_foundry/proposals/apply.py
+    - src/amplai_foundry/cli.py
+    - src/amplai_foundry/governance/migrations.py
+    - src/amplai_foundry/governance/ingress.py
+    - .github/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T010
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      `claim_next` 가 claim 시 `attempts = attempts + 1` 하고 그 row 를 다시 읽으므로
+      (`ingress.py:312`, `:331-334`) worker 가 든 `claim.attempts` 는 이번 시도를 이미 포함한다.
+      마지막 시도는 `claim.attempts >= max_attempts` 로 판별된다.
+    - >-
+      `_transition`(`ingress_worker.py:391-417`)은 재시도 6곳이 모이는 단일 통로다. 거기 한 곳에서
+      승격하면 모든 재시도 경로가 덮인다. 호출자 여섯을 각각 고치지 않는다.
+    - >-
+      승격하면 `_safe_outcome`(`ingress_worker.py:377-389`)이 recovery hold 이고 특정 code 가
+      아닌 경우를 `UNAVAILABLE` 로 옮긴다. 새 outcome 값을 만들 필요가 없고 D-034 를 되돌리지도
+      않는다 — 소진된 command 는 진짜 recovery hold 이므로 계약의
+      `recovery hold without a more specific public result` 정의에 그대로 맞는다.
+    - >-
+      `stranded()`(`ingress.py:382-403`)는 `state IN ('dead_letter', 'recovery_hold')` 라
+      승격 후에도 operator 가시성이 유지된다.
+    - >-
+      lease 만료 소진은 `claim_next` 안의 bulk UPDATE(`ingress.py:271-288`)로 일어나고 worker 를
+      거치지 않으므로 이 승격이 닿지 않는다. 그것은 의도한 결과다. 그 종점은 결과를 모른다 —
+      worker 가 decision commit 뒤 `complete` 전에 죽었으면 Result Card 는 이미 나갔고, 평소에는
+      재시도가 replay 로 자가 치유한다 (`ingress_worker.py:371-375`). 거기에 `unavailable` 을
+      보내면 배달된 Result Card 와 모순된다. 계약에 그 이유를 적는다.
+    - >-
+      feedback 은 여전히 best-effort 다. `_with_feedback` 의 실패는 ingress 전이를 되돌리지 않는다.
+  invariants:
+    - 성공한 첫 decision 은 여전히 safe outcome 을 내지 않는다. 그 통지는 Result Card 가 맡는다.
+    - 소진되지 않은 재시도는 여전히 아무 outcome 도 내지 않는다.
+    - feedback 실패가 decision 을 되돌리거나 ingress command 를 다시 열지 않는다.
+    - 소진된 command 는 승격 후에도 operator 복구 목록에 보인다.
+    - schema 는 바뀌지 않는다.
+    - 사용자에게 가는 문자열에 내부 예외 text, token ID, raw credential, request body 가 없다.
+  non_goals:
+    - lease 만료 소진의 자동 통지.
+    - safe outcome 집합 정렬.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 재시도로 끝나는 실패가 반복되어 worker 가 마지막 시도를 수행하는 상태.
+      when: 그 마지막 시도가 끝난다.
+      then: command 가 recovery hold 로 종결되고 reviewer 에게 unavailable 통지가 한 번 나간다.
+    - id: AC-02
+      given: 아직 예산이 남은 재시도.
+      when: 그 시도가 끝난다.
+      then: 아무 outcome 도 통지되지 않는다.
+    - id: AC-03
+      given: worker 가 claim 후 매번 죽어 lease 만료로만 시도가 소진되는 상태.
+      when: 예산이 소진된다.
+      then: 아무 통지도 나가지 않고 그 command 는 operator 복구 목록에 남는다.
+    - id: AC-04
+      given: AC-01 로 종결된 command.
+      when: operator 복구 목록을 읽는다.
+      then: 그 command 가 목록에 보인다.
+    - id: AC-05
+      given: 갱신된 계약 문서.
+      when: 계약이 선언한 종결 규칙과 코드가 실제로 만드는 종결을 대조한다.
+      then: 두 집합이 일치하고 계약에 코드가 만들지 않는 종결이 남아 있지 않다.
+    - id: AC-06
+      given: AC-01 과 AC-03 을 고정한다고 주장하는 신규 test.
+      when: 승격 조건을 되돌리고, 미지 종점의 침묵을 통지로 바꾼다.
+      then: 각 test 가 실제로 실패한다. 실패를 확인하지 못한 것은 evidence 에 고정한다고 적지 않는다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-06 의 항목별 negative verification 결과
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      승격 조건이 한 칸 어긋나면 마지막 시도가 아닌데 종결되거나 (재시도 예산을 잃는다) 소진됐는데
+      종결되지 않는다 (결함이 그대로 남는다). `claim.attempts` 가 이번 시도를 포함한다는 사실이
+      경계의 근거다.
+    - 종결 상태가 dead_letter 에서 recovery_hold 로 바뀌므로 그 상태를 읽는 기존 경로가 영향을 받는다.
+    - 통지가 늘어나므로 같은 사건이 두 번 알려질 위험을 확인해야 한다.
+  approvals:
+    - id: D-038
+      scope: >-
+        worker 가 관측한 마지막 시도를 recovery hold 로 승격해 unavailable 을 통지하고,
+        결과를 모르는 lease 만료 소진에는 통지를 넣지 않는다. schema 는 바꾸지 않는다.
+      granted_by: Workstream governor
+      granted_at: "2026-08-14"
+      record: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - claim_predicate_would_change
+    - double_announcement_would_occur
+    - raw_secret_appears_in_any_evidence
+    - schema_migration_would_be_required
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-14T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T011.md
+
+handoff:
+  expected_changes:
+    - 마지막 시도의 재시도 결말을 recovery hold 로 승격하는 단일 지점.
+    - 소진 종결과 미지 종점 침묵의 회귀 test.
+    - 계약의 종결 규칙 문단.
+  notes:
+    - >-
+      round 11 에서 contract lens 는 코드 경로로, failure lens 는 실행으로 같은 결론에 도달했다.
+      두 lens 가 독립 확인한 finding 이다.
+    - >-
+      `unavailable` 은 D-034 로 recovery hold 전용이 됐다. 이 task 는 그 축소를 되돌리지 않는다.
+      소진된 command 를 진짜 recovery hold 로 만들어 기존 정의 안에 넣는다.

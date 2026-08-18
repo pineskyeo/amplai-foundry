@@ -1,0 +1,258 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T019
+title: Restore the task record for the wave that shipped without one
+type: docs
+status: done
+
+goal:
+  outcome: >-
+    `index.yaml` 이 round 12 blocker 를 닫은 구현(workstream wave 6)과 이번 wave 를 둘 다
+    기록한다. 그 구현이 무효로 만든 `MGC-012-P5-T011` manifest 의 scope 문장이 정정된다.
+    낡은 source revision 이 갱신된다.
+  user_value: >-
+    manifest 는 무엇이 왜 바뀌었는지 남기는 유일한 기록이다. 기록 없이 구현한 wave 는 다음
+    라운드가 대조할 대상이 없고, `done` 인 manifest 가 이미 사실이 아닌 scope 를 주장하면
+    그것을 읽는 사람이 틀린 계약을 믿는다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-13.md
+      section: CT-3
+    - path: specs/003-slack-proposal-card/evidence/wave-6-round-12-closure.md
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-039
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-041
+  requirements:
+    - FR-024
+    - FR-026
+  decisions:
+    - D-039
+    - D-040
+    - D-041
+    - D-042
+
+scope:
+  include:
+    - >-
+      `index.yaml` 의 `update_history` 에 round 12 blocker 를 닫은 구현을 항목으로 추가한다.
+      마지막 항목이 2026-08-14 라 그 구현이 통째로 빠져 있다.
+    - "`index.yaml` 에 이번 wave (T015~T019) 항목과 execution wave 를 추가한다."
+    - >-
+      `MGC-012-P5-T011.yaml` 의 scope 문장 정정. `status: done` 인데 "그 결말이 기존
+      `_with_feedback` 경로를 타고 `unavailable` 을 내는지 고정한다" 고 적혀 있고, 그 구현이
+      정확히 그것을 바꿨다.
+    - >-
+      `index.yaml` 의 `source.files` revision 갱신. `plan.md` 와 `research.md` 의 기록값이
+      round 13 target 의 실제 해시와 다르다. `spec.md` 는 MGC-012-P5-T017 이 고친 뒤 값이다.
+    - 세 wave 번호 체계가 충돌하는 것을 기록한다.
+    - >-
+      **scope 확장 (2026-08-17, T015 구현 중 발견).** wave 6 이 manifest 없이 구현하면서
+      존재하지 않는 task ID 를 test 주석에 적었고, 그 번호가 이번 wave 의 실제 ID 와 겹친다.
+      `tests/test_review_cards.py:2171` 의 `MGC-012-P5-T017` 을 round 참조로 바꾼다.
+      존재하지 않는 manifest 를 가리키는 주석은 다음 읽는 사람을 없는 파일로 보낸다.
+      나머지 둘은 각각 T015(`tests/test_slack_http.py:3166`)와
+      T016(`tests/test_slack_ack_boundary.py:1903`)이 자기 경로 안에서 고친다.
+  exclude:
+    - "`src/` 수정."
+    - "`tests/` 의 동작 변경. 주석 한 줄 정정만 한다 (위 scope 확장 항목)."
+    - "`spec.md` 와 계약 문서. MGC-012-P5-T017 이 맡는다."
+    - "`T001`~`T014` 의 ID, status, evidence, completed_at 변경."
+    - "surviving task 의 renumber. 하지 않는다."
+    - "`tasks.md` 손편집. Pre-Implement Procedure 3단계가 생성한다."
+  allowed_paths:
+    - specs/003-slack-proposal-card/task-manifests/index.yaml
+    - specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T011.yaml
+    # scope 확장. 위 scope.include 마지막 항목에 이유가 있다.
+    - tests/test_review_cards.py
+  forbidden_paths:
+    - vault/
+    - src/
+    - .github/
+    - specs/003-slack-proposal-card/spec.md
+    - specs/003-slack-proposal-card/contracts/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T015
+    - MGC-012-P5-T016
+    - MGC-012-P5-T017
+    - MGC-012-P5-T018
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **무엇이 빠졌는지부터 확인한다.** round 13 `CT-3` 의 근거는 셋이다. `update_history`
+      마지막이 2026-08-14(wave 5)이고 그 뒤 구현 항목이 없다. manifest 14개가 전부 T001~T014
+      이고 그 구현의 것이 없다. `MGC-012-P5-T011.yaml` 이 `done` 인데 그 구현이 무효로 만든
+      scope 를 주장한다. **셋을 직접 확인하고 시작한다.**
+    - >-
+      **`T011` manifest 는 고치되 지우지 않는다.** `status`, `completed_at`, `evidence_paths`
+      를 건드리지 않는다. 낡은 문장을 삭제하지 말고, 무엇이 언제 왜 바뀌었는지를 덧붙이는
+      형태로 정정한다. taskify 계약이 "removed work 를 조용히 지우지 않는다" 를 요구한다.
+      `D-039` 와 `D-041` 이 근거다.
+    - >-
+      **`T011` 을 `needs_revalidation` 으로 볼지 판단한다.** 그 acceptance 가 지금도 참인지
+      본다. 참이 아니면 그렇게 표시하고 이유를 적는다. 참이면 왜 참인지 적는다. **판단을
+      건너뛰고 `done` 을 그대로 두지 않는다.**
+    - >-
+      **wave 번호가 세 체계다.** `index.yaml` 의 `execution.waves` 는 task 배치를 뜻하고 이제
+      12 까지다. workstream 문서(`CURRENT_ITEM.md`, `STATUS.md`)의 wave 는 구현 회차를 뜻하고
+      지금 7 이다. 그리고 생성된 `tasks.md` 는 같은 배치를 Phase 1~3 으로 **다시 번호
+      매긴다** — `taskify_to_tasks_md.py` 가 미완료 wave 만 골라 1 부터 세기 때문이다.
+      셋이 다른 것을 가리키는데 이름이 비슷하다. **어느 쪽을 쓰는지 매 항목에서 분명히 하고,
+      이 충돌 자체를 `update_history` 에 기록한다.**
+    - >-
+      `source.files` revision 은 `shasum -a 256 <path>` 로 계산해 `sha256:<hex>` 형식으로
+      적는다. round 13 target 기준 `plan.md` 는
+      `e5b4a76be142e52d20086e2f34cb6892533ef77561f5e795bed9e836e5eb537d`,
+      `research.md` 는
+      `9e5a95895c174bb04369b67c531c14960c473b0df9b6f2b9c29911c72f36cb64` 다.
+      **직접 다시 계산해 확인한다** — T017 이 `spec.md` 를 고친 뒤이므로 그 값은 새로 잰다.
+    - >-
+      새 wave 의 `coverage.requirements` 를 갱신한다. FR-024 와 FR-026 에 T017 이,
+      SC-003/SC-004 에 T015·T016·T018 이 붙는다. **커버되지 않은 요구사항이 생기지 않는지
+      다시 센다.**
+    - >-
+      이 task 는 앞선 넷이 무엇을 했는지 기록하므로 **마지막에 돈다.** 앞선 task 가 scope 를
+      넓혔으면 그 사실도 여기 기록한다 — wave 5 에서 세 번의 scope 확장 중 하나를 기록하지
+      않아 round 12 `C-1` 이 됐다.
+  invariants:
+    - "T001~T014 의 ID 가 바뀌지 않는다."
+    - "T001~T014 의 `status` 가 `ready` 로 되돌아가지 않는다."
+    - "완료된 task 의 `evidence_paths` 와 `completed_at` 이 바뀌지 않는다."
+    - "`src/` 를 수정하지 않는다."
+    - "`tests/` 에서 test 의 동작을 바꾸지 않는다. 주석 한 줄만 고친다."
+    - "manifest validator 가 통과한다."
+    - "`coverage.uncovered` 가 비어 있다."
+  non_goals:
+    - 새 요구사항 도입.
+    - 완료된 task 의 acceptance 재작성.
+    - "`tasks.md` 손편집."
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 갱신된 `index.yaml`.
+      when: "`update_history` 를 읽는다."
+      then: >-
+        round 12 blocker 를 닫은 구현이 한 항목으로 있고, 무엇을 바꿨는지와 왜 manifest 없이
+        진행됐는지가 적혀 있다.
+    - id: AC-02
+      given: 갱신된 `index.yaml`.
+      when: "`tasks` 목록을 읽는다."
+      then: T015~T019 가 있고 각각 `depends_on` 과 `requirements` 를 갖는다.
+    - id: AC-03
+      given: 갱신된 `index.yaml`.
+      when: "`execution.waves` 를 읽는다."
+      then: >-
+        새 wave 가 있고, 같은 wave 의 task 들이 파일을 공유하지 않음이 note 에 근거와 함께
+        적혀 있다.
+    - id: AC-04
+      given: 갱신된 `MGC-012-P5-T011.yaml`.
+      when: 낡은 scope 문장을 찾는다.
+      then: >-
+        정정돼 있고 원문이 무엇이었는지, 무엇이 왜 바뀌었는지가 남아 있다. `status`,
+        `completed_at`, `evidence_paths` 는 그대로다.
+    - id: AC-05
+      given: 갱신된 `MGC-012-P5-T011.yaml`.
+      when: 그 acceptance 가 지금도 참인지 확인한 기록을 찾는다.
+      then: >-
+        참/거짓 판단과 근거가 있다. 거짓이면 `needs_revalidation` 로 표시돼 있다.
+    - id: AC-06
+      given: 갱신된 `index.yaml`.
+      when: "`source.files` 의 각 revision 을 실제 파일 해시와 대조한다."
+      then: 전부 일치한다.
+    - id: AC-07
+      given: 갱신된 `index.yaml`.
+      when: "`coverage` 를 읽는다."
+      then: "`uncovered` 가 비어 있고 새 task 다섯이 전부 어떤 요구사항에 연결돼 있다."
+    - id: AC-08
+      given: 갱신된 manifest 집합.
+      when: manifest validator 를 돌린다.
+      then: 19/19 PASS 다.
+    - id: AC-09
+      given: 세 wave 번호 체계.
+      when: "`update_history` 를 읽는다."
+      then: 충돌이 기록돼 있고 각 항목이 어느 체계를 쓰는지 분명하다.
+    - id: AC-10
+      given: 저장소 전체.
+      when: "`MGC-012-P5-T0[1-9][0-9]` 형태의 task ID 를 `src/`, `tests/`, `specs/` 주석에서 전수 검색한다."
+      then: >-
+        각 ID 가 실제 존재하는 manifest 를 가리킨다. 가리키지 않는 것이 남으면 위치와 이유를
+        evidence 에 적는다.
+  commands:
+    - id: manifest-validator
+      kind: lint
+      run: python3 .claude/skills/taskify/scripts/validate_task_manifest.py specs/003-slack-proposal-card/task-manifests
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: manifest-validator
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-06 의 파일별 해시 재계산 결과
+      required: true
+    - type: note
+      source: AC-05 의 T011 acceptance 재확인 판단과 근거
+      required: true
+
+risk:
+  level: low
+  concerns:
+    - >-
+      기록 task 라 "적었다" 로 끝내기 쉽다. `CT-3` 이 잡은 것은 정확히 적지 않은 것이므로
+      acceptance 를 대조 가능한 형태로 유지한다.
+    - >-
+      `T011` 을 고치면서 완료 기록을 건드리면 history 가 손상된다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - completed_task_record_would_be_destroyed
+    - coverage_would_leave_a_requirement_uncovered
+    - validator_fails_after_two_attempts
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-17T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T019.md
+
+handoff:
+  expected_changes:
+    - "`index.yaml` 의 `update_history`, `tasks`, `execution`, `coverage`, `source` 갱신."
+    - "`MGC-012-P5-T011.yaml` 의 scope 정정."
+  notes:
+    - >-
+      앞선 넷이 무엇을 했는지 기록하므로 마지막에 돈다. 앞선 task 가 scope 를 넓혔으면 그
+      사실도 여기 남긴다.

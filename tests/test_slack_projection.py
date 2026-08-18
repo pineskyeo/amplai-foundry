@@ -2422,3 +2422,156 @@ def test_the_slack_path_leaves_another_provider_destination_untouched(
     # Telegram destination 은 여전히 자기 event 를 claim 할 수 있다.
     claimed = dispatcher.claim_next("telegram-worker", destination_ref=telegram.destination_ref)
     assert claimed is not None and claimed.event_id == telegram.event_id
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T009 — 공유 interruption 분류기 (round 11 R-1, R-6)
+# ---------------------------------------------------------------------------
+
+
+class _RaisingTransport(FakeSlackTransport):
+    """`post_message` 에서 임의의 BaseException 을 던지는 transport."""
+
+    def __init__(self, error: BaseException) -> None:
+        super().__init__()
+        self._error = error
+
+    def post_message(
+        self,
+        *,
+        channel: str,
+        payload: Mapping[str, object],
+        marker: Mapping[str, object],
+    ) -> SlackSendResult:
+        del channel, payload, marker
+        raise self._error
+
+
+def _raising_destination(
+    provider_ref: str, error: BaseException
+) -> tuple[SlackProjectionDestination, _RaisingTransport]:
+    transport = _RaisingTransport(error)
+    destination = SlackProjectionDestination(
+        transport,
+        destination_ref=provider_ref,
+        channel=CHANNEL,
+        app_id=APP_ID,
+        max_history_pages=SLACK_MAX_HISTORY_PAGES,
+        max_attempts=OutboxConfig().max_attempts,
+    )
+    return destination, transport
+
+
+def _event_states(store: GovernanceStore, destination_ref: str) -> list[tuple[str, int]]:
+    with store.connect() as connection:
+        return [
+            (str(row[0]), int(row[1]))
+            for row in connection.execute(
+                "SELECT state, attempts FROM governance_outbox_events WHERE destination_ref = ?",
+                (destination_ref,),
+            ).fetchall()
+        ]
+
+
+# T009 AC-01 — non-review event 의 평범한 Exception 이 dispatcher 밖으로 새지 않는다.
+#
+# round 11 `R-1` 이 잡은 결함이 정확히 이 경로다. transport 가 평범한 Exception 을 bare
+# `BaseException` 으로 바꿔 올리면 `slack_projection` 의 `if not is_review: raise` 가 그대로
+# 통과시키고, `deliver_next` 의 `except OutboxReconcileError` 와 `except Exception` 이 둘 다
+# 놓쳐 event 가 `leased` 로 남는다. 그래서 이 test 는 예외가 안 나오는 것만 보지 않고
+# **event 가 leased 로 방치되지 않았다는 것**까지 본다.
+def test_a_plain_exception_from_a_non_review_send_stays_inside_the_dispatcher(
+    tmp_path: Path,
+) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    destination, _ = _raising_destination(provider_ref, RuntimeError("transport 가 죽었다"))
+
+    event = dispatcher.deliver_next("worker", destination)
+
+    assert event is not None
+    assert event.state is not OutboxState.LEASED, "leased 로 남으면 아무도 이 event 를 못 잡는다"
+    assert [state for state, _ in _event_states(store, provider_ref)] != ["leased"]
+
+
+# T009 AC-03 — 세 process interruption 은 여전히 같은 종류로 전파된다.
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        (KeyboardInterrupt("stop"), KeyboardInterrupt),
+        (SystemExit("stop"), SystemExit),
+        (GeneratorExit(), GeneratorExit),
+    ],
+)
+def test_process_interruptions_still_propagate_from_a_send(
+    tmp_path: Path,
+    raised: BaseException,
+    expected: type[BaseException],
+) -> None:
+    store, clock, provider_ref = _dispatcher_fixture(tmp_path)
+    dispatcher = OutboxDispatcher(store, config=OutboxConfig(lease_seconds=5), clock=clock)
+    destination, _ = _raising_destination(provider_ref, raised)
+
+    with pytest.raises(expected):
+        dispatcher.deliver_next("worker", destination)
+
+
+# T009 AC-04 — 분류기 정의가 저장소에 하나다.
+#
+# `slack_http` 가 자기 사본을 갖고 있던 것이 `R-1` 의 원인이다. 이름만 같은 두 함수를
+# 비교하면 다시 갈라져도 안 잡히므로 **같은 함수 객체인지** 본다.
+def test_the_interruption_classifier_has_exactly_one_definition() -> None:
+    from amplai_foundry.governance import slack_http
+
+    assert slack_http.classify_interruption is slack_projection.classify_interruption
+    assert slack_http.raise_sanitized_interruption is slack_projection.raise_sanitized_interruption
+    assert not hasattr(slack_http, "_interruption_kind")
+    assert not hasattr(slack_http, "_raise_sanitized_interruption")
+
+
+# T009 AC-03 보조 — 분류기 자체의 네 분기를 직접 고정한다. `generator_exit` 분기는
+# round 11 `R-6` 이 두 파일 모두 test 0건이라고 지목한 자리다.
+@pytest.mark.parametrize(
+    ("error", "kind"),
+    [
+        (KeyboardInterrupt(), "keyboard_interrupt"),
+        (SystemExit(), "system_exit"),
+        (GeneratorExit(), "generator_exit"),
+        (RuntimeError(), "exception"),
+        (ValueError(), "exception"),
+    ],
+)
+def test_classify_interruption_names_each_kind(error: BaseException, kind: str) -> None:
+    assert slack_projection.classify_interruption(error) == kind
+
+
+# T009 AC-02 — `"exception"` 은 `except Exception` 이 잡을 수 있는 형으로 올라간다.
+# 이것이 `R-1` 을 되돌리는 mutation 을 죽이는 검사다.
+def test_a_classified_exception_is_re_raised_as_something_except_exception_catches() -> None:
+    with pytest.raises(BaseException) as caught:
+        slack_projection.raise_sanitized_interruption("exception", "메시지")
+
+    assert isinstance(caught.value, Exception), (
+        "bare BaseException 으로 올리면 deliver_next 의 두 handler 를 모두 통과해 조용히 샌다"
+    )
+    assert str(caught.value) == "메시지"
+    assert caught.value.__cause__ is None and caught.value.__context__ is None
+
+
+# T009 AC-03 보조 — 재던지기가 종류와 메시지를 보존한다. `GeneratorExit` 은 메시지를 안 받는다.
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [
+        ("keyboard_interrupt", KeyboardInterrupt),
+        ("system_exit", SystemExit),
+        ("generator_exit", GeneratorExit),
+    ],
+)
+def test_raise_sanitized_interruption_preserves_the_kind(
+    kind: str, expected: type[BaseException]
+) -> None:
+    with pytest.raises(expected) as caught:
+        slack_projection.raise_sanitized_interruption(kind, "메시지")
+
+    if expected is not GeneratorExit:
+        assert str(caught.value) == "메시지"

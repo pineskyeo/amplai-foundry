@@ -1,0 +1,306 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T016
+title: Keep an unreadable decision ledger from escaping the worker loop
+type: fix
+status: done
+
+goal:
+  outcome: >-
+    소진된 ingress command 를 종결할 때 `committed_decision()` 읽기가 실패해도 raw 예외가
+    `process_next` 밖으로 나가지 않는다. 읽기가 실패하면 침묵하고 command 는 recovery hold 로
+    남아 `stranded()` 에 보인다. 그리고 승격된 hold 의 원인 code 가 test 로 고정된다.
+  user_value: >-
+    지금은 store 가 busy 하면 command 가 `attempts == max_attempts` 인 채 `leased` 로 남아
+    다시 claim 되지 않는다. reviewer 는 HTTP 200 을 받은 뒤 아무것도 못 받고, worker loop 를
+    도는 caller 도 죽는다. **재시도를 소진시킨 그 조건이 이 읽기도 실패시키므로 상관된
+    실패다** — 드물어서 넘길 수 있는 종류가 아니다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-13.md
+      section: P1-1
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-13.md
+      section: F-3
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-13.md
+      section: PBC-3
+    - path: specs/003-slack-proposal-card/evidence/review-target-round-13.txt
+      section: Known Limits Carried Forward, Not Fixed
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-042
+  requirements:
+    - FR-024
+    - FR-026
+    - SC-004
+  decisions:
+    - D-039
+    - D-042
+
+scope:
+  include:
+    - >-
+      `_settle_exhausted_retry`(`ingress_worker.py:405`)의 `committed_decision()`
+      호출(`:444`)을 좁은 `try/except` 로 감싸고, 실패를 `D-042` 대로 침묵으로 해석한다.
+    - 그 실패 경로의 test — raw 예외가 `process_next` 밖으로 나가지 않음을 고정한다.
+    - "승격된 recovery hold 의 원인 code 회귀 test (`F-3`)."
+    - >-
+      **정정 (2026-08-17, 구현 중).** 원문은 "`test_a_first_successful_decision_sends_no_safe_feedback`
+      제거 (`PBC-3`)" 였다. **지우지 않았다.** 성분을 갈라 재니 round 13 의 `PBC-3` 판정이
+      틀렸다 — 그 test 는 `result.decision is not None` 성분을 **유일하게** 잡고, 대체품은
+      `result.decision.replayed` 를 잡는다. 지웠으면 전자가 무방비가 되고 `decision` 없는
+      완료 결과에서 `None.replayed` 로 worker 가 죽는다. 이름과 docstring 만 실제로 잡는
+      것에 맞게 고쳤다. 그리고 같은 `if` 의 세 번째 성분(`outcome is COMPLETED`)이 아무도
+      잡지 않는 것을 발견해 test 를 추가했다.
+  exclude:
+    - >-
+      `D-039` 의 승격 판단 자체를 바꾸는 것. 결정이 기록됐으면 침묵한다는 규칙은 그대로다.
+    - "`spec.md` 와 `contracts/interaction-feedback.md`. MGC-012-P5-T017 이 맡는다."
+    - "`slack_http.py`. MGC-012-P5-T015 가 맡는다."
+    - "lease 만료 소진 종점에 통지를 넣는 것 (`D-038` 항목 6). 여전히 침묵이 맞다."
+    - "operator hold 를 되돌릴 수 있게 만드는 것 (`D-038` 항목 1). 이번 wave 밖이다."
+    - "침묵 종결이 마지막 실패 원인 code 를 덮어쓰는 문제 (round 13 Advisory-1). 이번 wave 밖이다."
+  allowed_paths:
+    - src/amplai_foundry/governance/ingress_worker.py
+    - tests/test_ingress.py
+    - tests/test_slack_ack_boundary.py
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/slack_http.py
+    - src/amplai_foundry/governance/events.py
+    - specs/003-slack-proposal-card/spec.md
+    - specs/003-slack-proposal-card/contracts/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **결함의 정확한 위치.** `_finalize`(`:323`)가 `_settle_exhausted_retry` 를 `:332` 에서
+      부르는데 그 호출이 `try:`(`:333`) **밖**이다. `_settle_exhausted_retry` 는 `:444` 에서
+      `committed_decision()` 을 부르고, 그것이 `ingress.get()` 과 `decisions.result_for()` 로
+      connection 두 개를 새로 연다. `_finalize` 의 다른 store 호출은 전부 감싸져 있다.
+      **이 읽기 하나만 무방비다.**
+    - >-
+      **`D-042` 가 방향을 확정했다.** 좁은 `except (GovernanceStoreError, IngressError,
+      sqlite3.Error)` 로 감싸고, 실패 시 `RECOVERY_HOLD` 와
+      `INGRESS_DECISION_COMMITTED_UNRECONCILED` 를 낸다. 즉 침묵한다. 근거는 모르는 상태에서
+      `unavailable` 을 보내면 이미 배달된 Result Card 와 모순될 수 있고 그 통지는 되돌릴 수
+      없기 때문이다. 침묵은 `stranded()` 로 회수할 수 있다.
+    - >-
+      **호출을 `_finalize` 의 기존 `try` 안으로만 옮기는 최소 변경은 `D-042` 가 기각했다.**
+      그러면 승격 자체가 일어나지 않아 command 가 lease 만료 → `dead_letter` 로 가고, round 11
+      `R-3` 이 닫으려던 영구 침묵이 일부 복귀한다.
+    - >-
+      **예외 종류를 실측으로 정한다.** `ingress.get()` 과 `decisions.result_for()` 가 store
+      busy 에서 실제로 무엇을 던지는지 확인한다. round 13 실측은 `OperationalError database is
+      locked` 였다. `_finalize` 의 기존 arm 이 잡는 집합(`GovernanceStoreError`,
+      `IngressError`, `sqlite3.Error`)과 같은지 대조하고, 다르면 왜 다른지 적는다.
+      **넓히지 않는다** — `except Exception` 으로 덮으면 프로그래밍 오류까지 침묵이 된다.
+    - >-
+      **형제 위치를 센다.** `_settle_exhausted_retry` 밖에서 `committed_decision()` 을 부르는
+      곳이 또 있는지, `_finalize` 의 `try` 밖에서 store 를 읽는 다른 곳이 있는지 전수
+      열거한다. 네 라운드 연속 이것을 놓쳤다 (round 11 `R-1`, 12 `F-2`, 12 `RL-3`~`RL-5`,
+      13 `F-1`).
+    - >-
+      **`F-3` 는 코드 결함이 아니라 test 공백이다.** `:446` 의 `return WorkerOutcome
+      .RECOVERY_HOLD, error_code` 를 `..., None` 으로 바꿔도 전 suite 가 통과한다.
+      `_transition`(`:465`)이 `code = error_code or "INGRESS_DECISION_FAILED"` 를 쓰므로
+      durable `last_error_code` 가 조용히 generic 이 되고 `stranded()` 에서 진짜 원인이
+      사라진다. round 12 evidence 의 "원인 code 가 살아남는다" 는 주장을 round 13 이 직접
+      반증했다.
+    - >-
+      **`PBC-3` 는 삭제 지시였고, 실측 결과 따르지 않았다.** 아래는 착수 시 지침이고
+      실제 판단은 scope.include 의 정정 항목과 evidence 에 있다.
+      `tests/test_slack_ack_boundary.py:1866` 의
+      `test_a_first_successful_decision_sends_no_safe_feedback` 은 `decision=None` 을 넘겨
+      `result.decision is not None` 관문에서 나가므로 docstring 이 주장하는 `replayed` 조건에
+      닿지 않는다. `:2017` 주석이 가리키는 진짜 대체품이 이미 있으므로 빈 것을 지운다.
+      **지우기 전에 대체품이 실제로 그 조건을 덮는지 확인한다.**
+    - >-
+      **mutation 이 살아남으면 코드보다 test 를 먼저 의심한다.** wave 6 에서 그렇게 진짜
+      누출을 찾았다. test fixture 가 검사 대상을 미리 없애는지 매번 본다 (`PBC-1` 이 세 라운드
+      연속 나왔다).
+  invariants:
+    - "성공 경로(`COMPLETED`)의 동작이 바뀌지 않는다."
+    - "`RECOVERY_HOLD`, `LEASE_LOST` 종점의 기존 동작이 바뀌지 않는다."
+    - "`stranded()` 가 세 종점을 전부 계속 보여준다."
+    - "`process_next` 가 store 실패로 raw 예외를 밖으로 내보내지 않는다."
+    - "결정이 commit 된 command 에 `unavailable` 통지가 나가지 않는다 (`D-039`)."
+    - "`slack_http.py`, `events.py`, `spec.md`, 계약 문서를 수정하지 않는다."
+  non_goals:
+    - safe outcome enum 에 값 추가.
+    - operator hold 해제 경로 신설.
+    - "`committed_decision()` 이 읽는 대상 변경."
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 재시도 예산을 소진한 ingress command 와 `committed_decision()` 읽기가 실패하는 store.
+      when: "`process_next` 를 부른다."
+      then: 예외가 `process_next` 밖으로 나오지 않는다.
+    - id: AC-02
+      given: AC-01 과 같은 상태.
+      when: 반환 후 durable state 를 읽는다.
+      then: >-
+        command 가 `leased` 로 남지 않는다. recovery hold 이고 `last_error_code` 가
+        `INGRESS_DECISION_COMMITTED_UNRECONCILED` 다.
+    - id: AC-03
+      given: AC-01 과 같은 상태.
+      when: feedback port 의 호출 기록을 본다.
+      then: 아무 safe outcome 도 보내지 않았다. 침묵이다 (`D-042`).
+    - id: AC-04
+      given: AC-01 과 같은 상태.
+      when: "`stranded()` 를 부른다."
+      then: 그 command 가 목록에 있다.
+    - id: AC-05
+      given: 신규 test.
+      when: "`committed_decision()` 호출을 감싼 `try/except` 를 제거한다."
+      then: test 가 실패한다.
+    - id: AC-06
+      given: 신규 test.
+      when: "`:446` 의 `return ..., error_code` 를 `..., None` 으로 바꾼다."
+      then: test 가 실패한다 (`F-3`).
+    - id: AC-07
+      given: 신규 test.
+      when: "`:445` 의 `return RECOVERY_HOLD, _DECISION_COMMITTED_UNRECONCILED` 를 `..., error_code` 로 바꾼다."
+      then: test 가 실패한다. `D-039` 의 침묵 판단이 고정된다.
+    - id: AC-08
+      given: 소스 전체.
+      when: "`committed_decision()` 호출 지점과 `_finalize` 의 `try` 밖 store 접근을 전수 열거한다."
+      then: >-
+        목록을 evidence 에 적고, 각각이 보호되는지 표로 보인다. 보호되지 않는 것이 남으면 왜
+        안전한지 근거를 적는다.
+    - id: AC-09
+      given: "`except` 절이 잡는 예외 집합."
+      when: store busy 에서 실제로 올라오는 예외 type 을 실측한다.
+      then: >-
+        실측한 type 이 잡히는 집합 안에 있음을 보이고, `except Exception` 처럼 넓히지 않았음을
+        보인다.
+    - id: AC-10
+      given: "`_safe_outcome` 의 첫 `if` 성분 셋."
+      when: 각 성분을 하나씩 지우고 test 를 돌린다.
+      then: >-
+        세 성분 모두 적어도 하나의 test 가 실패한다. 어느 test 가 어느 성분을 잡는지 표로
+        적는다. **`PBC-3` 의 삭제 지시를 그대로 따르지 않은 근거가 이 표다.**
+    - id: AC-11
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: round 13 기준(1274 passed, 4 deselected) 이상으로 통과하고 실패가 없다.
+  commands:
+    - id: targeted-ingress
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_ingress.py
+      required: true
+    - id: targeted-ack
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted-ingress
+      required: true
+    - type: command_output
+      source: targeted-ack
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01/AC-02/AC-03 의 실측 출력 — 예외 미탈출, durable state, feedback 호출 기록
+      required: true
+    - type: note
+      source: AC-05/AC-06/AC-07 각 실험의 실패한 test 이름과 실패 사유
+      required: true
+    - type: note
+      source: AC-08 의 committed_decision 호출 지점 전수 표
+      required: true
+    - type: note
+      source: AC-09 의 실측 예외 type
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      상관된 실패다. 재시도를 소진시킨 조건이 이 읽기도 실패시킨다. test 가 그 상관을 재현하지
+      않으면 실제 조건을 안 덮는다.
+    - >-
+      `except` 를 넓히면 프로그래밍 오류까지 침묵이 되어 결함이 durable 하게 숨는다.
+    - >-
+      `D-042` 의 보수적 가정은 결정이 실제로 기록되지 않은 경우에도 침묵한다. 그때 reviewer 는
+      아무것도 못 받고 operator recovery 에만 의존한다. 이것은 받아들인 대가이고
+      `contracts/interaction-feedback.md` 에 적혀야 한다 — MGC-012-P5-T017 이 맡는다.
+  approvals:
+    - >-
+      사용자가 2026-08-17 에 `D-042` 를 승인했다 — 읽기 실패를 침묵으로 간주한다. 세 선택지를
+      제시하고 받은 답이고, 기각된 최소 변경안도 `D-042` 에 기록돼 있다.
+    - >-
+      사용자가 같은 날 round 13 blocker 9건을 닫는 wave 7 착수를 지시했다.
+
+loop:
+  max_attempts: 4
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - fix_would_reintroduce_permanent_silence
+    - exception_set_must_widen_beyond_store_errors
+    - scope_boundary_must_expand
+    - pbc3_replacement_does_not_cover_the_condition
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-17T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T016.md
+
+handoff:
+  expected_changes:
+    - "`_settle_exhausted_retry` 의 `committed_decision()` 호출이 좁게 보호된다."
+    - 읽기 실패 침묵 경로의 test.
+    - 승격된 hold 의 원인 code 회귀 test.
+    - >-
+      동어반복으로 보고된 test 의 이름·docstring 정정 (삭제하지 않았다) 과 같은 `if` 의
+      세 번째 성분 회귀 test 추가.
+  notes:
+    - >-
+      `P1-1` 은 실제 동작 결함이고 `F-3`·`PBC-3` 은 test 결함이다. 셋을 한 task 에 둔 이유는
+      전부 `_settle_exhausted_retry` 와 그 종점을 다루고 같은 test 모듈을 소유하기 때문이다.

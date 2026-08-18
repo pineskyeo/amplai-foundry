@@ -16,6 +16,15 @@ approved presentation contract, so the test did not prove what a reviewer sees o
 governed decision buttons are delivered safely. This feature closes that presentation and interaction
 gap without making Slack authoritative for Proposal state.
 
+## Clarifications
+
+### Session 2026-08-14
+
+- Q: A transient store failure during Card delivery currently stops the whole destination permanently. Does this feature make that hold releasable? → A: No. Transient failures are reclassified to consume the ordinary retry budget, but releasing an operator hold stays out of scope for this feature (recorded as a known limitation in Assumptions).
+- Q: When background processing of a reviewer action exhausts its retry budget, what does the reviewer receive? → A: A terminal safe outcome. The worker's final attempt ends as a recovery hold, so the existing safe-feedback path announces `unavailable`.
+  - **Narrowed after this session, not overruled** (`D-039`, `D-041`, `D-042`). The answer above holds for the case it was asked about — the last attempt fails and nothing was decided. Two later measurements found sub-cases where announcing `unavailable` would contradict a message the reviewer already has: an earlier attempt may have committed the decision and sent its result Card, and the store failure that exhausted the budget may also block reading whether that happened. Both end as a recovery hold as answered here, but stay silent. FR-026 carries the full rule.
+- Q: When the retry budget is exhausted without any worker observing the outcome (repeated worker death), what does the reviewer receive? → A: Nothing. The true outcome is unknown and a decision may already have produced a result Card, so announcing a failure could contradict it. The command stays visible for operator recovery instead.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Read a Decision Result Card (Priority: P1)
@@ -89,6 +98,9 @@ and zero durable or diagnostic copies of raw credentials.
 - A Card remains visible after its 24-hour action window: it stays historical, but every action is rejected as expired.
 - Result delivery is retried after a successful decision: the ordered projection recovers the existing receipt rather than creating a duplicate.
 - Slack is unavailable: local Proposal state and credential safety remain correct, and delivery follows the bounded retry or hold policy.
+- The local store is briefly busy while a Card is being prepared: delivery retries within its budget instead of stopping the destination on the first failure. Storage corruption is not brief and stops delivery immediately.
+- Background processing of a reviewer action runs out of retries: the reviewer is told the action is unavailable, and the command remains listed for operator recovery.
+- Processing runs out of retries without any attempt completing, because the worker keeps dying: no outcome is announced, because a decision may already have produced a result Card. Operator recovery is the only path.
 
 ## Requirements *(mandatory)*
 
@@ -117,8 +129,10 @@ and zero durable or diagnostic copies of raw credentials.
 - **FR-021**: Result and review delivery MUST preserve existing destination ordering, reconciliation, retry, hold, and provider-isolation behavior.
 - **FR-022**: Slack interaction failure MUST NOT stop unrelated provider destinations or authorize a direct canonical knowledge mutation.
 - **FR-023**: The real-workspace validation MUST send a Card produced from the same presentation contract used by the application, not a test-only substitute.
-- **FR-024**: The feature MUST provide safe reviewer feedback for denied, expired, stale, and already-completed actions without exposing internal exception text. An accepted action MUST NOT produce safe feedback; its user-visible result is the separate result Card required by FR-013, so that one decision is announced once.
+- **FR-024**: The feature MUST provide safe reviewer feedback for denied, expired, stale, already-completed, and otherwise-unavailable actions without exposing internal exception text. The set of safe outcomes named here MUST match the set the system can actually produce. An accepted action MUST NOT produce safe feedback; its user-visible result is the separate result Card required by FR-013, so that one decision is announced once.
 - **FR-025**: The first version MUST support a single designated reviewer and MUST NOT imply multi-reviewer, quorum, or first-authorized-user semantics.
+- **FR-026**: Background processing that exhausts its retry budget MUST reach a terminal state rather than remaining silent indefinitely. When the final attempt is observed, its outcome is known to have failed, and no earlier attempt committed a decision, the action MUST produce the unavailable safe outcome. When the final attempt is observed and failed but an earlier attempt already committed the decision, the system MUST NOT announce any outcome — that decision's result Card has already been delivered and a failure announcement would contradict it — and MUST keep the command listed for operator recovery under a distinct terminal error code. The same silent ending MUST apply when the system cannot determine whether a decision was committed, because the failure that exhausted the budget also prevents that determination. When the outcome is unknown because no attempt completed, the system MUST NOT announce any outcome and MUST keep the command listed for operator recovery.
+- **FR-027**: A transient delivery-store failure MUST consume the ordinary retry budget rather than immediately stopping its destination, and MUST be distinguished from storage corruption, which remains terminal. This requirement governs **which failures are classified as retryable**, and to that extent it takes precedence over FR-021's requirement to preserve existing retry behavior. FR-021 continues to govern the mechanisms themselves: ordering, reconciliation, the retry budget, holds, and provider isolation MUST still be used rather than bypassed.
 
 ### Key Entities
 
@@ -149,4 +163,5 @@ and zero durable or diagnostic copies of raw credentials.
 - Operation titles and aggregate counts are safe to show in the approved test workspace; full reasons, evidence, draft bodies, and local paths remain outside the Card.
 - The first version uses separate top-level result Cards. Editing the original Card, thread-only delivery, modal reason collection, multi-reviewer approval, quorum, web UI, and production rollout are excluded.
 - Existing Slack request authentication, bounded acknowledgement, background decision processing, ordered delivery, and marker reconciliation remain authoritative and are extended rather than replaced.
+- Releasing an operator hold is outside this feature. Once a destination is held, resuming it needs a governed release path that does not exist yet, so a failure that outlives the retry budget still stops that destination until that separate work lands.
 - A real interactive click requires an externally reachable Slack interaction endpoint, but adding a new central server or deployment topology is outside this feature. Local signed-payload integration remains required even if external endpoint wiring is not available.

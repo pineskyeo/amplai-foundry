@@ -11,6 +11,69 @@
 
 **Design source**: `specs/003-slack-proposal-card/spec.md`, `specs/003-slack-proposal-card/plan.md`, `specs/003-slack-proposal-card/research.md`, `specs/003-slack-proposal-card/data-model.md`
 
+## Phase 1
+
+> Structural wave from the round 14 three-lens review, chosen by the user on 2026-08-18 over continuing to count siblings. Five rounds running, the same pattern held; measuring showed that half of it is structure, not attention — four identical copies of one clearer, eight copies of one audit comparison, four copies of one documented rule. File ownership is disjoint and was checked path by path: T021 owns slack_http.py, T023 owns events.py, T024 owns store.py and ingress_worker.py, T025 owns the four spec and contract documents. No two name the same path. T021 carries the P0 and goes first in priority even though all four may run concurrently.
+
+- [ ] MGC-012-P5-T021 [P] Clear the send-path locals in a finally so nothing masks the frame below
+  - manifest: `task-manifests/MGC-012-P5-T021.yaml`
+  - files: `src/amplai_foundry/governance/slack_http.py`, `tests/test_slack_http.py`
+  - verify: `.venv/bin/python -m pytest tests/test_slack_http.py`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m ruff check .`
+  - verify: `.venv/bin/python -m ruff format --check .`
+  - verify: `.venv/bin/python -m mypy`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+- [ ] MGC-012-P5-T023 [P] Replace eight audit comparison chains with one helper that takes the expected mapping
+  - manifest: `task-manifests/MGC-012-P5-T023.yaml`
+  - files: `src/amplai_foundry/governance/events.py`, `tests/test_governance_events.py`, `tests/test_review_cards.py`
+  - verify: `.venv/bin/python -m pytest tests/test_governance_events.py tests/test_review_cards.py`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m ruff check .`
+  - verify: `.venv/bin/python -m ruff format --check .`
+  - verify: `.venv/bin/python -m mypy`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+- [ ] MGC-012-P5-T024 [P] Normalize every store connection failure at the boundary instead of listing exception classes
+  - manifest: `task-manifests/MGC-012-P5-T024.yaml`
+  - files: `src/amplai_foundry/governance/store.py`, `src/amplai_foundry/governance/ingress_worker.py`, `tests/test_governance_store.py`, `tests/test_ingress.py`, `tests/test_slack_ack_boundary.py`
+  - verify: `.venv/bin/python -m pytest tests/test_governance_store.py`
+  - verify: `.venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m ruff check .`
+  - verify: `.venv/bin/python -m ruff format --check .`
+  - verify: `.venv/bin/python -m mypy`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+- [ ] MGC-012-P5-T025 [P] Give each rule one home and make the other mentions point at it
+  - manifest: `task-manifests/MGC-012-P5-T025.yaml`
+  - files: `specs/003-slack-proposal-card/spec.md`, `specs/003-slack-proposal-card/contracts/interaction-feedback.md`, `specs/003-slack-proposal-card/plan.md`, `specs/003-slack-proposal-card/research.md`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+  - verify: `git diff --check`
+
+## Phase 2
+
+> T022 waits for T021 because both own slack_http.py. T026 adds a governance sub-app to cli.py and shares no path with T022. Both are lower risk than wave 14 and neither is a prerequisite for the others.
+
+- [ ] MGC-012-P5-T022 Collapse the four identical exception-frame clearers into one
+  - manifest: `task-manifests/MGC-012-P5-T022.yaml`
+  - depends on: MGC-012-P5-T021
+  - files: `src/amplai_foundry/governance/slack_http.py`, `src/amplai_foundry/governance/decisions.py`, `src/amplai_foundry/governance/slack_projection.py`, `src/amplai_foundry/governance/slack_cards.py`, `src/amplai_foundry/governance/__init__.py`, `tests/test_slack_http.py`, `tests/test_slack_projection.py`, `tests/test_review_cards.py`
+  - verify: `.venv/bin/python -m pytest tests/test_slack_http.py tests/test_slack_projection.py tests/test_review_cards.py`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m ruff check .`
+  - verify: `.venv/bin/python -m ruff format --check .`
+  - verify: `.venv/bin/python -m mypy`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+- [ ] MGC-012-P5-T026 Make the silent ending recoverable by exposing the two reads an operator needs
+  - manifest: `task-manifests/MGC-012-P5-T026.yaml`
+  - files: `src/amplai_foundry/cli.py`, `src/amplai_foundry/governance/__init__.py`, `tests/test_cli.py`, `tests/test_ingress.py`
+  - verify: `.venv/bin/python -m pytest tests/test_cli.py tests/test_ingress.py`
+  - verify: `.venv/bin/python -m pytest`
+  - verify: `.venv/bin/python -m ruff check .`
+  - verify: `.venv/bin/python -m ruff format --check .`
+  - verify: `.venv/bin/python -m mypy`
+  - verify: `.venv/bin/python -m amplai_foundry.cli verify --root .`
+
 ## Not scheduled
 
 - MGC-012-P5-T001 (done) Deliver production-shaped Slack Result Cards
@@ -21,3 +84,19 @@
 - MGC-012-P5-T006 (done) Hold the remaining renderer, payload and integrity guards with tests
 - MGC-012-P5-T007 (done) Align the safe outcome contract and reference docs to the implemented behavior
 - MGC-012-P5-T008 (done) Recover the unmeasured regression evidence
+- MGC-012-P5-T009 (done) Share one interruption classifier so a plain exception cannot escape the dispatcher
+- MGC-012-P5-T010 (done) Let a transient store failure spend its retry budget instead of stopping the destination
+- MGC-012-P5-T011 (done) End an exhausted ingress command instead of leaving the reviewer in permanent silence
+- MGC-012-P5-T012 (done) Make the safe outcome set contract true and prove it by observing real producers
+- MGC-012-P5-T013 (done) Pin the integrity comparison components and the outbox cardinality guard
+- MGC-012-P5-T014 (done) Pin the migration history continuity and store identity guards
+- MGC-012-P5-T015 (done) Sanitize every Slack transport failure at the shared exit instead of per caller
+- MGC-012-P5-T016 (done) Keep an unreadable decision ledger from escaping the worker loop
+- MGC-012-P5-T017 (done) Write the third exhaustion ending into the requirement and the contract
+- MGC-012-P5-T018 (done) Pin every component of the review card audit comparison, not the ones a review named
+- MGC-012-P5-T020 (superseded) Pin the remaining eight audit comparison blocks in reconcile_connection
+- MGC-012-P5-T019 (done) Restore the task record for the wave that shipped without one
+
+## Open questions
+
+- **OQ-001** bot token 이 exception traceback 과 `--showlocals` 출력에 남는 것을 금지하는 요구사항이 `spec.md` 에 없다. FR-018 과 SC-005 는 one-time decision credential 로, FR-019 는 Card content 로 한정된다. round 12 `F-2` 와 round 13 `F-1` 은 이 결함을 blocker 로 잡았고 근거는 `contracts/review-card-lifecycle.md:111-119` 의 Forbidden diagnostic fields 다. 즉 계약에는 있고 요구사항에는 없다. FR 을 신설하거나 FR-018 의 대상을 넓혀야 하는가?

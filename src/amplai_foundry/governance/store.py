@@ -27,6 +27,40 @@ class GovernanceCommitAmbiguousError(GovernanceTransactionError):
     """A failed COMMIT requires command-level result reconciliation."""
 
 
+def is_store_corruption(error: BaseException) -> bool:
+    """Say whether one failure means the store itself is unusable, not merely busy.
+
+    이 구분이 재시도할지 멈출지를 정한다. `database is locked` 는 몇 초 뒤 풀리지만
+    `SQLITE_CORRUPT` 는 다시 시도해도 같다. 손상만 즉시 terminal 로 보낸다.
+
+    **정의는 저장소에 하나만 둔다.** 원래 `ingress_worker` 안에만 있어서 배달 경로는 같은
+    예외에 다른 정책을 줬다 — ingress 는 재시도, 배달은 즉시 되돌릴 수 없는 hold 였다
+    (round 11 `R-2`). 사본을 만들지 않는다.
+
+    `sqlite_errorcode` 는 확장 code 를 담으므로 하위 byte 만 비교한다.
+    """
+    if not isinstance(error, sqlite3.DatabaseError):
+        return False
+    code = getattr(error, "sqlite_errorcode", None)
+    if not isinstance(code, int):
+        return False
+    return code & 0xFF in {sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB}
+
+
+def is_transient_store_failure(error: BaseException) -> bool:
+    """Say whether one failure is worth another attempt.
+
+    `ingress_worker` 가 이미 쓰던 순서를 그대로 옮겼다 — 손상이면 terminal, 그 외
+    store 관련 실패는 재시도. `disk I/O error`, `database or disk is full`,
+    `readonly database` 는 전부 재시도 쪽이다. 그쪽이 보수적이다: 재시도로 잘못 분류해도
+    예산을 소진하면 같은 dead letter 에 도달하지만, terminal 로 잘못 분류하면 destination
+    이 즉시 멈추고 그 hold 는 되돌릴 수 없다.
+    """
+    if is_store_corruption(error):
+        return False
+    return isinstance(error, (GovernanceStoreError, sqlite3.Error))
+
+
 @dataclass(frozen=True, slots=True)
 class GovernanceStoreConfig:
     busy_timeout_ms: int = 5_000

@@ -115,7 +115,8 @@ operator hold가 replacement를 차단한다.
 
 `BoundedIngressAck`는 기존 3-second contract를 유지한다. Background worker는 governed decision을
 끝낸 뒤 safe outcome code만 optional feedback port에 넘긴다. Slack 구현은 terminal denial,
-expired, stale, already-completed 결과를 `chat.postEphemeral`로 알린다. Feedback 실패는 이미
+expired, stale, already-completed, unavailable 결과를 `chat.postEphemeral`로 알린다.
+이 다섯이 코드가 실제로 만드는 집합 전부다. Feedback 실패는 이미
 완료된 decision을 rollback하지 않고 secret-free error code만 worker result에 남긴다.
 
 Result Card가 성공 decision의 authoritative visible feedback다. Ephemeral feedback은 오류 원인을

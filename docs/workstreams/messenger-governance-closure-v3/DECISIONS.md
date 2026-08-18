@@ -1172,3 +1172,267 @@
 - Date: 2026-08-13
 - Affected item: repository-wide spec-kit 절차.
 - Source: 사용자 요청. D-036과 짝을 이룬다.
+
+## D-038 — Classify Transient Store Failure As Retryable And Give Exhausted Ingress A Terminal Outcome
+
+- Status: APPROVED
+- Decision: round 11 의 `R-1`, `R-2`, `R-3` 을 아래 여섯 판단으로 닫는다.
+
+  1. **`R-2` 는 축 1 만 닫는다.** transient store 실패를 재시도 예산 소비 경로로
+     재분류한다. operator hold 를 푸는 governed 경로는 만들지 않는다.
+  2. **transient 경계는 `ingress_worker` 정책을 복제한다.** `_is_corruption` 을 공유
+     helper 로 올리고 같은 순서를 쓴다 — `sqlite3.DatabaseError` 이고 손상이면 terminal,
+     그 외 `(GovernanceStoreError, sqlite3.Error)` 는 재시도.
+  3. **`OutboxRetryableError` 를 신설한다.** `GovernanceEventError` 형제로 두고
+     `deliver_next` 에 분기를 더해 `unreconcilable=False` 로 `fail()` 을 부르되
+     `error_code=error.code` 를 넘긴다. 재시도 중간과 소진 후 DLQ 가 진짜 원인을 가진다.
+  4. **`R-1` 은 `interruption` 쌍만 합친다.** `_interruption_kind` 와
+     `_raise_sanitized_interruption` 을 공유 helper 하나로 만들고 두 파일이 쓴다.
+     `_clear_exception_frames` 4사본 통합은 backlog 로 넘긴다.
+  5. **`R-3` 은 `_transition` 에서 마지막 attempt 를 승격한다.** `RETRY` 이고
+     `claim.attempts >= max_attempts` 면 `RECOVERY_HOLD` 로 바꾼다. 기존
+     `_with_feedback` 이 돌아 `unavailable` 이 나간다. migration 은 없다.
+  6. **lease 만료 소진에는 자동 통지를 넣지 않는다.** 계약에 그 이유와
+     `ingress.stranded()` 가 operator 입구라는 것을 쓴다.
+
+- Reason: 판단마다 근거가 다르다.
+
+  **(1)** 재시도 예산을 쓰게 해도 되돌릴 수 없는 hold 는 사라지지 않는다.
+  `events.py:3148-3151` 의 `exhausted or unreconcilable` 이 같은 `_dead_letter` 로 가고
+  `_dead_letter`(`:3313-3332`)는 분기 없이 hold 를 insert 한다. 예산은 기본 설정에서
+  5+10+20+40 = 75초를 벌 뿐이다 (`OutboxConfig` `events.py:2922-2925`, backoff `:3355-3361`).
+  hold 해제는 API 부재가 아니라 schema 금지다 — `migrations.py:631` 의
+  `CHECK (resolved_at IS NULL)` 과 `:701-711` 의 append-only 트리거. 여는 것은 migration 을
+  포함한 새 기능이고 wave 5 의 성격(기존 spec 안의 결함 수정)을 벗어난다.
+
+  **(2)** review 의 지적이 정확히 "한 저장소에서 같은 예외가 두 정책을 받는다" 였다.
+  `ingress_worker.py:228-259` 가 이미 정책을 갖고 있으므로 새로 만들지 않고 그것을 쓴다.
+  helper 를 공유하면 앞으로 갈라질 수 없다.
+
+  **(3)** `deliver_next` 의 `except Exception`(`events.py:3238-3245`)은 예외를 보지 않고
+  `OUTBOX_DELIVERY_FAILED` 를 박는다. round 11 `R-1` 이 바로 이 형태를 결함으로 셌다 —
+  "수렴하기는 한다 (…) 그 값은 원인이 아니고". 같은 항의를 다시 받을 코드를 쓰지 않는다.
+
+  **(4)** `R-1` 의 원인은 복제된 함수 쌍이 한쪽만 고쳐진 것이다. `slack_projection.py:1003`
+  은 `"exception"` 을 돌려주고 `:1018` 이 catchable 한 `RuntimeError` 를 올리는데,
+  `slack_http.py:593` 은 `"base_exception"` 을, `:603` 은 `BaseException` 을 올려
+  `deliver_next` 의 두 handler 를 모두 통과한다. `_clear_exception_frames` 는 4사본
+  (`decisions.py:775`, `slack_projection.py:1085`, `slack_http.py:572`,
+  `slack_cards.py:327`)이지만 아직 갈라지지 않았고 결함을 만든 적이 없다. 결함 없는 중복까지
+  건드리면 round 12 frozen target 이 review 범위 밖 파일 둘로 넓어진다.
+
+  **(5)** `claim_next` 가 claim 시 `attempts = attempts + 1` 하고 row 를 다시 읽으므로
+  (`ingress.py:312`, `:331-334`) worker 가 든 `claim.attempts` 는 이번 시도를 포함한다.
+  마지막 시도가 정확히 판별된다. `_transition`(`ingress_worker.py:391-417`)은 RETRY 6곳이
+  모이는 단일 통로다. 승격하면 `_safe_outcome`(`:377-389`)이 `RECOVERY_HOLD` +
+  비특정 code 를 `UNAVAILABLE` 로 옮긴다. **D-034 를 되돌리지 않는다** — 소진된 command 는
+  진짜 recovery hold 가 되므로 "recovery hold without a more specific public result" 정의에
+  그대로 맞는다. `stranded()` 는 `recovery_hold` 도 포함하므로(`ingress.py:397`) operator
+  가시성이 유지된다.
+
+  **(6)** lease 만료 소진은 결과를 모르는 종점이다. worker 가 decision commit 뒤
+  `complete` 전에 죽었을 수 있고 그러면 Result Card 는 이미 나갔다. 평소에는 재시도가
+  자가 치유한다 — replay 가 `already_completed` 를 만든다(`ingress_worker.py:371-375`).
+  소진되면 그 치유가 끊긴다. 거기에 `unavailable` 을 자동 통지하면 배달된 Result Card 와
+  모순되는 메시지를 보낼 수 있다. 틀린 통지보다 침묵이 낫고, 그 이유를 계약에 적는다.
+
+- Evidence: `specs/003-slack-proposal-card/evidence/3lens-review-round-11.md` 의 `R-1`,
+  `R-2`, `R-3`. 위 인용 line 은 모두 이번 세션에서 원본을 열어 확인했다.
+- Scope audit: 이 Decision 은 판단만 기록한다. 코드·계약·spec 변경은 `/taskify` →
+  `/speckit-analyze` → `/speckit-implement` 경로로 만든다.
+- Remaining risks: 세 가지다.
+
+  1. **되돌릴 수 없는 operator hold 는 남는다.** (1)이 그것을 닫지 않는다고 명시했다.
+     transient 가 75초 안에 안 풀리면 destination 은 여전히 영구 정지한다. 별도 item 이다.
+  2. **lease 만료 소진의 침묵도 남는다.** (6)이 의도한 선택이지만 결함이 아니게 되려면
+     계약이 그것을 사실대로 적어야 한다. 적지 않으면 다음 round 가 다시 P1 로 센다.
+  3. `_clear_exception_frames` 4사본은 그대로다. 갈라지면 `R-1` 과 같은 결함이 난다.
+
+- Owner: Workstream governor.
+- Date: 2026-08-14
+- Affected item: `MGC-012-P5` wave 5. 후속 task 는 `/taskify` 산출물에서 확정한다.
+- Source: 사용자 선택. `/grill-me` 세션 6문 6답. round 11 `R-1`, `R-2`, `R-3`.
+
+## D-039 — Do Not Announce Failure For A Click Whose Decision Already Landed
+
+- Status: APPROVED
+- Decision: round 12 `F-1` 을 아래로 닫는다.
+
+  소진된 ingress command 를 recovery hold 로 승격하기 **전에** 그 명령에 대한 결정이 이미
+  기록됐는지 본다 (`committed_decision()`). 기록돼 있으면
+
+  1. **승격은 그대로 한다.** 명령이 recovery hold 로 남아야 `stranded()` 에 보이고, 결정은
+     됐는데 완료 도장이 없는 상태를 사람이 확인할 수 있다
+  2. **error code 를 `INGRESS_DECISION_COMMITTED_UNRECONCILED` 로 바꾼다.** 그 code 가
+     `_safe_outcome` 에서 침묵 집합에 들어가 사용자 통지를 만들지 않는다
+
+  결정이 기록돼 있지 않은 소진은 그대로 `unavailable` 을 알린다. 두 종점을 code 로 가른다.
+
+- Reason: `D-038` 항목 5 의 승격이 `D-038` 항목 6 이 거부한 모순을 한 분기 옆에서 만들었다.
+
+  reviewer 가 승인을 누르고, 1차 시도가 결정을 **기록하는 데 성공**하지만 완료 도장을 찍는
+  마지막 쓰기가 실패하고, lease 만료 뒤 재claim 된 마지막 시도가 실패하는 경우다. 결정은 살아
+  있고 "승인됨" Result Card 는 이미 대기열에 있는데, 승격이 `unavailable` 을 보내 **서로
+  모순되는 두 메시지**가 간다. round 12 failure lens 가 실측했다.
+
+  항목 6 에서 lease 만료 종점에 통지를 넣지 않은 이유가 정확히 이것이었다 — 배달된 Card 와
+  모순되는 통지를 보내지 않는다. 승격 분기가 그 원칙을 보지 않은 것이 결함이다.
+
+  침묵을 고른 것은 취향이 아니라 `D-034` 가 정한 것이다. "첫 성공 결정은 safe outcome 을
+  만들지 않는다. 그 통지는 Result Card 가 한다." `already_completed` 를 보내는 선택지는
+  `D-034` 위반이라 없다.
+
+  명령을 `completed` 로 끝내는 선택지도 있었으나 택하지 않았다. 상태는 깔끔해지지만 완료
+  도장이 왜 실패했는지 아무도 모르게 되고 operator 목록에서도 사라진다. 결정은 됐는데 장부가
+  안 맞는 상태는 사람이 한 번 봐야 한다.
+
+- Evidence: `specs/003-slack-proposal-card/evidence/3lens-review-round-12.md` `F-1`.
+  negative verification 둘 다 killed — 승격 전 `committed_decision()` 확인을 지우면
+  `test_an_exhausted_command_whose_decision_committed_announces_nothing` 이, 침묵 분기를
+  지우면 그 test 와 `test_the_silent_hold_code_does_not_swallow_other_outcomes` 가 실패한다.
+- Scope audit: `ingress_worker.py` 와 `tests/test_slack_ack_boundary.py` 만 바꾼다. schema 는
+  바뀌지 않는다.
+- Remaining risks: 결정이 기록됐는지 보는 것은 store 읽기 하나를 더 하는 일이다. 그 읽기가
+  실패하면 `committed_decision` 이 예외를 낼 수 있고 승격 자체가 실패한다. 현재는 그 경로가
+  `_finalize` 의 기존 except 로 흘러 `FINALIZE_FAILED` 가 된다 — 통지 없이 lease 만료로
+  수렴한다. 나쁘지 않지만 측정하지 않았다.
+- Owner: Workstream governor.
+- Date: 2026-08-16
+- Affected item: `MGC-012-P5` wave 6.
+- Source: 사용자 선택. round 12 `F-1`.
+
+## D-040 — Let FR-027 Govern The Retry Classification Without Weakening FR-021
+
+- Status: APPROVED (**안 B**)
+- Decision: **FR-021 은 원문 그대로 둔다.** 대신 FR-027 에 우선 관계를 명시한다 — 어떤 실패를
+  재시도로 분류하는지는 FR-027 이 정하고, 그 범위에서 FR-021 보다 우선한다. 메커니즘 자체
+  (ordering, reconciliation, 재시도 예산, hold, provider isolation)를 우회하지 않는 것은
+  FR-021 이 계속 요구한다.
+- Reason: 이번 사고의 교훈이 "변경하는 쪽이 변경 대상 요구사항을 느슨하게 만들지 않는다" 이므로,
+  기존 조항을 건드리지 않고 새 조항에 예외를 다는 쪽이 같은 실수를 반복하지 않는다. 두 조항을
+  같이 읽어야 뜻이 통하는 비용은 받아들인다.
+- Owner: Workstream governor.
+- Date: 2026-08-16
+- Affected item: `MGC-012-P5`. `spec.md` FR-027 에 반영했다. FR-021 은 원문이다.
+- Source: 사용자 선택. round 12 `C-2`.
+
+### 승인 전 기록 (참고)
+
+- Status: **PROPOSED — 승인 전이다. 적용하지 않았다.**
+- Context: 이 Decision 은 **이미 저지른 계약 변경을 되돌린 뒤** 정식으로 다시 묻는 것이다.
+
+  wave 5 에서 `/speckit-analyze` 가 FR-021 과 FR-027 의 긴장을 MEDIUM 으로 잡았을 때, 구현하는
+  쪽이 FR-021 문구를 조용히 완화해서 해소했다. Decision 기록이 없었다. round 12 `C-2` 가 그것을
+  Blocking-P2 로 잡았고, 사용자 지시에 따라 **FR-021 을 원문으로 되돌렸다.**
+
+  지금 저장소 상태는 원문이다. 그래서 아래 긴장이 **열린 채로 남아 있다.**
+
+- Problem: FR-021 원문은 이렇다.
+
+  > Result and review delivery MUST **preserve existing** destination ordering, reconciliation,
+  > **retry, hold**, and provider-isolation **behavior**.
+
+  `T010`(`D-038` 항목 1~3)이 한 일은 어떤 실패를 재시도로 볼 것인가를 **바꾼** 것이다. 즉 retry
+  동작을 바꿨다. 원문 그대로 읽으면 위반이다.
+
+- Options:
+
+  **안 A — FR-021 문구를 좁힌다.** "메커니즘을 우회하지 않는다" 는 뜻으로 다시 쓰고, 어떤
+  실패가 재시도인지는 FR-027 이 정한다고 명시한다. 요구사항 하나만 읽어도 뜻이 통한다. 다만
+  기존 요구사항을 느슨하게 만드는 방향이다.
+
+  **안 B — FR-021 은 그대로 두고 FR-027 에 예외를 적는다.** "재시도 분류에 대해서는 이 조항이
+  FR-021 에 우선한다" 를 FR-027 에 넣는다. 기존 요구사항을 건드리지 않는 보수적인 방향이다.
+  대신 두 조항을 같이 읽어야 뜻이 통한다.
+
+  **안 C — 아무것도 안 바꾸고 긴장을 기록만 한다.** 다음 round 가 같은 것을 다시 잡는다.
+
+- Recommendation: **안 B.** 이번 사고의 교훈이 "변경 대상이 되는 요구사항을 변경하는 쪽이
+  느슨하게 만들지 않는다" 이므로, 기존 조항을 건드리지 않고 새 조항에 예외를 다는 쪽이 같은
+  실수를 반복하지 않는다.
+- Owner: Workstream governor.
+- Date: 2026-08-16
+- Affected item: `MGC-012-P5`. **승인 전까지 `spec.md` 는 원문을 유지한다.**
+- Source: round 12 `C-2`.
+
+## D-041 — Write The Third Ending Into The Contract Instead Of Deleting It From The Code
+
+- Status: APPROVED (**안 A**)
+- Decision: **spec 과 계약을 종점 셋으로 고친다.** `D-039` 의 코드는 그대로 둔다.
+  - `spec.md` FR-026 에 세 번째 종점을 넣는다 — 마지막 attempt 가 관측됐고 실패했으나 **앞선
+    attempt 가 결정을 이미 commit 한** 경우, 시스템은 아무 outcome 도 알리지 않고 command 를
+    recovery hold 로 남겨 operator recovery 대상으로 유지한다.
+  - `contracts/interaction-feedback.md` 의 `Two endings are possible` 을 종점 셋으로 고치고,
+    `INGRESS_DECISION_COMMITTED_UNRECONCILED` 가 safe outcome 이 아니라 **error code** 임을
+    명시한다. 그 code 는 `_safe_outcome` 에서 침묵으로 mapping 된다.
+- Reason: 어느 쪽이 진실인지는 실측이 정했다. round 12 `F-1` 이 **배달된 Result Card 와
+  `unavailable` 통지가 모순되는 것**을 실측했다. 코드를 FR-026 에 맞추면 그 모순이 되살아나고,
+  모순된 통지는 되돌릴 수 없다. 그러므로 틀린 것은 코드가 아니라 계약 문서다.
+- Consequence: `CT-1` 과 `CT-2` 가 한 Decision 으로 닫힌다. 코드 변경은 없다.
+- Owner: Workstream governor.
+- Date: 2026-08-17
+- Affected item: `MGC-012-P5` wave 7. `spec.md` FR-026 과
+  `contracts/interaction-feedback.md` 를 고친다. `ingress_worker.py` 는 안 고친다.
+- Source: 사용자 선택. round 13 `CT-1`, `CT-2`. `D-039` 를 보완하며 supersede 하지 않는다.
+
+## D-042 — Treat An Unreadable Decision Ledger As A Reason To Stay Silent
+
+- Status: APPROVED (**안 A**)
+- Decision: `_settle_exhausted_retry` 의 `committed_decision()` 호출을 좁은 `try/except
+  (GovernanceStoreError, IngressError, sqlite3.Error)` 로 감싼다. 읽기가 실패하면 **결정이
+  기록됐을 수 있다는 보수적 가정**으로 `RECOVERY_HOLD` + `INGRESS_DECISION_COMMITTED_UNRECONCILED`
+  를 낸다. 즉 침묵한다.
+- Reason: 이 실패는 **상관된 실패**다. 재시도를 소진시킨 그 조건(store busy)이 이 읽기도
+  실패시킨다. 그래서 "드물다" 로 넘길 수 없다. 모르는 상태에서 `unavailable` 을 보내면 이미
+  배달된 Result Card 와 모순될 수 있고 그 통지는 되돌릴 수 없다. 침묵은 되돌릴 수 있다 —
+  command 가 recovery hold 로 남아 `stranded()` 에 보이고 operator 가 회수한다.
+- Rejected: 호출을 `_finalize` 의 기존 `try` 안으로만 옮기는 최소 변경. 그러면 승격 자체가
+  일어나지 않아 command 가 lease 만료 → `dead_letter` 로 가고, round 11 `R-3` 이 닫으려던
+  영구 침묵이 일부 복귀한다.
+- Consequence: `process_next` 밖으로 raw 예외가 나가지 않는다. command 는 `leased` 로 남지
+  않는다. `P1-1` 이 닫힌다.
+- Owner: Workstream governor.
+- Date: 2026-08-17
+- Affected item: `MGC-012-P5` wave 7. `ingress_worker.py` `_settle_exhausted_retry`.
+- Source: 사용자 선택. round 13 `P1-1`. `review-target-round-13.txt` 의 "D-039 잔여 위험:
+  승격 전 committed_decision() 읽기가 실패하는 경우를 측정하지 않았다" 를 닫는다.
+
+## D-043 — Widen The Third Ending Back To The Condition The User Actually Gave
+
+- Status: APPROVED (**안 A**)
+- Decision: 소진 종점 3 의 조건을 **"worker 가 마지막 attempt 의 결과를 관측하지 못한 경우"**
+  로 되돌린다. `spec.md` FR-026 마지막 문장과 `contracts/interaction-feedback.md` 를 고친다.
+  **코드는 안 고친다.**
+- Reason: **이것은 원상복구다.** 사용자가 `spec.md:26` 에 기록한 답변은
+  "without any worker observing the outcome" 이고 그것이 코드의 실제 조건과 같다. wave 7 의
+  `T017` 이 그것을 "no attempt ever completed" 로 좁혔고, **`D-041` 은 그 좁힘을 승인하지
+  않았다** — `D-041` 이 승인한 것은 committed-decision 종점을 추가하는 것뿐이다.
+- Consequence: 좁힌 조건에서 세 종점 어디에도 안 들어가던 경우가 종점 3 에 들어간다.
+  attempt 1 이 완료하고 `RETRY` 를 낸 뒤 마지막 attempt 가 claim 된 채 worker 가 죽으면
+  lease 만료 sweep 이 `dead_letter` 로 옮기고 통지는 없다 — 그 동작은 이미 그러하고 바뀌지
+  않는다. 계약이 그것을 서술하게 될 뿐이다.
+- Owner: Workstream governor.
+- Date: 2026-08-18
+- Affected item: `MGC-012-P5` wave 8. `spec.md` FR-026, `contracts/interaction-feedback.md`.
+- Source: 사용자 선택. round 14 `BP2-4`. `D-041` 을 정정하며 supersede 하지 않는다.
+
+## D-044 — Give The Silent Ending A Real Operator Entry Point
+
+- Status: APPROVED (**안 A**)
+- Decision: `stranded()` 와 `committed_decision()` 을 **read-only CLI command 로 노출한다.**
+  기존 typer sub-app 패턴을 따라 `governance` sub-app 을 추가한다.
+- Reason: `D-042` 가 침묵을 고른 근거 전체가 "침묵은 `stranded()` 로 회수할 수 있다" 이고
+  `T017` 이 그것을 계약에 "operator's entry point" 로 적었다. **그 수단이 실재하지 않았다** —
+  호출자가 test 와 docstring 뿐이다. 근거 없는 주장을 계약에 남기지 않는다.
+
+  조회 대상이 둘인 이유는, 침묵 종점을 만난 operator 가 알아야 하는 것이 정확히 **"결정이
+  실제로 났는가"** 이기 때문이다. `committed_decision()` 이 그 답을 이미 갖고 있다.
+- Scope: **조회만이다.** `recovery_hold` 나 `dead_letter` 에서 빼내는 governed mutation 은
+  포함하지 않는다. 그것은 ActionToken 과 authority 계약을 건드리므로 별도 item 이고,
+  `D-038` 항목 1 이 이미 알려진 한계로 기록해 두었다.
+- Consequence: 계약의 "operator's entry point" 문장이 참이 된다. `D-042` 의 근거가 실재한다.
+- Owner: Workstream governor.
+- Date: 2026-08-18
+- Affected item: `MGC-012-P5` wave 8. `src/amplai_foundry/cli.py`, 그리고 필요하면
+  `governance/__init__.py` export.
+- Source: 사용자 선택. round 14 `BP2-1`.

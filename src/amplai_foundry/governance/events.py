@@ -49,6 +49,16 @@ class OutboxReconcileError(GovernanceEventError):
     pass
 
 
+class OutboxRetryableError(GovernanceEventError):
+    """One delivery failure worth another attempt, carrying its own cause code.
+
+    `deliver_next` 의 `except Exception` 도 재시도로 흐르지만 그쪽은 예외를 보지 않고
+    `OUTBOX_DELIVERY_FAILED` 를 박는다. 그러면 재시도 기록과 소진 후 dead letter 가 원인을
+    가리키지 않는다 — round 11 `R-1` 이 정확히 그 형태를 결함으로 셌다. 이 형은 예산을
+    쓰면서 원인 code 를 보존한다.
+    """
+
+
 class OutboxState(StrEnum):
     PENDING = "pending"
     LEASED = "leased"
@@ -3235,6 +3245,14 @@ class OutboxDispatcher:
                 generation=event.claim_generation,
                 error_code=error.code,
                 unreconcilable=True,
+            )
+        except OutboxRetryableError as error:
+            # 예산을 쓰되 원인을 남긴다. 소진되면 `fail()` 이 알아서 dead letter 로 보낸다.
+            return self.fail(
+                event.event_id,
+                dispatcher_id=dispatcher_id,
+                generation=event.claim_generation,
+                error_code=error.code,
             )
         except Exception:
             return self.fail(

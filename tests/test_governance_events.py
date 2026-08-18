@@ -38,6 +38,7 @@ from amplai_foundry.governance import (
     OutboxDispatcher,
     OutboxLeaseConflictError,
     OutboxReconcileError,
+    OutboxRetryableError,
     OutboxState,
     ProposalDefinitionManifest,
     ProposalRef,
@@ -1330,3 +1331,98 @@ def test_the_raw_token_is_rejected_even_as_the_entire_idempotency_key(tmp_path: 
         )
 
     assert decisions.get_token(approve.record.token_id).state.value == "issued"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T010 — 재시도 가능한 배달 실패는 예산을 쓰고 원인을 남긴다 (round 11 R-2)
+# ---------------------------------------------------------------------------
+
+
+class _RetryableRemote:
+    """재시도 가능한 실패를 자기 code 와 함께 알리는 destination."""
+
+    def __init__(self, destination_ref: str) -> None:
+        self.destination_ref = destination_ref
+        self.sends = 0
+
+    def reconcile(self, event):
+        return None
+
+    def send(self, event):
+        self.sends += 1
+        raise OutboxRetryableError("DEMO_TRANSIENT_CAUSE")
+
+
+def _one_provider_event(tmp_path: Path):
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _audit, outbox = _append(
+        events,
+        store,
+        command_id="command-1",
+        state_revision=2,
+        destinations=(OutboxDestination(destination_ref="provider:slack:C456"),),
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    return store, provider
+
+
+# T010 AC-01 — 예산을 쓴다. destination 은 멈추지 않는다.
+def test_a_retryable_delivery_failure_spends_its_budget(tmp_path: Path) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+
+    result = OutboxDispatcher(store, clock=lambda: NOW).deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.state is OutboxState.RETRY_WAIT
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_dead_letters"
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_operator_holds").fetchone() == (
+            0,
+        )
+
+
+# T010 AC-01 — 원인 code 를 보존한다.
+#
+# `except Exception` 경로도 재시도로 흐르지만 예외를 보지 않고 `OUTBOX_DELIVERY_FAILED` 를
+# 박는다. round 11 `R-1` 이 원인 아닌 dead letter code 를 결함으로 셌으므로 같은 형태를
+# 만들지 않는다. 이 비교가 그 mutation 을 죽인다.
+def test_a_retryable_delivery_failure_keeps_its_own_cause_code(tmp_path: Path) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+
+    result = OutboxDispatcher(store, clock=lambda: NOW).deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.last_error_code == "DEMO_TRANSIENT_CAUSE"
+    assert result.last_error_code != "OUTBOX_DELIVERY_FAILED"
+
+
+# T010 AC-02 — 예산을 소진하면 여전히 dead letter 와 operator hold 에 도달하고, 그 dead
+# letter 가 원인 code 를 가진다. 재분류가 안전망을 없애지 않는다.
+def test_a_retryable_delivery_failure_dead_letters_once_the_budget_is_spent(
+    tmp_path: Path,
+) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+    clock = MutableClock()
+    dispatcher = OutboxDispatcher(store, clock=clock, config=OutboxConfig(max_attempts=3))
+
+    result = None
+    for _ in range(3):
+        clock.advance(timedelta(minutes=10))
+        result = dispatcher.deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.state is OutboxState.DEAD_LETTER
+    assert destination.sends == 3, "예산만큼 실제로 시도한다"
+    with store.connect() as connection:
+        dead = connection.execute(
+            "SELECT error_code FROM governance_outbox_dead_letters"
+        ).fetchall()
+        holds = connection.execute("SELECT reason_code FROM governance_operator_holds").fetchall()
+    assert dead == [("DEMO_TRANSIENT_CAUSE",)]
+    assert holds == [("DEMO_TRANSIENT_CAUSE",)]
