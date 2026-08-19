@@ -19,12 +19,11 @@
   "risk_rank": {"low": 0, "normal": 1, "high": 2},
   "profile_rank": {
     "fast": 0,
-    "standard": 1,
-    "runtime": 2,
-    "semantic": 3,
-    "v2": 4,
-    "full": 5,
-    "rhel": 6
+    "commit": 1,
+    "standard": 2,
+    "runtime": 3,
+    "full": 4,
+    "v2": 5
   },
   "risk_profiles": {"low": "fast", "normal": "standard", "high": "standard"},
   "human_gates": {
@@ -59,26 +58,6 @@
       "gates": ["architecture_change"]
     },
     {
-      "id": "ontology-canonical",
-      "patterns": [
-        "docs/ontology/dc-test.ttl", "docs/ontology/software-map.ttl",
-        "docs/ontology/manifest.json", "docs/ontology/shapes/**",
-        "docs/ontology/model/active/**", "docs/ontology/bindings/**",
-        "docs/ontology/evidence/**", "docs/ontology/competency/**",
-        "tools/ontology/**", "requirements/semantic-runtime.txt"
-      ],
-      "risk": "high",
-      "profile": "semantic",
-      "gates": ["ontology_promotion"]
-    },
-    {
-      "id": "ontology-proposal",
-      "patterns": ["docs/ontology/proposals/**", "docs/ontology/tests/**"],
-      "risk": "normal",
-      "profile": "semantic",
-      "gates": []
-    },
-    {
       "id": "public-contract",
       "patterns": [
         "conf/testplan/**", "docs/**/schemas/**", "include/cortex/**",
@@ -88,16 +67,6 @@
       "risk": "high",
       "profile": "full",
       "gates": ["public_contract"]
-    },
-    {
-      "id": "release-production",
-      "patterns": [
-        "cortex.spec", "scripts/*.service", "conf/*.sudoers", "conf/cortex.conf",
-        "plugins/cortex-production/**"
-      ],
-      "risk": "high",
-      "profile": "rhel",
-      "gates": ["public_contract", "production_operation"]
     },
     {
       "id": "core-runtime",

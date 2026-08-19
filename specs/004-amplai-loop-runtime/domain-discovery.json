@@ -1,0 +1,1493 @@
+{
+  "blocking_questions": [],
+  "contradictions": [],
+  "evidence_candidates": [
+    {
+      "locators": [
+        "line:60:→ Meta-loop"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/ROADMAP.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:32:forbidden_paths / loop"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:37:6. **Meta-loop** — 관찰된 실패를 지식·온톨로지·Skill·Policy·Harness 개선 Proposal로 전환하고 검증한다.",
+        "line:103:- Harness, Loop, Meta-loop 개념의 초기 정의",
+        "line:127:- Meta-loop 실행 파이프라인",
+        "line:270:│ Observatory → Meta-loop                                                       │",
+        "line:551:| Meta-loop Analyst | 반복 실패와 개선 기회를 Proposal로 전환 |",
+        "line:633:## 9. Meta-loop의 안전한 형태"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:17:5. **Meta-loop** — 관찰된 실패를 지식·온톨로지·Skill·Policy·Harness 개선 Proposal로 전환하고 검증한다.",
+        "line:64:- Harness, Loop, Meta-loop 개념의 초기 정의",
+        "line:88:- Meta-loop 실행 파이프라인",
+        "line:185:│                                Meta-loop                                     │",
+        "line:423:| Meta-loop Analyst | 반복 실패와 개선 기회를 Proposal로 전환 |",
+        "line:471:## 9. Meta-loop의 안전한 형태"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:| 가져온 것 | skill 5개, `.ai-team/` runtime layer, `loopctl.py`·`loopv2.py`·`eval.sh` |",
+        "line:31:doctor 가 PASS 라는 것은 파일이 제자리에 있다는 뜻이지 loop 가 돈다는 뜻이 아니다.",
+        "line:32:작은 목표 하나로 시험한다. 예: `/work loopctl status 출력에 feature 이름을 넣는다`",
+        "line:60:**test·verifier·loopctl 은 전부 `.venv/bin/python` 으로 돌린다.** 맨 `python3` 를 쓰면",
+        "line:67:- cortex 를 다시 당겨올 때 `scripts/loopctl.py` 는 **이 저장소용으로 고쳐져 있다.** 통째로"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:22:**개발 loop runtime 이다.** 이 저장소의 amplai-foundry(지식 거버넌스 제품)와 이름만 같다.",
+        "line:55:| `scripts/loopctl.py` | 884줄 |",
+        "line:56:| `scripts/loopv2.py` | 1,988줄 |",
+        "line:57:| `.claude/skills/` | work 285줄, dev-loop 125, design 116, code-review 58, systematic-debugging |",
+        "line:67:| `scripts/loopctl.py` | 884 | **0** |",
+        "line:69:| `scripts/loopv2.py` | 1,988 | 4 |"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:11:| skill 5개 | `work`, `design`, `dev-loop`, `code-review`, `systematic-debugging` |",
+        "line:13:| script 3개 | `scripts/loopctl.py`, `scripts/loopv2.py`, `scripts/eval.sh` |",
+        "line:19:대신한다. `loopctl doctor` 의 required path 와 semantic check 블록, `quadrant.json` 의 해당",
+        "line:31:| `fast` | ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator |",
+        "line:34:| `runtime` | standard + loop-skill-surface, loop-shell-syntax |",
+        "line:49:### 3. `loopctl doctor` — 이 저장소 사실에 맞춤"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:79:- `CLAIM_FAILED`에 backoff나 bound가 없다. Caller loop 계약으로 남긴다"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:29:| C3 | finalize와 claim 경로의 store error가 worker loop을 종료 | `FINALIZE_FAILED`, `CLAIM_FAILED` outcome으로 봉쇄한다 |"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:| store error 봉쇄 | VERIFIED — `complete()` 반복 실패 실측, loop 생존 |",
+        "line:76:- `CLAIM_FAILED`에 backoff나 bound가 없다 — caller loop 계약으로 남는다"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:66:- **AC-01 순서 test 가 이름과 다른 것을 검사했다.** loop 가 매번 시계를 밀어 gate 가 지키는"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:59:이식 workstream 은 `docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md` 다"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:547:loop stop_condition `acceptance_conflicts_with_approved_spec`에 해당하는 상태였으나",
+        "line:740:`loop.stop_conditions`의 `scope_boundary_must_expand`를 여는 승인이다.",
+        "line:757:2. probe의 `destination_sequence`가 더 낮으면 `_page_verdict`의 두 번째 loop이 \"하위",
+        "line:765:**왜 이 방법인가.** `_our_marker`가 `destination_ref` 불일치 marker를 두 loop 모두에서",
+        "line:810:상태라 supervisor가 재시작 loop을 돈다 → 재시작마다 probe가 한 장씩 쌓인다 → 원인을 고치고",
+        "line:1516:위에 적은 세 실패는 loop 없이는 안 닫힌다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:169:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:192:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:227:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:119:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:107:# spec 과 충돌해 loop stop_condition `acceptance_conflicts_with_approved_spec` 이다.",
+        "line:214:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:> 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:148:`_our_marker` 가 `destination_ref` 불일치 marker 를 두 loop 모두에서 배제하므로"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:280:**Rationale**: 설치된 executable은 Typer CLI 하나다. Slack worker command, daemon loop,"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:79:- 자체 재시도 loop. 재시도는 OutboxDispatcher 가 소유한다.",
+        "line:151:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:127:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:156:그래도 probe 를 지운다. 실패하는 상태가 곧 재시작 loop 이 도는 상태이고 거기서",
+        "line:247:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:31:# 2026-08-08 scope 확장. 사용자가 명시 승인했고 D-028 이 근거다. `loop.stop_conditions` 의",
+        "line:178:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:160:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:117:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:147:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:328:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:778:예산은 그대로 먹는다. 재시작 loop 이 4995건을 채우면 진짜 Card 가 묻혀 판정 불가가"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:> 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:85:raw 예외가 `process_next` 밖으로 나가 caller loop 를 죽이고, command 는 `attempts =="
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-13.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:101:round 13 `P1-1` 의 피해가 그대로 재현된다 — worker loop 사망, command 가",
+        "line:151:`claim_next` escape 는 아무것도 strand 하지 않음). 그러나 **둘 다 caller loop 를 죽인다.**"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-14.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:141:operator 에게 신호가 가지 않는다. `except Exception` 으로 도는 worker loop 도 이 예외를 못 잡아",
+        "line:198:않는다. chained `__cause__` / `__context__` 도 loop 가 따라간다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:측정 도구는 `$CLAUDE_JOB_DIR/tmp/repro_f1d.py` 다. 닫힌 loopback port 와 loopback"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T015.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:38:**round 13 `P1-1` 의 서술과 일치한다.** 예외가 `process_next` 밖으로 나가 caller loop 를"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T016.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:91:**거부 조건은 안 바뀐다.** or-chain 은 첫 불일치에서 멈췄고 loop 도 그렇다. 같은 입력에 같은"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T023.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:73:transaction 으로 `dead_letter` + `INGRESS_COMMAND_UNREADABLE` 을 쓴 뒤 loop 를 돈다.",
+        "line:76:하나만 치우고 반환하면 worker loop 가 손상 수만큼 헛돌고, 그동안 큐는 여전히 막힌 것으로"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T027.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:39:다루지 않고, 다만 loop 가 진행 없음을 판정할 수 있게 한다.",
+        "line:72:| 진행 보장(`cleared` 검사) 제거 | KILLED | `..._loop_terminates_when_the_write_changes_nothing` |"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T031.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:128:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T001.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:198:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T002.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:184:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T003.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:138:- 예외 class 를 바꾸면 상위 worker loop 의 처리 경로가 달라진다.",
+        "line:141:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T004.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:156:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T005.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:163:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T006.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:169:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T007.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:135:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T008.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:168:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T009.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:211:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T010.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:212:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T011.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:176:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T012.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:156:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T013.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:151:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T014.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:256:real urllib 를 쓰는 test 는 network 에 의존하기 쉽다. 닫힌 loopback port 로 connection",
+        "line:267:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T015.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: Keep an unreadable decision ledger from escaping the worker loop",
+        "line:15:다시 claim 되지 않는다. reviewer 는 HTTP 200 을 받은 뒤 아무것도 못 받고, worker loop 를",
+        "line:277:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T016.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:229:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T017.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:217:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T018.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:235:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T019.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:205:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T020.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:241:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T021.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:218:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T022.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:247:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T023.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:17:loop 를 죽이고 command 를 `leased` 로 남긴다. round 13 `P1-1` 의 피해가 그대로 재현된다.",
+        "line:255:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T024.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:227:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T025.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:228:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T026.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:117:when: worker loop 를 여러 번 돌린다.",
+        "line:130:when: worker loop 를 돌린다.",
+        "line:240:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T027.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:229:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T028.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:203:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T029.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:189:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T030.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: Make the dead-letter loop terminate, guard the write, and stop conflating unknown with absent",
+        "line:10:`claim_next` 의 dead-letter loop 가 진행을 보장하고, 그 write 가 다른 worker 의 살아",
+        "line:42:loop 를 돌지 않는다. `rowcount` 를 본다.",
+        "line:55:- loop 종료성, 경합, write 실패, 구분 넷을 각각 고정하는 test.",
+        "line:86:**loop 의 종료 조건을 명시한다.** `rowcount != 1` 이면 무엇을 하는가. 그 row 를 이미",
+        "line:88:다시 뽑는 loop 를 돌면 안 된다.** 반복 상한을 둘지, 처리한 id 를 기억할지 정하고"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T031.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:214:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T032.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:157:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T033.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:161:loop:"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T034.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:199:title: Keep an unreadable decision ledger from escaping the worker loop",
+        "line:330:title: Make the dead-letter loop terminate, guard the write, and stop conflating unknown with absent"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:> 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다.",
+        "line:31:- MGC-012-P5-T016 (done) Keep an unreadable decision ledger from escaping the worker loop",
+        "line:46:- MGC-012-P5-T031 (done) Make the dead-letter loop terminate, guard the write, and stop conflating unknown with absent"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/003-slack-proposal-card/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:36:초안은 `/work`, `.ai-team/`, `loopctl`, `registry.json`, `rdflib` 같은 구현 이름을 그대로"
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/004-amplai-loop-runtime/checklists/requirements.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature Branch**: `004-amplai-loop-runtime`",
+        "line:9:**Input**: `D-046` 과 `docs/workstreams/amplai-loop-runtime-adoption/FACTS.md`. cortex main",
+        "line:23:cortex 는 같은 문제를 loop runtime 으로 풀었다. 공개 명령을 `/work` 와 `/design` 둘로 줄이고",
+        "line:61:같은 우선순위인 이유는 loop 가 돌아도 판정이 무르면 같은 실패가 반복되기 때문이다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "specs/004-amplai-loop-runtime/spec.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:2921:`or` 사슬은 첫 불일치에서 멈췄고 이 loop 도 그렇다. 같은 입력에 같은 code 를 낸다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "src/amplai_foundry/governance/events.py",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:315:**loop 는 진행을 보장해야 끝난다** (round 16 `S-1`, P0). 치우는 write 가 실제로",
+        "line:470:다루지 않는다. 다만 그 사실을 호출자에게 알려야 loop 가 진행을 판정할 수 있다."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "src/amplai_foundry/governance/ingress.py",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:178:reported as `CLAIM_FAILED` rather than raised, so a caller loop survives them.",
+        "line:450:reviewer 는 아무것도 못 받고 worker loop 를 도는 caller 도 죽는다 (round 13 `P1-1`)."
+      ],
+      "matches": [
+        "loop"
+      ],
+      "path": "src/amplai_foundry/governance/ingress_worker.py",
+      "score": 1.0
+    }
+  ],
+  "generated_from": {
+    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "contract": "specs/004-amplai-loop-runtime/work-contract.json",
+    "working_diff": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md"
+  },
+  "invariants": [],
+  "known_facts": [
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:60:→ Meta-loop",
+          "source": "docs/ROADMAP.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/ROADMAP.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:32:forbidden_paths / loop",
+          "source": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:37:6. **Meta-loop** — 관찰된 실패를 지식·온톨로지·Skill·Policy·Harness 개선 Proposal로 전환하고 검증한다.",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:103:- Harness, Loop, Meta-loop 개념의 초기 정의",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:127:- Meta-loop 실행 파이프라인",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:270:│ Observatory → Meta-loop                                                       │",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:551:| Meta-loop Analyst | 반복 실패와 개선 기회를 Proposal로 전환 |",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:633:## 9. Meta-loop의 안전한 형태",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:17:5. **Meta-loop** — 관찰된 실패를 지식·온톨로지·Skill·Policy·Harness 개선 Proposal로 전환하고 검증한다.",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:64:- Harness, Loop, Meta-loop 개념의 초기 정의",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:88:- Meta-loop 실행 파이프라인",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:185:│                                Meta-loop                                     │",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:423:| Meta-loop Analyst | 반복 실패와 개선 기회를 Proposal로 전환 |",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:471:## 9. Meta-loop의 안전한 형태",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:21:| 가져온 것 | skill 5개, `.ai-team/` runtime layer, `loopctl.py`·`loopv2.py`·`eval.sh` |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:31:doctor 가 PASS 라는 것은 파일이 제자리에 있다는 뜻이지 loop 가 돈다는 뜻이 아니다.",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:32:작은 목표 하나로 시험한다. 예: `/work loopctl status 출력에 feature 이름을 넣는다`",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:60:**test·verifier·loopctl 은 전부 `.venv/bin/python` 으로 돌린다.** 맨 `python3` 를 쓰면",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:67:- cortex 를 다시 당겨올 때 `scripts/loopctl.py` 는 **이 저장소용으로 고쳐져 있다.** 통째로",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:22:**개발 loop runtime 이다.** 이 저장소의 amplai-foundry(지식 거버넌스 제품)와 이름만 같다.",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:55:| `scripts/loopctl.py` | 884줄 |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:56:| `scripts/loopv2.py` | 1,988줄 |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:57:| `.claude/skills/` | work 285줄, dev-loop 125, design 116, code-review 58, systematic-debugging |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:67:| `scripts/loopctl.py` | 884 | **0** |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:69:| `scripts/loopv2.py` | 1,988 | 4 |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:11:| skill 5개 | `work`, `design`, `dev-loop`, `code-review`, `systematic-debugging` |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:13:| script 3개 | `scripts/loopctl.py`, `scripts/loopv2.py`, `scripts/eval.sh` |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:19:대신한다. `loopctl doctor` 의 required path 와 semantic check 블록, `quadrant.json` 의 해당",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:31:| `fast` | ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:34:| `runtime` | standard + loop-skill-surface, loop-shell-syntax |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:49:### 3. `loopctl doctor` — 이 저장소 사실에 맞춤",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:79:- `CLAIM_FAILED`에 backoff나 bound가 없다. Caller loop 계약으로 남긴다",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:29:| C3 | finalize와 claim 경로의 store error가 worker loop을 종료 | `FINALIZE_FAILED`, `CLAIM_FAILED` outcome으로 봉쇄한다 |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:21:| store error 봉쇄 | VERIFIED — `complete()` 반복 실패 실측, loop 생존 |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:76:- `CLAIM_FAILED`에 backoff나 bound가 없다 — caller loop 계약으로 남는다",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:66:- **AC-01 순서 test 가 이름과 다른 것을 검사했다.** loop 가 매번 시계를 밀어 gate 가 지키는",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:59:이식 workstream 은 `docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md` 다",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:547:loop stop_condition `acceptance_conflicts_with_approved_spec`에 해당하는 상태였으나",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:740:`loop.stop_conditions`의 `scope_boundary_must_expand`를 여는 승인이다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:757:2. probe의 `destination_sequence`가 더 낮으면 `_page_verdict`의 두 번째 loop이 \"하위",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:765:**왜 이 방법인가.** `_our_marker`가 `destination_ref` 불일치 marker를 두 loop 모두에서",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:810:상태라 supervisor가 재시작 loop을 돈다 → 재시작마다 probe가 한 장씩 쌓인다 → 원인을 고치고",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1516:위에 적은 세 실패는 loop 없이는 안 닫힌다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:169:loop:",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:192:loop:",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:227:loop:",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:119:loop:",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:107:# spec 과 충돌해 loop stop_condition `acceptance_conflicts_with_approved_spec` 이다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:214:loop:",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:10:> 각 항목의 **계약은 manifest 에 있다** — acceptance behaviors, invariants, forbidden_paths, loop/stop conditions. 구현 전에 해당 YAML 을 읽는다. 이 체크리스트는 순서와 파일 소유만 전달한다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/tasks.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/tasks.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:148:`_our_marker` 가 `destination_ref` 불일치 marker 를 두 loop 모두에서 배제하므로",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:280:**Rationale**: 설치된 executable은 Typer CLI 하나다. Slack worker command, daemon loop,",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:79:- 자체 재시도 loop. 재시도는 OutboxDispatcher 가 소유한다.",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:151:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:127:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:156:그래도 probe 를 지운다. 실패하는 상태가 곧 재시작 loop 이 도는 상태이고 거기서",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:247:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:31:# 2026-08-08 scope 확장. 사용자가 명시 승인했고 D-028 이 근거다. `loop.stop_conditions` 의",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:178:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:160:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:117:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:147:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:328:loop:",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:778:예산은 그대로 먹는다. 재시작 loop 이 4995건을 채우면 진짜 Card 가 묻혀 판정 불가가",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+      "status": "candidate"
+    }
+  ],
+  "ontology_candidates": [
+    {
+      "error": "No module named 'semantic_runtime'",
+      "name": "semantic-runtime-unavailable",
+      "score": 0,
+      "uri": null
+    }
+  ],
+  "schema_version": "1.0",
+  "terms": [
+    "loop",
+    "runtime",
+    "profile",
+    "목록이",
+    "policy",
+    "loopctl",
+    "contract",
+    "schema",
+    "registry",
+    "곳에서",
+    "서로",
+    "어긋난",
+    "verifier",
+    "pass",
+    "내는",
+    "상태를",
+    "없앤다",
+    "registry.json",
+    "profiles",
+    "단일",
+    "출처로",
+    "삼고",
+    "어긋나면",
+    "doctor",
+    "block",
+    "으로",
+    "잡는다",
+    "죽은",
+    "flag",
+    "부르는",
+    "check",
+    "집합을",
+    "맞추고",
+    "어긋남을",
+    "잡게",
+    "한다",
+    "ai-team",
+    "verifiers",
+    "policy.json",
+    "contracts",
+    "work-contract.schema.json",
+    "scripts",
+    "loopctl.py",
+    "v2",
+    "실행에서",
+    "warn",
+    "하나도",
+    "없다",
+    "존재하지",
+    "않는",
+    "cli",
+    "profile_rank",
+    "key",
+    "집합이",
+    "집합과",
+    "정확히",
+    "같다",
+    "fallback",
+    "required",
+    "verification.profile",
+    "enum",
+    "하나를",
+    "일부러",
+    "어긋나게",
+    "하면",
+    "실패한다",
+    "결함은",
+    "다시",
+    "조용히",
+    "지나가지",
+    "않는다",
+    "전체가",
+    "하고",
+    "test",
+    "회귀가"
+  ],
+  "unknowns": [
+    "candidate evidence를 검토해 ownership/source-of-truth를 확정해야 함",
+    "acceptance와 verifier가 실제 current behavior를 판정하는지 확인해야 함"
+  ],
+  "work_id": "ALR-002"
+}

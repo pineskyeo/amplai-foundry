@@ -37,6 +37,18 @@ import loopv2
 
 POLICY = os.path.join(".ai-team", "runtime", "policy.json")
 REGISTRY = os.path.join(".ai-team", "verifiers", "registry.json")
+CONTRACT_SCHEMA = os.path.join(".ai-team", "contracts", "work-contract.schema.json")
+
+# verifier profile 이름의 정본은 REGISTRY 의 profiles 다. 아래는 policy 에 profile_rank 가
+# 없을 때만 쓰는 fallback 이고, doctor 가 정본과 어긋나면 block 한다.
+PROFILE_RANK_FALLBACK = {
+    "fast": 0,
+    "commit": 1,
+    "standard": 2,
+    "runtime": 3,
+    "full": 4,
+    "v2": 5,
+}
 
 
 def root_dir():
@@ -94,15 +106,8 @@ def match_path(path, pattern):
 def classify_paths(policy, paths):
     paths = [normalize_path(p) for p in paths if p and p.strip()]
     risk_rank = policy.get("risk_rank") or {"low": 0, "normal": 1, "high": 2}
-    profile_rank = policy.get("profile_rank") or {
-        "fast": 0,
-        "standard": 1,
-        "runtime": 2,
-        "semantic": 3,
-        "v2": 4,
-        "full": 5,
-        "rhel": 6,
-    }
+    # module 상수를 그대로 넘기지 않는다. 호출자가 반환값을 고쳐도 상수가 오염되지 않는다.
+    profile_rank = policy.get("profile_rank") or dict(PROFILE_RANK_FALLBACK)
     default_risk = (policy.get("defaults") or {}).get("risk", "normal")
     default_profile = (policy.get("defaults") or {}).get("profile", "standard")
     risk = "low" if paths else default_risk
@@ -438,13 +443,16 @@ def doctor(root):
 
     policy = None
     registry = None
-    for rel in (POLICY, REGISTRY, ".ai-team/contracts/work-contract.schema.json"):
+    contract_schema = None
+    for rel in (POLICY, REGISTRY, CONTRACT_SCHEMA):
         try:
             value = load_json(os.path.join(root, rel))
             if rel == POLICY:
                 policy = value
             elif rel == REGISTRY:
                 registry = value
+            else:
+                contract_schema = value
         except Exception as exc:
             errors.append(f"invalid JSON {rel}: {exc}")
 
@@ -453,9 +461,14 @@ def doctor(root):
             errors.append("runtime policy는 amplai-loop-v2여야 함")
         if sorted(policy.get("public_commands") or []) != ["design", "work"]:
             errors.append("policy public_commands는 work/design만이어야 함")
-        for required_profile in ("fast", "standard", "runtime", "semantic", "v2", "full", "rhel"):
-            if required_profile not in (policy.get("profile_rank") or {}):
-                errors.append(f"profile_rank에 {required_profile} 없음")
+        for rule in policy.get("path_rules") or []:
+            rule_profile = rule.get("profile")
+            if rule_profile and rule_profile not in (policy.get("profile_rank") or {}):
+                errors.append(
+                    "path_rule {}이 profile_rank에 없는 {}를 가리킴".format(
+                        rule.get("id"), rule_profile
+                    )
+                )
         for gate in policy.get("human_gates") or {}:
             if not isinstance(gate, str) or not gate:
                 errors.append("human gate id가 올바르지 않음")
@@ -556,6 +569,87 @@ def doctor(root):
                 if check_id not in known:
                     errors.append(f"verifier profile check 없음: {profile_name} -> {check_id}")
 
+        # profile 이름의 정본은 registry 다. policy·contract schema·loopctl fallback 셋이
+        # 그것과 어긋나면 classify가 존재하지 않는 profile을 고르거나 실재하는 profile을
+        # rank -1로 밀어낸다. 이식 잔재가 조용히 지나간 자리라 block으로 잡는다.
+        #
+        # 값을 못 읽으면 빈 집합으로 둔다. None으로 두고 건너뛰면 mirror 하나가 통째로
+        # 빠진 채 PASS가 나고 요약줄이 "일치"라고 거짓 보고한다.
+        canonical = set(profiles)
+        enum = None
+        if contract_schema is not None:
+            enum = (
+                ((contract_schema.get("properties") or {}).get("verification") or {})
+                .get("properties", {})
+                .get("profile", {})
+                .get("enum")
+            )
+        schema_names = set(enum) if isinstance(enum, list) else set()
+        mirrors = [
+            (POLICY, "profile_rank", set((policy or {}).get("profile_rank") or {})),
+            (CONTRACT_SCHEMA, "verification.profile enum", schema_names),
+            ("scripts/loopctl.py", "PROFILE_RANK_FALLBACK", set(PROFILE_RANK_FALLBACK)),
+        ]
+        for where, label, names in mirrors:
+            if names != canonical:
+                errors.append(
+                    f"verifier profile 집합 불일치: {where}의 {label} {sorted(names)} != "
+                    f"정본 {REGISTRY}의 profiles {sorted(canonical)}"
+                )
+
+        # rank 값도 본다. 이름이 같아도 순서가 갈라지면 policy가 지워졌을 때
+        # fallback이 같은 입력에 다른 profile을 고른다.
+        policy_rank = (policy or {}).get("profile_rank") or {}
+        if set(policy_rank) == set(PROFILE_RANK_FALLBACK):
+            order = sorted(policy_rank, key=lambda name: policy_rank[name])
+            fallback_order = sorted(PROFILE_RANK_FALLBACK, key=lambda n: PROFILE_RANK_FALLBACK[n])
+            if order != fallback_order:
+                errors.append(
+                    f"verifier profile 순서 불일치: {POLICY} {order} != "
+                    f"scripts/loopctl.py PROFILE_RANK_FALLBACK {fallback_order}"
+                )
+
+        # path_rules 밖에도 profile 이름을 쓰는 자리가 둘 더 있다. 여기가 rank에 없는
+        # 이름을 가리키면 classify의 floor 비교가 -1이 되어 조용히 죽는다.
+        named = [("defaults.profile", ((policy or {}).get("defaults") or {}).get("profile"))]
+        for risk, name in sorted(((policy or {}).get("risk_profiles") or {}).items()):
+            named.append((f"risk_profiles.{risk}", name))
+        for label, name in named:
+            if name and name not in policy_rank:
+                errors.append(f"{POLICY}의 {label}이 profile_rank에 없는 {name}를 가리킴")
+
+    # doctor 가 "Knowledge/Context/Evidence plane: valid" 를 찍기 전에 실제로 읽는다.
+    # 깨진 claims 는 context build 를 죽이고, 없는 source 는 pack 에서 조용히 빠진다.
+    claims_path = os.path.join(root, ".ai-team", "knowledge", "claims.jsonl")
+    if os.path.isfile(claims_path):
+        with open(claims_path, encoding="utf-8") as handle:
+            for number, line in enumerate(handle, start=1):
+                if not line.strip():
+                    continue
+                try:
+                    json.loads(line)
+                except ValueError as exc:
+                    errors.append(f"claims.jsonl:{number} 파싱 실패: {exc}")
+
+    map_path = os.path.join(root, ".ai-team", "knowledge", "map.json")
+    if os.path.isfile(map_path):
+        try:
+            knowledge_map = load_json(map_path)
+        except Exception as exc:
+            errors.append(f"invalid JSON {map_path}: {exc}")
+        else:
+            if registry is not None:
+                project = knowledge_map.get("project")
+                if project and project != registry.get("project"):
+                    errors.append(
+                        "knowledge map project가 registry와 다름: "
+                        f"{project} != {registry.get('project')}"
+                    )
+            for item in knowledge_map.get("sources") or []:
+                rel = item.get("path")
+                if rel and not os.path.exists(os.path.join(root, rel)):
+                    errors.append(f"knowledge map source 없음: {item.get('id')} -> {rel}")
+
     template = os.path.join(root, ".ai-team", "contracts", "work-contract.template.json")
     if policy is not None and registry is not None and os.path.isfile(template):
         for error in validate_contract(template, policy, registry):
@@ -601,6 +695,10 @@ def doctor(root):
     print("- internal capabilities: %d" % (len(shared_names) - 2))
     print("- legacy runtime directories: absent")
     print("- policy/contract/verifier JSON: valid")
+    print(
+        "- verifier profile 집합: %s (registry 정본, policy/schema/fallback 일치)"
+        % ", ".join(sorted((registry or {}).get("profiles") or {}))
+    )
     print("- Knowledge/Context/Evidence plane: valid")
     print("- Semantic Runtime: 이식 제외 (D-046). Vault lint 가 대신한다")
     print("- Harness quadrant coverage: complete")

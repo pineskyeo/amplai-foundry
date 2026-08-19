@@ -2,18 +2,25 @@
   "schema_version": "1.0",
   "entries": [
     {
-      "id": "ADR-AMPLAI-V1",
+      "id": "D-046",
       "status": "active",
-      "title": "Reliable Single-Agent Loop baseline",
-      "path": "specs/005-amplai-loop-runtime-v1/plan.md",
-      "scope": [".ai-team", ".agents", ".specify", "scripts/eval.sh"]
+      "title": "Move workflow ordering from the human procedure to the /work controller",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [".ai-team", ".agents", ".claude", ".specify", "scripts", "AGENTS.md", "CLAUDE.md"]
     },
     {
-      "id": "ADR-AMPLAI-V2",
+      "id": "amplai-constitution",
       "status": "active",
-      "title": "Knowledge-Aware Evidence-Governed Loop",
-      "path": "specs/006-amplai-loop-runtime-v2/plan.md",
-      "scope": [".ai-team", "docs/ontology", "tools/ontology", "tools/knowledge"]
+      "title": "AMPLAI foundry constitution",
+      "path": ".specify/memory/constitution.md",
+      "scope": ["vault", "src", "docs"]
+    },
+    {
+      "id": "MGC-012",
+      "status": "active",
+      "title": "Messenger governance closure — Slack interaction authority and proposal cards",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": ["src/amplai_foundry", "specs/001-mgc-012-slack-reference-adapter", "specs/002-mgc-012-package-4-slack-reference-e2e", "specs/003-slack-proposal-card"]
     }
   ]
 }

@@ -1,0 +1,122 @@
+{
+  "applied": true,
+  "applied_paths": [
+    "scripts/__pycache__/loopctl.cpython-311.pyc",
+    "scripts/__pycache__/loopv2.cpython-311.pyc"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "G-001",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "delete",
+      "risk": "low",
+      "safety": "SAFE_AUTO",
+      "status": "applied",
+      "target": {
+        "path": "scripts/__pycache__/loopctl.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-002",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "delete",
+      "risk": "low",
+      "safety": "SAFE_AUTO",
+      "status": "applied",
+      "target": {
+        "path": "scripts/__pycache__/loopv2.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    }
+  ],
+  "content_hash": "0e5091df4ddb002c666f6c81cd7dfe43b7a2b5a100b9b5f76e61be66e285d948",
+  "generated_from": {
+    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "generated_at": "2026-08-19T07:51:42Z",
+    "policy_sha256": "3187d92816d098c65ec70062db6b98ee1c0dfdbc53c02edbe36a8e3faf3051ca",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "integrity": {
+    "all_classified": true,
+    "all_have_evidence": true,
+    "no_gated_auto_delete": true,
+    "violations": []
+  },
+  "mode": "incremental",
+  "notes": [],
+  "pass": true,
+  "rule": "candidate 는 삭제 제안이지 삭제가 아니다. proposal only — harness/ontology/production 자산을 자동 수정하지 않는다.",
+  "schema_version": "1.0",
+  "scope": [
+    ".ai-team",
+    ".ai-team/README.md",
+    ".ai-team/contracts",
+    ".ai-team/contracts/work-contract.schema.json",
+    ".ai-team/knowledge",
+    ".ai-team/knowledge/README.md",
+    ".ai-team/knowledge/claims.jsonl",
+    ".ai-team/knowledge/decisions.index.json",
+    ".ai-team/knowledge/map.json",
+    ".ai-team/policy",
+    ".ai-team/policy/documentation.json",
+    ".ai-team/rules",
+    ".ai-team/rules/commit-release-gate.md",
+    ".ai-team/runtime",
+    ".ai-team/runtime/policy.json",
+    ".ai-team/verifiers",
+    ".ai-team/verifiers/README.md",
+    ".ai-team/verifiers/registry.json",
+    "ai-team",
+    "ai-team/README.md",
+    "docs/workstreams/amplai-loop-runtime-adoption",
+    "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+    "scripts",
+    "scripts/loopctl.py",
+    "specs/004-amplai-loop-runtime",
+    "specs/004-amplai-loop-runtime/context-pack.json",
+    "specs/004-amplai-loop-runtime/doc-impact.json",
+    "specs/004-amplai-loop-runtime/domain-discovery.json",
+    "specs/004-amplai-loop-runtime/environment.json",
+    "specs/004-amplai-loop-runtime/evidence-trace.jsonl",
+    "specs/004-amplai-loop-runtime/garden-report.json",
+    "specs/004-amplai-loop-runtime/knowledge-readiness.json",
+    "specs/004-amplai-loop-runtime/work-contract.json"
+  ],
+  "summary": {
+    "applied_count": 2,
+    "by_safety": {
+      "SAFE_AUTO": 2
+    },
+    "by_type": {
+      "generated_garbage": 2
+    },
+    "gated_count": 0,
+    "total": 2
+  },
+  "work_id": "ALR-002"
+}

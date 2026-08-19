@@ -21,7 +21,7 @@ CI는 message context가 없는 `fast` profile을 독립적으로 다시 실행�
 
 ## Heavy evidence
 
-변경 범위에 따라 `/work` contract가 `standard`, `runtime`, `full`, `rhel` profile을 선택한다.
+변경 범위에 따라 `/work` contract가 `standard`, `runtime`, `full`, `v2` profile을 선택한다.
 release/production 영향이 있으면 최소한 다음을 확인한다.
 
 - fresh build/test 결과

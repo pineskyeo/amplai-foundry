@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "completed_slices": [],
+  "context_pack_hash": "1ad547a27238aa713125c46ef1cf830d269abf015b51e15bbe11ac4ef7f1b1b4",
+  "current_slice": null,
+  "git_checkpoint": "59b159302522ce73e1853a825d3b8989f4e11adf",
+  "last_verification": null,
+  "next_action": "commit 승인을 받는다. git_publish gate 가 열리지 않아 변경은 uncommitted 다. 다음 Work 는 .ai-team/rules/ 의 cortex 고유 규칙 4개 정리다",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "executing",
+  "work_id": "ALR-002"
+}

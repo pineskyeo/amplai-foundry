@@ -36,7 +36,6 @@
         "standard"
       ],
       "checks": [
-        "loop-skill-surface",
         "loop-shell-syntax"
       ]
     },
@@ -130,13 +129,6 @@
       "severity": "block",
       "source": ".ai-team/runtime/WORKFLOW.md",
       "description": "canonical skill surface, adapter, policy, registry 존재 검사."
-    },
-    {
-      "id": "loop-skill-surface",
-      "command": "python3 scripts/loopctl.py doctor --skills",
-      "severity": "warn",
-      "source": ".ai-team/runtime/WORKFLOW.md",
-      "description": "user-invocable 이 work/design 둘뿐인지."
     },
     {
       "id": "loop-shell-syntax",

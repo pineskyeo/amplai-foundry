@@ -46,9 +46,9 @@ V2는 V1 dev-loop를 재구현하지 않는다. Knowledge/Evidence/Governance pl
 
 Canonical project assets는 복사하지 않는다.
 
-- ontology/SHACL/CQ/binding/evidence: `docs/ontology/`
-- architecture/decision: `docs/architecture/`, `docs/decisions/`, `specs/<feature>/`
-- domain knowledge: `docs/knowledge/`
+- canonical knowledge note: `vault/projects/<project>/`
+- architecture/decision: `docs/workstreams/*/DECISIONS.md`, `specs/<feature>/`
+- domain knowledge: `docs/`의 주제별 문서
 - Work Memory: `specs/<feature>/contract|readiness|context|environment|trace|handoff|doc-impact|garden-report`
 - 실행 evidence: code/test/git/verifier output
 
@@ -107,12 +107,9 @@ Freshness만 적용한다.
 
 ## Semantic Runtime
 
-Canonical ontology는 `docs/ontology`에 있다. Agent용 read-only interface:
-
-```text
-ontology_search / describe / neighbors / path
-ontology_validate / evidence / binding
-```
+이 저장소는 semantic runtime(ontology TTL, SHACL, competency question, read-only MCP,
+project miner)을 이식하지 않았다 (`D-046`). Knowledge Vault와 Proposal 모델이 그 자리를
+대신하고, 그 층의 검사는 verifier registry의 `vault-lint`와 `schema` check가 맡는다.
 
 Query는 read-only다. 새 knowledge는 candidate → RDF/SHACL/CQ/diff validation → explicit promotion으로 처리한다. MCP에는 write/promotion tool을 노출하지 않는다.
 
@@ -129,9 +126,9 @@ changed files → impact rules → ontology binding → knowledge map → decisi
 ```
 
 문서 상태는 `ACTIVE / STALE / SUPERSEDED / DEPRECATED / CANDIDATE`다. 과거 결정은 덮어쓰지
-않는다. 이 repository의 convention은 `docs/decisions/cortex-decisions.md`의 D-NN append-only이며
-뒤집힌 항목에 `(superseded by D-MM)`을 달고, `.ai-team/knowledge/decisions.index.json`이
-`status`/`superseded_by`로 같은 사실을 유지한다.
+않는다. 이 repository의 convention은 `docs/workstreams/<workstream>/DECISIONS.md`의 D-NN
+append-only이며 뒤집힌 항목에 `Superseded: ... 은 D-MM 이 대체한다` 줄을 달고,
+`.ai-team/knowledge/decisions.index.json`이 `status`/`superseded_by`로 같은 사실을 유지한다.
 
 `docs validate --repo`는 canonical 문서가 존재하지 않는 repository 경로를 선언하는지 본다.
 문서가 실제와 어긋났음을 기계적으로 판정할 수 있는 신호다.
@@ -159,11 +156,10 @@ Repository      dead code / obsolete script / stale config / orphan fixture / ge
 | `EVIDENCE_REQUIRED` | orphan fixture, obsolete internal script, broken reference | 불가 — reference/build/test/packaging 근거 필요 |
 | `HUMAN_GATED` | public header, plugin/action entry, conditional build, production config, packaging contract | 금지 |
 
-Cortex에서 static text reference가 없다는 사실은 dead code 근거가 아니다. plugin과 action은
-`dlopen` + entry symbol로 진입하고(`src/plugin/plugin_loader.c`,
-`src/runtime/cortex_action_engine.c`), RHEL/HP-UX/32-bit는 conditional build이며,
-`cortex.spec`이 packaging으로 참조한다. runner가 glob이나 디렉토리로 수집하는 test/scenario도
-이름 참조가 없는 것이 정상이다.
+static text reference가 없다는 사실은 dead code 근거가 아니다. entry point는 CLI subcommand
+등록, plugin/provider registry, configuration-driven dispatch로 진입할 수 있고, runner가
+glob이나 디렉토리로 수집하는 test/fixture도 이름 참조가 없는 것이 정상이다. packaging과
+conditional build가 참조하는 자산도 마찬가지다.
 
 `repository-garden-integrity`의 PASS 기준은 candidate가 0개인 것이 아니다.
 

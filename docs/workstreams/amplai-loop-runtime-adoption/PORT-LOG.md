@@ -31,7 +31,7 @@ cortex 의 check 30개를 버리고 이 저장소 것 12개로 갈아 끼웠다.
 | `fast` | ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator |
 | `commit` | fast + diff-check |
 | `standard` | fast + pytest |
-| `runtime` | standard + loop-skill-surface, loop-shell-syntax |
+| `runtime` | standard + loop-shell-syntax |
 | `full` | standard + schema, vault-lint, project-pack |
 | `v2` | runtime + full — **gate 판정용** |
 

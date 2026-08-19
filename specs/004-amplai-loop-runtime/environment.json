@@ -1,0 +1,60 @@
+{
+  "captured_at": "2026-08-19T07:00:09Z",
+  "content_hash": "b22b474c0d5108a8bb17d2b992c061c058034f39b75a06fbd93fa973b95e1acd",
+  "fixture_refs": [
+    "testdata/",
+    "docs/ontology/tests/fixtures/"
+  ],
+  "git": {
+    "branch": "mgc-012-package-3-wave-4",
+    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "dirty": true
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python": "3.11.15",
+    "system": "Darwin"
+  },
+  "safe_environment": {},
+  "schema_version": "1.0",
+  "target_assumptions": {
+    "architectures": [
+      "x86-32",
+      "x86_64"
+    ],
+    "c_standard": "C99",
+    "operating_systems": [
+      "RHEL5",
+      "RHEL7",
+      "RHEL8",
+      "HP-UX where guarded"
+    ],
+    "python_compatibility": [
+      "Python 3.6 for deployed operational scripts when applicable"
+    ]
+  },
+  "tools": [
+    {
+      "command": "python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": "cc --version",
+      "exit_code": 0,
+      "output": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+    },
+    {
+      "command": "make --version",
+      "exit_code": 0,
+      "output": "GNU Make 3.81"
+    },
+    {
+      "command": "git --version",
+      "exit_code": 0,
+      "output": "git version 2.50.1 (Apple Git-155)"
+    }
+  ],
+  "work_id": "ALR-002"
+}

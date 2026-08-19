@@ -1,0 +1,177 @@
+{
+  "schema_version": "2.0",
+  "id": "ALR-002",
+  "title": "verifier profile 집합과 knowledge map 을 이 저장소 사실에 맞추고 doctor 가 그 어긋남을 잡게 한다",
+  "goal": "loop runtime 의 profile 목록이 policy·loopctl·contract schema·registry 네 곳에서 서로 어긋난 채 verifier PASS 를 내는 상태를 없앤다. registry.json 의 profiles 를 단일 출처로 삼고, 어긋나면 doctor 가 block 으로 잡는다. 죽은 flag 를 부르는 check 도 없앤다. 함께 .ai-team/knowledge/ 의 map 과 claim 을 이 저장소 자산으로 갈아 끼워 Context Pack 이 실제로 valid 를 낼 수 있게 만든다 — 지금은 source 20개 중 16개가 cortex 경로라 어떤 Work 도 DONE 에 도달하지 못한다.",
+  "source": [
+    "spec.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
+  ],
+  "work_type": "bug_fix",
+  "risk": "high",
+  "scope": {
+    "include": [
+      ".ai-team/verifiers/registry.json",
+      ".ai-team/runtime/policy.json",
+      ".ai-team/contracts/work-contract.schema.json",
+      "scripts/loopctl.py",
+      ".ai-team/knowledge/map.json",
+      ".ai-team/knowledge/claims.jsonl",
+      ".ai-team/knowledge/decisions.index.json",
+      ".ai-team/policy/documentation.json",
+      ".ai-team/README.md",
+      ".ai-team/knowledge/README.md",
+      "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      ".ai-team/verifiers/README.md",
+      ".ai-team/rules/commit-release-gate.md",
+      "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
+    ],
+    "exclude": [
+      "policy.json 의 path_rules 중 유효한 profile(full/standard/fast)을 가리키는 죽은 rule — public-contract 의 include/cortex, core-runtime 의 src/runtime, build-system 의 mk/** 은 대상 경로가 없지만 profile 참조가 성립하므로 그대로 둔다",
+      "scripts/loopv2.py 가 읽는 semantic_change_paths / non_semantic_change_paths policy key 누락",
+      "src/amplai_foundry/ 제품 코드",
+      ".ai-team/policy/documentation.json 의 canonical_roots — 존재하지 않는 cortex 경로가 남아 있지만 error 를 내지 않는다. historical_documents 만 blocker 였다",
+      ".ai-team/rules/ 의 cortex 고유 규칙 4개 — c99-rhel8-build, dist-ui, production-debug-map, memory-safety. 파일 전체가 C/RHEL/UI 빌드 규칙이라 이 저장소와 무관하다. c99-rhel8-build.md:29 가 rhel profile 을 언급하지만 그 한 줄만 고치면 나머지 make rhel8, tools/ci/check_layers.sh 서술이 그대로 남는다. 파일 단위 정리가 맞고 별건이다"
+    ]
+  },
+  "non_goals": [
+    "semantic runtime 이식",
+    "verifier check 를 새로 추가해 검사 범위를 넓히는 것",
+    "profile 이름 자체를 새로 설계하는 것"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "runtime 과 v2 profile 실행에서 WARN 이 하나도 없다. 존재하지 않는 CLI flag 를 부르는 check 가 없다.",
+      "evidence": [
+        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 출력에 WARN 0건",
+        ".venv/bin/python .ai-team/verifiers/run.py --profile runtime 출력에 WARN 0건"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "policy.json 의 profile_rank key 집합이 registry.json 의 profiles key 집합과 정확히 같다.",
+      "evidence": [
+        "set(policy.profile_rank) == set(registry.profiles) 를 확인하는 실행"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "loopctl.py 의 fallback profile_rank 와 doctor 의 required profile 목록이 registry profiles 와 같다.",
+      "evidence": [
+        "scripts/loopctl.py 의 두 지점이 registry 를 출처로 삼거나 같은 집합을 갖는다"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "work-contract.schema.json 의 verification.profile enum 이 registry profiles 와 같다.",
+      "evidence": [
+        "schema enum 과 registry profiles 비교 실행"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "네 곳 중 하나를 일부러 어긋나게 하면 doctor 가 block 으로 실패한다. 이 결함은 다시 조용히 지나가지 않는다.",
+      "evidence": [
+        "policy.profile_rank 에서 key 하나를 뺀 상태로 doctor 실행 → 비영 exit",
+        "원복 후 doctor PASS"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "v2 profile 전체가 PASS 하고 test 회귀가 없다.",
+      "evidence": [
+        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
+        ".venv/bin/python -m pytest 1382 passed"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "context validate 가 valid 를 낸다. knowledge map 의 source 가 전부 이 저장소에 실재하고 project 이름이 registry 와 같다.",
+      "evidence": [
+        ".venv/bin/python scripts/loopctl.py context build specs/004-amplai-loop-runtime",
+        ".venv/bin/python scripts/loopctl.py context validate specs/004-amplai-loop-runtime/context-pack.json -> valid true"
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "claims.jsonl 의 claim 이 전부 이 저장소에서 확인 가능한 evidence 를 갖는다. cortex 에만 있는 사실을 주장하지 않는다.",
+      "evidence": [
+        "claims 의 evidence path 전수 존재 확인 실행"
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "Documentation Freshness 가 RESOLVED 이고 repo 전체 검사가 FRESH 다. broken reference 가 0건이다.",
+      "evidence": [
+        ".venv/bin/python scripts/loopctl.py docs impact specs/004-amplai-loop-runtime -> RESOLVED, broken_references 0",
+        ".venv/bin/python scripts/loopctl.py docs validate --repo -> valid true, FRESH"
+      ]
+    },
+    {
+      "id": "AC-010",
+      "statement": "path_rule 3개를 뺐어도 ontology_promotion 과 production_operation gate 는 action 경유로 여전히 걸린다.",
+      "evidence": [
+        ".venv/bin/python scripts/loopctl.py permission check ontology_promotion -> exit 3 gated",
+        ".venv/bin/python scripts/loopctl.py permission check production_operation -> exit 3 gated"
+      ]
+    },
+    {
+      "id": "AC-011",
+      "statement": "정합 검사가 조용히 건너뛰는 경로가 없다. mirror 값을 못 읽으면 빈 집합으로 대조하고, 이름이 같아도 rank 순서가 갈라지면 잡는다. profile 이름을 쓰는 다른 자리(defaults.profile, risk_profiles)와 knowledge plane(claims 파싱, map source 존재, project 일치)도 doctor 가 읽는다.",
+      "evidence": [
+        "schema 의 enum key 제거 -> doctor FAIL",
+        "schema 의 verification -> verify rename -> doctor FAIL",
+        "risk_profiles.normal 을 semantic 으로 -> doctor FAIL",
+        "defaults.profile 을 rhel 로 -> doctor FAIL",
+        "profile_rank 의 full/v2 순서만 교체 -> doctor FAIL",
+        "claims.jsonl 에 깨진 줄 추가 -> doctor FAIL",
+        "map source 를 없는 파일로 -> doctor FAIL",
+        "전부 원복 후 doctor PASS"
+      ]
+    },
+    {
+      "id": "AC-012",
+      "statement": "loop runtime 이 실제로 쓰는 문서에 없어진 profile 이름이나 제거된 check 가 남지 않는다 — verifier README, commit-release-gate rule, PORT-LOG 의 profile 표.",
+      "evidence": [
+        "grep -rn 'semantic|rhel' .ai-team/verifiers/README.md .ai-team/rules/commit-release-gate.md -> 0건",
+        "grep -rn 'loop-skill-surface' 대상 문서 3개 -> 0건",
+        "남은 언급 2곳은 사실 기록이다: FACTS.md:104 는 cortex 의 profile 8개를 기술하고, specs/004 의 readiness/discovery 는 수정 전 상태를 기록한다"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      ".venv/bin/python scripts/loopctl.py doctor"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-046",
+    "gate 승인(architecture_change, 2026-08-19): semantic·rhel 을 profile 목록에서 빼면 그 둘만 가리키던 path_rule 3개(ontology-canonical, ontology-proposal, release-production)가 존재하지 않는 profile 을 가리키게 되므로 함께 뺀다. 대상 경로가 이 저장소에 전무하다. gate 정의 자체와 permissions.json 의 action 경유 gate 는 유지된다"
+  ],
+  "blocked_by": [],
+  "status": "done"
+}

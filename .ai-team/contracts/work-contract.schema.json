@@ -77,7 +77,7 @@
       "required": ["profile"],
       "properties": {
         "profile": {
-          "enum": ["fast", "standard", "runtime", "semantic", "v2", "full", "rhel"]
+          "enum": ["fast", "commit", "standard", "runtime", "full", "v2"]
         },
         "operational": {"type": "array", "items": {"type": "string"}}
       }

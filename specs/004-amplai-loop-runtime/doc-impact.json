@@ -1,0 +1,635 @@
+{
+  "acknowledged": [
+    "docs/KNOWLEDGE-RULES.md",
+    "docs/MEMORY-DOMAIN-MODEL.md",
+    "docs/MESSENGER-PROPOSAL-CONTROL.md",
+    "docs/PROJECT-PACK.md",
+    "docs/PROPOSALS.md",
+    "docs/VERSIONING.md",
+    "docs/VISION.md"
+  ],
+  "broken_references": [],
+  "changed_sources": [
+    ".agents/skills/taskify",
+    ".agents/skills/taskify/agents/openai.yaml",
+    ".agents/skills/taskify/assets/icon.svg",
+    ".agents/skills/taskify/assets/task-index.yaml",
+    ".agents/skills/taskify/assets/task-manifest.yaml",
+    ".agents/skills/taskify/evals/cases.yaml",
+    ".agents/skills/taskify/examples/CORTEX-RUN-T001.yaml",
+    ".agents/skills/taskify/examples/CORTEX-RUN-T002.yaml",
+    ".agents/skills/taskify/scripts/test_validate_task_manifest.py",
+    ".agents/skills/taskify/scripts/validate_task_manifest.py",
+    ".ai-team/contracts/work-contract.schema.json",
+    ".ai-team/contracts/work-contract.template.json",
+    ".ai-team/knowledge/claims.jsonl",
+    ".ai-team/knowledge/context-pack.schema.json",
+    ".ai-team/knowledge/decisions.index.json",
+    ".ai-team/knowledge/doc-impact.schema.json",
+    ".ai-team/knowledge/domain-discovery.schema.json",
+    ".ai-team/knowledge/garden-report.schema.json",
+    ".ai-team/knowledge/handoff.schema.json",
+    ".ai-team/knowledge/knowledge-readiness.schema.json",
+    ".ai-team/knowledge/knowledge-readiness.template.json",
+    ".ai-team/knowledge/map.json",
+    ".ai-team/policy/approvals.jsonl",
+    ".ai-team/policy/documentation.json",
+    ".ai-team/policy/gardening.json",
+    ".ai-team/policy/knowledge-readiness.json",
+    ".ai-team/policy/permissions.json",
+    ".ai-team/policy/quadrant.json",
+    ".ai-team/policy/tdd.json",
+    ".ai-team/runtime/policy.json",
+    ".ai-team/verifiers/registry.json",
+    ".ai-team/verifiers/run.py",
+    "scripts/eval.sh",
+    "scripts/loopctl.py",
+    "scripts/loopv2.py",
+    "src/amplai_foundry/cli.py",
+    "src/amplai_foundry/governance/__init__.py",
+    "src/amplai_foundry/governance/decisions.py",
+    "src/amplai_foundry/governance/events.py",
+    "src/amplai_foundry/governance/ingress.py",
+    "src/amplai_foundry/governance/ingress_worker.py",
+    "src/amplai_foundry/governance/migrations.py",
+    "src/amplai_foundry/governance/projections.py",
+    "src/amplai_foundry/governance/review_cards.py",
+    "src/amplai_foundry/governance/slack_cards.py",
+    "src/amplai_foundry/governance/slack_http.py",
+    "src/amplai_foundry/governance/slack_projection.py",
+    "src/amplai_foundry/governance/store.py"
+  ],
+  "content_hash": "a5a11e25eb0aadb778dfedd426827421854b6dee8af61c1eab6bdf9e702c3cbc",
+  "evidence": [
+    "changed_files",
+    "impact_rules",
+    "ontology_binding",
+    "knowledge_map",
+    "decision_index",
+    "doc_reference"
+  ],
+  "generated_from": {
+    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "contract_sha256": "2c8bac1922db048280acaa07bd16dbfc02e3f9c4c3ad93fc7d33153e63f0f452",
+    "generated_at": "2026-08-19T07:51:29Z",
+    "policy_sha256": "65f96edbeba4eb8b04f7925d4e98398b954f9b7c9d02d25c482682304d872069",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "impacted_documents": [
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/knowledge/decisions.index.json"
+      ],
+      "handled": true,
+      "path": ".agents/skills/design/SKILL.md",
+      "reason": "문서가 .ai-team/knowledge/decisions.index.json, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F scripts/eval.sh"
+      ],
+      "handled": true,
+      "path": ".agents/skills/dev-loop/SKILL.md",
+      "reason": "문서가 scripts/eval.sh, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .agents/skills/taskify"
+      ],
+      "handled": true,
+      "path": ".agents/skills/speckit-implement/SKILL.md",
+      "reason": "문서가 .agents/skills/taskify, .agents/skills/taskify/scripts/validate_task_manifest.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/contracts/work-contract.template.json"
+      ],
+      "handled": true,
+      "path": ".agents/skills/work/SKILL.md",
+      "reason": "문서가 .ai-team/contracts/work-contract.template.json, .ai-team/policy/documentation.json, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        ".ai-team/knowledge/map.json#loop-runtime-readme",
+        "git grep -F .ai-team/knowledge/decisions.index.json"
+      ],
+      "handled": true,
+      "path": ".ai-team/README.md",
+      "reason": "loop runtime contract change; keyword contract,knowledge,policy; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, .ai-team/verifiers/run.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F scripts/loopctl.py"
+      ],
+      "handled": true,
+      "path": ".ai-team/contracts/README.md",
+      "reason": "문서가 scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        ".ai-team/knowledge/map.json#loop-runtime-workflow"
+      ],
+      "handled": true,
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "loop runtime contract change; keyword handoff,review",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/verifiers/run.py"
+      ],
+      "handled": true,
+      "path": ".ai-team/verifiers/README.md",
+      "reason": "문서가 .ai-team/verifiers/run.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map",
+        "decision_index"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#constitution",
+        ".ai-team/knowledge/decisions.index.json#amplai-constitution"
+      ],
+      "handled": true,
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword governance; active decision amplai-constitution",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "impact_rules",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        "git grep -F .ai-team/verifiers/run.py"
+      ],
+      "handled": true,
+      "path": "AGENTS.md",
+      "reason": "loop runtime contract change; 문서가 .ai-team/verifiers/run.py, scripts/eval.sh, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "impact_rules",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        "git grep -F .ai-team/verifiers/run.py"
+      ],
+      "handled": true,
+      "path": "CLAUDE.md",
+      "reason": "loop runtime contract change; 문서가 .ai-team/verifiers/run.py, scripts/eval.sh, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#knowledge-rules"
+      ],
+      "handled": true,
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "reason": "keyword knowledge",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#memory-domain-model"
+      ],
+      "handled": true,
+      "path": "docs/MEMORY-DOMAIN-MODEL.md",
+      "reason": "keyword domain",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#messenger-proposal-control"
+      ],
+      "handled": true,
+      "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
+      "reason": "keyword slack",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#project-pack"
+      ],
+      "handled": true,
+      "path": "docs/PROJECT-PACK.md",
+      "reason": "keyword manifest,pack",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#proposals"
+      ],
+      "handled": true,
+      "path": "docs/PROPOSALS.md",
+      "reason": "keyword validate",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#versioning"
+      ],
+      "handled": true,
+      "path": "docs/VERSIONING.md",
+      "reason": "keyword schema",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#vision"
+      ],
+      "handled": true,
+      "path": "docs/VISION.md",
+      "reason": "keyword amplai",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/knowledge/map.json"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "reason": "문서가 .ai-team/knowledge/map.json, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#loop-adoption-facts",
+        "git grep -F .ai-team/policy/permissions.json"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "reason": "keyword runtime; 문서가 .ai-team/policy/permissions.json, .ai-team/verifiers/run.py, scripts/loopctl.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#loop-adoption-port-log",
+        "git grep -F .ai-team/knowledge/map.json"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "reason": "keyword runtime; 문서가 .ai-team/knowledge/map.json, .ai-team/verifiers/run.py, scripts/eval.sh 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F src/amplai_foundry/cli.py"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/messenger-governance-closure-v3/BACKLOG.md",
+      "reason": "문서가 src/amplai_foundry/cli.py 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "knowledge_map",
+        "decision_index",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#mgc-decisions",
+        ".ai-team/knowledge/decisions.index.json#D-046",
+        ".ai-team/knowledge/decisions.index.json#MGC-012",
+        "git grep -F .ai-team/verifiers/registry.json"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "keyword ingress,slack; active decision D-046; active decision MGC-012",
+      "state": "ACTIVE"
+    }
+  ],
+  "non_semantic_sources": [
+    ".agents/skills/code-review/SKILL.md",
+    ".agents/skills/design/SKILL.md",
+    ".agents/skills/dev-loop/SKILL.md",
+    ".agents/skills/speckit-analyze/SKILL.md",
+    ".agents/skills/speckit-checklist/SKILL.md",
+    ".agents/skills/speckit-clarify/SKILL.md",
+    ".agents/skills/speckit-constitution/SKILL.md",
+    ".agents/skills/speckit-converge/SKILL.md",
+    ".agents/skills/speckit-implement/SKILL.md",
+    ".agents/skills/speckit-plan/SKILL.md",
+    ".agents/skills/speckit-specify/SKILL.md",
+    ".agents/skills/speckit-taskstoissues/SKILL.md",
+    ".agents/skills/systematic-debugging/SKILL.md",
+    ".agents/skills/taskify/SKILL.md",
+    ".agents/skills/taskify/references/manifest-contract.md",
+    ".agents/skills/taskify/scripts/requirements.txt",
+    ".agents/skills/work/SKILL.md",
+    ".ai-team/README.md",
+    ".ai-team/contracts/README.md",
+    ".ai-team/evidence/README.md",
+    ".ai-team/evidence/provenance.schema.json",
+    ".ai-team/knowledge/README.md",
+    ".ai-team/rules/c99-rhel8-build.md",
+    ".ai-team/rules/commit-release-gate.md",
+    ".ai-team/rules/contract-registry.md",
+    ".ai-team/rules/dist-ui.md",
+    ".ai-team/rules/memory-safety.md",
+    ".ai-team/rules/production-debug-map.md",
+    ".ai-team/rules/test-discipline.md",
+    ".ai-team/runtime/WORKFLOW.md",
+    ".ai-team/runtime/escalation.md",
+    ".ai-team/verifiers/README.md",
+    ".claude/skills/code-review",
+    ".claude/skills/design",
+    ".claude/skills/dev-loop",
+    ".claude/skills/speckit-analyze/SKILL.md",
+    ".claude/skills/speckit-checklist/SKILL.md",
+    ".claude/skills/speckit-clarify/SKILL.md",
+    ".claude/skills/speckit-constitution/SKILL.md",
+    ".claude/skills/speckit-converge/SKILL.md",
+    ".claude/skills/speckit-implement/SKILL.md",
+    ".claude/skills/speckit-plan/SKILL.md",
+    ".claude/skills/speckit-specify/SKILL.md",
+    ".claude/skills/speckit-taskstoissues/SKILL.md",
+    ".claude/skills/systematic-debugging",
+    ".claude/skills/taskify",
+    ".claude/skills/work",
+    ".specify/feature.json",
+    ".specify/memory/constitution.md",
+    ".specify/workflows/speckit/workflow.yml",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ai-team/README.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+    "docs/workstreams/messenger-governance-closure-v3/APPROVALS.md",
+    "docs/workstreams/messenger-governance-closure-v3/BACKLOG.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+    "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md",
+    "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+    "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+    "docs/workstreams/messenger-governance-closure-v3/PROGRESSION_QUEUE.md",
+    "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+    "pyproject.toml",
+    "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+    "specs/001-mgc-012-slack-reference-adapter/data-model.md",
+    "specs/001-mgc-012-slack-reference-adapter/plan.md",
+    "specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+    "specs/001-mgc-012-slack-reference-adapter/research.md",
+    "specs/001-mgc-012-slack-reference-adapter/spec.md",
+    "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+    "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+    "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+    "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+    "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+    "specs/001-mgc-012-slack-reference-adapter/tasks.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/requirements.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+    "specs/002-mgc-012-package-4-slack-reference-e2e/tasks.md",
+    "specs/003-slack-proposal-card/checklists/requirements.md",
+    "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+    "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+    "specs/003-slack-proposal-card/contracts/slack-card-payloads.md",
+    "specs/003-slack-proposal-card/data-model.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-11.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-13.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-14.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-15.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-16.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T001.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T002.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T004.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T005.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T006.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T007.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T009.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T010.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T011.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T012.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T013.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T014.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T015.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T016.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T017.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T018.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T019.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T023.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T027.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T028.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T029.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T030.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T031.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T032.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T033.md",
+    "specs/003-slack-proposal-card/evidence/MGC-012-P5-T034.md",
+    "specs/003-slack-proposal-card/evidence/mutation-round-11.md",
+    "specs/003-slack-proposal-card/evidence/review-target-round-12.txt",
+    "specs/003-slack-proposal-card/evidence/review-target-round-13.txt",
+    "specs/003-slack-proposal-card/evidence/review-target-round-14.txt",
+    "specs/003-slack-proposal-card/evidence/review-target-round-15.txt",
+    "specs/003-slack-proposal-card/evidence/review-target-round-16.txt",
+    "specs/003-slack-proposal-card/evidence/review-target.txt",
+    "specs/003-slack-proposal-card/evidence/wave-6-round-12-closure.md",
+    "specs/003-slack-proposal-card/plan.md",
+    "specs/003-slack-proposal-card/quickstart.md",
+    "specs/003-slack-proposal-card/research.md",
+    "specs/003-slack-proposal-card/spec.md",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T001.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T002.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T003.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T004.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T005.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T006.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T007.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T008.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T009.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T010.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T011.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T012.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T013.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T014.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T015.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T016.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T017.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T018.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T019.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T020.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T021.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T022.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T023.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T024.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T025.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T026.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T027.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T028.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T029.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T030.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T031.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T032.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T033.yaml",
+    "specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T034.yaml",
+    "specs/003-slack-proposal-card/task-manifests/index.yaml",
+    "specs/003-slack-proposal-card/tasks.md",
+    "tests/test_cli.py",
+    "tests/test_decisions.py",
+    "tests/test_governance_events.py",
+    "tests/test_governance_migrations.py",
+    "tests/test_governance_store.py",
+    "tests/test_ingress.py",
+    "tests/test_review_cards.py",
+    "tests/test_slack_ack_boundary.py",
+    "tests/test_slack_cards.py",
+    "tests/test_slack_http.py",
+    "tests/test_slack_projection.py"
+  ],
+  "reason": "impacted document 23 건을 이번 Work 에서 모두 갱신했다",
+  "schema_version": "1.0",
+  "semantic_change": true,
+  "status": "RESOLVED",
+  "work_id": "ALR-002"
+}

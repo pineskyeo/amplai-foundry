@@ -17,13 +17,13 @@
 
   "historical_documents": [
     {
-      "path": "docs/decisions/cortex-decisions.md",
-      "convention": "D-NN append-only. 뒤집힌 항목은 지우지 않고 '(superseded by D-MM)'을 단다.",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "convention": "D-NN append-only. 뒤집힌 항목은 지우지 않고 'Superseded: ... 은 D-MM 이 대체한다' 줄을 단다.",
       "index": ".ai-team/knowledge/decisions.index.json"
     },
     {
-      "path": "docs/decisions/cortex-risks.md",
-      "convention": "risk log. 해소된 항목도 이력으로 남긴다.",
+      "path": "docs/workstreams/messenger-governance-closure-v3/BACKLOG.md",
+      "convention": "미해결 항목 log. 닫힌 항목도 이력으로 남긴다.",
       "index": ".ai-team/knowledge/decisions.index.json"
     }
   ],

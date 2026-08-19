@@ -7,8 +7,8 @@
 
 | 종류 | 질문 | Canonical 자산 |
 |---|---|---|
-| Stable Knowledge | 시스템은 원래 어떻게 동작하는가 | `AGENTS.md`, `CLAUDE.md`, architecture/domain docs, ontology |
-| Decision Memory | 왜 이렇게 선택했는가 | `docs/decisions/`, feature plan/ADR, `decisions.index.json` |
+| Stable Knowledge | 시스템은 원래 어떻게 동작하는가 | `AGENTS.md`, `CLAUDE.md`, `docs/`의 domain 문서, `vault/`의 canonical note |
+| Decision Memory | 왜 이렇게 선택했는가 | `docs/workstreams/*/DECISIONS.md`, feature spec/plan, `decisions.index.json` |
 | Work Memory | 이번 작업은 어디까지 됐는가 | `specs/<work>/`의 contract/context/progress/verification/handoff |
 | Evidence | 그 사실의 근거는 무엇인가 | code/test/API/log/git/verifier result, `claims.jsonl`의 evidence link |
 
