@@ -1,0 +1,149 @@
+{
+  "schema_version": "2.0",
+  "project": "amplai-foundry",
+  "profiles": {
+    "fast": {
+      "description": "모든 환경에서 실행 가능한 빠른 정적 invariant",
+      "checks": [
+        "ruff-check",
+        "ruff-format",
+        "mypy",
+        "loop-runtime-doctor",
+        "manifest-validator"
+      ]
+    },
+    "commit": {
+      "description": "fast + tree cleanliness",
+      "extends": [
+        "fast"
+      ],
+      "checks": [
+        "diff-check"
+      ]
+    },
+    "standard": {
+      "description": "fast + 전체 test",
+      "extends": [
+        "fast"
+      ],
+      "checks": [
+        "pytest"
+      ]
+    },
+    "runtime": {
+      "description": "standard + loop runtime 자체 검사",
+      "extends": [
+        "standard"
+      ],
+      "checks": [
+        "loop-skill-surface",
+        "loop-shell-syntax"
+      ]
+    },
+    "full": {
+      "description": "standard + amplai-foundry verify 전체 (schema/vault/pack 포함)",
+      "extends": [
+        "standard"
+      ],
+      "checks": [
+        "schema",
+        "vault-lint",
+        "project-pack"
+      ]
+    },
+    "v2": {
+      "description": "runtime + full. gate 판정에 쓰는 묶음",
+      "extends": [
+        "runtime",
+        "full"
+      ],
+      "checks": []
+    }
+  },
+  "checks": [
+    {
+      "id": "pytest",
+      "command": ".venv/bin/python -m pytest",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "전체 test. slack_e2e 는 pyproject addopts 가 deselect 한다."
+    },
+    {
+      "id": "ruff-check",
+      "command": ".venv/bin/python -m ruff check .",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "lint."
+    },
+    {
+      "id": "ruff-format",
+      "command": ".venv/bin/python -m ruff format --check .",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "format 일관성."
+    },
+    {
+      "id": "mypy",
+      "command": ".venv/bin/python -m mypy",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "strict type check."
+    },
+    {
+      "id": "schema",
+      "command": ".venv/bin/python -m amplai_foundry.cli schema check",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "Pydantic 파생 JSON Schema 가 코드와 일치하는지."
+    },
+    {
+      "id": "vault-lint",
+      "command": ".venv/bin/python -m amplai_foundry.cli lint vault/",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "canonical 지식 규칙. 공식 지식의 무결성을 지킨다."
+    },
+    {
+      "id": "project-pack",
+      "command": ".venv/bin/python -m amplai_foundry.cli project validate --workspace .",
+      "severity": "block",
+      "source": "src/amplai_foundry/verification/runner.py",
+      "description": "Project Pack 정합성."
+    },
+    {
+      "id": "diff-check",
+      "command": "git diff --check",
+      "severity": "block",
+      "source": "AGENTS.md",
+      "description": "whitespace 오염과 conflict marker."
+    },
+    {
+      "id": "manifest-validator",
+      "command": "python3 .claude/skills/taskify/scripts/validate_task_manifest.py specs/003-slack-proposal-card/task-manifests",
+      "severity": "warn",
+      "source": ".agents/skills/taskify/SKILL.md",
+      "description": "taskify manifest 계약. feature 가 없으면 warn 으로 지나간다."
+    },
+    {
+      "id": "loop-runtime-doctor",
+      "command": "python3 scripts/loopctl.py doctor",
+      "severity": "block",
+      "source": ".ai-team/runtime/WORKFLOW.md",
+      "description": "canonical skill surface, adapter, policy, registry 존재 검사."
+    },
+    {
+      "id": "loop-skill-surface",
+      "command": "python3 scripts/loopctl.py doctor --skills",
+      "severity": "warn",
+      "source": ".ai-team/runtime/WORKFLOW.md",
+      "description": "user-invocable 이 work/design 둘뿐인지."
+    },
+    {
+      "id": "loop-shell-syntax",
+      "command": "bash -n .specify/scripts/bash/check-prerequisites.sh",
+      "severity": "warn",
+      "source": ".ai-team/runtime/WORKFLOW.md",
+      "description": "loop 가 부르는 shell script 문법."
+    }
+  ]
+}

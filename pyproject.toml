@@ -55,6 +55,15 @@ extend-exclude = [".agents", ".ai-team", ".claude", ".specify"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+# cortex main 3a3eb46b 에서 이식한 loop runtime (D-046). 자동 수정 가능한 168건은 이미
+# 적용했고, 남은 것들은 upstream 과 diff 를 유지하기 위해 남긴다 — cortex 가 이 파일들을
+# 계속 고치므로 재이식 때 충돌을 줄이는 쪽이 이득이다.
+#
+# 이 예외는 `scripts/` 의 두 파일에만 걸린다. `src/` 와 `tests/` 는 그대로 strict 다.
+[tool.ruff.lint.per-file-ignores]
+"scripts/loopctl.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
+"scripts/loopv2.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
+
 [tool.ruff.format]
 quote-style = "double"
 

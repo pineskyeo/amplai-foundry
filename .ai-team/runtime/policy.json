@@ -1,0 +1,170 @@
+{
+  "schema_version": "2.0",
+  "runtime": "amplai-loop-v2",
+  "public_commands": ["work", "design"],
+  "defaults": {
+    "risk": "normal",
+    "profile": "standard",
+    "max_repair_attempts": 3,
+    "contract_required": ["normal", "high"],
+    "knowledge_readiness_required_for": ["domain_heavy", "architecture", "operations", "repository_gardening", "high-risk"],
+    "documentation_freshness_required_for": ["normal", "high"],
+    "incremental_gardening_required_for": ["normal", "high"],
+    "full_gardening_only_for": ["repository_gardening"],
+    "context_pack_required": ["normal", "high"],
+    "environment_fingerprint_required": ["normal", "high"],
+    "evidence_trace_required": ["normal", "high"],
+    "review_required": ["normal", "high"]
+  },
+  "risk_rank": {"low": 0, "normal": 1, "high": 2},
+  "profile_rank": {
+    "fast": 0,
+    "standard": 1,
+    "runtime": 2,
+    "semantic": 3,
+    "v2": 4,
+    "full": 5,
+    "rhel": 6
+  },
+  "risk_profiles": {"low": "fast", "normal": "standard", "high": "standard"},
+  "human_gates": {
+    "requirement_decision": "요구 자체의 의미·우선순위·충돌을 사람이 결정해야 한다.",
+    "architecture_change": "큰 구조 또는 ownership boundary를 바꾼다.",
+    "public_contract": "API/schema/registry/파일 형식/ABI 호환성에 영향을 준다.",
+    "ontology_promotion": "candidate knowledge를 canonical active ontology로 승격한다.",
+    "destructive_change": "데이터·파일·기능 삭제 또는 되돌리기 어려운 migration이다.",
+    "production_operation": "설비·운영 환경에 설치, 실행, 변경한다.",
+    "git_publish": "commit/push/PR/merge/release 등 저장소 밖 상태를 바꾼다."
+  },
+  "path_rules": [
+    {
+      "id": "loop-runtime-v2",
+      "patterns": [
+        "AGENTS.md", "CLAUDE.md", "CODEX.md", ".claude/settings.json",
+        ".codex/config.toml", ".mcp.json", ".ai-team/README.md",
+        ".ai-team/runtime/**", ".ai-team/policy/**", ".ai-team/contracts/**",
+        ".ai-team/verifiers/**", ".ai-team/knowledge/**", ".ai-team/evidence/**",
+        ".ai-team/rules/**", ".agents/skills/work/**", ".agents/skills/design/**",
+        ".agents/skills/dev-loop/**", ".agents/skills/speckit-*/**",
+        ".agents/skills/taskify/**", ".agents/skills/code-review/**",
+        ".agents/skills/systematic-debugging/**", ".claude/skills/**",
+        ".specify/memory/constitution.md", ".specify/scripts/**", ".specify/templates/**",
+        "scripts/eval.sh", "scripts/loopctl.py", "scripts/loopv2.py",
+        "tools/knowledge/**", "tests/ai/**", ".githooks/**", ".github/workflows/**",
+        "tools/ci/**", "specs/005-amplai-loop-runtime-v1/**",
+        "specs/006-amplai-loop-runtime-v2/**"
+      ],
+      "risk": "high",
+      "profile": "v2",
+      "gates": ["architecture_change"]
+    },
+    {
+      "id": "ontology-canonical",
+      "patterns": [
+        "docs/ontology/dc-test.ttl", "docs/ontology/software-map.ttl",
+        "docs/ontology/manifest.json", "docs/ontology/shapes/**",
+        "docs/ontology/model/active/**", "docs/ontology/bindings/**",
+        "docs/ontology/evidence/**", "docs/ontology/competency/**",
+        "tools/ontology/**", "requirements/semantic-runtime.txt"
+      ],
+      "risk": "high",
+      "profile": "semantic",
+      "gates": ["ontology_promotion"]
+    },
+    {
+      "id": "ontology-proposal",
+      "patterns": ["docs/ontology/proposals/**", "docs/ontology/tests/**"],
+      "risk": "normal",
+      "profile": "semantic",
+      "gates": []
+    },
+    {
+      "id": "public-contract",
+      "patterns": [
+        "conf/testplan/**", "docs/**/schemas/**", "include/cortex/**",
+        "include/pinesky/**", "sdk/algorithms/**", "sdk/authoring/**",
+        "sdk/**/schema/**", "schemas/**"
+      ],
+      "risk": "high",
+      "profile": "full",
+      "gates": ["public_contract"]
+    },
+    {
+      "id": "release-production",
+      "patterns": [
+        "cortex.spec", "scripts/*.service", "conf/*.sudoers", "conf/cortex.conf",
+        "plugins/cortex-production/**"
+      ],
+      "risk": "high",
+      "profile": "rhel",
+      "gates": ["public_contract", "production_operation"]
+    },
+    {
+      "id": "core-runtime",
+      "patterns": [
+        "src/runtime/**", "src/contract/**", "src/dispatch/**", "src/server/**",
+        "src/api/**", "plugins/**"
+      ],
+      "risk": "high",
+      "profile": "full",
+      "gates": []
+    },
+    {
+      "id": "build-system",
+      "patterns": ["Makefile", "mk/**", "tools/build/**"],
+      "risk": "normal",
+      "profile": "full",
+      "gates": []
+    },
+    {
+      "id": "feature-artifacts",
+      "patterns": ["specs/**"],
+      "risk": "normal",
+      "profile": "standard",
+      "gates": []
+    },
+    {
+      "id": "code-and-tests",
+      "patterns": [
+        "src/**", "include/**", "tests/**", "tools/**", "scripts/**", "Makefile",
+        "ui/src/**", "ui/public/**"
+      ],
+      "risk": "normal",
+      "profile": "standard",
+      "gates": []
+    },
+    {
+      "id": "documentation-only",
+      "patterns": [
+        "README.md", "docs/**", "ui/*.md"
+      ],
+      "risk": "low",
+      "profile": "fast",
+      "gates": []
+    }
+  ],
+  "review_triggers": [
+    "risk is normal or high",
+    "Knowledge Readiness conflict or superseded knowledge was resolved",
+    "security/privacy/secret handling changes",
+    "public contract, ontology canonical model, or production path changes",
+    "memory ownership/concurrency/error recovery changes",
+    "verifier/runtime/policy/permission changes"
+  ],
+  "forbidden_automatic_actions": [
+    "code while Knowledge Readiness is DISCOVER or BLOCKED",
+    "silently choose between contradictory active knowledge sources",
+    "promote ontology candidates without validation and human/governor approval",
+    "change an unresolved requirement",
+    "delete or migrate production data",
+    "deploy to equipment or production",
+    "commit, push, open or merge a PR, or release without explicit request",
+    "silently weaken a verifier to obtain PASS",
+    "delete a HUMAN_GATED gardening candidate without explicit human approval",
+    "call code dead because no static text reference was found",
+    "run full repository gardening outside an explicit repository_gardening Work",
+    "declare DONE while documentation freshness is STALE",
+    "overwrite a historical decision to match current behavior",
+    "implement V3 parallel worker or scheduler features in V2"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "id": "ADR-AMPLAI-V1",
+      "status": "active",
+      "title": "Reliable Single-Agent Loop baseline",
+      "path": "specs/005-amplai-loop-runtime-v1/plan.md",
+      "scope": [".ai-team", ".agents", ".specify", "scripts/eval.sh"]
+    },
+    {
+      "id": "ADR-AMPLAI-V2",
+      "status": "active",
+      "title": "Knowledge-Aware Evidence-Governed Loop",
+      "path": "specs/006-amplai-loop-runtime-v2/plan.md",
+      "scope": [".ai-team", "docs/ontology", "tools/ontology", "tools/knowledge"]
+    }
+  ]
+}

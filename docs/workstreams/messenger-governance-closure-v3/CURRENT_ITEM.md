@@ -54,6 +54,9 @@ message projection과 retry는 background path에서 수행한다.
 - Review: **round 10~16 전부 FAIL.** round 15 는 blocker 9건(P0 1), round 16 도 9건(P0 1)
 - **round 15 의 9건은 round 16 이 전부 닫힘을 실행으로 확인했다.** round 16 의 9건은 wave 10
   이 대응했고 **아직 review 되지 않았다**
+- **2026-08-19 중단.** 사용자가 cortex AMPLAI Loop Runtime 이식을 먼저 하기로 정했다
+  (`D-046`). wave 10 은 구현됐고 review 되지 않았다. 재개 지점은 아래 그대로다.
+  이식 workstream 은 `docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md` 다
 - Selected next item: **round 17 review** — wave 10(T031~T034)을 검증한다. 그 전에 재freeze
 - Sequence: `재freeze → round 17 review → (blocker 0이면) gate → T010 → T013 → T012`
 - Stop rule: Package 5 review 가 닫히기 전에는 Package 4 구현을 재개하지 않는다

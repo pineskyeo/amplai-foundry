@@ -1,6 +1,8 @@
 ---
 name: taskify
 description: Convert an approved specification, architecture plan, PRD, ADR set, or GitHub Spec Kit outputs into small implementation-ready vertical task manifests with stable IDs, dependencies, scope boundaries, executable acceptance checks, and bounded retry or replan rules. Use before implementation when asked to split work, create implementation steps, transform spec.md/plan.md/tasks.md into executable goals, or prepare an implementation loop. Do not use to implement code or silently decide unresolved product or architecture questions.
+user-invocable: false
+disable-model-invocation: false
 ---
 
 # Taskify

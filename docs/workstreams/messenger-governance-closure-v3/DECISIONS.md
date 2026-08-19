@@ -952,6 +952,7 @@
 ## D-033 — Remove The Human Approval Before `/speckit-implement`
 
 - Status: APPROVED
+- Superseded (부분): Pre-Implement Procedure 절 은 `D-046`(2026-08-19)이 대체한다. 실질(그 단계를 거친다)은 유지되고 **호출 주체가 `/work` controller 로 바뀐다.**
 - Decision: `/speckit-implement` 앞의 사람 승인을 없앤다. AI가 승인 없이 스스로 호출해도 된다.
   세 곳을 고쳤다.
 
@@ -1091,6 +1092,7 @@
 ## D-036 — Make `/speckit-analyze` A Required Pre-Implement Step
 
 - Status: APPROVED
+- Superseded (부분): analyze 를 고정 순서에 못박은 부분 은 `D-046`(2026-08-19)이 대체한다. 실질(그 단계를 거친다)은 유지되고 **호출 주체가 `/work` controller 로 바뀐다.**
 - Decision: `/speckit-analyze`를 선택에서 **필수**로 올린다. `/taskify` 뒤,
   `/speckit-implement` 앞이다. **CRITICAL 또는 HIGH가 하나라도 있으면 구현을 시작하지
   않는다.** MEDIUM과 LOW는 기록하고 item별로 판단한다.
@@ -1133,6 +1135,7 @@
 ## D-037 — Make `/speckit-clarify` A Required Step Before `/speckit-plan`
 
 - Status: APPROVED
+- Superseded (부분): clarify 를 고정 순서에 못박은 부분 은 `D-046`(2026-08-19)이 대체한다. 실질(그 단계를 거친다)은 유지되고 **호출 주체가 `/work` controller 로 바뀐다.**
 - Decision: `/speckit-clarify`를 선택에서 **필수**로 올린다. `/speckit-specify` 뒤,
   `/speckit-plan` 앞이다.
 
@@ -1474,3 +1477,57 @@
   빈 값을 채운 가짜 view 는 operator 에게 거짓을 보이는 것이다. **operator 가 보는
   `governance stranded` 출력은 승인 의도대로** 두 목록을 함께 낸다. 승인 문구는 고치지
   않고 이 각주를 단다.
+
+## D-046 — Move Workflow Ordering From The Human Procedure To The `/work` Controller
+
+- Status: APPROVED (**안 A** — cortex 와 같게)
+- Supersedes: `D-033` 의 Pre-Implement Procedure 절, `D-036`, `D-037`. **셋의 실질(analyze·
+  clarify·taskify 를 반드시 거친다)은 유지되고, 그것을 *언제* 거칠지 정하는 주체만 바뀐다.**
+- Decision: cortex AMPLAI Loop Runtime V2.1 을 이식하고 **절차 주도권을 `/work` controller
+  에 넘긴다.**
+
+  1. user-invocable 개발 명령을 **둘로 줄인다** — `/work <goal>`, `/design <problem>`.
+     `speckit-specify`·`clarify`·`plan`·`taskify`·`analyze`·`implement`·`converge` 와
+     review·debug 는 **internal capability** 가 된다. 사용자가 그 순서를 지휘하지 않는다.
+  2. `CLAUDE.md` 를 **adapter 로 줄이고** 실질 규칙을 `AGENTS.md` 로 옮긴다. runtime 진입점은
+     `.ai-team/README.md` 다. cortex 가 쓰는 구조와 같다.
+  3. `.ai-team/` 에 runtime layer 를 둔다 — `runtime`, `policy`, `contracts`, `verifiers`,
+     `knowledge`, `evidence`. 기존 `.ai-team/skills/taskify` 와 **경로가 겹치므로 정리한다.**
+  4. `amplai-foundry verify` 의 7 check 를 `.ai-team/verifiers/registry.json` 으로 옮기고
+     profile 을 만든다. check 형식이 이미 같다 — `{id, command, severity, source, description}`.
+  5. **semantic runtime(rdflib·ontology TTL·SHACL·MCP)은 가져오지 않는다.** 이 저장소에는
+     그 기반이 없고 Knowledge Vault 와 Proposal 모델이 그 자리를 대신한다.
+- Reason: **이번 세션이 수동 절차의 대가를 실측으로 보여줬다.** wave 8 → round 15 → wave 9
+  → round 16 → wave 10 을 손으로 돌리며 나온 것들이다.
+
+  - 수치를 **여섯 라운드 연속** 틀렸다. 원인은 매번 같다 — 세지 않고 기억하거나 추정한 값을
+    적었다. runtime 은 "LLM 자기평가를 PASS 로 쓰지 않는다" 를 원칙으로 두고 deterministic
+    verifier 로 판정한다.
+  - **수정이 새 blocker 를 만들었다.** round 16 의 blocker 9건 중 다수가 wave 9 의 산물이다.
+    Contract → Slice → verify → diagnose → repair 를 작은 단위로 닫는 것이 그 실패를 겨냥한다.
+  - reviewer 가 **세 번** 세션 한도로 죽어 판정을 잃었다. "evidence/handoff recoverable" 이
+    V1 Done 조건이다.
+
+  고정 순서 자체가 나빴던 것이 아니다. **그 순서를 사람이 매번 손으로 태우는 것**이 비쌌다.
+- Rejected: **절반만 — `/work` 를 더하되 speckit 직접 호출도 남기기.** 기존 Decision 을 안
+  건드려 위험이 작지만, cortex 가 명시적으로 금지한 상태(사용자가 순서를 지휘)로 남는다
+  (`AGENTS.md:15-16`). 두 절차가 공존하면 다음 라운드가 어느 것을 따를지 모호해진다.
+- Rejected: **verifier + evidence 만 가져오기.** Decision 이 필요 없고 며칠이면 되지만,
+  위에 적은 세 실패는 loop 없이는 안 닫힌다.
+- Rejected: **병행 후 A/B 측정.** cortex 설계의 전제("사용자가 순서를 지휘하지 않는다")와
+  양립하지 않는다.
+- Unchanged: 아래는 그대로다.
+  - **구현 후 three-lens subagent review.** `D-033` 이 "승인 절차가 아니라 검증" 으로
+    남긴 것이고 cortex loop 에도 review 단계가 있다. P0/P1/Blocking-P2 가 하나라도 있으면
+    gate 를 열지 않는다.
+  - Knowledge Safety(원칙 I), Governed Mutation Only(원칙 IV), Completion Gate(원칙 III).
+  - `analyze`·`clarify`·`taskify` 를 거치는 것 자체. 호출 주체만 controller 로 바뀐다.
+- Consequence: `CLAUDE.md` 구조가 바뀐다. `.claude/skills/`·`.agents/skills/`·
+  `.ai-team/skills/` 셋에 흩어진 skill 실물도 정리 대상이 된다 (cortex 는 `.agents/skills/`
+  를 정본으로 두고 `.claude/skills/` 가 symlink 다).
+- Owner: Workstream governor.
+- Date: 2026-08-19
+- Affected item: 새 workstream `docs/workstreams/amplai-loop-runtime-adoption/`.
+  `MGC-012 Package 5` 는 **round 17 이 열린 채로 남는다** — 사용자가 이식을 먼저 하기로 했다.
+- Source: 사용자 선택 2026-08-19. 근거는
+  `docs/workstreams/amplai-loop-runtime-adoption/FACTS.md` 와 cortex main `3a3eb46b`.

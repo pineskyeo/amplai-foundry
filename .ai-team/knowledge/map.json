@@ -1,0 +1,297 @@
+{
+  "project": "cortex",
+  "schema_version": "1.0",
+  "selection": {
+    "exclude_status": [
+      "deprecated",
+      "superseded",
+      "rejected"
+    ],
+    "max_sources": 24
+  },
+  "sources": [
+    {
+      "id": "amplai-v1-v2-roadmap",
+      "keywords": [
+        "AMPLAI",
+        "V1",
+        "V2",
+        "V3",
+        "roadmap",
+        "review",
+        "ontology",
+        "semantic runtime"
+      ],
+      "memory_type": "decision",
+      "path": "docs/ai/AMPLAI_LOOP_RUNTIME_V1_V2_AND_ROADMAP.md",
+      "priority": 100,
+      "status": "active"
+    },
+    {
+      "id": "loop-runtime-policy",
+      "keywords": [
+        "work",
+        "risk",
+        "verifier",
+        "gate",
+        "loop"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": ".ai-team/runtime/policy.json",
+      "priority": 100,
+      "status": "active"
+    },
+    {
+      "id": "loop-v2-design",
+      "keywords": [
+        "knowledge",
+        "context",
+        "evidence",
+        "ontology",
+        "MCP",
+        "V2"
+      ],
+      "memory_type": "decision",
+      "path": "specs/006-amplai-loop-runtime-v2/plan.md",
+      "priority": 100,
+      "status": "active"
+    },
+    {
+      "id": "root-agent-contract",
+      "keywords": [
+        "cortex",
+        "architecture",
+        "build",
+        "test",
+        "compatibility",
+        "C99",
+        "RHEL"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "AGENTS.md",
+      "priority": 100,
+      "status": "active"
+    },
+    {
+      "id": "root-claude-contract",
+      "keywords": [
+        "cortex",
+        "C99",
+        "RHEL",
+        "HP-UX",
+        "python",
+        "domain",
+        "production"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "CLAUDE.md",
+      "priority": 95,
+      "status": "active"
+    },
+    {
+      "id": "dc-test-ontology",
+      "keywords": [
+        "DC Test",
+        "run",
+        "wafer",
+        "measurement",
+        "retest",
+        "verdict",
+        "result"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/ontology/dc-test.ttl",
+      "priority": 90,
+      "status": "active"
+    },
+    {
+      "id": "ontology-bindings",
+      "keywords": [
+        "binding",
+        "source",
+        "json",
+        "code",
+        "schema",
+        "locator"
+      ],
+      "memory_type": "evidence",
+      "path": "docs/ontology/bindings/cortex.yaml",
+      "priority": 90,
+      "status": "active"
+    },
+    {
+      "id": "ontology-evidence",
+      "keywords": [
+        "evidence",
+        "provenance",
+        "claim",
+        "verified"
+      ],
+      "memory_type": "evidence",
+      "path": "docs/ontology/evidence/index.jsonl",
+      "priority": 90,
+      "status": "active"
+    },
+    {
+      "id": "cortex-decisions",
+      "keywords": [
+        "decision",
+        "결정",
+        "supersede",
+        "rationale"
+      ],
+      "memory_type": "decision",
+      "path": "docs/decisions/cortex-decisions.md",
+      "priority": 85,
+      "status": "active"
+    },
+    {
+      "id": "dc-test-software-map",
+      "keywords": [
+        "implementedBy",
+        "locatedIn",
+        "code",
+        "test",
+        "component",
+        "source"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/ontology/software-map.ttl",
+      "priority": 85,
+      "status": "active"
+    },
+    {
+      "id": "domain-knowledge",
+      "keywords": [
+        "domain",
+        "legacy",
+        "설비",
+        "DCOP",
+        "TDE",
+        "P9000",
+        "equipment"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/knowledge/domain/cortex-domain-knowledge.md",
+      "priority": 80,
+      "status": "active"
+    },
+    {
+      "id": "lessons-learned",
+      "keywords": [
+        "lesson",
+        "regression",
+        "실패",
+        "legacy",
+        "pitfall"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/knowledge/lessons/lessons-learned.md",
+      "priority": 80,
+      "status": "active"
+    },
+    {
+      "id": "production-runtime-contract",
+      "keywords": [
+        "production",
+        "runtime",
+        "contract",
+        "plugin"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/architecture/production-runtime-contract.md",
+      "priority": 75,
+      "status": "active"
+    },
+    {
+      "id": "cal-legacy-bridge-design",
+      "keywords": [
+        "CAL",
+        "legacy",
+        "bridge",
+        "pairing"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/architecture/cal-legacy-bridge-design.md",
+      "priority": 70,
+      "status": "active"
+    },
+    {
+      "id": "cortex-analysis-layer-design",
+      "keywords": [
+        "analysis",
+        "layer",
+        "design",
+        "synapse"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/architecture/cortex-analysis-layer-design.md",
+      "priority": 70,
+      "status": "active"
+    },
+    {
+      "id": "dcop-reform-guide",
+      "keywords": [
+        "DCOP",
+        "reform",
+        "wafer",
+        "partid"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/knowledge/domain/dcop-reform-guide.md",
+      "priority": 70,
+      "status": "active"
+    },
+    {
+      "id": "feature-specs",
+      "keywords": [
+        "spec",
+        "plan",
+        "tasks",
+        "contract",
+        "verification",
+        "handoff"
+      ],
+      "memory_type": "work",
+      "path": "specs/",
+      "priority": 70,
+      "status": "active"
+    },
+    {
+      "id": "p9000-reference",
+      "keywords": [
+        "P9000",
+        "prober",
+        "manual"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/knowledge/domain/p9000-reference.md",
+      "priority": 70,
+      "status": "active"
+    },
+    {
+      "id": "cortex-risks",
+      "keywords": [
+        "risk",
+        "위험",
+        "mitigation"
+      ],
+      "memory_type": "decision",
+      "path": "docs/decisions/cortex-risks.md",
+      "priority": 65,
+      "status": "active"
+    },
+    {
+      "id": "cortex-glossary",
+      "keywords": [
+        "glossary",
+        "용어",
+        "terminology"
+      ],
+      "memory_type": "stable_knowledge",
+      "path": "docs/knowledge/glossary/cortex-glossary.md",
+      "priority": 60,
+      "status": "active"
+    }
+  ]
+}
