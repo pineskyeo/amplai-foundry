@@ -16,7 +16,6 @@ import json
 import math
 import os
 import time
-import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -28,6 +27,7 @@ from typing import IO, Final, NoReturn, Protocol, cast
 
 from pydantic import SecretStr, TypeAdapter, ValidationError
 
+from amplai_foundry.governance.decisions import clear_exception_frames
 from amplai_foundry.governance.events import OutboxEventView
 from amplai_foundry.governance.ingress import IngressCommandView
 from amplai_foundry.governance.ingress_worker import SafeInteractionOutcome
@@ -380,9 +380,27 @@ class HttpSlackTransport:
 
         `channel` 과 `metadata` 를 payload **뒤에** 둔다. dict literal 은 뒤 key 가 이기므로
         payload 가 무엇을 담고 있든 우리 값이 나간다.
+
+        **`finally` 다. `except` arm 이 아니다 (round 14 `P0-1`).** 예전에는 두 arm 이 예외를
+        잡아 `payload`/`marker` 를 비운 뒤 **새 예외를 올렸다.** 새 예외의 traceback 은 이
+        함수에서 시작하므로 `_send` frame 이 거기 들어가지 않았고, 그래서 `_send` 의
+        `body = None` 을 보는 test 가 존재할 수 없었다 — 지워도 전 suite 가 통과했다.
+
+        **그 회복은 interruption 경로에서만 일어난다** (round 15 `F-5` 가 정정했다). 실측:
+
+            transport 실패 → frames = [post_message, _call]
+            interruption   → frames = [post_message, _call, _send, raise_sanitized_interruption]
+
+        `SlackTransportError` 경로에서는 `_call`(`:508`)이
+        `raise _sanitized_transport_error(error) from None` 으로 **새 객체**를 만들고 그
+        helper 가 `clear_exception_frames` 를 부른다. 그래서 그 경로의 `_send` frame 은 이
+        변경 전에도 후에도 없다. `body = None` 을 검증 가능하게 만드는 것은 interruption
+        경로 하나이고, 그것으로 충분하다 — mutation 하나를 죽이는 데 경로 하나면 된다.
+
+        이 arm 을 `finally` 로 바꾼 이유는 두 가지다. 위의 회복이 하나이고, 나머지 하나는
+        `payload`/`marker` 를 비우는 대입이 arm 두 벌에 흩어져 있던 것을 한 벌로 줄이는
+        것이다.
         """
-        failure: SlackTransportError | None = None
-        interruption_kind: str | None = None
         try:
             response = self._call(
                 _POST_MESSAGE,
@@ -399,33 +417,18 @@ class HttpSlackTransport:
             # 방금 보낸 probe 를 지울 수 있다 — `channel` 은 우리가 넘긴 값이라 이미 안다.
             ts = _require_text(response, "ts")
             response_channel = _require_text(response, "channel")
-        except SlackTransportError as error:
-            # `_call` 이 이미 chain 을 지웠다. 여기서 다시 잡는 것은 아래에서 `payload` 와
-            # `marker` 를 비우기 위해서다 — Card 내용이 이 frame 의 local 로 남는다.
-            failure = error
-        except BaseException as error:
-            # `_call` 을 거쳐 왔으므로 `error` 는 이미 sanitize 된 새 예외다. frame 을 다시
-            # 지우지 않는다. 여기서 잡는 것은 아래에서 `payload` 와 `marker` 를 비우기
-            # 위해서다 — Card 내용이 이 frame 의 local 로 남는다.
-            #
-            # 사본을 남기면 `_send` 안의 guard 를 **가린다.** 이 사본이 있는 동안
-            # `_send` 의 `_clear_exception_frames` 를 지워도 `post_message` 경로만 통과해서
-            # mutation 이 살아남았다 (round 13 `F-2` 가 이것을 놓쳤다).
-            interruption_kind = classify_interruption(error)
-        if failure is not None:
+        finally:
+            # Card 내용이 이 frame 의 local 로 남지 않게 한다. 성공 경로에서도 돈다 —
+            # 반환값은 위에서 이미 뽑았다.
             payload = {}
             marker = {}
-            raise failure from None
-        if interruption_kind is not None:
-            payload = {}
-            marker = {}
-            raise_sanitized_interruption(interruption_kind, _TRANSPORT_INTERRUPTION_MESSAGE)
         return SlackSendResult(channel=response_channel, ts=ts)
 
     def post_ephemeral(self, *, channel: str, user: str, text: str) -> None:
-        """Send one fixed, non-authoritative interaction outcome."""
+        """Send one fixed, non-authoritative interaction outcome.
 
-        failure: SlackTransportError | None = None
+        `post_message` 와 같은 이유로 `finally` 다 (round 14 `P0-1`).
+        """
         try:
             self._call(
                 _POST_EPHEMERAL,
@@ -434,13 +437,9 @@ class HttpSlackTransport:
                 ),
                 _JSON_CONTENT_TYPE,
             )
-        except SlackTransportError as error:
-            # `_call` 이 이미 chain 을 지웠다. 여기서 다시 잡는 것은 아래에서 `text` 를
-            # 비우기 위해서다.
-            failure = error
-        if failure is not None:
+        finally:
+            # 사용자에게 보낸 문구가 이 frame 의 local 로 남지 않게 한다.
             text = ""
-            raise failure from None
 
     def delete_message(self, *, channel: str, ts: str) -> None:
         """Delete one message this bot posted (H-3.2).
@@ -515,7 +514,7 @@ class HttpSlackTransport:
         바뀌지 않는다.
 
         `BaseException` interruption 은 여기 걸리지 않는다. `_send` 가 이미
-        `_clear_exception_frames` 를 거쳐 `SlackTransportError` 가 아닌 것으로 올린다.
+        `clear_exception_frames` 를 거쳐 `SlackTransportError` 가 아닌 것으로 올린다.
         """
         try:
             return self._send(method, build_body, content_type)
@@ -587,7 +586,7 @@ class HttpSlackTransport:
             # header 를 들고 있어서, traceback 이 살아 있으면 token 이 `--showlocals`
             # 렌더링과 log 로 새어 나간다 (`F-2` 가 실측했다).
             kind = classify_interruption(error)
-            _clear_exception_frames(error)
+            clear_exception_frames(error)
             raise_sanitized_interruption(kind, _TRANSPORT_INTERRUPTION_MESSAGE)
         finally:
             # **이 frame 은 실패해도 traceback 안에 살아남는다.** 위에서 올리는 예외가 여기서
@@ -648,22 +647,8 @@ def _sanitized_transport_error(error: SlackTransportError) -> SlackTransportErro
         retry_after_seconds=error.retry_after_seconds,
         transport_exception=safe_transport_exception(error.transport_exception),
     )
-    _clear_exception_frames(error)
+    clear_exception_frames(error)
     return safe
-
-
-def _clear_exception_frames(error: BaseException) -> None:
-    seen: set[int] = set()
-    current: BaseException | None = error
-    while current is not None and id(current) not in seen:
-        seen.add(id(current))
-        if current.__traceback__ is not None:
-            traceback.clear_frames(current.__traceback__)
-            current.__traceback__ = None
-        next_error = current.__cause__ or current.__context__
-        current.__cause__ = None
-        current.__context__ = None
-        current = next_error
 
 
 def _json_value(value: object) -> object:

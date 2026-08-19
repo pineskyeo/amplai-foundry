@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-P5-T026
 title: Make the silent ending recoverable by exposing the two reads an operator needs
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -65,7 +65,8 @@ scope:
     - src/amplai_foundry/governance/events.py
 
 dependencies:
-  tasks: []
+  tasks:
+    - MGC-012-P5-T022
   external: []
 
 implementation:
@@ -235,9 +236,9 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
   evidence_paths:
     - specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
 
@@ -251,3 +252,7 @@ handoff:
       `D-044` 가 명시적으로 범위 밖으로 두었다.
     - >-
       이 task 뒤에 계약의 "operator's entry point" 문장이 실재하는 command 를 가리키게 된다.
+    - >-
+      **MGC-012-P5-T022 뒤에 둔다.** 둘 다 `src/amplai_foundry/governance/__init__.py` 를
+      allowed_paths 에 갖는다. wave 15 note 는 "shares no path" 라고 썼는데 틀렸다.
+      2026-08-18 `/speckit-analyze` 가 wave 8 착수 전에 `F1` 으로 잡았다.

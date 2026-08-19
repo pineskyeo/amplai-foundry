@@ -1436,3 +1436,41 @@
 - Affected item: `MGC-012-P5` wave 8. `src/amplai_foundry/cli.py`, 그리고 필요하면
   `governance/__init__.py` export.
 - Source: 사용자 선택. round 14 `BP2-1`.
+
+## D-045 — Dead-Letter An Ingress Command Row That Cannot Be Read
+
+- Status: APPROVED (**안 A**)
+- Decision: `claim_next` 가 durable ingress command row 를 `IngressCommandView` 로 만들지
+  못하면 그 row 를 `dead_letter` 로 옮기고 `last_error_code` 에
+  `INGRESS_COMMAND_UNREADABLE` 을 적는다. `stranded()` 가 그것을 낸다. 사용자 통지는 없다.
+- Reason: round 15 `F-1` 이 **P0 로 실측했다.** `_view`(`ingress.py:482`)의
+  `json.loads`(`:492`)와 `model_validate` 가 `ValueError` 를 내는데 `process_next` 의
+  `except (GovernanceStoreError, IngressError, sqlite3.Error)` 가 그것을 안 잡는다.
+  `_view` 는 `governance_transaction` **안**이라 claim 이 rollback 되고, row 는
+  `pending`·`attempts=0` 으로 되돌아간다. `claim_next` 는 `received_at` 순으로 고르므로
+  그 row 가 매번 다시 뽑히고 **뒤에 들어온 command 가 하나도 처리되지 않는다.**
+  reviewer 가 두 command 로 재현했다 — 뒤 것이 세 번 연속 `CRASH` 후 `pending` 에 남았다.
+
+  침묵도 아니다. row 가 `pending` 이라 `stranded()` 의 어느 조건에도 안 걸리고
+  `governance stranded` 가 `NONE` 을 낸다. **operator 가 볼 방법이 없다.**
+- Rejected: **worker 를 fail-closed 로 멈추기.** 저장소가 손상을 terminal 로 다루는 기존
+  입장과는 맞지만, 읽을 수 없는 row 하나가 나머지 전부의 처리를 막는 것은 같다. 차단을
+  시끄럽게 만들 뿐 풀지 않는다.
+- Rejected: **raw escape 만 감싸고 차단은 미루기.** `IngressError` 로 닫으면
+  `CLAIM_FAILED` 가 되지만 row 는 여전히 `pending` 이고 head-of-line 이 남는다. P0 가
+  열린 채로 gate 를 못 연다.
+- Scope: **읽기 실패에 한한다.** `sqlite3.Error` 나 store 손상은 기존 경로를 그대로 쓴다.
+  `dead_letter` 에서 빼내는 governed recovery 는 여전히 범위 밖이다 (`D-038` 항목 1).
+- Consequence: 읽기 실패가 durable state 변경을 낳는다. 그 대가로 큐가 풀리고 손상 row 가
+  operator 에게 보인다. `INGRESS_COMMAND_UNREADABLE` 은 error code 이지 safe outcome 이
+  아니다 — 사용자에게 알리지 않는다.
+- Owner: Workstream governor.
+- Date: 2026-08-18
+- Affected item: `MGC-012-P5` wave 9. `src/amplai_foundry/governance/ingress.py`.
+- Source: 사용자 선택. round 15 `F-1`(P0), `F-2`(P1).
+- Implementation note (2026-08-18, round 16 `A16-1`): 승인문은 "`stranded()` 가 그것을
+  낸다" 인데 구현은 `unreadable()` 이 낸다. `stranded()` 는
+  `tuple[IngressCommandView, ...]` 를 내고 읽을 수 없는 row 는 그 model 로 만들 수 없다 —
+  빈 값을 채운 가짜 view 는 operator 에게 거짓을 보이는 것이다. **operator 가 보는
+  `governance stranded` 출력은 승인 의도대로** 두 목록을 함께 낸다. 승인 문구는 고치지
+  않고 이 각주를 단다.

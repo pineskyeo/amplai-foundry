@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-P5-T025
 title: Give each rule one home and make the other mentions point at it
 type: docs
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -235,9 +235,9 @@ loop:
     - scope_boundary_must_expand
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
   evidence_paths:
     - specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md
 

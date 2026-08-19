@@ -23,16 +23,17 @@ The background worker maps every other internal result to a closed public vocabu
 | `expired` | expired token |
 | `stale` | Proposal snapshot mismatch or revoked action |
 | `denied` | actor, channel, permission, binding, or installation denial |
-| `unavailable` | recovery hold without a more specific public result |
+| `unavailable` | recovery hold without a more specific public result, **except** a hold carrying `INGRESS_DECISION_COMMITTED_UNRECONCILED`, which is answered with silence (see the exhausted-command endings below) |
 
 A retry with attempts left produces no safe outcome. The command is not finished, so announcing a
 result would be premature; the next attempt decides. Only a recovery hold is terminal enough to
 report.
 
 An exhausted command has no next attempt, so the premise above stops holding and silence would be
-permanent. Three endings are possible and they are not the same. The first two turn on whether the
-worker observed the last attempt; the third splits the observed case by whether an earlier attempt
-already committed a decision.
+permanent. Three endings are possible and they are not the same. The split is made twice: first on
+whether the worker observed the outcome of the final attempt, and then, within the observed case,
+on whether an earlier attempt already committed a decision. Only the observed case with no
+committed decision is announced.
 
 - **The worker observed the last attempt, it failed, and no decision was committed.** The outcome
   is known, so the worker ends the command as a recovery hold and the mapping above reports
@@ -48,10 +49,16 @@ already committed a decision.
   committed, because the store failure that exhausted the retry budget also failed that read. The
   result is the same and the reason is different — not *we know a decision landed* but *we cannot
   tell*. Silence is the recoverable choice; a wrong announcement is not (`D-042`).
-- **No attempt ever completed**, because the worker kept dying and only lease expiry consumed the
-  budget. The outcome is unknown here: a decision may have committed before the worker died, in
-  which case its result Card already went out, and announcing a failure would contradict it. The
-  system announces nothing and the command stays listed for operator recovery.
+- **The worker did not observe the outcome of the final attempt**, because it died while holding
+  the claim and only lease expiry consumed the budget. Earlier attempts may well have completed and
+  returned `RETRY`; what is missing is the last one. The outcome is unknown here: a decision may
+  have committed before the worker stopped, in which case its result Card already went out, and
+  announcing a failure would contradict it. The system announces nothing and the command stays
+  listed for operator recovery.
+
+  This is the condition the user gave (`spec.md:26`, "without any worker observing the outcome") and
+  the condition the code already applies. `D-043` restored it after `T017` narrowed it to "no
+  attempt ever completed", which left a reachable case in none of the three endings.
 
 `INGRESS_DECISION_COMMITTED_UNRECONCILED` is an **error code, not a safe outcome.** It does not
 belong in the safe outcome enum above and must not be added to it. The enum names what the reviewer

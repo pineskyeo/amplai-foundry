@@ -1,0 +1,62 @@
+# MGC-012-P5 wave 8 + wave 9 review target — round 16
+# frozen 2026-08-18. round 15 의 blocker 9건을 wave 9(T027~T030)로 고친 뒤 다시 얼렸다.
+# 이 파일 자신은 목록에 넣지 않는다 (자기참조).
+#
+# 재확인:
+#   python3 - <<'EOF'
+#   import hashlib,pathlib
+#   p=pathlib.Path('specs/003-slack-proposal-card/evidence/review-target-round-16.txt')
+#   rows=[l for l in p.read_text().splitlines() if l and not l.startswith('#')]
+#   for r in rows:
+#       d,n=r.split('  ',1)
+#       assert d==hashlib.sha256(pathlib.Path(n).read_bytes()).hexdigest(), n
+#   print('aggregate', hashlib.sha256('\n'.join(rows).encode()).hexdigest())
+#   EOF
+
+4c87f572937ff4dfd7d845cf08ad244c6659d7c368af2f9e00dc9b3f570bfd9a  docs/workstreams/messenger-governance-closure-v3/BACKLOG.md
+cb350e5cadd7500eb1cb1762d9ad25ab33e649842f311531fbce95301e287fd9  docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+162d33655f215587e9b48ec122a3fefeb9d847a413d3c509b3ba783cd07d2de4  specs/003-slack-proposal-card/contracts/interaction-feedback.md
+b9aab4f669b40475f4b4c13e0f47da22b19c4d718f7be5c21da28e3f23aec22e  specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+1ddfbf78e882f8b0e638001d000edc93362f1ccc59b2202d6c383a06ccb1df7c  specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md
+b83b908ac11fc9a0c3377cb3f10383caf9a66bfc48f307cb05fab712c7b51084  specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md
+4a67381aaa93a704d9617635d40f5134ae83108431860669dbedb5f1ecd86023  specs/003-slack-proposal-card/evidence/MGC-012-P5-T023.md
+390f1cb0898a2659781a848c66b451a01a60ffc98159c68c3cd40d15d0495e97  specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md
+d06b462423ce83144229f3c3e7b7adb80c94a5530e5df234f53b7732ad7fab8f  specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md
+6b1ec52211b37e6dbbb59d9e020d9167eff5f49bf990c7f8a55a65218519e3b7  specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
+65c4b40109ca63e5a431b25cb6168a080a1d37325137d1c990e774f5b19edb4d  specs/003-slack-proposal-card/evidence/MGC-012-P5-T027.md
+1d44b213b75d0b80204a784b1b6efe4d0f70e09917e0de4495578b4428181e6d  specs/003-slack-proposal-card/evidence/MGC-012-P5-T028.md
+3555e5cc705f699224f0ceb293ae480cbcc2054151815dc6af6154d865634a80  specs/003-slack-proposal-card/evidence/MGC-012-P5-T029.md
+6e850b4b5c9e8a5d1a7c5cf76ff42f7ae1b856bf83e25af219c6511da7935ce8  specs/003-slack-proposal-card/evidence/MGC-012-P5-T030.md
+23d3e5ebc8de40793981cafb9d32e0bd0c418db7381540e4132c8f824541b443  specs/003-slack-proposal-card/evidence/review-target-round-15.txt
+555a1ba3ea7cc9becf0e879313385344077c76b8c78bb2461399110a35ec716c  specs/003-slack-proposal-card/plan.md
+691c9f3ff3921810c7d33db7b7afd203d4aa1d408f2d7c01e7e6f225cbc9a0ab  specs/003-slack-proposal-card/research.md
+230eeed37c42d4c65f4130fa2f2eea972a5f26be461fb571848d85484fdc58e7  specs/003-slack-proposal-card/spec.md
+bca134f35c9d5aea10e10c186549bf060ca110a7cffa5857662baf41edaf24a4  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T021.yaml
+0424af9902078e37d79d2faafa801544321a1143993e5a04741ae5e90b49d3cd  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T022.yaml
+76e46cdf40db44acce7af84119d8a3fa64aab7989b585e0e2ac1b050f00a838b  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T023.yaml
+26877a5a7e5800ba21f47f175dbed5f0634ff177ae19a9cfb991c61b0cd436f9  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T024.yaml
+76883e532820d05655cd5bc7bd3861a7c71106164a234ff8a3808a765b74f087  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T025.yaml
+c11e0e1e29ca370c1203872dbff067bfac1c3d5db63029462c2e4aff424c36f9  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T026.yaml
+d807fc7d26cd6e8b5b57cc67a76c6738c39f97b433e481eb0e1725bb29475d34  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T027.yaml
+d1ed197058b88ed55fbbe0009bdeab8b4d765585dd4085adc92498548cb0c5a6  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T028.yaml
+4de1db142890b633a64c45a6bc833a896c99a49afbb116e584c007294711dd7c  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T029.yaml
+2aa3d5a0866a5c9b95c3c6034005096b8b6316cdd2e8503973c6fd1f34c83e84  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T030.yaml
+c9c6a60d352a1c4d6fbc99b5d5853192297d0ed00d41c1e17fa712a58ff7856f  specs/003-slack-proposal-card/task-manifests/index.yaml
+f0387f1625e46287cf2d36b9e4639a19aa97ea8da368f995a48347cc29042fd8  specs/003-slack-proposal-card/tasks.md
+21eff4870d56b49e5efd38b52f8a8acf559b63913a8fad01e51f96c45f746eef  src/amplai_foundry/cli.py
+810808154591471f8172b097fcdd5fbce2f453d3adef0373d8dbb92b3d06ae95  src/amplai_foundry/governance/decisions.py
+7bd7daa3bb963edb78786c1a75189470112301a793e44e3139911b289bc2186c  src/amplai_foundry/governance/events.py
+ea7958048e4f5f0f25110ee3a2c91e3f0c224f2a36f91f8d61b15aa5d8a744dd  src/amplai_foundry/governance/ingress.py
+d4fe3897e4d903afdfdc67139b14830917befe19dce935f0c5a8de46e50b3afd  src/amplai_foundry/governance/review_cards.py
+d4a3bd3c5de6050278ebc434775c54c47516c247efb2a908e140371643a02cef  src/amplai_foundry/governance/slack_cards.py
+e95a82702e1b17e22346da3b4c36d82b2930451748695853e97501cd034fd43c  src/amplai_foundry/governance/slack_http.py
+2e1a5ba02cf23166573b7c3e0c49091555d12e8fd381aefe6c90aa26b3a355c0  src/amplai_foundry/governance/slack_projection.py
+32f298ca5e1e421ce9a9457d50a004269d926f3681106f75b97c3579926483be  src/amplai_foundry/governance/store.py
+aeb5d31060a472f72773832e706e8a195fabd157c29b0a12578f2b08ddb966b8  tests/test_cli.py
+f6d23671add819d02fd68744027139742b31c4eff6ba240a5eee9b7c0dd48ae3  tests/test_governance_events.py
+9739ca624eee0b4328b2b75a746ec137105b3b426c662fb8ffea2353e763c69f  tests/test_governance_store.py
+6f5c504e88255c238f854cdac594354b2ea9393c028e3c65304f8129cc3ae136  tests/test_slack_ack_boundary.py
+a5c334657aa611018b5ac1dbd7909186e56efcf788031d0876badf3329dd2303  tests/test_slack_http.py
+
+# aggregate = sha256 of the 44 lines above joined by newline
+# b5a88e45b332fccabb1cd8abe91be8dec9b3f8181b82e44f0593cd0bd002aecf

@@ -280,3 +280,93 @@ D-014의 provider outbox destination granularity는 Package 4에도 넣지 않�
 ```text
 $pinesky-workstream-next docs/workstreams/messenger-governance-closure-v3
 ```
+
+## 2026-08-19 — Wave 8·9·10 And Rounds 15·16
+
+**gate 없음.** round 16 이 FAIL 이고 wave 10 은 아직 review 되지 않았다.
+
+### 한 일
+
+| 단계 | 결과 |
+|---|---|
+| `/speckit-analyze` (wave 8 착수 전) | CRITICAL 0, HIGH 1(`F1`) → 수정 후 착수 |
+| wave 8 = T021~T026 | 구현 완료 |
+| round 15 three-lens | **FAIL** — blocker 9 (P0 1 / P1 4 / B-P2 4) |
+| wave 9 = T027~T030 | 9건 대응 |
+| round 16 three-lens | **FAIL** — round 15 의 9건 전부 폐쇄 확인, 신규 9 (P0 1 / P1 3 / B-P2 5) |
+| wave 10 = T031~T034 | 9건 대응. **미review** |
+
+### 검증 (2026-08-19 실행)
+
+```text
+pytest        1382 passed, 4 deselected      (wave 8 착수 시 1301 → +81)
+ruff check    All checks passed
+ruff format   136 files already formatted
+mypy          Success: no issues found in 102 source files
+verify        7/7 PASS
+validator     34/34 PASS
+git diff --check   (출력 없음)
+```
+
+### 무엇이 닫혔나
+
+wave 8 이 실측으로 찾아 닫은 것.
+
+| | 착수 전 | 지금 |
+|---|---|---|
+| `slack_http` credential guard 무방비 | 7 중 **4** (round 14 는 1개만 지목) | 0 |
+| 감사 대조 성분 무방비 | 72 중 **62** | 0 |
+| `clear_exception_frames` 정의 | 4벌, killer 2 | 1벌, killer 13 |
+| operator 회수 진입점 | 없음 | `governance stranded` / `decision` |
+
+round 15·16 이 잡은 18건 중 무거운 것.
+
+- **P0 둘.** 손상 ingress row 하나가 큐 전체를 영구히 막던 것(round 15 `F-1`), 그리고 그
+  수정이 만든 무한 루프(round 16 `S-1`).
+- 살아 있는 lease 를 지우던 경합(`FR-1`), "알 수 없음"을 "결정 없음"으로 보고하던 거짓
+  음성(`C16-1`), CLI raw traceback **네 종류**, `legacy_*.py` 아홉 handler 봉쇄 회귀(`R-1`).
+
+### 새 Decision
+
+- **`D-045`** — 읽을 수 없는 ingress command row 를 `dead_letter` +
+  `INGRESS_COMMAND_UNREADABLE` 로 치우고 `stranded()`(구현은 `unreadable()`)에 노출한다.
+  사용자 통지 없음. 읽기 실패에 한한다.
+
+### 새 BACKLOG item
+
+- **`MGC-017` — Legacy Surface Reduction.** 사용자가 "데드코드면 지워라" 라고 해서 실측했다.
+  **데드코드가 아니다** — schema migration 15개는 `migrations.py:4185-4204` `_verify_rows` 의
+  연속성·checksum 검사 때문에 물리적으로 못 지우고, `legacy_mutation_block` 이 매 governed
+  mutation 마다 돈다. 죽은 것은 **진입점**뿐이다 (`grep -i legacy src/.../cli.py` 0건).
+  축소하려면 "legacy table 은 영원히 비어 있다"를 계약으로 못 박아야 하고 그 전제는 이
+  저장소에서 확인할 수 없다. `D-010` 을 되돌리는 것이라 새 Decision 이 필요하다.
+
+### 다음 세션이 할 일
+
+1. **재freeze.** round 16 target(`review-target-round-16.txt`, 44 파일,
+   `b5a88e45…`)은 wave 10 **이전** 상태다. wave 10 변경이 그 밖에 있다.
+2. **round 17 three-lens review.** wave 10(T031~T034)을 검증한다.
+   - reviewer 셋을 **순차로** 돌린다. 동시에 돌리면 세션 token 한도에 셋 다 죽는다 (이번에
+     세 번 겪었다).
+   - 각 reviewer 에게 **예산 규율**을 준다 — `events.py`(3494), `test_slack_http.py`(3553),
+     `test_slack_ack_boundary.py`(2600+), `test_governance_events.py`(1918)를 통째로 읽지
+     말고 `grep -n`·`sed -n` 을 쓰게 한다. 죽은 reviewer 셋이 전부 거기서 죽었다.
+   - **이미 보고된 것을 목록으로 주고 그 너머를 찾게 한다.** 안 그러면 같은 것을 다시
+     재현하다 예산을 쓴다.
+3. blocker 0 이면 gate. 아니면 wave 11.
+
+### 열린 Advisory (별건)
+
+- `FR-4` — `accept()` frame 의 raw credential 이 이후 실패 경로 traceback 에 남는다.
+  sink 로 가는 경로는 못 찾았다.
+- `FR-5` — `ChannelRef` 에 모르는 key 하나면 정상 command 가 재시도 없이 dead-letter 된다.
+  rolling deploy 위험.
+- `T023-F1` — 네 감사 대조가 audit row 의 proposal 동일성을 확인하지 않는다.
+- `T024-F1` — `_replayed_decision` 의 `ValueError` 가 `connect()` 경계 밖이다.
+- `R16-4`/`R16-5`/`A16-6` — `stranded(limit)` 의미 변화, 두 목록이 다른 snapshot,
+  `PRAGMA journal_mode` 가 help 의 "SELECT only" 보다 넓다.
+
+### 독립 확인이 없는 것
+
+wave 8 의 **착수 전 기준선 수치** — 무방비 4/7, 62/72, `connect()` 형제 6/7. 세 라운드 모두
+재현 비용(성분당 전 suite)으로 넘겼다. **내 실측만 있다.**

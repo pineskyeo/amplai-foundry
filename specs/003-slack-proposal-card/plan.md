@@ -114,10 +114,12 @@ operator hold가 replacement를 차단한다.
 ### Interaction Feedback Path
 
 `BoundedIngressAck`는 기존 3-second contract를 유지한다. Background worker는 governed decision을
-끝낸 뒤 safe outcome code만 optional feedback port에 넘긴다. Slack 구현은 terminal denial,
-expired, stale, already-completed, unavailable 결과를 `chat.postEphemeral`로 알린다.
-이 다섯이 코드가 실제로 만드는 집합 전부다. Feedback 실패는 이미
-완료된 decision을 rollback하지 않고 secret-free error code만 worker result에 남긴다.
+끝낸 뒤 safe outcome code만 optional feedback port에 넘긴다. Slack 구현은 그 결과를
+`chat.postEphemeral`로 알린다. **safe outcome 집합과 각 값의 producer는
+[contracts/interaction-feedback.md](contracts/interaction-feedback.md)의 Safe Outcomes 표가
+유일한 출처다** — 여기에 값을 다시 적지 않는다. 사본을 두면 다음 변경 때 뒤처진다.
+Feedback 실패는 이미 완료된 decision을 rollback하지 않고 secret-free error code만 worker
+result에 남긴다.
 
 Result Card가 성공 decision의 authoritative visible feedback다. Ephemeral feedback은 오류 원인을
 안전한 사용자 문구로 바꾸는 보조 경로다.
@@ -166,28 +168,37 @@ specs/003-slack-proposal-card/
 ### Source Code
 
 ```text
-src/amplai_foundry/governance/
-├── active_proposals.py       # existing reviewed transition, unchanged contract
-├── decisions.py              # transaction-scoped token set issue/revoke
-├── events.py                 # ReviewProjectionPayload and audit/outbox source checks
-├── ingress_worker.py         # safe feedback handoff after decision
-├── migrations.py             # schema versions 31-32
-├── slack.py                  # existing signed Block Action parser
-├── slack_cards.py            # pure Result/Review Card renderer
-├── slack_http.py             # chat.postMessage/history plus postEphemeral
-├── slack_projection.py       # payload-specific rendering and action set lifecycle
-└── review_cards.py           # review request and action-set services
+src/amplai_foundry/
+├── cli.py                    # governance sub-app: two read-only operator queries (D-044)
+└── governance/
+    ├── active_proposals.py   # existing reviewed transition, unchanged contract
+    ├── decisions.py          # transaction-scoped token set issue/revoke; sole clear_exception_frames
+    ├── events.py             # ReviewProjectionPayload and audit/outbox source checks
+    ├── ingress_worker.py     # safe feedback handoff after decision
+    ├── migrations.py         # schema versions 31-32
+    ├── slack.py              # existing signed Block Action parser
+    ├── slack_cards.py        # pure Result/Review Card renderer
+    ├── slack_http.py         # chat.postMessage/history plus postEphemeral
+    ├── slack_projection.py   # payload-specific rendering and action set lifecycle
+    ├── store.py              # connect() normalizes every open-phase failure (T024)
+    └── review_cards.py       # review request and action-set services
 
 tests/
+├── test_cli.py
 ├── test_decisions.py
 ├── test_governance_events.py
 ├── test_governance_migrations.py
+├── test_governance_store.py
 ├── test_slack_ack_boundary.py
 ├── test_slack_cards.py
 ├── test_slack_http.py
 ├── test_slack_projection.py
 └── test_review_cards.py
 ```
+
+`cli.py` 의 `governance` sub-app 은 조회 전용이다 — `stranded()` 와 `committed_decision()` 두
+읽기만 노출하고 governed mutation 은 없다 (`D-044`). 계약이 "operator's entry point" 라고
+서술한 수단이 실재하게 만드는 것이 목적이다.
 
 **Structure Decision**: Existing single Python package를 유지한다. Rendering은 pure module로,
 durable lifecycle은 governance service로, network는 existing HTTP adapter로 나눈다.

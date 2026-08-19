@@ -72,6 +72,39 @@ def _system_now() -> datetime:
     return datetime.now(UTC)
 
 
+def clear_exception_frames(error: BaseException) -> None:
+    """Drop every frame an exception chain still holds (MGC-012-P5-T022).
+
+    이 함수는 credential 을 든 frame 을 예외 chain 에서 지운다. `_send` 의 `request` local 은
+    `Authorization: Bearer <token>` 을 든 채이고, renderer 의 local 은 button 의 raw
+    ActionToken 을 든 채다. traceback 이 살아 있으면 `--showlocals` 렌더링과 log 로 그것들이
+    나간다.
+
+    **정의는 저장소에 하나만 둔다.** 원래 `slack_http`, `decisions`, `slack_projection`,
+    `slack_cards` 에 네 벌로 있었고 본문이 완전히 같았다 (`ast.unparse` digest 로 확인).
+    사본이 넷이면 하나를 고칠 때 나머지 셋이 뒤처지고, 그것이 round 11 `R-1` 이 실측한
+    사고다. `D-038` 항목 4 가 알려진 한계로 기록해 둔 것을 닫는다.
+
+    **여기 두는 이유는 import 방향이다.** 네 module 중 `decisions` 만이 나머지 셋의
+    (직접 또는 간접) 의존 대상이다 — `slack_cards -> decisions`,
+    `slack_projection -> slack_cards`, `slack_http -> slack_projection`. 반대 방향은 없으므로
+    순환이 생기지 않는다. 이름을 공개형으로 둔 것은 `classify_interruption`,
+    `raise_sanitized_interruption` 과 같은 성격의 module 간 helper 이기 때문이다. 이 셋은
+    `governance/__init__.py` 로 export 하지 않는다 — 공개 API 표면을 넓힐 이유가 없다.
+    """
+    seen: set[int] = set()
+    current: BaseException | None = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if current.__traceback__ is not None:
+            traceback.clear_frames(current.__traceback__)
+            current.__traceback__ = None
+        next_error = current.__cause__ or current.__context__
+        current.__cause__ = None
+        current.__context__ = None
+        current = next_error
+
+
 class ActionTokenView(BaseModel):
     """Durable token metadata. The raw credential is deliberately absent."""
 
@@ -163,7 +196,7 @@ class DecisionService:
                 )
             return issued
         except BaseException as error:
-            self._clear_exception_frames(error)
+            clear_exception_frames(error)
             credentials = ()
             issued = ()
             raise
@@ -286,7 +319,7 @@ class DecisionService:
             # `decide()` remains a supported raw-token boundary for direct callers.
             # Remove all credential-bearing source frames while preserving the public
             # exception type/code and process-level interruption class.
-            self._clear_exception_frames(error)
+            clear_exception_frames(error)
             raw_token = ""
             raise
         finally:
@@ -770,20 +803,6 @@ class DecisionService:
             raise DecisionError("ACTION_TOKEN_INVALID")
         if raw_token in idempotency_key:
             raise DecisionError("IDEMPOTENCY_CONFLICT")
-
-    @staticmethod
-    def _clear_exception_frames(error: BaseException) -> None:
-        seen: set[int] = set()
-        current: BaseException | None = error
-        while current is not None and id(current) not in seen:
-            seen.add(id(current))
-            if current.__traceback__ is not None:
-                traceback.clear_frames(current.__traceback__)
-                current.__traceback__ = None
-            next_error = current.__cause__ or current.__context__
-            current.__cause__ = None
-            current.__context__ = None
-            current = next_error
 
     @staticmethod
     def _validate_verified_command(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import sqlite3
@@ -46,6 +47,7 @@ from amplai_foundry.governance import (
     YamlProjectionDestination,
     canonicalize_definition,
 )
+from amplai_foundry.governance import events as events_module
 from amplai_foundry.governance.events import (
     DecisionProjectionPayload,
     GovernanceEventService,
@@ -1426,3 +1428,491 @@ def test_a_retryable_delivery_failure_dead_letters_once_the_budget_is_spent(
         holds = connection.execute("SELECT reason_code FROM governance_operator_holds").fetchall()
     assert dead == [("DEMO_TRANSIENT_CAUSE",)]
     assert holds == [("DEMO_TRANSIENT_CAUSE",)]
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T023 — 여덟 감사 대조가 helper 하나를 쓴다
+# ---------------------------------------------------------------------------
+#
+# 착수 전 실측: `reconcile_connection` 의 감사 대조는 여덟 블록 72성분이었고 **62개가
+# 무방비**였다. 블록을 통째로 무력화(`if False and (...)`)해도 전 suite 가 통과한 블록이
+# 여섯이다 — `LEGACY_MIGRATION`, `LEGACY_APPROVAL_REVIEW`, `DECISION`, `APPLY`,
+# `APPLY_JOB`, `PUBLISH_RESOLUTION`. `REVIEW_CARD` 만 T018 이 9/9 를 고정해 뒀다.
+#
+# 성분을 하나씩 test 로 덮는 대신(그것이 superseded 된 T020 이었다) 비교를 helper 하나로
+# 모았다. 아래 셋이 그 구조를 고정한다.
+#
+#   1. helper 자신 — 주어진 필드 하나만 어긋나도 지정된 code 로 거부한다.
+#   2. or-chain 이 되돌아오지 않는다 (AST).
+#   3. 각 호출 지점이 기대하는 필드 집합과 code 가 기록과 같다 (AST).
+#
+# 2 와 3 이 함께 72성분을 덮는다. mapping 에서 key 를 빼면 3 이 실패하고, 비교를 무력화하면
+# 1 과 아래 실행 test 들이 실패한다.
+
+
+def _audit_row(store: GovernanceStore, event_type: str) -> tuple[object, ...]:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT * FROM governance_audit_events WHERE event_type = ?",
+            (event_type,),
+        ).fetchone()
+    assert row is not None, f"{event_type} 감사 row 가 없다"
+    return tuple(row)
+
+
+_HELPER_FIELDS = (
+    ("event_type", "proposal.tampered"),
+    ("actor_id", "ACT-OTHER"),
+    ("actor_type", "service"),
+    ("policy_snapshot_id", "sha256:" + "c" * 64),
+    ("before_state", "draft"),
+    ("after_state", "superseded"),
+    ("definition_digest", "sha256:" + "d" * 64),
+    ("destination_manifest_digest", "sha256:" + "e" * 64),
+    ("destination_count", 7),
+)
+
+
+@pytest.mark.parametrize(
+    ("field", "wrong"), _HELPER_FIELDS, ids=[name for name, _ in _HELPER_FIELDS]
+)
+def test_the_audit_helper_rejects_every_field_it_is_given(
+    tmp_path: Path, field: str, wrong: object
+) -> None:
+    """helper 는 `expected` 의 **모든** key 를 본다. 하나라도 어긋나면 주어진 code 로 막는다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-helper", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    truthful = {
+        "event_type": audit.event_type,
+        "actor_id": audit.actor_id,
+        "actor_type": audit.actor_type,
+        "policy_snapshot_id": audit.policy_snapshot_id,
+        "before_state": audit.before_state,
+        "after_state": audit.after_state,
+        "definition_digest": audit.definition_digest,
+        "destination_manifest_digest": audit.destination_manifest_digest,
+        "destination_count": audit.destination_count,
+    }
+    GovernanceEventService._assert_audit_matches(audit, truthful, "SHOULD_NOT_RAISE")
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService._assert_audit_matches(
+            audit, {**truthful, field: wrong}, "HELPER_TEST_CODE"
+        )
+    assert "HELPER_TEST_CODE" in str(caught.value)
+
+
+def test_the_audit_helper_compares_occurred_at_in_its_stored_form(tmp_path: Path) -> None:
+    """`occurred_at` 만 변환을 거친다. view 는 `datetime`, row 는 문자열이다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-occurred", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    stored = GovernanceEventService._timestamp(audit.occurred_at)
+    GovernanceEventService._assert_audit_matches(audit, {"occurred_at": stored}, "UNUSED")
+
+    with pytest.raises(GovernanceEventError, match="OCCURRED_AT_CODE"):
+        GovernanceEventService._assert_audit_matches(
+            audit, {"occurred_at": "2000-01-01T00:00:00.000000Z"}, "OCCURRED_AT_CODE"
+        )
+
+
+def test_the_audit_helper_ignores_fields_the_call_site_did_not_name(tmp_path: Path) -> None:
+    """비대칭은 의도다. 주지 않은 필드는 보지 않는다 — 그 사실을 고정한다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-partial", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    GovernanceEventService._assert_audit_matches(audit, {"event_type": audit.event_type}, "UNUSED")
+
+
+# --- AST — 구조 자체를 고정한다 ------------------------------------------------
+#
+# 아래 둘이 T020(60성분을 하나씩 test 로 덮기)을 대체한다. mapping 에서 key 를 하나 빼면
+# `..._expects_its_recorded_field_set` 이 실패하고, or-chain 으로 되돌리면
+# `..._uses_the_shared_helper` 가 실패한다. 성분을 세는 일이 사라진다.
+
+_EXPECTED_AUDIT_CALL_SITES: dict[str, frozenset[str]] = {
+    "REVIEW_CARD_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "proposal_ref",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_MIGRATION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "proposal_ref",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "DECISION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "APPLY_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "APPLY_JOB_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "PUBLISH_RESOLUTION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+}
+
+
+def _reconcile_ast() -> ast.FunctionDef:
+    source = Path(events_module.__file__).read_text(encoding="utf-8")
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.FunctionDef) and node.name == "reconcile_connection":
+            return node
+    raise AssertionError("reconcile_connection 을 찾지 못했다")
+
+
+def _audit_call_sites() -> dict[str, frozenset[str]]:
+    sites: dict[str, frozenset[str]] = {}
+    for node in ast.walk(_reconcile_ast()):
+        if not isinstance(node, ast.Call):
+            continue
+        target = node.func
+        if not (isinstance(target, ast.Attribute) and target.attr == "_assert_audit_matches"):
+            continue
+        assert len(node.args) == 3, "helper 는 (audit, expected, code) 셋을 받는다"
+        mapping, code = node.args[1], node.args[2]
+        assert isinstance(mapping, ast.Dict), "`expected` 는 literal mapping 이어야 눈에 보인다"
+        assert isinstance(code, ast.Constant), "code 는 literal 이어야 한 눈에 읽힌다"
+        keys = frozenset(key.value for key in mapping.keys if isinstance(key, ast.Constant))
+        assert len(keys) == len(mapping.keys), "mapping key 는 전부 문자열 literal 이다"
+        assert str(code.value) not in sites, f"error code 가 두 지점에 있다: {code.value}"
+        sites[str(code.value)] = keys
+    return sites
+
+
+def test_every_audit_comparison_uses_the_shared_helper() -> None:
+    """`or` 사슬로 되돌아가지 않는다.
+
+    되돌아가면 다시 성분을 세야 하고, 그 세기가 다섯 라운드 연속 틀렸다.
+    """
+    chains = [
+        node
+        for node in ast.walk(_reconcile_ast())
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.BoolOp)
+        and isinstance(node.test.op, ast.Or)
+        and any(
+            isinstance(sub, ast.Attribute)
+            and isinstance(sub.value, ast.Name)
+            and sub.value.id == "audit"
+            for sub in ast.walk(node.test)
+        )
+    ]
+    assert chains == [], f"감사 대조 or-chain 이 되살아났다: {[n.lineno for n in chains]}"
+    assert len(_audit_call_sites()) == len(_EXPECTED_AUDIT_CALL_SITES)
+
+
+def test_each_audit_comparison_expects_its_recorded_field_set() -> None:
+    """호출 지점의 `expected` mapping 에서 필드를 빼면 여기서 걸린다.
+
+    이 하나가 72성분을 덮는다. 예전에는 성분마다 test 가 필요했고 62개가 비어 있었다.
+    """
+    assert _audit_call_sites() == _EXPECTED_AUDIT_CALL_SITES
+
+
+# --- 실행 test — 각 호출 지점이 자기 code 로 막는다 -------------------------------
+#
+# 위의 AST test 는 mapping 을 **읽어서** 고정한다. 그 mapping 이 실제로 그 code 로 거부하는지는
+# 실행해야 안다. 착수 전 실측에서 여섯 지점은 통째로 무력화해도 실패하는 test 가 0건이었다.
+#
+# state 를 만드는 helper 는 다른 test module 에서 **수정 없이 import** 한다. 같은 fixture 를
+# 두 벌 만들면 그것이 다음 형제가 된다 — `test_slack_http` 가 이미 이 방식을 쓴다.
+import test_apply_jobs as apply_fixtures  # noqa: E402
+
+
+def _tamper_audit(store: GovernanceStore, event_type: str, column: str, value: object) -> None:
+    with store.connect() as connection:
+        connection.execute("DROP TRIGGER governance_audit_events_no_update")
+        changed = connection.execute(
+            f"UPDATE governance_audit_events SET {column} = ? WHERE event_type = ?",
+            (value, event_type),
+        )
+        assert changed.rowcount == 1, f"{event_type} 감사 row 하나만 바꾼다"
+        connection.commit()
+
+
+# `_publish_pending_job_fixture` 하나가 decision, apply, apply_job 세 지점의 감사 row 를
+# 남긴다. 세 지점 모두 착수 전 무방비였다.
+_EXECUTED_AUDIT_SITES = [
+    ("proposal.approved", "actor_id", "ACT-OTHER-HUMAN", "DECISION_AUDIT_MISMATCH"),
+    ("proposal.approved", "before_state", "draft", "DECISION_AUDIT_MISMATCH"),
+    ("proposal.apply_requested", "actor_id", "ACT-OTHER-HUMAN", "APPLY_AUDIT_MISMATCH"),
+    ("proposal.apply_requested", "after_state", "applied", "APPLY_AUDIT_MISMATCH"),
+    ("apply_job.claimed", "actor_type", "human", "APPLY_JOB_AUDIT_MISMATCH"),
+    ("apply_job.started", "after_state", "queued", "APPLY_JOB_AUDIT_MISMATCH"),
+]
+
+
+@pytest.mark.parametrize(
+    ("event_type", "column", "wrong_value", "expected_code"),
+    _EXECUTED_AUDIT_SITES,
+    ids=[f"{event}-{column}" for event, column, _, _ in _EXECUTED_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_audit_with_the_code_of_its_own_call_site(
+    tmp_path: Path,
+    event_type: str,
+    column: str,
+    wrong_value: str,
+    expected_code: str,
+) -> None:
+    """대조가 잡았다는 증거는 **그 지점의 code** 다.
+
+    audit row 를 고치면 hash chain 도 깨져 `AUDIT_HASH_CHAIN_INVALID` 가 대신 잡을 수 있다.
+    code 를 확인하지 않으면 겨냥한 대조를 고정한 것이 아니다 (T018 이 쓴 방식).
+    """
+    store, _job_id = apply_fixtures._publish_pending_job_fixture(tmp_path)
+    _tamper_audit(store, event_type, column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert expected_code in str(caught.value), (
+        f"{event_type}.{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# legacy migration import 는 `LEGACY_MIGRATION_AUDIT_MISMATCH` 지점의 감사 row 를 남긴다.
+# 그 지점도 착수 전 무방비였다 (블록 전체를 무력화해도 실패 0건).
+import test_legacy_migration as legacy_fixtures  # noqa: E402
+from amplai_foundry.governance import legacy_migration as legacy_approval_review  # noqa: E402
+
+
+def _legacy_imported_store(tmp_path: Path) -> GovernanceStore:
+    root = legacy_fixtures._legacy_tree(tmp_path / "project", revision=7)
+    store, _objects, dry_run, service, backup = legacy_fixtures._import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=legacy_fixtures._freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.prepare(plan, backup)
+    service.import_state(plan, backup)
+    return store
+
+
+_LEGACY_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-HUMAN"),
+    ("actor_type", "agent"),
+    ("policy_snapshot_id", "sha256:" + "f" * 64),
+    ("after_state", "approved"),
+    ("occurred_at", "2000-01-01T00:00:00.000000Z"),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _LEGACY_AUDIT_SITES,
+    ids=[column for column, _ in _LEGACY_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_legacy_migration_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    store = _legacy_imported_store(tmp_path)
+    with store.connect() as connection:
+        event_type = connection.execute(
+            "SELECT event_type FROM governance_audit_events LIMIT 1"
+        ).fetchone()[0]
+    _tamper_audit(store, str(event_type), column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "LEGACY_MIGRATION_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# publish resolution 은 실제 git repository 를 세우고 CAS 를 돌려야 감사 row 가 생긴다.
+# `test_apply_jobs` 가 그 fixture 를 이미 갖고 있다.
+_PUBLISH_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-SERVICE"),
+    ("actor_type", "human"),
+    ("before_state", "queued"),
+    ("definition_digest", "sha256:" + "9" * 64),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _PUBLISH_AUDIT_SITES,
+    ids=[column for column, _ in _PUBLISH_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_publish_resolution_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = (
+        apply_fixtures._real_prepared_publish_fixture(tmp_path)
+    )
+    coordinator = apply_fixtures.FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher-audit-probe",
+        clock=lambda: apply_fixtures.NOW,
+    )
+    assert (
+        coordinator.publish_prepared_ref(prepared.intent_id) is apply_fixtures.GitCASOutcome.UPDATED
+    )
+    apply_fixtures.PublishResolutionService(
+        store,
+        apply_fixtures.SubprocessGitCandidateInspector(repository),
+        coordinator_id="recovery-audit-probe",
+        clock=lambda: apply_fixtures.NOW,
+    ).recover(prepared.intent_id)
+
+    _tamper_audit(store, "publish.published", column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "PUBLISH_RESOLUTION_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# 마지막 지점. `legacy_approval_review_required` 로 들어온 항목을 사람이 검토하면
+# `migration.synthetic_approval_reviewed` 감사 row 가 생기고
+# `LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH` 대조가 그것을 본다. 여기도 착수 전 무방비였다.
+_LEGACY_REVIEW_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-HUMAN"),
+    ("actor_type", "service"),
+    ("policy_snapshot_id", "sha256:" + "7" * 64),
+    ("before_state", "approved"),
+    ("occurred_at", "2000-01-01T00:00:00.000000Z"),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _LEGACY_REVIEW_AUDIT_SITES,
+    ids=[column for column, _ in _LEGACY_REVIEW_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_legacy_approval_review_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    root = legacy_fixtures._legacy_tree(tmp_path / "project", status="approved")
+    store, _objects, dry_run, service, backup = legacy_fixtures._import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=legacy_fixtures._freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.prepare(plan, backup)
+    service.import_state(plan, backup)
+    legacy_approval_review.LegacyApprovalReviewService(
+        store,
+        AuthorityService(store, clock=lambda: legacy_fixtures.NOW),
+        clock=lambda: legacy_fixtures.NOW,
+    ).resolve(
+        plan.proposals[0].proposal_ref,
+        authority_request=legacy_fixtures._migration_authority(store),
+        reason="human reviewed untrusted legacy approval",
+        idempotency_key="audit-probe:legacy-review:1",
+        request_fingerprint="b" * 64,
+    )
+
+    _tamper_audit(store, "migration.synthetic_approval_reviewed", column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )

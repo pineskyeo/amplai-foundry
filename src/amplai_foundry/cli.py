@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import sqlite3
 import sys
 from dataclasses import asdict
 from datetime import datetime
@@ -21,7 +22,11 @@ from amplai_foundry.governance import (
     AuthorityService,
     ChannelProvider,
     ChannelRef,
+    DecisionService,
     ExternalActorIdentity,
+    IngressDecisionWorker,
+    IngressError,
+    IngressService,
 )
 from amplai_foundry.governance.migrations import GovernanceMigrationError
 from amplai_foundry.governance.store import GovernanceStore, GovernanceStoreError
@@ -60,6 +65,13 @@ schema_app = typer.Typer(help="Generate and check Pydantic-derived JSON Schemas.
 project_app = typer.Typer(help="Inspect, validate, rebuild, and archive Project Packs.")
 intake_app = typer.Typer(help="Process intent and artifacts through governed knowledge intake.")
 roadmap_app = typer.Typer(help="Diff and inspect versioned roadmap plans.")
+governance_app = typer.Typer(
+    help=(
+        "Read-only governance queries for operator recovery. "
+        "These issue SELECT statements only — no write, no lease, no transaction that "
+        "contends with a running worker."
+    )
+)
 app.add_typer(source_app, name="source")
 app.add_typer(proposal_app, name="proposal")
 app.add_typer(curate_app, name="curate")
@@ -67,6 +79,7 @@ app.add_typer(schema_app, name="schema")
 app.add_typer(project_app, name="project")
 app.add_typer(intake_app, name="intake")
 app.add_typer(roadmap_app, name="roadmap")
+app.add_typer(governance_app, name="governance")
 
 
 def _fatal(message: str, *, code: int = 2) -> Never:
@@ -643,6 +656,160 @@ def verify_command(
             typer.echo(step.output, err=True)
     if not report.passed:
         raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# governance — 조회 전용 (MGC-012-P5-T026, D-044)
+# ---------------------------------------------------------------------------
+#
+# `D-042` 가 침묵을 고른 근거 전체가 "침묵은 `stranded()` 로 회수할 수 있다" 이고
+# `contracts/interaction-feedback.md` 가 그것을 "operator's entry point" 로 적었다.
+# **그 수단이 실재하지 않았다** — 호출자가 test 와 docstring 뿐이었다. 근거 없는 주장을
+# 계약에 남기지 않는다.
+#
+# 조회 대상이 둘인 이유는, 침묵 종점을 만난 operator 가 알아야 하는 것이 정확히
+# "결정이 실제로 났는가" 이기 때문이다. `committed_decision()` 이 그 답을 갖고 있다.
+#
+# **조회만이다.** `recovery_hold` 나 `dead_letter` 에서 빼내는 governed mutation 은
+# `D-044` 가 명시적으로 범위 밖에 두었다.
+
+
+def _governance_worker(workspace: Path) -> IngressDecisionWorker:
+    """읽기 두 개를 위한 최소 조립.
+
+    `IngressService` 는 `ProviderAuthenticator` 를 요구하지만 `stranded()` 와
+    `committed_decision()` 은 그것을 부르지 않는다. 그래도 `None` 을 넣지 않고 부르면
+    실패하는 authenticator 를 넣는다 — 이 CLI 로 command 를 받아들일 길이 없음을 형으로
+    못박는다.
+    """
+
+    class _ReadOnlyAuthenticator:
+        def verify(self, envelope: object) -> Never:
+            raise IngressError("CLI_IS_READ_ONLY")
+
+    path = workspace / ".amplai/runtime/governance.db"
+    # **`check_startup()` 을 부르지 않는다** (round 15 `C-1`, `F-3`, `F-4`).
+    #
+    # 그것은 `PRAGMA integrity_check`(전체 스캔), migration verify, 그리고
+    # `_probe_wal_write` 의 `BEGIN IMMEDIATE` + `UPDATE` 를 한다. 조회 둘에는 필요 없고
+    # 셋 다 해롭다.
+    #
+    # - 쓰기 probe 가 배타 lock 을 잡아 worker 가 write transaction 을 쥔 동안 이 CLI 가
+    #   실패했다. **회수 도구가 회수해야 할 바로 그 순간에 안 됐다.**
+    # - "조회만" 이라고 적어놓고 매 호출이 `UPDATE` 를 냈다.
+    # - `check_startup()` 은 `connect()` **밖에서** filesystem 을 검증하므로 거기서 나는
+    #   `GovernanceFilesystemError` 가 아래 `except` 를 빠져나가 raw traceback 이 됐다.
+    #
+    # 존재 확인만 손으로 한다. `connect()` 는 없는 파일을 sqlite 가 만들어 버리므로 그냥
+    # 열면 빈 store 에 대해 `NONE` 을 내어 operator 를 속인다. `connect()` 안의 filesystem
+    # 검증과 정규화는 그대로 쓴다 (`T024`).
+    #
+    # 잃는 것은 schema version 검증이다. 두 조회는 `governance_ingress_commands` 와
+    # `governance_decision_results` 만 읽고, schema 가 낡거나 이 파일이 governance store 가
+    # 아니면 `sqlite3.OperationalError`(`no such table`)로 실패한다 — 조용히 틀린 답을 내지
+    # 않는다.
+    #
+    # **그 예외는 두 command 의 except tuple 이 잡는다** (round 16 `R16-1`, `FR-3`).
+    # 처음에는 안 잡아서 raw traceback 이 났다. store 상태 일곱을 전수로 재서 read-only,
+    # governance schema 아님, 빈 파일, 손상 파일 넷이 `sqlite3.Error` 계열임을 확인하고
+    # 그 하나를 tuple 에 더했다.
+    #
+    # **정규화 위치가 요점이다.** `connect()` 에 넣으면 `legacy_*.py` 아홉 handler 가
+    # `sqlite3.Error` 봉쇄를 잃는다 (round 15 `R-1`). CLI 는 최종 소비자라 아무도 그 아래에서
+    # class 를 구분하지 않는다.
+    if not path.is_file():
+        _fatal(f"Governance Store가 존재하지 않습니다: {path}", code=1)
+    store = GovernanceStore(path)
+    ingress = IngressService(store, _ReadOnlyAuthenticator())
+    return IngressDecisionWorker(
+        store,
+        ingress,
+        DecisionService(store, AuthorityService(store)),
+    )
+
+
+@governance_app.command("stranded")
+def governance_stranded_command(
+    workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
+    limit: Annotated[int, typer.Option("--limit")] = 100,
+) -> None:
+    """List the commands no worker will claim again.
+
+    `--json` 은 없다. `MGC-012-P5-T026` 의 `scope.exclude` 가 "새 출력 형식(JSON 등)의
+    계약화. 사람이 읽는 목록이면 충분하다" 로 배제했고 그 배제를 뒤집는 Decision 이 없다
+    (round 15 `C-3`).
+    """
+    try:
+        ingress = _governance_worker(workspace).ingress
+        commands = ingress.stranded(limit=limit)
+        unreadable = ingress.unreadable(limit=limit)
+    except (
+        GovernanceStoreError,
+        GovernanceMigrationError,
+        IngressError,
+        ValueError,
+        sqlite3.Error,
+    ) as error:
+        _fatal(str(error), code=1)
+    for command in commands:
+        typer.echo(
+            f"{command.command_id}  {command.state.value}  attempts={command.attempts}  "
+            f"{command.last_error_code or '-'}"
+        )
+    # 읽을 수 없는 row 는 view 로 만들 수 없어 위 목록에 못 들어간다. 그렇다고 조용히
+    # 빠뜨리면 목록이 완전하다고 오해한다 (round 15 `F-2`).
+    for command_id in unreadable:
+        typer.echo(f"{command_id}  UNREADABLE  이 row 는 읽을 수 없다")
+    if not commands and not unreadable:
+        typer.echo("NONE")
+
+
+@governance_app.command("decision")
+def governance_decision_command(
+    command_id: Annotated[str, typer.Argument(help="Ingress command ID.")],
+    workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
+) -> None:
+    """Answer whether a stranded command already committed its decision."""
+    try:
+        worker = _governance_worker(workspace)
+        decision = worker.committed_decision(command_id)
+    except (
+        GovernanceStoreError,
+        GovernanceMigrationError,
+        IngressError,
+        ValueError,
+        sqlite3.Error,
+    ) as error:
+        _fatal(str(error), code=1)
+    if decision is None:
+        # **"결정 없음" 과 "알 수 없음" 을 구분한다** (round 16 `C16-1`).
+        #
+        # 계약(`contracts/interaction-feedback.md:47-54`)이 "*we know a decision landed*" 와
+        # "*we cannot tell*" 을 나누고 `D-042` 는 후자를 침묵의 근거로 쓴다. 회수 도구가
+        # 그 둘을 하나로 뭉개면 읽을 수 없는 row 에 거짓 음성을 낸다 — `governance stranded`
+        # 가 방금 `UNREADABLE` 로 표시한 바로 그 id 에 대해서.
+        #
+        # 판정은 `IngressService` 가 한다. 여기서 다시 판정하면 그것이 다음 형제가 된다.
+        try:
+            unreadable = worker.ingress.is_unreadable(command_id)
+        except (
+            GovernanceStoreError,
+            GovernanceMigrationError,
+            IngressError,
+            ValueError,
+            sqlite3.Error,
+        ) as error:
+            _fatal(str(error), code=1)
+        if unreadable:
+            typer.echo("UNKNOWN  이 command 는 읽을 수 없다. 결정 여부를 알 수 없다")
+            return
+        # `token_id` 도 fingerprint 도 내보내지 않는다.
+        typer.echo("NONE")
+        return
+    typer.echo(
+        f"{decision.proposal_ref.proposal_id}  {decision.action.value}  "
+        f"{decision.proposal_status.value}  state_revision={decision.state_revision}"
+    )
 
 
 if __name__ == "__main__":

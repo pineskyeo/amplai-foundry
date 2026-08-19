@@ -1,0 +1,210 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T030
+title: Correct the claims round 15 proved false
+type: docs
+status: done
+
+goal:
+  outcome: >-
+    wave 8 이 남긴 거짓·과장 진술이 정정된다. `slack_http.py` docstring 의 근거, evidence 의
+    줄 번호, `T021` 의 범위 과장, 지워진 사설 이름 참조.
+  user_value: >-
+    round 15 가 `F-5`(B-P2)와 Advisory 넷을 냈다. 전부 "코드는 맞는데 그 근거로 적은 문장이
+    사실보다 넓거나 틀렸다" 는 것이다. 다음 라운드가 그 문장을 믿고 판단하면 잘못된 결론에
+    이른다. **evidence 는 gate 의 근거이므로 거짓이면 gate 가 무효다.**
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+      section: F-5
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+      section: Advisory
+  requirements:
+    - FR-019
+    - FR-021
+  decisions:
+    - D-038
+
+scope:
+  include:
+    - >-
+      **`F-5`** — `slack_http.py:388` docstring 의 "`finally` 로 원래 예외가 전파되고
+      `_send` frame 이 traceback 에 남는다" 는 `SlackTransportError` 경로에서 거짓이다.
+      `_call`(`:508`)이 `from None` 으로 새 예외를 만들고 `_sanitized_transport_error`
+      (`:637`)가 `clear_exception_frames` 를 부른다. 실측 traceback 은 `[post_message,
+      _call]` 이다. **어느 경로에서 참인지 명시한다** — interruption 경로 하나다.
+    - >-
+      **`A-1`** — `T021` evidence 의 "중복이었다" 는 `_call` **내부** interruption 에만
+      성립한다. `_require_text`(try 안, `_call` 밖)의 non-standard `BaseException` 은
+      예전에는 `RuntimeError` 가 됐고 지금은 그대로 나간다. 도달성과 함께 적는다.
+    - "**`A-2`** — `slack_http.py:503` docstring 이 지워진 `_clear_exception_frames` 를 가리킨다."
+    - "**`A-5`** — `T022` evidence 의 호출 위치 `decisions.py:289` 를 `:322` 로 정정한다."
+    - >-
+      **`A-4`** — `T025` 가 `plan.md` Source tree 를 고친 것이 `scope.include` 밖이었다.
+      **되돌리지 않는다** — 내용은 옳다. `T025` evidence 에 범위 밖 변경이었음을 적는다.
+  exclude:
+    - "코드 동작 변경. 이 task 는 문장만 고친다."
+    - "`A-3`(BACKLOG 의 MGC-017). 사용자 요청으로 만든 별건 기록이고 스스로 별건임을 밝혔다."
+    - "`T026` evidence 의 `C-2` 정정. T028 이 그 파일을 소유한다."
+    - "`T024` evidence 의 census 정정. T029 가 소유한다."
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/store.py
+    - src/amplai_foundry/governance/ingress.py
+    - src/amplai_foundry/cli.py
+    - tests/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **`slack_http.py` 는 docstring 과 주석만 고친다.** 실행되는 문장을 하나도 바꾸지
+      않는다. `git diff` 로 확인한다.
+    - >-
+      **`F-5` 를 고칠 때 무엇이 참인지 실측한다.** 두 경로에서 traceback 의 frame 이름을
+      찍어 evidence 에 넣는다. reviewer 는 transport 실패에서 `[post_message, _call]`,
+      interruption 에서 `[post_message, _call, _send, raise_sanitized_interruption]` 을
+      얻었다. 직접 다시 얻는다.
+    - >-
+      **`T021` evidence 는 이미 한 곳에서 맞게 적었다** — "그 경로는 이번 변경으로도 `_send`
+      frame 을 되살리지 않는다". docstring 이 그것과 어긋난 것이다. 둘을 일치시킨다.
+    - >-
+      **줄 번호를 고칠 때 다시 센다.** `A-5` 는 줄 번호 오류였다. 고치면서 또 틀리면 같은
+      결함을 반복한다. `grep -n` 으로 확인한 값을 쓴다.
+    - >-
+      **정정은 덮어쓰지 말고 남긴다.** 무엇이 틀렸고 왜 틀렸는지 적는다. 그것이 다음
+      라운드가 같은 실수를 안 하게 하는 유일한 방법이다.
+  invariants:
+    - "실행되는 코드가 바뀌지 않는다. docstring 과 주석만 바뀐다."
+    - "test 를 수정하지 않는다."
+    - "기존 evidence 의 사실 진술을 지우지 않는다 — 정정을 덧붙인다."
+    - "전 suite 결과가 바뀌지 않는다."
+  non_goals:
+    - 코드 수정.
+    - 새 test.
+    - 다른 task 의 evidence 수정.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 두 실패 경로.
+      when: traceback 의 `/src/amplai_foundry/` frame 이름을 찍는다.
+      then: >-
+        transport 실패와 interruption 에서 frame 목록이 다름을 보인다. 그 값을 evidence 에
+        적는다.
+    - id: AC-02
+      given: 갱신된 `slack_http.py:388` docstring.
+      when: 읽는다.
+      then: "`_send` frame 이 남는 경로가 interruption 하나임을 명시한다."
+    - id: AC-03
+      given: 갱신된 `slack_http.py:503` docstring.
+      when: 읽는다.
+      then: 존재하는 이름을 가리킨다.
+    - id: AC-04
+      given: 갱신된 `T021` evidence.
+      when: "\"중복이었다\" 주변을 읽는다."
+      then: "`_require_text` 경로의 예외를 명시하고 도달성을 적는다."
+    - id: AC-05
+      given: 갱신된 `T022` evidence.
+      when: 호출 위치를 읽는다.
+      then: 실제 줄 번호와 일치한다. `grep -n` 결과를 함께 적는다.
+    - id: AC-06
+      given: 갱신된 `T025` evidence.
+      when: 읽는다.
+      then: "`plan.md` Source tree 변경이 `scope.include` 밖이었음이 적혀 있다."
+    - id: AC-07
+      given: "`git diff src/amplai_foundry/governance/slack_http.py`."
+      when: 본다.
+      then: 실행되는 문장 변경이 0 이다.
+    - id: AC-08
+      given: 전체 test suite.
+      when: 돌린다.
+      then: 이전과 같은 결과다.
+  commands:
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-01 의 두 경로 frame 목록 실측
+      required: true
+    - type: note
+      source: AC-07 의 실행문 무변경 확인
+      required: true
+
+risk:
+  level: low
+  concerns:
+    - >-
+      docstring 을 고치다 실행문을 건드릴 수 있다. `git diff` 로 확인한다.
+    - >-
+      줄 번호를 고치면서 또 틀릴 수 있다. `grep -n` 결과를 evidence 에 함께 적는다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - a_correction_would_require_a_code_change
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T030.md
+
+handoff:
+  expected_changes:
+    - "`slack_http.py` docstring 둘 정정."
+    - "`T021`·`T022`·`T025` evidence 의 정정 절."
+  notes:
+    - >-
+      코드는 옳고 문장이 틀렸다. **evidence 가 gate 의 근거이므로 거짓 문장은 gate 를
+      무효로 만든다.**

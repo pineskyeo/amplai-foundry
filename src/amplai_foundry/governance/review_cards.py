@@ -22,6 +22,7 @@ from amplai_foundry.governance.decisions import (
     DecisionError,
     DecisionService,
     IssuedActionToken,
+    clear_exception_frames,
 )
 from amplai_foundry.governance.definitions import ProposalDefinitionManifest
 from amplai_foundry.governance.events import (
@@ -545,7 +546,7 @@ class ReviewActionSetService:
             assert prepared is not None
             return prepared
         except BaseException as error:
-            DecisionService._clear_exception_frames(error)
+            clear_exception_frames(error)
             credentials = ()
             issued = ()
             prepared = None

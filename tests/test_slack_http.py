@@ -425,6 +425,109 @@ def test_http_interruption_traceback_contains_no_button_or_bot_credential(
     assert TOKEN.get_secret_value() not in diagnostics
 
 
+# `payload`/`marker`/`text`/`body`/`request` 를 비우는 대입 다섯을 **이름으로** 고정한다
+# (MGC-012-P5-T021).
+#
+# 왜 canary 부재 test 로 부족한가. round 14 착수 전 sweep 에서 `marker = {}` 둘,
+# `text = ""`, `body = None` 이 **지워도 1301건이 전부 통과했다.** canary 를 훑는 test 는
+# 그 값이 `repr(f_locals)` 에 실제로 보일 때만 mutation 을 죽이고, frame 이 traceback 에
+# 없으면 아예 도달하지 못한다. 아래 test 는 frame 을 함수 이름으로 찾아 그 안의 local 이
+# 비워졌는지 **직접** 본다. 대입 하나를 지우면 해당 assert 가 실패한다.
+def _locals_of(error: BaseException, function_name: str) -> list[Mapping[str, object]]:
+    """예외 chain 전체를 훑어 이름이 같은 frame 의 `f_locals` 를 모은다."""
+    found: list[Mapping[str, object]] = []
+    current: BaseException | None = error
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        cursor = current.__traceback__
+        while cursor is not None:
+            if cursor.tb_frame.f_code.co_name == function_name:
+                found.append(dict(cursor.tb_frame.f_locals))
+            cursor = cursor.tb_next
+        current = current.__cause__ or current.__context__
+    return found
+
+
+def test_post_message_failure_clears_the_card_from_its_own_frame(slack: _FakeSlack) -> None:
+    slack.queue("chat.postMessage", _Reply.slack_error("invalid_auth"))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    frames = _locals_of(caught.value, "post_message")
+    assert frames, "post_message frame 이 traceback 에 없다"
+    for frame_locals in frames:
+        assert frame_locals["payload"] == {}
+        assert frame_locals["marker"] == {}
+
+
+def test_post_message_interruption_clears_the_card_and_leaves_the_send_frame(
+    slack: _FakeSlack,
+) -> None:
+    """`finally` 가 `_send` frame 을 traceback 에 남기고 그 local 도 비워져 있다.
+
+    예전 `except BaseException` arm 은 새 예외를 올려 `_send` frame 을 떨어뜨렸다. 그것이
+    `body = None` 을 검증 불가능하게 만든 masking 이다 (round 14 `P0-1`).
+    """
+    transport = _transport(slack)
+
+    class InterruptingOpener:
+        def open(self, request: object, *, timeout: float) -> object:
+            del request, timeout
+            raise KeyboardInterrupt("interrupted after serialization")
+
+    transport._opener = InterruptingOpener()  # type: ignore[assignment]
+
+    with pytest.raises(KeyboardInterrupt) as caught:
+        transport.post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+
+    entry_frames = _locals_of(caught.value, "post_message")
+    assert entry_frames, "post_message frame 이 traceback 에 없다"
+    for frame_locals in entry_frames:
+        assert frame_locals["payload"] == {}
+        assert frame_locals["marker"] == {}
+
+    send_frames = _locals_of(caught.value, "_send")
+    assert send_frames, "`_send` frame 이 traceback 에 없다 — masking 이 되살아났다"
+    for frame_locals in send_frames:
+        assert frame_locals["body"] is None
+        assert frame_locals["request"] is None
+
+
+def test_post_ephemeral_failure_clears_the_message_text_from_its_own_frame(
+    slack: _FakeSlack,
+) -> None:
+    slack.queue("chat.postEphemeral", _Reply.slack_error("channel_not_found"))
+
+    with pytest.raises(SlackTransportError) as caught:
+        _transport(slack).post_ephemeral(channel=CHANNEL, user="U0REVIEWER", text="safe message")
+
+    frames = _locals_of(caught.value, "post_ephemeral")
+    assert frames, "post_ephemeral frame 이 traceback 에 없다"
+    for frame_locals in frames:
+        assert frame_locals["text"] == ""
+
+
+def test_the_two_entry_points_clear_their_frames_on_the_success_path_too(
+    slack: _FakeSlack,
+) -> None:
+    """`finally` 는 성공에서도 돈다. 반환값이 그것에 영향받지 않음을 함께 고정한다."""
+    slack.queue("chat.postMessage", _Reply.ok({"channel": CHANNEL, "ts": "1700000000.000100"}))
+    slack.queue("chat.postEphemeral", _Reply.ok({}))
+    transport = _transport(slack)
+
+    result = transport.post_message(channel=CHANNEL, payload=PAYLOAD, marker=MARKER)
+    transport.post_ephemeral(channel=CHANNEL, user="U0REVIEWER", text="safe message")
+
+    assert result.channel == CHANNEL
+    assert result.ts == "1700000000.000100"
+    # 보낸 body 는 비우기 **전에** 만들어졌다. 계약이 유지된다.
+    sent = json.loads(slack.requests[0].body)
+    assert sent["text"] == PAYLOAD["text"]
+    assert sent["metadata"] == MARKER
+
+
 def test_http_interruption_showlocals_child_is_secret_free() -> None:
     if os.environ.get("AMPLAI_HTTP_INTERRUPT_TRACEBACK_CHILD") != "1":
         return

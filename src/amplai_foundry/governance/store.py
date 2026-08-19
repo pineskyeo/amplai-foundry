@@ -10,9 +10,39 @@ from pathlib import Path
 
 from amplai_foundry.governance.filesystem import (
     FilesystemStatus,
+    GovernanceFilesystemError,
     LocalFilesystemGuard,
 )
 from amplai_foundry.governance.migrations import MigrationRunner
+
+# `connect()` 가 여는 동안 날 수 있는 실패 중 **정규화하는 것** (MGC-012-P5-T024, T029).
+#
+# **호출자를 세지 않으려고 경계에서 정규화한다.** `connect()` 호출 지점이 15개 module 62곳
+# 이다. 호출자마다 `except` 절에 class 를 하나씩 더하는 방식은 그 62곳을 세는 일이고, 다섯
+# 라운드 연속 실패한 바로 그 작업이다.
+#
+# **`sqlite3.Error` 는 일부러 뺐다 (round 15 `R-1`).** 처음에는 넣었는데, `legacy_*.py` 의
+# 아홉 `try` 가 `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다 —
+# `legacy_lifecycle:157`, `legacy_migration:823,1069,1114,1169`, `legacy_recovery:206,415`,
+# `legacy_rollback:180,549`. 정규화하면 그 봉쇄가 전부 사라지고 raw `GovernanceStoreError`
+# 가 module 경계를 넘는다. **test 가 없어서 suite 는 조용했다.**
+#
+# round 14 `P1-1` 이 요구한 것은 `GovernanceFilesystemError` 하나였다. 나머지는 "형제를
+# 전수로 센다" 를 과하게 적용한 결과다. **세는 것은 옳았고 덮는 범위를 넓힌 것이 틀렸다.**
+#
+# 그래서 `_configure` 의 PRAGMA, `PRAGMA database_list`, `_raw_connection` 의 PRAGMA 에서
+# 나는 `sqlite3.Error` 는 HEAD 처럼 그대로 나간다. `sqlite3.connect` 자체의 실패는
+# `_raw_connection` 이 예전부터 감싸고 있고 그것은 유지한다.
+#
+# **`Exception` 으로 넓히지 않는다.** `AttributeError`·`TypeError` 같은 프로그래밍 오류는
+# 그대로 시끄럽게 나가야 한다. 정규화가 결함을 durable 하게 숨기면 안 된다.
+#
+# `GovernanceStoreError` 는 `RuntimeError` 라 이 tuple 에 걸리지 않는다 — 이미 정규화된
+# 것은 그대로 지나간다.
+_OPEN_FAILURES: tuple[type[BaseException], ...] = (
+    GovernanceFilesystemError,
+    OSError,
+)
 
 
 class GovernanceStoreError(RuntimeError):
@@ -186,25 +216,38 @@ class GovernanceStore:
         )
         if effective_timeout < 0:
             raise ValueError("busy_timeout_ms는 0 이상이어야 합니다.")
-        before = self.filesystem_guard.validate(self.path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        # 여는 단계의 모든 실패를 `GovernanceStoreError` 로 정규화한다 (T024).
+        # `yield` 는 두 `try` 밖이다 — 호출자가 던진 예외까지 삼키면 안 된다.
+        try:
+            before = self.filesystem_guard.validate(self.path)
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        except _OPEN_FAILURES as error:
+            raise GovernanceStoreError(
+                f"Governance Store를 열기 전 검사에 실패했습니다: {error}"
+            ) from error
         with self._raw_connection(busy_timeout_ms=effective_timeout) as connection:
-            self._configure(connection, busy_timeout_ms=effective_timeout)
-            after = self.filesystem_guard.validate(self.path)
-            if before != after:
-                raise GovernanceStoreError(
-                    f"filesystem identity가 connection open 중 변경됐습니다: {before} -> {after}"
+            try:
+                self._configure(connection, busy_timeout_ms=effective_timeout)
+                after = self.filesystem_guard.validate(self.path)
+                if before != after:
+                    raise GovernanceStoreError(
+                        "filesystem identity가 connection open 중 변경됐습니다: "
+                        f"{before} -> {after}"
+                    )
+                database_row = connection.execute("PRAGMA database_list").fetchone()
+                database_path = (
+                    Path(str(database_row[2])).resolve(strict=False)
+                    if database_row is not None
+                    else None
                 )
-            database_row = connection.execute("PRAGMA database_list").fetchone()
-            database_path = (
-                Path(str(database_row[2])).resolve(strict=False)
-                if database_row is not None
-                else None
-            )
-            if database_path != self.path:
+                if database_path != self.path:
+                    raise GovernanceStoreError(
+                        f"opened database path가 요청과 다릅니다: {database_path} != {self.path}"
+                    )
+            except _OPEN_FAILURES as error:
                 raise GovernanceStoreError(
-                    f"opened database path가 요청과 다릅니다: {database_path} != {self.path}"
-                )
+                    f"Governance Store connection을 열 수 없습니다: {error}"
+                ) from error
             yield connection
 
     @contextmanager
@@ -223,6 +266,9 @@ class GovernanceStore:
         except sqlite3.Error as error:
             raise GovernanceStoreError(f"Governance Store에 연결할 수 없습니다: {error}") from error
         try:
+            # 이 PRAGMA 의 `sqlite3.Error` 는 정규화하지 않는다. T024 가 감쌌다가 round 15
+            # `R-1` 로 되돌렸다 — `legacy_*.py` 아홉 handler 가 `sqlite3.Error` 를 잡아
+            # domain error 로 닫고 있었고 정규화가 그 봉쇄를 없앴다.
             connection.execute(f"PRAGMA busy_timeout = {effective_timeout}")
             yield connection
         finally:

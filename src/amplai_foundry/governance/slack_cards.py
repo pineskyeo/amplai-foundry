@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import traceback
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC
 from types import MappingProxyType
 from typing import Final, TypeAlias, cast
 
-from amplai_foundry.governance.decisions import DecisionAction
+from amplai_foundry.governance.decisions import DecisionAction, clear_exception_frames
 from amplai_foundry.governance.events import DecisionProjectionPayload, ReviewProjectionPayload
 from amplai_foundry.governance.review_cards import PreparedReviewActionSet
 
@@ -82,7 +81,7 @@ class SlackProposalCardRenderer:
         try:
             return self._render_review(payload, action_set)
         except BaseException as error:
-            _clear_exception_frames(error)
+            clear_exception_frames(error)
             raise
 
     def _render_review(
@@ -322,17 +321,3 @@ def _freeze(value: object) -> FrozenJson:
 
 def _freeze_mapping(value: Mapping[str, object]) -> Mapping[str, object]:
     return cast("Mapping[str, object]", _freeze(value))
-
-
-def _clear_exception_frames(error: BaseException) -> None:
-    seen: set[int] = set()
-    current: BaseException | None = error
-    while current is not None and id(current) not in seen:
-        seen.add(id(current))
-        if current.__traceback__ is not None:
-            traceback.clear_frames(current.__traceback__)
-            current.__traceback__ = None
-        next_error = current.__cause__ or current.__context__
-        current.__cause__ = None
-        current.__context__ = None
-        current = next_error

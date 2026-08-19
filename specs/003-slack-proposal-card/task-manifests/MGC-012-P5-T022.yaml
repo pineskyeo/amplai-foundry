@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-P5-T022
 title: Collapse the four identical exception-frame clearers into one
 type: refactor
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -51,6 +51,12 @@ scope:
     - src/amplai_foundry/governance/slack_projection.py
     - src/amplai_foundry/governance/slack_cards.py
     - src/amplai_foundry/governance/__init__.py
+    # 구현 중 확장 (2026-08-18). `review_cards.py:548` 이
+    # `DecisionService._clear_exception_frames(error)` 로 class 를 가로질러 호출한다 —
+    # scope.include 가 이미 지목한 그 호출이다. 정의를 module-level 로 옮기면 이 한 줄이
+    # 따라와야 한다. 남겨 두려면 `DecisionService` 에 위임 staticmethod 를 두어야 하는데
+    # 그것이 바로 이 task 가 없애려는 사본이다. 한 줄 호출 갱신만 했고 다른 변경은 없다.
+    - src/amplai_foundry/governance/review_cards.py
     - tests/test_slack_http.py
     - tests/test_slack_projection.py
     - tests/test_review_cards.py
@@ -220,9 +226,9 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
   evidence_paths:
     - specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md
 

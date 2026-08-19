@@ -1,0 +1,184 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T034
+title: Fix the sixth count error and the evidence declared present but absent
+type: docs
+status: done
+
+goal:
+  outcome: >-
+    evidence 의 test 수가 맞고, manifest 가 `required: true` 로 요구한 command_output 이
+    실제로 있으며, round 16 이 지적한 과장과 미기재가 정정된다.
+  user_value: >-
+    round 16 `C16-2` 와 `C16-3`. **수치 오류가 여섯 번째다.** round 15 가 "수치가 이번엔
+    전부 맞다" 로 닫았는데 wave 9 가 새 오류를 넣었다. 그리고 실행하지 않았거나 기록하지 않은
+    검증을 `required_evidence_present: true` 로 선언했다 — Completion Gate 가 금지하는 것이다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-16.md
+      section: C16-2
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-16.md
+      section: C16-3
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-16.md
+      section: Advisory
+  requirements:
+    - FR-024
+  decisions:
+    - D-045
+
+scope:
+  include:
+    - >-
+      **`C16-2`** — `tests/test_cli.py` 의 test 수를 다시 세어 `T028` 과 `T026` evidence 를
+      고친다. **두 파일에 같은 거짓이 있다.**
+    - >-
+      **`C16-3`** — `T029`·`T030` evidence 에 빠진 `ruff-format` 출력(과 `T029` 의
+      `targeted`)을 채운다. 실행하고 실제 출력을 붙인다.
+    - >-
+      **`A16-1`** — `D-045` 승인문이 "`stranded()` 가 그것을 낸다" 인데 code 는
+      `unreadable()` 이 낸다. Decision 에 정정 각주를 단다. **문구를 조용히 바꾸지 않는다.**
+    - >-
+      **`A16-5`** — `T027` evidence 의 AC-07·AC-09 에 실측 출력이 없다. 채우거나 못 채우는
+      이유를 적는다.
+    - >-
+      **T027 AC-06 정정문의 과장** — "구현 불가능하다" 를 "이 설계로는 불가능하고 반환
+      model 을 바꾸면 가능했다" 로 고친다. reviewer 가 지적한 대로다.
+  exclude:
+    - "코드 변경."
+    - "`T031`·`T032`·`T033` 이 소유한 evidence."
+    - "Advisory `FR-4`·`FR-5`·`R16-3`~`R16-6`·`A16-6`. 별건이다."
+  allowed_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T027.md
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T028.md
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T030.md
+    - specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T027.yaml
+    - docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+  forbidden_paths:
+    - vault/
+    - src/
+    - tests/
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **세고 나서 적는다.** `grep -c "^def test_" tests/test_cli.py` 로 총계를 얻고,
+      `T028` 이 더한 것을 이름으로 세어 뺀다. **두 값을 다 evidence 에 적는다** — 그러면
+      다음 사람이 산수를 검증할 수 있다.
+    - >-
+      **여섯 번째라는 사실을 적는다.** 숨기지 않는다. 무엇을 고쳤는지보다 왜 또 틀렸는지가
+      다음 라운드에 쓸모 있다.
+    - >-
+      **`ruff-format` 을 실제로 돌린다.** 출력을 지어내지 않는다. `T029` 의 `targeted` 도
+      마찬가지다.
+    - >-
+      **`D-045` 는 새 Decision 을 만들지 않는다.** 승인된 문구에 "구현은 `unreadable()` 로
+      냈다" 는 정정 각주를 단다. Knowledge Safety 가 삭제보다 기록을 요구한다.
+  invariants:
+    - "코드와 test 를 수정하지 않는다."
+    - "기존 사실 진술을 지우지 않는다 — 정정을 덧붙인다."
+    - "`D-045` 의 승인 문구를 고쳐 쓰지 않는다. 각주로 단다."
+    - "전 suite 결과가 바뀌지 않는다."
+  non_goals:
+    - 코드 수정.
+    - 새 Decision.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: "`tests/test_cli.py`."
+      when: test 수를 두 방법으로 센다.
+      then: 값이 일치한다. 두 값과 방법을 evidence 에 적는다.
+    - id: AC-02
+      given: 갱신된 `T028`·`T026` evidence.
+      when: 읽는다.
+      then: 수가 맞고 무엇이 틀렸는지 적혀 있다.
+    - id: AC-03
+      given: "`T029`·`T030` evidence."
+      when: "manifest 의 `evidence[].required: true` 목록과 대조한다."
+      then: 빠진 것이 없다. 출력은 실제 실행 결과다.
+    - id: AC-04
+      given: 갱신된 `D-045`.
+      when: 읽는다.
+      then: 승인 문구가 그대로 있고 구현이 다른 이름을 쓴다는 각주가 있다.
+    - id: AC-05
+      given: 갱신된 `T027` evidence 와 manifest.
+      when: AC-06 정정문을 읽는다.
+      then: "\"구현 불가능\" 이 아니라 설계 선택이었음이 적혀 있다."
+    - id: AC-06
+      given: 전체 test suite.
+      when: 돌린다.
+      then: 이전과 같은 결과다.
+  commands:
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-01 의 두 방법 계수
+      required: true
+
+risk:
+  level: low
+  concerns:
+    - >-
+      정정하면서 또 틀릴 수 있다. 두 방법으로 세고 둘 다 적는다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - a_correction_would_require_a_code_change
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T034.md
+
+handoff:
+  expected_changes:
+    - "test 수 정정 (두 파일)."
+    - "빠진 command_output 채움 (두 파일)."
+    - "`D-045` 정정 각주."
+    - "`T027` AC-06 정정문의 과장 완화."
+  notes:
+    - >-
+      **evidence 가 gate 의 근거다.** 수치가 틀리거나 요구된 출력이 없으면 gate 판정이
+      근거를 잃는다.

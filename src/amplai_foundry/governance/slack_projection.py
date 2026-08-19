@@ -10,13 +10,13 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import traceback
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Final, NoReturn, Protocol
 
+from amplai_foundry.governance.decisions import clear_exception_frames
 from amplai_foundry.governance.events import (
     OutboxConfig,
     OutboxEventView,
@@ -927,11 +927,11 @@ class SlackProjectionDestination:
                 presentation = self._card_renderer.render_review(review_payload, action_set)
             except (ReviewCardError, SlackCardRenderingError, ValueError) as error:
                 render_failure_code = str(getattr(error, "code", "SLACK_CARD_RENDER_FAILED"))
-                self._clear_exception_frames(error)
+                clear_exception_frames(error)
             except BaseException as error:
                 interruption_kind = self._interruption_kind(error)
                 prepare_is_transient = is_transient_store_failure(error)
-                self._clear_exception_frames(error)
+                clear_exception_frames(error)
             if render_failure_code is not None or interruption_kind is not None:
                 # Drop every memory-only credential before cleanup. `abandon()` may
                 # itself fail and its exception may be rendered with `--showlocals`.
@@ -985,7 +985,7 @@ class SlackProjectionDestination:
                 transport_failure = self._sanitized_transport_error(error) if is_review else error
             else:
                 marker_failure = True
-                self._clear_exception_frames(error)
+                clear_exception_frames(error)
         except Exception as error:
             if post_started:
                 # C-1 의무 위반에 대한 두 번째 방어선이다. 넓게 잡는 것이 의도다 — 좁히면
@@ -993,12 +993,12 @@ class SlackProjectionDestination:
                 transport_failure = self._rewrap(error, preserve_cause=not is_review)
             else:
                 marker_failure = True
-                self._clear_exception_frames(error)
+                clear_exception_frames(error)
         except BaseException as error:
             if not is_review:
                 raise
             interruption_kind = self._interruption_kind(error)
-            self._clear_exception_frames(error)
+            clear_exception_frames(error)
         finally:
             if is_review:
                 # This executes for success, classified failures, and process-level
@@ -1043,7 +1043,7 @@ class SlackProjectionDestination:
             self._review_action_sets.abandon(event_id, generation)
         except BaseException as error:
             cleanup_failure_kind = self._interruption_kind(error)
-            self._clear_exception_frames(error)
+            clear_exception_frames(error)
         if cleanup_failure_kind is not None:
             if cleanup_failure_kind != "exception":
                 self._raise_sanitized_interruption(cleanup_failure_kind)
@@ -1108,7 +1108,7 @@ class SlackProjectionDestination:
         if preserve_cause:
             wrapped.__cause__ = error
         else:
-            SlackProjectionDestination._clear_exception_frames(error)
+            clear_exception_frames(error)
         return wrapped
 
     @staticmethod
@@ -1120,22 +1120,8 @@ class SlackProjectionDestination:
             retry_after_seconds=error.retry_after_seconds,
             transport_exception=safe_transport_exception(error.transport_exception),
         )
-        SlackProjectionDestination._clear_exception_frames(error)
+        clear_exception_frames(error)
         return safe
-
-    @staticmethod
-    def _clear_exception_frames(error: BaseException) -> None:
-        seen: set[int] = set()
-        current: BaseException | None = error
-        while current is not None and id(current) not in seen:
-            seen.add(id(current))
-            if current.__traceback__ is not None:
-                traceback.clear_frames(current.__traceback__)
-                current.__traceback__ = None
-            next_error = current.__cause__ or current.__context__
-            current.__cause__ = None
-            current.__context__ = None
-            current = next_error
 
     def _receipt(self, ts: str) -> str:
         """Build the receipt both `send()` and `reconcile()` must agree on (C-2.3).

@@ -9,7 +9,7 @@ import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Annotated, Literal, Protocol, cast
+from typing import Annotated, Literal, Protocol, TypedDict, cast
 
 from pydantic import (
     AwareDatetime,
@@ -281,6 +281,32 @@ class AuditEventView(BaseModel):
     previous_event_hash: Digest | None = None
     event_hash: Digest
     occurred_at: AwareDatetime
+
+
+class _ExpectedAudit(TypedDict, total=False):
+    """`reconcile_connection` 의 감사 대조 하나가 기대하는 값 집합 (MGC-012-P5-T023).
+
+    **`TypedDict` 인 이유.** 예전에는 여덟 곳이 각각 `or` 로 이어진 비교 사슬이었고, 필드를
+    하나 빠뜨려도 눈에 띄지 않았다. 착수 전 실측에서 72성분 중 62개가 무방비였다 — 여섯
+    블록은 통째로 무력화해도 전 suite 가 통과했다. mapping 으로 바꾸면 빠진 필드가 보이지만
+    평범한 `Mapping[str, object]` 로 받으면 `actor_idd` 같은 오타를 mypy 가 더는 못 잡는다.
+    `TypedDict` 는 둘 다 준다 — 호출 지점마다 key 이름과 값 type 을 mypy 가 검사한다.
+
+    **값은 저장 형태다.** row 에서 읽은 값과 비교하므로 `occurred_at` 은 `datetime` 이 아니라
+    timestamp 문자열이다. 그 한 변환만 `_assert_audit_matches` 안에 있다.
+    """
+
+    event_type: str
+    proposal_ref: ProposalRef
+    actor_id: str
+    actor_type: str
+    policy_snapshot_id: str
+    before_state: str
+    after_state: str
+    definition_digest: str
+    occurred_at: str
+    destination_manifest_digest: str
+    destination_count: int
 
 
 class OutboxEventView(BaseModel):
@@ -1251,18 +1277,21 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("REVIEW_CARD_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != "proposal.review_card_requested"
-                or audit.proposal_ref != ref
-                or audit.actor_id != str(review[9])
-                or audit.actor_type != str(review[10])
-                or audit.before_state != "reviewed"
-                or audit.after_state != "reviewed"
-                or audit.definition_digest != str(review[5])
-                or audit.destination_manifest_digest != manifest_digest
-                or audit.destination_count != 1
-            ):
-                raise GovernanceEventError("REVIEW_CARD_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": "proposal.review_card_requested",
+                    "proposal_ref": ref,
+                    "actor_id": str(review[9]),
+                    "actor_type": str(review[10]),
+                    "before_state": "reviewed",
+                    "after_state": "reviewed",
+                    "definition_digest": str(review[5]),
+                    "destination_manifest_digest": manifest_digest,
+                    "destination_count": 1,
+                },
+                "REVIEW_CARD_AUDIT_MISMATCH",
+            )
         if has_review_cards:
             review_by_command = {
                 cls._review_card_command_id(str(row[0])): row for row in review_rows
@@ -1477,19 +1506,22 @@ class GovernanceEventService:
                     f"{legacy_payload.validation_policy_ref}"
                 ).encode()
             )
-            if (
-                audit.event_type != str(legacy[7])
-                or audit.actor_id != str(legacy[8])
-                or audit.actor_type != str(legacy[9])
-                or audit.policy_snapshot_id != expected_policy
-                or audit.before_state != str(legacy[17])
-                or audit.after_state != str(legacy[19])
-                or audit.definition_digest != str(legacy[13])
-                or cls._timestamp(audit.occurred_at) != str(legacy[10])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 1
-            ):
-                raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": str(legacy[7]),
+                    "actor_id": str(legacy[8]),
+                    "actor_type": str(legacy[9]),
+                    "policy_snapshot_id": expected_policy,
+                    "before_state": str(legacy[17]),
+                    "after_state": str(legacy[19]),
+                    "definition_digest": str(legacy[13]),
+                    "occurred_at": str(legacy[10]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 1,
+                },
+                "LEGACY_MIGRATION_AUDIT_MISMATCH",
+            )
             hold = connection.execute(
                 """
                 SELECT reason_code, source_artifact_digest
@@ -1554,19 +1586,22 @@ class GovernanceEventService:
                 if len(audits) != 1:
                     raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
                 audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-                if (
-                    audit.event_type != review_payload.event_type
-                    or audit.actor_id != str(review[7])
-                    or audit.actor_type != str(review[8])
-                    or audit.policy_snapshot_id != cls._digest(b"legacy-approval-human-review:v1")
-                    or audit.before_state != review_payload.before_status
-                    or audit.after_state != review_payload.after_status
-                    or audit.definition_digest != str(review[13])
-                    or cls._timestamp(audit.occurred_at) != str(review[9])
-                    or audit.destination_manifest_digest != manifest_digest
-                    or audit.destination_count != 1
-                ):
-                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
+                cls._assert_audit_matches(
+                    audit,
+                    {
+                        "event_type": review_payload.event_type,
+                        "actor_id": str(review[7]),
+                        "actor_type": str(review[8]),
+                        "policy_snapshot_id": cls._digest(b"legacy-approval-human-review:v1"),
+                        "before_state": review_payload.before_status,
+                        "after_state": review_payload.after_status,
+                        "definition_digest": str(review[13]),
+                        "occurred_at": str(review[9]),
+                        "destination_manifest_digest": manifest_digest,
+                        "destination_count": 1,
+                    },
+                    "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH",
+                )
             uncovered_item = connection.execute(
                 """
                 SELECT 1
@@ -1708,20 +1743,23 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != recovery_payload.event_type
-                or audit.proposal_ref != ref
-                or audit.actor_id != str(recovery[19])
-                or audit.actor_type != str(recovery[20])
-                or audit.policy_snapshot_id != cls._digest(b"legacy-forward-recovery:v1")
-                or audit.before_state != recovery_payload.previous_status
-                or audit.after_state != recovery_payload.next_status
-                or audit.definition_digest != recovery_payload.next_definition_digest
-                or cls._timestamp(audit.occurred_at) != str(recovery[18])
-                or audit.destination_manifest_digest != manifest_digest
-                or audit.destination_count != 1
-            ):
-                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": recovery_payload.event_type,
+                    "proposal_ref": ref,
+                    "actor_id": str(recovery[19]),
+                    "actor_type": str(recovery[20]),
+                    "policy_snapshot_id": cls._digest(b"legacy-forward-recovery:v1"),
+                    "before_state": recovery_payload.previous_status,
+                    "after_state": recovery_payload.next_status,
+                    "definition_digest": recovery_payload.next_definition_digest,
+                    "occurred_at": str(recovery[18]),
+                    "destination_manifest_digest": manifest_digest,
+                    "destination_count": 1,
+                },
+                "LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH",
+            )
         if has_forward_recovery:
             idempotency_collision = connection.execute(
                 """
@@ -1792,17 +1830,20 @@ class GovernanceEventService:
                 audit.destination_manifest_digest,
                 len(reconciled_destinations),
             )
-            if (
-                audit.event_type != f"proposal.{decision[7]}"
-                or audit.actor_id != str(decision[5])
-                or audit.actor_type != str(decision[6])
-                or audit.before_state != "reviewed"
-                or audit.after_state != str(decision[7])
-                or audit.definition_digest != str(decision[8])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != decision_commands[command_id][3]
-            ):
-                raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"proposal.{decision[7]}",
+                    "actor_id": str(decision[5]),
+                    "actor_type": str(decision[6]),
+                    "before_state": "reviewed",
+                    "after_state": str(decision[7]),
+                    "definition_digest": str(decision[8]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": decision_commands[command_id][3],
+                },
+                "DECISION_AUDIT_MISMATCH",
+            )
         apply_rows = (
             connection.execute(
                 """
@@ -1872,17 +1913,20 @@ class GovernanceEventService:
                 audit.destination_manifest_digest,
                 len(reconciled_destinations),
             )
-            if (
-                audit.event_type != "proposal.apply_requested"
-                or audit.actor_id != str(apply[4])
-                or audit.actor_type != str(apply[5])
-                or audit.before_state != "approved"
-                or audit.after_state != "apply_requested"
-                or audit.definition_digest != str(apply[10])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != decision_commands[command_id][3]
-            ):
-                raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": "proposal.apply_requested",
+                    "actor_id": str(apply[4]),
+                    "actor_type": str(apply[5]),
+                    "before_state": "approved",
+                    "after_state": "apply_requested",
+                    "definition_digest": str(apply[10]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": decision_commands[command_id][3],
+                },
+                "APPLY_AUDIT_MISMATCH",
+            )
         has_job_events = (
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' "
@@ -1956,17 +2000,20 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != f"apply_job.{job_event[4]}"
-                or audit.actor_id != str(job_event[5])
-                or audit.actor_type != "service"
-                or audit.before_state != str(job_event[6])
-                or audit.after_state != str(job_event[7])
-                or audit.definition_digest != str(job_event[20])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 2
-            ):
-                raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"apply_job.{job_event[4]}",
+                    "actor_id": str(job_event[5]),
+                    "actor_type": "service",
+                    "before_state": str(job_event[6]),
+                    "after_state": str(job_event[7]),
+                    "definition_digest": str(job_event[20]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 2,
+                },
+                "APPLY_JOB_AUDIT_MISMATCH",
+            )
         has_publish_resolution_events = (
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' "
@@ -2110,17 +2157,20 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != f"publish.{resolution[4]}"
-                or audit.actor_id != str(resolution[17])
-                or audit.actor_type != "service"
-                or audit.before_state != str(resolution[19])
-                or audit.after_state != str(resolution[6])
-                or audit.definition_digest != str(resolution[18])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 2
-            ):
-                raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"publish.{resolution[4]}",
+                    "actor_id": str(resolution[17]),
+                    "actor_type": "service",
+                    "before_state": str(resolution[19]),
+                    "after_state": str(resolution[6]),
+                    "definition_digest": str(resolution[18]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 2,
+                },
+                "PUBLISH_RESOLUTION_AUDIT_MISMATCH",
+            )
         if has_job_events:
             jobs = connection.execute(
                 """
@@ -2854,6 +2904,29 @@ class GovernanceEventService:
     def _apply_command_id(idempotency_key: str) -> str:
         digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
         return f"apply:sha256:{digest}"
+
+    @classmethod
+    def _assert_audit_matches(
+        cls,
+        audit: AuditEventView,
+        expected: _ExpectedAudit,
+        code: str,
+    ) -> None:
+        """감사 row 가 기대한 값 집합과 일치하지 않으면 `code` 로 거부한다.
+
+        여덟 호출 지점이 이 하나를 쓴다. 예전에는 같은 비교가 여덟 벌로 흩어져 있어서 어느
+        블록이 어느 필드를 빠뜨렸는지 세어야 알 수 있었다. 이제 `expected` mapping 을 나란히
+        놓고 보면 드러난다.
+
+        `or` 사슬은 첫 불일치에서 멈췄고 이 loop 도 그렇다. 같은 입력에 같은 code 를 낸다.
+        """
+        for field, want in expected.items():
+            actual: object = getattr(audit, field)
+            if field == "occurred_at":
+                # view 는 `datetime`, row 는 문자열이다. 저장 형태로 맞춘 뒤 비교한다.
+                actual = cls._timestamp(cast(datetime, actual))
+            if actual != want:
+                raise GovernanceEventError(code)
 
     @staticmethod
     def _audit_view(row: tuple[object, ...]) -> AuditEventView:

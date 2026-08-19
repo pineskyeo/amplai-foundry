@@ -58,8 +58,10 @@ safe feedback을 처리한다.
 Source: [Slack chat.postEphemeral](https://docs.slack.dev/reference/methods/chat.postEphemeral/),
 checked 2026-08-12.
 
-Decision: Terminal denial/expired/stale/already-completed/unavailable feedback에 사용한다. Governance result나
-retry source of truth로 사용하지 않는다.
+Decision: terminal failure outcome의 reviewer 통지에 사용한다. **어떤 outcome이 그 집합에
+속하는지는 [contracts/interaction-feedback.md](contracts/interaction-feedback.md)의 Safe Outcomes
+표가 정한다** — 값을 여기에 다시 적지 않는다. Governance result나 retry source of truth로
+사용하지 않는다.
 
 ## Repository Facts
 

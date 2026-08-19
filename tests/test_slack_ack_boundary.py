@@ -5,6 +5,7 @@ import hmac
 import json
 import re
 import sqlite3
+import threading
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -48,6 +49,10 @@ from amplai_foundry.governance import (
     WorkerOutcome,
 )
 from amplai_foundry.governance.events import GovernanceEventError
+from amplai_foundry.governance.filesystem import (
+    FilesystemStatus,
+    LocalFilesystemGuard,
+)
 from amplai_foundry.governance.ingress_worker import _DENIED_CODES
 from amplai_foundry.governance.slack_http import _SAFE_INTERACTION_MESSAGES
 from amplai_foundry.governance.store import (
@@ -2235,3 +2240,440 @@ def test_an_observed_exhaustion_keeps_the_cause_code_in_durable_state(
     # operator 가 보는 목록에도 그 code 가 그대로 있다.
     stranded = ingress.stranded()
     assert [entry.last_error_code for entry in stranded] == ["INGRESS_DECISION_UNAVAILABLE"]
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T024 — 정규화가 worker 의 세 지점을 실제로 덮는다
+# ---------------------------------------------------------------------------
+#
+# round 14 `P1-1`: `filesystem.py:166` 의 `GovernanceFilesystemError` 가 세 지점을 그대로
+# 뚫었다. 셋 다 `except (GovernanceStoreError, IngressError, sqlite3.Error)` 인데 그 class 는
+# 어디에도 없다.
+#
+#   `process_next` 의 `claim_next`            (`ingress_worker.py:186`)
+#   `_finalize` 의 `_transition`              (`:343`)
+#   `_settle_exhausted_retry` 의 `committed_decision()` (`:466-469`)
+#
+# **`committed_decision` 을 patch 하지 않는다.** 진짜 filesystem guard 에서 예외가 나게 해서
+# 재현한다 — round 14 가 쓴 방식이다. patch 하면 정규화가 실제 경로를 덮는지 알 수 없다.
+
+
+class _TrippingFilesystemProbe:
+    """`window` 안의 inspect 호출에만 network filesystem 이라고 답한다.
+
+    `connect()` 는 열 때 `validate()` 를 두 번 부른다 (before / after). 창을 좁게 열면
+    특정 호출 지점 하나만 막고 그 뒤 경로는 정상으로 둘 수 있다.
+    """
+
+    def __init__(self, *, window: tuple[int, int]) -> None:
+        self.calls = 0
+        self.window = window
+
+    def inspect(self, path: Path) -> FilesystemStatus:
+        self.calls += 1
+        first, last = self.window
+        local = not (first <= self.calls <= last)
+        return FilesystemStatus(
+            kind="apfs" if local else "nfs",
+            mount_point=path.parent,
+            local=local,
+        )
+
+
+def _trip_the_filesystem_guard(store: GovernanceStore, *, window: tuple[int, int]) -> None:
+    store.filesystem_guard = LocalFilesystemGuard(_TrippingFilesystemProbe(window=window))
+
+
+def test_a_filesystem_failure_in_claim_next_does_not_escape_process_next(
+    tmp_path: Path,
+) -> None:
+    """세 지점 중 첫째 (`ingress_worker.py:186`)."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    _trip_the_filesystem_guard(store, window=(1, 10**6))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED, "raw 예외가 `process_next` 밖으로 나갔다"
+
+
+def test_a_filesystem_failure_while_settling_an_exhausted_retry_stays_silent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """세 지점 중 셋째 (`ingress_worker.py:466-469`).
+
+    `D-042` 의 판단은 유지된다 — 읽기 실패는 침묵이고 command 는 recovery hold 로 남아
+    `stranded()` 에 보인다. 이 변경은 그 판단이 **도달하지 못하던 경로**를 여는 것이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+
+    # 첫 시도는 예산을 쓴다.
+    assert worker.process_next("slack-worker") is not None
+    now[0] = now[0] + timedelta(minutes=10)
+
+    # 마지막 시도에서 `committed_decision()` 이 여는 connection **만** 막는다. 실측한
+    # `validate()` 호출 순서는 아래와 같다 (`connect()` 하나가 두 번 부른다).
+    #
+    #   1-2  `claim_next`
+    #   3-4  decision transaction
+    #   5-8  `committed_decision()` — `ingress.get` 과 `decisions.result_for`
+    #   9-10 `_transition` 의 `recovery_hold` 쓰기
+    #
+    # 5 하나만 막는다. `before` validate 가 raise 하면 그 `connect()` 는 `after` 를 부르지
+    # 않으므로 호출 하나만 쓰고, `committed_decision()` 은 첫 읽기에서 이미 멈춘다. 창을
+    # 넓게 잡으면 `_transition` 의 쓰기까지 막혀 command 가 `leased` 로 남는데, 그것은
+    # store 가 통째로 죽은 다른 경우다.
+    _trip_the_filesystem_guard(store, window=(5, 5))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is not None
+    assert settled.state is not IngressState.LEASED, "command 가 `leased` 로 남았다"
+    assert feedback.calls == [], "결과를 모르는데 사용자에게 알렸다"
+    assert [command.command_id for command in ingress.stranded()] == [ack.command_id]
+
+
+def test_a_filesystem_failure_in_the_finalize_transition_does_not_escape(
+    tmp_path: Path,
+) -> None:
+    """세 지점 중 둘째 (`ingress_worker.py:343`).
+
+    `_transition` 이 여는 connection 만 막는다. 실측한 순서에서 성공 경로의 마지막 두
+    `validate()` 가 그 쓰기다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    #   1-2 `claim_next`, 3-4 decision transaction, 5- 그 뒤가 `_transition` 이다.
+    #   소진 전이라 `_settle_exhausted_retry` 는 읽기를 하지 않는다.
+    _trip_the_filesystem_guard(store, window=(5, 5))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+    assert result.outcome is WorkerOutcome.FINALIZE_FAILED
+    assert result.finalize_error_code is not None, "실패 원인이 사라졌다"
+    # decision 자체는 이미 resolve 됐다. lease 만료 뒤 replay 가 첫 결과로 수렴한다.
+    assert ingress.get(str(ack.command_id)) is not None
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T027 — 읽을 수 없는 row 가 큐를 멈추지 않는다 (D-045)
+# ---------------------------------------------------------------------------
+#
+# round 15 `F-1` (P0). `_view`(`ingress.py:600`)의 `json.loads` 와 `model_validate` 가
+# `ValueError` 를 내는데 `process_next` 의 except tuple 이 그것을 안 잡았다. `_view` 가 claim
+# transaction 안이라 claim 이 rollback 되고 row 는 `pending`·`attempts=0` 으로 돌아갔다.
+# `received_at` 순으로 다시 뽑히므로 **뒤 command 가 하나도 처리되지 않았다.** `pending` 이라
+# `stranded()` 에도 안 걸려 operator 가 볼 방법도 없었다.
+
+
+def _channel_payload() -> dict[str, str]:
+    """`_corrupt` 가 망가뜨린 `channel_json` 을 되돌릴 때 쓰는 정상 값."""
+    return {
+        "provider": "slack",
+        "workspace_id": "T123",
+        "channel_id": "C789",
+        "message_id": "1722387600.000200",
+    }
+
+
+def _corrupt(store: GovernanceStore, command_id: str) -> None:
+    """durable row 하나를 읽을 수 없게 만든다. `channel_json` 에 CHECK 제약이 없다."""
+    with store.connect() as connection:
+        changed = connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json = ? WHERE command_id = ?",
+            ("{bad", command_id),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+
+def _two_commands(store: GovernanceStore, ingress: IngressService) -> tuple[str, str]:
+    """받은 순서대로 command 둘. 앞의 것을 손상시킨다."""
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    boundary.submit(_envelope())
+    boundary.submit(_envelope(_body(_payload(trigger_id="999.888.second"))))
+    with store.connect() as connection:
+        rows = connection.execute(
+            "SELECT command_id FROM governance_ingress_commands ORDER BY received_at, command_id"
+        ).fetchall()
+    assert len(rows) == 2
+    return str(rows[0][0]), str(rows[1][0])
+
+
+def test_an_unreadable_command_row_does_not_escape_process_next(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+    _corrupt(store, str(ack.command_id))
+
+    # 예전에는 여기서 raw `json.decoder.JSONDecodeError` 가 나갔다.
+    worker.process_next("slack-worker")
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is None, "읽을 수 없는 row 는 view 로 나오지 않는다"
+    with store.connect() as connection:
+        state, code = connection.execute(
+            "SELECT state, last_error_code FROM governance_ingress_commands WHERE command_id = ?",
+            (str(ack.command_id),),
+        ).fetchone()
+    assert state == "dead_letter"
+    assert code == "INGRESS_COMMAND_UNREADABLE"
+
+
+def test_an_unreadable_command_row_does_not_block_the_ones_behind_it(tmp_path: Path) -> None:
+    """P0 의 실체. 이 test 가 head-of-line 차단을 고정한다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    worker = _worker(store, ingress)
+    _corrupt(store, poison)
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.command_id == healthy, (
+        "손상 row 뒤의 command 가 같은 호출에서 처리돼야 한다 — 큐가 막히면 안 된다"
+    )
+    with store.connect() as connection:
+        states = dict(
+            connection.execute(
+                "SELECT command_id, state FROM governance_ingress_commands"
+            ).fetchall()
+        )
+    assert states[poison] == "dead_letter"
+    assert states[healthy] == "completed"
+
+
+def test_an_unreadable_row_is_visible_to_the_operator(tmp_path: Path) -> None:
+    """치웠으면 보여야 한다. 조용히 사라지면 침묵과 같다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+    _worker(store, ingress).process_next("slack-worker")
+
+    assert ingress.unreadable() == (str(ack.command_id),)
+
+
+def test_one_unreadable_row_does_not_hide_the_other_stranded_commands(
+    tmp_path: Path,
+) -> None:
+    """round 15 `F-2`. 예전에는 손상 row 하나가 목록 전체를 없앴다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    with store.connect() as connection:
+        connection.execute("UPDATE governance_ingress_commands SET state = 'dead_letter'")
+        connection.commit()
+    _corrupt(store, poison)
+
+    listed = ingress.stranded()
+
+    assert [view.command_id for view in listed] == [healthy], "읽을 수 있는 row 는 계속 나와야 한다"
+    assert ingress.unreadable() == (poison,), "건너뛴 것은 조용히 빠지지 않는다"
+
+
+def test_a_programming_error_inside_the_view_still_escapes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """정규화가 구현 결함을 durable dead letter 로 숨기면 안 된다.
+
+    `_UNREADABLE_ROW` 를 `Exception` 으로 넓히면 이 test 가 실패한다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    # `stranded()` 가 실제로 row 를 읽어야 `_view` 에 닿는다. `pending` 은 목록에서 빠진다.
+    with store.connect() as connection:
+        connection.execute("UPDATE governance_ingress_commands SET state = 'dead_letter'")
+        connection.commit()
+
+    def _bug(row: object) -> object:
+        raise AttributeError("구현자 실수를 흉내낸다")
+
+    monkeypatch.setattr(IngressService, "_view", staticmethod(_bug))
+
+    with pytest.raises(AttributeError):
+        ingress.get(str(ack.command_id))
+    with pytest.raises(AttributeError):
+        ingress.stranded()
+
+
+def test_a_healthy_queue_is_unchanged(tmp_path: Path) -> None:
+    """정상 경로가 안 바뀐다. dead-letter 로 새는 row 가 없다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.COMPLETED
+    assert result.command_id == str(ack.command_id)
+    assert ingress.unreadable() == ()
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T031 — dead-letter loop 가 진행을 보장하고 경합을 건드리지 않는다
+# ---------------------------------------------------------------------------
+#
+# round 16 blocker 넷이 T027 이 넣은 구조 하나에서 나왔다. `while True` + transaction 밖
+# write 를 도입하면서 그 구조가 요구하는 넷을 안 채웠다.
+
+
+def test_the_dead_letter_loop_terminates_when_the_write_changes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 16 `S-1` (P0). `rowcount` 를 안 보면 같은 row 가 다시 뽑혀 영원히 돈다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+
+    attempts = 0
+
+    def _never_changes_a_row(self: IngressService, command_id: str, claim_generation: int) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts > 10:
+            raise AssertionError("loop 가 끝나지 않는다")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _never_changes_a_row)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("slack-worker")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert attempts == 1, "치우지 못한 row 를 다시 뽑으면 안 된다"
+
+
+def test_the_dead_letter_write_does_not_touch_another_workers_live_lease(
+    tmp_path: Path,
+) -> None:
+    """round 16 `FR-1` (P1).
+
+    claim rollback 과 치우는 write 사이에 다른 worker 가 같은 row 를 정상 claim 할 수 있다.
+    guard 가 없으면 그 **살아 있는 lease 를 지운다.** 그 worker 는 governed decision 을
+    이미 commit 했을 수 있다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    command_id = str(ack.command_id)
+    _corrupt(store, command_id)
+
+    entered = threading.Event()
+    released = threading.Event()
+
+    class _PausingBeforeTheWrite(IngressService):
+        def _dead_letter_unreadable(self, command_id: str, claim_generation: int) -> None:
+            entered.set()
+            released.wait(20)
+            super()._dead_letter_unreadable(command_id, claim_generation)
+
+    paused = _PausingBeforeTheWrite(store, _authenticator(), clock=lambda: NOW)
+    worker_a = threading.Thread(target=lambda: paused.claim_next("worker-a"))
+    worker_a.start()
+    assert entered.wait(20), "worker A 가 치우기 직전까지 오지 않았다"
+
+    # 그 사이 row 가 고쳐지고 worker B 가 정상 claim 한다.
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json = ?",
+            (json.dumps(_channel_payload()),),
+        )
+        connection.commit()
+    claimed = ingress.claim_next("worker-b")
+    assert claimed is not None
+
+    released.set()
+    worker_a.join(20)
+
+    still_leased = ingress.get(command_id)
+    assert still_leased is not None
+    assert still_leased.state is IngressState.LEASED, "살아 있는 lease 를 지웠다"
+    assert still_leased.lease_owner == "worker-b"
+    # 그 worker 가 계속 진행할 수 있다.
+    ingress.complete(command_id, worker_id="worker-b", generation=claimed.claim_generation)
+
+
+def test_a_failing_dead_letter_write_closes_in_a_form_the_caller_knows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 16 `FR-2`. 조용히 `D-045` 가 거절한 상태로 돌아가지 않는다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+
+    def _unavailable(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise GovernanceStoreError("store unavailable")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _unavailable)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("slack-worker")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert isinstance(caught.value.__cause__, GovernanceStoreError), "원인이 사라졌다"
+
+
+def test_an_unreadable_row_is_told_apart_from_one_with_no_decision(tmp_path: Path) -> None:
+    """round 16 `C16-1` (P1).
+
+    계약(`interaction-feedback.md:47-54`)이 "we know a decision landed" 와 "we cannot tell"
+    을 나눈다. `get()` 의 `None` 하나로는 그 둘이 뭉개진다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    command_id = str(ack.command_id)
+
+    assert ingress.is_unreadable(command_id) is False
+    assert ingress.is_unreadable("CMD-DEADBEEFDEADBEEF") is False, "없는 id 는 읽기 실패가 아니다"
+
+    _corrupt(store, command_id)
+
+    assert ingress.is_unreadable(command_id) is True
+    assert ingress.get(command_id) is None, "`get()` 은 여전히 None 이다"

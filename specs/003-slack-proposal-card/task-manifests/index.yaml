@@ -8,11 +8,11 @@ feature:
 source:
   files:
     - path: specs/003-slack-proposal-card/spec.md
-      revision: sha256:a2d8878d2144fb626c2d562897a13a01489ea61b7e98ab13f4fd8fe133855662
+      revision: sha256:230eeed37c42d4c65f4130fa2f2eea972a5f26be461fb571848d85484fdc58e7
     - path: specs/003-slack-proposal-card/plan.md
-      revision: sha256:e5b4a76be142e52d20086e2f34cb6892533ef77561f5e795bed9e836e5eb537d
+      revision: sha256:555a1ba3ea7cc9becf0e879313385344077c76b8c78bb2461399110a35ec716c
     - path: specs/003-slack-proposal-card/research.md
-      revision: sha256:9e5a95895c174bb04369b67c531c14960c473b0df9b6f2b9c29911c72f36cb64
+      revision: sha256:691c9f3ff3921810c7d33db7b7afd203d4aa1d408f2d7c01e7e6f225cbc9a0ab
     - path: specs/003-slack-proposal-card/data-model.md
       revision: sha256:ea42191d775fb0fd9e4adaf32b03925e2a9884722acb349dae43e58414e60dd3
   generated_from:
@@ -244,7 +244,7 @@ tasks:
 
   - id: MGC-012-P5-T021
     title: Clear the send-path locals in a finally so nothing masks the frame below
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-019
@@ -253,7 +253,7 @@ tasks:
       - SC-004
   - id: MGC-012-P5-T022
     title: Collapse the four identical exception-frame clearers into one
-    status: ready
+    status: done
     depends_on:
       - MGC-012-P5-T021
     requirements:
@@ -264,7 +264,7 @@ tasks:
       - SC-005
   - id: MGC-012-P5-T023
     title: Replace eight audit comparison chains with one helper that takes the expected mapping
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-013
@@ -273,7 +273,7 @@ tasks:
       - SC-003
   - id: MGC-012-P5-T024
     title: Normalize every store connection failure at the boundary instead of listing exception classes
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-024
@@ -281,19 +281,82 @@ tasks:
       - SC-004
   - id: MGC-012-P5-T025
     title: Give each rule one home and make the other mentions point at it
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - FR-024
       - FR-026
   - id: MGC-012-P5-T026
     title: Make the silent ending recoverable by exposing the two reads an operator needs
-    status: ready
+    status: done
+    depends_on:
+      - MGC-012-P5-T022
+    requirements:
+      - FR-024
+      - FR-026
+      - SC-004
+  - id: MGC-012-P5-T027
+    title: Dead-letter an ingress command row that cannot be read instead of stalling the queue
+    status: done
     depends_on: []
     requirements:
       - FR-024
       - FR-026
       - SC-004
+  - id: MGC-012-P5-T028
+    title: Make the operator queries actually read-only and honest about it
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+      - FR-026
+      - SC-004
+  - id: MGC-012-P5-T029
+    title: Narrow the connect normalization back to what the round 14 finding needed
+    status: done
+    depends_on: []
+    requirements:
+      - FR-021
+      - FR-024
+      - SC-003
+  - id: MGC-012-P5-T030
+    title: Correct the claims round 15 proved false
+    status: done
+    depends_on: []
+    requirements:
+      - FR-019
+      - FR-021
+  - id: MGC-012-P5-T031
+    title: Make the dead-letter loop terminate, guard the write, and stop conflating unknown with absent
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+      - FR-026
+      - SC-004
+  - id: MGC-012-P5-T032
+    title: Normalize at the CLI boundary so neither fix reopens the raw traceback
+    status: done
+    depends_on:
+      - MGC-012-P5-T031
+    requirements:
+      - FR-024
+      - FR-026
+      - SC-004
+  - id: MGC-012-P5-T033
+    title: Pin the revert point that no test was holding
+    status: done
+    depends_on: []
+    requirements:
+      - FR-021
+      - FR-024
+      - SC-003
+  - id: MGC-012-P5-T034
+    title: Fix the sixth count error and the evidence declared present but absent
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
 
 execution:
   waves:
@@ -410,9 +473,49 @@ execution:
         - MGC-012-P5-T022
         - MGC-012-P5-T026
       note: >-
-        T022 waits for T021 because both own slack_http.py. T026 adds a governance sub-app to
-        cli.py and shares no path with T022. Both are lower risk than wave 14 and neither is a
-        prerequisite for the others.
+        T022 waits for T021 because both own slack_http.py. T026 waits for T022 because both
+        own src/amplai_foundry/governance/__init__.py — T022 may move the shared
+        _clear_exception_frames definition and T026 may export the two read-only accessors, and
+        the earlier claim that these two shared no path was wrong (corrected 2026-08-18 by
+        /speckit-analyze finding F1 before wave 8 started). Run this wave sequentially. Both are
+        lower risk than wave 14.
+    - wave: 16
+      tasks:
+        - MGC-012-P5-T027
+        - MGC-012-P5-T028
+        - MGC-012-P5-T029
+        - MGC-012-P5-T030
+      note: >-
+        Convergence wave from the round 15 three-lens review. Nine blockers, two roots.
+        T027 closes the P0: an unreadable ingress row rolled the claim back and stalled the
+        whole queue invisibly (D-045). T028 fixes the four blockers that all came from calling
+        check_startup() in a read-only CLI. T029 narrows the T024 normalization back off
+        sqlite3.Error, which had silently removed nine legacy handlers' containment. T030
+        corrects the statements round 15 proved false. File ownership is disjoint and was
+        checked path by path: T027 owns ingress.py, T028 owns cli.py, T029 owns store.py,
+        T030 owns slack_http.py docstrings. Evidence file ownership is also disjoint —
+        T028 owns T026's evidence, T029 owns T024's, T030 owns T021/T022/T025's. No two name
+        the same path, so all four may run concurrently. T027 carries the P0 and goes first
+        in priority.
+    - wave: 17
+      tasks:
+        - MGC-012-P5-T031
+        - MGC-012-P5-T032
+        - MGC-012-P5-T033
+        - MGC-012-P5-T034
+      note: >-
+        Convergence wave from the round 16 three-lens review. Round 15's nine blockers were all
+        confirmed closed; these nine are new. Two roots. Four of them (S-1, FR-1, FR-2, C16-1)
+        come from the dead-letter structure T027 introduced without filling in what that
+        structure requires — progress guarantee, contention guard, write-failure handling, and
+        telling "unknown" from "absent". T031 closes those. Two more (FR-3, R16-1) are the same
+        CLI raw traceback reopened by two different fixes, T029's narrowing and T028's removal;
+        T032 closes both by normalizing at the CLI boundary, which is the position neither
+        earlier attempt used. T033 pins the revert point T029 left untested. T034 corrects the
+        sixth count error and the evidence declared present but absent. T032 waits for T031
+        because it consumes the unknown/absent distinction T031 creates. The other three own
+        disjoint paths — T031 ingress.py, T033 tests/test_governance_store.py, T034 evidence
+        and DECISIONS.md only.
   critical_path:
     - MGC-012-P5-T001
     - MGC-012-P5-T002

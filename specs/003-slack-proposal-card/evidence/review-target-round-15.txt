@@ -1,0 +1,50 @@
+# MGC-012-P5 wave 8 review target — round 15
+# frozen 2026-08-18. 이 목록의 digest 로 review 중 무손상을 확인한다.
+# 이 파일 자신은 목록에 넣지 않는다 (자기참조).
+#
+# 재확인:
+#   python3 - <<'EOF'
+#   import hashlib,pathlib
+#   rows=[l for l in pathlib.Path('specs/003-slack-proposal-card/evidence/review-target-round-15.txt')
+#           .read_text().splitlines() if l and not l.startswith('#')]
+#   for r in rows:
+#       d,n=r.split('  ',1)
+#       assert d==hashlib.sha256(pathlib.Path(n).read_bytes()).hexdigest(), n
+#   print('aggregate', hashlib.sha256('\n'.join(rows).encode()).hexdigest())
+#   EOF
+
+4c87f572937ff4dfd7d845cf08ad244c6659d7c368af2f9e00dc9b3f570bfd9a  docs/workstreams/messenger-governance-closure-v3/BACKLOG.md
+162d33655f215587e9b48ec122a3fefeb9d847a413d3c509b3ba783cd07d2de4  specs/003-slack-proposal-card/contracts/interaction-feedback.md
+a1c0ae1e79375ebaaeb5fb5dfad788f3fcba19b84909667ce8868cd33ad45f18  specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md
+90c3ddd40675c86cf056875847f8a89ced216bc7f90784986b5fe077ca50ad2d  specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md
+4a67381aaa93a704d9617635d40f5134ae83108431860669dbedb5f1ecd86023  specs/003-slack-proposal-card/evidence/MGC-012-P5-T023.md
+6c2046720b0d7940f518fb955f65c66af372acf8526bd013f1b21abb20a4d885  specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md
+080c7ea4aa3dd990d8d634b696bba4f0bad043b83d716077b63c12dc096e38d4  specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md
+693ec36c4fd3745d431d663b8a84daedaa94a1fb1b2c5c66bd4ed80215d5b68a  specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
+555a1ba3ea7cc9becf0e879313385344077c76b8c78bb2461399110a35ec716c  specs/003-slack-proposal-card/plan.md
+691c9f3ff3921810c7d33db7b7afd203d4aa1d408f2d7c01e7e6f225cbc9a0ab  specs/003-slack-proposal-card/research.md
+230eeed37c42d4c65f4130fa2f2eea972a5f26be461fb571848d85484fdc58e7  specs/003-slack-proposal-card/spec.md
+bca134f35c9d5aea10e10c186549bf060ca110a7cffa5857662baf41edaf24a4  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T021.yaml
+0424af9902078e37d79d2faafa801544321a1143993e5a04741ae5e90b49d3cd  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T022.yaml
+76e46cdf40db44acce7af84119d8a3fa64aab7989b585e0e2ac1b050f00a838b  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T023.yaml
+26877a5a7e5800ba21f47f175dbed5f0634ff177ae19a9cfb991c61b0cd436f9  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T024.yaml
+76883e532820d05655cd5bc7bd3861a7c71106164a234ff8a3808a765b74f087  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T025.yaml
+c11e0e1e29ca370c1203872dbff067bfac1c3d5db63029462c2e4aff424c36f9  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T026.yaml
+fdf64d0b8c411f202cab9284e4dc1a4669d386d304b1e86cae135fef5bdca9d1  specs/003-slack-proposal-card/task-manifests/index.yaml
+63487772c47db4a26fd51b0ad1d98207dc3d78564d4c1c3c5ef56f48f85cd928  specs/003-slack-proposal-card/tasks.md
+3d14e5c780623acce3cf66cd23d1f983ca89509cf0a7fe3abd39a88b30202171  src/amplai_foundry/cli.py
+810808154591471f8172b097fcdd5fbce2f453d3adef0373d8dbb92b3d06ae95  src/amplai_foundry/governance/decisions.py
+7bd7daa3bb963edb78786c1a75189470112301a793e44e3139911b289bc2186c  src/amplai_foundry/governance/events.py
+d4fe3897e4d903afdfdc67139b14830917befe19dce935f0c5a8de46e50b3afd  src/amplai_foundry/governance/review_cards.py
+d4a3bd3c5de6050278ebc434775c54c47516c247efb2a908e140371643a02cef  src/amplai_foundry/governance/slack_cards.py
+7677918ace94dd3e1048e2118d929e45dee0c5a5c7dd3bd3892751dad64078d7  src/amplai_foundry/governance/slack_http.py
+2e1a5ba02cf23166573b7c3e0c49091555d12e8fd381aefe6c90aa26b3a355c0  src/amplai_foundry/governance/slack_projection.py
+cc1c7199b56cc1a3b734587f32d32c665973911a0a6f8f81a7806f72fa189f32  src/amplai_foundry/governance/store.py
+2d9ad66c47f57b99e445b94ad63daee4a6d40e2efd5b8d47fdc61cb4de53ba7b  tests/test_cli.py
+f6d23671add819d02fd68744027139742b31c4eff6ba240a5eee9b7c0dd48ae3  tests/test_governance_events.py
+099988652e44d1f4f19970e63421a568477ab2d8f12dc1f4294b6b1877feb6bc  tests/test_governance_store.py
+95deea8ad5424ff2d3ff4b3f6440ef6625a1dc784389223a39d91e116df513a3  tests/test_slack_ack_boundary.py
+a5c334657aa611018b5ac1dbd7909186e56efcf788031d0876badf3329dd2303  tests/test_slack_http.py
+
+# aggregate = sha256 of the 32 lines above joined by newline
+# 50ce748f871b2270f8b101d7c5b9f60680240fdf42935a421be26ec7aa8ec27e

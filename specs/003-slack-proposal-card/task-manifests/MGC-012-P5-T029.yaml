@@ -1,0 +1,227 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T029
+title: Narrow the connect normalization back to what the round 14 finding needed
+type: fix
+status: done
+
+goal:
+  outcome: >-
+    `connect()` 의 정규화가 `GovernanceFilesystemError` 와 `OSError` 만 덮는다.
+    `sqlite3.Error` 는 HEAD 처럼 그대로 나가고 `legacy_*.py` 아홉 handler 의 봉쇄가 돌아온다.
+  user_value: >-
+    round 15 `R-1` 이 P1 로 실측했다. `T024` 가 open 단계의 `sqlite3.Error` 까지
+    `GovernanceStoreError` 로 바꿨는데, `legacy_lifecycle:157`, `legacy_migration:823,1069,
+    1114,1169`, `legacy_recovery:206,415`, `legacy_rollback:180,549` 아홉 곳이 `sqlite3.Error`
+    를 잡아 domain error 로 닫고 있었다. 그 봉쇄가 사라져 raw `GovernanceStoreError` 가
+    module 경계를 넘는다. **test 가 없어서 suite 는 조용하다.**
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+      section: R-1
+    - path: specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md
+      section: The Sibling Census
+  requirements:
+    - FR-021
+    - FR-024
+    - SC-003
+  decisions:
+    - D-042
+
+scope:
+  include:
+    - >-
+      `_OPEN_FAILURES` 에서 `sqlite3.Error` 를 뺀다. round 14 `P1-1` 이 요구한 것은
+      `GovernanceFilesystemError` 였고 `sqlite3.Error` 정규화는 그 위에 얹은 초과분이다.
+    - >-
+      `_raw_connection` 의 PRAGMA 를 감싼 try/except 를 되돌린다. 같은 초과분이다.
+      **`sqlite3.connect` 를 감싼 기존 정규화는 HEAD 부터 있던 것이라 유지한다.**
+    - 아홉 handler 가 다시 잡는지 실행으로 확인하는 test.
+    - "`T024` evidence 의 sibling census 표 정정 — 무엇을 의도적으로 안 덮는지 적는다."
+  exclude:
+    - "`legacy_*.py` 아홉 handler 수정. 그것이 호출자를 세는 방식이고 이번 wave 가 없애려는 형태다."
+    - "`GovernanceFilesystemError` 정규화 제거. round 14 `P1-1` 이 그것을 요구했다."
+    - "`OSError` 정규화 제거. `mkdir` 실패를 덮는다."
+    - "`filesystem.py` 변경."
+    - "`cli.py`. T028 이 맡는다."
+  allowed_paths:
+    - src/amplai_foundry/governance/store.py
+    - tests/test_governance_store.py
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/filesystem.py
+    - src/amplai_foundry/governance/legacy_migration.py
+    - src/amplai_foundry/governance/legacy_recovery.py
+    - src/amplai_foundry/governance/legacy_rollback.py
+    - src/amplai_foundry/governance/legacy_lifecycle.py
+    - src/amplai_foundry/governance/ingress.py
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **먼저 재현한다.** reviewer 의 probe 는 `GovernanceStore._configure` 를
+      `sqlite3.OperationalError("disk I/O error")` 로 바꾸고
+      `LegacyMigrationForwardRecoveryPlanner.plan()` 을 부른다. HEAD 는
+      `LegacyMigrationLifecycleError`, 현재는 raw `GovernanceStoreError` 다. 같은 대조를
+      직접 만든다.
+    - >-
+      **아홉 곳을 다시 센다.** reviewer 는 AST 로 셌고 실행 확인은 `legacy_recovery.py:206`
+      하나뿐이다. `grep`/AST 로 직접 전수하고 표로 적는다. 아홉이 맞는지, 더 있는지 본다.
+    - >-
+      **되돌린 뒤 round 14 `P1-1` 이 다시 열리지 않는지 확인한다.** 그 finding 은
+      `GovernanceFilesystemError` 였다. `sqlite3.Error` 를 빼도 세 worker 지점의 test 가
+      계속 통과해야 한다.
+    - >-
+      **무엇을 의도적으로 안 덮는지 evidence 에 적는다.** `_configure` 의 PRAGMA,
+      `PRAGMA database_list`, `_raw_connection` 의 PRAGMA 에서 나는 `sqlite3.Error` 는
+      정규화하지 않는다. 그 선택의 이유는 아홉 handler 가 그것에 의존한다는 실측이다.
+    - >-
+      **`sqlite3.Warning` 은 `sqlite3.Error` 의 subclass 가 아니다.** reviewer 가 확인했고
+      HEAD 도 같다. 회귀가 아니므로 손대지 않되 evidence 에 적는다.
+  invariants:
+    - "`GovernanceFilesystemError` 정규화가 유지된다 — round 14 `P1-1` 이 다시 열리지 않는다."
+    - "`OSError` 정규화가 유지된다."
+    - "`sqlite3.connect` 실패의 기존 정규화가 유지된다 (HEAD 부터 있던 것)."
+    - "아홉 legacy handler 가 HEAD 와 같은 domain error 로 닫는다."
+    - "`yield` 가 여전히 두 `try` 밖이다."
+    - "프로그래밍 오류는 시끄럽게 나간다."
+    - "`legacy_*.py` 를 하나도 수정하지 않는다."
+  non_goals:
+    - legacy handler 확장.
+    - 새 예외 계층.
+    - store 손상 분류 변경.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 착수 전 코드.
+      when: "`_configure` 에서 `sqlite3.Error` 가 나게 하고 legacy 진입점을 부른다."
+      then: raw `GovernanceStoreError` 가 나가는 것을 실측한다.
+    - id: AC-02
+      given: 같은 probe 를 HEAD 판 `store.py` 로 돌린다.
+      when: 결과를 대조한다.
+      then: HEAD 는 domain error 로 닫는다. 회귀임을 보인다.
+    - id: AC-03
+      given: 소스 전체.
+      when: "`connect()` 를 감싸며 `sqlite3.Error` 를 잡는 `try` 를 전수 열거한다."
+      then: 표로 적고 개수를 명시한다. 아홉이 맞는지 확인한다.
+    - id: AC-04
+      given: 고친 코드.
+      when: AC-01 의 probe 를 다시 돌린다.
+      then: HEAD 와 같은 domain error 로 닫힌다.
+    - id: AC-05
+      given: 고친 코드.
+      when: "`GovernanceFilesystemError` 재현 두 경우를 돌린다."
+      then: 여전히 `GovernanceStoreError` 로 정규화된다. `P1-1` 이 다시 열리지 않는다.
+    - id: AC-06
+      given: 고친 코드.
+      when: T024 가 만든 세 worker 지점 test 를 돌린다.
+      then: 전부 통과한다.
+    - id: AC-07
+      given: 갱신된 `T024` evidence.
+      when: sibling census 표를 읽는다.
+      then: 무엇을 안 덮는지와 그 이유가 적혀 있다.
+    - id: AC-08
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: 실패가 없다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_governance_store.py tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01 과 AC-02 의 HEAD 대조
+      required: true
+    - type: note
+      source: AC-03 의 handler 전수 표
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      정규화를 좁히면 `_configure` 와 `PRAGMA database_list` 의 `sqlite3.Error` 가 다시 raw
+      로 나간다. 그것이 worker 세 지점에서 문제가 되는지 확인한다 — 그 셋은
+      `sqlite3.Error` 를 이미 잡는다.
+    - >-
+      되돌리는 변경이라 `T024` 의 주장 일부가 무효가 된다. evidence 를 지우지 말고 무엇이
+      과했는지 적는다.
+  approvals:
+    - >-
+      HEAD 동작으로 되돌리는 것이라 계약 변경이 아니다. 새 Decision 이 필요하지 않다.
+      round 14 `P1-1` 이 요구한 범위는 그대로 유지된다.
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - narrowing_would_reopen_round_14_P1_1
+    - a_worker_call_point_would_lose_its_normalization
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T029.md
+
+handoff:
+  expected_changes:
+    - "`_OPEN_FAILURES` 에서 `sqlite3.Error` 제거."
+    - "`_raw_connection` 의 PRAGMA try/except 되돌림."
+    - "`T024` evidence 의 census 표 정정."
+  notes:
+    - >-
+      **초과분을 걷어내는 변경이다.** round 14 가 요구한 것은 `GovernanceFilesystemError`
+      하나였고 나머지는 "형제를 전수로 센다" 를 과하게 적용한 결과다. 세는 것은 옳았고
+      덮는 범위를 넓힌 것이 틀렸다.
