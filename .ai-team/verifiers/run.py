@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Run Cortex verifier profiles from .ai-team/verifiers/registry.json.
+"""Run AMPLAI verifier profiles from .ai-team/verifiers/registry.json.
 
 Exit codes:
   0  all blocking checks passed (warnings may have failed)
   1  one or more blocking checks failed
   2  invalid registry/arguments or requested blocking check unavailable
 
-Python 3.6+ stdlib only so the runner stays usable on older Cortex hosts.
+stdlib only. 이 runner 자체는 어느 interpreter 로도 돌지만, 등록된 check 는
+pyproject 의 requires-python 을 만족하는 interpreter 를 부른다. report 는 그것을
+registry command 에서 관찰해 기록한다.
 """
-from __future__ import print_function
-
 import argparse
 import hashlib
 import io
@@ -23,6 +23,51 @@ import time
 
 
 DEFAULT_REGISTRY = os.path.join(".ai-team", "verifiers", "registry.json")
+
+
+
+def python_requirement(root):
+    """pyproject.toml 의 requires-python 을 읽는다. 못 읽으면 빈 문자열."""
+    path = os.path.join(root, "pyproject.toml")
+    if not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                stripped = line.strip()
+                if stripped.startswith("requires-python") and "=" in stripped:
+                    return stripped.split("=", 1)[1].strip().strip("\"'")
+    except OSError:
+        return ""
+    return ""
+
+
+def verifier_interpreters(registry):
+    """check command 가 실제로 부르는 python interpreter 를 뽑는다.
+
+    상수로 적어 두면 registry 가 바뀌어도 report 는 옛 주장을 계속 한다.
+    command 를 해석하지 못하면 빈 목록이 아니라 그 사실을 돌려준다.
+    """
+    found = []
+    unparsed = []
+    for item in registry.get("checks") or []:
+        if not isinstance(item, dict):
+            continue
+        command = item.get("command")
+        head = command.split() if isinstance(command, str) else []
+        if not head:
+            continue
+        if os.path.basename(head[0]) in ("python", "python3") or head[0].endswith("/python"):
+            if head[0] not in found:
+                found.append(head[0])
+        elif "python" in command:
+            unparsed.append(item.get("id") or command)
+    values = sorted(found)
+    if unparsed:
+        values.append(
+            "unobserved: command에서 interpreter를 못 읽음 (%s)" % ", ".join(sorted(unparsed))
+        )
+    return values
 
 
 def repo_root():
@@ -63,7 +108,7 @@ def sha256_file(path):
         return ""
 
 
-def environment_fingerprint(root, registry_path):
+def environment_fingerprint(root, registry_path, registry=None):
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode("utf-8", "replace").strip()
     except Exception:
@@ -73,16 +118,17 @@ def environment_fingerprint(root, registry_path):
         "system": platform.system(),
         "machine": platform.machine(),
         "python": platform.python_version(),
-        "cc": first_line(["cc", "--version"]),
-        "make": first_line(["make", "--version"]),
         "git": first_line(["git", "--version"]),
         "commit": commit,
         "registry_sha256": sha256_file(registry_path),
         "target_assumptions": {
-            "c_standard": "C99",
-            "architectures": ["x86-32", "x86_64"],
-            "operating_systems": ["RHEL5", "RHEL7", "RHEL8", "HP-UX guarded"],
-            "python_compatibility": "deployed operational scripts may require Python 3.6"
+            "verified_on": platform.platform(),
+            "verifier_interpreter": verifier_interpreters(registry or {}),
+            "not_verified": [
+                "다른 OS·architecture 에서의 동작",
+                "pyproject 의 requires-python 아래 버전에서의 동작"
+            ],
+            "python_requirement": python_requirement(root)
         }
     }
 
@@ -341,7 +387,7 @@ def main(argv=None):
         "verdict": verdict,
         "exit_code": exit_code,
         "platform": host,
-        "environment": environment_fingerprint(root, registry_path),
+        "environment": environment_fingerprint(root, registry_path, registry),
         "results": results,
     }
     if args.json_report:

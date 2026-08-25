@@ -49,9 +49,7 @@
         ".agents/skills/systematic-debugging/**", ".claude/skills/**",
         ".specify/memory/constitution.md", ".specify/scripts/**", ".specify/templates/**",
         "scripts/eval.sh", "scripts/loopctl.py", "scripts/loopv2.py",
-        "tools/knowledge/**", "tests/ai/**", ".githooks/**", ".github/workflows/**",
-        "tools/ci/**", "specs/005-amplai-loop-runtime-v1/**",
-        "specs/006-amplai-loop-runtime-v2/**"
+        ".github/workflows/**"
       ],
       "risk": "high",
       "profile": "v2",
@@ -59,31 +57,10 @@
     },
     {
       "id": "public-contract",
-      "patterns": [
-        "conf/testplan/**", "docs/**/schemas/**", "include/cortex/**",
-        "include/pinesky/**", "sdk/algorithms/**", "sdk/authoring/**",
-        "sdk/**/schema/**", "schemas/**"
-      ],
+      "patterns": ["schemas/**"],
       "risk": "high",
       "profile": "full",
       "gates": ["public_contract"]
-    },
-    {
-      "id": "core-runtime",
-      "patterns": [
-        "src/runtime/**", "src/contract/**", "src/dispatch/**", "src/server/**",
-        "src/api/**", "plugins/**"
-      ],
-      "risk": "high",
-      "profile": "full",
-      "gates": []
-    },
-    {
-      "id": "build-system",
-      "patterns": ["Makefile", "mk/**", "tools/build/**"],
-      "risk": "normal",
-      "profile": "full",
-      "gates": []
     },
     {
       "id": "feature-artifacts",
@@ -94,19 +71,14 @@
     },
     {
       "id": "code-and-tests",
-      "patterns": [
-        "src/**", "include/**", "tests/**", "tools/**", "scripts/**", "Makefile",
-        "ui/src/**", "ui/public/**"
-      ],
+      "patterns": ["src/**", "tests/**", "scripts/**", "pyproject.toml"],
       "risk": "normal",
       "profile": "standard",
       "gates": []
     },
     {
       "id": "documentation-only",
-      "patterns": [
-        "README.md", "docs/**", "ui/*.md"
-      ],
+      "patterns": ["README.md", "docs/**"],
       "risk": "low",
       "profile": "fast",
       "gates": []

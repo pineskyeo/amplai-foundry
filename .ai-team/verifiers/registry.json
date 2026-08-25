@@ -118,14 +118,14 @@
     },
     {
       "id": "manifest-validator",
-      "command": "python3 .claude/skills/taskify/scripts/validate_task_manifest.py specs/003-slack-proposal-card/task-manifests",
+      "command": ".venv/bin/python .claude/skills/taskify/scripts/validate_task_manifest.py specs/003-slack-proposal-card/task-manifests",
       "severity": "warn",
       "source": ".agents/skills/taskify/SKILL.md",
       "description": "taskify manifest 계약. feature 가 없으면 warn 으로 지나간다."
     },
     {
       "id": "loop-runtime-doctor",
-      "command": "python3 scripts/loopctl.py doctor",
+      "command": ".venv/bin/python scripts/loopctl.py doctor",
       "severity": "block",
       "source": ".ai-team/runtime/WORKFLOW.md",
       "description": "canonical skill surface, adapter, policy, registry 존재 검사."

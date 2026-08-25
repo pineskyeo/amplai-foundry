@@ -8,21 +8,23 @@ cortex 의 AMPLAI Loop Runtime V2.1 을 amplai-foundry 로 이식해 **이 저�
 
 근거: `D-046`. 출처: cortex main `3a3eb46b`.
 
-## 상태 — `/work` 를 한 번 완주했다
+## 상태 — 이식이 닫혔다
 
 ```text
 LOOP DOCTOR: PASS
 verifier --profile v2     : PASS (WARN 0건)
-verifier --profile commit : PASS
 pytest                    : 1382 passed, 4 deselected
+context validate          : valid, MATCH
+docs validate --repo      : FRESH
 ```
 
 | | |
 |---|---|
 | 가져온 것 | skill 5개, `.ai-team/` runtime layer, `loopctl.py`·`loopv2.py`·`eval.sh` |
-| 안 가져온 것 | semantic runtime (ontology·SHACL·CQ·MCP·project miner) |
+| 안 가져온 것 | semantic runtime (ontology·SHACL·CQ·MCP·project miner). 호출부도 없앴다 |
 | public skill | `/work`, `/design` 둘. internal 17개 |
 | verifier | check 11개 / profile 6개. `verify` 의 7 check 전부 포함 |
+| rule | 3개. cortex 고유 4개는 지웠다 |
 
 세부는 [PORT-LOG.md](PORT-LOG.md), 조사 근거는 [FACTS.md](FACTS.md).
 
@@ -60,21 +62,46 @@ FAIL 을 확인했다.
 그 파일은 index 이지 decision 원본이 아니다 — 원본은 `docs/workstreams/*/DECISIONS.md` 가 갖고
 그것은 무변경이다. 역사 덮어쓰기가 아니라 dangling index entry 제거다. 흔적을 여기 남긴다.
 
-## 다음 할 일 — 순서대로
+## 두 번째 완주가 닫은 것 — `ALR-003`
 
-1. `.ai-team/rules/` 7개 중 넷이 cortex 고유다 — `c99-rhel8-build`, `dist-ui`,
-   `production-debug-map`, `memory-safety`. 파일 전체가 C/RHEL/UI 빌드 규칙이라 이 저장소와
-   무관하다. 파일 단위로 정리한다. `c99-rhel8-build.md:29` 는 없어진 `rhel` profile 도 계속
-   언급한다.
-2. `policy.json` 의 `path_rules` 에 대응 경로가 없는 rule 이 남아 있다 — `public-contract` 의
-   `include/cortex/**`·`sdk/**`, `core-runtime` 의 `src/runtime/**`, `build-system` 의 `mk/**`.
-   유효한 profile 을 가리켜서 doctor 는 통과하지만 죽은 rule 이다.
-3. `.ai-team/policy/documentation.json` 의 `canonical_roots` 가 없는 cortex 경로를 선언한다.
-   `historical_documents` 만 이번에 고쳤다.
-4. `scripts/loopv2.py:422` 가 `from semantic_runtime import SemanticRuntime` 를 시도한다.
-   이식하지 않은 module 이다. try/except 로 감싸져 있는지 확인한다.
-5. `environment capture` 가 `Python 3.9.6` 을 기록한다 — system interpreter 다. verifier 는
-   `.venv` 로 도는데 fingerprint 는 다른 interpreter 를 남긴다.
+`ALR-002` 가 남긴 다섯 부류를 닫았다. 전부 cortex 를 가리키던 것들이다.
+
+1. **rule 7개가 없는 build system 을 규정했다.** `c99-rhel8-build`·`dist-ui`·`memory-safety`·
+   `production-debug-map` 넷은 파일 전체가 C99/RHEL/React/C daemon 규칙이라 지웠다. 남은 셋
+   (`commit-release-gate`·`contract-registry`·`test-discipline`)은 개념이 유효해서 enforcement
+   만 이 저장소 실물로 바꿨다 — `make hooks`·`.alg`·`ui/dist` 대신 verifier profile 과
+   `amplai_foundry.cli` 를 인용한다.
+2. **path_rule 7개 중 둘은 대상 경로가 하나도 없었다.** `core-runtime`(`src/runtime/**`,
+   `plugins/**`)과 `build-system`(`Makefile`, `mk/**`)을 뺐다. 나머지의 dead pattern
+   (`include/cortex/**`, `sdk/**`, `ui/src/**`, `specs/005-…`, `specs/006-…`)도 정리했다.
+   `CODEX.md`·`.codex/config.toml`·`.mcp.json`·`.claude/settings.json` 은 **남겼다** — 아직
+   없지만 생기면 high 로 잡혀야 하는 adapter 설정이다.
+3. **documentation policy 가 없는 경로를 정본이라 선언했다.** `canonical_roots` 10개 중 8개가
+   부재였다. `impact_rules` 7개도 `src/runtime/**`·`plugins/**`·`ui/src/**` 를 trigger 로 삼아
+   전부 죽어 있었다. 다섯 축을 이 저장소 package 이름으로 다시 썼다.
+4. **discovery 가 매번 없는 module 을 import 했다.** `ontology_candidates` 가 `tools/ontology`
+   를 `sys.path` 에 넣고 실패한 뒤 `semantic-runtime-unavailable` 을 결과에 넣었다.
+   `load_ontology_bindings` 도 같은 부류다. `D-046` 이 미이식을 정했으므로 호출부를 없앴다.
+5. **environment fingerprint 가 증명한 적 없는 환경을 주장했다.** `loopv2.py` 와
+   `verifiers/run.py` 두 곳이 `C99`·`RHEL5/7/8`·`HP-UX`·`x86-32`·`Python 3.6` 을 하드코딩했고,
+   tool 목록은 system `python3` 3.9.6 만 기록했다. **이게 제일 나빴다** — fingerprint 는
+   "무엇을 증명하지 않았는지" 경계를 남기는 물건인데 거짓 경계를 남겼다. 실측값으로 바꿨다.
+
+```json
+"target_assumptions": {
+  "verified_on": "macOS-26.2-arm64-arm-64bit",
+  "python_requirement": ">=3.11",
+  "verifier_interpreter": ".venv/bin/python",
+  "not_verified": ["다른 OS·architecture 에서의 동작", "requires-python 아래 버전에서의 동작"]
+}
+```
+
+## 다음 할 일
+
+이식 workstream 은 닫혔다. 남은 것은 하나다.
+
+- `.ai-team/README.md` 가 "Cortex AMPLAI Loop Runtime V2" 로 시작하고 본문도 cortex 를
+  주어로 쓴다. 동작에 영향은 없다. 문구 정리는 별건이다.
 
 ## 해소된 실패 하나 — interpreter 문제였다
 

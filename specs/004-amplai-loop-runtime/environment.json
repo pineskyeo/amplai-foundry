@@ -1,13 +1,12 @@
 {
-  "captured_at": "2026-08-19T07:00:09Z",
-  "content_hash": "b22b474c0d5108a8bb17d2b992c061c058034f39b75a06fbd93fa973b95e1acd",
+  "captured_at": "2026-08-25T06:17:25Z",
+  "content_hash": "8f164dcc3ab2c49056be3ffbfc3c9860000e6fb13a3af233141fd0e230d4cd49",
   "fixture_refs": [
-    "testdata/",
-    "docs/ontology/tests/fixtures/"
+    "testdata/"
   ],
   "git": {
     "branch": "mgc-012-package-3-wave-4",
-    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "commit": "f61ca1cf95f99ec7d1fa914013046a85d9c1e4e0",
     "dirty": true
   },
   "host": {
@@ -19,36 +18,26 @@
   "safe_environment": {},
   "schema_version": "1.0",
   "target_assumptions": {
-    "architectures": [
-      "x86-32",
-      "x86_64"
+    "not_verified": [
+      "다른 OS·architecture 에서의 동작",
+      "pyproject 의 requires-python 아래 버전에서의 동작"
     ],
-    "c_standard": "C99",
-    "operating_systems": [
-      "RHEL5",
-      "RHEL7",
-      "RHEL8",
-      "HP-UX where guarded"
-    ],
-    "python_compatibility": [
-      "Python 3.6 for deployed operational scripts when applicable"
+    "python_requirement": ">=3.11",
+    "verified_on": "macOS-26.2-arm64-arm-64bit",
+    "verifier_interpreter": [
+      ".venv/bin/python"
     ]
   },
   "tools": [
     {
-      "command": "python3 --version",
+      "command": "/Users/pinesky/workspace/amplai-foundry/.venv/bin/python --version",
       "exit_code": 0,
-      "output": "Python 3.9.6"
+      "output": "Python 3.11.15"
     },
     {
-      "command": "cc --version",
+      "command": ".venv/bin/python --version",
       "exit_code": 0,
-      "output": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
-    },
-    {
-      "command": "make --version",
-      "exit_code": 0,
-      "output": "GNU Make 3.81"
+      "output": "Python 3.11.15"
     },
     {
       "command": "git --version",
@@ -56,5 +45,5 @@
       "output": "git version 2.50.1 (Apple Git-155)"
     }
   ],
-  "work_id": "ALR-002"
+  "work_id": "ALR-003"
 }

@@ -5,82 +5,84 @@
       "evidence": [
         "specs/004-amplai-loop-runtime/work-contract.json"
       ],
-      "notes": "contract 의 AC-001~AC-006 이 판정 기준이다. AC-005 가 핵심 — 같은 어긋남이 다시 생기면 doctor 가 block 으로 잡아야 한다.",
+      "notes": "contract 의 AC-001~AC-007 이 판정 기준이다. AC-005 가 핵심 — 거짓 환경 가정을 없앤다.",
       "status": "ready"
     },
     "contradictions": {
       "evidence": [
-        "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
-        "AGENTS.md 'What Was Not Ported'",
-        "commit 59b1593"
+        "commit f61ca1c",
+        "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md '다음 할 일'"
       ],
-      "notes": "지식 충돌은 없다. 네 곳의 불일치는 cortex 이식 잔재이고 D-046 이 semantic runtime 미이식을 이미 정했다. semantic·rhel 은 그 결정에 따라 남아 있으면 안 되는 이름이다.",
+      "notes": "지식 충돌은 없다. 다섯 부류 전부 D-046 이 정한 미이식 방침과 어긋난 잔재다. ALR-002 가 같은 부류 셋을 닫았고 이것이 나머지다.",
       "status": "ready"
     },
     "current_behavior": {
       "evidence": [
-        ".ai-team/verifiers/registry.json:136 command 'python3 scripts/loopctl.py doctor --skills'",
-        "scripts/loopctl.py:725 sub.add_parser('doctor') 은 인자를 받지 않는다",
-        "scripts/loopctl.py:97-105 fallback profile_rank 에 semantic·rhel 포함",
-        "scripts/loopctl.py:456 doctor 가 semantic·rhel 존재를 강제한다",
-        ".ai-team/contracts/work-contract.schema.json verification.profile enum 7개",
-        "실행: .venv/bin/python .ai-team/verifiers/run.py --profile v2 -> loop-skill-surface WARN (exit 2)"
+        "rule 7개 전문 확인 — make rhel8, tools/ci/check_layers.sh, ui/dist, .alg, zlog.conf, /var/lib/cortex 등 인용",
+        "path_rule pattern glob 전수: core-runtime alive=0, build-system alive=0",
+        "canonical_roots 전수: docs/architecture·decisions·knowledge·ontology·ai·legacy-live-cal·milestones·knowledge/investigations 부재",
+        "scripts/loopv2.py:417-430 ontology_candidates",
+        "specs/004-amplai-loop-runtime/domain-discovery.json:1405 semantic-runtime-unavailable",
+        "scripts/loopv2.py:803-812, .ai-team/verifiers/run.py:81-86",
+        "specs/004-amplai-loop-runtime/environment.json tools[0] Python 3.9.6"
       ],
-      "notes": "profile 이름 집합이 네 곳에서 서로 다르다. registry 는 6개(fast commit standard runtime full v2), 나머지 세 곳은 7개(fast standard runtime semantic v2 full rhel)다. commit 이 rank 에 없고 semantic·rhel 은 registry 에 없다. 별개로 loop-skill-surface check 가 doctor 에 없는 --skills 를 붙여 항상 exit 2 를 낸다.",
+      "notes": "다섯 부류가 cortex 를 가리킨다. (1) rule 7개 전부에 cortex 문구가 있고 그중 넷은 파일 전체가 C99/RHEL/UI/C-memory 규칙이다. (2) path_rule 7개 중 core-runtime·build-system 은 대상 경로가 하나도 없고 나머지도 dead pattern 을 갖는다. (3) canonical_roots 10개 중 8개가 없는 경로다. (4) ontology_candidates 가 매번 tools/ontology 를 sys.path 에 넣고 import 를 시도해 실패하며 semantic-runtime-unavailable 을 discovery 결과에 넣는다. (5) target_assumptions 가 loopv2.py 와 verifiers/run.py 두 곳에 C99/RHEL5-7-8/HP-UX/x86-32/Python3.6 으로 하드코딩돼 있고, environment tools 는 system python3 3.9.6 만 기록한다.",
       "status": "ready"
     },
     "invariants": {
       "evidence": [
-        "scripts/loopctl.py:125 rank 미등록 profile 은 -1 로 취급돼 절대 선택되지 않는다",
-        "scripts/loopctl.py:141 risk_profiles 최소값도 rank 로 비교한다",
-        ".ai-team/README.md verifier 절"
+        "AGENTS.md What Was Not Ported",
+        ".ai-team/verifiers/README.md '어떤 환경에서 무엇을 증명했는지 경계를 남기는 것'",
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md D-046"
       ],
-      "notes": "profile 이름 집합은 registry.json 이 정본이고 policy.profile_rank, loopctl fallback, loopctl doctor 강제 목록, contract schema enum 넷은 그것과 같아야 한다. 어긋나면 classify 가 registry 에 없는 profile 을 고르거나 registry 에 있는 profile 이 rank -1 로 밀려 잘못된 verifier 를 선택한다. registry 에 없는 check command 는 존재하는 CLI 만 부른다.",
+      "notes": "rule·path_rule·canonical_root 는 이 저장소에 실재하는 것만 규정한다. 없는 것을 규정하면 그 rule 은 절대 발동하지 않으면서 발동하는 것처럼 보인다. environment fingerprint 와 verifier report 는 실제로 검증한 환경만 주장한다 — 증명하지 않은 환경을 쓰면 fingerprint 의 존재 이유가 뒤집힌다. D-046 이 semantic runtime 미이식을 정했으므로 그 호출부는 남지 않는다.",
       "status": "ready"
     },
     "source_of_truth": {
       "evidence": [
-        ".ai-team/verifiers/run.py 가 registry.json 을 읽어 profile 을 해석한다",
-        "AGENTS.md '.ai-team/verifiers/ — verifier registry 와 environment-aware runner'"
+        "pyproject.toml requires-python >=3.11",
+        ".ai-team/verifiers/registry.json check command 가 .venv/bin/python 을 쓴다",
+        "src/ 는 amplai_foundry 하나뿐"
       ],
-      "notes": "registry.json 의 profiles 가 단일 출처다. 실제 check 를 실행하는 것이 그 파일이고 나머지 셋은 이름을 참조만 한다.",
+      "notes": "이 저장소의 실제 파일 구조가 정본이다. rule 과 policy 는 그것을 따라간다. 환경 가정의 정본은 verifier 가 실제로 실행하는 interpreter 와 platform 이다.",
       "status": "ready"
     },
     "system_boundary": {
       "evidence": [
-        "grep -rln 'loopctl|ai-team|profile_rank' tests/ -> 결과 없음",
-        "AGENTS.md 'Runtime Ownership' 절",
-        ".venv/bin/python scripts/loopctl.py classify -> loop-runtime-v2 rule, risk high, profile v2"
+        "grep -rln 'loopctl|ai-team' tests/ -> 결과 없음",
+        "AGENTS.md Runtime Ownership",
+        "classify -> loop-runtime-v2, risk high, profile v2"
       ],
-      "notes": "loop runtime layer(.ai-team/ + scripts/loopctl.py + scripts/loopv2.py)와 제품 코드 src/amplai_foundry/ 는 분리돼 있다. 이 Work 는 runtime layer 만 건드린다. tests/ 아래에 loopctl 이나 .ai-team 을 검사하는 test 가 하나도 없다 — 이 layer 의 자기 검증은 doctor 와 verifier registry 가 전부다.",
+      "notes": "loop runtime layer(.ai-team/ + scripts/loopctl.py + scripts/loopv2.py) 안에서 끝난다. 제품 코드 src/amplai_foundry/ 와 tests/ 는 건드리지 않는다. tests/ 에 이 layer 를 검사하는 test 는 여전히 없다 — 자기 검증은 doctor 와 verifier registry 가 전부다.",
       "status": "ready"
     },
     "terminology": {
       "evidence": [
-        ".ai-team/verifiers/registry.json:profiles",
-        ".ai-team/runtime/policy.json:profile_rank",
-        "scripts/loopctl.py:125 profile_rank.get(candidate_profile) 비교"
+        ".ai-team/rules/",
+        ".ai-team/runtime/policy.json:path_rules",
+        ".ai-team/policy/documentation.json:canonical_roots",
+        "scripts/loopv2.py:803 target_assumptions"
       ],
-      "notes": "profile 은 verifier check 묶음 이름이다. registry.json 의 profiles 가 그 정의를 갖고 extends 로 합성한다. policy.json 의 profile_rank 는 그 이름들의 상대 강도이고 classify 가 더 강한 profile 을 고를 때 쓴다.",
+      "notes": "rule 은 .ai-team/rules/ 의 engineering guard 문서다. path_rule 은 policy.json 이 변경 경로에 risk/profile/gate 를 매기는 규칙이다. canonical_root 는 documentation.json 이 문서 종류별 정본 위치를 선언한 것이다. target_assumption 은 environment fingerprint 가 '무엇을 증명하지 않았는지' 경계를 남기는 항목이다.",
       "status": "ready"
     },
     "verifier": {
       "evidence": [
-        ".ai-team/verifiers/registry.json:profiles.v2 extends [runtime, full]",
-        "실행: .venv/bin/python -m pytest -> 1382 passed, 4 deselected"
+        ".ai-team/verifiers/registry.json profiles.v2",
+        "실행: v2 PASS at f61ca1c"
       ],
-      "notes": "v2 profile 이 검증 수단이다. runtime(loop-skill-surface, loop-shell-syntax) + full(schema, vault-lint, project-pack) + standard(pytest) + fast(ruff, mypy, doctor, manifest) 을 합성한다. 이 Work 는 그 v2 실행에 WARN 이 남지 않는 것이 조건이다.",
+      "notes": "v2 profile 이 검증 수단이다. ALR-002 가 doctor 에 넣은 정합 검사(profile 집합·rank 순서·path_rule profile 참조·claims 파싱·map source 존재)가 이번 변경도 잡는다.",
       "status": "ready"
     }
   },
   "contradictions": [],
   "generated_from": {
-    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
+    "commit": "f61ca1cf95f99ec7d1fa914013046a85d9c1e4e0",
     "contract": "specs/004-amplai-loop-runtime/work-contract.json"
   },
   "risk": "high",
   "schema_version": "1.0",
   "verdict": "READY",
-  "work_id": "ALR-002",
-  "work_type": "bug_fix"
+  "work_id": "ALR-003",
+  "work_type": "refactor"
 }

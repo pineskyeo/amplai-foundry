@@ -112,32 +112,22 @@ manifest-validator PASS / schema PASS / vault-lint PASS / project-pack PASS
 pytest FAIL   ← 아래 참고
 ```
 
-## 알려진 실패 하나 — 환경 문제
+## 해소된 실패 하나 — interpreter 문제였다
 
-`tests/test_slack_http.py` 가 실패한다. **이식과 무관하다.**
-
-```text
-$ .venv/bin/python -m pytest --ignore=tests/test_slack_http.py
-1136 passed in 134.94s
-```
-
-원인은 localhost 연결이 막힌 것이다. 최소 재현:
+이식 세션은 `tests/test_slack_http.py` 실패를 "sandbox network 정책이 바뀐 것 **(추정)**" 으로
+기록했다. **틀렸다.** `ALR-002` 가 재확인했고 원인은 interpreter 선택이었다.
 
 ```text
-ThreadingHTTPServer 를 127.0.0.1:0 에 띄우고 urlopen →
-URLError [Errno 49] Can't assign requested address
+$ python3 -m pytest tests/test_slack_http.py     # system 3.9
+E   ModuleNotFoundError: No module named 'tomllib'
+
+$ .venv/bin/python -m pytest
+1382 passed, 4 deselected
 ```
 
-그 module 의 `_FakeSlack` 이 실제 loopback HTTP server 를 쓴다. 같은 세션 초반에는 전 suite
-1382건이 통과했으므로 sandbox network 정책이 도중에 바뀐 것으로 보인다 **(추정)**.
-`git status` 상 `src/` 와 `tests/` 는 무변경이다.
+`pyproject.toml` 이 `requires-python = ">=3.11"` 이다. test 는 `.venv/bin/python` 으로 돌린다.
 
 ## 남은 일
 
-1. `/work` 를 실제로 한 번 돌려 본다. 아직 이 저장소에서 실행한 적이 없다.
-2. `.ai-team/knowledge/map.json` 과 `claims.jsonl` 이 cortex 내용 그대로다. 이 저장소 것으로
-   바꿔야 Knowledge Readiness 가 의미를 갖는다.
-3. `.ai-team/rules/` 7개를 안 읽었다. cortex 고유 규칙이 섞여 있을 수 있다.
-4. `contracts/work-contract.template.json` 의 verifier profile 참조가 이 저장소 profile 과
-   맞는지 확인 (doctor 의 `contract template: valid` 는 통과했다).
-5. `MGC-012 Package 5` 는 round 17 이 열린 채로 남아 있다.
+이식 이후의 진행 상태는 [CURRENT_ITEM.md](CURRENT_ITEM.md) 가 갖는다. 이 문서는 이식 시점의
+기록이고 더 갱신하지 않는다.

@@ -16,34 +16,28 @@
     }
   ],
   "code_scope": [
-    ".ai-team/verifiers/registry.json",
+    ".ai-team/rules/",
     ".ai-team/runtime/policy.json",
-    ".ai-team/contracts/work-contract.schema.json",
-    "scripts/loopctl.py",
-    ".ai-team/knowledge/map.json",
-    ".ai-team/knowledge/claims.jsonl",
-    ".ai-team/knowledge/decisions.index.json",
     ".ai-team/policy/documentation.json",
-    ".ai-team/README.md",
-    ".ai-team/knowledge/README.md",
+    "scripts/loopv2.py",
+    ".ai-team/verifiers/run.py",
     "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
-    ".ai-team/verifiers/README.md",
-    ".ai-team/rules/commit-release-gate.md",
-    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+    ".ai-team/verifiers/registry.json"
   ],
-  "content_hash": "1ad547a27238aa713125c46ef1cf830d269abf015b51e15bbe11ac4ef7f1b1b4",
+  "content_hash": "3daa7a7a1a9c567900258921e5220d243014ed9af7200954c1c1ac753e8c6f4a",
   "generated_from": {
     "claims_sha256": "da6f3e2591defcff8bd57b17cd698b2fd3c8c70f6c105e69530904e9f25a4360",
-    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
-    "contract_sha256": "2c8bac1922db048280acaa07bd16dbfc02e3f9c4c3ad93fc7d33153e63f0f452",
-    "discovery_sha256": "c61503ea468ac99723dff07b19c5a2ef0bc65e521dab7696a55c77405c51bb14",
-    "generated_at": "2026-08-19T07:51:28Z",
+    "commit": "f61ca1cf95f99ec7d1fa914013046a85d9c1e4e0",
+    "contract_sha256": "0fe7a3f43c0cb6f6358a3ef9c80fba077141487d1ad94dd4e10d14bb6ab0282a",
+    "discovery_sha256": "92f943babd5332e976a0e58e5f35049a6e321d8f37e8f49294b3d8f3e0397ef5",
+    "generated_at": "2026-08-25T06:17:41Z",
     "knowledge_map_sha256": "9a7cb461c9ea4a239be2060a29a4caf956049c98609ab1d8d892d1d4c87cc9f4",
-    "readiness_sha256": "a080cd49514ce6bf34c71066637eddba022e86b2ff6c1f454d6ac594795201fe",
+    "readiness_sha256": "bf32190c88c98d5f9105a2e3fc8a7ca8e45814ebf91dadaca2a64bad3379978c",
     "worktree_dirty": true,
     "worktree_state": "WORKTREE"
   },
-  "goal": "loop runtime 의 profile 목록이 policy·loopctl·contract schema·registry 네 곳에서 서로 어긋난 채 verifier PASS 를 내는 상태를 없앤다. registry.json 의 profiles 를 단일 출처로 삼고, 어긋나면 doctor 가 block 으로 잡는다. 죽은 flag 를 부르는 check 도 없앤다. 함께 .ai-team/knowledge/ 의 map 과 claim 을 이 저장소 자산으로 갈아 끼워 Context Pack 이 실제로 valid 를 낼 수 있게 만든다 — 지금은 source 20개 중 16개가 cortex 경로라 어떤 Work 도 DONE 에 도달하지 못한다.",
+  "goal": "이식 후 남은 cortex 잔재 다섯 부류를 닫는다. rule 문서가 없는 build system 을 규정하고, path_rule 과 canonical_root 가 없는 경로를 가리키고, discovery 가 이식하지 않은 semantic runtime 을 매번 호출하고, environment fingerprint 와 verifier report 가 RHEL/C99/x86-32 라는 거짓 환경 가정을 남긴다. 마지막 것이 제일 나쁘다 — fingerprint 는 '어떤 환경에서 무엇을 증명했는지' 를 남기는 물건인데 증명한 적 없는 환경을 쓴다.",
   "knowledge_verdict": "READY",
   "ontology_refs": [],
   "required_knowledge": [
@@ -51,136 +45,72 @@
       "evidence": [],
       "id": "loop-adoption-port-log",
       "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
-      "reason": "keyword:loop,runtime,verifier,cortex,work,docs,workstreams,amplai-loop-runtime-adoption,port-log.md",
-      "source_sha256": "123aff60c169252e118e7e14e98095a283ae96863f8ceb0349b8bdc1c1337c0c",
+      "reason": "keyword:cortex,runtime,verifier,loop,docs,workstreams,amplai-loop-runtime-adoption,port-log.md",
+      "source_sha256": "f63f9036135639d07ef428e38a5fafe8ede91d9aad041ee87cd3f4f2f4cdf454",
       "status": "active"
     },
     {
       "evidence": [],
       "id": "loop-runtime-policy",
       "path": ".ai-team/runtime/policy.json",
-      "reason": "keyword:loop,runtime,profile,policy,verifier,ai-team,work,policy.json",
-      "source_sha256": "621ea58e56b01cefd68666b555832ff6b42034f70dee95ef0ca2e1f26ebb26d2",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "verifier-registry",
-      "path": ".ai-team/verifiers/registry.json",
-      "reason": "keyword:profile,schema,registry,verifier,registry.json,check,ai-team,verifiers",
-      "source_sha256": "93723bfdcc887c225f7be9af10e227c440b43ad57dddb8c2083db8f75f447ce5",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "loop-runtime-readme",
-      "path": ".ai-team/README.md",
-      "reason": "keyword:loop,runtime,policy,contract,ai-team,knowledge,readme.md",
-      "source_sha256": "a3aefef39ce5187167228f61f5f2480a6c799adce1e904aedfcc15890b69ce47",
+      "reason": "keyword:runtime,verifier,loop,ai-team,policy.json,policy",
+      "source_sha256": "2d9baa0ff26f30cc8ffd206527dcccc1516f5f891fe78faca1f397f8a743c6ef",
       "status": "active"
     },
     {
       "evidence": [],
       "id": "loop-adoption-facts",
       "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
-      "reason": "keyword:loop,runtime,cortex,work,docs,workstreams,amplai-loop-runtime-adoption",
+      "reason": "keyword:cortex,runtime,loop,docs,workstreams,amplai-loop-runtime-adoption",
       "source_sha256": "0bac3c41898ca3378fb1a9f8be68684f595be343e29d4db37369e3f46590ef12",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "keyword:verifier,ai-team,verifiers,registry.json",
+      "source_sha256": "667b065d5cf4f98a472fe869de0c6fef7eec0732103a4199e560d179acbc8049",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:runtime,loop,ai-team,policy",
+      "source_sha256": "a3aefef39ce5187167228f61f5f2480a6c799adce1e904aedfcc15890b69ce47",
       "status": "active"
     },
     {
       "evidence": [],
       "id": "loop-runtime-workflow",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "keyword:loop,runtime,ai-team,work",
+      "reason": "keyword:runtime,loop,ai-team",
       "source_sha256": "835a954b6ead4fcc8cd2c70bfa9a4a19593b06721ec91b2e5bd5ee18f20b23fd",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "root-agent-contract",
-      "path": "AGENTS.md",
-      "reason": "keyword:contract,knowledge,work",
-      "source_sha256": "b4aaa56d861e942c8e310c2ff9e5e829cd576c61ff39a14d06f490941c3110f7",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "mgc-decisions",
-      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
-      "reason": "keyword:work,docs,workstreams",
-      "source_sha256": "f0d4f90d81c680f5c4092ad1bea53f0960ebf490a0fe474b0ed306ce7d7eaabd",
       "status": "active"
     },
     {
       "evidence": [],
       "id": "knowledge-rules",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "keyword:knowledge,docs,rules",
+      "reason": "keyword:rule,rules,docs",
       "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93",
       "status": "active"
     },
     {
       "evidence": [],
-      "id": "project-pack",
-      "path": "docs/PROJECT-PACK.md",
-      "reason": "keyword:pack,work,docs",
-      "source_sha256": "ea0d88131449dde33cdca05076605e7d9a3c54a5c1b4e24f4472d93220edb919",
+      "id": "mgc-decisions",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "keyword:docs,workstreams",
+      "source_sha256": "f0d4f90d81c680f5c4092ad1bea53f0960ebf490a0fe474b0ed306ce7d7eaabd",
       "status": "active"
     },
     {
       "evidence": [],
-      "id": "memory-domain-model",
-      "path": "docs/MEMORY-DOMAIN-MODEL.md",
-      "reason": "keyword:source,docs",
-      "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "proposals",
-      "path": "docs/PROPOSALS.md",
-      "reason": "keyword:valid,docs",
-      "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "knowledge-intake",
-      "path": "docs/KNOWLEDGE-INTAKE.md",
-      "reason": "keyword:knowledge,docs",
-      "source_sha256": "e6215e6ad872f1bf984fe7db5849a97baa28ca7720dfa0b6354453571c83e31d",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "source-ingestion",
-      "path": "docs/SOURCE-INGESTION.md",
-      "reason": "keyword:source,docs",
-      "source_sha256": "b38f4051c3c062f89f0657b7135bb600b800d94db1a71f9f3779ee41ba6cf5eb",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "versioning",
-      "path": "docs/VERSIONING.md",
-      "reason": "keyword:schema,docs",
-      "source_sha256": "130b08e680cf6a185c9ab5142b76025504f1b338e93fe7cf2805b12fa8ec49b1",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "roadmap",
-      "path": "docs/ROADMAP.md",
-      "reason": "keyword:map,docs",
-      "source_sha256": "25e2761fcf9eb9f73f734593a87e350da31f4ca6fff1e581b014a95a7692a13d",
-      "status": "active"
-    },
-    {
-      "evidence": [],
-      "id": "root-claude-contract",
-      "path": "CLAUDE.md",
-      "reason": "keyword:contract",
-      "source_sha256": "3bc238e6e58205d1113392701f221b1ea992de8f21b1e22ac5d1daaad972133e",
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:rule",
+      "source_sha256": "b4aaa56d861e942c8e310c2ff9e5e829cd576c61ff39a14d06f490941c3110f7",
       "status": "active"
     },
     {
@@ -193,10 +123,42 @@
     },
     {
       "evidence": [],
+      "id": "memory-domain-model",
+      "path": "docs/MEMORY-DOMAIN-MODEL.md",
+      "reason": "keyword:docs",
+      "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20",
+      "status": "active"
+    },
+    {
+      "evidence": [],
       "id": "messenger-proposal-control",
       "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
       "reason": "keyword:docs",
       "source_sha256": "08b4a0b7795a6b3ae57b1e597852bfd294d836ff27398f6521eda5fab42997a0",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "proposals",
+      "path": "docs/PROPOSALS.md",
+      "reason": "keyword:docs",
+      "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "knowledge-intake",
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "reason": "keyword:docs",
+      "source_sha256": "e6215e6ad872f1bf984fe7db5849a97baa28ca7720dfa0b6354453571c83e31d",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "project-pack",
+      "path": "docs/PROJECT-PACK.md",
+      "reason": "keyword:docs",
+      "source_sha256": "ea0d88131449dde33cdca05076605e7d9a3c54a5c1b4e24f4472d93220edb919",
       "status": "active"
     },
     {
@@ -209,10 +171,26 @@
     },
     {
       "evidence": [],
-      "id": "feature-specs",
-      "path": "specs/",
-      "reason": "keyword:contract",
-      "source_sha256": "",
+      "id": "source-ingestion",
+      "path": "docs/SOURCE-INGESTION.md",
+      "reason": "keyword:docs",
+      "source_sha256": "b38f4051c3c062f89f0657b7135bb600b800d94db1a71f9f3779ee41ba6cf5eb",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "versioning",
+      "path": "docs/VERSIONING.md",
+      "reason": "keyword:docs",
+      "source_sha256": "130b08e680cf6a185c9ab5142b76025504f1b338e93fe7cf2805b12fa8ec49b1",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "roadmap",
+      "path": "docs/ROADMAP.md",
+      "reason": "keyword:docs",
+      "source_sha256": "25e2761fcf9eb9f73f734593a87e350da31f4ca6fff1e581b014a95a7692a13d",
       "status": "active"
     },
     {
@@ -265,7 +243,7 @@
       "id": "claim-loop-public-surface",
       "path": ".ai-team/runtime/policy.json",
       "reason": "active claim",
-      "source_sha256": "621ea58e56b01cefd68666b555832ff6b42034f70dee95ef0ca2e1f26ebb26d2",
+      "source_sha256": "2d9baa0ff26f30cc8ffd206527dcccc1516f5f891fe78faca1f397f8a743c6ef",
       "status": "active"
     },
     {
@@ -303,15 +281,13 @@
       "id": "claim-verifier-profile-single-source",
       "path": ".ai-team/verifiers/registry.json",
       "reason": "active claim",
-      "source_sha256": "93723bfdcc887c225f7be9af10e227c440b43ad57dddb8c2083db8f75f447ce5",
+      "source_sha256": "667b065d5cf4f98a472fe869de0c6fef7eec0732103a4199e560d179acbc8049",
       "status": "active"
     }
   ],
   "schema_version": "1.0",
-  "test_scope": [
-    "tests/fixtures/codex-workflow/README.md"
-  ],
+  "test_scope": [],
   "unknowns": [],
   "verifier_profile": "v2",
-  "work_id": "ALR-002"
+  "work_id": "ALR-003"
 }

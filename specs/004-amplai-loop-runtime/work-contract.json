@@ -1,142 +1,122 @@
 {
   "schema_version": "2.0",
-  "id": "ALR-002",
-  "title": "verifier profile 집합과 knowledge map 을 이 저장소 사실에 맞추고 doctor 가 그 어긋남을 잡게 한다",
-  "goal": "loop runtime 의 profile 목록이 policy·loopctl·contract schema·registry 네 곳에서 서로 어긋난 채 verifier PASS 를 내는 상태를 없앤다. registry.json 의 profiles 를 단일 출처로 삼고, 어긋나면 doctor 가 block 으로 잡는다. 죽은 flag 를 부르는 check 도 없앤다. 함께 .ai-team/knowledge/ 의 map 과 claim 을 이 저장소 자산으로 갈아 끼워 Context Pack 이 실제로 valid 를 낼 수 있게 만든다 — 지금은 source 20개 중 16개가 cortex 경로라 어떤 Work 도 DONE 에 도달하지 못한다.",
+  "id": "ALR-003",
+  "title": "loop runtime 에 남은 cortex 잔재를 이 저장소 사실로 바꾼다",
+  "goal": "이식 후 남은 cortex 잔재 다섯 부류를 닫는다. rule 문서가 없는 build system 을 규정하고, path_rule 과 canonical_root 가 없는 경로를 가리키고, discovery 가 이식하지 않은 semantic runtime 을 매번 호출하고, environment fingerprint 와 verifier report 가 RHEL/C99/x86-32 라는 거짓 환경 가정을 남긴다. 마지막 것이 제일 나쁘다 — fingerprint 는 '어떤 환경에서 무엇을 증명했는지' 를 남기는 물건인데 증명한 적 없는 환경을 쓴다.",
   "source": [
-    "spec.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
     "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
   ],
-  "work_type": "bug_fix",
+  "work_type": "refactor",
   "risk": "high",
   "scope": {
     "include": [
-      ".ai-team/verifiers/registry.json",
+      ".ai-team/rules/",
       ".ai-team/runtime/policy.json",
-      ".ai-team/contracts/work-contract.schema.json",
-      "scripts/loopctl.py",
-      ".ai-team/knowledge/map.json",
-      ".ai-team/knowledge/claims.jsonl",
-      ".ai-team/knowledge/decisions.index.json",
       ".ai-team/policy/documentation.json",
-      ".ai-team/README.md",
-      ".ai-team/knowledge/README.md",
+      "scripts/loopv2.py",
+      ".ai-team/verifiers/run.py",
       "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
-      ".ai-team/verifiers/README.md",
-      ".ai-team/rules/commit-release-gate.md",
-      "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
+      "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      ".ai-team/verifiers/registry.json"
     ],
     "exclude": [
-      "policy.json 의 path_rules 중 유효한 profile(full/standard/fast)을 가리키는 죽은 rule — public-contract 의 include/cortex, core-runtime 의 src/runtime, build-system 의 mk/** 은 대상 경로가 없지만 profile 참조가 성립하므로 그대로 둔다",
-      "scripts/loopv2.py 가 읽는 semantic_change_paths / non_semantic_change_paths policy key 누락",
       "src/amplai_foundry/ 제품 코드",
-      ".ai-team/policy/documentation.json 의 canonical_roots — 존재하지 않는 cortex 경로가 남아 있지만 error 를 내지 않는다. historical_documents 만 blocker 였다",
-      ".ai-team/rules/ 의 cortex 고유 규칙 4개 — c99-rhel8-build, dist-ui, production-debug-map, memory-safety. 파일 전체가 C/RHEL/UI 빌드 규칙이라 이 저장소와 무관하다. c99-rhel8-build.md:29 가 rhel profile 을 언급하지만 그 한 줄만 고치면 나머지 make rhel8, tools/ci/check_layers.sh 서술이 그대로 남는다. 파일 단위 정리가 맞고 별건이다"
+      "semantic runtime 이식 — D-046 이 미이식을 정했다. 호출부를 없애는 것이지 되살리는 게 아니다",
+      "MGC-012 Package 5 의 round 17 — 별도 workstream 이다",
+      "verifier check 를 새로 추가해 검사 범위를 넓히는 것"
     ]
   },
   "non_goals": [
-    "semantic runtime 이식",
-    "verifier check 를 새로 추가해 검사 범위를 넓히는 것",
-    "profile 이름 자체를 새로 설계하는 것"
+    "rule 이 규정하는 내용 자체를 새로 설계하는 것",
+    "path_rule 의 risk/profile 배정을 바꾸는 것 — 죽은 것만 뺀다",
+    "environment capture 가 수집하는 항목을 늘리는 것"
   ],
   "acceptance": [
     {
       "id": "AC-001",
-      "statement": "runtime 과 v2 profile 실행에서 WARN 이 하나도 없다. 존재하지 않는 CLI flag 를 부르는 check 가 없다.",
+      "statement": ".ai-team/rules/ 의 모든 rule 이 이 저장소에 실재하는 경로와 명령만 규정한다. 없는 build system 을 전제하지 않는다.",
       "evidence": [
-        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 출력에 WARN 0건",
-        ".venv/bin/python .ai-team/verifiers/run.py --profile runtime 출력에 WARN 0건"
+        "각 rule 이 인용하는 경로·명령의 존재를 전수 확인하는 실행"
       ]
     },
     {
       "id": "AC-002",
-      "statement": "policy.json 의 profile_rank key 집합이 registry.json 의 profiles key 집합과 정확히 같다.",
+      "statement": "policy.json 의 path_rule 중 대상 경로가 하나도 없는 rule 이 없다. 남은 rule 의 pattern 도 이 저장소 구조를 가리킨다.",
       "evidence": [
-        "set(policy.profile_rank) == set(registry.profiles) 를 확인하는 실행"
+        "rule 별 pattern glob 매칭 전수 확인 실행",
+        "classify 가 주요 경로에 같은 risk/profile 을 주는지 확인"
       ]
     },
     {
       "id": "AC-003",
-      "statement": "loopctl.py 의 fallback profile_rank 와 doctor 의 required profile 목록이 registry profiles 와 같다.",
+      "statement": "documentation.json 의 canonical_roots 와 reference_scan.documents 가 실재하는 경로만 선언한다.",
       "evidence": [
-        "scripts/loopctl.py 의 두 지점이 registry 를 출처로 삼거나 같은 집합을 갖는다"
+        "canonical_roots·reference_scan 경로 존재 전수 확인",
+        "docs validate --repo 가 FRESH"
       ]
     },
     {
       "id": "AC-004",
-      "statement": "work-contract.schema.json 의 verification.profile enum 이 registry profiles 와 같다.",
+      "statement": "discovery 가 이식하지 않은 semantic runtime 을 호출하지 않는다. domain-discovery.json 에 semantic-runtime-unavailable 이 남지 않는다.",
       "evidence": [
-        "schema enum 과 registry profiles 비교 실행"
+        "discovery scan 재실행 후 결과에 해당 항목 0건"
       ]
     },
     {
       "id": "AC-005",
-      "statement": "네 곳 중 하나를 일부러 어긋나게 하면 doctor 가 block 으로 실패한다. 이 결함은 다시 조용히 지나가지 않는다.",
+      "statement": "environment fingerprint 와 verifier report 의 target_assumptions 가 이 저장소가 실제로 검증하는 환경을 쓴다. RHEL·C99·x86-32·HP-UX·Python 3.6 을 주장하지 않는다.",
       "evidence": [
-        "policy.profile_rank 에서 key 하나를 뺀 상태로 doctor 실행 → 비영 exit",
-        "원복 후 doctor PASS"
+        "environment capture 재실행 후 target_assumptions 확인",
+        "verifier --profile v2 --json-report 의 target_assumptions 확인"
       ]
     },
     {
       "id": "AC-006",
-      "statement": "v2 profile 전체가 PASS 하고 test 회귀가 없다.",
+      "statement": "environment fingerprint 의 tool 목록이 verifier 가 실제로 쓰는 interpreter 를 기록한다. system python3 만 남기지 않는다.",
       "evidence": [
-        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
-        ".venv/bin/python -m pytest 1382 passed"
+        "environment.json 의 tools 에 .venv interpreter version 이 있는지 확인"
       ]
     },
     {
       "id": "AC-007",
-      "statement": "context validate 가 valid 를 낸다. knowledge map 의 source 가 전부 이 저장소에 실재하고 project 이름이 registry 와 같다.",
+      "statement": "v2 profile 이 PASS 하고 test 회귀가 없다. doctor 가 이 변경 뒤에도 PASS 다.",
       "evidence": [
-        ".venv/bin/python scripts/loopctl.py context build specs/004-amplai-loop-runtime",
-        ".venv/bin/python scripts/loopctl.py context validate specs/004-amplai-loop-runtime/context-pack.json -> valid true"
+        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
+        "pytest 1382 passed"
       ]
     },
     {
       "id": "AC-008",
-      "statement": "claims.jsonl 의 claim 이 전부 이 저장소에서 확인 가능한 evidence 를 갖는다. cortex 에만 있는 사실을 주장하지 않는다.",
+      "statement": "verifier_interpreter 는 상수가 아니라 registry command 에서 관찰한 값이다. registry 가 다른 interpreter 를 쓰기 시작하면 fingerprint 가 그것을 그대로 보여준다.",
       "evidence": [
-        "claims 의 evidence path 전수 존재 확인 실행"
+        "registry 의 loop-runtime-doctor 를 python3 로 되돌리면 fingerprint 가 ['.venv/bin/python','python3'] 를 기록하고 tools 에 Python 3.9.6 이 나타난다",
+        "원복하면 ['.venv/bin/python'] 로 돌아온다"
       ]
     },
     {
       "id": "AC-009",
-      "statement": "Documentation Freshness 가 RESOLVED 이고 repo 전체 검사가 FRESH 다. broken reference 가 0건이다.",
+      "statement": "registry 의 모든 check 가 pyproject 의 requires-python 을 만족하는 interpreter 를 부른다.",
       "evidence": [
-        ".venv/bin/python scripts/loopctl.py docs impact specs/004-amplai-loop-runtime -> RESOLVED, broken_references 0",
-        ".venv/bin/python scripts/loopctl.py docs validate --repo -> valid true, FRESH"
+        "python3 scripts/loopctl.py trace append -> AttributeError: module 'datetime' has no attribute 'UTC' (loopv2.py:53, 3.11+ 전용)",
+        "registry command 전수에 맨 python3 0건"
       ]
     },
     {
       "id": "AC-010",
-      "statement": "path_rule 3개를 뺐어도 ontology_promotion 과 production_operation gate 는 action 경유로 여전히 걸린다.",
+      "statement": "loopctl 의 어떤 command 도 이식하지 않은 semantic runtime 을 부르지 않는다. garden scan 이 통과한다.",
       "evidence": [
-        ".venv/bin/python scripts/loopctl.py permission check ontology_promotion -> exit 3 gated",
-        ".venv/bin/python scripts/loopctl.py permission check production_operation -> exit 3 gated"
+        "grep -c 'semantic_runtime|SemanticRuntime' scripts/ -> 0",
+        ".venv/bin/python scripts/loopctl.py garden scan -> pass true, findings 0"
       ]
     },
     {
       "id": "AC-011",
-      "statement": "정합 검사가 조용히 건너뛰는 경로가 없다. mirror 값을 못 읽으면 빈 집합으로 대조하고, 이름이 같아도 rank 순서가 갈라지면 잡는다. profile 이름을 쓰는 다른 자리(defaults.profile, risk_profiles)와 knowledge plane(claims 파싱, map source 존재, project 일치)도 doctor 가 읽는다.",
+      "statement": "fingerprint 헬퍼가 관찰 실패를 관찰 결과로 위장하지 않고, 비정상 자료구조에서 죽지 않는다.",
       "evidence": [
-        "schema 의 enum key 제거 -> doctor FAIL",
-        "schema 의 verification -> verify rename -> doctor FAIL",
-        "risk_profiles.normal 을 semantic 으로 -> doctor FAIL",
-        "defaults.profile 을 rhel 로 -> doctor FAIL",
-        "profile_rank 의 full/v2 순서만 교체 -> doctor FAIL",
-        "claims.jsonl 에 깨진 줄 추가 -> doctor FAIL",
-        "map source 를 없는 파일로 -> doctor FAIL",
-        "전부 원복 후 doctor PASS"
-      ]
-    },
-    {
-      "id": "AC-012",
-      "statement": "loop runtime 이 실제로 쓰는 문서에 없어진 profile 이름이나 제거된 check 가 남지 않는다 — verifier README, commit-release-gate rule, PORT-LOG 의 profile 표.",
-      "evidence": [
-        "grep -rn 'semantic|rhel' .ai-team/verifiers/README.md .ai-team/rules/commit-release-gate.md -> 0건",
-        "grep -rn 'loop-skill-surface' 대상 문서 3개 -> 0건",
-        "남은 언급 2곳은 사실 기록이다: FACTS.md:104 는 cortex 의 profile 8개를 기술하고, specs/004 의 readiness/discovery 는 수정 전 상태를 기록한다"
+        "env prefix wrapper -> ['.venv/bin/python', 'unobserved: command에서 interpreter를 못 읽음 (pytest)']",
+        "checks 에 string 항목 / command 가 list -> 무시하고 정상값 반환",
+        "requires-python 이 값 없이 -> capture 가 죽지 않는다"
       ]
     }
   ],
@@ -163,14 +143,14 @@
     "trace_file": "evidence-trace.jsonl"
   },
   "human_gates": [
-    "architecture_change"
+    "architecture_change",
+    "destructive_change"
   ],
   "retry": {
     "max_attempts_per_slice": 3
   },
   "decisions": [
-    "D-046",
-    "gate 승인(architecture_change, 2026-08-19): semantic·rhel 을 profile 목록에서 빼면 그 둘만 가리키던 path_rule 3개(ontology-canonical, ontology-proposal, release-production)가 존재하지 않는 profile 을 가리키게 되므로 함께 뺀다. 대상 경로가 이 저장소에 전무하다. gate 정의 자체와 permissions.json 의 action 경유 gate 는 유지된다"
+    "D-046"
   ],
   "blocked_by": [],
   "status": "done"

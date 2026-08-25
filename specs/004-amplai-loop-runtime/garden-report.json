@@ -52,10 +52,10 @@
       "type": "generated_garbage"
     }
   ],
-  "content_hash": "0e5091df4ddb002c666f6c81cd7dfe43b7a2b5a100b9b5f76e61be66e285d948",
+  "content_hash": "647b0b412aa3fc078369108c0d27ab566b52c2785aa1ce645ea1b57ed8425cfc",
   "generated_from": {
-    "commit": "59b159302522ce73e1853a825d3b8989f4e11adf",
-    "generated_at": "2026-08-19T07:51:42Z",
+    "commit": "f61ca1cf95f99ec7d1fa914013046a85d9c1e4e0",
+    "generated_at": "2026-08-25T06:26:41Z",
     "policy_sha256": "3187d92816d098c65ec70062db6b98ee1c0dfdbc53c02edbe36a8e3faf3051ca",
     "worktree_dirty": true,
     "worktree_state": "WORKTREE"
@@ -72,31 +72,29 @@
   "rule": "candidate 는 삭제 제안이지 삭제가 아니다. proposal only — harness/ontology/production 자산을 자동 수정하지 않는다.",
   "schema_version": "1.0",
   "scope": [
-    ".ai-team",
-    ".ai-team/README.md",
-    ".ai-team/contracts",
-    ".ai-team/contracts/work-contract.schema.json",
-    ".ai-team/knowledge",
-    ".ai-team/knowledge/README.md",
-    ".ai-team/knowledge/claims.jsonl",
-    ".ai-team/knowledge/decisions.index.json",
-    ".ai-team/knowledge/map.json",
     ".ai-team/policy",
     ".ai-team/policy/documentation.json",
     ".ai-team/rules",
+    ".ai-team/rules/",
+    ".ai-team/rules/c99-rhel8-build.md",
     ".ai-team/rules/commit-release-gate.md",
+    ".ai-team/rules/contract-registry.md",
+    ".ai-team/rules/dist-ui.md",
+    ".ai-team/rules/memory-safety.md",
+    ".ai-team/rules/production-debug-map.md",
+    ".ai-team/rules/test-discipline.md",
     ".ai-team/runtime",
     ".ai-team/runtime/policy.json",
     ".ai-team/verifiers",
-    ".ai-team/verifiers/README.md",
     ".ai-team/verifiers/registry.json",
-    "ai-team",
-    "ai-team/README.md",
+    ".ai-team/verifiers/run.py",
+    "ai-team/policy",
+    "ai-team/policy/documentation.json",
     "docs/workstreams/amplai-loop-runtime-adoption",
     "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
     "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
     "scripts",
-    "scripts/loopctl.py",
+    "scripts/loopv2.py",
     "specs/004-amplai-loop-runtime",
     "specs/004-amplai-loop-runtime/context-pack.json",
     "specs/004-amplai-loop-runtime/doc-impact.json",
@@ -104,6 +102,7 @@
     "specs/004-amplai-loop-runtime/environment.json",
     "specs/004-amplai-loop-runtime/evidence-trace.jsonl",
     "specs/004-amplai-loop-runtime/garden-report.json",
+    "specs/004-amplai-loop-runtime/handoff.json",
     "specs/004-amplai-loop-runtime/knowledge-readiness.json",
     "specs/004-amplai-loop-runtime/work-contract.json"
   ],
@@ -118,5 +117,5 @@
     "gated_count": 0,
     "total": 2
   },
-  "work_id": "ALR-002"
+  "work_id": "ALR-003"
 }

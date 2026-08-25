@@ -1,20 +1,43 @@
 {
   "schema_version": "1.0",
   "purpose": "언제 어떤 문서를 검사하고 update/supersede 하는지 정한다. 문서 내용은 여기 두지 않는다.",
-
   "canonical_roots": [
-    {"path": "docs/architecture", "category": "architecture", "kind": "canonical"},
-    {"path": "docs/decisions", "category": "decision", "kind": "historical"},
-    {"path": "docs/knowledge", "category": "domain_knowledge", "kind": "canonical"},
-    {"path": "docs/ontology", "category": "ontology", "kind": "canonical"},
-    {"path": "docs/ai", "category": "runtime_design", "kind": "canonical"},
-    {"path": ".ai-team", "category": "runtime_contract", "kind": "canonical"},
-    {"path": "docs/knowledge/investigations", "category": "investigation", "kind": "historical"},
-    {"path": "docs/legacy-live-cal", "category": "legacy_record", "kind": "historical"},
-    {"path": "docs/milestones", "category": "milestone_record", "kind": "historical"},
-    {"path": "specs", "category": "work_memory", "kind": "work_scoped"}
+    {
+      "path": "vault/projects",
+      "category": "domain_knowledge",
+      "kind": "canonical"
+    },
+    {
+      "path": "docs",
+      "category": "architecture",
+      "kind": "canonical"
+    },
+    {
+      "path": "docs/workstreams",
+      "category": "decision",
+      "kind": "historical"
+    },
+    {
+      "path": "docs/roadmaps/history",
+      "category": "milestone_record",
+      "kind": "historical"
+    },
+    {
+      "path": ".ai-team",
+      "category": "runtime_contract",
+      "kind": "canonical"
+    },
+    {
+      "path": ".specify/memory",
+      "category": "runtime_design",
+      "kind": "canonical"
+    },
+    {
+      "path": "specs",
+      "category": "work_memory",
+      "kind": "work_scoped"
+    }
   ],
-
   "historical_documents": [
     {
       "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
@@ -27,109 +50,174 @@
       "index": ".ai-team/knowledge/decisions.index.json"
     }
   ],
-
-  "document_states": ["ACTIVE", "STALE", "SUPERSEDED", "DEPRECATED", "CANDIDATE"],
-
-  "freshness_states": ["NOT_APPLICABLE", "ACTIVE", "STALE", "RESOLVED"],
-
+  "document_states": [
+    "ACTIVE",
+    "STALE",
+    "SUPERSEDED",
+    "DEPRECATED",
+    "CANDIDATE"
+  ],
+  "freshness_states": [
+    "NOT_APPLICABLE",
+    "ACTIVE",
+    "STALE",
+    "RESOLVED"
+  ],
   "semantic_change_paths": [
     "src/**",
-    "include/**",
-    "plugins/**",
-    "sdk/**",
-    "tools/**",
     "scripts/*.py",
     "scripts/*.sh",
-    "conf/**",
-    "Makefile",
-    "cortex.spec",
-    "docs/ontology/**",
+    "schemas/**",
+    "pyproject.toml",
     ".ai-team/policy/**",
     ".ai-team/runtime/**",
     ".ai-team/contracts/**",
     ".ai-team/verifiers/**",
     ".ai-team/knowledge/**",
     ".agents/skills/**",
-    "ui/src/**"
+    ".claude/skills/**",
+    ".ai-team/rules/*.md"
   ],
-
   "non_semantic_change_paths": [
-    "**/*.md",
-    "docs/assets/**",
-    "**/.gitignore",
-    "**/*.txt",
-    "ui/dist/**",
+    "docs/**",
+    "README.md",
+    "specs/**",
     "testdata/**",
-    "specs/**"
+    "**/*.txt",
+    "**/.gitignore",
+    "docs/assets/**"
   ],
-
   "impact_rules": [
     {
-      "id": "core-runtime-to-architecture",
-      "when_changed": ["src/runtime/**", "src/dispatch/**", "src/server/**", "src/api/**", "src/contract/**"],
-      "impacted": ["docs/architecture/**", "docs/knowledge/domain/**"],
-      "reason": "core runtime behavior change"
-    },
-    {
-      "id": "plugin-production-to-architecture",
-      "when_changed": ["plugins/**"],
-      "impacted": ["docs/architecture/production-runtime-contract.md", "docs/knowledge/domain/**"],
-      "reason": "production plugin behavior change"
-    },
-    {
-      "id": "public-contract-to-architecture",
-      "when_changed": ["include/cortex/**", "include/pinesky/**", "sdk/algorithms/**", "sdk/authoring/**", "conf/testplan/**"],
-      "impacted": ["docs/architecture/**", "sdk/**/README.md", "docs/knowledge/glossary/**"],
-      "reason": "public contract or schema change"
-    },
-    {
-      "id": "ontology-to-ontology-docs",
-      "when_changed": ["docs/ontology/**", "tools/ontology/**"],
-      "impacted": ["docs/ontology/README.md", "docs/ai/AMPLAI_LOOP_RUNTIME_V1_V2_AND_ROADMAP.md"],
-      "reason": "semantic model change"
-    },
-    {
       "id": "loop-runtime-to-runtime-docs",
-      "when_changed": [".ai-team/**", ".agents/skills/**", "scripts/loopctl.py", "scripts/loopv2.py", "scripts/eval.sh"],
-      "impacted": [".ai-team/README.md", ".ai-team/runtime/WORKFLOW.md", "AGENTS.md", "CLAUDE.md", "CODEX.md", "docs/ai/AMPLAI_LOOP_RUNTIME_V1_V2_AND_ROADMAP.md"],
+      "when_changed": [
+        ".ai-team/**",
+        ".agents/skills/**",
+        ".claude/skills/**",
+        "scripts/loopctl.py",
+        "scripts/loopv2.py",
+        "scripts/eval.sh"
+      ],
+      "impacted": [
+        ".ai-team/README.md",
+        ".ai-team/runtime/WORKFLOW.md",
+        ".ai-team/verifiers/README.md",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
       "reason": "loop runtime contract change"
     },
     {
-      "id": "packaging-to-operations",
-      "when_changed": ["cortex.spec", "scripts/*.service", "conf/cortex.conf"],
-      "impacted": ["docs/architecture/production-runtime-contract.md", "docs/operator-mode/**"],
-      "reason": "packaging or operational behavior change"
+      "id": "public-schema-to-docs",
+      "when_changed": [
+        "schemas/**",
+        "src/amplai_foundry/domain/**",
+        "src/amplai_foundry/schema.py"
+      ],
+      "impacted": [
+        "docs/VERSIONING.md",
+        "docs/MEMORY-DOMAIN-MODEL.md",
+        "docs/RELATIONSHIPS.md"
+      ],
+      "reason": "public schema or memory model change"
     },
     {
-      "id": "ui-to-ui-docs",
-      "when_changed": ["ui/src/**"],
-      "impacted": ["ui/AGENTS.md", "docs/architecture/**"],
-      "reason": "UI behavior change"
+      "id": "governance-to-messenger-docs",
+      "when_changed": [
+        "src/amplai_foundry/governance/**"
+      ],
+      "impacted": [
+        "docs/MESSENGER-PROPOSAL-CONTROL.md",
+        "docs/PROPOSALS.md",
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md"
+      ],
+      "reason": "governance or messenger behavior change"
+    },
+    {
+      "id": "knowledge-pipeline-to-docs",
+      "when_changed": [
+        "src/amplai_foundry/intake/**",
+        "src/amplai_foundry/curation/**",
+        "src/amplai_foundry/ingestion/**",
+        "src/amplai_foundry/lint/**",
+        "src/amplai_foundry/repositories/**"
+      ],
+      "impacted": [
+        "docs/KNOWLEDGE-INTAKE.md",
+        "docs/KNOWLEDGE-RULES.md",
+        "docs/SOURCE-INGESTION.md",
+        "docs/LIFECYCLE.md"
+      ],
+      "reason": "knowledge intake or vault behavior change"
+    },
+    {
+      "id": "project-pack-to-docs",
+      "when_changed": [
+        "src/amplai_foundry/projects/**",
+        "vault/projects/*/project.json"
+      ],
+      "impacted": [
+        "docs/PROJECT-PACK.md"
+      ],
+      "reason": "project pack contract change"
     }
   ],
-
   "discovery_axes": [
-    {"id": "changed_files", "source": "git diff + contract scope"},
-    {"id": "impact_rules", "source": ".ai-team/policy/documentation.json#impact_rules"},
-    {"id": "ontology_binding", "source": "docs/ontology/bindings/cortex.yaml"},
-    {"id": "knowledge_map", "source": ".ai-team/knowledge/map.json"},
-    {"id": "decision_index", "source": ".ai-team/knowledge/decisions.index.json"},
-    {"id": "doc_reference", "source": "canonical 문서 본문이 changed path를 직접 언급"}
+    {
+      "id": "changed_files",
+      "source": "git diff + contract scope"
+    },
+    {
+      "id": "impact_rules",
+      "source": ".ai-team/policy/documentation.json#impact_rules"
+    },
+    {
+      "id": "knowledge_map",
+      "source": ".ai-team/knowledge/map.json"
+    },
+    {
+      "id": "decision_index",
+      "source": ".ai-team/knowledge/decisions.index.json"
+    },
+    {
+      "id": "doc_reference",
+      "source": "canonical 문서 본문이 changed path를 직접 언급"
+    }
   ],
-
   "keyword_stopwords": [
-    "cortex", "test", "tests", "build", "work", "code", "main", "src",
-    "file", "data", "json", "path", "tool", "tools", "spec", "docs"
+    "cortex",
+    "test",
+    "tests",
+    "build",
+    "work",
+    "code",
+    "main",
+    "src",
+    "file",
+    "data",
+    "json",
+    "path",
+    "tool",
+    "tools",
+    "spec",
+    "docs"
   ],
-
-  "actions": ["update", "supersede", "deprecate", "create_candidate", "acknowledge", "none"],
-
+  "actions": [
+    "update",
+    "supersede",
+    "deprecate",
+    "create_candidate",
+    "acknowledge",
+    "none"
+  ],
   "supersede_rule": {
     "never_overwrite": true,
-    "required_fields": ["status", "superseded_by"],
+    "required_fields": [
+      "status",
+      "superseded_by"
+    ],
     "reason": "과거 결정은 역사다. 현재 내용에 맞게 덮어쓰지 않는다."
   },
-
   "reference_scan": {
     "documents": [
       ".ai-team/README.md",
@@ -140,37 +228,51 @@
       ".ai-team/knowledge/README.md",
       ".ai-team/evidence/README.md",
       "AGENTS.md",
-      "CLAUDE.md",
-      "CODEX.md",
-      "docs/decisions/cortex-decisions.md",
-      "docs/ai/AMPLAI_LOOP_RUNTIME_V1_V2_AND_ROADMAP.md",
-      "docs/ontology/README.md"
+      "CLAUDE.md"
     ],
     "ignore_patterns": [
-      "*<*", "*>*", "*{*", "*}*", "*$*", "*...*", "*|*",
-      "http:*", "https:*", "~*", "/*",
-      "*NN*", "*PATH*", "*FEATURE*", "*name*",
+      "*<*",
+      "*>*",
+      "*{*",
+      "*}*",
+      "*$*",
+      "*...*",
+      "*|*",
+      "http:*",
+      "https:*",
+      "~*",
+      "/*",
+      "*NN*",
+      "*PATH*",
+      "*FEATURE*",
+      "*name*",
       "epoko77-ai/*"
     ],
     "known_absent": [
-      ".specify/eval/**", ".specify/eval/",
-      "_workspace/**", "_workspace/",
-      "bin/**", "bin/",
-      "build/**", "build/",
-      "dist/**", "dist/",
-      "rpmbuild/**", "rpmbuild/",
-      "lib/**", "lib/",
-      "docs/.obsidian/**", "docs/.obsidian/"
+      ".specify/eval/**",
+      ".specify/eval/",
+      "_workspace/**",
+      "_workspace/",
+      "bin/**",
+      "bin/",
+      "build/**",
+      "build/",
+      "dist/**",
+      "dist/",
+      "rpmbuild/**",
+      "rpmbuild/",
+      "lib/**",
+      "lib/",
+      "docs/.obsidian/**",
+      "docs/.obsidian/"
     ],
     "reason": "문서가 존재하지 않는 repository 경로를 canonical한 것처럼 가리키면 stale이다. 이 검사는 기계적으로 판정 가능한 stale signal이다."
   },
-
   "skip_when": [
     "formatting only",
     "comment only",
     "local typo",
     "generated output refresh"
   ],
-
   "rule": "canonical 문서는 docs/ 와 각 소유 위치에 둔다. .ai-team 에는 문서 내용을 복사하지 않는다. 큰 문서를 이유 없이 전체 rewrite 하지 않고 impacted section 만 최소 patch 한다."
 }

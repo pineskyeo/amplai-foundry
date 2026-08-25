@@ -25,11 +25,64 @@ GARDENING_POLICY = os.path.join(".ai-team", "policy", "gardening.json")
 KNOWLEDGE_MAP = os.path.join(".ai-team", "knowledge", "map.json")
 CLAIMS = os.path.join(".ai-team", "knowledge", "claims.jsonl")
 DECISIONS = os.path.join(".ai-team", "knowledge", "decisions.index.json")
-ONTOLOGY_BINDINGS = os.path.join("docs", "ontology", "bindings", "cortex.yaml")
+
+REGISTRY = os.path.join(".ai-team", "verifiers", "registry.json")
 
 # 파일 경로가 아닌 evidence locator. superseded claim 의 근거는 이미 삭제된
 # 파일인 게 정상이므로 이런 marker 를 stale 로 세지 않는다.
 EVIDENCE_MARKERS = ("git-history",)
+
+
+def verifier_interpreters(root):
+    """registry 의 check 가 실제로 부르는 python interpreter 를 뽑는다.
+
+    상수로 적어 두면 registry 가 다른 interpreter 를 쓰기 시작해도 fingerprint 는
+    옛 주장을 계속 한다. 관찰값만 기록한다.
+
+    command 를 해석하지 못하면 빈 목록이 아니라 그 사실을 돌려준다 — 관찰 실패를
+    관찰 결과로 착각하면 이 함수의 존재 이유가 없어진다.
+    """
+    try:
+        registry = load_json(os.path.join(root, REGISTRY))
+    except Exception as exc:
+        return [f"unobserved: registry를 읽지 못함 ({exc})"]
+    found = []
+    unparsed = []
+    for item in registry.get("checks") or []:
+        if not isinstance(item, dict):
+            continue
+        command = item.get("command")
+        head = command.split() if isinstance(command, str) else []
+        if not head:
+            continue
+        if os.path.basename(head[0]) in ("python", "python3") or head[0].endswith("/python"):
+            if head[0] not in found:
+                found.append(head[0])
+        elif "python" in command:
+            # env prefix, bash -c wrapper 처럼 첫 토큰이 interpreter 가 아닌 형태.
+            unparsed.append(item.get("id") or command)
+    values = sorted(found)
+    if unparsed:
+        values.append(
+            "unobserved: command에서 interpreter를 못 읽음 ({})".format(", ".join(sorted(unparsed)))
+        )
+    return values
+
+
+def python_requirement(root):
+    """pyproject.toml 의 requires-python 을 읽는다. 못 읽으면 빈 문자열."""
+    path = os.path.join(root, "pyproject.toml")
+    if not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                stripped = line.strip()
+                if stripped.startswith("requires-python") and "=" in stripped:
+                    return stripped.split("=", 1)[1].strip().strip("\"'")
+    except OSError:
+        return ""
+    return ""
 
 
 def utc_now():
@@ -414,21 +467,6 @@ def grep_candidates(root, terms, max_results=80):
     return values[:max_results]
 
 
-def ontology_candidates(root, goal):
-    script_dir = os.path.join(root, "tools", "ontology")
-    if script_dir not in sys.path:
-        sys.path.insert(0, script_dir)
-    try:
-        from semantic_runtime import SemanticRuntime
-
-        runtime = SemanticRuntime(root=root)
-        return runtime.search(goal, 20)
-    except Exception as exc:
-        return [
-            {"uri": None, "name": "semantic-runtime-unavailable", "score": 0, "error": str(exc)}
-        ]
-
-
 def discovery_scan(root, feature_raw, write=True):
     feature = resolve_feature(root, feature_raw)
     contract = load_json(contract_path(feature))
@@ -467,7 +505,6 @@ def discovery_scan(root, feature_raw, write=True):
         "work_id": contract.get("id"),
         "terms": terms,
         "evidence_candidates": candidates,
-        "ontology_candidates": ontology_candidates(root, contract.get("goal") or " ".join(terms)),
         "known_facts": known,
         "invariants": invariants,
         "contradictions": [],
@@ -601,7 +638,6 @@ def context_build(root, feature_raw, force=False):
     decisions = active_decisions(root, contract)
     code_scope = list((contract.get("scope") or {}).get("include") or [])
     tests = derive_test_scope(root, code_scope)
-    semantic = ontology_candidates(root, contract.get("goal") or "")
     required_knowledge = []
     for item in sources:
         path = item.get("path")
@@ -627,18 +663,8 @@ def context_build(root, feature_raw, force=False):
                 "evidence": item.get("evidence") or [],
             }
         )
+    # semantic runtime 은 이식하지 않았다 (D-046). schema 가 요구하는 필드라 빈 채로 둔다.
     ontology_refs = []
-    for item in semantic:
-        if item.get("uri"):
-            ontology_refs.append(
-                {
-                    "id": item.get("uri"),
-                    "status": "active",
-                    "path": "docs/ontology/manifest.json",
-                    "reason": "semantic search score={}".format(item.get("score")),
-                    "evidence": [],
-                }
-            )
     tree = worktree_state(root)
     generated = {
         "commit": tree["commit"],
@@ -794,25 +820,24 @@ def environment_capture(root, feature_raw):
             "machine": platform.machine(),
             "python": platform.python_version(),
         },
-        "tools": [
-            command_version(["python3", "--version"], root),
-            command_version(["cc", "--version"], root),
-            command_version(["make", "--version"], root),
-            command_version(["git", "--version"], root),
-        ],
+        "tools": [command_version([sys.executable, "--version"], root)]
+        + [command_version([name, "--version"], root) for name in verifier_interpreters(root)]
+        + [command_version(["git", "--version"], root)],
+        # verifier 가 실제로 증명한 경계만 쓴다. 증명하지 않은 platform 을 여기 적으면
+        # fingerprint 가 존재 이유를 잃는다.
         "target_assumptions": {
-            "c_standard": "C99",
-            "architectures": ["x86-32", "x86_64"],
-            "operating_systems": ["RHEL5", "RHEL7", "RHEL8", "HP-UX where guarded"],
-            "python_compatibility": ["Python 3.6 for deployed operational scripts when applicable"],
+            "verified_on": platform.platform(),
+            "python_requirement": python_requirement(root),
+            "verifier_interpreter": verifier_interpreters(root),
+            "not_verified": [
+                "다른 OS·architecture 에서의 동작",
+                "pyproject 의 requires-python 아래 버전에서의 동작",
+            ],
         },
-        "fixture_refs": [
-            "testdata/",
-            "docs/ontology/tests/fixtures/",
-        ],
+        "fixture_refs": ["testdata/"],
         "safe_environment": {
             key: os.environ.get(key)
-            for key in ("CC", "CFLAGS", "PYTHONPATH", "CORTEX_PYTHON3")
+            for key in ("PYTHONPATH", "VIRTUAL_ENV", "AMPLAI_VAULT")
             if os.environ.get(key)
         },
     }
@@ -1198,29 +1223,6 @@ def scan_broken_references(root, policy, documents=None):
     return findings
 
 
-def load_ontology_bindings(root):
-    """cortex.yaml binding 을 최소 파싱한다. 새 YAML 의존을 만들지 않는다."""
-    path = os.path.join(root, ONTOLOGY_BINDINGS)
-    if not os.path.isfile(path):
-        return []
-    bindings = []
-    current = None
-    with open(path, encoding="utf-8") as handle:
-        for line in handle:
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            if stripped.startswith("- id:"):
-                current = {"id": stripped.split(":", 1)[1].strip()}
-                bindings.append(current)
-                continue
-            if current is None or ":" not in stripped or stripped.startswith("-"):
-                continue
-            key, value = stripped.split(":", 1)
-            current[key.strip()] = value.strip()
-    return bindings
-
-
 def docs_referencing(root, paths, limit=40):
     """canonical 문서가 changed path 를 직접 언급하는지 git grep 으로 찾는다."""
     hits = {}
@@ -1296,27 +1298,8 @@ def discover_impacted_documents(root, policy, semantic_paths, contract=None):
                 [".ai-team/policy/documentation.json#{}".format(rule.get("id"))],
             )
 
-    bindings = load_ontology_bindings(root)
-    touched_entities = set()
-    for binding in bindings:
-        source = norm_rel(binding.get("source") or "")
-        if not source:
-            continue
-        if any(
-            path == source or path.startswith(source.rstrip("/") + "/") for path in semantic_paths
-        ):
-            touched_entities.add(binding.get("entity"))
-    for binding in bindings:
-        if binding.get("entity") not in touched_entities:
-            continue
-        target = norm_rel(binding.get("source") or "")
-        if target.endswith(".md"):
-            add(
-                target,
-                "ontology_binding",
-                "entity {} binding".format(binding.get("entity")),
-                ["docs/ontology/bindings/cortex.yaml#{}".format(binding.get("id"))],
-            )
+    # ontology binding 축은 semantic runtime 과 함께 이식하지 않았다 (D-046).
+    # 나머지 네 축(impact_rules, knowledge_map, decision_index, doc_reference)이 후보를 좁힌다.
 
     try:
         knowledge = load_json(os.path.join(root, KNOWLEDGE_MAP))
@@ -2125,69 +2108,9 @@ def garden_scan(root):
             findings.append(
                 {"type": "superseded_without_target", "id": claim_id, "severity": "warn"}
             )
-    active_terms = {}
-    try:
-        script_dir = os.path.join(root, "tools", "ontology")
-        if script_dir not in sys.path:
-            sys.path.insert(0, script_dir)
-        from semantic_runtime import SemanticRuntime, local_name
-
-        runtime = SemanticRuntime(root=root)
-
-        def namespace_of(uri):
-            text = str(uri)
-            for sep in ("#", "/", ":"):
-                idx = text.rfind(sep)
-                if idx > 0:
-                    return text[:idx]
-            return text
-
-        def types_of(subject):
-            try:
-                from rdflib import RDF
-
-                return sorted(str(o) for o in runtime.graph.objects(subject, RDF.type))
-            except Exception:
-                return []
-
-        for subject in set(runtime.graph.subjects()):
-            name = local_name(subject).lower()
-            previous = active_terms.get(name)
-            if previous is not None and str(subject) != previous["uri"]:
-                # local name 이 같아도 namespace 가 다르면 RDF 에서는 정상 구분이다.
-                # 실제 위험은 "같은 종류의 것을 두 번 선언"한 경우다 — 그때만 warn.
-                current_types = types_of(subject)
-                shared_type = bool(set(current_types) & set(previous["types"]))
-                same_namespace = namespace_of(subject) == namespace_of(previous["uri"])
-                if shared_type or same_namespace:
-                    findings.append(
-                        {
-                            "type": "ontology_local_name_collision",
-                            "name": name,
-                            "uris": [previous["uri"], str(subject)],
-                            "rdf_types": [previous["types"], current_types],
-                            "severity": "warn",
-                            "reason": "동일 namespace"
-                            if same_namespace
-                            else "동일 rdf:type 으로 중복 선언 의심",
-                        }
-                    )
-                else:
-                    findings.append(
-                        {
-                            "type": "ontology_local_name_shared",
-                            "name": name,
-                            "uris": [previous["uri"], str(subject)],
-                            "rdf_types": [previous["types"], current_types],
-                            "severity": "info",
-                            "reason": "namespace 와 rdf:type 이 모두 달라 의미 모호성 없음",
-                        }
-                    )
-            active_terms[name] = {"uri": str(subject), "types": types_of(subject)}
-    except Exception as exc:
-        findings.append(
-            {"type": "semantic_runtime_unavailable", "error": str(exc), "severity": "block"}
-        )
+    # ontology local-name 검사는 semantic runtime 과 함께 이식하지 않았다 (D-046).
+    # 이 저장소에는 RDF graph 가 없고 Knowledge Vault 와 Proposal 모델이 그 자리를
+    # 대신한다. 같은 층의 검사는 verifier registry 의 vault-lint 가 맡는다.
     return {
         "pass": not any(item.get("severity") == "block" for item in findings),
         "finding_count": len(findings),
