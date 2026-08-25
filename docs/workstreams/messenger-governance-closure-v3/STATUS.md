@@ -281,6 +281,69 @@ D-014의 provider outbox destination granularity는 Package 4에도 넣지 않�
 $pinesky-workstream-next docs/workstreams/messenger-governance-closure-v3
 ```
 
+## 2026-08-25 — Round 17
+
+**gate 없음.** round 17 이 FAIL 이다. **다만 P0 가 처음으로 사라졌다.**
+
+### 한 일
+
+| 단계 | 결과 |
+|---|---|
+| 재freeze | `review-target-round-17.txt`, 52 파일, `8c7d2220…`. round 16 의 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다 |
+| round 17 three-lens | **FAIL** — round 16 의 9건 중 여덟 폐쇄 확인, 신규 8 (P0 0 / P1 3 / B-P2 5) |
+
+세 reviewer 를 순차로 돌렸고 셋 다 살아남았다. 예산 규율(`grep -n`·`sed -n` 강제, 호출
+30회 제한)을 줬고 이전처럼 죽은 reviewer 는 없다. regression reviewer 는 mutation 9회를
+`cp` 백업·복원으로 돌렸고 target 무손상을 4회 확인했다.
+
+### round 16 blocker 9건
+
+여덟이 닫혔다. 둘이 남았다.
+
+- `FR-2` **절반만** — 예외가 뚫는 것은 닫혔지만 row 가 안 보이는 것과 큐가 막히는 것은
+  그대로다 (`F17-2`).
+- `C16-3` **안 닫힘** — T029/T030 만 고쳤고 T026·T027 은 그대로다. **wave 10 자신이 셋을
+  새로 냈다** (`F17-4`). 9 manifest 중 5개가 같은 상태다.
+
+### 신규 blocker 8건
+
+`specs/003-slack-proposal-card/evidence/3lens-review-round-17.md` 가 전문이다.
+
+| id | 등급 | 요지 |
+|---|---|---|
+| `F17-1` | P1 | `FR-1` 의 guard 가 만료 lease 를 "다른 worker 가 가져갔다" 로 오해한다. **round 15 의 head-of-line 차단이 되돌아왔다** |
+| `F17-2` | P1 | dead-letter write 실패 시 row 가 `pending`·`attempts=0` 으로 남아 `stranded()`·`unreadable()` 둘 다 안 보인다. 시간이 지나도 안 보인다 |
+| `F17-3` | P1 | `FR-1` 의 두 guard 를 **하나씩 지워도 suite 1382건이 전부 통과한다** |
+| `F17-4` | B-P2 | `C16-3` 재발. required evidence 부재가 9 manifest 중 5개 |
+| `F17-5` | B-P2 | `T033` AC-02 가 evidence 에 통째로 없는데 `all_acceptance_passed: true` |
+| `F17-6` | B-P2 | `T031` AC-07·AC-12 절 없음. AC-03 은 남의 재현을 인용 |
+| `F17-7` | B-P2 | 실패한 claim transaction 이 lease-expiry·exhaustion sweep 까지 rollback |
+| `F17-8` | B-P2 | wave 10 이 새로 놓은 세 번째 CLI 포획에 test 가 없다 |
+
+### 세 뿌리
+
+1. **guard 를 좁게 쓰고 그 밖을 안 셌다** — `F17-1`, `F17-2`.
+2. **고침은 들어갔고 그것을 지키는 test 는 부분적이다** — `F17-3`, `F17-8`. mutation 9개 중
+   셋이 SURVIVED. **round 15 `R-1`, round 16 `R16-2` 에 이어 세 라운드째 같은 형태다.**
+3. **지적을 고치는 wave 가 같은 지적을 재생산했다** — `F17-4`·`F17-5`·`F17-6`. `T034` 가
+   `C16-3`·`A16-5` 를 지적하면서 `T031`·`T033` 이 각각 그 둘을 다시 냈다.
+
+### 눈에 띄는 수치 하나
+
+`A17-5` — "legacy_*.py **아홉** handler" 가 문서 넷에 있는데 **실측 13** 이다. 두 방법으로
+셌고 둘 다 13 이다. 파일 수도 다섯이라 아홉은 파일 수도 handler 수도 아니다. 정규화 위치를
+CLI 로 정한 근거 수치가 일곱 라운드째 틀린 채 남아 있었다. **결정 자체는 안 바뀐다.**
+
+### 다음 세션이 할 일
+
+1. **wave 11** — blocker 8건을 닫는다. `/taskify` 를 건너뛰지 않는다.
+2. `F17-1`·`F17-2`·`F17-7` 은 **한 자리**에서 나왔다. `_claim_one` 의 transaction 경계와
+   `_dead_letter_unreadable` 의 guard 를 같이 설계해야 한다. 하나씩 고치면 round 10~17 이
+   반복한 "한 방향을 고치며 반대를 만든다" 가 여덟 번째가 된다.
+3. `F17-3`·`F17-8` 은 test 만 추가하면 닫힌다. 다만 **각 guard 를 가르는 시나리오**를 써야
+   한다 — 지금 test 는 두 조건이 동시에 참인 시나리오뿐이다.
+4. 재freeze → round 18.
+
 ## 2026-08-19 — Wave 8·9·10 And Rounds 15·16
 
 **gate 없음.** round 16 이 FAIL 이고 wave 10 은 아직 review 되지 않았다.

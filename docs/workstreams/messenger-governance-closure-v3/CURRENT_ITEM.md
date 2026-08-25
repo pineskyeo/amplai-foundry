@@ -44,21 +44,22 @@ message projection과 retry는 background path에서 수행한다.
 - Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:
   `PASS` for `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` under `APR-017` / `D-032`
 - Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):
-  T001~T034 `done`, T020 `superseded`. **round 16 FAIL. wave 10 미review. gate 없음**
-- Frozen source/test evidence: round 16 aggregate
-  `b5a88e45b332fccabb1cd8abe91be8dec9b3f8181b82e44f0593cd0bd002aecf` (44 파일).
-  **wave 10 은 그 뒤 변경이라 target 밖이다 — round 17 전에 재freeze 한다**
+  T001~T034 `done`, T020 `superseded`. **round 17 FAIL. gate 없음**
+- Frozen source/test evidence: round 17 aggregate
+  `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
+  round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
+  세 reviewer 가 착수·종료에 확인했고 regression 은 mutation 9회 전후로도 확인했다. 무손상
 - Tests: full `1382 passed, 4 deselected` (wave 8 착수 시 1301 → +81)
 - Verification: Ruff check/format, mypy, `verify` 7/7, manifest validator 34/34,
   `git diff --check` 모두 PASS
-- Review: **round 10~16 전부 FAIL.** round 15 는 blocker 9건(P0 1), round 16 도 9건(P0 1)
-- **round 15 의 9건은 round 16 이 전부 닫힘을 실행으로 확인했다.** round 16 의 9건은 wave 10
-  이 대응했고 **아직 review 되지 않았다**
-- **2026-08-19 중단.** 사용자가 cortex AMPLAI Loop Runtime 이식을 먼저 하기로 정했다
-  (`D-046`). wave 10 은 구현됐고 review 되지 않았다. 재개 지점은 아래 그대로다.
-  이식 workstream 은 `docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md` 다
-- Selected next item: **round 17 review** — wave 10(T031~T034)을 검증한다. 그 전에 재freeze
-- Sequence: `재freeze → round 17 review → (blocker 0이면) gate → T010 → T013 → T012`
+- Review: **round 10~17 전부 FAIL.** round 15·16 은 각 9건(P0 1). **round 17 은 8건 —
+  P0 0 / P1 3 / Blocking-P2 5.** 등급이 처음으로 내려갔다
+- **round 16 의 9건 중 여덟이 닫혔다.** contract reviewer 가 각각 실행으로 확인했다.
+  `FR-2` 는 절반만(`F17-2`), `C16-3` 은 안 닫혔다(`F17-4`)
+- **2026-08-25 round 17 완료.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-17.md`
+- Selected next item: **wave 11** — round 17 의 blocker 8건을 닫는다
+- Sequence: `wave 11(taskify → 구현) → 재freeze → round 18 review → (blocker 0이면) gate
+  → T010 → T013 → T012`
 - Stop rule: Package 5 review 가 닫히기 전에는 Package 4 구현을 재개하지 않는다
 - Stop rule: **형제 위치를 끝까지 센다.** 규칙은 "정의 사본 + **호출 지점** + **같은 검사의
   모든 성분**" 이다. 여섯 라운드 연속 이것을 어겼다. wave 8 이 실측으로 보여준 값 —
@@ -79,7 +80,15 @@ message projection과 retry는 background path에서 수행한다.
 - Stop rule: review 지시를 그대로 구현하기 전에 다른 축이 무너지는지 본다. 한 방향을 고치며
   반대를 만든 것이 round 10 → 16 으로 계속 이어졌다
 - Stop rule: **test 를 쓸 때 fixture 가 검사 대상을 지우는지 본다.**
-- Stop rule: **mutation 이 살아남으면 코드보다 test 를 먼저 의심한다.**
+- Stop rule: **mutation 이 살아남으면 코드보다 test 를 먼저 의심한다.** round 17 에서
+  9개 중 셋이 SURVIVED 했다 — `claim_generation` guard, `state` guard, `cli.py:800` 의
+  세 번째 포획. **세 라운드째 같은 형태다** (round 15 `R-1`, round 16 `R16-2`)
+- Stop rule: **guard 를 좁히면 그 밖의 상태를 전부 센다.** round 17 `F17-1` 이 그것이다.
+  `state IN ('pending','retry_wait')` 가 "0행 = 다른 worker 가 가져갔다" 만 가정했는데
+  만료 lease 도 0행을 낸다. **round 15 의 head-of-line 차단이 되돌아왔다**
+- Stop rule: **review 지적을 고치는 wave 가 같은 지적을 재생산하지 않는지 본다.**
+  `T034` 가 `C16-3`·`A16-5` 를 지적하면서 `T031`·`T033` 이 각각 그 둘을 다시 냈다
+  (round 17 `F17-4`·`F17-5`·`F17-6`)
 - Stop rule: **`/taskify` 를 건너뛰지 않는다.** blocker 를 고치는 wave 도 Pre-Implement
   Procedure 를 탄다. wave 9·10 둘 다 탔다
 - Stop rule: **계약 변경은 Decision 을 먼저 받는다.** wave 9 의 `D-045` 가 그 예다
