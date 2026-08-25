@@ -60,6 +60,61 @@ message projection과 retry는 background path에서 수행한다.
 - Selected next item: **wave 11** — round 17 의 blocker 8건을 닫는다
 - Sequence: `wave 11(taskify → 구현) → 재freeze → round 18 review → (blocker 0이면) gate
   → T010 → T013 → T012`
+
+## Wave 11 착수 지시
+
+round 17 의 blocker 8건을 닫는다. 전문은
+[`3lens-review-round-17.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-17.md).
+
+### 묶어서 설계할 것 — `F17-1`·`F17-2`·`F17-7`
+
+셋이 **한 자리**에서 나왔다. `_claim_one` 의 transaction 경계와 `_dead_letter_unreadable` 의
+guard 다. **하나씩 고치면 round 10~17 이 반복한 "한 방향을 고치며 반대를 만든다" 가 여덟
+번째가 된다.**
+
+| id | 등급 | 결함 |
+|---|---|---|
+| `F17-1` | P1 | `state IN ('pending','retry_wait')` guard 가 만료 lease 를 "다른 worker 가 가져갔다" 로 오해한다. 손상 row 가 `leased`+만료면 write 가 항상 0행이고 뒤 command 가 영원히 안 처리된다 |
+| `F17-2` | P1 | dead-letter write 실패 시 row 가 `pending`·`attempts=0` 으로 남는데 `_stranded_rows` 가 `pending` 을 안 본다. `attempts` 는 rollback 되는 transaction 안에서만 증가하므로 시간이 지나도 안 보인다 |
+| `F17-7` | B-P2 | 실패한 claim transaction 이 lease-expiry sweep 과 exhaustion sweep 까지 rollback 한다 |
+
+설계할 때 답해야 하는 것 — **guard 가 0행을 내는 상태를 전부 세고 각각의 처리를 정한다.**
+round 17 이 실측한 표가 review 문서 "뿌리 1" 절에 있다.
+
+### test 만 추가하면 닫히는 것 — `F17-3`·`F17-8`
+
+```text
+F17-3  claim_generation guard 와 state guard 를 각각 가르는 시나리오
+F17-8  cli.py:800 의 세 번째 sqlite3.Error 포획
+```
+
+**지금 test 는 두 조건이 동시에 참인 시나리오뿐이라 어느 하나를 지워도 통과한다.** 가르는
+시나리오는 `_dead_letter_unreadable` 의 docstring 이 스스로 이름을 댄다 — generation 만
+어긋난 경우(claim → lease 만료 → `pending` 복귀)와 state 만 어긋난 경우(`completed` 가 되어
+`completed_at` CHECK 위반). `F17-8` 은 `is_unreadable()` 만 실패하는 상태를 만들어야 한다.
+
+### 문서 규율 — `F17-4`·`F17-5`·`F17-6`
+
+`T034` 가 지적한 것을 같은 wave 가 재생산했다. wave 11 은 **자기 manifest 부터** 본다.
+
+```text
+F17-4  required: true 인 targeted command_output 이 T026·T027·T031·T032·T033 에 없다 (9 중 5)
+F17-5  T033 AC-02 가 evidence 에 통째로 없는데 all_acceptance_passed: true
+F17-6  T031 AC-07·AC-12 절 없음. AC-03 은 남의 재현을 인용
+```
+
+`A17-5` 도 같이 고친다 — "legacy_*.py **아홉** handler" 가 문서 넷(`cli.py:716`,
+`test_governance_store.py:1177,1186,1220`)에 있는데 **실측 13** 이다. 두 방법으로 셌다.
+결정 자체는 안 바뀐다.
+
+### 순서
+
+```text
+/taskify → wave 11 구현 → 재freeze → round 18 three-lens → (blocker 0이면) gate
+```
+
+`/taskify` 를 건너뛰지 않는다. blocker 를 고치는 wave 도 탄다 — wave 9·10 둘 다 탔다.
+
 - Stop rule: Package 5 review 가 닫히기 전에는 Package 4 구현을 재개하지 않는다
 - Stop rule: **형제 위치를 끝까지 센다.** 규칙은 "정의 사본 + **호출 지점** + **같은 검사의
   모든 성분**" 이다. 여섯 라운드 연속 이것을 어겼다. wave 8 이 실측으로 보여준 값 —
