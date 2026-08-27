@@ -44,8 +44,7 @@ message projection과 retry는 background path에서 수행한다.
 - Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:
   `PASS` for `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` under `APR-017` / `D-032`
 - Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):
-  T001~T045 `done`, T020 `superseded`. **wave 14 가 round 20 의 blocker 6건을 닫았다.
-  round 21 review 대기**
+  T001~T045 `done`, T020 `superseded`. **round 21 이 FAIL 6건을 냈다. wave 15 대기**
 - Frozen source/test evidence: round 17 aggregate
   `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
   round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
@@ -55,9 +54,10 @@ message projection과 retry는 background path에서 수행한다.
   selected(1413 collected), round 20 기준 1401 대비 +8 이고 추가한 test 수와 같다
 - Verification: Ruff check/format, mypy, `verify` 7/7, manifest validator 45/45,
   `git diff --check` 모두 PASS
-- Review: **round 10~20 전부 FAIL.** 15·16 은 각 9건(P0 1), 17 은 8건(P1 3),
-  18 은 5건, 19 는 9건, **20 은 6건 — P0 0 / P1 1 / Blocking-P2 5.**
-  **round 20 에서 처음으로 앞 라운드의 blocker 가 전부 닫혔다** (부분 닫힘 0)
+- Review: **round 10~21 전부 FAIL.** 15·16 은 각 9건(P0 1), 17 은 8건(P1 3),
+  18 은 5건, 19 는 9건, 20 은 6건, **21 은 6건 — P0 0 / P1 1 / Blocking-P2 5.**
+  round 20 에서 처음으로 앞 라운드 blocker 가 전부 닫혔지만 **21 에서 부분 닫힘이 셋으로
+  돌아왔다**
 - **round 16 의 9건 중 여덟이 닫혔다.** contract reviewer 가 각각 실행으로 확인했다.
   `FR-2` 는 절반만(`F17-2`), `C16-3` 은 안 닫혔다(`F17-4`)
 - **2026-08-25 round 17 완료.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-17.md`
@@ -80,8 +80,11 @@ message projection과 retry는 background path에서 수행한다.
   `specs/003-slack-proposal-card/evidence/3lens-review-round-20.md`
 - **2026-08-26 wave 14 완료.** `T044`(truncation·test)·`T045`(문서) 둘. `D-050` 이
   잘린 목록을 잘렸다고 말하게 했다
-- Selected next item: **round 21 three-lens review**
-- Sequence: `재freeze → round 21 review → (blocker 0이면) gate → T010 → T013 → T012`
+- **2026-08-27 round 21 완료. FAIL — 6건 (P0 0 / P1 1 / Blocking-P2 5).** round 20 의
+  6건 중 셋이 닫히고 **셋이 부분**이다. round 20 은 부분이 0 이었다. 기록은
+  `specs/003-slack-proposal-card/evidence/3lens-review-round-21.md`
+- Selected next item: **wave 15 — round 21 의 blocker 6건**
+- Sequence: `wave 15 → 재freeze → round 22 review → (blocker 0이면) gate → T010 → T013 → T012`
 
 ## Wave 11 결과 (2026-08-26)
 
@@ -267,46 +270,98 @@ round 20 의 blocker 6건을 닫았다. 전문은
 재freeze → round 21 three-lens → (blocker 0이면) gate
 ```
 
-## Round 21 착수 지시
+## Round 21 결과 (2026-08-27)
 
-**세 lens 를 순차로 돌린다.** 동시에 띄우면 세션 한도로 전멸한다. 각 reviewer 에게 큰 파일을
-통째로 읽지 말라는 예산 규율을 준다.
+**FAIL — 6건 (P0 0 / P1 1 / Blocking-P2 5).** 전문은
+[`3lens-review-round-21.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-21.md).
+lens 별 기록은 같은 디렉토리의 `round-21-lens-contract.md`·`round-21-lens-failure.md`·
+`round-21-lens-regression.md` 다.
+
+세 lens 를 순차로 돌렸고 여섯 hash 시점 전부 **어긋남 0** 이다. 셋 다 aggregate 를 무손상
+근거로 쓰지 않았고 mutation 은 전부 `PYTHONDONTWRITEBYTECODE=1` 로 돌렸다.
+
+### round 20 의 6건 — 셋 닫힘, 셋 부분
+
+| round 20 | 판정 | 이유 |
+|---|---|---|
+| `F20-1`(P1) | **부분** | truncation 줄은 실재하고 mutation 으로 고정됐다. 판정식이 손상 row 앞에서 거짓 음성을 낸다 |
+| `F20-2` | **부분** | `unreadable()` 쪽 판정은 참값이고 `stranded()` 쪽만 무너진다. **두 목록 중 하나만 옳다** |
+| `F20-3` | 닫힘 | M19 KILLED 1건 |
+| `C20-1` | **부분** | 지목된 자리만 각주. 형제 둘이 남았다 |
+| `C20-2` | 닫힘 | `Source` 가 "벽 다섯" 으로 정정 + `Correction` 절 |
+| `R20-1` | 닫힘 | M20 KILLED (`[None]` param) |
+
+**round 20 은 부분 닫힘이 0 이었다. 이번은 셋이다.**
+
+### 새 blocker 6건
+
+| id | 등급 | 한 줄 |
+|---|---|---|
+| `F21-1` | **P1** | `stranded()` 는 SQL 이 가져온 `limit + 1` 개에서 손상 row 를 걸러낸 뒤 반환한다. CLI 가 걸러낸 뒤의 개수로 잘림을 판정해 **손상 row 가 하나만 섞여도 잘림 표시가 꺼진다.** 후보 201 / 손상 1 / `--limit 100` → 숨은 후보 100개, 표시 없음 |
+| `F21-2` | B-P2 | `--limit 9223372036854775807` → `limit + 1 = 2**63` 이 sqlite3 binding 에서 `OverflowError`. except 절이 안 잡아 **raw traceback**. `…806` 은 정상이라 wave 14 가 만든 것이다. round 16 `FR-3`·`R16-1` 이 닫은 계약이 되돌아왔다 |
+| `R21-1` | B-P2 | `len(...) > limit` 둘을 `>=` 로 바꿔도 **1409개가 전부 통과**. AC-07 표 #3 의 test 칸이 경계에 안 선다 |
+| `R21-2` | B-P2 | `unreadable = unreadable[:limit]` 을 지워도 **1409개가 전부 통과**. 표 #6 의 처리는 slicing 둘인데 test 는 `commands` 쪽만 센다 |
+| `C21-3` | B-P2 | **`D-050` 이 `approvals.jsonl` 에 없다.** `D-047`~`D-049` 는 셋 다 `public_contract` 행이 있는데, 실제로 CLI 출력을 바꾸는 유일한 Decision 만 `gate: none` 으로 기록됐다 |
+| `C21-4` | B-P2 | `C20-1` 을 고친 wave 가 같은 지적을 재생산했다. `D-049` 가 틀렸다고 지목한 주장이 `T038.yaml:38` 과 이 파일 `CURRENT_ITEM.md` 의 `T038` 절에 정정 없이 남았다 |
+
+**두 결함을 두 lens 가 독립으로 찾았다** — `F21-2`(contract 는 `C21-2`),
+`R21-1`(contract 는 `C21-1`).
+
+### 뿌리 — "전수 표" 가 두 방향으로 실패했다
+
+wave 14 는 round 16·18 의 뿌리를 막으려고 **새 구조가 요구하는 것을 착수 전에 표로 만드는**
+도구를 썼다. 그 도구가 한 번 실제로 작동했다 — `--limit 0` 우회를 착수 전에 잡았다.
+
+| 방향 | 무엇이 빠졌나 | blocker |
+|---|---|---|
+| **행이 모자라다** | "반환 개수 ≠ SQL fetch 개수인 조회에서 반환 개수로 잘림을 판정할 수 있는가", "`limit + 1` 의 정수 overflow" | `F21-1`(P1) · `F21-2` |
+| **채운 칸이 거짓이다** | 여덟 칸 중 #3·#6 이 mutation 없이 채워졌다. 표는 여덟 칸인데 evidence 의 mutation 표는 **넷**(M18~M21)뿐이다 | `R21-1` · `R21-2` |
+
+`T044` manifest 는 "표의 칸을 mutation 으로 확인하기 전에는 채우지 않는다" 를 자기 규칙으로
+넣었고 그 규칙이 한 칸에서 작동해 제출 전에 SURVIVED 를 잡았다. **#3·#6 에서는 mutation 을
+아예 안 돌렸다.** 칸 수와 mutation 수가 안 맞는 것이 신호였고 아무도 그 대조를 안 했다.
+
+`F21-1` 은 축이 하나 더 있다는 것이다. round 19·20 이 `limit` 의 벽을 두 축(state ·
+가독성)으로 실측했다. **세 번째 축은 반환 경로에 filter 가 있는가** 이고, 그 filter 는
+`D-047` 이 round 15 `F-2` 때문에 넣은 것이다. `D-050` 이 앞의 두 결정을 안 셌다.
+
+### 처음 증명된 것
+
+**test 삭제 0 / skip·xfail 신규 0.** package 5 가 commit 돼 기준 commit `e13e01c` 가
+생겼다. **세 라운드 연속 "기준 commit 이 없다" 로 Not Checked 이던 항목이다.** 다만
+`87a0c76` 한 commit 에 wave 11~14 가 함께 들어 있어 wave 14 단독 분리는 못 한다.
+
+## Wave 15 착수 지시
+
+blocker 6건을 닫는다. `/work` 로 타고 `/taskify` 를 건너뛰지 않는다.
 
 ```text
-target : specs/003-slack-proposal-card/evidence/review-target-round-21.txt   (97 파일)
-전문   : specs/003-slack-proposal-card/evidence/3lens-review-round-20.md
+전문   : specs/003-slack-proposal-card/evidence/3lens-review-round-21.md
+lens별 : specs/003-slack-proposal-card/evidence/round-21-lens-{contract,failure,regression}.md
 ```
 
-**aggregate 값을 여기 적지 않는다.** target 파일 끝에 있고 머리말의 재확인 script 가 그것을
-다시 계산한다. **여기 적으면 순환이 생긴다** — 이 파일이 target 안에 있어서, aggregate 를
-적는 행위가 그 aggregate 를 바꾼다. wave 14 가 실제로 한 번 겪었고 그래서 뺐다.
+### 착수 전에 정할 것
 
-### reviewer 에게 반드시 줄 것
+- **`F21-1` 은 계약 변경이다.** 잘림 판정을 SQL fetch 개수 기준으로 옮기면 `stranded()` 의
+  반환값 또는 signature 가 바뀐다. **Decision 을 먼저 받는다** (Stop rule). `D-047` 의
+  skip 과 round 15 `F-2` 를 함께 세고 시작한다
+- **`F21-2` 는 `A21-9` 와 함께 본다.** 같은 파일의 다른 command 는 `typer.Option(min=1)`
+  로 선언 단계에서 막는다. 위쪽 끝도 선언 단계에서 막을 수 있다
+- **`C21-3` 은 승인 ledger 다.** `D-050` 을 `approvals.jsonl` 에 소급 기록할지, 아니면
+  기록 누락 자체를 경위와 함께 남길지 정한다. **사용자 결정 사항이다**
 
-- **aggregate 는 무손상 증거가 아니다.** 행별 hash 재계산이 실제 보장이고 target 머리말이
-  그것을 설명한다. round 18 에서 세 reviewer 전부 혼동했고 19·20 에서는 여섯 전부 지켰다
-- **mutation 은 `PYTHONDONTWRITEBYTECODE=1` 을 쓰거나 `__pycache__` 를 지운다.** round 18
-  `A18-R1` 이 `.pyc` 캐시가 결과를 **위조**하는 것을 실측했다 — pristine 코드에서 FAILED 가
-  나온 사례다
-- 등급은 P0 / P1 / Blocking-P2 / Advisory
+### 반드시 지킬 것 — 이번 라운드가 만든 것
 
-### wave 14 가 한 주장 — 검증 대상
+- **표를 만들면 칸 수와 mutation 수를 대조한다.** wave 14 는 여덟 칸에 mutation 넷을
+  돌렸고 안 돌린 두 칸이 둘 다 거짓이었다
+- **`limit + 1` 처럼 새 구조를 넣으면 양쪽 끝을 다 센다.** wave 14 는 아래쪽 끝(`0`·`-1`)만
+  셌고 위쪽 끝이 `F21-2` 가 됐다
+- **정정 각주를 달 때 형제 위치를 끝까지 센다.** `C20-1` → `C21-4` 가 같은 형태의 반복이다
 
-1. `F20-1`(P1) — `D-050` 이 잘림을 **없애는 대신 보이게** 만들었다. `governance stranded`
-   가 `limit + 1` 을 요청해 판정하고 한 줄로 알린다
-2. `F20-2` — 두 목록(`stranded`·`unreadable`) 각각을 판정한다
-3. `F20-3`·`R20-1` — 적어만 두고 test 가 없던 계약 둘을 묶었다
-4. `C20-1`·`C20-2` — `D-049` 가 틀렸다고 지목한 문장에 각주를 달고, `Source` 의 과대 계상을
-   고쳤다
-5. 새 구조(`limit + 1`)가 요구하는 것을 **착수 전에** 표로 만들었다. 첫 항목은 `--limit 0`
-   이 `1` 로 바뀌어 service guard 를 우회하는 것이고 CLI 에서 막았다
+### 미해결 Advisory — 두 라운드째
 
-### 알려진 것 — reviewer 에게 미리 알린다
-
-- `handoff.json` 은 target 밖이다. freeze 자기참조를 피하려고 `evidence-trace.jsonl`·
-  `approvals.jsonl` 과 함께 뺐다
-- `T045` manifest 가 `T042`(done) 복사본이라 **착수 시점부터 `all_acceptance_passed: true`**
-  였다. 절차 위반이고 `T045` evidence 와 Stop rule 에 기록했다
+`A21-4`(`A20-R1`, `in` 대신 `==`), `A21-5`(`A20-C3`, assert message 문구),
+`A21-6`(`A20-C2`, `D-048` 의 `Rejected` pointer). 셋 다 wave 14 의 `allowed_paths` 안이었다.
 
 ## Package 5 뒤 — 로드맵 위치
 
@@ -435,6 +490,18 @@ PASS 로 판정하는데 BACKLOG 는 `MGC-011` 만 `done` 이고 001~010 이 `pl
 - Stop rule: **면제를 적을 때 누구에게 적용되는지 확인한다.** `T024-A1` 이 "cli.py 는 T024
   범위 밖" 으로 면제했는데 `cli.py` 는 `T026` 범위 안이었다 (round 16 `C16-2`). 범위 밖은
   "이 task 가 안 고친다" 이지 "아무도 안 고쳐도 된다" 가 아니다
+- Stop rule: **표를 만들었으면 칸 수와 mutation 수를 대조한다.** wave 14 의 AC-07 표는
+  여덟 칸인데 evidence 의 mutation 표는 넷이었다. **안 돌린 두 칸이 둘 다 거짓이었다**
+  (round 21 `R21-1`·`R21-2`). "mutation 으로 확인한 것만 채운다" 는 규칙을 넣어 두는 것으로는
+  부족하다 — 그 규칙이 지켜졌는지 세는 자리가 따로 있어야 한다
+- Stop rule: **새 구조를 넣으면 양쪽 끝을 다 센다.** wave 14 는 `limit + 1` 의 아래쪽
+  끝(`0`·`-1`)만 세고 막았고, 위쪽 끝이 round 21 `F21-2` 가 됐다 — int64 최대값이
+  `limit + 1` 로 overflow 해 raw traceback 을 냈다. **round 16 `FR-3` 이 닫은 계약이
+  되돌아왔다**
+- Stop rule: **반환 개수로 무언가를 판정하기 전에 그 경로에 filter 가 있는지 본다.**
+  round 21 `F21-1`(P1)이 그것이다. `stranded()` 는 SQL 이 가져온 `limit + 1` 개에서 손상
+  row 를 걸러낸 뒤 반환하는데 `D-050` 이 그 둘을 같다고 가정했다. 그 filter 는 `D-047` 이
+  round 15 `F-2` 때문에 넣은 것이다 — **세 결정이 겹치는 자리에서 앞의 둘을 안 셌다**
 
 ## Out Of Scope
 
