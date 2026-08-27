@@ -21,11 +21,26 @@ from amplai_foundry.governance.migrations import MigrationRunner
 # 이다. 호출자마다 `except` 절에 class 를 하나씩 더하는 방식은 그 62곳을 세는 일이고, 다섯
 # 라운드 연속 실패한 바로 그 작업이다.
 #
-# **`sqlite3.Error` 는 일부러 뺐다 (round 15 `R-1`).** 처음에는 넣었는데, `legacy_*.py` 의
-# 아홉 `try` 가 `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다 —
-# `legacy_lifecycle:157`, `legacy_migration:823,1069,1114,1169`, `legacy_recovery:206,415`,
-# `legacy_rollback:180,549`. 정규화하면 그 봉쇄가 전부 사라지고 raw `GovernanceStoreError`
-# 가 module 경계를 넘는다. **test 가 없어서 suite 는 조용했다.**
+# **`sqlite3.Error` 는 일부러 뺐다 (round 15 `R-1`).** 처음에는 넣었는데, `legacy_*.py` 가
+# `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다. 정규화하면 그 봉쇄가 전부 사라지고
+# raw `GovernanceStoreError` 가 module 경계를 넘는다. **test 가 없어서 suite 는 조용했다.**
+#
+# **이 자리의 "아홉" 은 두 가지를 섞고 있었다** (round 17 `A17-5`). wave 11 이 AST 로 갈라
+# 셌다.
+#
+# **`connect()` 를 감싸며 `sqlite3.Error` 를 잡는 `try` — 열.**
+#   `legacy_lifecycle:156`, `legacy_migration:822,1068,1113,1168,1665`,
+#   `legacy_recovery:205,412`, `legacy_rollback:179,548`
+#
+# **`sqlite3.Error` 계열을 잡는 `except` handler — 열셋.**
+#   `legacy_lifecycle:349`, `legacy_migration:1014,1092,1141,1240,1691,2298`,
+#   `legacy_recovery:276,632,634`, `legacy_rollback:242,730,734`
+#
+# 옛 목록은 **앞쪽**을 센 것이고 당시 9였다 — `legacy_migration:1665` 가 그 뒤에 늘었다.
+# round 17 이 실측한 13은 **뒤쪽**이다. 둘 다 아홉이 아니고, 파일 수(다섯)도 아니다.
+# 한 줄 grep 은 `legacy_recovery:634` 의 여러 줄 `except` 를 놓쳐 12 를 내므로 AST 로 센다.
+# `src` 전체로 넓히면 앞쪽은 **14** 다 (legacy 10 + `ingress:221` + `ingress_worker:201`
+# + `store:265,286`).
 #
 # round 14 `P1-1` 이 요구한 것은 `GovernanceFilesystemError` 하나였다. 나머지는 "형제를
 # 전수로 센다" 를 과하게 적용한 결과다. **세는 것은 옳았고 덮는 범위를 넓힌 것이 틀렸다.**
@@ -267,7 +282,7 @@ class GovernanceStore:
             raise GovernanceStoreError(f"Governance Store에 연결할 수 없습니다: {error}") from error
         try:
             # 이 PRAGMA 의 `sqlite3.Error` 는 정규화하지 않는다. T024 가 감쌌다가 round 15
-            # `R-1` 로 되돌렸다 — `legacy_*.py` 아홉 handler 가 `sqlite3.Error` 를 잡아
+            # `R-1` 로 되돌렸다 — `legacy_*.py` 의 `try` **열**이 `sqlite3.Error` 를 잡아
             # domain error 로 닫고 있었고 정규화가 그 봉쇄를 없앴다.
             connection.execute(f"PRAGMA busy_timeout = {effective_timeout}")
             yield connection

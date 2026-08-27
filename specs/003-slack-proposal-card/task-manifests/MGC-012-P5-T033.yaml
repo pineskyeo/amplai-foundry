@@ -1,3 +1,14 @@
+# --- 정정 (wave 12 / `T039`, 2026-08-26, round 18 `N18-3`) -------------------
+# 이 파일이 말하는 "아홉 handler" 는 `connect()` 를 감싸며 `sqlite3.Error` 를 잡는 `try`
+# 를 센 값이다. **그 값은 지금 열이다** — `legacy_migration:1665` 가 그 뒤에 늘었다.
+# `sqlite3.Error` 계열을 잡는 `except` handler 는 **열셋**이고, 둘은 다른 것을 센다.
+# 근거는 `src/amplai_foundry/governance/store.py` 머리말의 두 목록과
+# `specs/003-slack-proposal-card/evidence/MGC-012-P5-T039.md` 다.
+#
+# **본문은 고치지 않는다.** manifest 는 그 wave 가 무엇을 계약했는지의 기록이고, 숫자를
+# 지금 값으로 덮으면 그 기록이 사라진다 (Knowledge Safety). 다만 `invariants:` 아래의
+# 현재형 문장은 위 값으로 읽는다.
+# ---------------------------------------------------------------------------
 schema_version: "1.0"
 
 id: MGC-012-P5-T033

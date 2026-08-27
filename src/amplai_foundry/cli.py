@@ -714,7 +714,7 @@ def _governance_worker(workspace: Path) -> IngressDecisionWorker:
     # governance schema 아님, 빈 파일, 손상 파일 넷이 `sqlite3.Error` 계열임을 확인하고
     # 그 하나를 tuple 에 더했다.
     #
-    # **정규화 위치가 요점이다.** `connect()` 에 넣으면 `legacy_*.py` 아홉 handler 가
+    # **정규화 위치가 요점이다.** `connect()` 에 넣으면 `legacy_*.py` 의 `try` 열이
     # `sqlite3.Error` 봉쇄를 잃는다 (round 15 `R-1`). CLI 는 최종 소비자라 아무도 그 아래에서
     # class 를 구분하지 않는다.
     if not path.is_file():
@@ -739,10 +739,19 @@ def governance_stranded_command(
     계약화. 사람이 읽는 목록이면 충분하다" 로 배제했고 그 배제를 뒤집는 Decision 이 없다
     (round 15 `C-3`).
     """
+    # **`limit + 1` 을 요청하기 전에 여기서 막는다** (`D-050`, round 20 `F20-1`).
+    # 아래가 `limit + 1` 을 넘기므로 `--limit 0` 은 service 의 `limit < 1` guard 에
+    # `1` 로 도착해 **우회된다.** 그 guard 가 지금까지 `--limit 0` 을 잡고 있었다
+    # (round 18 `A18-5`, round 20 `A20-F3`). 같은 문구로 여기서 잡는다.
+    if limit < 1:
+        _fatal("limit은 1 이상이어야 합니다.", code=1)
     try:
         ingress = _governance_worker(workspace).ingress
-        commands = ingress.stranded(limit=limit)
-        unreadable = ingress.unreadable(limit=limit)
+        # **한 개 더 요청해 잘림을 판정한다** (`D-050`). `limit` 개만 왔으면 그것이 전부이고,
+        # `limit + 1` 개가 왔으면 더 있다. service signature 를 안 바꾸므로
+        # `D-047`·`D-048`·`D-049` 가 공통으로 건 불변이 유지된다.
+        commands = ingress.stranded(limit=limit + 1)
+        unreadable = ingress.unreadable(limit=limit + 1)
     except (
         GovernanceStoreError,
         GovernanceMigrationError,
@@ -751,6 +760,11 @@ def governance_stranded_command(
         sqlite3.Error,
     ) as error:
         _fatal(str(error), code=1)
+    # **두 목록을 각각 판정한다.** 하나만 잘려도 알려야 한다 — 둘은 다른 조회이고
+    # 후보 집합도 다르다 (round 20 `F20-2`).
+    truncated = len(commands) > limit or len(unreadable) > limit
+    commands = commands[:limit]
+    unreadable = unreadable[:limit]
     for command in commands:
         typer.echo(
             f"{command.command_id}  {command.state.value}  attempts={command.attempts}  "
@@ -762,6 +776,12 @@ def governance_stranded_command(
         typer.echo(f"{command_id}  UNREADABLE  이 row 는 읽을 수 없다")
     if not commands and not unreadable:
         typer.echo("NONE")
+    # **잘렸으면 말한다** (`D-050`). `limit` 이 있는 한 어떤 규칙도 완전할 수 없다 —
+    # `SQL LIMIT` 은 읽힐 벽이, python 상한은 **안 읽힐 벽**이 `limit + 1` 번째를 민다
+    # (round 19 `F19-1`, round 20 `F20-1`). **그것을 없애는 대신 보이게 만든다.**
+    # 이 줄이 없으면 operator 가 목록이 잘린 것을 알 방법이 없다.
+    if truncated:
+        typer.echo(f"...  목록이 --limit {limit} 에서 잘렸다. 더 있다")
 
 
 @governance_app.command("decision")

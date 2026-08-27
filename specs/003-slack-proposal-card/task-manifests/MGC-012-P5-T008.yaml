@@ -149,6 +149,8 @@ completion:
   evidence_paths:
     - specs/003-slack-proposal-card/evidence/mutation-round-11.md
     - specs/003-slack-proposal-card/evidence/3lens-review-round-11.md
+    # wave 11 이 채운 `full-pytest` 출력 (round 17 `F17-4`).
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T008.md
 
 handoff:
   expected_changes:

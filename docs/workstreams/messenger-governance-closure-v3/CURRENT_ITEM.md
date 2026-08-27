@@ -44,76 +44,228 @@ message projection과 retry는 background path에서 수행한다.
 - Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:
   `PASS` for `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` under `APR-017` / `D-032`
 - Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):
-  T001~T034 `done`, T020 `superseded`. **round 17 FAIL. gate 없음**
+  T001~T045 `done`, T020 `superseded`. **wave 14 가 round 20 의 blocker 6건을 닫았다.
+  round 21 review 대기**
 - Frozen source/test evidence: round 17 aggregate
   `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
   round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
   세 reviewer 가 착수·종료에 확인했고 regression 은 mutation 9회 전후로도 확인했다. 무손상
-- Tests: full `1382 passed, 4 deselected` (wave 8 착수 시 1301 → +81)
-- Verification: Ruff check/format, mypy, `verify` 7/7, manifest validator 34/34,
+- Tests: full `1409 passed, 4 deselected` (wave 8 착수 시 1301 → +108, wave 11 이 +6,
+  12 가 +4, 13 이 +9, 14 가 +8). 두 방법으로 셌다 — `--collect-only` 가 1409
+  selected(1413 collected), round 20 기준 1401 대비 +8 이고 추가한 test 수와 같다
+- Verification: Ruff check/format, mypy, `verify` 7/7, manifest validator 45/45,
   `git diff --check` 모두 PASS
-- Review: **round 10~17 전부 FAIL.** round 15·16 은 각 9건(P0 1). **round 17 은 8건 —
-  P0 0 / P1 3 / Blocking-P2 5.** 등급이 처음으로 내려갔다
+- Review: **round 10~20 전부 FAIL.** 15·16 은 각 9건(P0 1), 17 은 8건(P1 3),
+  18 은 5건, 19 는 9건, **20 은 6건 — P0 0 / P1 1 / Blocking-P2 5.**
+  **round 20 에서 처음으로 앞 라운드의 blocker 가 전부 닫혔다** (부분 닫힘 0)
 - **round 16 의 9건 중 여덟이 닫혔다.** contract reviewer 가 각각 실행으로 확인했다.
   `FR-2` 는 절반만(`F17-2`), `C16-3` 은 안 닫혔다(`F17-4`)
 - **2026-08-25 round 17 완료.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-17.md`
-- Selected next item: **wave 11** — round 17 의 blocker 8건을 닫는다
-- Sequence: `wave 11(taskify → 구현) → 재freeze → round 18 review → (blocker 0이면) gate
-  → T010 → T013 → T012`
+- **2026-08-26 wave 11 완료.** `T035`(구현)·`T036`(test)·`T037`(문서) 셋을 `/work` 로 탔다.
+  V2 artifact 를 이 feature 에 처음 만들었다 — `work-contract.json`(`MGC-012-P5-W11`),
+  `knowledge-readiness.json`(READY), `context-pack.json`, `environment.json`,
+  `evidence-trace.jsonl`
+- **2026-08-26 round 18 완료. FAIL — 5건 (P0 0 / P1 1 / Blocking-P2 4).** round 17 의 8건
+  중 **7이 닫혔다.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-18.md`
+- **2026-08-26 wave 12 완료.** `T038`(구현·test)·`T039`(census)·`T040`(절차) 셋.
+  `D-048` 이 `unreadable()` 의 범위를 정정했다
+- **2026-08-26 round 19 완료. FAIL — 9건 (P0 0 / P1 1 / Blocking-P2 8).** round 18 의 5건 중
+  둘이 닫히고 셋이 부분이었다. **수가 늘었다** (8 → 5 → 9). 다만 여덟이 문서·표의 정확성이고
+  실질 코드 결함은 `F19-1` 하나다. 기록은
+  `specs/003-slack-proposal-card/evidence/3lens-review-round-19.md`
+- **2026-08-26 wave 13 완료.** `T041`(구현·test)·`T042`(승인문)·`T043`(표 정정) 셋.
+  `D-049` 가 `LIMIT` 을 출력 상한으로 옮겼다
+- **2026-08-26 round 20 완료. FAIL — 6건 (P0 0 / P1 1 / Blocking-P2 5).** **round 19 의
+  9건이 전부 닫혔다** — round 17 이후 처음으로 부분 닫힘이 하나도 없다. 기록은
+  `specs/003-slack-proposal-card/evidence/3lens-review-round-20.md`
+- **2026-08-26 wave 14 완료.** `T044`(truncation·test)·`T045`(문서) 둘. `D-050` 이
+  잘린 목록을 잘렸다고 말하게 했다
+- Selected next item: **round 21 three-lens review**
+- Sequence: `재freeze → round 21 review → (blocker 0이면) gate → T010 → T013 → T012`
 
-## Wave 11 착수 지시
+## Wave 11 결과 (2026-08-26)
 
-round 17 의 blocker 8건을 닫는다. 전문은
+round 17 의 blocker 8건을 셋으로 묶어 닫았다. 전문은
 [`3lens-review-round-17.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-17.md).
 
-### 묶어서 설계할 것 — `F17-1`·`F17-2`·`F17-7`
+### `T035` — `F17-1`·`F17-2`·`F17-7` 을 한 자리에서 닫았다
 
-셋이 **한 자리**에서 나왔다. `_claim_one` 의 transaction 경계와 `_dead_letter_unreadable` 의
-guard 다. **하나씩 고치면 round 10~17 이 반복한 "한 방향을 고치며 반대를 만든다" 가 여덟
-번째가 된다.**
+뿌리는 `_claim_one` 이 **회수(sweep)와 투기(claim)를 한 transaction 에 묶은 것**이다.
+`_view` 실패가 투기를 되돌리며 회수까지 되돌려, 손상 row 가 `leased`+만료로 durable 하게
+남고 guard 가 0행을 냈다.
 
-| id | 등급 | 결함 |
+`_sweep_recoverable()` 을 자기 transaction 으로 분리해 `F17-1` 과 `F17-7` 을 함께 닫았다.
+**guard 를 넓히지 않았다** — 넓히면 round 16 `FR-1` 이 막은 "살아 있는 lease 를 지운다" 가
+되살아난다. `F17-2` 는 `D-047` 로 `unreadable()` 의 조회 범위만 넓혀 닫았고 `stranded()` 의
+계약은 그대로다.
+
+guard 가 0행을 내는 durable state 를 전수로 셌다 — `state` 여섯 중 넷 + generation 불일치
+= **다섯 가지**. round 17 이 "도달 경로 못 찾음" 으로 남긴 세 칸도 durable row 를 만들어
+rowcount 를 관찰했다. 도달 경로 자체는 여전히 특정하지 못했고 그대로 적었다.
+
+### `T036` — mutation 다섯이 전부 KILLED
+
+round 17 에서 SURVIVED 했던 셋이 각각 **다른 test** 로 잡힌다. `claim_generation` guard 와
+`state` guard 를 가르는 시나리오를 따로 만들었다 — 기존 race test 는 둘을 동시에 바꿔서
+어느 하나를 지워도 통과했다.
+
+### `T037` — 세었더니 범위가 두 번 다 컸다
+
+| 항목 | round 17 | wave 11 실측 |
 |---|---|---|
-| `F17-1` | P1 | `state IN ('pending','retry_wait')` guard 가 만료 lease 를 "다른 worker 가 가져갔다" 로 오해한다. 손상 row 가 `leased`+만료면 write 가 항상 0행이고 뒤 command 가 영원히 안 처리된다 |
-| `F17-2` | P1 | dead-letter write 실패 시 row 가 `pending`·`attempts=0` 으로 남는데 `_stranded_rows` 가 `pending` 을 안 본다. `attempts` 는 rollback 되는 transaction 안에서만 증가하므로 시간이 지나도 안 보인다 |
-| `F17-7` | B-P2 | 실패한 claim transaction 이 lease-expiry sweep 과 exhaustion sweep 까지 rollback 한다 |
+| "아홉" 을 주장하는 위치 | 넷 | **여덟** |
+| evidence 가 빠진 manifest | 9 중 5 (자기 범위) | **20** (feature 전체, 50 선언) |
+| `T033` 의 빠진 AC 절 | AC-02 | **AC-02·AC-04·AC-05** |
 
-설계할 때 답해야 하는 것 — **guard 가 0행을 내는 상태를 전부 세고 각각의 처리를 정한다.**
-round 17 이 실측한 표가 review 문서 "뿌리 1" 절에 있다.
+사용자가 스물을 전부 닫기로 정했다. `T020`(superseded, `required_evidence_present: false`)
+일곱만 남았고 그것은 정합적이다.
 
-### test 만 추가하면 닫히는 것 — `F17-3`·`F17-8`
+**"아홉" 은 두 값을 섞고 있었다.** `connect()` 를 감싸는 `try` 는 **열**(당시 아홉),
+`sqlite3.Error` 를 잡는 `except` handler 는 **열셋**이다. 정정하면서 여덟 곳을 전부 13 으로
+바꿨다가 되잡았다 — 그 문맥은 전부 `connect()` 정규화 이야기라 **열**이 맞다.
 
-```text
-F17-3  claim_generation guard 와 state guard 를 각각 가르는 시나리오
-F17-8  cli.py:800 의 세 번째 sqlite3.Error 포획
-```
+### 범위 밖 — `OutboxDispatcher` 가 같은 형태다
 
-**지금 test 는 두 조건이 동시에 참인 시나리오뿐이라 어느 하나를 지워도 통과한다.** 가르는
-시나리오는 `_dead_letter_unreadable` 의 docstring 이 스스로 이름을 댄다 — generation 만
-어긋난 경우(claim → lease 만료 → `pending` 복귀)와 state 만 어긋난 경우(`completed` 가 되어
-`completed_at` CHECK 위반). `F17-8` 은 `is_unreadable()` 만 실패하는 상태를 만들어야 한다.
+`events.py:3025` 의 `claim_next` 가 ingress 와 같은 구조다. 실측했고 **head-of-line 차단이
+재현된다.** 다만 `governance_outbox_payload_immutable` trigger 가 payload 11 column 을
+막아 도달 경로가 더 좁고, Outbox 에는 `D-045` 의 치우기 경로가 없다. 사용자가 범위 밖에
+두기로 정했다. **다음 wave 가 받는다.**
 
-### 문서 규율 — `F17-4`·`F17-5`·`F17-6`
-
-`T034` 가 지적한 것을 같은 wave 가 재생산했다. wave 11 은 **자기 manifest 부터** 본다.
+### 다음
 
 ```text
-F17-4  required: true 인 targeted command_output 이 T026·T027·T031·T032·T033 에 없다 (9 중 5)
-F17-5  T033 AC-02 가 evidence 에 통째로 없는데 all_acceptance_passed: true
-F17-6  T031 AC-07·AC-12 절 없음. AC-03 은 남의 재현을 인용
+재freeze → round 18 three-lens → (blocker 0이면) gate
 ```
 
-`A17-5` 도 같이 고친다 — "legacy_*.py **아홉** handler" 가 문서 넷(`cli.py:716`,
-`test_governance_store.py:1177,1186,1220`)에 있는데 **실측 13** 이다. 두 방법으로 셌다.
-결정 자체는 안 바뀐다.
+## Wave 12 결과 (2026-08-26)
 
-### 순서
+round 18 의 blocker 5건을 닫았다. 전문은
+[`3lens-review-round-18.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-18.md).
+
+### round 18 이 무엇을 확인했나
+
+**round 17 의 8건 중 7이 닫혔다.** `F17-2` 만 부분이었다. 그리고 **세 라운드 연속
+이어지던 "고침은 들어갔고 test 는 부분적" 패턴이 닫혔다** — regression lens 가 wave 11 의
+mutation 다섯을 독립 재현했고 다섯 다 KILLED, 죽은 test 이름과 건수까지 일치했다.
+
+### `T038` — 목록 자체가 덜 찼던 것을 고쳤다
+
+round 18 의 셋(`N18-1`·`N18-2`·`F18-R1`)이 wave 11 이 넣은 **두 구조**에서 나왔다.
+`T035` evidence 는 "새 구조가 요구한 것 다섯" 을 적었는데 `F18-R1` 은 **그 목록의 첫째
+항목**이었다 — 처리를 적고 test 를 안 만들었다.
+
+이번에는 표를 먼저 만들고 고쳤다. 항목마다 **처리**와 **test** 두 칸이다.
+
+| | wave 11 이 센 수 | wave 12 실측 |
+|---|---|---|
+| 구조 1 (`unreadable()` 자기 조회) | **0** — 구조로 세지 않았다 | 7 |
+| 구조 2 (`_sweep_recoverable()` 분리) | 5 | 9 |
+| 합계 | 5 | **16** |
+
+`N18-1`(P1)은 `D-048` 로 닫았다 — `unreadable()` 의 SELECT 가 종결 상태를 제외해 `limit` 이
+**후보 상한**으로 돌아온다. 실측: `completed` 150개 뒤의 손상 row 가 고침 전 `limit=100` 에
+안 나왔고 고침 후 나온다.
+
+### `T039` — "전수" 라 쓰고 범위를 안 밝힌 것
+
+wave 11 이 `src/`·`tests/` 만 훑고 "전수" 라 적었다. 이번에는 **repository 전역**을
+`.git`·`.venv`·`__pycache__` 만 빼고 세었다 — 한글 79줄 26파일, 영문 9줄.
+
+**완료된 wave 의 manifest 와 evidence 본문은 고치지 않았다.** 그것은 그 wave 가 무엇을
+계약했고 무엇을 보았는지의 기록이다. 대신 **여섯 파일에 정정 각주**를 달았다.
+
+### `T040` — freeze 와 mutation 절차
+
+`N18-4` 는 freeze 가 **자기 자신이 만드는 변경**을 담은 것이다. `A18-R1` 은 더 무겁다 —
+**`.pyc` 캐시가 mutation 결과를 위조한다.** round 17·18 이 mutation 을 blocker 판정의
+근거로 삼았다. Stop rule 다섯을 새로 남겼다.
+
+### 다음
 
 ```text
-/taskify → wave 11 구현 → 재freeze → round 18 three-lens → (blocker 0이면) gate
+재freeze → round 19 three-lens → (blocker 0이면) gate
 ```
 
-`/taskify` 를 건너뛰지 않는다. blocker 를 고치는 wave 도 탄다 — wave 9·10 둘 다 탔다.
+## Wave 13 결과 (2026-08-26)
+
+round 19 의 blocker 9건을 닫았다. 전문은
+[`3lens-review-round-19.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-19.md).
+
+### `T041` — "읽을 수 없다" 는 SQL 로 판정할 수 없다
+
+`F19-1`(P1)이 유일한 코드 결함이었다. `D-048` 이 `completed` 하나만 뺐는데, **손상 여부는
+`_view` 를 돌려야 알기 때문에** `SQL LIMIT` 은 그 판정 **전에** 자른다. 어떤 state 집합을
+골라도 창 안의 읽을 수 있는 row 가 손상 row 를 밀어낸다.
+
+벽 6종을 전수로 실측했다 — 고침 전에는 `completed` 만 막혀 있었고 **다섯이 뚫려 있었다.**
+round 19 가 "재현 불가" 로 남긴 `leased` 벽도 만들어 확인했다.
+
+`D-049` 가 `LIMIT` 을 python 출력 상한으로 옮겼다. **비용이 `limit` 이 아니라 종결 아닌 row
+수에 비례한다** — `D-048` 이 거절 사유로 들었던 그 비용을 받아들인 것이다.
+
+### `R19-1`·`R19-2` — 채워진 칸이 빈 칸보다 나쁘다
+
+wave 12 가 "덜 세는 것" 을 고치려고 만든 AC-06 표에서 **두 칸이 거짓이었다.** 적어 둔 test
+가 `unreadable()` 을 한 번도 안 부르거나 정렬을 안 본다.
+
+**빈 칸은 `non_goals` 로 명시돼 다음 라운드가 보지만, 채워진 칸은 "이미 막았다" 로 분류돼
+아무도 안 본다.** 그래서 wave 13 은 **mutation 으로 확인하기 전에는 칸을 채우지 않는다** 를
+`T041` manifest 의 규칙으로 넣었다.
+
+### 세 표가 각각 덜 셌다
+
+| 표 | 주장 | 실측 |
+|---|---|---|
+| `T038` AC-06 요구 표 | test 있는 칸 12 | **10** |
+| `T039` census 분류표 | 26 파일 전부 | **24** |
+| `T040` freeze 표 | 결과가 "아래" 에 | **절이 비어 있었다** |
+
+### 다음
+
+```text
+재freeze → round 20 three-lens → (blocker 0이면) gate
+```
+
+## Wave 14 결과 (2026-08-26)
+
+round 20 의 blocker 6건을 닫았다. 전문은
+[`3lens-review-round-20.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-20.md).
+
+### round 20 이 확인한 것
+
+**round 19 의 9건이 전부 닫혔다.** round 17 이후 처음으로 **부분 닫힘이 하나도 없다** —
+18·19 에서는 매번 셋이 부분이었다. regression lens 가 `T041` evidence 의 표 다섯을 전수
+검증했고 **거짓 칸이 없다** (wave 12 가 저지른 형태가 반복되지 않았다).
+
+### `F20-1` 은 고칠 수 있는 종류가 아니다
+
+| 방식 | 무엇이 밀어내나 |
+|---|---|
+| `SQL LIMIT` (`D-048` 까지) | 창 안의 **읽을 수 있는** row (round 19 `F19-1`) |
+| python 출력 상한 (`D-049`) | **읽을 수 없는** 종결 row (round 20 `F20-1`) |
+
+**둘 다 `limit` 의 본질이다.** `D-049` 는 벽의 state 를 여섯으로 전수했지만 **가독성 축을
+세지 않았고**, 그 축을 `_dead_letter_unreadable` 이 스스로 만든다.
+
+`D-050` 이 **없애는 대신 보이게** 만든다. CLI 가 `limit + 1` 을 요청해 잘림을 판정하고 한
+줄로 알린다. 두 lens 가 두 라운드 연속 그 줄을 요청했다.
+
+### 규칙이 자기 실수를 잡았다
+
+`T044` manifest 에 "표의 칸을 mutation 으로 확인하기 전에는 채우지 않는다" 를 넣었다.
+`R20-1` test 를 값이 있는 경우만 쳐서 `COALESCE` mutation 이 **SURVIVED** 했고, 제출 전에
+발견해 `parametrize` 로 `None` 경우를 넓혔다. round 19 `R19-3` 이 wave 12 표에서 찾은
+형태다.
+
+**새 구조가 요구하는 것도 착수 전에 표로 만들었다.** 첫 항목(`limit + 1` 이 `--limit 0` 을
+`1` 로 바꿔 service guard 를 우회한다)이 착수 전에 보였고 manifest 의 `risk.concerns` 에
+적고 시작했다.
+
+### 다음
+
+```text
+재freeze → round 21 three-lens → (blocker 0이면) gate
+```
 
 - Stop rule: Package 5 review 가 닫히기 전에는 Package 4 구현을 재개하지 않는다
 - Stop rule: **형제 위치를 끝까지 센다.** 규칙은 "정의 사본 + **호출 지점** + **같은 검사의
@@ -129,9 +281,10 @@ F17-6  T031 AC-07·AC-12 절 없음. AC-03 은 남의 재현을 인용
 - Stop rule: **새 구조를 넣으면 그 구조가 요구하는 것을 센다.** round 16 blocker 넷이
   wave 9 의 `while True` + transaction 밖 write 하나에서 나왔다 — 진행 보장(`rowcount`),
   경합 guard(`state`/`generation`), write 실패 처리, "모름"과 "없음"의 구분을 전부 빠뜨렸다
-- Stop rule: **정규화는 위치를 먼저 정한다.** `connect()` 에 넣으면 `legacy_*.py` 아홉
-  handler 가 깨지고(round 15 `R-1`), 안 넣으면 CLI 가 traceback 을 낸다(round 16 `FR-3`,
-  `R16-1`). **최종 소비자가 경계다** — CLI 에서 `sqlite3.Error` 를 잡아 둘 다 닫았다
+- Stop rule: **정규화는 위치를 먼저 정한다.** `connect()` 에 넣으면 `legacy_*.py` 의
+  `try` **열**이 깨지고(round 15 `R-1`), 안 넣으면 CLI 가 traceback 을 낸다(round 16 `FR-3`,
+  `R16-1`). **최종 소비자가 경계다** — CLI 에서 `sqlite3.Error` 를 잡아 둘 다 닫았다.
+  (개수는 wave 11 실측이다. 오래 "아홉" 으로 적혀 있었다 — round 17 `A17-5`)
 - Stop rule: review 지시를 그대로 구현하기 전에 다른 축이 무너지는지 본다. 한 방향을 고치며
   반대를 만든 것이 round 10 → 16 으로 계속 이어졌다
 - Stop rule: **test 를 쓸 때 fixture 가 검사 대상을 지우는지 본다.**
@@ -146,10 +299,60 @@ F17-6  T031 AC-07·AC-12 절 없음. AC-03 은 남의 재현을 인용
   (round 17 `F17-4`·`F17-5`·`F17-6`)
 - Stop rule: **`/taskify` 를 건너뛰지 않는다.** blocker 를 고치는 wave 도 Pre-Implement
   Procedure 를 탄다. wave 9·10 둘 다 탔다
-- Stop rule: **계약 변경은 Decision 을 먼저 받는다.** wave 9 의 `D-045` 가 그 예다
+- Stop rule: **계약 변경은 Decision 을 먼저 받는다.** wave 9 의 `D-045`, wave 11 의
+  `D-047` 이 그 예다
+- Stop rule: **수치를 고칠 때 무엇을 세는 값인지 먼저 확인한다.** wave 11 이 "아홉" 을 전부
+  13 으로 바꿨다가 되잡았다 — 그 자리는 `connect()` 를 감싸는 `try` 를 세고 있었고 그 값은
+  **열**이다. 여섯 라운드 연속 틀린 원인이 "세지 않고 적는 것" 이었다면 이것은 **"무엇을
+  세는지 확인하지 않고 값만 바꾸는 것"** 이다. 같은 뿌리다
+- Stop rule: **evidence 를 찾을 때 manifest 가 선언한 경로를 읽는다.** wave 11 의 첫 대조가
+  파일 이름을 `<task-id>.md` 로 추측해 `T008` 을 "파일 없음" 으로 쳤다. `evidence_paths` 가
+  이미 답을 갖고 있었다
+- Stop rule: **`connect()` 호출 순서에 결합된 test 가 있다.** filesystem-guard test 둘이
+  `validate()` 호출을 세어 창을 잡는다. store 접근을 하나라도 더하거나 빼면 창이 밀린다 —
+  wave 11 이 sweep 을 분리하며 그것을 만났고 실측으로 `+2` 를 확인해 옮겼다
 - Stop rule: **AC 를 구현 뒤에 맞추지 않는다.** 못 지킬 AC 는 **착수 전에** 고치고 원문을
   남긴다. `T027` AC-06 이 그 사례이고 round 16 이 적법하다고 판정했다
 - Stop rule: 재freeze → 재review 순서를 지킨다
+- Stop rule: **freeze 는 마지막에 하고, freeze 자신이 만드는 변경을 target 에 담지 않는다.**
+  round 18 `N18-4` 가 그것이다 — manifest 가 `evidence-trace.jsonl` 의 4줄 시점 hash 를
+  담았는데 freeze 뒤에 세 줄을 더 썼다. trace 처럼 freeze 자체를 기록해야 하는 파일은
+  **target 에서 빼고 그 이유를 적는다.** target 파일이 자기 자신을 목록에 안 넣는 것과 같은
+  이유다
+- Stop rule: **aggregate 일치는 무손상 증거가 아니다.** aggregate 는 manifest **행 문자열**만
+  해싱하므로 행이 가리키는 파일이 그 뒤에 바뀐 것을 못 잡는다. 실제 보장은 **행별 hash 를
+  다시 계산하는 재확인 script** 다. round 18 에서 세 reviewer 가 전부 aggregate 를 무손상
+  근거로 인용했다
+- Stop rule: **mutation 을 돌릴 때 `.pyc` 캐시를 막는다.** round 18 `A18-R1` 이 실측했다 —
+  test 파일을 같은 크기로 1초 안에 다시 쓰면 CPython 의 mtime+size 기반 bytecode 무효화가
+  변경을 감지하지 못해 **직전 컴파일 결과가 재실행된다.** pristine 코드에서 FAILED 가 나온
+  사례가 있다. round 17·18 이 mutation 을 blocker 판정의 근거로 삼았으므로 무겁다.
+  `PYTHONDONTWRITEBYTECODE=1` 을 쓰거나 `__pycache__` 를 지운다
+- Stop rule: **고칠 수 없는 것을 고치려 하지 않는다. 대신 숨기지 않는다.** round 19·20 이
+  `limit` 의 본질을 두 번 실측했다 — `SQL LIMIT` 은 읽힐 벽이, python 상한은 안 읽힐 벽이
+  `limit+1` 번째를 민다. `D-050` 이 truncation 표시로 **보이게** 만들었다. 없앤 것이
+  아니라는 구분을 evidence 에 적는다
+- Stop rule: **manifest 를 복사해 만들 때 `status` 와 `completion` 을 먼저 되돌린다.**
+  wave 14 가 `T042`(done)를 복사해 `T045` 를 만들면서 착수 시점부터
+  `all_acceptance_passed: true` 인 manifest 를 남겼다. `index.yaml` 에는 `ready` 로 등록해
+  둘이 어긋났다. round 17 `F17-5`·round 19 `C19-2` 와 같은 형태이고 원인만 다르다
+- Stop rule: **부분적으로 정확한 문서가 전부 정확해 보인다.** round 20 `C20-1`·`C20-2` 가
+  그것이다 — 같은 파일 다른 자리에는 각주를 달고 한 자리만 빠뜨렸고, 같은 Decision 의 다른
+  절은 정확한데 `Source` 만 근거를 과대 계상했다
+- Stop rule: **표의 칸을 mutation 으로 확인하기 전에는 채우지 않는다.** round 19
+  `R19-1`·`R19-2` 가 그것이다 — wave 12 의 AC-06 표가 두 칸을 "test 있음" 으로 적었는데 그
+  test 들은 대상 함수를 부르지도 않았다. **빈 칸보다 나쁘다.** 빈 칸은 `non_goals` 로
+  명시돼 다음 라운드가 보지만 채워진 칸은 "이미 막았다" 로 분류돼 아무도 안 본다
+- Stop rule: **"전수" 라 쓸 때 그 표가 실제로 전부를 담는지 다시 센다.** round 19 `C19-4` —
+  census 가 26 파일을 얻고 표는 24개만 이름을 댔다. **`N18-3` 을 고치는 task 가 같은 것을
+  다시 냈다**
+- Stop rule: **문서에 제목만 쓰고 내용을 비워 두지 않는다.** round 19 `C19-2` — `T040` 이
+  "아래가 결과다" 라 쓰고 아래를 비운 채 freeze 됐다. `required: true` 로 선언한 출력이었다
+- Stop rule: **새 구조가 요구하는 것을 세는 목록 자체가 덜 찰 수 있다.** round 16 blocker
+  넷과 round 18 blocker 셋이 모두 그 자리에서 나왔다. wave 11 의 `T035` 는 "요구 다섯" 을
+  적었는데 round 18 `F18-R1` 이 **그 목록의 첫째 항목**이었다 — 처리를 적고 test 를 안
+  만들었다. **표를 만들 때 항목마다 '처리' 와 '그 처리를 지키는 test' 두 칸을 둔다.** test
+  칸이 빈 항목이 다음 라운드의 blocker 다
 - Stop rule: **되돌린 것도 test 로 묶는다.** `T029` 가 회귀를 고쳤는데 세 지점 중 둘이
   test 없이 남아 round 16 `R16-2` 가 됐다
 - Stop rule: **면제를 적을 때 누구에게 적용되는지 확인한다.** `T024-A1` 이 "cli.py 는 T024

@@ -357,6 +357,78 @@ tasks:
     depends_on: []
     requirements:
       - FR-024
+  - id: MGC-012-P5-T035
+    title: Separate the recovery sweeps from the speculative claim so the guard stops lying
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T036
+    title: Write the scenarios that tell each guard apart instead of passing when either is gone
+    status: done
+    depends_on:
+      - MGC-012-P5-T035
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T037
+    title: Stop reproducing the evidence failure this feature keeps pointing at
+    status: done
+    depends_on:
+      - MGC-012-P5-T035
+      - MGC-012-P5-T036
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T038
+    title: Count what the two new structures actually require, this time to the end
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T039
+    title: Say what range the census covered, and cover the whole of it
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T040
+    title: Stop the freeze from carrying what the freeze itself creates
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T041
+    title: Make limit an output cap and pin what the table said was already pinned
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T042
+    title: Make the approved wording say what the code actually does
+    status: done
+    depends_on:
+      - MGC-012-P5-T041
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T043
+    title: Fix the three tables wave 12 got wrong
+    status: done
+    depends_on:
+      - MGC-012-P5-T041
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T044
+    title: Say when the list is cut, and count what that new structure requires
+    status: done
+    depends_on: []
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T045
+    title: Annotate the sentence a Decision called wrong, and fix a Source that overcounted
+    status: done
+    depends_on:
+      - MGC-012-P5-T044
+    requirements:
+      - FR-024
 
 execution:
   waves:
@@ -516,6 +588,113 @@ execution:
         because it consumes the unknown/absent distinction T031 creates. The other three own
         disjoint paths — T031 ingress.py, T033 tests/test_governance_store.py, T034 evidence
         and DECISIONS.md only.
+    - wave: 18
+      tasks:
+        - MGC-012-P5-T035
+        - MGC-012-P5-T036
+        - MGC-012-P5-T037
+      note: >-
+        Convergence wave from the round 17 three-lens review. Eight blockers, three roots.
+        Round 16's nine were eight-closed-one-not, and the grade dropped for the first time
+        (P0 0 / P1 3 / Blocking-P2 5). T035 owns the first root and closes F17-1, F17-2 and
+        F17-7 together because all three came from one place - _claim_one holds the recovery
+        sweeps and the speculative claim in a single transaction, so a _view failure rolls the
+        sweeps back with it and leaves the corrupt row durable in a state the
+        _dead_letter_unreadable guard does not match. Separating the sweeps closes the first
+        two without widening the guard, which matters: widening it would revive the live-lease
+        deletion round 16 FR-1 closed. F17-2 needs a separate call and the user approved D-047
+        on 2026-08-26 - widen unreadable() only, leave the stranded() contract alone.
+        T036 owns the second root: the fixes landed and the tests holding them are partial,
+        the same shape for the third consecutive round (round 15 R-1, round 16 R16-2). Three
+        of nine mutations survived. The scenarios must tell each guard apart - today's only
+        race test changes generation and state together, so either one can be deleted.
+        T037 owns the third root: the wave that pointed at the evidence discipline reproduced
+        it. T034 raised C16-3 and A16-5 while T031 and T033 each filed one of them again.
+        T037 reads its own manifests first.
+        Wave 11 also measured OutboxDispatcher.claim_next and found the same shape - sweeps
+        inside the claim transaction and a view built there too. It is out of scope by the
+        user's decision on 2026-08-26 and recorded rather than fixed; the outbox has no
+        D-045 clearing path and its payload columns are trigger-protected, so the reach is
+        narrower than ingress.
+      note_counts_verified_twice: true
+    - wave: 19
+      tasks:
+        - MGC-012-P5-T038
+        - MGC-012-P5-T039
+        - MGC-012-P5-T040
+      note: >-
+        Convergence wave from the round 18 three-lens review. Five blockers, two roots, and
+        the grade improved again - round 17's eight became five, P1 three became one.
+        Seven of round 17's eight closed; only F17-2 is partial.
+        T038 owns the first root and it is the same root round 16 had: a new structure went
+        in and what it required was undercounted. Wave 11 added two structures - unreadable()
+        as its own query and _sweep_recoverable() split out - and round 18 found three
+        blockers in them. T035's evidence listed "five things the new structure requires"
+        and F18-R1 is the FIRST item on that list: the handling was written, the test was
+        not. N18-1 is the widened query's limit turning from a candidate cap into a table
+        cap, which two lenses measured independently - 150 completed rows push the corrupt
+        one out of the window and governance stranded prints NONE. D-048 bounds the query
+        to rows that still need recovery.
+        T039 owns the second root: wave 11 wrote "counted exhaustively" and swept src/ and
+        tests/ only, leaving 21 lines across 6 spec files still claiming nine - one of them
+        a present-tense invariant. The correction to round 17's "four" was itself partial.
+        T040 owns the freeze and mutation procedures. The round 18 manifest carried a hash
+        of evidence-trace.jsonl from when it had four lines; wave 11 wrote three more after
+        freezing. And A18-R1 measured something heavier - .pyc caching can forge a mutation
+        result, which rounds 17 and 18 both leaned on for blocker verdicts.
+      note_counts_verified_twice: true
+    - wave: 20
+      tasks:
+        - MGC-012-P5-T041
+        - MGC-012-P5-T042
+        - MGC-012-P5-T043
+      note: >-
+        Convergence wave from the round 19 three-lens review. Nine blockers, and the count
+        went up for the first time since round 17 - eight, five, nine. The grade held
+        (P0 zero, P1 one) but the shape changed: eight of the nine are documents and tables,
+        only F19-1 is a code defect.
+        T041 owns it. D-048 removed completed alone, but "unreadable" is not a SQL predicate
+        - _view has to run - so a SQL LIMIT lets whatever readable rows sit in the chosen
+        state set push the corrupt one out of the window. Every wall reproduced it:
+        pending, retry_wait, dead_letter, recovery_hold, and leased. The heaviest reproduction
+        has the queue actually blocked while governance stranded prints only old dead_letter
+        rows. D-049 moves LIMIT to a python output cap and accepts the cost D-048 had
+        rejected. T041 also closes R19-1 and R19-2, which are worse than open gaps: the AC-06
+        table wave 12 built to stop undercounting listed both as "test present" when neither
+        had one. A filled-in cell that is wrong gets filed as "already covered" and nobody
+        looks again.
+        T042 makes the approved wording match the code - D-045's INGRESS_COMMAND_UNREADABLE
+        marks the _dead_letter_unreadable path, not every unreadable row, and the sweep
+        reaches dead_letter first by two separate routes.
+        T043 fixes the three tables wave 12 got wrong: an empty freeze section, a census
+        classification that named 24 of 26 files, and the AC-06 count of 12 that measured 10.
+      note_counts_verified_twice: true
+    - wave: 21
+      tasks:
+        - MGC-012-P5-T044
+        - MGC-012-P5-T045
+      note: >-
+        Convergence wave from the round 20 three-lens review. Six blockers, and round 19's
+        nine all closed - the first round since 17 with no partial closures.
+        F20-1 is not the kind of defect that gets fixed. Rounds 19 and 20 measured the same
+        spot twice: a SQL LIMIT lets readable rows push the corrupt one past the window, and
+        a python output cap lets unreadable terminal rows do the same. Both are what a limit
+        is. D-049 counted the wall's state across six values but never counted its
+        readability, and _dead_letter_unreadable builds that second axis itself - every row
+        it clears is dead_letter and unreadable, and nothing takes a row out of dead_letter.
+        D-050 stops trying to remove it and makes it visible instead: the CLI asks for
+        limit+1 and says so when the list was cut. Two lenses had asked for that line in two
+        consecutive rounds.
+        T044 also counted what the new structure requires before building it - the first item
+        was visible before the work started, because limit+1 turns --limit 0 into 1 and slips
+        past the service guard that had been catching it. And its own rule ("do not fill a
+        cell until a mutation confirms it") caught a weak test before submission: the R20-1
+        test only covered the case where last_error_code was set, so a COALESCE mutation
+        survived until the test was widened to the NULL case.
+        T045 annotates the sentence D-049 called wrong - wave 13 had annotated five other
+        places and skipped that one - and corrects a Source line that credited round 19 with
+        six walls when it measured five.
+      note_counts_verified_twice: true
   critical_path:
     - MGC-012-P5-T001
     - MGC-012-P5-T002

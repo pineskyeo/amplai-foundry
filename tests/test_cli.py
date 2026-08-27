@@ -343,7 +343,7 @@ def test_the_reads_reject_a_json_flag(tmp_path: Path) -> None:
 # `_OPEN_FAILURES` 축소가, `R16-1` 은 T028 의 `check_startup()` 제거가 원인이다.
 # 전수로 재니 네 상태가 raw traceback 이었다 — 위 둘에 빈 파일과 손상 파일이 더 있었다.
 #
-# **정규화 위치가 요점이다.** `connect()` 에 넣으면 `legacy_*.py` 아홉 handler 가
+# **정규화 위치가 요점이다.** `connect()` 에 넣으면 `legacy_*.py` 의 `try` 열이
 # `sqlite3.Error` 봉쇄를 잃는다 (round 15 `R-1`). CLI 가 최종 소비자다.
 
 
@@ -456,3 +456,113 @@ def test_both_reads_reject_a_json_flag(tmp_path: Path) -> None:
         result = RUNNER.invoke(app, argv)
         # typer 는 usage 오류를 exit 2 로 낸다. 문구는 stderr 로 가므로 code 만 본다.
         assert result.exit_code == 2, argv
+
+
+def test_the_decision_read_survives_a_store_failure_inside_the_unreadable_check(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-8`. wave 10 이 놓은 **세 번째** 포획에 test 가 없었다.
+
+    기존 test 넷은 store 를 통째로 망가뜨려서 `committed_decision()` 단계에서 이미 터진다.
+    그래서 안쪽 포획에 **도달하지 못한다** — 지워도 suite 가 전부 통과했다. 여기서는
+    `committed_decision()` 을 성공시키고 `is_unreadable()` 만 실패시켜 그 지점을 때린다.
+    """
+    workspace = _workspace(tmp_path)
+    _store_unused, command_id = _stranded_command(workspace)
+
+    def _fails(self: IngressService, command_id: str) -> bool:
+        raise sqlite3.OperationalError("database disk image is malformed")
+
+    with patch.object(IngressService, "is_unreadable", _fails):
+        result = RUNNER.invoke(
+            app, ["governance", "decision", command_id, "--workspace", str(workspace)]
+        )
+
+    assert result.exit_code == 1, result.stdout + result.stderr
+    assert result.exception is None or isinstance(result.exception, SystemExit), (
+        f"raw traceback 이 나갔다: {result.exception!r}"
+    )
+
+
+def _wall_for_cli(workspace: Path, state: str, count: int) -> GovernanceStore:
+    """CLI test 용 벽. `ack_fixtures._readable_wall` 을 그대로 쓴다."""
+    store = _store(workspace)
+    ack_fixtures._readable_wall(store, state, count)
+    return store
+
+
+def test_stranded_says_when_the_list_is_cut(tmp_path: Path) -> None:
+    """round 20 `F20-1`(P1)·`F20-2`. `D-050` 이 정한 것.
+
+    **`limit` 이 있는 한 어떤 규칙도 완전할 수 없다.** `SQL LIMIT` 은 읽힐 벽이, python
+    출력 상한은 **안 읽힐 벽**이 `limit + 1` 번째를 민다. 없애는 대신 **보이게** 만든다.
+    이 줄이 없으면 operator 가 목록이 잘린 것을 알 방법이 없다.
+    """
+    workspace = _workspace(tmp_path)
+    store, _command_id = _stranded_command(workspace)
+    ack_fixtures._readable_wall(store, "dead_letter", 5)
+
+    cut = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", "3"]
+    )
+
+    assert cut.exit_code == 0, cut.stdout
+    assert "잘렸다" in cut.stdout, "목록이 잘렸는데 알리지 않는다"
+    rows = [line for line in cut.stdout.splitlines() if line and "잘렸다" not in line]
+    assert len(rows) == 3
+
+
+def test_stranded_stays_quiet_when_the_list_fits(tmp_path: Path) -> None:
+    """round 20 `F20-1`. 안 잘렸으면 출력이 이전과 같아야 한다."""
+    workspace = _workspace(tmp_path)
+    _store_unused, command_id = _stranded_command(workspace)
+
+    whole = RUNNER.invoke(app, ["governance", "stranded", "--workspace", str(workspace)])
+
+    assert whole.exit_code == 0, whole.stdout
+    assert "잘렸다" not in whole.stdout, "안 잘렸는데 잘렸다고 말한다"
+    assert command_id in whole.stdout
+
+
+def test_stranded_reports_a_cut_in_either_list(tmp_path: Path) -> None:
+    """round 20 `F20-2`. **두 목록을 각각 판정한다.**
+
+    `stranded` 후보는 적고 손상 row 만 많은 경우다. 둘은 다른 조회이고 후보 집합도 다르다.
+    """
+    workspace = _workspace(tmp_path)
+    store, _command_id = _stranded_command(workspace)
+    ack_fixtures._readable_wall(store, "pending", 6)
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json='{bad' WHERE state='pending'"
+        )
+        connection.commit()
+
+    cut = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", "2"]
+    )
+
+    assert cut.exit_code == 0, cut.stdout
+    assert "UNREADABLE" in cut.stdout
+    assert "잘렸다" in cut.stdout, "손상 목록만 잘려도 알려야 한다"
+
+
+@pytest.mark.parametrize("bad_limit", ["0", "-1"])
+def test_stranded_still_rejects_a_non_positive_limit(tmp_path: Path, bad_limit: str) -> None:
+    """round 20 `F20-1` 의 부작용을 막는다.
+
+    CLI 가 `limit + 1` 을 넘기므로 `--limit 0` 은 service 의 `limit < 1` guard 에 **`1` 로
+    도착해 우회된다.** 그 guard 가 지금까지 `--limit 0` 을 잡고 있었다 (round 18 `A18-5`,
+    round 20 `A20-F3`). **새 구조가 요구한 첫 항목이고 착수 전에 보였다.**
+    """
+    workspace = _workspace(tmp_path)
+    _store_unused, _command_id = _stranded_command(workspace)
+
+    result = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", bad_limit]
+    )
+
+    assert result.exit_code == 1, result.stdout + result.stderr
+    assert result.exception is None or isinstance(result.exception, SystemExit), (
+        f"raw traceback 이 나갔다: {result.exception!r}"
+    )

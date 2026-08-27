@@ -1,0 +1,131 @@
+{
+  "schema_version": "2.0",
+  "id": "MGC-012-P5-W14",
+  "title": "잘린 목록을 잘렸다고 말한다",
+  "goal": "round 20 의 blocker 6건(P1 1 / Blocking-P2 5)을 닫는다. F20-1(P1)은 고칠 수 있는 종류가 아니다 — limit 이 있는 한 SQL LIMIT 은 읽힐 벽이, python 상한은 안 읽힐 벽이 limit+1 번째를 밀어낸다. D-050 이 그것을 없애는 대신 보이게 만든다. 나머지 다섯은 test 둘(F20-3·R20-1)과 문서 둘(C20-1·C20-2), 그리고 stranded() 에도 같은 뿌리가 있다는 것(F20-2)이다.",
+  "source": [
+    "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-20.md"
+  ],
+  "work_type": "logic_change",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "src/amplai_foundry/cli.py",
+      "src/amplai_foundry/governance/ingress.py",
+      "tests/test_slack_ack_boundary.py",
+      "tests/test_cli.py",
+      "specs/003-slack-proposal-card/",
+      "docs/workstreams/messenger-governance-closure-v3/"
+    ],
+    "exclude": [
+      "dead_letter 정리 경로 신설 — D-038 항목 1 이 명시적으로 거절했고 D-050 이 그 판단을 유지한다",
+      "IngressService 의 signature 변경 — D-047·D-048·D-049 가 공통으로 건 불변이다",
+      "OutboxDispatcher 와 apply_jobs.py (A18-6)",
+      "spec.md 의 FR 신설 — OQ-001 은 여전히 wave 밖이다",
+      "MGC-012 Package 4 의 T010·T012·T013"
+    ]
+  },
+  "non_goals": [
+    "F20-1·F20-2 를 없애는 것 — D-050 이 '없애는 것이 아니라 보이게 만든다' 를 명시했다",
+    "unreadable() 의 scan 비용 최적화 (A20-F1 이 측정했다: 종결 아닌 row 당 5.5µs)",
+    "WAL checkpoint 지연 (A20-F6)",
+    "새 출력 형식(JSON 등)의 계약화 — T026 scope.exclude 가 배제했다"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "governance stranded 가 목록이 limit 에서 잘렸을 때 그 사실을 출력한다. 안 잘리면 이전과 같은 출력이다.",
+      "evidence": [
+        "잘린 경우와 안 잘린 경우의 CLI 출력 실측",
+        "round 20 이 실측한 임계값(벽 99 보임 / 100 안 보임)에서 truncation 줄이 나오는 것",
+        "mutation 으로 KILLED 확인"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "stranded 와 unreadable 두 목록 각각에 대해 잘림을 판정한다. 하나만 잘려도 알린다.",
+      "evidence": [
+        "두 목록을 각각 잘리게 만든 실측"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "limit+1 을 요청하는 새 구조가 요구하는 것을 전수로 센다. 특히 --limit 0 이 여전히 거부되는지 확인한다.",
+      "evidence": [
+        "새 구조 요구 표 — 항목마다 처리와 test",
+        "--limit 0 과 음수의 CLI 동작 실측"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "unreadable() 이 종결 상태를 제외한다는 계약을 고정하는 test 가 있다. 그 WHERE 절을 지우면 test 가 죽는다.",
+      "evidence": [
+        "WHERE state != 'completed' 제거 mutation 이 KILLED"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "retry_wait+소진 경로가 last_error_code 를 안 건드린다는 사실을 고정하는 test 가 있다.",
+      "evidence": [
+        "둘째 UPDATE 에 COALESCE 를 넣는 mutation 이 KILLED"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "D-049 가 틀렸다고 지목한 문장에 정정 각주가 있고, D-049 의 Source 가 실제 근거와 맞는다.",
+      "evidence": [
+        "T038.md 의 해당 문장과 각주",
+        "D-049 Source 정정"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "전 suite 가 통과하고 test 가 줄지 않는다. v2 profile 이 PASS 다.",
+      "evidence": [
+        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
+        "test 수를 두 방법으로 세고 둘 다 기록"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      ".venv/bin/python -m amplai_foundry.cli governance stranded --workspace <tmp>",
+      ".venv/bin/python -m amplai_foundry.cli governance decision <command_id> --workspace <tmp>"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "requirement_decision",
+    "public_contract"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-042",
+    "D-045",
+    "D-047",
+    "D-048",
+    "D-049",
+    "D-050"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

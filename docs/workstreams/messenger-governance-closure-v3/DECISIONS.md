@@ -1471,6 +1471,19 @@
 - Date: 2026-08-18
 - Affected item: `MGC-012-P5` wave 9. `src/amplai_foundry/governance/ingress.py`.
 - Source: 사용자 선택. round 15 `F-1`(P0), `F-2`(P1).
+- Implementation note (2026-08-26, round 19 `C19-1`): 승인문의 "`last_error_code` 에
+  `INGRESS_COMMAND_UNREADABLE` 을 적는다" 는 **`_dead_letter_unreadable` 이 치운 경로의
+  표시**다. "읽을 수 없는 row 는 모두 그 code 를 갖는다" 가 아니다.
+
+  `_sweep_recoverable` 의 소진 UPDATE 가 손상 row 를 **먼저** `dead_letter` 로 옮기는 경로가
+  둘 있고 (round 18 `N18-2`, round 19 `F19-2`), 그 row 는 `INGRESS_LEASE_EXPIRED` 를 갖거나
+  앞선 값을 그대로 갖는다. 셋 다 사실이다 — lease 가 만료됐고 시도가 소진됐으며, 읽을 수
+  없다는 것은 그 시점에 아직 발견되지 않았다.
+
+  **`D-045` 가 실제로 요구하는 것은 그 row 가 operator 에게 보이는 것이고**, 세 경로 모두
+  `unreadable()` 에 나온다. wave 12 가 이 해석을 task manifest 에만 적고 승인문 쪽에는 안
+  적어서 round 19 가 `work-contract` 와의 어긋남으로 잡았다. **승인 문구는 고치지 않고 이
+  각주를 단다.**
 - Implementation note (2026-08-18, round 16 `A16-1`): 승인문은 "`stranded()` 가 그것을
   낸다" 인데 구현은 `unreadable()` 이 낸다. `stranded()` 는
   `tuple[IngressCommandView, ...]` 를 내고 읽을 수 없는 row 는 그 model 로 만들 수 없다 —
@@ -1531,3 +1544,192 @@
   `MGC-012 Package 5` 는 **round 17 이 열린 채로 남는다** — 사용자가 이식을 먼저 하기로 했다.
 - Source: 사용자 선택 2026-08-19. 근거는
   `docs/workstreams/amplai-loop-runtime-adoption/FACTS.md` 와 cortex main `3a3eb46b`.
+
+## D-047 — Widen `unreadable()` Instead Of Redefining What "Stranded" Means
+
+- Status: APPROVED (**안 A**)
+- Decision: dead-letter write 가 실패해 손상 row 가 회수 불가 상태로 남는 경우를
+  `unreadable()` 이 낸다. 조회 범위를 "`_stranded_rows` 가 건너뛴 것" 에서 "**읽을 수 없는
+  durable row**" 로 넓힌다. `stranded()` 의 계약 — "no worker will claim again" — 은
+  **그대로 둔다.** `governance stranded` 의 출력 형식도 그대로다. `UNREADABLE` 줄의 목록만
+  늘어난다.
+- Reason: round 17 `F17-2` 를 실측으로 재현했다. `_dead_letter_unreadable` 이
+  `sqlite3.OperationalError` 로 실패하면 row 가 `pending`·`attempts=0` 으로 남는데
+  `_stranded_rows` 의 WHERE 가 `pending` 을 포함하지 않아 `stranded()` 도 `unreadable()` 도
+  빈 목록을 낸다. `attempts` 는 rollback 되는 transaction 안에서만 증가하므로 **시간이
+  지나도 보이지 않는다.** `D-045` 가 닫으려던 "operator 가 볼 방법이 없다" 가 다른 경로로
+  되살아난 것이다.
+- Rejected: **`stranded()` 의 의미를 "진행하지 못하는 row" 로 넓히기.** 가장 직관적이지만
+  `contracts/` 의 문구와 docstring 을 고쳐야 하고, `MGC-012-P5-T026` 이 정한 CLI 출력
+  계약의 의미도 함께 바뀐다. `pending` 손상 row 는 claim 은 **되는데** 진행이 안 되는
+  것이라 "no worker will claim again" 과 실제로 다르다. 계약 하나를 넓혀 두 사실을 뭉개면
+  round 16 `C16-1` 이 갈라 놓은 "결정 없음" 과 "알 수 없음" 을 다시 합치는 것과 같은 형태가
+  된다.
+- Rejected: **실패 시 `last_error_code` 만 남기는 2차 write.** write 자체가 실패하는
+  상황에서 또 다른 write 에 기대는 것이라 신뢰도가 낮다. round 16 `FR-2` 가 같은 이유로
+  절반만 닫혔다.
+- Scope: 조회 범위만 넓힌다. `stranded()` 의 signature·계약·CLI 출력 형식과
+  `IngressService.get()` 의 signature 는 건드리지 않는다. `D-042` 의 보수적 침묵도 그대로다.
+- Consequence: `unreadable()` 이 `_stranded_rows` 의 부산물이 아니라 자기 조회를 갖는다.
+  읽을 수 없는 row 를 찾으려면 후보 row 를 `_view` 로 시도해 봐야 하므로 `limit` 안에서
+  도는 비용이 늘어난다. 그 대가로 `D-045` 가 정한 "손상 row 는 operator 에게 보인다" 가
+  치우기 실패 경로에서도 유지된다.
+- Owner: Workstream governor.
+- Date: 2026-08-26
+- Affected item: `MGC-012-P5` wave 11. `src/amplai_foundry/governance/ingress.py`.
+- Source: 사용자 선택 2026-08-26. 근거는 round 17 `F17-2` 와 wave 11 착수 실측
+  (`_dead_letter_unreadable` 실패 후 `stranded()`·`unreadable()` 둘 다 빈 목록).
+- Amended (2026-08-26, round 18 `N18-1`): Scope 절의 "읽을 수 없는 durable row" 가 너무
+  넓었다. `LIMIT` 이 전체 표에 걸려 `completed` row 가 손상 row 를 창 밖으로 밀어냈다.
+  **`D-048` 이 그 범위를 "회수가 필요한 durable row" 로 좁힌다.** 이 Decision 의 핵심
+  (`stranded()` 는 그대로, `unreadable()` 만 넓힌다)은 유지된다.
+
+## D-048 — Bound `unreadable()` To Rows That Still Need Recovery
+
+- Status: APPROVED (**안 A**)
+- Amends: `D-047` 의 Scope 절. **핵심은 유지된다** — `stranded()` 의 계약과 CLI 출력 형식은
+  그대로고 `unreadable()` 만 넓힌다. 넓히는 **대상**을 "읽을 수 없는 durable row" 에서
+  "**회수가 필요한 durable row 중 읽을 수 없는 것**" 으로 좁힌다.
+- Decision: `unreadable()` 의 SELECT 가 종결 상태(`completed`)를 SQL 에서 제외한다. 남는
+  후보는 `pending`, `leased`, `retry_wait`, `recovery_hold`, `dead_letter` 다. 그러면
+  `limit` 이 다시 **후보 상한**이 되고 `stranded()` 와 같은 의미를 갖는다.
+- Reason: round 18 `N18-1`(P1) 을 두 reviewer 가 **독립으로** 실측했다. `D-047` 대로 넓힌
+  조회가 `LIMIT` 을 전체 표에 걸고 **그 다음에** `_view` 로 거른다. 정렬이
+  `received_at, command_id` 라 오래된 `completed` row 가 앞을 채우고, 손상 row 앞에 `limit`
+  개 이상이 쌓이면 창 밖으로 밀린다. 실측 — `completed` 150개 + 손상 1개에서
+  `governance stranded` 가 **`NONE`** 을 냈다. `--limit 1000` 으로는 나온다.
+
+  `governance_ingress_commands` 를 지우는 코드가 `src` 어디에도 없어 `completed` row 는
+  무한히 쌓인다. **`D-047` 의 Consequence("손상 row 는 치우기 실패 경로에서도 operator 에게
+  보인다")가 command 100건 이후 거짓이 된다.**
+- Rejected: **`LIMIT` 을 없애고 전체를 훑기.** 누락은 사라지지만 비용이 표 크기에 비례하고
+  CLI 의 `--limit` 이 의미를 잃는다. `stranded()` 는 `limit` 을 지키는데 `unreadable()` 만
+  안 지키면 같은 command 의 두 목록이 다른 규칙을 따른다.
+- Rejected: **두 조회로 나누기** — stranded 후보와 "치우기 실패로 남은 row" 를 각각 뽑아
+  합치기. 가장 정확하고 `D-047` 의 문구를 안 좁힌다. 다만 구조가 하나 늘고, **새 구조가
+  요구하는 것을 다시 세야 한다** — round 16 blocker 넷과 round 18 blocker 셋이 모두 그
+  자리에서 나왔다. 이번에는 구조를 늘리지 않는 쪽을 고른다.
+- Scope: SELECT 의 WHERE 만 바꾼다. `stranded()`, `get()`, `is_unreadable()` 의 signature 와
+  계약, CLI 출력 형식은 그대로다.
+- Consequence: 손상된 `completed` row 는 `unreadable()` 에 안 나온다. **그것이 옳다** —
+  `completed` 는 회수 대상이 아니고, round 18 `A18-1` 이 "회수가 필요 없는 row 가 회수
+  목록에 섞인다" 로 지적한 것이 함께 닫힌다. 그런 row 를 조회해야 하면
+  `is_unreadable(command_id)` 가 id 단위로 답한다 — 그쪽은 `limit` 이 없다.
+- Owner: Workstream governor.
+- Date: 2026-08-26
+- Affected item: `MGC-012-P5` wave 12. `src/amplai_foundry/governance/ingress.py`.
+- Source: 사용자 선택 2026-08-26. 근거는 round 18 `N18-1` 과 두 lens 의 독립 실측.
+- Amended (2026-08-26, round 19 `F19-1`): Decision 절 후반의 "`limit` 이 다시 후보 상한이
+  되고 `stranded()` 와 같은 의미를 갖는다" 가 **틀렸다.** 두 후보 집합이 실제로 다르고,
+  `completed` 외의 벽에서 같은 결함이 재현된다. **`D-049` 가 `LIMIT` 을 SQL 에서 빼
+  출력 상한으로 만든다.** "종결 상태를 SQL 에서 제외한다" 는 유지된다.
+
+## D-049 — Make `limit` An Output Cap, Because "Unreadable" Is Not A SQL Predicate
+
+- Status: APPROVED (**안 A**)
+- Amends: `D-048` 의 Decision 절 후반. **"종결 상태를 SQL 에서 제외한다" 는 유지된다.**
+  틀린 것은 그 다음 문장이다 — "그러면 `limit` 이 다시 후보 상한이 되고 `stranded()` 와
+  같은 의미를 갖는다".
+- Decision: `unreadable()` 의 SQL 에서 `LIMIT` 을 뺀다. `WHERE state != 'completed'` 와
+  `ORDER BY received_at, command_id` 는 그대로 두고, **`limit` 은 python 이 `_view` 실패를
+  모으는 개수의 상한**이 된다. 읽을 수 있는 row 는 건너뛰므로 어떤 벽도 손상 row 를 밀어낼
+  수 없다.
+- Reason: **"읽을 수 없다" 는 SQL 로 판정할 수 없다.** `_view` 를 돌려야 안다. 그래서
+  `LIMIT` 을 SQL 에 걸면 **어떤 state 집합을 고르든** 그 집합 안의 읽을 수 있는 row 가
+  손상 row 를 창 밖으로 민다. `D-048` 은 `completed` 하나를 빼면 `stranded()` 와 같은
+  의미가 된다고 봤는데, 두 후보 집합이 실제로 다르다 —
+  `unreadable()` 은 `{pending, leased, retry_wait, recovery_hold, dead_letter}`,
+  `_stranded_rows` 는 `{dead_letter, recovery_hold, retry_wait&소진, leased&소진&만료}` 다.
+
+  round 19 `F19-1`(P1) 이 실측했다. `pending`·`retry_wait(미소진)`·`dead_letter`·
+  `recovery_hold` 벽 각각에서 `N18-1` 과 같은 signature 가 재현된다. 가장 무거운 재현은
+  치우기가 영구히 실패하는 경우다 — **큐가 실제로 막힌 채** `governance stranded` 가 오래된
+  `dead_letter` 100줄만 내고 손상 row 는 `UNREADABLE` 로 나오지 않는다. `dead_letter` 와
+  `recovery_hold` 도 벗어나는 UPDATE·DELETE 가 `src` 에 없어 `completed` 와 똑같이 영구히
+  쌓인다.
+
+  **후보 집합을 좁히는 것으로는 못 닫는다.** 좁히면 `D-047` 이 닫은 round 17 `F17-2`
+  (치우기 실패로 `pending`·`attempts=0` 에 남은 row)가 되살아난다.
+- Rejected: **두 조회로 나누기.** `D-048` 이 "구조를 늘리면 그 구조가 요구하는 것을 또 세야
+  한다" 로 거절했고 그 판단은 여전히 유효하다. round 16 blocker 넷, round 18 셋, round 19
+  넷이 전부 그 자리에서 나왔다.
+- Rejected: **손상 여부를 durable column 으로 두어 SQL 이 판정하게 하기.** 근본적이지만
+  migration 과 모든 쓰기 경로 변경이 따르고 범위가 크게 는다. `D-045` 가 "읽을 수 없는 row 는
+  생긴다" 를 전제로 존재하는데, 그 판정을 쓰기 시점에 하려면 그 전제와 충돌한다 — 쓸 때
+  읽을 수 있었어도 나중에 손상될 수 있다.
+- Scope: `unreadable()` 의 SQL 과 python loop 만 바꾼다. `stranded()`·`get()`·
+  `is_unreadable()` 의 signature 와 계약, CLI 출력 형식은 그대로다.
+- Consequence: **비용이 `limit` 이 아니라 "종결 아닌 row 수" 에 비례한다.** `D-048` 이
+  거절 사유로 든 바로 그 비용을 받아들이는 것이다. 그 대가로 `D-047` 의 Consequence("손상
+  row 는 치우기 실패 경로에서도 operator 에게 보인다")가 **처음으로 참이 된다.**
+
+  완화 요소가 둘 있다. `completed` 는 여전히 SQL 에서 빠지고, 실무에서 대부분의 row 는
+  결국 `completed` 가 된다. 그리고 이 조회는 operator 가 부르는 진단 경로이지 worker 의
+  hot path 가 아니다.
+
+  **`limit` 의 의미가 `stranded()` 와 다르다는 사실은 남는다.** 이제 그것을 docstring 에
+  정확히 적는다 — 저쪽은 후보 상한, 이쪽은 출력 상한이다. `D-048` 은 그 차이를 없애려
+  했으나 없앨 수 없는 차이였다.
+- Owner: Workstream governor.
+- Date: 2026-08-26
+- Affected item: `MGC-012-P5` wave 13. `src/amplai_foundry/governance/ingress.py`.
+- Source: 사용자 선택 2026-08-26. 근거는 round 19 `F19-1` 이 실측한 **벽 다섯**
+  (`pending`·`retry_wait`·`dead_letter`·`recovery_hold`, 그리고 `completed` 대조)이다.
+- Correction (2026-08-26, round 20 `C20-2`): 이 항목은 처음에 "**벽 6종 전수 실측**" 이라고
+  적었다. **틀렸다.** round 19 는 다섯만 했고 `leased` 벽을 "CHECK 제약으로 재현 못 했다" 로
+  Not Checked 에 남겼다. 여섯 종은 **이 Decision 이 승인된 뒤** wave 13 이 만든 증거다 —
+  승인 근거로 소급 기재된 것이다. 같은 Decision 의 `Reason` 절은 처음부터 정확히 넷을 댄다.
+  **승인 판단 자체는 바뀌지 않는다** — 다섯이든 여섯이든 결론이 같다.
+
+## D-050 — Say When The List Is Cut, Because No `limit` Rule Can Be Complete
+
+- Status: APPROVED (**안 A**)
+- Decision: `governance stranded` 가 목록이 `limit` 에서 잘렸을 때 **그 사실을 한 줄로
+  알린다.** 판정은 service 를 고치지 않고 CLI 가 한다 — `limit + 1` 을 요청해 `limit + 1`
+  개가 오면 잘린 것이고, 출력은 `limit` 개까지만 한다. `stranded()` 와 `unreadable()` 둘 다
+  같은 규칙을 쓴다.
+- Reason: **`limit` 이 있는 한 어떤 규칙도 완전할 수 없다.** round 19·20 이 그것을 두 번
+  실측했다.
+
+  | 방식 | 무엇이 밀어내나 |
+  |---|---|
+  | `SQL LIMIT` (`D-048` 까지) | 창 안의 **읽을 수 있는** row (round 19 `F19-1`) |
+  | python 출력 상한 (`D-049`) | **읽을 수 없는** 종결 row (round 20 `F20-1`) |
+
+  둘 다 `limit` 의 본질이다. 출력이 `limit` 개로 제한되면 `limit + 1` 번째는 안 보인다.
+  `D-049` 는 벽의 **state 를 여섯으로 전수**했지만 **가독성 축을 세지 않았고**, 그 축을
+  `_dead_letter_unreadable` 이 스스로 만든다 — 치운 손상 row 는 전부 `dead_letter` +
+  읽을 수 없음이고 `dead_letter` 를 벗어나는 UPDATE·DELETE 가 없다.
+
+  실측 임계값은 정확히 `limit` 이다 — 벽 99 보임, **100 안 보임**. SQL 재계수 손상 101개에
+  CLI 출력 100줄이다. `stranded()` 도 같다 — 후보 301개에 100줄, 새로 stranded 된 row 가
+  영구히 안 보인다 (round 20 `F20-2`).
+
+  **고칠 수 없는 것을 고치려 하지 않는다. 대신 숨기지 않는다.** operator 가 "더 있다" 를
+  보면 `--limit` 을 올려 회수한다. `A19-F2`·`A20-F2` 가 두 라운드 연속 "truncation 표시가
+  없어서 operator 가 스스로 알 방법이 없다" 를 지적했고, failure lens 가 그것을
+  "`F20-1`·`F20-2` 를 **발견 불가능**하게 만드는 부품" 이라고 적었다.
+- Rejected: **`dead_letter` 정리 경로 신설.** 벽이 쌓이는 것 자체를 막으므로 근본적이지만
+  `D-038` 항목 1 이 "`dead_letter` 에서 빼내는 governed recovery 는 범위 밖" 으로 명시적으로
+  거절한 것이다. 그 결정을 뒤집으려면 별도 설계가 필요하고 범위가 크게 는다.
+- Rejected: **`limit` 을 없애고 전부 반환.** 목록이 무한히 길어질 수 있고 CLI 가 감당하지
+  못한다. round 20 `A20-F1` 이 잰 비용은 종결 아닌 row 당 5.5 µs 이고 `dead_letter` 는 안
+  빠지므로 사고 누적과 함께 단조 증가한다.
+- Rejected: **service signature 에 truncation flag 를 더하기.** `stranded()` 의 반환형이
+  바뀌면 `D-047`·`D-048`·`D-049` 가 공통으로 건 불변("`stranded()` 의 signature 와 계약
+  불변")이 깨진다. `limit + 1` 을 요청하는 것으로 같은 정보를 얻는다.
+- Scope: `cli.py` 의 `governance stranded` 만 바꾼다. `IngressService` 의 어떤 signature 도
+  바뀌지 않는다. `governance decision` 은 id 단위라 해당 없다.
+- Consequence: **CLI 출력 형식이 바뀐다** — 잘렸을 때만 줄 하나가 는다. 안 잘리면 이전과
+  같다. `MGC-012-P5-T026` 의 `scope.exclude` 가 배제한 것은 "새 **출력 형식**(JSON 등)의
+  계약화" 이고 이것은 사람이 읽는 목록에 한 줄을 더하는 것이라 그 배제에 걸리지 않는다.
+
+  조회가 `limit + 1` 개를 읽으므로 비용이 한 row 만큼 는다. `unreadable()` 쪽은 그 한 row
+  를 찾기까지 더 훑을 수 있다 — 손상이 `limit` 개를 넘을 때만이다.
+
+  **`F20-1`·`F20-2` 를 없애는 것이 아니라 보이게 만든다.** 그 구분을 evidence 에 적는다.
+- Owner: Workstream governor.
+- Date: 2026-08-26
+- Affected item: `MGC-012-P5` wave 14. `src/amplai_foundry/cli.py`.
+- Source: 사용자 선택 2026-08-26. 근거는 round 20 `F20-1`·`F20-2` 의 임계값 실측과
+  `A19-F2`·`A20-F2` 의 두 라운드 연속 지적.

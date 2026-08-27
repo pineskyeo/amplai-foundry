@@ -1,0 +1,210 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T035
+title: Separate the recovery sweeps from the speculative claim so the guard stops lying
+type: code
+status: done
+
+goal:
+  outcome: >-
+    손상 row 가 durable 하게 어떤 state 에 있든 큐가 막히지 않고, 치우지 못한 row 는
+    operator 에게 보인다. `_dead_letter_unreadable` 의 guard 는 **넓히지 않는다.**
+  user_value: >-
+    round 17 `F17-1`·`F17-2`·`F17-7`. 셋이 한 자리에서 나왔다 — `_claim_one` 이
+    **회수(sweep)와 투기(claim)를 한 transaction 에 묶었다.** `_view` 실패가 후자를
+    되돌리며 전자까지 되돌리고, 그래서 손상 row 의 durable state 가 `leased` 로 남아
+    guard 가 0행을 낸다. 하나씩 고치면 round 10~17 이 여덟 번 반복한 "한 방향을 고치며
+    반대를 만든다" 가 아홉 번째가 된다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-17.md
+      section: New Blockers
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-17.md
+      section: Three Roots
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-047
+  requirements:
+    - FR-024
+  decisions:
+    - D-042
+    - D-045
+    - D-047
+
+scope:
+  include:
+    - >-
+      **`F17-1`** — lease-expiry sweep 과 exhaustion sweep 을 claim transaction **밖**으로
+      빼고 자기 transaction 에서 commit 한다. 그러면 손상 row 가 `leased`+만료여도 sweep 이
+      durable 하게 `retry_wait` 로 바꾸므로 기존 guard 가 **맞는다.**
+    - >-
+      **`F17-7`** — 같은 분리가 닫는다. 실패한 claim 이 남의 회수를 되돌리지 않는다.
+    - >-
+      **`F17-2`** — `D-047` 대로 `unreadable()` 의 조회 범위를 "읽을 수 없는 durable row"
+      로 넓힌다. `stranded()` 의 계약과 CLI 출력 형식은 **건드리지 않는다.**
+    - >-
+      **`A17-1`·`A17-4`** — 같은 함수의 주석 둘이 코드와 반대다. 함께 맞춘다.
+  exclude:
+    - "`_dead_letter_unreadable` 의 guard 를 넓히는 것. 살아 있는 lease 를 지우는 회귀가 된다 (round 16 `FR-1`)."
+    - "`stranded()` 의 signature·계약·CLI 출력 형식."
+    - "`IngressService.get()` 의 signature 와 `committed_decision` 의 보수적 침묵 (`D-042`)."
+    - "`OutboxDispatcher` 의 같은 형태. 실측했고 범위 밖이다 — `T037` 이 기록한다."
+    - "`A17-3`(`ValueError` 와 `sqlite3.Error` 를 같은 tuple 로 잡는 것). advisory 다."
+    - "test 작성. `T036` 이 소유한다."
+  allowed_paths:
+    - src/amplai_foundry/governance/ingress.py
+  forbidden_paths:
+    - vault/
+    - specs/003-slack-proposal-card/spec.md
+    - src/amplai_foundry/governance/events.py
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **sweep 을 먼저 commit 한다.** `claim_next` 의 loop 안, `_claim_one` **앞**에서
+      부른다. sweep 이 durable 해지면 손상 row 가 `retry_wait` 가 되고 기존 guard 의
+      `state IN ('pending','retry_wait')` 가 맞는다. **guard 를 넓혀 고치지 않는다** —
+      넓히면 round 16 `FR-1` 이 막은 "살아 있는 lease 를 지운다" 가 되살아난다.
+    - >-
+      **새 구조가 요구하는 것을 센다** (round 16 blocker 넷의 원인). sweep 이 자기
+      transaction 이 되면 (1) sweep 자체의 실패 처리 (2) sweep 과 claim 사이의 경합
+      (3) sweep 결과가 되돌릴 수 없게 되는 것 (4) `INGRESS_LEASE_EXPIRED` 가 claim 실패
+      후에도 durable 하게 남는 것 — 넷을 각각 정하고 적는다.
+    - >-
+      **`unreadable()` 은 자기 조회를 갖는다.** 지금은 `_stranded_rows` 의 부산물이라
+      `pending` 손상 row 를 못 본다. `D-047` 이 조회 범위만 넓히기로 정했다. `limit` 의
+      의미가 "stranded 후보 중 N" 에서 "전체 중 N" 으로 바뀌는 것을 docstring 에 적는다.
+    - >-
+      **주석을 코드에 맞춘다.** `A17-1` 은 `generation` 이 claim 이 쓴 값이라 쓰는데 실제로는
+      SELECT 가 읽은 이전 값이다. `A17-4` 는 docstring 이 `rowcount` 를 호출자에게 알린다고
+      쓰는데 함수는 `None` 을 낸다. 결론은 맞고 전제만 틀렸다 — 전제를 고친다.
+  invariants:
+    - "치우는 write 는 claim transaction 밖에 남는다 (`D-045`)."
+    - "`claim_generation` guard 와 state guard 를 **지우지도 넓히지도 않는다**."
+    - "`stranded()` 가 내는 목록의 의미가 바뀌지 않는다."
+    - "`governance stranded` 의 출력 형식이 바뀌지 않는다."
+    - "읽기 실패만 `_UNREADABLE_ROW` 로 잡는다. `Exception` 으로 넓히지 않는다."
+  non_goals:
+    - guard 확장.
+    - Outbox 수정.
+    - 새 CLI command 나 출력 형식.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 손상 row 가 durable `leased` + lease 만료이고 뒤에 정상 command 가 있다.
+      when: "`claim_next` 를 부른다."
+      then: 정상 command 를 반환한다. 손상 row 는 `dead_letter` 가 되고 `unreadable()` 에 나온다.
+    - id: AC-02
+      given: 손상 row 와 만료 lease row 가 함께 있고 claim 이 `IngressError` 로 끝난다.
+      when: 끝난 뒤 durable state 를 읽는다.
+      then: 만료 lease 는 `retry_wait` 로 회수돼 있다. sweep 이 claim 과 함께 되돌아가지 않는다.
+    - id: AC-03
+      given: dead-letter write 가 `sqlite3.Error` 로 실패한다.
+      when: "`unreadable()` 을 부른다."
+      then: 그 row 의 id 가 나온다. `stranded()` 의 목록은 이전과 같다.
+    - id: AC-04
+      given: "`_dead_letter_unreadable` 의 WHERE."
+      when: durable state 여섯과 generation 불일치를 각각 만들어 rowcount 를 센다.
+      then: 표가 두 방법으로 재현되고 각 0행 상태의 처리가 코드 주석에 적혀 있다.
+    - id: AC-05
+      given: "`ingress.py:411` 과 `_dead_letter_unreadable` 의 docstring."
+      when: 읽는다.
+      then: 코드가 실제로 하는 것과 같은 말을 한다.
+    - id: AC-06
+      given: 전체 test suite.
+      when: 돌린다.
+      then: 이전 기준 이상으로 통과하고 실패가 없다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: lint
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-04 의 state 전수 표 (두 방법)
+      required: true
+    - type: note
+      source: 새 구조가 요구하는 넷의 처리
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      **한 방향을 고치며 반대를 만드는 것이 round 10~17 로 이어졌다.** sweep 을 분리하면
+      sweep 결과가 되돌릴 수 없게 된다. 그것이 옳은지 각 상태에서 확인한다.
+    - >-
+      `unreadable()` 의 조회 범위를 넓히면 비용이 는다. `limit` 안에서 도는 것을 지킨다.
+  approvals:
+    - public_contract
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - a_fix_would_require_widening_the_guard
+    - stranded_contract_would_have_to_change
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-26T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T035.md
+
+handoff:
+  expected_changes:
+    - "sweep 분리 — `_claim_one` 밖의 자기 transaction."
+    - "`unreadable()` 의 자기 조회."
+    - "`A17-1`·`A17-4` 주석 정정."
+  notes:
+    - >-
+      **guard 를 넓히지 않고 닫는 것이 이 task 의 핵심이다.** 넓히면 round 16 `FR-1` 이
+      막은 회귀가 되살아난다.

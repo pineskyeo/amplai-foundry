@@ -1174,7 +1174,7 @@ def test_connect_does_not_normalize_what_the_caller_raises(tmp_path: Path) -> No
 # MGC-012-P5-T029 — `sqlite3.Error` 는 정규화하지 않는다 (round 15 `R-1`)
 #
 # T024 가 open 단계의 `sqlite3.Error` 까지 `GovernanceStoreError` 로 바꿨는데,
-# `legacy_*.py` 아홉 `try` 가 `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다. 그
+# `legacy_*.py` 의 `try` 열이 `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다. 그
 # 봉쇄가 사라져 raw `GovernanceStoreError` 가 module 경계를 넘었다. **test 가 없어서
 # suite 는 조용했다.** 아래 둘이 그 침묵을 없앤다.
 
@@ -1183,7 +1183,7 @@ def test_connect_does_not_normalize_a_sqlite_error_from_configuring(tmp_path: Pa
     """`_configure` 의 `sqlite3.Error` 는 그대로 나간다.
 
     round 14 `P1-1` 이 요구한 것은 `GovernanceFilesystemError` 하나였다. `sqlite3.Error`
-    까지 덮으면 `sqlite3.Error` 를 잡던 호출자 아홉의 봉쇄가 사라진다.
+    까지 덮으면 `sqlite3.Error` 를 잡던 호출자 열의 봉쇄가 사라진다.
     """
     path = tmp_path / "governance.db"
     GovernanceStore(path).initialize()
@@ -1217,7 +1217,7 @@ def test_connect_still_normalizes_the_failure_round_14_asked_for(tmp_path: Path)
 # MGC-012-P5-T033 — T029 가 되돌린 세 지점을 전부 고정한다 (round 16 R16-2)
 # ---------------------------------------------------------------------------
 #
-# `T029` 는 `_OPEN_FAILURES` 에서 `sqlite3.Error` 를 빼서 `legacy_*.py` 아홉 handler 의
+# `T029` 는 `_OPEN_FAILURES` 에서 `sqlite3.Error` 를 빼서 `legacy_*.py` 의 `try` 열의
 # 봉쇄를 되살렸다. 그런데 test 는 `_configure` 지점 하나만 고정했다. 착수 전 실측에서
 # **세 지점 중 둘이 무방비**였다 — `_raw_connection` 의 PRAGMA 와 `PRAGMA database_list`.
 # 둘 다 다시 감싸는 mutation 이 40건을 전부 통과했다.
@@ -1256,7 +1256,7 @@ def test_connect_leaves_a_sqlite_error_raw_at_every_revert_point(
     """`T029` 가 정규화하지 않기로 한 지점이 실제로 raw 로 나간다.
 
     어느 하나를 다시 `GovernanceStoreError` 로 감싸면 이 test 가 실패한다. 그 봉쇄에
-    `legacy_*.py` 아홉 handler 가 의존한다.
+    `legacy_*.py` 의 `try` 열이 의존한다.
     """
     path = tmp_path / "governance.db"
     GovernanceStore(path).initialize()

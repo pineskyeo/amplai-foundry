@@ -47,6 +47,17 @@
 - MGC-012-P5-T032 (done) Normalize at the CLI boundary so neither fix reopens the raw traceback
 - MGC-012-P5-T033 (done) Pin the revert point that no test was holding
 - MGC-012-P5-T034 (done) Fix the sixth count error and the evidence declared present but absent
+- MGC-012-P5-T035 (done) Separate the recovery sweeps from the speculative claim so the guard stops lying
+- MGC-012-P5-T036 (done) Write the scenarios that tell each guard apart instead of passing when either is gone
+- MGC-012-P5-T037 (done) Stop reproducing the evidence failure this feature keeps pointing at
+- MGC-012-P5-T038 (done) Count what the two new structures actually require, this time to the end
+- MGC-012-P5-T039 (done) Say what range the census covered, and cover the whole of it
+- MGC-012-P5-T040 (done) Stop the freeze from carrying what the freeze itself creates
+- MGC-012-P5-T041 (done) Make limit an output cap and pin what the table said was already pinned
+- MGC-012-P5-T042 (done) Make the approved wording say what the code actually does
+- MGC-012-P5-T043 (done) Fix the three tables wave 12 got wrong
+- MGC-012-P5-T044 (done) Say when the list is cut, and count what that new structure requires
+- MGC-012-P5-T045 (done) Annotate the sentence a Decision called wrong, and fix a Source that overcounted
 
 ## Open questions
 

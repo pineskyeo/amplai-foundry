@@ -1,0 +1,217 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T044
+title: Say when the list is cut, and count what that new structure requires
+type: code
+status: done
+
+goal:
+  outcome: >-
+    `governance stranded` 가 목록이 `limit` 에서 잘렸을 때 알린다. `F20-3`·`R20-1` 이
+    test 로 묶인다.
+  user_value: >-
+    round 20 `F20-1`(P1)·`F20-2`·`F20-3`·`R20-1`. **`F20-1` 은 고칠 수 있는 종류가 아니다** —
+    `limit` 이 있는 한 `SQL LIMIT` 은 읽힐 벽이, python 상한은 **안 읽힐 벽**이 `limit+1`
+    번째를 밀어낸다. `D-050` 이 그것을 **없애는 대신 보이게** 만든다. 두 lens 가 두 라운드
+    연속 "truncation 표시가 없어서 operator 가 스스로 알 방법이 없다" 를 지적했다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-20.md
+      section: New Blockers
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-050
+  requirements:
+    - FR-024
+  decisions:
+    - D-045
+    - D-049
+    - D-050
+
+scope:
+  include:
+    - >-
+      **`F20-1`·`F20-2`** — `D-050` 대로 CLI 가 `limit + 1` 을 요청해 잘림을 판정하고 한
+      줄로 알린다. `stranded` 와 `unreadable` 두 목록 각각에 대해 판정한다.
+    - >-
+      **새 구조가 요구하는 것을 전수로 센다.** `limit + 1` 을 요청하면 무엇이 달라지는가.
+      **특히 `--limit 0` 이 `limit + 1 = 1` 이 되어 service guard 를 우회하는지 본다.**
+    - "**`F20-3`** — `unreadable()` 의 `WHERE state != 'completed'` 를 고정하는 test."
+    - "**`R20-1`** — `retry_wait`+소진 경로의 `last_error_code` 를 고정하는 test."
+  exclude:
+    - "`F20-1`·`F20-2` 를 **없애는 것**. `D-050` 이 '보이게 만든다' 로 정했다."
+    - "`dead_letter` 정리 경로. `D-038` 항목 1 이 거절했다."
+    - "`IngressService` 의 signature 변경."
+    - "새 출력 형식(JSON 등)의 계약화."
+    - "문서 정정. `T045` 가 소유한다."
+  allowed_paths:
+    - src/amplai_foundry/cli.py
+    - tests/test_cli.py
+    - tests/test_slack_ack_boundary.py
+  forbidden_paths:
+    - vault/
+    - specs/003-slack-proposal-card/spec.md
+    - src/amplai_foundry/governance/
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **판정은 CLI 가 한다.** `limit + 1` 을 요청해 `limit + 1` 개가 오면 잘린 것이고 출력은
+      `limit` 개까지만 한다. service signature 를 안 바꾸므로 `D-047`·`D-048`·`D-049` 가
+      공통으로 건 불변이 유지된다.
+    - >-
+      **새 구조가 요구하는 것을 세는 것이 이 task 의 절반이다.** round 16·18·19·20 의
+      blocker 열둘이 전부 "새 구조를 넣고 그것이 요구하는 것을 덜 셌다" 에서 나왔다.
+      **`--limit 0` 이 `limit + 1 = 1` 로 바뀌어 service 의 `limit < 1` guard 를 우회하는
+      것이 첫 항목이다** — 착수 전에 이미 보인다. 표에 항목마다 **처리**와 **test** 를 둔다.
+    - >-
+      **`F20-1` 을 없애는 것이 아니다.** 잘린 사실을 알릴 뿐이고 `limit` 을 올려야 회수된다.
+      그 구분을 evidence 에 명시한다.
+    - >-
+      **mutation 은 `PYTHONDONTWRITEBYTECODE=1` 과 `__pycache__` 삭제 뒤에 돌린다.**
+    - >-
+      **표의 칸을 mutation 으로 확인하기 전에는 채우지 않는다** (round 19 `R19-3`).
+  invariants:
+    - "`IngressService` 의 어떤 signature 도 바꾸지 않는다."
+    - "안 잘렸을 때의 출력은 이전과 같다."
+    - "`--limit 0` 과 음수가 여전히 거부된다."
+    - "test 를 지우거나 약화하지 않는다."
+  non_goals:
+    - service 변경.
+    - dead_letter 정리.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: stranded 후보가 `limit` 보다 많다.
+      when: "`governance stranded --limit N` 을 부른다."
+      then: N 줄과 **잘렸다는 줄**이 나온다.
+    - id: AC-02
+      given: 후보가 `limit` 이하다.
+      when: 같은 명령을 부른다.
+      then: 잘렸다는 줄이 **없다.** 출력이 이전과 같다.
+    - id: AC-03
+      given: 손상 row 가 `limit` 보다 많고 stranded 후보는 적다.
+      when: 같은 명령을 부른다.
+      then: 잘렸다는 줄이 나온다. **두 목록 각각을 판정한다.**
+    - id: AC-04
+      given: "`--limit 0` 과 `--limit -1`."
+      when: 부른다.
+      then: exit 1 이고 raw traceback 이 없다. **`limit + 1` 이 guard 를 우회하지 않는다.**
+    - id: AC-05
+      given: "`unreadable()` 의 `WHERE state != 'completed'`."
+      when: 지운다.
+      then: test 가 죽는다.
+    - id: AC-06
+      given: sweep 둘째 UPDATE.
+      when: "`last_error_code = COALESCE(...)` 를 더한다."
+      then: test 가 죽는다.
+    - id: AC-07
+      given: "`limit + 1` 을 요청하는 새 구조."
+      when: 그 구조가 요구하는 것을 전수로 센다.
+      then: 표에 항목마다 **처리**와 **test** 가 있다. test 칸은 mutation 으로 확인한 것만 채운다.
+    - id: AC-08
+      given: 전체 test suite.
+      when: 돌린다.
+      then: 통과하고 test 수가 줄지 않는다. 두 방법으로 센다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_cli.py tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: lint
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks:
+    - id: mutation-table
+      observer: 구현자
+      action: >-
+        AC-01·AC-05·AC-06 의 mutation 을 하나씩 넣고 `PYTHONDONTWRITEBYTECODE=1` 로 돌린 뒤
+        되돌린다. `__pycache__` 를 먼저 지운다.
+      expected: 셋 다 KILLED 이고 서로 다른 test 가 죽는다.
+      reason_not_automated: mutation 은 구현 파일을 바꾸는 것이라 suite 안에서 자동화할 수 없다.
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-07 의 새 구조 요구 표 (처리와 test)
+      required: true
+    - type: note
+      source: AC-01~AC-04 의 CLI 출력 실측
+      required: true
+    - type: note
+      source: mutation 표 (KILLED 와 죽은 test 이름)
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      **`limit + 1` 이 `--limit 0` 의 guard 를 우회한다.** 착수 전에 보이는 첫 요구 항목이고,
+      이것 하나만 있는지 전수로 세야 한다.
+    - >-
+      **잘림을 알리는 것과 없애는 것을 혼동하지 않는다.** evidence 에 구분을 적는다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - a_fix_would_require_changing_a_service_signature
+    - a_fix_would_require_a_dead_letter_cleanup_path
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-26T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T044.md
+
+handoff:
+  expected_changes:
+    - "CLI 의 truncation 판정과 출력."
+    - "`--limit` guard 를 CLI 에서도 건다."
+    - "`F20-3`·`R20-1` test."
+  notes:
+    - >-
+      **잘린 것을 보이게 만드는 것이지 없애는 것이 아니다.**

@@ -2336,16 +2336,21 @@ def test_a_filesystem_failure_while_settling_an_exhausted_retry_stays_silent(
     # 마지막 시도에서 `committed_decision()` 이 여는 connection **만** 막는다. 실측한
     # `validate()` 호출 순서는 아래와 같다 (`connect()` 하나가 두 번 부른다).
     #
-    #   1-2  `claim_next`
-    #   3-4  decision transaction
-    #   5-8  `committed_decision()` — `ingress.get` 과 `decisions.result_for`
-    #   9-10 `_transition` 의 `recovery_hold` 쓰기
+    #   1-2   `claim_next` 의 `_sweep_recoverable`
+    #   3-4   `_claim_one`
+    #   5-6   decision transaction
+    #   7-10  `committed_decision()` — `ingress.get` 과 `decisions.result_for`
+    #   11-12 `_transition` 의 `recovery_hold` 쓰기
     #
-    # 5 하나만 막는다. `before` validate 가 raise 하면 그 `connect()` 는 `after` 를 부르지
+    # 7 하나만 막는다. `before` validate 가 raise 하면 그 `connect()` 는 `after` 를 부르지
     # 않으므로 호출 하나만 쓰고, `committed_decision()` 은 첫 읽기에서 이미 멈춘다. 창을
     # 넓게 잡으면 `_transition` 의 쓰기까지 막혀 command 가 `leased` 로 남는데, 그것은
     # store 가 통째로 죽은 다른 경우다.
-    _trip_the_filesystem_guard(store, window=(5, 5))
+    #
+    # **wave 11 이 sweep 을 claim transaction 밖으로 뺐다** (round 17 `F17-7`). 회수가
+    # 자기 connection 을 쓰므로 그 뒤가 전부 2씩 밀렸다 — 창은 5 에서 7 로 옮겼고 때리는
+    # 지점은 그대로 `committed_decision()` 의 첫 읽기다. 실측으로 다시 셌다.
+    _trip_the_filesystem_guard(store, window=(7, 7))
 
     result = worker.process_next("slack-worker")
 
@@ -2372,9 +2377,14 @@ def test_a_filesystem_failure_in_the_finalize_transition_does_not_escape(
     ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
     worker = _worker(store, ingress)
 
-    #   1-2 `claim_next`, 3-4 decision transaction, 5- 그 뒤가 `_transition` 이다.
-    #   소진 전이라 `_settle_exhausted_retry` 는 읽기를 하지 않는다.
-    _trip_the_filesystem_guard(store, window=(5, 5))
+    #   1-2 `claim_next` 의 `_sweep_recoverable`, 3-4 `_claim_one`, 5-6 decision
+    #   transaction, 7- 그 뒤가 `_transition` 이다. 소진 전이라
+    #   `_settle_exhausted_retry` 는 읽기를 하지 않는다.
+    #
+    #   **wave 11 이 sweep 을 claim transaction 밖으로 뺐다** (round 17 `F17-7`). 회수가
+    #   자기 connection 을 쓰므로 그 뒤가 전부 2씩 밀렸다 — 창은 5 에서 7 로 옮겼고 때리는
+    #   지점은 그대로 `_transition` 이다. 실측으로 다시 셌다.
+    _trip_the_filesystem_guard(store, window=(7, 7))
 
     result = worker.process_next("slack-worker")
 
@@ -2677,3 +2687,579 @@ def test_an_unreadable_row_is_told_apart_from_one_with_no_decision(tmp_path: Pat
 
     assert ingress.is_unreadable(command_id) is True
     assert ingress.get(command_id) is None, "`get()` 은 여전히 None 이다"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T035 / T036 — 회수와 투기를 가르고, guard 를 각각 가른다 (round 17)
+# ---------------------------------------------------------------------------
+#
+# round 17 blocker 셋이 한 자리에서 나왔다. `_claim_one` 이 회수(sweep)와 투기(claim)를 한
+# transaction 에 묶어서, `_view` 실패가 claim 을 되돌리며 회수까지 되돌렸다. 손상 row 가
+# `leased`+만료로 durable 하게 남아 `_dead_letter_unreadable` 의 guard 가 0행을 냈고 큐가
+# 닫혔다 — round 15 `F-1` 의 head-of-line 차단이 되돌아온 것이다 (`F17-1`).
+
+
+_LEASE_EXPIRED_AT = IngressService._timestamp(NOW - timedelta(seconds=60))
+
+
+def _pin_state(
+    store: GovernanceStore,
+    command_id: str,
+    state: str,
+    *,
+    attempts: int = 1,
+) -> None:
+    """durable row 하나를 원하는 state 로 못박는다. state 별 CHECK 를 함께 맞춘다.
+
+    `leased` 는 `lease_owner`·`lease_expires_at` 이 NOT NULL 이어야 하고 다른 state 는 둘 다
+    NULL 이어야 한다. `retry_wait` 는 `retry_at`, `completed` 는 `completed_at` 이 필요하다
+    (`migrations.py:291-301`).
+    """
+    with store.connect() as connection:
+        changed = connection.execute(
+            "UPDATE governance_ingress_commands SET state=?, attempts=?, lease_owner=?, "
+            "lease_expires_at=?, retry_at=?, completed_at=? WHERE command_id=?",
+            (
+                state,
+                attempts,
+                "dead-worker" if state == "leased" else None,
+                _LEASE_EXPIRED_AT if state == "leased" else None,
+                _LEASE_EXPIRED_AT if state == "retry_wait" else None,
+                _LEASE_EXPIRED_AT if state == "completed" else None,
+                command_id,
+            ),
+        )
+        assert changed.rowcount == 1, f"{state} 로 못박지 못했다"
+        connection.commit()
+
+
+def _durable(store: GovernanceStore, command_id: str) -> tuple[str, int, str | None]:
+    with store.connect() as connection:
+        state, attempts, code = connection.execute(
+            "SELECT state, attempts, last_error_code FROM governance_ingress_commands "
+            "WHERE command_id = ?",
+            (command_id,),
+        ).fetchone()
+    return str(state), int(attempts), code
+
+
+def _generation(store: GovernanceStore, command_id: str) -> int:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT claim_generation FROM governance_ingress_commands WHERE command_id = ?",
+            (command_id,),
+        ).fetchone()
+    return int(row[0])
+
+
+def test_a_corrupt_row_holding_an_expired_lease_does_not_block_the_ones_behind_it(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-1` (P1). **round 15 의 head-of-line 차단이 되돌아왔던 자리다.**
+
+    손상 row 가 durable 하게 `leased`+만료면 `state IN ('pending','retry_wait')` guard 가
+    0행을 냈다. 치우지 못한 채 `cleared` 판정으로 `claim_next` 가 닫히고 뒤 command 는
+    영원히 `pending` 이었다. `attempts=0` 이라 `stranded()` 에도 안 보였다.
+
+    이제 `_sweep_recoverable` 이 claim **앞에서** 그 row 를 `retry_wait` 로 회수하므로
+    guard 가 맞는다. **guard 를 넓혀 고친 것이 아니다** — 넓히면 round 16 `FR-1` 이 막은
+    "살아 있는 lease 를 지운다" 가 되살아난다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "leased")
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None, "손상 row 뒤의 command 가 처리돼야 한다 — 큐가 막히면 안 된다"
+    assert claimed.command_id == healthy
+    assert _durable(store, poison)[0] == "dead_letter"
+    assert ingress.unreadable() == (poison,), "치운 것은 operator 에게 보여야 한다"
+
+
+def test_a_failed_claim_does_not_roll_back_another_rows_recovery(tmp_path: Path) -> None:
+    """round 17 `F17-7` (B-P2).
+
+    회수는 투기적이지 않다. lease 는 실제로 만료됐고 claim 실패가 그 사실을 바꾸지 않는다.
+    전에는 같은 transaction 이라 함께 되돌아가 죽은 worker 의 lease 가 `leased` 로
+    고정됐다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, healthy, "leased")
+
+    def _cannot_clear(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    original = IngressService._dead_letter_unreadable
+    try:
+        IngressService._dead_letter_unreadable = _cannot_clear  # type: ignore[method-assign]
+        with pytest.raises(IngressError):
+            ingress.claim_next("worker-b")
+    finally:
+        IngressService._dead_letter_unreadable = original  # type: ignore[method-assign]
+
+    state, _attempts, code = _durable(store, healthy)
+    assert state == "retry_wait", "만료 lease 회수가 실패한 claim 과 함께 되돌아갔다"
+    assert code == "INGRESS_LEASE_EXPIRED"
+
+
+def test_a_row_left_behind_by_a_failed_dead_letter_write_is_still_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 17 `F17-2` (P1). `D-047` 이 정한 것.
+
+    치우는 write 가 실패하면 row 가 `pending` 이나 `retry_wait` 로 남는데 `_stranded_rows`
+    의 WHERE 가 그것을 안 본다. `attempts` 는 rollback 되는 transaction 안에서만 증가하므로
+    **시간이 지나도 나타나지 않는다.** `D-045` 가 닫으려던 "operator 가 볼 방법이 없다" 가
+    다른 경로로 되살아난 것이다.
+
+    `stranded()` 의 계약은 그대로 두고 `unreadable()` 만 넓혔다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+
+    def _cannot_clear(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _cannot_clear)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("worker-b")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert _durable(store, poison)[0] == "pending", "치우지 못했으므로 그대로 남는다"
+    assert ingress.unreadable() == (poison,), "치우지 못한 row 가 operator 에게 보여야 한다"
+    assert ingress.stranded() == (), "`stranded()` 의 계약은 넓히지 않았다"
+
+
+def test_the_dead_letter_write_leaves_a_row_alone_when_only_the_generation_differs(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-3` — **`claim_generation` guard 만** 가른다.
+
+    state 는 `pending` 이라 state guard 는 참이다. generation 만 어긋난다. 그래서
+    `claim_generation = ?` 를 `? IS NOT NULL` 로 바꾸면 이 test 가 죽고, `state IN (...)`
+    를 지워도 이 test 는 통과한다. 두 guard 가 **같은 시나리오에서 참이던** 기존 race
+    test 와 다른 점이 이것이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    stale_generation = _generation(store, poison) + 1
+
+    ingress._dead_letter_unreadable(poison, stale_generation)
+
+    assert _durable(store, poison) == ("pending", 0, None), (
+        "generation 이 어긋나면 건드리지 않는다 — 그 사이 다른 claim 이 있었다는 뜻이다"
+    )
+
+
+def test_the_dead_letter_write_leaves_a_row_alone_when_only_the_state_differs(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-3` — **state guard 만** 가른다.
+
+    generation 은 맞고 state 만 `completed` 다. state guard 를 지우면 `completed` row 에
+    `state='dead_letter'` 를 쓰면서 `completed_at` 이 남아 CHECK 를 위반해 `IntegrityError`
+    가 난다 (`migrations.py:299`). `claim_generation` guard 를 지워도 이 test 는 통과한다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    generation = _generation(store, poison)
+    _pin_state(store, poison, "completed", attempts=1)
+
+    ingress._dead_letter_unreadable(poison, generation)
+
+    assert _durable(store, poison)[0] == "completed", (
+        "이미 끝난 row 를 되돌리지 않는다 — 결정은 났는데 장부가 '읽을 수 없었다' 가 된다"
+    )
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T038 — 두 구조가 요구하는 것을 끝까지 센다 (round 18)
+# ---------------------------------------------------------------------------
+#
+# round 18 blocker 넷이 wave 11 이 넣은 두 구조에서 나왔다 — `unreadable()` 을 자기 조회로
+# 넓힌 것과 `_sweep_recoverable()` 을 분리한 것이다. `T035` evidence 가 "새 구조가 요구한 것
+# 다섯" 을 세었는데 그 목록 자체가 덜 셌다.
+
+
+def _fill_completed(store: GovernanceStore, count: int) -> None:
+    """읽을 수 있는 `completed` row 를 `received_at` 이 아주 이른 값으로 채운다.
+
+    `unreadable()` 의 정렬이 `received_at, command_id` 라 이 row 들이 앞을 차지한다.
+    `limit` 이 표 상한이면 뒤의 손상 row 가 창 밖으로 밀린다 (round 18 `N18-1`).
+    """
+    with store.connect() as connection:
+        template = connection.execute(
+            "SELECT provider, provider_installation_ref, credential_kind, credential_id, "
+            "credential_hash, action FROM governance_ingress_commands LIMIT 1"
+        ).fetchone()
+        provider, install, kind, credential_id, credential_hash, action = template
+        channel = json.dumps(_channel_payload(), separators=(",", ":"), sort_keys=True)
+        for index in range(count):
+            token = f"filler-{index}"
+            command_id = f"CMD-{hashlib.sha256(token.encode()).hexdigest()[:16].upper()}"
+            connection.execute(
+                "INSERT INTO governance_ingress_commands (command_id, provider, "
+                "provider_installation_ref, provider_fingerprint, raw_body_digest, "
+                "external_event_id, external_actor_key, channel_json, credential_kind, "
+                "credential_id, credential_hash, action, received_at, state, attempts, "
+                "claim_generation, completed_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'completed', 1, 1, ?)",
+                (
+                    command_id,
+                    provider,
+                    install,
+                    hashlib.sha256(f"fp-{token}".encode()).hexdigest(),
+                    f"sha256:{hashlib.sha256(f'body-{token}'.encode()).hexdigest()}",
+                    f"EVT-{token}",
+                    "U456",
+                    channel,
+                    kind,
+                    credential_id,
+                    credential_hash,
+                    action,
+                    "2020-01-01T00:00:00.000000Z",
+                    "2020-01-01T00:00:01.000000Z",
+                ),
+            )
+        connection.commit()
+
+
+def test_a_corrupt_row_stays_visible_behind_a_wall_of_completed_ones(tmp_path: Path) -> None:
+    """round 18 `N18-1` (P1). `D-048` 이 정한 것.
+
+    `unreadable()` 이 `LIMIT` 을 전체 표에 걸면 오래된 `completed` row 가 앞을 채워
+    손상 row 를 창 밖으로 민다. 실측에서 `completed` 150개 뒤의 손상 row 가
+    `limit=100` 에 안 나왔고 `governance stranded` 가 `NONE` 을 냈다.
+    `governance_ingress_commands` 를 지우는 코드가 없어 `completed` 는 무한히 쌓인다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "retry_wait", attempts=9)
+    _fill_completed(store, 150)
+
+    assert ingress.unreadable(limit=100) == (poison,), (
+        "종결 상태가 창을 채우면 손상 row 가 보이지 않는다 — limit 은 후보 상한이어야 한다"
+    )
+    assert ingress.unreadable(limit=200) == (poison,), "창을 넓혀도 같은 결과여야 한다"
+
+
+def test_an_exhausted_corrupt_row_is_still_visible_after_the_sweep_clears_it(
+    tmp_path: Path,
+) -> None:
+    """round 18 `N18-2`. 표에 없던 경로다.
+
+    `_sweep_recoverable` 의 첫째 UPDATE 가 `retry_at = now` 를 쓰므로 **같은 transaction
+    안에서** 둘째 UPDATE 의 `retry_at <= now` 가 참이 된다. `leased`+만료+소진 row 는
+    거기서 바로 `dead_letter` 로 가고 `_dead_letter_unreadable` 에 **도달하지 않는다.**
+
+    `last_error_code` 는 `INGRESS_LEASE_EXPIRED` 다. 둘 다 사실이다 — lease 가 만료됐고
+    시도가 소진됐다. **중요한 것은 회수 경로가 살아 있다는 것이다.**
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store, _authenticator(), config=IngressConfig(max_attempts=2), clock=lambda: NOW
+    )
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "leased", attempts=5)
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None and claimed.command_id == healthy, "큐가 막히면 안 된다"
+    state, _attempts, code = _durable(store, poison)
+    assert state == "dead_letter"
+    assert code == "INGRESS_LEASE_EXPIRED", (
+        "소진 sweep 이 먼저 치운 경로다. `_dead_letter_unreadable` 에 도달하지 않는다"
+    )
+    assert ingress.unreadable() == (poison,), "그래도 operator 에게는 보여야 한다"
+
+
+def test_a_sweep_failure_alone_still_closes_the_claim(tmp_path: Path) -> None:
+    """round 18 `F18-R1`. `T035` 가 "새 구조가 요구한 것" 첫째로 적고 test 를 안 만들었다.
+
+    기존 `..._filesystem_failure_in_claim_next_...` 는 `window=(1, 10**6)` 으로 store 를
+    통째로 막는다. 그래서 sweep 이 실패를 삼켜도 뒤이은 `_claim_one` 이 대신 실패해
+    `CLAIM_FAILED` 가 나온다 — **그 test 는 이 지점을 가르지 못한다.**
+
+    여기서는 **sweep 의 connect 하나만** 막는다. 실측한 `validate()` 순서에서 1-2 가
+    `_sweep_recoverable`, 3-4 가 `_claim_one` 이다. `before` validate 가 raise 하면 그
+    `connect()` 는 `after` 를 안 부르므로 창 하나면 충분하다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    _trip_the_filesystem_guard(store, window=(1, 1))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED, (
+        "sweep 실패를 삼키면 claim 이 그대로 진행돼 만료 lease 회수가 조용히 사라진다"
+    )
+
+
+def test_unreadable_rejects_a_non_positive_limit(tmp_path: Path) -> None:
+    """round 18 `F18-R2`. `unreadable()` 이 자기 조회가 되면서 guard 를 복제했는데 test 가
+    `stranded(limit=0)` 만 쳤다. guard 가 없으면 `LIMIT 0` 이 빈 결과를 내 "손상 row 없음"
+    이라는 거짓 음성이 된다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    with pytest.raises(ValueError):
+        ingress.unreadable(limit=0)
+    with pytest.raises(ValueError):
+        ingress.unreadable(limit=-1)
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T041 — limit 은 출력 상한이다 (round 19)
+# ---------------------------------------------------------------------------
+#
+# `D-048` 은 종결 상태만 빼면 `unreadable()` 의 `limit` 이 `stranded()` 와 같은 뜻이 된다고
+# 봤다. 틀렸다 — **"읽을 수 없다" 는 SQL 로 판정할 수 없어서** `SQL LIMIT` 을 쓰는 한 어떤
+# state 집합을 골라도 그 안의 읽을 수 있는 row 가 손상 row 를 창 밖으로 민다 (round 19
+# `F19-1`, P1). `D-049` 가 `LIMIT` 을 python 출력 상한으로 옮겼다.
+
+_WALL_STATES = ("completed", "dead_letter", "recovery_hold", "pending", "retry_wait", "leased")
+
+
+def _readable_wall(store: GovernanceStore, state: str, count: int) -> None:
+    """읽을 수 있는 row 로 벽을 쌓는다. `received_at` 이 이르므로 정렬 앞을 차지한다.
+
+    state 별 CHECK 를 맞춘다 (`migrations.py:291-301`).
+    """
+    with store.connect() as connection:
+        template = connection.execute(
+            "SELECT provider, provider_installation_ref, credential_kind, credential_id, "
+            "credential_hash, action FROM governance_ingress_commands LIMIT 1"
+        ).fetchone()
+        provider, install, kind, credential_id, credential_hash, action = template
+        channel = json.dumps(_channel_payload(), separators=(",", ":"), sort_keys=True)
+        for index in range(count):
+            token = f"{state}-wall-{index}"
+            connection.execute(
+                "INSERT INTO governance_ingress_commands (command_id, provider, "
+                "provider_installation_ref, provider_fingerprint, raw_body_digest, "
+                "external_event_id, external_actor_key, channel_json, credential_kind, "
+                "credential_id, credential_hash, action, received_at, state, attempts, "
+                "claim_generation, lease_owner, lease_expires_at, retry_at, completed_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,1,?,?,?,?)",
+                (
+                    f"CMD-{hashlib.sha256(token.encode()).hexdigest()[:16].upper()}",
+                    provider,
+                    install,
+                    hashlib.sha256(f"fp-{token}".encode()).hexdigest(),
+                    f"sha256:{hashlib.sha256(f'b-{token}'.encode()).hexdigest()}",
+                    f"EVT-{token}",
+                    "U456",
+                    channel,
+                    kind,
+                    credential_id,
+                    credential_hash,
+                    action,
+                    "2020-01-01T00:00:00.000000Z",
+                    state,
+                    "wall-worker" if state == "leased" else None,
+                    _LEASE_EXPIRED_AT if state == "leased" else None,
+                    _LEASE_EXPIRED_AT if state == "retry_wait" else None,
+                    _LEASE_EXPIRED_AT if state == "completed" else None,
+                ),
+            )
+        connection.commit()
+
+
+@pytest.mark.parametrize("wall_state", _WALL_STATES)
+def test_no_wall_of_readable_rows_can_hide_a_corrupt_one(tmp_path: Path, wall_state: str) -> None:
+    """round 19 `F19-1` (P1). **벽 6종 전수.**
+
+    `SQL LIMIT` 을 쓰던 동안에는 `completed` 만 막혀 있었고 나머지 다섯이 그대로 뚫렸다.
+    `dead_letter` 와 `recovery_hold` 도 벗어나는 UPDATE·DELETE 가 `src` 에 없어 `completed`
+    와 똑같이 영구히 쌓인다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "retry_wait", attempts=9)
+    _readable_wall(store, wall_state, 150)
+
+    assert poison in ingress.unreadable(limit=100), (
+        f"`{wall_state}` 벽 150개가 손상 row 를 창 밖으로 밀었다 — "
+        "limit 은 후보 상한이 아니라 출력 상한이어야 한다"
+    )
+
+
+def test_a_queue_blocked_by_a_failing_clear_is_still_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 19 `F19-1` 재현 B — 가장 무거운 것.
+
+    치우기가 영구히 실패하면 큐가 **실제로 막힌다.** 그 상태에서 오래된 `dead_letter` 벽이
+    있으면 `governance stranded` 가 그 벽만 내고 손상 row 는 `UNREADABLE` 로 안 나왔다.
+    `D-047` 의 Consequence 가 `D-048` 뒤에도 거짓이었고 `D-049` 가 그것을 처음으로 참으로
+    만든다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _readable_wall(store, "dead_letter", 100)
+
+    def _never_clears(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _never_clears)
+    for _ in range(3):
+        with pytest.raises(IngressError):
+            ingress.claim_next("worker-b")
+
+    assert _durable(store, healthy)[0] == "pending", "큐가 막힌 상태를 만들지 못했다"
+    assert poison in ingress.unreadable(limit=100), "큐가 막힌 채 손상 row 가 operator 목록에 없다"
+
+
+def test_a_programming_error_inside_the_view_escapes_the_unreadable_scan(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 19 `R19-1`. **`unreadable()` 에 대해서는 아무도 이것을 치지 않았다.**
+
+    `T038` AC-06 표가 이 칸에 `..._a_programming_error_inside_the_view_still_escapes` 를
+    적었는데 그 test 는 `get()` 과 `stranded()` 만 부른다. 그래서 `unreadable()` 의
+    `except _UNREADABLE_ROW` 를 `except Exception` 으로 넓혀도 suite 가 전부 통과했다.
+
+    넓히면 `_view` 안의 구현 결함(`AttributeError`·`TypeError`)이 operator 에게 "이 row 는
+    손상됐다" 로 보고된다 — round 15 `F-2` 가 `stranded()` 에 대해 막은 거짓 양성이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+
+    def _bug(row: object) -> object:
+        raise AttributeError("구현자 실수를 흉내낸다")
+
+    monkeypatch.setattr(IngressService, "_view", staticmethod(_bug))
+
+    with pytest.raises(AttributeError):
+        ingress.unreadable()
+
+
+def test_unreadable_lists_corrupt_rows_in_arrival_order(tmp_path: Path) -> None:
+    """round 19 `R19-2`. 정렬은 장식이 아니다.
+
+    `limit` 이 출력 상한이라 **어떤 손상 row 가 그 안에 드는지**를 정렬이 정한다.
+    `stranded()` 와 같은 규칙(`received_at, command_id`)이어야 두 목록이 어긋나지 않는다.
+
+    `T038` AC-06 표는 "위 두 test 가 순서에 의존" 이라 적었지만 둘 다 의존하지 않았다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    first, second = _two_commands(store, ingress)
+    _corrupt(store, first)
+    _corrupt(store, second)
+
+    listed = ingress.unreadable()
+
+    assert listed == (first, second), "도착 순서가 아니다"
+    assert ingress.unreadable(limit=1) == (first,), (
+        "출력 상한을 채울 때 가장 오래된 것부터 나와야 한다"
+    )
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T044 — 적어 둔 계약을 test 로 묶는다 (round 20)
+# ---------------------------------------------------------------------------
+
+
+def test_unreadable_skips_a_corrupt_row_that_already_completed(tmp_path: Path) -> None:
+    """round 20 `F20-3`. **이 계약을 고정하는 test 가 없었다.**
+
+    `unreadable()` 의 docstring 이 "손상된 `completed` row 는 여기 안 나온다. **그것이
+    옳다**" 로 단언하고 `D-048` 이 그것을 승인 근거로 삼는데, `WHERE state != 'completed'`
+    를 통째로 지워도 전 suite 가 통과했다. round 19 `A19-R2` 가 Advisory 로 적었고 그 사이
+    같은 문장이 두 Decision 의 근거로 승격됐다.
+
+    `completed` 는 회수 대상이 아니다. 그런 row 를 조회해야 하면 `is_unreadable()` 이 id
+    단위로 답한다 — **그 대안 경로가 실제로 있는지도 함께 고정한다.**
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "completed", attempts=1)
+
+    assert ingress.unreadable() == (), "종결 상태는 회수 대상이 아니다"
+    assert ingress.is_unreadable(poison) is True, "대안 경로가 답하지 못하면 대가가 너무 크다"
+
+
+@pytest.mark.parametrize("prior_code", ["INGRESS_AUTHORITY_DENIED", None])
+def test_the_exhaustion_sweep_leaves_the_prior_error_code_alone(
+    tmp_path: Path, prior_code: str | None
+) -> None:
+    """round 20 `R20-1`. 도달 안 하는 두 경로 중 **둘째만 test 가 없었다.**
+
+    `retry_wait` + `attempts >= max` + `retry_at <= now` 인 row 는 `_sweep_recoverable` 의
+    둘째 UPDATE 가 바로 `dead_letter` 로 옮긴다. 그 UPDATE 는 `last_error_code` 를 **안
+    건드리므로** 앞선 값이 그대로 남고, **없으면 `NULL` 로 남는다.**
+
+    첫째 경로(`leased`+만료+소진)는 `..._exhausted_corrupt_row_is_still_visible...` 이
+    `INGRESS_LEASE_EXPIRED` 를 단언해 지킨다. 이 test 가 나머지 절반이다.
+
+    **두 경우를 다 쳐야 한다.** 처음에는 값이 있는 경우만 쳤고, 그 test 는 둘째 UPDATE 에
+    `last_error_code = COALESCE(last_error_code, '…')` 를 더하는 mutation 을 **못 죽였다** —
+    `COALESCE` 는 `NULL` 일 때만 덮기 때문이다. `NULL` 인 경우가 round 20 이 실측한
+    `('dead_letter', 5, None)` 이고 CLI 가 `dead_letter … -` 를 내는 근거다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store, _authenticator(), config=IngressConfig(max_attempts=2), clock=lambda: NOW
+    )
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET state='retry_wait', attempts=5, "
+            "retry_at=?, lease_owner=NULL, lease_expires_at=NULL, "
+            "last_error_code=? WHERE command_id=?",
+            (_LEASE_EXPIRED_AT, prior_code, poison),
+        )
+        connection.commit()
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None and claimed.command_id == healthy
+    assert _durable(store, poison) == ("dead_letter", 5, prior_code), (
+        "소진 sweep 은 `last_error_code` 를 안 건드린다 — 앞선 값이 그대로 남는다"
+    )
+    assert poison in ingress.unreadable(), "회수 경로는 살아 있어야 한다"
