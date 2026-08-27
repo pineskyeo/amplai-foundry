@@ -267,6 +267,79 @@ round 20 의 blocker 6건을 닫았다. 전문은
 재freeze → round 21 three-lens → (blocker 0이면) gate
 ```
 
+## Round 21 착수 지시
+
+**세 lens 를 순차로 돌린다.** 동시에 띄우면 세션 한도로 전멸한다. 각 reviewer 에게 큰 파일을
+통째로 읽지 말라는 예산 규율을 준다.
+
+```text
+target : specs/003-slack-proposal-card/evidence/review-target-round-21.txt   (97 파일)
+전문   : specs/003-slack-proposal-card/evidence/3lens-review-round-20.md
+```
+
+**aggregate 값을 여기 적지 않는다.** target 파일 끝에 있고 머리말의 재확인 script 가 그것을
+다시 계산한다. **여기 적으면 순환이 생긴다** — 이 파일이 target 안에 있어서, aggregate 를
+적는 행위가 그 aggregate 를 바꾼다. wave 14 가 실제로 한 번 겪었고 그래서 뺐다.
+
+### reviewer 에게 반드시 줄 것
+
+- **aggregate 는 무손상 증거가 아니다.** 행별 hash 재계산이 실제 보장이고 target 머리말이
+  그것을 설명한다. round 18 에서 세 reviewer 전부 혼동했고 19·20 에서는 여섯 전부 지켰다
+- **mutation 은 `PYTHONDONTWRITEBYTECODE=1` 을 쓰거나 `__pycache__` 를 지운다.** round 18
+  `A18-R1` 이 `.pyc` 캐시가 결과를 **위조**하는 것을 실측했다 — pristine 코드에서 FAILED 가
+  나온 사례다
+- 등급은 P0 / P1 / Blocking-P2 / Advisory
+
+### wave 14 가 한 주장 — 검증 대상
+
+1. `F20-1`(P1) — `D-050` 이 잘림을 **없애는 대신 보이게** 만들었다. `governance stranded`
+   가 `limit + 1` 을 요청해 판정하고 한 줄로 알린다
+2. `F20-2` — 두 목록(`stranded`·`unreadable`) 각각을 판정한다
+3. `F20-3`·`R20-1` — 적어만 두고 test 가 없던 계약 둘을 묶었다
+4. `C20-1`·`C20-2` — `D-049` 가 틀렸다고 지목한 문장에 각주를 달고, `Source` 의 과대 계상을
+   고쳤다
+5. 새 구조(`limit + 1`)가 요구하는 것을 **착수 전에** 표로 만들었다. 첫 항목은 `--limit 0`
+   이 `1` 로 바뀌어 service guard 를 우회하는 것이고 CLI 에서 막았다
+
+### 알려진 것 — reviewer 에게 미리 알린다
+
+- `handoff.json` 은 target 밖이다. freeze 자기참조를 피하려고 `evidence-trace.jsonl`·
+  `approvals.jsonl` 과 함께 뺐다
+- `T045` manifest 가 `T042`(done) 복사본이라 **착수 시점부터 `all_acceptance_passed: true`**
+  였다. 절차 위반이고 `T045` evidence 와 Stop rule 에 기록했다
+
+## Package 5 뒤 — 로드맵 위치
+
+`BACKLOG.md` 의 `depends_on` 과 `STATUS.md` 의 Gate 절로 확인한 사실이다.
+
+```text
+MGC-001~011   PASS        (STATUS.md Gate 절)
+MGC-012       ACTIVE      ← 지금 여기. Package 5 gate 가 없다
+MGC-013       Telegram adapter        deps: MGC-005, MGC-008
+MGC-014       Hermes Skill            deps: MGC-006, MGC-008, MGC-009  ← 셋 다 PASS 범위
+MGC-015       Activation Control      deps: MGC-010, MGC-012, MGC-013
+MGC-016       Full Verification       deps: 011, 012, 013, 014, 015
+```
+
+**`MGC-014`(Hermes)는 `MGC-012` 에 의존하지 않는다.** 의존 셋이 이미 PASS 이고 코드도
+실재한다 — `AuthorityService`·`ActorBindingService`(`governance/authority.py`),
+`OutboxDispatcher`(`governance/events.py`), `ApplyGrant`·`ApplyJob`
+(`governance/apply_jobs.py`). 순서상 병렬 착수가 가능하다.
+
+다만 **준비물이 없다.** `specs/` 에 Hermes 디렉토리가 없고, `BACKLOG` 서술은 한 줄이며,
+`CON-0010`(Hermes 정의)이 `status: candidate` 다 — 승인된 결정이 아니다. `QUE-0011`(개인
+메모리를 AMPLAI intake 로 승격하는 trigger)도 열려 있다. **`/design` 이 먼저다.**
+
+실제로 Hermes 로 대화하려면 `MGC-015`·`MGC-016` 까지 가야 하고 그 둘은 `MGC-012`·`MGC-013`
+에 의존한다.
+
+### 문서 어긋남 하나 — 정리 대상
+
+`BACKLOG.md` 의 `status` 필드가 `STATUS.md` 의 Gate 절과 어긋난다. Gate 는 001~011 을
+PASS 로 판정하는데 BACKLOG 는 `MGC-011` 만 `done` 이고 001~010 이 `planned` 다. **Gate 절이
+최신이다.** 로드맵을 읽을 때 혼란을 주므로 정리할 값이 있다 — 이번 세션 범위 밖이라 손대지
+않았다.
+
 - Stop rule: Package 5 review 가 닫히기 전에는 Package 4 구현을 재개하지 않는다
 - Stop rule: **형제 위치를 끝까지 센다.** 규칙은 "정의 사본 + **호출 지점** + **같은 검사의
   모든 성분**" 이다. 여섯 라운드 연속 이것을 어겼다. wave 8 이 실측으로 보여준 값 —
@@ -319,6 +392,10 @@ round 20 의 blocker 6건을 닫았다. 전문은
   담았는데 freeze 뒤에 세 줄을 더 썼다. trace 처럼 freeze 자체를 기록해야 하는 파일은
   **target 에서 빼고 그 이유를 적는다.** target 파일이 자기 자신을 목록에 안 넣는 것과 같은
   이유다
+- Stop rule: **freeze target 안의 파일에 그 target 의 aggregate 값을 적지 않는다.**
+  순환이 생긴다 — 적는 행위가 aggregate 를 바꾸고, 고치면 또 바뀐다. wave 14 가 착수 지시에
+  값을 적었다가 두 번 다시 얼렸다. **target 파일을 가리키기만 한다.** 값은 그 파일 끝에
+  있고 머리말의 재확인 script 가 다시 계산한다
 - Stop rule: **aggregate 일치는 무손상 증거가 아니다.** aggregate 는 manifest **행 문자열**만
   해싱하므로 행이 가리키는 파일이 그 뒤에 바뀐 것을 못 잡는다. 실제 보장은 **행별 hash 를
   다시 계산하는 재확인 script** 다. round 18 에서 세 reviewer 가 전부 aggregate 를 무손상

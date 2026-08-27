@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "completed_slices": [],
+  "context_pack_hash": "571a5b4dce5958157072ab0a6bdc63b60d6ca416d23ab49aac1a76014b2c0e83",
+  "current_slice": null,
+  "git_checkpoint": "87a0c7696cf80f49e8fff74020f406e433a09197",
+  "last_verification": null,
+  "next_action": "round 21 three-lens review 를 돌린다. target 은 specs/003-slack-proposal-card/evidence/review-target-round-21.txt (97 파일) 이고 aggregate 는 그 파일 끝에 있다 — 머리말의 재확인 script 로 무손상을 확인한다. reviewer 는 순차로 돌린다. blocker 0 이면 Package 5 gate 를 열고 T010 → T013 → T012 로 간다. 진입점은 docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md 의 'Round 21 착수 지시' 절이다.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "executing",
+  "work_id": "MGC-012-P5-W14"
+}

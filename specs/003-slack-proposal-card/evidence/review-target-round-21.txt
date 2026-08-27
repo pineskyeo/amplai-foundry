@@ -25,9 +25,23 @@
 #   print('rows',len(rows),'| 어긋남',len(bad),bad)
 #   print('aggregate', hashlib.sha256('\n'.join(rows).encode()).hexdigest())
 #   EOF
+#
+# **두 번째 freeze (2026-08-26).** 첫 freeze 뒤 `CURRENT_ITEM.md` 에 round 21 착수
+#   지시와 로드맵 위치를 썼다 — 그 파일이 target 안에 있어 재확인 script 가 1건으로
+#   잡았다. **round 18 `N18-4`·round 19 `C19-2` 와 같은 형태다.** 착수 지시도 wave
+#   산출물이므로 빼는 대신 다시 얼렸다. 목록은 그대로 97 파일이고 hash 하나만 바뀌었다.
+#   첫 freeze 의 aggregate 는 `53eeff7b56ec…` 였다.
+#
+# **세 번째이자 마지막 freeze (2026-08-26).** 두 번째 뒤에 `CURRENT_ITEM.md` 의 착수
+#   지시에서 **aggregate 값을 뺐다.** 그 값을 여기 적으면 순환이 생긴다 — 그 파일이
+#   target 안에 있어서 적는 행위가 aggregate 를 바꾼다. 이제 착수 지시는 이 파일을
+#   가리키기만 한다. 목록은 그대로 97 파일이다.
+#
+# **네 번째 freeze — 최종.** 세 번째 뒤에 그 순환을 Stop rule 로 남겼다. 그 문구는
+#   aggregate 를 참조하지 않으므로 여기서 수렴한다. 목록은 계속 97 파일이었다.
 
 4c87f572937ff4dfd7d845cf08ad244c6659d7c368af2f9e00dc9b3f570bfd9a  docs/workstreams/messenger-governance-closure-v3/BACKLOG.md
-c3fab053e90382e8c5f94fd461684fe8ec902b94898294391f01b1035c3c99ce  docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md
+43e5828357b53be77846568667b3e6b0711999c73a51a666e63b893ec984e42f  docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md
 4f67fa0fdcbc03290d6050162d67f82670b24a6f5bc284ee3ab6924f01c0802d  docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
 995aed3f863b6d5ea04a983a7fb53116868654b9793acaad463cab21344b0fcc  docs/workstreams/messenger-governance-closure-v3/STATUS.md
 a625521049bbac7003ac7d731539063ec0f3a3ea28ca89833d6b2a702ac6d631  specs/003-slack-proposal-card/context-pack.json
@@ -125,4 +139,4 @@ edfc88e6fc0b9417eb6accc95a6a111b7dbb82677d173534d51b6ef47643f8fa  tests/test_gov
 a5c334657aa611018b5ac1dbd7909186e56efcf788031d0876badf3329dd2303  tests/test_slack_http.py
 
 # aggregate = sha256 of the 97 lines above joined by newline
-# 53eeff7b56ecaeb67ffa5085fdd55a2b9d758ef22c878fda56d29078d9417d93
+# 71fd4b876fd646a34de8bb5c5ea1507b126dbcc3d0dff9302f329b15aec6a0e2
