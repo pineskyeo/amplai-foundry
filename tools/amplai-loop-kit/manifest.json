@@ -176,12 +176,12 @@
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_kit_installer.py",
-      "sha256": "sha256:111e6a1fb9aeba9e5acef8b1114943c7f0ea01da3ae4ab3a34556b06a3ac3d20"
+      "sha256": "sha256:d8cab93606648a27b6734c8307c18f46f97fedf4e30b158349d16fda412db67e"
     },
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_kit_regressions.py",
-      "sha256": "sha256:7dde7fa7f6d7a4b0ffc0d828d966d29bb9f4ec0d50c8e6372bf9bcc4114efc0f"
+      "sha256": "sha256:3cd9e60f7162f716ed6c5ba4db38cced6a7f64c8c47778e34e230a5a4374f206"
     }
   ],
   "required_paths": [

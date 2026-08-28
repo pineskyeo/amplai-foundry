@@ -210,6 +210,55 @@ class InstallerTest(unittest.TestCase):
         self.assertEqual([rule["id"] for rule in policy["path_rules"]], ["app-owned"])
         self.assertEqual(policy["forbidden_automatic_actions"], ["app owned prohibition"])
 
+    def test_uninstall_keeps_a_created_file_the_app_wrote_into(self):
+        """Creating a file does not make its later content ours to delete.
+
+        `setUp` pre-creates AUTONOMY_POLICY.md, so the created-marker branch is
+        never exercised by the other tests.  This removes it first so the kit
+        genuinely creates it, then has the application write below our header.
+        """
+        policy = os.path.join(self.target, ".ai-team/AUTONOMY_POLICY.md")
+        if os.path.exists(policy):
+            os.unlink(policy)
+        self.run_install()
+        self.assertTrue(os.path.exists(policy))
+
+        body = read(policy) + "\n## Application section\n\nowned by the app\n"
+        write(policy, body)
+
+        stdout, _stderr = self.run_install(extra=["--uninstall"])
+        report = json.loads(stdout)
+
+        self.assertTrue(
+            os.path.exists(policy),
+            "a file the application wrote into must survive the uninstall",
+        )
+        remaining = read(policy)
+        self.assertIn("owned by the app", remaining)
+        self.assertNotIn("AMPLAI-ASYNC-BEGIN", remaining)
+        self.assertTrue(
+            any("content outside the managed section" in note for note in report["notes"]),
+            report["notes"],
+        )
+
+    def test_uninstall_removes_a_created_file_that_is_only_our_header(self):
+        """The other side of the same judgement: nothing of theirs, so remove it."""
+        policy = os.path.join(self.target, ".ai-team/AUTONOMY_POLICY.md")
+        if os.path.exists(policy):
+            os.unlink(policy)
+        self.run_install()
+        self.run_install(extra=["--uninstall"])
+        self.assertFalse(os.path.exists(policy))
+
+    def test_uninstall_keeps_a_pre_existing_file_it_did_not_create(self):
+        """A file the app already had is never removed, only stripped."""
+        policy = os.path.join(self.target, ".ai-team/AUTONOMY_POLICY.md")
+        write(policy, "# Existing autonomy\n")
+        self.run_install()
+        self.run_install(extra=["--uninstall"])
+        self.assertTrue(os.path.exists(policy))
+        self.assertIn("Existing autonomy", read(policy))
+
     def test_uninstall_leaves_no_directory_it_created(self):
         """An app that counts its own top-level directories must see none of ours.
 
@@ -273,3 +322,112 @@ class InstallerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StoreSupervisorEntryPointTest(unittest.TestCase):
+    """The Store's `run` had no tests at all.
+
+    It decides which application copy of the supervisor to execute and refuses
+    a version it cannot vouch for.  Both gates worked when exercised by hand
+    and neither was pinned, so a change to either would have passed silently.
+    """
+
+    def setUp(self):
+        if not os.path.isdir(KIT_ROOT):
+            self.skipTest("kit source is not vendored beside the installed payload")
+        self.temp = tempfile.mkdtemp(prefix="amplai-store-run-")
+        self.home = os.path.join(self.temp, "store")
+        self.repo = os.path.join(self.temp, "app")
+        os.makedirs(os.path.join(self.home, "supervisor"))
+        os.makedirs(os.path.join(self.home, ".amplai", "local", "apps"))
+        os.makedirs(os.path.join(self.repo, "scripts"))
+        os.makedirs(os.path.join(self.repo, ".ai-team", "install"))
+
+        shutil.copy2(
+            os.path.join(KIT_ROOT, "payload", "store", "supervisor", "run"),
+            os.path.join(self.home, "supervisor", "run"),
+        )
+        # A stand-in supervisor: the entry point's job is choosing and checking,
+        # not running the real scheduler.
+        write(os.path.join(self.repo, "scripts", "amplai_supervisor.py"),
+              "import sys\nprint('supervisor ran', sys.argv[1:])\n")
+        self.write_json(os.path.join(self.home, "supervisor", "source.json"),
+                        {"app_id": "app", "kit_version": "9.9.9"})
+        self.write_json(os.path.join(self.home, ".amplai", "local", "apps", "app.json"),
+                        {"repo_path": self.repo})
+        write(os.path.join(self.home, "supervisor", "VERSION"), "9.9.9\n")
+        self.write_json(os.path.join(self.repo, ".ai-team", "install", "amplai-loop-kit.json"),
+                        {"package_version": "9.9.9"})
+
+    def tearDown(self):
+        shutil.rmtree(self.temp, ignore_errors=True)
+
+    @staticmethod
+    def write_json(path, value):
+        write(path, json.dumps(value, indent=2) + "\n")
+
+    def run_entry(self):
+        env = dict(os.environ, AMPLAI_PROJECT_HOME=self.home)
+        return subprocess.run(
+            [sys.executable, os.path.join(self.home, "supervisor", "run"), "--dry-run"],
+            capture_output=True, text=True, env=env,
+        )
+
+    def test_matching_versions_hand_over_to_the_application_copy(self):
+        result = self.run_entry()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("supervisor ran", result.stdout)
+
+    def test_a_version_mismatch_is_refused(self):
+        self.write_json(os.path.join(self.repo, ".ai-team", "install", "amplai-loop-kit.json"),
+                        {"package_version": "0.0.1"})
+        result = self.run_entry()
+        self.assertEqual(result.returncode, 4)
+        self.assertIn("mismatch", result.stderr)
+
+    def test_an_unknown_version_is_refused_rather_than_skipped(self):
+        """Not knowing the versions is when running is least safe."""
+        for break_it in (
+            lambda: write(os.path.join(self.home, "supervisor", "VERSION"), ""),
+            lambda: os.unlink(os.path.join(self.home, "supervisor", "VERSION")),
+            lambda: os.unlink(
+                os.path.join(self.repo, ".ai-team", "install", "amplai-loop-kit.json")),
+            lambda: self.write_json(
+                os.path.join(self.repo, ".ai-team", "install", "amplai-loop-kit.json"), {}),
+        ):
+            self.setUp()
+            break_it()
+            result = self.run_entry()
+            self.assertEqual(result.returncode, 4, result.stdout)
+            self.assertIn("cannot compare", result.stderr)
+
+    def test_a_missing_source_application_is_refused(self):
+        os.unlink(os.path.join(self.home, "supervisor", "source.json"))
+        result = self.run_entry()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("no source application", result.stderr)
+
+    def test_a_missing_supervisor_script_is_refused(self):
+        os.unlink(os.path.join(self.repo, "scripts", "amplai_supervisor.py"))
+        result = self.run_entry()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("no supervisor script", result.stderr)
+
+    def test_source_app_can_be_overridden_on_the_command_line(self):
+        other = os.path.join(self.temp, "other")
+        os.makedirs(os.path.join(other, "scripts"))
+        os.makedirs(os.path.join(other, ".ai-team", "install"))
+        write(os.path.join(other, "scripts", "amplai_supervisor.py"),
+              "print('other supervisor')\n")
+        self.write_json(os.path.join(other, ".ai-team", "install", "amplai-loop-kit.json"),
+                        {"package_version": "9.9.9"})
+        self.write_json(os.path.join(self.home, ".amplai", "local", "apps", "other.json"),
+                        {"repo_path": other})
+        env = dict(os.environ, AMPLAI_PROJECT_HOME=self.home)
+        result = subprocess.run(
+            [sys.executable, os.path.join(self.home, "supervisor", "run"),
+             "--source-app", "other", "--dry-run"],
+            capture_output=True, text=True, env=env,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("other supervisor", result.stdout)

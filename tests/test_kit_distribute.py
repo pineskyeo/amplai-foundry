@@ -183,6 +183,41 @@ class TestRunGates:
         # The whole point: a bad plan means nothing is written anywhere.
         assert installs == []
 
+    def test_an_install_failure_stops_before_the_targets_after_it(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """With only two targets a failure is always last, so `break` is untested.
+
+        The real configuration has three apps and the wrapper writes into other
+        repositories, so "stops at the first failure" has to be pinned with a
+        target that comes after the one that fails.
+        """
+        config["targets"].append({"app_id": "gamma", "role": "target", "path_hint": "../gamma"})
+        self._resolved(tmp_path, monkeypatch, config, names=("alpha", "beta", "gamma"))
+        attempted = []
+
+        def fake(target, cfg, *, dry_run, uninstall=False, project_home=None):
+            if not dry_run:
+                attempted.append(target["app_id"])
+            ok = dry_run or target["app_id"] != "beta"
+            return {
+                "app_id": target["app_id"],
+                "path": target["path"],
+                "returncode": 0 if ok else 1,
+                "ok": ok,
+                "report": {"ok": ok, "actions": []},
+                "stderr": None,
+            }
+
+        monkeypatch.setattr(kd, "run_installer", fake)
+        rc = kd.main(["--all"])
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_ERROR
+        assert payload["stopped_at"] == "beta"
+        # gamma comes after the failure and must never be touched.
+        assert attempted == ["alpha", "beta"]
+        assert payload["not_attempted"] == ["gamma"]
+
     def test_an_install_failure_stops_and_reports_what_was_done(
         self, config, tmp_path, monkeypatch, capsys
     ):
@@ -299,6 +334,56 @@ class TestRealPackage:
         raw = json.loads(record.read_text(encoding="utf-8"))
         assert "package_version" in raw
         assert kd.installed_version(REPO_ROOT) == raw["package_version"]
+
+    def test_seal_verify_reports_a_broken_package(self, tmp_path):
+        """The seal check must fail on a mismatch, not just on a clean tree.
+
+        Nothing read CHECKSUMS.sha256 until this check existed, and the seal
+        sat broken across two commits.  A green-only test would not have
+        noticed either.
+        """
+        seal = kd.KIT_ROOT / "seal.py"
+        clean = subprocess.run(
+            [sys.executable, str(seal), "--verify"],
+            capture_output=True,
+            text=True,
+        )
+        assert clean.returncode == 0, clean.stdout
+        assert json.loads(clean.stdout)["ok"] is True
+
+        target = kd.KIT_ROOT / "distribution" / "targets.json"
+        original = target.read_bytes()
+        try:
+            target.write_bytes(original + b"\n")
+            broken = subprocess.run(
+                [sys.executable, str(seal), "--verify"],
+                capture_output=True,
+                text=True,
+            )
+            payload = json.loads(broken.stdout)
+            assert broken.returncode == 1
+            assert payload["ok"] is False
+            assert "distribution/targets.json" in payload["checksum_mismatched"]
+            assert payload["hint"]
+        finally:
+            target.write_bytes(original)
+
+    def test_seal_verify_notices_a_file_missing_from_checksums(self, tmp_path):
+        """A new package file that was never sealed must not pass silently."""
+        seal = kd.KIT_ROOT / "seal.py"
+        extra = kd.KIT_ROOT / "distribution" / "__seal_probe__.json"
+        extra.write_text("{}\n", encoding="utf-8")
+        try:
+            result = subprocess.run(
+                [sys.executable, str(seal), "--verify"],
+                capture_output=True,
+                text=True,
+            )
+            payload = json.loads(result.stdout)
+            assert result.returncode == 1
+            assert "distribution/__seal_probe__.json" in payload["not_in_checksums"]
+        finally:
+            extra.unlink()
 
     def test_kit_version_matches_the_manifest(self):
         manifest = json.loads((kd.KIT_ROOT / "manifest.json").read_text(encoding="utf-8"))

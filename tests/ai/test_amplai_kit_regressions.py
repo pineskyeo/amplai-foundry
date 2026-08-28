@@ -20,7 +20,7 @@ if SCRIPTS not in sys.path:
 from amplai_runtime import (  # noqa: E402
     AtomicDirectoryLock, ConflictError, LockError, ProjectStore,
     ValidationError, read_json, reseal_object, scan_unsealed, utc_after,
-    write_json_atomic,
+    utc_now, write_json_atomic,
 )
 from amplai_supervisor import Supervisor  # noqa: E402
 
@@ -576,6 +576,29 @@ class SupervisorSingleInstanceTest(unittest.TestCase):
             write_json_atomic(lock.owner_path, aged)
             self.assertTrue(lock._stale())
 
+            # The state a running supervisor is actually in: started long ago,
+            # heartbeat recent.  Ageing both fields cannot tell whether
+            # heartbeat_at is preferred, so pin that separately.
+            live = read_json(lock.owner_path)
+            live["created_at"] = "2000-01-01T00:00:00Z"
+            live["heartbeat_at"] = utc_now()
+            write_json_atomic(lock.owner_path, live)
+            self.assertFalse(
+                lock._stale(),
+                "a long-running holder with a fresh heartbeat must not look stale",
+            )
+
+            # And the reverse: a fresh start with no heartbeat since is stale
+            # once the window passes, so created_at is still the fallback.
+            fallback = read_json(lock.owner_path)
+            fallback["created_at"] = "2000-01-01T00:00:00Z"
+            del fallback["heartbeat_at"]
+            write_json_atomic(lock.owner_path, fallback)
+            self.assertTrue(lock._stale())
+
+            write_json_atomic(lock.owner_path, aged)
+            self.assertTrue(lock._stale())
+
             self.assertTrue(lock.heartbeat())
             # After a heartbeat the same lock is live again, so a contender
             # that would have reclaimed it now loses.
@@ -684,10 +707,40 @@ class SupervisorLockRaceTest(unittest.TestCase):
         blocker = self._lock()
         blocker.acquire()
         try:
-            with self.assertRaises(LockError):
+            with self.assertRaises(LockError) as caught:
                 self._lock().acquire()
+            # Reaching the deadline is the ordinary path; this test exists for
+            # the other one, so name which branch answered.
+            self.assertIn("timed out", str(caught.exception))
         finally:
             blocker.release()
+
+    def test_an_os_error_while_contending_becomes_a_lock_error(self):
+        """The reclaim path must not leak a raw OSError to the caller.
+
+        A contender removing the directory underneath us is a lost race, not a
+        broken Store.  Before this, FileExistsError escaped acquire() and the
+        caller could not tell the two apart.
+        """
+        blocker = self._lock(stale=0.0)
+        blocker.acquire()
+        try:
+            # The contender must judge the holder stale, or reclaim is never
+            # reached and the deadline answers instead.
+            contender = self._lock(wait=1, stale=0.0)
+
+            def explode(_expected_token=None):
+                raise OSError(17, "File exists")
+
+            contender._reclaim_stale = explode
+            with self.assertRaises(LockError) as caught:
+                contender.acquire()
+            self.assertIn("failed while contending", str(caught.exception))
+        finally:
+            try:
+                blocker.release()
+            except LockError:
+                pass
 
     def test_concurrent_acquire_yields_exactly_one_holder(self):
         held = []
@@ -746,8 +799,12 @@ class SupervisorStopsWhenItLosesTheLockTest(unittest.TestCase):
             return False
 
         supervisor = Supervisor(self.store, heartbeat=heartbeat)
+        # persistent=False so that a regression here fails the assertion
+        # instead of spinning forever: ignoring the heartbeat result under
+        # persistent=True is an endless loop, and a hanging suite is a worse
+        # signal than a failing one.
         with self.assertRaises(LockError):
-            supervisor.run_until_quiescent(persistent=True)
+            supervisor.run_until_quiescent(persistent=False)
         self.assertEqual(len(calls), 1)
 
     def test_a_healthy_heartbeat_does_not_stop_it(self):

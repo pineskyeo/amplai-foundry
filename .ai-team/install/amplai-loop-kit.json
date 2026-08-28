@@ -12,7 +12,7 @@
       "timeout": 5
     }
   ],
-  "content_hash": "sha256:6a48bd4a6bc42f6ee0d574650df6949aa23370ca59de5b7ad53437c0425dc8b6",
+  "content_hash": "sha256:e28e2e8d12a3a9d69b779f90ed05a386ef12969d6d2f94e94b3f7baae25b37ad",
   "created_paths": [
     ".ai-team/AUTONOMY_POLICY.md",
     ".claude/settings.json"
@@ -52,8 +52,8 @@
     "scripts/amplai_runtime.py": "sha256:9164255161cbda432b884013dc6f53fd70fcf6150a793a97febb53181102b1e7",
     "scripts/amplai_supervisor.py": "sha256:113270aa7f7f02b4d53e4c7ec28e159ceaeacb854b7432375b36d6b524407234",
     "tests/ai/test_amplai_async_runtime.py": "sha256:7431301130999218285852b81de9a9d0564e4e2d7f4388cdbfa94299c9b22491",
-    "tests/ai/test_amplai_kit_installer.py": "sha256:111e6a1fb9aeba9e5acef8b1114943c7f0ea01da3ae4ab3a34556b06a3ac3d20",
-    "tests/ai/test_amplai_kit_regressions.py": "sha256:7dde7fa7f6d7a4b0ffc0d828d966d29bb9f4ec0d50c8e6372bf9bcc4114efc0f"
+    "tests/ai/test_amplai_kit_installer.py": "sha256:d8cab93606648a27b6734c8307c18f46f97fedf4e30b158349d16fda412db67e",
+    "tests/ai/test_amplai_kit_regressions.py": "sha256:3cd9e60f7162f716ed6c5ba4db38cced6a7f64c8c47778e34e230a5a4374f206"
   },
   "package_version": "2.3.0",
   "project_id": "ai-platform",
