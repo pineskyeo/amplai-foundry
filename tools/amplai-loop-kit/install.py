@@ -322,6 +322,8 @@ class Installer(object):
         self.project_store_home = None
         self.project_store_created = False
         self.removals = []
+        # Paths this run brings into existence, for a symmetric uninstall.
+        self.created_paths = set()
 
     def validate_package(self):
         if self.manifest.get("runtime_protocol") != PROTOCOL:
@@ -417,6 +419,8 @@ class Installer(object):
             if (not os.path.exists(dest) and not item.get("required", False)
                     and not item.get("create_if_missing", False)):
                 continue
+            if not os.path.exists(dest):
+                self.created_paths.add(rel)
             current = (
                 read_text(dest) if os.path.exists(dest)
                 else item.get("create_header", "")
@@ -442,6 +446,8 @@ class Installer(object):
     def plan_claude_settings(self):
         rel = ".claude/settings.json"
         dest = safe_destination(self.target, rel)
+        if not os.path.exists(dest):
+            self.created_paths.add(rel)
         settings = read_json(dest) if os.path.exists(dest) else {}
         merged = merge_hooks(settings, self.manifest.get("claude_hooks", []))
         if merged != settings:
@@ -618,6 +624,10 @@ class Installer(object):
                 for rule in extension.get("path_rules", [])
             }
         previous_installed_at = self.state.get("installed_at")
+        # Remember which paths this kit brought into existence.  Without it an
+        # uninstall cannot tell "the app had this before" from "we created it",
+        # and has to leave both behind.
+        created = sorted(set(self.state.get("created_paths") or []) | self.created_paths)
         state = {
             "schema_version": "1.0",
             "kind": "amplai_loop_kit_install",
@@ -630,6 +640,7 @@ class Installer(object):
             "marker_sections": markers,
             "json_objects": json_objects,
             "claude_hooks": self.manifest.get("claude_hooks", []),
+            "created_paths": created,
         }
         data = (json.dumps(seal(state), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
         self.actions = [action for action in self.actions if action.rel != STATE_REL]
@@ -641,6 +652,7 @@ class Installer(object):
         if not self.state:
             raise InstallError("no install record at %s; nothing to uninstall" % STATE_REL)
         owned = self.state.get("owned_files") or {}
+        created = set(self.state.get("created_paths") or [])
         removals = []
         for rel, installed_hash in sorted(owned.items()):
             dest = safe_destination(self.target, rel)
@@ -662,6 +674,12 @@ class Installer(object):
             if not found or stripped == current:
                 continue
             if stripped == "":
+                removals.append(rel)
+                continue
+            if rel in created:
+                # The kit brought this file into existence, so what remains
+                # after stripping is only the header the kit wrote.  Leaving it
+                # would make an uninstall look incomplete.
                 removals.append(rel)
                 continue
             mode = stat.S_IMODE(os.stat(dest).st_mode)
@@ -687,7 +705,16 @@ class Installer(object):
                 if value not in owned_prohibitions
             ]
             if merged != current:
+                # Install splices additions in textually to keep the rest of
+                # the file byte-identical; removal has no such counterpart yet,
+                # so the file comes back with standard formatting.  The content
+                # is exactly the pre-install content -- only the layout differs.
                 data = (json.dumps(merged, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+                self.notes.append(
+                    "%s was rewritten with standard JSON formatting; the managed rules "
+                    "are gone and the content matches the pre-install state, but the "
+                    "original line layout is not restored" % rel
+                )
                 self.add_action(Action(rel, data, stat.S_IMODE(os.stat(dest).st_mode),
                                        "remove managed JSON rules"))
         settings_rel = ".claude/settings.json"
@@ -695,7 +722,10 @@ class Installer(object):
         if os.path.exists(settings_dest):
             settings = read_json(settings_dest)
             merged = remove_hooks(settings, self.state.get("claude_hooks") or [])
-            if merged != settings:
+            if settings_rel in created and not merged:
+                # We created this file and removing our hooks empties it.
+                removals.append(settings_rel)
+            elif merged != settings:
                 data = (json.dumps(merged, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
                 self.add_action(Action(settings_rel, data,
                                        stat.S_IMODE(os.stat(settings_dest).st_mode),

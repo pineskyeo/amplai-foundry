@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: ALR-006-T007
 title: 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >
@@ -114,12 +114,20 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md
 
 handoff:
   expected_changes:
     - docs/workstreams/amplai-loop-runtime-adoption/ — 제거 절차 확정본과 참조 전수표
-  notes: []
+  notes:
+    - >-
+      AC-01 이 "git status 가 빈다" 를 요구했는데 실측은 2건이 남는다. created_paths 를
+      추가해 4건에서 2건으로 줄였고(AUTONOMY_POLICY.md, .claude/settings.json 삭제),
+      남은 둘은 성격이 다르다 — .ai-team/backups/ 는 복구용이라 의도적이고,
+      policy.json 은 내용이 원본과 정확히 같고 표기만 다르다(실측 확인). 완전 대칭에는
+      append_to_json_array 의 역함수가 필요해 후속 과제로 남겼다. 제거 출력의 note 가
+      그 한계를 알린다.

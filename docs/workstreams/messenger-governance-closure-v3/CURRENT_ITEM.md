@@ -49,7 +49,12 @@ message projection과 retry는 background path에서 수행한다.
   `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
   round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
   세 reviewer 가 착수·종료에 확인했고 regression 은 mutation 9회 전후로도 확인했다. 무손상
-- Tests: full `1409 passed, 4 deselected` (wave 8 착수 시 1301 → +108, wave 11 이 +6,
+- **Tests: `1429 passed, 4 deselected` (2026-08-28, `ALR-006` T005).** 기준선이 1409 에서
+  움직였다 — `tests/test_kit_distribute.py` 20건이 늘었고 두 방법으로 셌다(collect 1429,
+  실행 1429). kit 의 `tools/amplai-loop-kit/payload/tests/ai/` 는 `testpaths=["tests"]` 밖이라
+  **아직 수집되지 않는다.** 배포(`ALR-006-T006`)로 kit 이 이 저장소에 설치되면 그쪽 test 가
+  `tests/ai/` 로 들어와 한 번 더 움직인다. **round 22 는 1429 를 기준으로 센다**
+- (이전) Tests: full `1409 passed, 4 deselected` (wave 8 착수 시 1301 → +108, wave 11 이 +6,
   12 가 +4, 13 이 +9, 14 가 +8). 두 방법으로 셌다 — `--collect-only` 가 1409
   selected(1413 collected), round 20 기준 1401 대비 +8 이고 추가한 test 수와 같다
 - Verification: Ruff check/format, mypy, `verify` 7/7, manifest validator 45/45,

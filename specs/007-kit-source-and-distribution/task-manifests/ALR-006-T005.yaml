@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: ALR-006-T005
 title: 배포 래퍼가 여러 대상을 안전하게 순회한다
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >
@@ -136,10 +136,12 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - scripts/kit_distribute.py
+    - tests/test_kit_distribute.py
 
 handoff:
   expected_changes:
