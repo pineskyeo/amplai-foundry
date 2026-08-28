@@ -2,6 +2,7 @@
 
 Each test names the 2.1.0 behaviour it prevents from coming back.
 """
+import io
 import json
 import os
 import shutil
@@ -16,6 +17,12 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SCRIPTS = os.path.join(REPO_ROOT, "scripts")
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
+# 이 디렉토리를 직접 넣는다. 앱마다 tests/ai 가 package 이기도 하고
+# (cortex 는 __init__.py 가 있다) 아니기도 해서(amplai-foundry) sibling
+# import 가 runner 에 따라 갈린다.
+HERE = os.path.abspath(os.path.dirname(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 from amplai_runtime import (  # noqa: E402
     AtomicDirectoryLock, ConflictError, LockError, ProjectStore,
@@ -810,3 +817,63 @@ class SupervisorStopsWhenItLosesTheLockTest(unittest.TestCase):
     def test_a_healthy_heartbeat_does_not_stop_it(self):
         supervisor = Supervisor(self.store, heartbeat=lambda: True)
         supervisor.run_until_quiescent(persistent=False)
+
+
+class HookTestIsolationTest(unittest.TestCase):
+    """2.3.1: kit 이 설치된 세션에서 자기 test 가 실제 Store 를 읽던 것.
+
+    SessionStart hook 이 AMPLAI_PROJECT_HOME 을 세션에 export 하고
+    (amplai_hook.py append_env), discover_project_home() 은 그 변수를
+    repo-local binding 보다 먼저 본다 (amplai_runtime.py). 그래서 kit 이
+    설치된 저장소의 Claude 세션에서 test 를 돌리면 AmplaiHookTest 가 임시
+    Store 대신 실제 Store 를 읽어 실패했다. verifier 의 block check 하나가
+    통째로 FAIL 이 되는 경로였고, 사람이 맨 터미널에서 돌리면 통과해서
+    한동안 안 보였다.
+
+    hook 쪽 동작은 의도된 것이므로 고치지 않는다. 격리는 test 의 책임이다.
+    """
+
+    def setUp(self):
+        self.saved = {
+            name: value for name, value in os.environ.items()
+            if name.startswith("AMPLAI_")
+        }
+
+    def tearDown(self):
+        for name in [n for n in os.environ if n.startswith("AMPLAI_")]:
+            del os.environ[name]
+        os.environ.update(self.saved)
+
+    def test_hook_test_passes_while_a_real_store_is_named_in_the_environment(self):
+        """AMPLAI_PROJECT_HOME 이 다른 Store 를 가리켜도 hook test 가 통과한다."""
+        from test_amplai_async_runtime import AmplaiHookTest
+
+        decoy_root = tempfile.mkdtemp(prefix="amplai-decoy-store-")
+        self.addCleanup(shutil.rmtree, decoy_root, True)
+        decoy = ProjectStore.initialize(
+            os.path.join(decoy_root, "store"), "decoy-project", git_init=False,
+        )
+        os.environ["AMPLAI_PROJECT_HOME"] = decoy.home
+        os.environ["AMPLAI_APP_ID"] = "decoy-app"
+
+        name = "test_session_hooks_inject_and_checkpoint_without_owning_work_state"
+        result = unittest.TextTestRunner(
+            stream=io.StringIO(), verbosity=0,
+        ).run(unittest.TestSuite([AmplaiHookTest(name)]))
+
+        self.assertEqual([], result.errors, result.errors)
+        self.assertEqual([], result.failures, result.failures)
+
+    def test_the_decoy_store_is_what_would_have_broken_it(self):
+        """격리가 없으면 그 변수가 실제로 Store 결정을 이긴다는 것을 고정한다."""
+        from amplai_runtime import discover_project_home
+
+        decoy_root = tempfile.mkdtemp(prefix="amplai-decoy-precedence-")
+        self.addCleanup(shutil.rmtree, decoy_root, True)
+        repo = os.path.join(decoy_root, "app")
+        os.makedirs(repo)
+        os.environ["AMPLAI_PROJECT_HOME"] = os.path.join(decoy_root, "elsewhere")
+
+        self.assertEqual(
+            os.path.join(decoy_root, "elsewhere"), discover_project_home(repo),
+        )

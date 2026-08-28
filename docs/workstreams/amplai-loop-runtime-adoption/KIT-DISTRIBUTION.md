@@ -59,9 +59,9 @@ tools/amplai-loop-kit/distribution/targets.json   커밋. app_id·project_id·ro
 ```bash
 .venv/bin/python scripts/kit_distribute.py --dry-run          # 계획만. 아무것도 안 바꾼다
 .venv/bin/python scripts/kit_distribute.py --all              # 전체 배포
-.venv/bin/python scripts/kit_distribute.py --app cortex       # 하나만
+.venv/bin/python scripts/kit_distribute.py --all --app cortex # 하나만
 .venv/bin/python scripts/kit_distribute.py --verify           # 설치 버전 대조
-.venv/bin/python scripts/kit_distribute.py --uninstall --app cortex
+.venv/bin/python scripts/kit_distribute.py --all --uninstall --app cortex
 ```
 
 순서와 게이트는 이렇다.

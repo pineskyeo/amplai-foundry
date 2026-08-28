@@ -76,8 +76,8 @@ PROVENANCE.md          2.3.1 이 무엇을 고쳤는지 한 줄
 
 ```bash
 .venv/bin/python scripts/kit_distribute.py --dry-run
-.venv/bin/python scripts/kit_distribute.py --app amplai-foundry --project-home ~/workspace/amplai-project
-.venv/bin/python scripts/kit_distribute.py --app synapse --project-home ~/workspace/amplai-project
+.venv/bin/python scripts/kit_distribute.py --all --app amplai-foundry --project-home ~/workspace/amplai-project
+.venv/bin/python scripts/kit_distribute.py --all --app synapse --project-home ~/workspace/amplai-project
 .venv/bin/python scripts/kit_distribute.py --verify
 ```
 
@@ -129,7 +129,7 @@ kit 밖 디렉토리     .ai-team/zzz 를 만들고 FAIL 확인
 
 ```bash
 .venv/bin/python scripts/kit_distribute.py --dry-run --app cortex
-.venv/bin/python scripts/kit_distribute.py --app cortex --project-home ~/workspace/amplai-project
+.venv/bin/python scripts/kit_distribute.py --all --app cortex --project-home ~/workspace/amplai-project
 ```
 
 검증(`AC-007`·`AC-008`), cortex 저장소에서:
@@ -165,7 +165,7 @@ cortex 가 설치되면 `--verify` 는 저절로 `rc=0` 이 된다. 그래도 `A
 |---|---|
 | S01 이 다른 env 민감 test 를 더 드러낸다 | 전부 같은 방식으로 격리한다. 수가 3을 넘으면 개별 격리 대신 `setUpModule` 로 올린다 |
 | S03 에서 synapse 갱신이 dirty gate 에 막힌다 | 그 저장소 상태를 먼저 정리한다. `--allow-dirty` 를 쓰지 않는다 |
-| S05 배포가 중간에 실패한다 | `kit_distribute.py` 가 실패 지점에서 멈추고 어디까지 됐는지 보고한다. 그 보고를 근거로 `--uninstall --app cortex` 로 되돌린다 |
+| S05 배포가 중간에 실패한다 | `kit_distribute.py` 가 실패 지점에서 멈추고 어디까지 됐는지 보고한다. 그 보고를 근거로 `--all --uninstall --app cortex` 로 되돌린다 |
 | cortex 에서 예상 밖 test 가 깨진다 | 복제본에서 재현하고 원인을 kit / cortex 규약 중 어디에 속하는지 먼저 가른다. cortex 규약이면 **다시 Decision 이다** — 임의로 고치지 않는다 |
 | `--project-home` 을 실제 Store 로 준 실험이 fleet 상태를 바꾼다 | 실험에는 임시 Store 를 쓴다. 실제 Store 를 썼으면 `supervisor/source.json` 과 `.amplai/local/apps/*.json` 을 확인해 복구한다 |
 
@@ -175,7 +175,7 @@ cortex 가 설치되면 `--verify` 는 저절로 `rc=0` 이 된다. 그래도 `A
 S01·S02   commit revert. 설치본은 S03 재실행으로 되돌아간다
 S03       kit_distribute.py 로 2.3.0 을 다시 설치. 정본을 되돌린 뒤 재배포한다
 S04       cortex 브랜치를 버린다. 머지 전이면 비용 0
-S05       kit_distribute.py --uninstall --app cortex.  ALR-006 이 이미 한 번 완주한 경로다
+S05       kit_distribute.py --all --uninstall --app cortex.  ALR-006 이 이미 한 번 완주한 경로다
 ```
 
 **`--uninstall` 이 완전하지 않은 것이 둘 알려져 있다.** `policy.json` 표기 차이(내용은 동일)와
