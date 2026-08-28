@@ -1,0 +1,409 @@
+import io
+import json
+import os
+import shutil
+import sys
+import tempfile
+import unittest
+
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SCRIPTS = os.path.join(REPO_ROOT, "scripts")
+if SCRIPTS not in sys.path:
+    sys.path.insert(0, SCRIPTS)
+
+from amplai_runtime import (  # noqa: E402
+    ConflictError, ProjectStore, ValidationError, read_json, seal,
+    write_json_atomic,
+)
+from amplai_supervisor import Supervisor, WorkerRunner  # noqa: E402
+
+
+class AmplaiRuntimeTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.mkdtemp(prefix="amplai-runtime-test-")
+        self.project_home = os.path.join(self.temp, "project")
+        self.cortex_repo = os.path.join(self.temp, "cortex")
+        self.synapse_repo = os.path.join(self.temp, "synapse")
+        os.makedirs(self.cortex_repo)
+        os.makedirs(self.synapse_repo)
+        self.store = ProjectStore.initialize(
+            self.project_home, "test-project", git_init=False,
+        )
+        self.store.register_app("cortex", repo_path=self.cortex_repo)
+        self.store.register_app("synapse", repo_path=self.synapse_repo)
+        self.change = self.store.create_change(
+            "Cross app change", "Coordinate Cortex and Synapse", "cortex",
+            affected_apps=["cortex", "synapse"], change_id="CR-0001",
+        )
+        self.store.activate_change(self.change["change_id"])
+
+    def tearDown(self):
+        shutil.rmtree(self.temp)
+
+    def make_work(self, app="cortex", depends=None, goal="Implement change"):
+        work = self.store.create_work(
+            self.change["change_id"], app, goal,
+            depends_on=depends or [], acceptance=["deterministic verifier passes"],
+        )
+        return work
+
+    def activate_claim_start(self, work):
+        self.store.activate_work(work["work_id"])
+        claimed, token = self.store.claim_work(work["work_id"], "test-worker")
+        self.store.start_work(work["work_id"], token)
+        return claimed, token
+
+    def add_evidence(self, work, evidence_type="test", metadata=None):
+        return self.store.add_evidence(
+            self.change["change_id"], evidence_type,
+            "verified evidence", "test", "fixture://evidence",
+            work_id=work["work_id"], app_id=work["target_app"],
+            facts=["fixture passed"], metadata=metadata or {},
+        )
+
+    def test_content_hash_tampering_is_rejected(self):
+        work = self.make_work()
+        path = self.store.work_path(self.change["change_id"], work["work_id"])
+        value = read_json(path)
+        value["goal"] = "tampered without resealing"
+        write_json_atomic(path, value)
+        with self.assertRaises(ValidationError):
+            self.store.get_work(work["work_id"])
+
+    def test_auto_decision_requires_evidence(self):
+        work = self.make_work()
+        question = self.store.create_question(
+            work["work_id"], "Use an existing parser?",
+            decision_class="engineering", reversibility="high", blast_radius="low",
+        )
+        self.assertEqual(question["required_authority"], "AUTO")
+        with self.assertRaises(ValidationError):
+            self.store.record_decision(
+                question["question_id"], "Use existing parser", "Repository convention", [],
+            )
+        evidence = self.add_evidence(work, "code")
+        decision = self.store.record_decision(
+            question["question_id"], "Use existing parser", "Repository convention",
+            [evidence["evidence_id"]],
+        )
+        self.assertEqual(decision["authority"], "AUTO")
+        self.assertEqual(self.store.get_question(question["question_id"])["status"], "RESOLVED")
+
+    def test_challenge_requires_independent_accept_review(self):
+        work = self.make_work()
+        question = self.store.create_question(
+            work["work_id"], "Change persistence boundary?",
+            decision_class="persistence", reversibility="low", blast_radius="high",
+        )
+        evidence = self.add_evidence(work, "code")
+        ordinary_review = self.add_evidence(
+            work, "review", {"independent": False, "verdict": "ACCEPT"},
+        )
+        with self.assertRaises(ValidationError):
+            self.store.record_decision(
+                question["question_id"], "Keep current boundary", "Lower migration risk",
+                [evidence["evidence_id"]], authority="CHALLENGE",
+                review_evidence_refs=[ordinary_review["evidence_id"]],
+            )
+        independent = self.add_evidence(
+            work, "review", {"independent": True, "verdict": "ACCEPT"},
+        )
+        decision = self.store.record_decision(
+            question["question_id"], "Keep current boundary", "Lower migration risk",
+            [evidence["evidence_id"]], authority="CHALLENGE",
+            review_evidence_refs=[independent["evidence_id"]],
+        )
+        self.assertEqual(decision["authority"], "CHALLENGE")
+
+    def test_human_decision_requires_approval(self):
+        work = self.make_work()
+        question = self.store.create_question(
+            work["work_id"], "Change product behavior?", decision_class="product",
+            reversibility="medium", blast_radius="high",
+        )
+        evidence = self.add_evidence(work, "documentation")
+        with self.assertRaises(ValidationError):
+            self.store.record_decision(
+                question["question_id"], "Keep behavior", "Owner not recorded",
+                [evidence["evidence_id"]], authority="HUMAN",
+            )
+        approval = self.add_evidence(
+            work, "human_approval", {"approved_by": "product-owner"},
+        )
+        decision = self.store.record_decision(
+            question["question_id"], "Keep behavior", "Owner approved compatibility",
+            [evidence["evidence_id"]], authority="HUMAN",
+            approval_evidence_refs=[approval["evidence_id"]],
+        )
+        self.assertEqual(decision["authority"], "HUMAN")
+
+    def test_draft_is_not_launchable_and_activation_respects_dependency(self):
+        upstream = self.make_work("cortex", goal="Produce contract")
+        downstream = self.make_work("synapse", [upstream["work_id"]], "Consume contract")
+        self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "DRAFT")
+        self.assertIsNone(self.store.next_ready("synapse"))
+        activated = self.store.activate_work(downstream["work_id"])
+        self.assertEqual(activated["status"], "WAITING")
+        _, token = self.activate_claim_start(upstream)
+        evidence = self.add_evidence(upstream)
+        self.store.complete_work(
+            upstream["work_id"], token, "Contract produced", [evidence["evidence_id"]],
+        )
+        self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "READY")
+
+    def test_dependency_cycle_is_rejected(self):
+        first = self.make_work("cortex", goal="First")
+        second = self.make_work("synapse", [first["work_id"]], "Second")
+        self.store.activate_work(first["work_id"])
+        self.store.activate_work(second["work_id"])
+        claimed, token = self.store.claim_work(first["work_id"], "cycle-worker")
+        self.store.start_work(claimed["work_id"], token)
+        with self.assertRaises(ValidationError):
+            self.store.wait_work(
+                first["work_id"], token, [second["work_id"]], "cycle",
+            )
+
+    def test_app_concurrency_is_atomic(self):
+        first = self.make_work("cortex", goal="First")
+        second = self.make_work("cortex", goal="Second")
+        self.store.activate_work(first["work_id"])
+        self.store.activate_work(second["work_id"])
+        self.store.claim_work(first["work_id"], "worker-one")
+        with self.assertRaises(ConflictError):
+            self.store.claim_work(second["work_id"], "worker-two")
+
+    def test_expired_lease_recovers_to_ready(self):
+        work = self.make_work()
+        self.store.activate_work(work["work_id"])
+        claimed, _ = self.store.claim_work(work["work_id"], "expired-worker", lease_seconds=10)
+        lease_path = self.store._lease_path(claimed["work_id"])
+        lease = read_json(lease_path)
+        lease["expires_at"] = "2000-01-01T00:00:00Z"
+        write_json_atomic(lease_path, seal(lease), mode=0o600)
+        self.store.reconcile()
+        recovered = self.store.get_work(work["work_id"])
+        self.assertEqual(recovered["status"], "READY")
+        self.assertIn("lease expired", recovered["last_error"])
+
+    def test_open_question_blocks_done(self):
+        work = self.make_work()
+        _, token = self.activate_claim_start(work)
+        self.store.create_question(work["work_id"], "Unresolved engineering question")
+        evidence = self.add_evidence(work)
+        with self.assertRaises(ConflictError):
+            self.store.complete_work(
+                work["work_id"], token, "Should not close", [evidence["evidence_id"]],
+            )
+
+    def test_human_required_does_not_block_independent_work(self):
+        human_work = self.make_work("cortex", goal="Owner choice")
+        independent = self.make_work("synapse", goal="Independent implementation")
+        _, token = self.activate_claim_start(human_work)
+        question = self.store.create_question(
+            human_work["work_id"], "Select product behavior", decision_class="product",
+        )
+        self.store.require_human(
+            human_work["work_id"], token, "product_owner", "Need owner choice",
+            question_refs=[question["question_id"]],
+        )
+        self.store.activate_work(independent["work_id"])
+        self.assertEqual(self.store.next_ready("synapse")["work_id"], independent["work_id"])
+        with self.assertRaises(ConflictError):
+            self.store.activate_work(human_work["work_id"])
+
+    def test_human_question_cannot_be_deferred_or_gate_without_question(self):
+        work = self.make_work("cortex", goal="Owner-gated change")
+        _, token = self.activate_claim_start(work)
+        question = self.store.create_question(
+            work["work_id"], "Owner must choose", decision_class="product",
+        )
+        with self.assertRaises(ConflictError):
+            self.store.defer_question(question["question_id"], "later")
+        with self.assertRaises(ValidationError):
+            self.store.require_human(
+                work["work_id"], token, "owner", "No question reference", question_refs=[],
+            )
+
+    def test_work_cannot_reference_decision_or_evidence_from_another_change(self):
+        first_work = self.make_work()
+        evidence = self.add_evidence(first_work)
+        question = self.store.create_question(first_work["work_id"], "Local choice")
+        decision = self.store.record_decision(
+            question["question_id"], "Choose A", "Evidence supports A",
+            [evidence["evidence_id"]],
+        )
+        other = self.store.create_change(
+            "Other", "Separate change", "cortex", change_id="CR-0002",
+        )
+        with self.assertRaises(ValidationError):
+            self.store.create_work(
+                other["change_id"], "cortex", "Invalid reference",
+                acceptance=["must reject"], decision_refs=[decision["decision_id"]],
+            )
+        with self.assertRaises(ValidationError):
+            self.store.create_work(
+                other["change_id"], "cortex", "Invalid evidence",
+                acceptance=["must reject"], input_evidence_refs=[evidence["evidence_id"]],
+            )
+
+    def test_handoff_is_generated_projection(self):
+        work = self.make_work("synapse")
+        rendered = self.store.render_handoff(work["work_id"])
+        self.assertIn(work["work_id"], rendered)
+        self.assertIn("Assigned Work", rendered)
+        self.assertFalse(os.path.exists(os.path.join(self.store.change_dir("CR-0001"), "handoffs")))
+
+    def test_claude_command_masks_prompt_and_can_resume(self):
+        work = self.make_work("cortex")
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="claude-code",
+            command="claude", runner_args=["--model", "sonnet"], auto_start=True,
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        self.store.update_session("cortex", work_id=work["work_id"], session_id="session-123")
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        command = runner._command()
+        self.assertIn("--resume", command)
+        self.assertIn("session-123", command)
+        self.assertEqual(command[-2], "-p")
+        self.assertIn("Work ID", command[-1])
+
+
+class AmplaiSupervisorGoldenTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.mkdtemp(prefix="amplai-golden-")
+        self.home = os.path.join(self.temp, "project")
+        self.cortex_repo = os.path.join(self.temp, "cortex")
+        self.synapse_repo = os.path.join(self.temp, "synapse")
+        os.makedirs(self.cortex_repo)
+        os.makedirs(self.synapse_repo)
+        self.worker_path = os.path.join(self.temp, "fake_worker.py")
+        worker_source = r'''import os, sys
+sys.path.insert(0, %r)
+from amplai_runtime import ProjectStore
+store = ProjectStore(os.environ["AMPLAI_PROJECT_HOME"])
+work_id = os.environ["AMPLAI_WORK_ID"]
+token = os.environ["AMPLAI_LEASE_TOKEN"]
+work = store.get_work(work_id)
+cr_id = work["change_id"]
+if work["target_app"] == "cortex" and not work.get("depends_on"):
+    child = store.create_work(
+        cr_id, "synapse", "Confirm consumer contract", source_app="cortex",
+        acceptance=["consumer contract evidence recorded"], actor="cortex-agent")
+    store.activate_work(child["work_id"], actor="cortex-agent")
+    store.wait_work(work_id, token, [child["work_id"]], "Waiting for Synapse contract", actor="cortex-agent")
+elif work["target_app"] == "synapse":
+    evidence = store.add_evidence(
+        cr_id, "contract", "Synapse accepts optional field", "fixture",
+        "fixture://synapse-contract", work_id=work_id, app_id="synapse",
+        facts=["optional string is backward compatible"], actor="synapse-agent")
+    store.complete_work(work_id, token, "Consumer contract confirmed", [evidence["evidence_id"]], actor="synapse-agent")
+else:
+    evidence = store.add_evidence(
+        cr_id, "test", "Cortex resumed after Synapse", "fixture",
+        "fixture://cortex-resume", work_id=work_id, app_id="cortex",
+        facts=["dependency result consumed"], actor="cortex-agent")
+    store.complete_work(work_id, token, "Producer implementation completed after resume", [evidence["evidence_id"]], actor="cortex-agent")
+print('{"ok": true}')
+''' % SCRIPTS
+        with io.open(self.worker_path, "w", encoding="utf-8") as handle:
+            handle.write(worker_source)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp)
+
+    def test_cortex_synapse_cortex_async_round_trip(self):
+        store = ProjectStore.initialize(self.home, "golden", git_init=False)
+        for app_id, repo in (("cortex", self.cortex_repo), ("synapse", self.synapse_repo)):
+            store.register_app(
+                app_id, repo_path=repo, runner_type="command",
+                command=sys.executable, runner_args=[self.worker_path], auto_start=True,
+            )
+        change = store.create_change(
+            "Async round trip", "Cortex waits for Synapse and resumes", "cortex",
+            affected_apps=["cortex", "synapse"], change_id="CR-0100",
+        )
+        store.activate_change(change["change_id"])
+        initial = store.create_work(
+            change["change_id"], "cortex", "Implement producer",
+            acceptance=["resume after consumer decision"],
+        )
+        store.activate_work(initial["work_id"])
+        results = Supervisor(store, max_workers=2).run_until_quiescent()
+        works = store.list_work(cr_id=change["change_id"])
+        self.assertEqual(len(works), 2)
+        self.assertTrue(all(item["status"] == "DONE" for item in works))
+        self.assertEqual(store.get_work(initial["work_id"])["attempts"], 2)
+        self.assertTrue(store.verify()["ok"])
+        self.assertGreaterEqual(len(results), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+class AmplaiHookTest(unittest.TestCase):
+    def setUp(self):
+        # 이 test 는 임시 Store 를 세우지만 discover_project_home() 은
+        # AMPLAI_PROJECT_HOME 을 repo-local binding 보다 먼저 본다
+        # (amplai_runtime.py:2381). 그 변수를 심는 것이 이 kit 의 SessionStart
+        # hook 자신이므로, kit 이 설치된 저장소의 세션에서 돌리면 실제 Store 를
+        # 읽어 버린다. 격리는 test 의 책임이다 — hook 의 동작은 의도된 것이다.
+        self._saved_env = {
+            name: value for name, value in os.environ.items()
+            if name.startswith("AMPLAI_")
+        }
+        for name in self._saved_env:
+            del os.environ[name]
+        self.temp = tempfile.mkdtemp(prefix="amplai-hook-")
+        self.repo = os.path.join(self.temp, "app")
+        self.home = os.path.join(self.temp, "project")
+        os.makedirs(os.path.join(self.repo, ".ai-team", "local"))
+        self.store = ProjectStore.initialize(self.home, "hook-project", git_init=False)
+        self.store.register_app("synapse", repo_path=self.repo)
+        from amplai_runtime import write_json_atomic
+        write_json_atomic(os.path.join(self.repo, ".ai-team", "app.json"), seal({
+            "schema_version": "1.0", "kind": "app_identity",
+            "runtime_protocol": "amplai.async-cross-app.v1",
+            "project_id": "hook-project", "app_id": "synapse",
+        }))
+        write_json_atomic(os.path.join(self.repo, ".ai-team", "local", "project.json"), seal({
+            "schema_version": "1.0", "kind": "local_project_binding",
+            "runtime_protocol": "amplai.async-cross-app.v1",
+            "project_id": "hook-project", "app_id": "synapse",
+            "project_home": self.home,
+        }), mode=0o600)
+
+    def tearDown(self):
+        for name in [n for n in os.environ if n.startswith("AMPLAI_")]:
+            del os.environ[name]
+        os.environ.update(self._saved_env)
+        shutil.rmtree(self.temp)
+
+    def test_session_hooks_inject_and_checkpoint_without_owning_work_state(self):
+        from amplai_hook import session_end, session_start
+        change = self.store.create_change(
+            "Hook test", "Expose READY Work", "synapse", change_id="CR-0200",
+        )
+        self.store.activate_change(change["change_id"])
+        work = self.store.create_work(
+            change["change_id"], "synapse", "Run from hook context",
+            acceptance=["context injected"],
+        )
+        self.store.activate_work(work["work_id"])
+        old = os.environ.copy()
+        env_file = os.path.join(self.temp, "claude-env")
+        try:
+            os.environ["CLAUDE_PROJECT_DIR"] = self.repo
+            os.environ["CLAUDE_ENV_FILE"] = env_file
+            value = session_start({"cwd": self.repo})
+            context = value["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("Next READY Work", context)
+            self.assertIn(work["work_id"], context)
+            session_end({"cwd": self.repo, "session_id": "hook-session", "reason": "clear"})
+            session = self.store.get_session("synapse")
+            self.assertEqual(session["last_event"], "SessionEnd")
+            self.assertEqual(self.store.get_work(work["work_id"])["status"], "READY")
+        finally:
+            os.environ.clear()
+            os.environ.update(old)

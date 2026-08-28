@@ -1,0 +1,149 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T001
+title: Deliver production-shaped Slack Result Cards
+type: feature
+status: done
+
+goal:
+  outcome: Every supported Proposal decision is delivered as one structured, action-free Slack Result Card with accessible fallback text.
+  user_value: Channel members can identify the Proposal outcome and revisions without interpreting a test-only message.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/spec.md
+      section: User Story 1; FR-001..FR-004; SC-001
+    - path: specs/003-slack-proposal-card/plan.md
+      section: Result Card Path; Phase 1
+    - path: specs/003-slack-proposal-card/contracts/slack-card-payloads.md
+      section: Result Card
+  requirements:
+    - FR-001
+    - FR-002
+    - FR-003
+    - FR-004
+    - FR-020
+    - FR-021
+    - FR-022
+    - FR-023
+    - SC-001
+    - SC-006
+    - SC-007
+    - SC-008
+  decisions:
+    - research.md#D-001
+    - research.md#D-002
+    - research.md#D-003
+
+scope:
+  include:
+    - Pure Slack Result Card models and deterministic renderer for all three decision statuses.
+    - Slack projection integration that preserves semantic outbox payload digest and metadata marker.
+    - Unit, projection, HTTP, and production-shaped result Card E2E coverage.
+  exclude:
+    - Review Card actions and ActionToken issuance.
+    - Interaction feedback, message edit/delete, modal, thread, or production endpoint wiring.
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_cards.py
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/__init__.py
+    - tests/test_slack_cards.py
+    - tests/test_slack_projection.py
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - vault/
+    - src/amplai_foundry/memory/
+    - src/amplai_foundry/proposals/apply.py
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - Render DecisionProjectionPayload only after destination and semantic payload digest validation.
+    - Keep the existing marker built from the semantic event, not the rendered message.
+    - Use one official card block plus top-level fallback text.
+  invariants:
+    - Result Cards contain no actions.
+    - Rendering never changes outbox payload_json or payload_digest.
+    - All text bounds and truncation are deterministic.
+    - Non-Slack projection destinations retain their current payload and behavior.
+  non_goals:
+    - Review intent persistence or token lifecycle.
+    - Slack message update, delete, thread reply, modal, or web UI.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: An approved, rejected, or changes-requested DecisionProjectionPayload.
+      when: The Slack renderer builds its provider presentation.
+      then: It returns one card block with Proposal identity, project, status, content revision, state revision, fallback text, and no actions.
+    - id: AC-02
+      given: A valid Slack outbox event and marker.
+      when: SlackProjectionDestination sends the event.
+      then: The transport receives the rendered message while reconciliation still uses the original event payload digest and marker.
+    - id: AC-03
+      given: The same result event was remotely accepted before local completion.
+      when: Delivery retries.
+      then: Reconciliation returns the existing receipt and no duplicate Result Card is posted.
+    - id: AC-04
+      given: A non-Slack provider destination.
+      when: The same decision event is delivered.
+      then: Existing provider behavior is unchanged and no Slack renderer is called.
+  commands:
+    - id: focused-tests
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_slack_cards.py tests/test_slack_projection.py tests/test_slack_http.py tests/test_governance_events.py -m "not slack_e2e"
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check src/amplai_foundry/governance/slack_cards.py src/amplai_foundry/governance/slack_projection.py tests/test_slack_cards.py tests/test_slack_projection.py tests/test_slack_http.py
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy src
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: focused-tests
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - Presentation adaptation must not invalidate outbox integrity or reconciliation.
+    - Slack Card bounds may reject an otherwise valid semantic event.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - official_card_block_contract_is_unavailable
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-12T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T001.md
+
+handoff:
+  expected_changes:
+    - One pure renderer module and Slack destination presentation hook.
+    - Production-shaped Result Card tests using DecisionProjectionPayload.
+  notes:
+    - Do not put Slack text or blocks into DecisionProjectionPayload.

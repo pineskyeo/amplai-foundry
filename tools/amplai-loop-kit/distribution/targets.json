@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "project_id": "ai-platform",
+  "note": "논리 목록이다. 실제 경로는 host-local 파일이 정한다 — 절대경로를 여기 적지 않는다. kit 이 apps/<id>.json(커밋)과 .amplai/local/apps/<id>.json(host-local)을 나누는 것과 같은 이유다.",
+  "path_map": ".ai-team/local/kit-targets.json",
+  "targets": [
+    {
+      "app_id": "amplai-foundry",
+      "role": "source",
+      "path_hint": ".",
+      "note": "kit 정본을 소유한다. 자기 자신에도 설치한다 (role: source 는 대상에서 빠진다는 뜻이 아니다)"
+    },
+    {
+      "app_id": "synapse",
+      "role": "target",
+      "path_hint": "../synapse",
+      "note": "2.2.0 이 이미 설치돼 있다. 2.3.0 은 갱신 경로를 탄다"
+    },
+    {
+      "app_id": "cortex",
+      "role": "target",
+      "path_hint": "../cortex",
+      "note": "2026-08-28 배포했다가 제거했다 — cortex 의 test_ai_team_has_no_new_top_level_directory 가 .ai-team 최상위를 7개로 못박아 kit 의 install·local·backups 가 그것을 깨뜨렸다. D-054 가 그 test 를 삭제가 아니라 kit 3개 예외로 완화하기로 정했고 ALR-007 이 그것을 실행한다. 완화와 설치가 그 저장소의 PR 로 머지되기 전까지 expect_installed 를 false 로 둔다. docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md 참조",
+      "expect_installed": false
+    }
+  ]
+}

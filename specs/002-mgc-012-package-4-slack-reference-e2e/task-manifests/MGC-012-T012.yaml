@@ -1,0 +1,168 @@
+schema_version: "1.0"
+
+id: MGC-012-T012
+title: MGC-012 closure on a clean clone across both Python versions
+type: chore
+status: blocked
+
+goal:
+  outcome: >-
+    clean clone 의 Python 3.11 과 3.12 에서 amplai-foundry verify 가 network 없이
+    통과하고, Package 3·4 를 합친 MGC-012 가 닫힌다.
+  user_value: >-
+    A15 와 외부 SPEC 의 "Clean clone Python 3.11/3.12" 다. 이것이 통과해야 MGC-012 를
+    완료로 부를 수 있다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      section: FR-022, SC-014, SC-015, SC-016
+    - path: docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md
+      section: A15
+  requirements:
+    - FR-022
+  decisions:
+    - D-004
+    - D-027
+
+scope:
+  include:
+    - clean clone 에서 Python 3.11·3.12 로 amplai-foundry verify 실행
+    - 전체 regression
+    - 001 index.yaml 의 W3 항목 셋 상태 갱신
+    - Package 3·4 를 합친 MGC-012 closure review
+  exclude:
+    - 새 기능 구현
+    - MGC-013 이후 항목
+  allowed_paths:
+    - specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml
+    - specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml
+    - docs/workstreams/messenger-governance-closure-v3
+  forbidden_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/slack.py
+    - src/amplai_foundry/governance/events.py
+
+dependencies:
+  tasks:
+    - MGC-012-T010
+    - MGC-012-T011
+    - MGC-012-T013
+  external:
+    - id: E-5
+      name: Python 3.12 toolchain
+      description: >-
+        Python 3.12 toolchain. 현재 개발 환경에 3.11 만 있다 (uv python 목록 확인).
+        SC-014 는 두 버전 모두를 요구하므로 3.12 없이는 이 task 의 acceptance 를 채울 수 없다.
+      owner: 사용자
+      status: pending
+
+implementation:
+  guidance:
+    - clean clone 이란 작업 tree 가 아니라 새로 clone 한 디렉터리다. .venv 와 캐시가
+      없는 상태에서 도는지가 질문이다.
+    - network 없이 통과해야 한다. E2E 는 marker 로 빠져 있어야 한다 (T009).
+    - skip 을 pass 로 적지 않는다. E2E 가 skip 됐으면 gate 기록에 skip 이라고 쓴다
+      (quickstart D 절).
+  invariants:
+    - 실행하지 않은 검증을 통과했다고 보고하지 않는다.
+    - test 수를 baseline 으로 고정하지 않는다 (SC-015).
+  non_goals:
+    - CI pipeline 구축.
+    - 성능 최적화.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 새로 clone 한 디렉터리와 Python 3.11 환경
+      when: amplai-foundry verify 를 network 없이 돌리면
+      then: 7 stage 가 모두 통과한다
+    - id: AC-02
+      given: 같은 clone 과 Python 3.12 환경
+      when: amplai-foundry verify 를 돌리면
+      then: 7 stage 가 모두 통과한다
+    - id: AC-03
+      given: 전체 test suite
+      when: python -m pytest 를 돌리면
+      then: 회귀 없이 통과한다. 숫자를 고정하지 않는다
+    - id: AC-04
+      given: Package 4 의 모든 wave 가 끝난 상태
+      when: contract·failure-recovery·regression 3 lens review 를 돌리면
+      then: P0·P1·Blocking-P2 가 0건이다
+    - id: AC-05
+      given: 001 의 index.yaml 이 W3 항목 셋을 deferred 로 갖고 있는 상태
+      when: 확인하면
+      then: history-ordering 과 history-oauth-scope 는 닫혔고 transport-readback 은
+        T008 이 닫은 것으로 기록돼 있다
+  commands:
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault
+      required: true
+    - id: verify
+      kind: integration
+      run: amplai-foundry verify
+      required: true
+  manual_checks:
+    - id: MC-01
+      observer: 사용자
+      action: >-
+        repo 를 새 디렉터리로 clone 하고 Python 3.11 과 3.12 각각에서
+        amplai-foundry verify 를 network 없이 돌린다.
+      expected: >-
+        두 버전 모두 7 stage 가 통과한다. E2E 는 marker 로 빠져 있어 network 를 요구하지
+        않는다.
+      reason_not_automated: >-
+        CI pipeline 구축은 이 task 의 범위 밖이다. clean clone 은 작업 tree 가 아니라
+        캐시 없는 새 디렉터리라 기존 verify runner 안에서 재현할 수 없다.
+  evidence:
+    - type: command_output
+      source: verify
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - Python 3.12 에서만 드러나는 문제가 있으면 이 시점에 처음 보인다.
+    - clean clone 이 개발 환경의 캐시에 의존하고 있었다면 여기서 드러난다.
+  approvals:
+    - MGC-012 closure 시 3 lens review 전원
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - docs/workstreams 의 gate 기록과 STATUS·CURRENT_ITEM·PROGRESSION_QUEUE
+    - 001 과 002 의 index.yaml coverage 갱신
+  notes:
+    - 이 task 가 MGC-012 의 마지막이다. 통과 후 MGC-013 Telegram 으로 간다.
+    - E-5 (Python 3.12) 가 없으면 AC-02 를 채울 수 없다. 그 상태로 gate 를 열지 않는다.

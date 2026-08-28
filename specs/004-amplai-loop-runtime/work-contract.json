@@ -1,0 +1,157 @@
+{
+  "schema_version": "2.0",
+  "id": "ALR-003",
+  "title": "loop runtime 에 남은 cortex 잔재를 이 저장소 사실로 바꾼다",
+  "goal": "이식 후 남은 cortex 잔재 다섯 부류를 닫는다. rule 문서가 없는 build system 을 규정하고, path_rule 과 canonical_root 가 없는 경로를 가리키고, discovery 가 이식하지 않은 semantic runtime 을 매번 호출하고, environment fingerprint 와 verifier report 가 RHEL/C99/x86-32 라는 거짓 환경 가정을 남긴다. 마지막 것이 제일 나쁘다 — fingerprint 는 '어떤 환경에서 무엇을 증명했는지' 를 남기는 물건인데 증명한 적 없는 환경을 쓴다.",
+  "source": [
+    "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md"
+  ],
+  "work_type": "refactor",
+  "risk": "high",
+  "scope": {
+    "include": [
+      ".ai-team/rules/",
+      ".ai-team/runtime/policy.json",
+      ".ai-team/policy/documentation.json",
+      "scripts/loopv2.py",
+      ".ai-team/verifiers/run.py",
+      "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      ".ai-team/verifiers/registry.json"
+    ],
+    "exclude": [
+      "src/amplai_foundry/ 제품 코드",
+      "semantic runtime 이식 — D-046 이 미이식을 정했다. 호출부를 없애는 것이지 되살리는 게 아니다",
+      "MGC-012 Package 5 의 round 17 — 별도 workstream 이다",
+      "verifier check 를 새로 추가해 검사 범위를 넓히는 것"
+    ]
+  },
+  "non_goals": [
+    "rule 이 규정하는 내용 자체를 새로 설계하는 것",
+    "path_rule 의 risk/profile 배정을 바꾸는 것 — 죽은 것만 뺀다",
+    "environment capture 가 수집하는 항목을 늘리는 것"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": ".ai-team/rules/ 의 모든 rule 이 이 저장소에 실재하는 경로와 명령만 규정한다. 없는 build system 을 전제하지 않는다.",
+      "evidence": [
+        "각 rule 이 인용하는 경로·명령의 존재를 전수 확인하는 실행"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "policy.json 의 path_rule 중 대상 경로가 하나도 없는 rule 이 없다. 남은 rule 의 pattern 도 이 저장소 구조를 가리킨다.",
+      "evidence": [
+        "rule 별 pattern glob 매칭 전수 확인 실행",
+        "classify 가 주요 경로에 같은 risk/profile 을 주는지 확인"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "documentation.json 의 canonical_roots 와 reference_scan.documents 가 실재하는 경로만 선언한다.",
+      "evidence": [
+        "canonical_roots·reference_scan 경로 존재 전수 확인",
+        "docs validate --repo 가 FRESH"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "discovery 가 이식하지 않은 semantic runtime 을 호출하지 않는다. domain-discovery.json 에 semantic-runtime-unavailable 이 남지 않는다.",
+      "evidence": [
+        "discovery scan 재실행 후 결과에 해당 항목 0건"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "environment fingerprint 와 verifier report 의 target_assumptions 가 이 저장소가 실제로 검증하는 환경을 쓴다. RHEL·C99·x86-32·HP-UX·Python 3.6 을 주장하지 않는다.",
+      "evidence": [
+        "environment capture 재실행 후 target_assumptions 확인",
+        "verifier --profile v2 --json-report 의 target_assumptions 확인"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "environment fingerprint 의 tool 목록이 verifier 가 실제로 쓰는 interpreter 를 기록한다. system python3 만 남기지 않는다.",
+      "evidence": [
+        "environment.json 의 tools 에 .venv interpreter version 이 있는지 확인"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "v2 profile 이 PASS 하고 test 회귀가 없다. doctor 가 이 변경 뒤에도 PASS 다.",
+      "evidence": [
+        ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
+        "pytest 1382 passed"
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "verifier_interpreter 는 상수가 아니라 registry command 에서 관찰한 값이다. registry 가 다른 interpreter 를 쓰기 시작하면 fingerprint 가 그것을 그대로 보여준다.",
+      "evidence": [
+        "registry 의 loop-runtime-doctor 를 python3 로 되돌리면 fingerprint 가 ['.venv/bin/python','python3'] 를 기록하고 tools 에 Python 3.9.6 이 나타난다",
+        "원복하면 ['.venv/bin/python'] 로 돌아온다"
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "registry 의 모든 check 가 pyproject 의 requires-python 을 만족하는 interpreter 를 부른다.",
+      "evidence": [
+        "python3 scripts/loopctl.py trace append -> AttributeError: module 'datetime' has no attribute 'UTC' (loopv2.py:53, 3.11+ 전용)",
+        "registry command 전수에 맨 python3 0건"
+      ]
+    },
+    {
+      "id": "AC-010",
+      "statement": "loopctl 의 어떤 command 도 이식하지 않은 semantic runtime 을 부르지 않는다. garden scan 이 통과한다.",
+      "evidence": [
+        "grep -c 'semantic_runtime|SemanticRuntime' scripts/ -> 0",
+        ".venv/bin/python scripts/loopctl.py garden scan -> pass true, findings 0"
+      ]
+    },
+    {
+      "id": "AC-011",
+      "statement": "fingerprint 헬퍼가 관찰 실패를 관찰 결과로 위장하지 않고, 비정상 자료구조에서 죽지 않는다.",
+      "evidence": [
+        "env prefix wrapper -> ['.venv/bin/python', 'unobserved: command에서 interpreter를 못 읽음 (pytest)']",
+        "checks 에 string 항목 / command 가 list -> 무시하고 정상값 반환",
+        "requires-python 이 값 없이 -> capture 가 죽지 않는다"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      ".venv/bin/python scripts/loopctl.py doctor"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "destructive_change"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-046"
+  ],
+  "blocked_by": [],
+  "status": "done"
+}

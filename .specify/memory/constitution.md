@@ -85,13 +85,21 @@ Item gate 는 다음을 모두 만족해야 PASS 다.
 | 축 | 담당 |
 |---|---|
 | 무엇을 만들 것인가 | spec-kit — `spec.md`, `plan.md` |
+| spec 모호성 해소 | `/speckit-clarify` — 답을 `spec.md` 에 기록 |
 | 작업 분해 | `/taskify` — task manifest |
+| 구현 전 정합성 | `/speckit-analyze` — spec/plan/tasks 대조 |
 | 실행 | `/speckit-implement` |
 | 검토와 gate | subagent review 3인 → `/pinesky-workstream-gate` |
 
 규칙:
 
 - `/speckit-tasks` 대신 `/taskify` 를 쓴다. 산출물이 두 벌 생기는 것을 막는다.
+- `/speckit-plan` **앞에는** 반드시 `/speckit-clarify` 를 돌린다 (D-037). 모호한 곳이 없으면
+  질문 없이 coverage map 만 나온다. 사람에게 묻고 멈추는 것은 승인 관문이 아니라 모르는
+  사실을 받는 단계다 — 원칙 위의 No Speculation 과 같은 방향이다.
+- `/speckit-implement` **앞에는** 반드시 `/speckit-analyze` 를 돌린다 (D-036). CRITICAL 또는
+  HIGH 가 있으면 구현하지 않는다. analyze 는 artifact 끼리만 대조하고 소스 코드는 읽지
+  않으므로 구현 뒤 subagent review 를 대체하지 않는다.
 - `/speckit-implement` 다음에는 반드시 subagent review 를 돌린다. review 없이 gate 를
   기록하지 않는다.
 - spec-kit 은 `specs/` 아래 문서만 만든다. canonical Vault 와 Git state 변경은 원칙

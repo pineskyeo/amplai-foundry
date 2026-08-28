@@ -329,3 +329,52 @@ owner_agent: main-codex
 ```
 
 Clean-clone, failure injection, Provider E2E와 final review를 실행한다.
+
+### MGC-017 — Legacy Surface Reduction
+
+```yaml
+id: MGC-017
+type: backend-refactor
+project: amplai-foundry
+target: legacy migration subsystem
+title: Legacy Surface Reduction
+status: planned
+priority: P2
+depends_on: [MGC-011, MGC-012]
+pipeline: grill → decision → specify → implement → subagent-review → gate
+forbidden:
+  - schema migration 삭제 또는 renumber
+  - legacy row 존재 여부를 확인하지 않은 진입 서비스 제거
+risk_level: high
+owner_agent: main-codex
+```
+
+Legacy 진입 서비스를 줄이고 reconcile 표면을 좁힌다. 2026-08-18 사용자가 "데드코드면
+지워라"라고 요청해 실측한 결과를 여기 남긴다.
+
+**데드코드가 아니다.** 세 가지가 확인됐다.
+
+1. `store.py:154-170`(`initialize`)과 `:254-268`(`_reconcile_events`)이 legacy 서비스 셋을
+   부른다. `connect()`·`check_startup()` 하는 모든 경로가 탄다.
+2. `legacy_gates.legacy_mutation_block`을 `decisions.py:29`, `publish_resolution.py:22`,
+   `active_proposals.py:13`이 import 한다. 비-legacy src 파일 12개가 참조하고
+   `active_proposals.py:352`는 SQL에서 `governance_legacy_migration_items`를 JOIN 한다.
+3. **schema migration 15개는 못 지운다.** `migrations.py:4185-4204` `_verify_rows`가 적용된
+   version의 `1..N` 연속성과 각 row의 `name`·`checksum` 일치를 요구한다. 하나라도 지우거나
+   번호를 당기면 기존 store가 전부 열리지 않는다.
+
+죽은 것은 **진입점**이다. `grep -i legacy src/amplai_foundry/cli.py`가 0건이고, repo 안에
+v2 tree도 `.amplai/runtime/` governance DB도 없다. 심볼 36개 중 비-legacy 코드와 test
+어디서도 안 쓰이는 것은 `LegacyApprovalAuditEvidence` 하나다.
+
+규모: src 5,630줄(`legacy_migration` 2,705 / `legacy_rollback` 1,028 / `legacy_recovery` 967
+/ `legacy_lifecycle` 834 / `legacy_gates` 96), test 7,436줄.
+
+축소하려면 **"legacy table은 영원히 비어 있다"를 계약으로 못 박아야** 한다. 그 전제가 서면
+진입 서비스를 지우고 reconciler를 "비어 있음 확인" 하나로 줄일 수 있다. 전제를 세우려면
+배포된 store에 legacy row가 있는지 확인해야 하고, 이 저장소에서는 확인할 수 없다.
+
+`D-010`이 닫은 `MGC-011` 범위를 되돌리는 것이므로 **새 Decision이 필요하다.** 기존 Decision에
+`superseded_by`를 기록한다.
+
+wave 8과 섞지 않는다. 13,000줄 변경을 review target에 넣으면 round 15 review가 무효가 된다.

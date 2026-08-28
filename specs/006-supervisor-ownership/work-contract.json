@@ -1,0 +1,143 @@
+{
+  "schema_version": "2.0",
+  "id": "ALR-005",
+  "title": "[SUPERSEDED by ALR-006] Project Store 가 supervisor 의 코드와 실행 권한을 갖는다",
+  "goal": "SUPERSEDED — S01·S02 가 kit 2.3.0 기능으로 흡수됐다 (D-053). kit 정본을 amplai-foundry 가 가지면 단일 인스턴스 락을 amplai_supervisor.py 안에 넣을 수 있고 이 contract 가 한계로 인정한 우회 경로가 사라진다. D-052 의 실질(Store 가 supervisor 를 소유한다)은 유효하고 D-053 이 amend 했다. 후속은 specs/007-kit-source-and-distribution 이 받는다. Local Supervisor 를 Store 소유로 옮긴다. kit 은 supervisor 스크립트를 모든 앱 repo 에 복사하면서 어느 것을 돌려야 하는지 정하지 않고, 단일 인스턴스 보장 장치가 전혀 없다 (grep 으로 0건 확인). Store 의 .amplai/locks/ 에 supervisor.lock 을 두어 누가 어디서 실행하든 하나만 살게 하고, 코드도 Store 로 옮겨 개념과 배포를 일치시킨다. 소유는 Store 이고 코드 공급은 amplai-foundry 다.",
+  "source": [
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-052",
+    "/Users/pinesky/workspace/synapse/.claude/worktrees/amplai-loop-kit/.ai-team/state/HANDOFF_2026-08-28_amplai-loop-kit-2.2.0.md"
+  ],
+  "work_type": "architecture",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "<PROJECT_HOME>/supervisor/",
+      "<PROJECT_HOME>/.amplai/locks/supervisor.lock",
+      "scripts/",
+      "docs/workstreams/amplai-loop-runtime-adoption/",
+      "specs/006-supervisor-ownership/"
+    ],
+    "exclude": [
+      "kit 원본 (synapse tools/amplai-loop-kit/) — 고치지 않는다. PR #81 과 독립이어야 한다",
+      "kit 이 소유한 Store 경로 — project.json, policy.json, apps/, contracts/, changes/, .amplai/local/",
+      "src/amplai_foundry/ 제품 코드",
+      "vault/ canonical knowledge",
+      "앱 repo 의 scripts/amplai_supervisor.py 제거 — kit 재설치가 되돌린다"
+    ]
+  },
+  "non_goals": [
+    "supervisor 를 켜는 것(--run) — HANDOFF §3 이 활성 세션 라우팅 확인 전까지 쓰지 말라 했다",
+    "HANDOFF §3 의 개선 후보 1(worktree 인식)·2(알림)·3(활성 세션 라우팅) 설계",
+    "kit 원본에 락을 넣는 것 — upstream 제안 초안까지만 만든다",
+    "앱 repo 사본의 직접 실행을 코드로 막는 것 — kit 을 안 고치므로 불가능하다"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "Project Store 가 AMPLAI_PROJECT_HOME 아래 생성돼 있고 project verify 가 통과한다.",
+      "evidence": [
+        "amplai.py project status 출력",
+        "amplai.py project verify 출력"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "<PROJECT_HOME>/supervisor/ 에 amplai_supervisor.py·amplai_runtime.py·VERSION·run 이 있고 두 .py 가 amplai-foundry 사본과 byte 동일하다.",
+      "evidence": [
+        "sha256 대조 — Store 사본과 amplai-foundry scripts/ 사본",
+        "VERSION 내용이 앱의 install record 버전과 같은지 확인"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "run 이 .amplai/locks/supervisor.lock 을 잡는다. 두 번째 실행이 거부되고 exit code 로 구분된다. 첫 번째가 죽으면 락이 회수돼 다음 실행이 성공한다.",
+      "evidence": [
+        "동시 실행 재현 — 두 번째가 거부되고 exit code 가 성공과 다름",
+        "첫 프로세스를 SIGKILL 한 뒤 다음 실행이 성공하는 것을 확인",
+        "락 디렉토리가 Store .gitignore 에 걸려 git 에 안 올라가는 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "supervisor/VERSION 과 등록된 각 앱의 .ai-team/install/amplai-loop-kit.json 버전이 다르면 run 이 fail-closed 한다. 어느 앱이 어긋났는지 출력한다.",
+      "evidence": [
+        "앱 install record 의 version 을 바꿔 넣고 run 이 거부하는 것을 확인",
+        "출력에 어긋난 app_id 가 나오는지 확인",
+        "원복하면 통과하는지 확인"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "동기화 명령이 amplai-foundry 에 있고 실행하면 supervisor/ 의 두 .py 와 VERSION 이 갱신된다. 갱신 전후로 AC-002 가 유지된다.",
+      "evidence": [
+        "Store 사본을 일부러 바꾼 뒤 동기화 명령으로 복구되는지 확인",
+        "동기화 후 sha256 재대조"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "run --dry-run 이 kit 의 --dry-run 을 그대로 통과시키고 Work 를 claim 하지 않는다.",
+      "evidence": [
+        "run --dry-run 실행 후 Work 의 attempts 와 status 가 안 바뀌는 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "kit 이 소유한 Store 경로가 이 feature 의 어떤 동작으로도 안 바뀐다.",
+      "evidence": [
+        "Store 에서 git status 로 project.json·policy.json·apps/·contracts/·changes/ 가 안 바뀐 것을 확인",
+        "run·동기화·락 획득 전후로 각각 확인"
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "우회 경로(앱 repo 의 scripts/amplai_supervisor.py 직접 실행)가 락을 잡지 않는다는 사실이 문서에 적혀 있고 재현으로 확인됐다.",
+      "evidence": [
+        "앱 사본을 직접 실행하면서 동시에 run 을 띄워 둘 다 사는 것을 재현",
+        "그 한계가 문서에 적혀 있는지 확인"
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "제거 절차가 있다. supervisor/ 와 락을 지우면 Store 가 kit 이 만든 상태로 돌아간다.",
+      "evidence": [
+        "복제 Store 에서 제거 실행 후 git status 가 비는 것을 확인",
+        "제거 후 project verify 가 통과하는지 확인"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "python3 scripts/loopctl.py doctor"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-052",
+    "D-051"
+  ],
+  "blocked_by": [],
+  "status": "done"
+}

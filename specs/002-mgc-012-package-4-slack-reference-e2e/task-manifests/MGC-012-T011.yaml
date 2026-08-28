@@ -1,0 +1,154 @@
+schema_version: "1.0"
+
+id: MGC-012-T011
+title: The real transport leaves other providers untouched
+type: feature
+status: done
+
+goal:
+  outcome: >-
+    실제 HTTP transport 로 Slack 경로를 성공과 hold 양쪽으로 완주해도 다른 Provider 의
+    outbox destination row 와 event state 가 바뀌지 않는다.
+  user_value: >-
+    A14 다. 외부 SPEC 의 Stop Condition 에 "Slack activation 이 Telegram 을 활성화함" 이
+    있다. hold 는 destination 전체를 멈추므로 번지면 피해가 크다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      section: FR-021, User Story 3, SC-012
+    - path: docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md
+      section: A14
+  requirements:
+    - FR-021
+  decisions:
+    - D-026
+
+scope:
+  include:
+    - Telegram destination 이 있는 store 에서 실제 transport 로 Slack 경로 완주
+    - 성공 경로와 terminal hold 경로 양쪽
+    - Telegram destination row 와 event state 불변 확인
+    - hold scope 가 Slack destination 에만 걸리는 것 확인
+  exclude:
+    - ActivationEvidence 와 Gate machinery (MGC-015 소유, D-026)
+    - Telegram adapter 구현 (MGC-013)
+    - 실제 Slack workspace 호출 (T010 소유)
+  allowed_paths:
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/slack.py
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+
+dependencies:
+  tasks:
+    - MGC-012-T006
+    - MGC-012-T008
+  external: []
+
+implementation:
+  guidance:
+    - Package 3 의 T005 AC-07 이 fake transport 로 같은 검사를 이미 했다. 이 task 는
+      **실제 HTTP transport** 로 다시 한다. 전송 계층이 바뀌어도 격리가 유지되는지가 질문이다.
+    - Telegram destination 은 production 파생 규칙이 만들게 한다. row 를 손으로 넣으면
+      실제로 생기지 않는 모양을 검사한다 (T005 선례).
+    - fake server 를 쓴다. 실제 Slack 은 필요 없다 — 격리는 local state 문제다.
+  invariants:
+    - Slack 경로가 다른 Provider 의 durable row 를 안 건드린다.
+    - hold 는 Slack destination scope 에만 걸린다.
+  non_goals:
+    - activation state 자체를 읽는 것. 그 table 은 MGC-015 가 만든다.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: Telegram provider destination 과 pending event 가 있는 상태
+      when: 실제 transport 로 Slack 경로가 성공으로 끝나면
+      then: Telegram destination row 전체와 event state 가 그대로다
+    - id: AC-02
+      given: 같은 상태에서
+      when: Slack 쪽이 terminal 실패로 hold 를 만들면
+      then: hold 의 scope_ref 가 Slack destination 이고 Telegram 은 계속 claim 가능하다
+    - id: AC-03
+      given: Slack destination 이 hold 로 멈춘 상태
+      when: Telegram destination 을 claim 하면
+      then: 자기 event 를 정상적으로 가져간다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_http.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault/
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - Package 3 가 검사한 것과 겹쳐 보일 수 있다. 차이는 전송 계층이 실물이라는 것뿐이고
+      그 차이가 무의미하다고 판정되면 이 task 를 접는다.
+  approvals:
+    - Wave 6R 이후 contract·failure-recovery·regression 3 lens revalidation
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  # AC-01~03 셋 다 통과한다. test 하나가 셋을 한 시나리오로 덮는다 — 성공과 hold 를 같은
+  # store 에서 이어 돌려야 격리가 시간축을 건너 유지되는지 보인다.
+  #
+  # AC-01: Telegram destination row 넷(next_sequence, delivered_sequence, operator_hold,
+  #        updated_at)이 통째로 그대로이고 event 는 PENDING 이다.
+  # AC-02: hold 가 ("outbox_destination", Slack destination_ref) 하나뿐이다.
+  # AC-03: Telegram destination 을 claim 하면 자기 event 를 가져간다.
+  #
+  # **T005 AC-07 과 겹치지 않는 부분을 명시한다** (OQ-006). T005 는 SlackTransportError 를
+  # 손으로 만들어 주입해 응답 판별 경로를 안 탄다. 여기서는 fake server 의 ok:false JSON
+  # 에서 예외가 생성되고 분류·DLQ·hold 까지 간다. 두 호출이 실제 HTTP 로 나간 것을
+  # 요청 기록으로 확인한다 — 그 assertion 이 없으면 fake transport 로도 통과한다.
+  #
+  # mutation 3종이 전부 죽는다 — _slack_error_code 가 None 을 돌려주기, 응답을 무조건
+  # 성공으로 보기, 불변을 주장하는 대상을 Telegram 에서 Slack row 로 바꾸기.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # 2026-08-12 final shared-file regression: full 1087 passed, 1 slack_e2e deselected;
+  # isolated regression lens killed all 10 mutations. Three-lens blocker/advisory count is 0.
+  completed_at: "2026-08-12T11:27:46+09:00"
+  evidence_paths:
+    - tests/test_slack_http.py
+
+handoff:
+  expected_changes:
+    - tests/test_slack_http.py 확장
+  notes:
+    - network 없이 돈다. fake server 로 충분하다.

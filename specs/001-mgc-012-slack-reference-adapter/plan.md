@@ -28,7 +28,7 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 
 **Storage**: SQLite governance store. Package 3 는 schema 를 바꾸지 않는다
 
-**Testing**: `python -m pytest`. 기존 709 test 가 baseline
+**Testing**: `python -m pytest` 전량. 숫자를 baseline 으로 고정하지 않는다 (SC-006)
 
 **Target Platform**: local CLI / worker process
 
@@ -40,7 +40,8 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 **Constraints**: `destination_ref` 형식 `provider:{provider}:{channel_digest}` 불변
 (D-018 항목 1). `OutboxDispatcher` 계약 불변 (MGC-008 gate PASS at `e989566`)
 
-**Scale/Scope**: 신규 module 1개, 신규 test file 1개. 기존 파일 수정은 export 추가 수준
+**Scale/Scope**: 신규 module 1개, 신규 test file 1개. 기존 파일은 `projections.py` 의 사전
+검증 예외 종류와 그 test 만 바뀐다 (D-022)
 
 ## Constitution Check
 
@@ -64,6 +65,13 @@ Slack channel 로 나가는 Proposal Card 를 기존 ordered outbox 위에 얹�
 `research.md` 가 `plan.md` 로 넘긴 판단 둘을 여기서 닫는다.
 
 ### P-001 — Deleted Card Falls To Hold
+
+> **좁혀짐 (D-023, 2026-08-05).** 아래 결정은 **조회 범위를 다 못 본 경우로 한정된다.**
+> `next_cursor` 가 없어 history 를 끝까지 훑었는데도 marker 가 없으면 미전송으로 보고
+> 보낸다. 좁히지 않으면 `destination_sequence` 가 1 인 event 가 판정 근거를 댈 수 없어
+> **모든 destination 의 첫 Card 가 영구 hold** 가 된다. 아래 근거의 "중복 Card" 는 범위를
+> 다 못 본 경우에만 성립한다 — history 가 소진됐다면 없는 것이 확정이라 두 장이 될 수
+> 없다. 확정 계약은 contracts C-2.2 다.
 
 **결정**: 사람이 Card 를 지워 marker 를 못 찾으면 hold 로 떨어뜨린다. 다시 보내지 않는다.
 
@@ -116,25 +124,28 @@ specs/001-mgc-012-slack-reference-adapter/
 │   └── slack-transport.md   # transport Protocol 과 destination 계약
 └── tasks.md             # /taskify manifest 에서 생성한다. 손으로 쓰지 않는다
                          # python3 .specify/scripts/taskify_to_tasks_md.py \
-                         #     specs/001-mgc-012-slack-reference-adapter/task-manifests \
-                         #     --out specs/001-mgc-012-slack-reference-adapter/tasks.md
+                         #     specs/001-mgc-012-slack-reference-adapter/task-manifests
 ```
 
 설계 소스가 `specs/` 안에 있으므로 taskify 출력 위치는 `.amplai/tasks/` 가 아니라
 `<feature-directory>/task-manifests/` 다 (`.claude/skills/taskify/SKILL.md:59-60`).
-`--out` 은 그래도 필요하다 — manifest 디렉터리와 `tasks.md` 위치가 다르다.
+`--out` 은 **필요 없다.** script 기본값이 `<manifest-dir>/../tasks.md` 인데 manifest 가
+`specs/<feature>/task-manifests/` 안에 있어 그 값이 정확히 맞는다. 생성된 `tasks.md` 의
+header 가 출력하는 재생성 명령에도 `--out` 이 없다. `--out` 이 필요한 것은 manifest 가
+`.amplai/tasks/` 아래 있을 때다.
 
 ### Source Code (repository root)
 
 ```text
 src/amplai_foundry/governance/
 ├── events.py            # 수정 없음 — ProjectionDestination Protocol, OutboxDispatcher
-├── projections.py       # 수정 없음 — YamlProjectionDestination (참조 구현)
+├── projections.py       # 사전 검증 예외 종류만 변경 (D-022) — 나머지는 참조 구현
 ├── slack.py             # 수정 없음 — Package 1·2 의 ingress 인증
 └── slack_projection.py  # 신규 — SlackProjectionDestination, transport Protocol, error 분류
 
 tests/
-└── test_slack_projection.py   # 신규
+├── test_slack_projection.py   # 신규
+└── test_governance_events.py  # D-022 의 projections.py 변경에 대한 test 추가
 ```
 
 **Structure Decision**: 기존 단일 package 구조를 그대로 쓴다. `slack.py` 에 넣지 않고
@@ -164,8 +175,8 @@ regression 3 lens review 를 돌린다 (D-019 항목 4).
 
 ### Wave 3 — Reconcile Path
 
-- `reconcile()` — bounded 역순 조회, 세 갈래 판정 (R-004), 판정 불가 시
-  `OutboxReconcileError`
+- `reconcile()` — 첫 시도 분기, bounded 역순 조회, 네 갈래 판정 (R-004, D-023), 판정 불가
+  시 `OutboxReconcileError`
 - 검증: marker 발견 / 하위 sequence 선발견 / 상한 초과 세 경우
 
 ### Wave 4 — Dispatcher Integration And Failure Matrix

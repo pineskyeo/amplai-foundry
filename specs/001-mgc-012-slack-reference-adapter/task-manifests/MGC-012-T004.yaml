@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: MGC-012-T004
 title: Ordered delivery and supersession through the real dispatcher
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >-
@@ -126,10 +126,14 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  # AC-01~AC-04 넷 다 실제 OutboxDispatcher.deliver_next 를 통과시킨 test 로 닫았다.
+  # dispatcher 코드는 한 줄도 안 고쳤다 — 통합은 destination 쪽 계약만으로 성립했다.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # wave 4 gate PASS at 5b2024b. review 2 라운드에서 P0·P1·Blocking-P2 0건이다.
+  completed_at: "2026-08-07"
+  evidence_paths:
+    - tests/test_slack_projection.py
 
 handoff:
   expected_changes:

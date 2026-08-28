@@ -1,0 +1,121 @@
+schema_version: "1.0"
+
+id: ALR-006-T004
+title: 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
+type: feature
+status: done
+
+goal:
+  outcome: >
+    distribution/targets.json 이 세 앱을 논리 정보로 담고 절대경로를 담지 않는다.
+    .ai-team/local/kit-targets.json 이 실제 경로를 담고 gitignore 에 걸린다.
+    경로를 못 정하면 추측하지 않고 멈춘다.
+  user_value: >
+    다른 머신·다른 사용자에서도 설정이 깨지지 않는다. 남의 저장소에 짐작한 경로로
+    쓰는 사고를 구조적으로 막는다.
+
+source:
+  feature: ALR-006
+  files:
+    - path: specs/007-kit-source-and-distribution/plan.md
+      section: "1. 경로 설정 — 두 층으로 나눈다"
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      section: AC-008
+  requirements:
+    - AC-008
+  decisions:
+    - D-053
+
+scope:
+  include:
+    - tools/amplai-loop-kit/distribution/targets.json — app_id, project_id, role, path_hint
+    - .ai-team/local/kit-targets.json 형식 정의와 실제 파일 생성
+    - .gitignore 에 .ai-team/local/ 이 있는지 확인하고 없으면 추가한다
+    - 경로 해석 규칙 — --app 지정, host-local, 없으면 후보 제시 후 중단
+  exclude:
+    - 배포 래퍼 구현 (T005 가 한다)
+    - 실제 배포
+  allowed_paths:
+    - tools/amplai-loop-kit/distribution/**
+    - .ai-team/local/kit-targets.json
+    - .gitignore
+    - specs/007-kit-source-and-distribution/**
+  forbidden_paths:
+    - src/**
+    - vault/**
+
+dependencies:
+  tasks:
+    - ALR-006-T001
+  external: []
+
+implementation:
+  guidance:
+    - kit 이 apps/<id>.json 과 .amplai/local/apps/<id>.json 을 나누는 형식을 참고한다
+    - kit 의 fragments/gitignore.md 가 이미 .ai-team/local/ 을 marker 로 넣는다. 중복을 만들지 않는다
+    - path_hint 는 힌트다. 권위는 host-local 에 있다는 것을 스키마 주석이나 문서에 적는다
+    - ~ 와 $VAR 를 확장하고, 확장 뒤 절대경로가 아니면 거부한다
+  invariants:
+    - targets.json 에 절대경로(/ 또는 ~ 로 시작)가 하나도 없다
+    - kit-targets.json 이 git 에 올라가지 않는다
+  non_goals:
+    - Store 경로(project_home)를 kit 이 자동으로 정하는 것 — 사람이 정한다
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: distribution/targets.json
+      when: 값 전체에서 / 또는 ~ 로 시작하는 문자열을 찾는다
+      then: 0건이고 세 앱(amplai-foundry, synapse, cortex)이 모두 있다
+    - id: AC-02
+      given: .ai-team/local/kit-targets.json
+      when: git check-ignore 로 확인한다
+      then: 무시 대상이고 git status 에 안 나온다
+    - id: AC-03
+      given: .gitignore
+      when: .ai-team/local/ 항목을 센다
+      then: 정확히 한 번만 있다 (kit marker 와 중복되지 않는다)
+  commands:
+    - id: gitignore-check
+      kind: integration
+      run: git check-ignore -v .ai-team/local/kit-targets.json
+      required: true
+    - id: doctor
+      kind: lint
+      run: python3 scripts/loopctl.py doctor
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: gitignore-check
+      required: true
+
+risk:
+  level: low
+  concerns:
+    - .gitignore 중복 항목이 kit 재설치 때 marker 병합과 충돌할 수 있다
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - tools/amplai-loop-kit/distribution/targets.json
+    - .gitignore
+
+handoff:
+  expected_changes:
+    - tools/amplai-loop-kit/distribution/targets.json (신규)
+    - .ai-team/local/kit-targets.json (신규, gitignore)
+    - .gitignore (필요 시)
+  notes: []

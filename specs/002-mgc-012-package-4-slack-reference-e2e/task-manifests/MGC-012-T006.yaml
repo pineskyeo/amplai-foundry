@@ -1,0 +1,187 @@
+schema_version: "1.0"
+
+id: MGC-012-T006
+title: Real Slack HTTP transport over the standard library
+type: feature
+status: done
+
+goal:
+  outcome: >-
+    SlackTransport Protocol 의 실제 HTTP 구현이 존재하고, 모든 실패가
+    SlackTransportError 로 감싸여 기존 분류기에 들어간다.
+  user_value: >-
+    Package 1~3 이 만든 계약이 처음으로 실물 network 를 탄다. transport 가 예외를 흘리면
+    분류가 안 돌아 terminal 이어야 할 invalid_auth 가 조용히 재시도된다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      section: FR-013, FR-014, FR-015, FR-016
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md
+      section: Wave 5, P-004
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
+      section: H-2
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md
+      section: R-013
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      section: C-1
+  requirements:
+    - FR-013
+    - FR-014
+    - FR-015
+    - FR-016
+  decisions:
+    - D-018
+    - D-020
+    - D-027
+
+scope:
+  include:
+    - urllib.request 기반 post_message 와 read_history
+    - 모든 예외를 SlackTransportError 로 감싸기
+    - ok:false 응답에서 error code 추출
+    - 호출 단위 timeout
+    - read_history 에 include_all_metadata=true 강제
+    - local fake HTTP server 를 상대로 한 단위 test
+  exclude:
+    - credential 을 환경에서 읽는 것 (T007 소유)
+    - readback 자가검사 (T008 소유)
+    - 실제 Slack 호출 (T010 소유)
+    - SlackTransport Protocol 자체 수정
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/slack.py
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - 새 module 이다. slack_projection.py 를 고치지 않는다 — 그 파일 docstring 이
+      "이 module 은 Slack 을 실제로 호출하지 않는다" 로 시작한다 (plan P-004).
+    - runtime dependency 를 늘리지 않는다. urllib.request 로 충분하다 (R-013).
+    - Slack 은 application error 를 HTTP 200 + ok:false 로 준다. status code 만 보고
+      성공을 판정하지 않는다 (contracts H-2.2).
+    - 감쌀 예외 목록은 contracts H-2.1 표에 있다. urllib 의 표면이 넓다.
+  invariants:
+    - transport 밖으로 SlackTransportError 아닌 예외가 새지 않는다.
+    - code 없는 실패는 code 를 비운 채 올린다. 채우면 terminal 이 되어 되돌릴 수 없는
+      hold 가 된다 (D-020 항목 1).
+    - credential 이 예외 message 나 log 에 들어가지 않는다.
+  non_goals:
+    - 자체 재시도 loop. 재시도는 OutboxDispatcher 가 소유한다.
+    - Retry-After 를 backoff 에 주입.
+    - connection pooling.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: fake server 가 ok:true 와 channel·ts 를 돌려주는 상태
+      when: post_message 를 부르면
+      then: SlackSendResult 를 돌려주고 요청 body 에 marker 가 metadata 로 실린다
+    - id: AC-02
+      given: fake server 가 HTTP 200 + ok:false + error 를 돌려주는 상태
+      when: post_message 를 부르면
+      then: SlackTransportError 가 그 error code 를 error_code 에 싣고 올라온다
+    - id: AC-03
+      given: fake server 가 HTTP 5xx 또는 JSON 이 아닌 body 를 돌려주는 상태
+      when: 호출하면
+      then: SlackTransportError 가 error_code 없이 올라온다. classify_slack_failure 가
+        RETRYABLE 로 분류한다
+    - id: AC-04
+      given: fake server 가 timeout 이 지나도 응답하지 않는 상태
+      when: 호출하면
+      then: 지정한 timeout 안에 SlackTransportError 로 돌아온다
+    - id: AC-05
+      given: read_history 를 부르는 상태
+      when: 요청을 관측하면
+      then: include_all_metadata 가 true 로 실려 있다
+    - id: AC-06
+      given: fake server 가 next_cursor 가 있는 page 를 돌려주는 상태
+      when: read_history 를 부르면
+      then: SlackHistoryPage 의 messages 와 next_cursor 가 응답과 일치한다
+    - id: AC-07
+      given: transport 가 어떤 예외를 만나든
+      when: 호출이 실패하면
+      then: SlackTransportError 가 아닌 예외는 밖으로 나오지 않는다
+    - id: AC-08
+      given: 구현 module 의 import 를 검사하는 상태
+      when: 확인하면
+      then: pydantic·pyyaml·typer 밖의 third-party dependency 를 import 하지 않는다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_http.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - urllib 의 예외 표면을 하나라도 빠뜨리면 그 경로가 분류를 건너뛴다.
+    - fake server test 가 실제 Slack 응답 모양과 어긋나면 T010 에서만 드러난다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  # AC-01~08 여덟 다 통과한다. **wave 5 review round 1 이 AC-04 와 AC-07 을 거짓으로
+  # 판정했고 그것을 고친 뒤의 상태다.**
+  #
+  # AC-07 (예외가 안 샌다) — json.dumps 와 Request 생성이 try 밖이라 raw TypeError·
+  # ValueError 가 샜다. try 안으로 옮겼고 세 경로를 test 로 고정했다.
+  # AC-04 (timeout) — 이전 test 는 timeout 인자를 통째로 지워도 초록이었다. 경과 시간을
+  # 재고 dribble body 를 흘리는 test 로 바꿨다.
+  #
+  # mutation 은 round 2 regression lens 가 다시 돌린다. round 1 이 센 5종 중
+  # "예약 key 검사 제거" 는 그 guard 를 뺐으므로 더 이상 해당하지 않는다.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  # gate 는 아직이다. wave 5 의 3 lens review 가 끝나고 P0·P1·Blocking-P2 가 0건일 때만
+  # 채운다. status 도 그때 done 으로 바꾼다.
+  # wave 5 gate PASS at dfbcd15. review 2 라운드에서 P0·P1·Blocking-P2 0건이다.
+  completed_at: "2026-08-08"
+  evidence_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
+
+handoff:
+  expected_changes:
+    - src/amplai_foundry/governance/slack_http.py 신규
+    - tests/test_slack_http.py 신규
+  notes:
+    - T007~T009 가 같은 test file 을 쓴다. 병렬 실행하지 않는다.
+    - network 없이 돈다. 선행 조건이 없다.

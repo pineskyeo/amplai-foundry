@@ -3,10 +3,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 import sqlite3
+import threading
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 from urllib.parse import urlencode
 
 import pytest
@@ -29,23 +32,34 @@ from amplai_foundry.governance import (
     ChannelRef,
     DecisionAction,
     DecisionService,
+    IngressCommandView,
     IngressConfig,
     IngressDecisionWorker,
     IngressError,
     IngressLeaseConflictError,
     IngressService,
     IngressState,
+    IngressWorkerResult,
+    InteractionFeedback,
     ProviderEnvelope,
+    SafeInteractionOutcome,
     SlackBlockActionAuthenticator,
     SlackInstallationPolicy,
     VerifiedProviderCommand,
     WorkerOutcome,
 )
 from amplai_foundry.governance.events import GovernanceEventError
+from amplai_foundry.governance.filesystem import (
+    FilesystemStatus,
+    LocalFilesystemGuard,
+)
+from amplai_foundry.governance.ingress_worker import _DENIED_CODES
+from amplai_foundry.governance.slack_http import _SAFE_INTERACTION_MESSAGES
 from amplai_foundry.governance.store import (
     GovernanceCommitAmbiguousError,
     GovernanceStore,
     GovernanceStoreError,
+    governance_transaction,
 )
 
 NOW = datetime(2026, 7, 31, 1, 2, 3, tzinfo=UTC)
@@ -99,11 +113,12 @@ def _action(
     *,
     token_id: str = TOKEN_ID,
     raw_token: str = RAW_TOKEN,
+    action: DecisionAction = DecisionAction.APPROVE,
     action_ts: str = "1722387723.000400",
 ) -> dict[str, object]:
     return {
         "type": "button",
-        "action_id": "approve",
+        "action_id": action.value,
         "block_id": "proposal-actions",
         "action_ts": action_ts,
         "value": f"{token_id}.{raw_token}",
@@ -239,6 +254,7 @@ def _seed_proposal(
     expires_at: datetime | None = None,
     state_revision: int = 2,
     channel: ChannelRef = CHANNEL,
+    action: DecisionAction = DecisionAction.APPROVE,
 ) -> None:
     channel_json = json.dumps(
         channel.model_dump(mode="json", exclude_none=True),
@@ -276,7 +292,7 @@ def _seed_proposal(
                 decision_epoch, allowed_action, allowed_actor_id, allowed_actor_type,
                 bound_channel_json, issued_at, expires_at, state, resolved_at
             ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 1,
-                      'approve', ?, 'human', ?, ?, ?, 'issued', NULL)
+                      ?, ?, 'human', ?, ?, ?, 'issued', NULL)
             """,
             (
                 token_id,
@@ -286,6 +302,7 @@ def _seed_proposal(
                 proposal_id,
                 definition_digest,
                 state_revision,
+                action.value,
                 USER.actor_id,
                 channel_json,
                 NOW.isoformat(),
@@ -300,13 +317,34 @@ def _store(tmp_path: Path) -> GovernanceStore:
     return store
 
 
-def _worker(store: GovernanceStore, ingress: IngressService) -> IngressDecisionWorker:
+def _worker(
+    store: GovernanceStore,
+    ingress: IngressService,
+    feedback: InteractionFeedback | None = None,
+) -> IngressDecisionWorker:
     authority = AuthorityService(store, clock=lambda: NOW)
     return IngressDecisionWorker(
         store,
         ingress,
         DecisionService(store, authority, clock=lambda: NOW),
+        feedback,
     )
+
+
+class _CapturedFeedback:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.calls: list[tuple[str, SafeInteractionOutcome]] = []
+
+    def send(
+        self,
+        command: IngressCommandView,
+        outcome: SafeInteractionOutcome,
+    ) -> None:
+        command_id = command.command_id
+        self.calls.append((command_id, outcome))
+        if self.fail:
+            raise RuntimeError("feedback transport failed")
 
 
 # A8 — durable commit before any success ack
@@ -604,6 +642,46 @@ def test_worker_decides_after_the_ack_and_completes_the_command(tmp_path: Path) 
     assert not result.decision.replayed
 
 
+@pytest.mark.parametrize(
+    ("action", "expected_status"),
+    [
+        (DecisionAction.APPROVE, ActiveProposalStatus.APPROVED),
+        (DecisionAction.REQUEST_CHANGES, ActiveProposalStatus.CHANGES_REQUESTED),
+        (DecisionAction.REJECT, ActiveProposalStatus.REJECTED),
+    ],
+)
+def test_each_signed_review_card_action_decides_once_and_enqueues_one_result(
+    tmp_path: Path,
+    action: DecisionAction,
+    expected_status: ActiveProposalStatus,
+) -> None:
+    store = _store(tmp_path)
+    _seed_bindings(store)
+    _seed_proposal(store, action=action)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    body = _body(_payload(actions=[_action(action=action)]))
+
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope(body))
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert ack.success
+    assert result is not None
+    assert result.outcome is WorkerOutcome.COMPLETED
+    assert result.decision is not None
+    assert result.decision.action is action
+    assert result.decision.proposal_status is expected_status
+    with store.connect() as connection:
+        result_rows = connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone()
+        result_cards = connection.execute(
+            "SELECT count(*) FROM governance_outbox_events "
+            "WHERE destination_ref LIKE 'provider:slack:%'"
+        ).fetchone()
+    assert result_rows == (1,)
+    assert result_cards == (1,)
+
+
 def test_worker_is_idle_when_no_command_is_pending(tmp_path: Path) -> None:
     store = _store(tmp_path)
     _seed(store)
@@ -667,6 +745,138 @@ def test_expired_token_moves_the_command_to_recovery_hold(tmp_path: Path) -> Non
     assert result.state is IngressState.RECOVERY_HOLD
     assert result.error_code == "ACTION_TOKEN_EXPIRED"
     assert result.decision is None
+
+
+def test_terminal_feedback_runs_after_recovery_hold_is_durable(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.state is IngressState.RECOVERY_HOLD
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.EXPIRED)]
+
+
+def test_feedback_failure_does_not_reopen_or_rollback_the_terminal_outcome(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store, token_expires_at=NOW - timedelta(minutes=1))
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback(fail=True)
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.feedback_error_code == "INTERACTION_FEEDBACK_FAILED"
+    stored = ingress.get(str(ack.command_id))
+    assert stored is not None
+    assert stored.state is IngressState.RECOVERY_HOLD
+
+
+def test_a_second_click_gets_already_completed_feedback_without_a_second_decision(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    assert _worker(store, ingress).process_next("slack-worker") is not None
+    second_body = _body(_payload(actions=[_action(action_ts="1722387724.000500")]))
+    second_ack = boundary.submit(_envelope(second_body))
+    assert second_ack.success
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "ACTION_TOKEN_CONSUMED"
+    assert feedback.calls == [(second_ack.command_id, SafeInteractionOutcome.ALREADY_COMPLETED)]
+    with store.connect() as connection:
+        decision_count = connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone()
+    assert decision_count is not None
+    assert int(decision_count[0]) == 1
+
+
+def test_signed_action_from_a_disabled_actor_gets_denied_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    ActorBindingService(store, AUTHORITY_PROJECT, clock=lambda: NOW).disable_actor(
+        USER,
+        approval=BindingApproval(
+            approval_id="APR-0000000000000004",
+            approved_by=MANAGER,
+            reason="disable actor for signed denial test",
+        ),
+    )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.RECOVERY_HOLD
+    assert result.error_code == "ACTOR_DISABLED"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.DENIED)]
+
+
+def test_signed_action_against_a_changed_snapshot_gets_stale_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    with store.connect() as connection, governance_transaction(connection):
+        connection.execute(
+            """
+            UPDATE governance_active_proposals
+            SET decision_epoch = decision_epoch + 1,
+                state_revision = state_revision + 1,
+                updated_at = ?
+            WHERE project_namespace = ? AND project_id = ? AND proposal_id = ?
+            """,
+            (NOW.isoformat(), PROJECT.namespace, PROJECT.project_id, PROPOSAL_ID),
+        )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "PROPOSAL_STALE"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.STALE)]
+
+
+def test_signed_revoked_action_gets_stale_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    with store.connect() as connection, governance_transaction(connection):
+        DecisionService._revoke_token_ids_in_transaction(
+            connection,
+            (TOKEN_ID,),
+            resolved_at=NOW,
+        )
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.error_code == "ACTION_TOKEN_REVOKED"
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.STALE)]
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM governance_decision_results"
+        ).fetchone() == (0,)
 
 
 def test_worker_without_the_lease_reports_lease_loss(tmp_path: Path) -> None:
@@ -878,9 +1088,11 @@ def test_two_distinct_interactions_do_not_share_a_replay_result(tmp_path: Path) 
     assert first.decision.token_id != second.decision.token_id
 
 
-def test_projection_conflict_does_not_strand_a_leased_command(tmp_path: Path) -> None:
-    # Two proposals in one channel share an Outbox destination, so the second decision
-    # can raise GovernanceEventError. That must not escape the worker.
+def test_same_channel_proposals_complete_without_a_projection_revision_conflict(
+    tmp_path: Path,
+) -> None:
+    # Two proposals share one channel-wide Outbox sequence, but source revision
+    # monotonicity is per Proposal. Equal revisions therefore complete independently.
     store = _store(tmp_path)
     _seed_bindings(store)
     _seed_proposal(store)
@@ -911,18 +1123,22 @@ def test_projection_conflict_does_not_strand_a_leased_command(tmp_path: Path) ->
     results = [worker.process_next("slack-worker") for _ in range(2)]
 
     assert all(result is not None for result in results)
-    outcomes = {result.outcome for result in results if result is not None}
-    assert WorkerOutcome.COMPLETED in outcomes
-    assert WorkerOutcome.RETRY in outcomes
-    conflicted = next(
-        result for result in results if result is not None and result.outcome is WorkerOutcome.RETRY
-    )
-    assert conflicted.error_code == "OUTBOX_SOURCE_REVISION_CONFLICT"
     for result in results:
         assert result is not None
+        assert result.outcome is WorkerOutcome.COMPLETED
+        assert result.error_code is None
         settled = ingress.get(str(result.command_id))
         assert settled is not None
-        assert settled.state is not IngressState.LEASED
+        assert settled.state is IngressState.COMPLETED
+    with store.connect() as connection:
+        sequences = connection.execute(
+            """
+            SELECT destination_sequence FROM governance_outbox_events
+            WHERE destination_ref LIKE 'provider:slack:%'
+            ORDER BY destination_sequence
+            """
+        ).fetchall()
+    assert sequences == [(1,), (2,)]
 
 
 def test_stranded_commands_are_visible_to_an_operator(tmp_path: Path) -> None:
@@ -1025,7 +1241,13 @@ def test_committed_decision_replays_after_the_actor_loses_permission(
     assert not ingress.stranded()
 
 
-def test_retry_exhausted_command_is_stranded_before_the_sweep(
+# T011 AC-01 / AC-04 — worker 가 마지막 시도를 관측하면 종결하고 reviewer 에게 알린다.
+#
+# **이 test 는 전에 반대를 요구했다.** 소진된 command 가 `retry_wait` 로 남았다가 sweep 이
+# `dead_letter` 로 옮기는 것을 고정했는데, claim 조건이 `attempts < max_attempts` 라 그 row 는
+# 다시 claim 되지 않고 feedback 도 영영 돌지 않았다. reviewer 는 HTTP 200 뒤 아무것도 못
+# 받았다 (round 11 `R-3`). operator 가시성 요구는 그대로 두고 종점을 옮긴다.
+def test_a_worker_observed_exhaustion_ends_as_a_recovery_hold_with_feedback(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1040,7 +1262,8 @@ def test_retry_exhausted_command_is_stranded_before_the_sweep(
     )
     boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
     ack = boundary.submit(_envelope())
-    worker = _worker(store, ingress)
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
 
     def _raise(*args: object, **kwargs: object) -> object:
         raise GovernanceStoreError("ingress decision connection is busy")
@@ -1052,18 +1275,89 @@ def test_retry_exhausted_command_is_stranded_before_the_sweep(
 
     exhausted = ingress.get(str(ack.command_id))
     assert exhausted is not None
-    assert exhausted.state is IngressState.RETRY_WAIT
+    assert exhausted.state is IngressState.RECOVERY_HOLD, "소진된 command 를 침묵으로 두지 않는다"
+
+    # 예산이 남은 시도는 아무것도 알리지 않는다. 마지막 한 번만 알린다.
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.UNAVAILABLE)]
+
+    # operator 가시성은 그대로다. 이것이 옮기기 전 test 가 지키던 성질이다.
+    stranded = ingress.stranded()
+    assert len(stranded) == 1
+    assert stranded[0].command_id == ack.command_id
+
+
+# T011 AC-02 — 예산이 남은 재시도는 여전히 아무 outcome 도 알리지 않는다. 승격 조건이 한 칸
+# 어긋나면 이 test 가 잡는다.
+def test_a_retry_with_budget_left_announces_nothing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=3),
+        clock=lambda: NOW,
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    assert worker.process_next("slack-worker") is not None
+
+    still_open = ingress.get(str(ack.command_id))
+    assert still_open is not None
+    assert still_open.state is IngressState.RETRY_WAIT
+    assert feedback.calls == []
+
+
+# T011 AC-03 — 결과를 모르는 종점에는 아무것도 알리지 않는다.
+#
+# worker 가 claim 뒤 매번 죽으면 lease 만료로만 시도가 소진된다. 그 종점은 결과를 모른다 —
+# decision 이 commit 됐는데 `complete` 전에 죽었으면 Result Card 는 이미 나갔다. 거기에
+# `unavailable` 을 보내면 배달된 Card 와 모순된다. 침묵을 유지하고 operator 복구에 맡긴다.
+def test_a_lease_expired_exhaustion_stays_silent_and_visible_to_the_operator(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2, lease_duration=timedelta(seconds=30)),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    feedback = _CapturedFeedback()
+
+    # worker 가 claim 만 하고 죽는 것을 흉내낸다. 아무것도 finalize 하지 않는다.
+    for _ in range(2):
+        assert ingress.claim_next("dying-worker") is not None
+        now[0] = now[0] + timedelta(minutes=10)
+
+    exhausted = ingress.get(str(ack.command_id))
+    assert exhausted is not None
     assert exhausted.attempts == 2
-    before_sweep = ingress.stranded()
-    assert len(before_sweep) == 1
-    assert before_sweep[0].command_id == ack.command_id
 
-    assert worker.process_next("slack-worker") is None
-    after_sweep = ingress.stranded()
+    # sweep 이 돌면 dead letter 로 간다. worker 를 거치지 않으므로 승격 대상이 아니다.
+    assert ingress.claim_next("next-worker") is None
+    after_sweep = ingress.get(str(ack.command_id))
+    assert after_sweep is not None
+    assert after_sweep.state is IngressState.DEAD_LETTER
 
-    assert len(after_sweep) == 1
-    assert after_sweep[0].command_id == ack.command_id
-    assert after_sweep[0].state is IngressState.DEAD_LETTER
+    assert feedback.calls == [], "결과를 모르는 종점에 결과를 선언하지 않는다"
+    stranded = ingress.stranded()
+    assert len(stranded) == 1
+    assert stranded[0].command_id == ack.command_id
+    assert stranded[0].state is IngressState.DEAD_LETTER
 
 
 def test_claim_failure_keeps_the_underlying_ingress_code(
@@ -1502,3 +1796,1470 @@ def test_stranded_rejects_a_non_positive_limit(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="limit"):
         ingress.stranded(limit=0)
+
+
+def _observed_safe_outcomes() -> set[SafeInteractionOutcome]:
+    """Collect what the classifier actually produces, by running it.
+
+    **enum 을 걸러서 만들지 않는다.** 이전 판(`T007`)이 그렇게 해서 동어반복이었다 —
+    `produced` 를 enum 자신에서 hardcoded 문자열 집합으로 만들고 다시 enum 과 비교했으므로
+    producer 를 한 번도 보지 않았고, `ingress_worker.py` 의
+    `return SafeInteractionOutcome.UNAVAILABLE` 을 지워도 통과했다 (round 11 `R-4`).
+
+    여기서는 대표 입력을 분류기에 넣고 **나온 값**을 모은다. 어떤 값에 producer 가 없어지면
+    그 값이 이 집합에서 빠지므로 아래 대조가 실패한다.
+
+    `already_completed` 에는 producer 가 둘이다 — 여기서 쓰는 소비된 action 과, replay 된
+    성공 decision. 후자는
+    `test_a_second_click_gets_already_completed_feedback_without_a_second_decision` 이
+    실제 두 번 클릭으로 덮는다. 여기서 재현하지 않는다.
+    """
+    denied_code = sorted(_DENIED_CODES)[0]
+    inputs = [
+        *(
+            IngressWorkerResult(
+                command_id="CMD-1",
+                outcome=WorkerOutcome.RECOVERY_HOLD,
+                error_code=code,
+            )
+            for code in (
+                "ACTION_TOKEN_CONSUMED",
+                "ACTION_TOKEN_EXPIRED",
+                "PROPOSAL_STALE",
+                "INVALID_PROPOSAL_STATE",
+                "ACTION_TOKEN_REVOKED",
+                denied_code,
+                "INGRESS_DECISION_UNAVAILABLE",
+            )
+        ),
+    ]
+    observed = {IngressDecisionWorker._safe_outcome(result) for result in inputs}
+    observed.discard(None)
+    return cast("set[SafeInteractionOutcome]", observed)
+
+
+# T012 AC-01 / AC-02 — 열거된 outcome 마다 실제 producer 가 있다.
+#
+# producer 를 하나 지우면 그 값이 관측 집합에서 빠져 이 대조가 실패한다. 이전 판은 지워도
+# 통과했다. 도달 불가 값을 남기면 다음 사람이 이미 보내고 있다고 읽거나 producer 를 붙여
+# 같은 사건을 두 번 알린다 (D-034).
+def test_every_safe_outcome_value_has_a_real_producer() -> None:
+    observed = _observed_safe_outcomes()
+
+    assert observed == set(SafeInteractionOutcome)
+    assert len(observed) == len(SafeInteractionOutcome)
+    assert not hasattr(SafeInteractionOutcome, "COMPLETED")
+    assert set(_SAFE_INTERACTION_MESSAGES) == set(SafeInteractionOutcome)
+
+
+# T012 AC-03 — 계약이 열거한 집합과 코드가 만드는 집합의 **크기와 원소**를 둘 다 센다.
+#
+# `R-5` 가 4 대 5 불일치를 남기고 일치했다고 기록한 사례다. 크기를 세지 않은 대조는
+# 대조가 아니다.
+def test_the_contract_enumerates_exactly_the_outcomes_the_code_produces() -> None:
+    contract = Path(__file__).resolve().parents[1] / (
+        "specs/003-slack-proposal-card/contracts/interaction-feedback.md"
+    )
+    text = contract.read_text(encoding="utf-8")
+    listed = set(re.findall(r"^\| `([a-z_]+)` \|", text, flags=re.MULTILINE))
+    produced = {outcome.value for outcome in _observed_safe_outcomes()}
+
+    assert listed == produced
+    assert len(listed) == len(produced)
+
+
+def test_a_completed_result_without_a_decision_sends_no_safe_feedback() -> None:
+    """`decision` 이 없으면 replay 판정을 할 수 없으므로 아무것도 알리지 않는다.
+
+    **round 13 `PBC-3` 는 이 test 를 "동어반복" 으로 보고 삭제를 지시했다. 그 판정은
+    틀렸다.** 성분을 하나씩 지워 재면 이렇게 갈린다.
+
+    | 지운 성분 | 죽는 test |
+    |---|---|
+    | `result.decision is not None` | **이 test 만** |
+    | `result.decision.replayed` | `test_a_real_first_successful_decision_sends_no_feedback` 만 |
+
+    둘은 같은 `if` 의 **다른 성분**을 잡는다. 이 test 를 지우면
+    `result.decision is not None` 이 무방비가 되고, 그러면 `decision` 이 없는 완료 결과에서
+    `None.replayed` 로 `AttributeError` 가 나 worker 가 죽는다.
+
+    이름과 docstring 만 실제로 잡는 것에 맞게 고쳤다. 원래 이름
+    `test_a_first_successful_decision_sends_no_safe_feedback` 은 replay 조건을 잡는 것처럼
+    읽혔고 그것이 `PBC-3` 오판의 원인이다.
+    """
+    result = IngressWorkerResult(
+        command_id="ICMD-1",
+        outcome=WorkerOutcome.COMPLETED,
+        decision=None,
+        error_code=None,
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is None
+
+
+def test_a_recovery_hold_carrying_a_replayed_decision_is_not_called_already_completed(
+    tmp_path: Path,
+) -> None:
+    """같은 `if` 의 세 번째 성분 — `outcome is COMPLETED` — 을 고정한다.
+
+    round 13 이 이 성분을 세지 않았다. 지워도 108건이 전부 통과했다. 지우면 replay 된
+    결정을 실은 recovery hold 가 `already_completed` 로 보고되어, 실패한 명령이 성공한 것처럼
+    알려진다.
+
+    "정의 사본 + 호출 지점 + **같은 검사의 모든 성분**" 규칙이 겨냥하는 자리다.
+    """
+    # 진짜 결정을 한 번 만들어 그 모양을 쓴다. 손으로 지어낸 `DecisionResult` 는 실제
+    # 필드 조합과 어긋날 수 있고, 그러면 이 test 가 없는 상태를 검사하게 된다.
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    completed = _worker(store, ingress, _CapturedFeedback()).process_next("slack-worker")
+    assert completed is not None
+    assert completed.decision is not None
+
+    replayed = completed.model_copy(
+        update={
+            "outcome": WorkerOutcome.RECOVERY_HOLD,
+            "decision": completed.decision.model_copy(update={"replayed": True}),
+            "error_code": "SOMETHING_UNMAPPED",
+        }
+    )
+
+    assert IngressDecisionWorker._safe_outcome(replayed) is SafeInteractionOutcome.UNAVAILABLE
+
+
+def test_a_retry_sends_no_safe_feedback() -> None:
+    """retry 는 아직 끝나지 않은 명령이라 결과를 알리지 않는다 (D-034)."""
+    result = IngressWorkerResult(
+        command_id="ICMD-2",
+        outcome=WorkerOutcome.RETRY,
+        decision=None,
+        error_code="INGRESS_DECISION_UNAVAILABLE",
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is None
+
+
+def test_a_recovery_hold_without_a_known_code_reports_unavailable() -> None:
+    """hold 는 종결이므로 `unavailable` 로 알린다."""
+    result = IngressWorkerResult(
+        command_id="ICMD-3",
+        outcome=WorkerOutcome.RECOVERY_HOLD,
+        decision=None,
+        error_code="SOMETHING_UNMAPPED",
+    )
+
+    assert IngressDecisionWorker._safe_outcome(result) is SafeInteractionOutcome.UNAVAILABLE
+
+
+# ---------------------------------------------------------------------------
+# round 12 F-1 을 닫은 wave (workstream wave 6) — 이미 결정된 명령의 소진은 침묵한다
+#
+# **이 wave 는 task manifest 가 없다** (round 13 `CT-3`). 원래 주석은 `MGC-012-P5-T015` 를
+# 달았는데 그 ID 는 그때 발급된 적이 없고, 지금은 전혀 다른 task 의 ID 다. round 참조로
+# 바꾼다. 존재하지 않는 manifest 를 가리키는 주석은 다음 읽는 사람을 없는 파일로 보낸다.
+# ---------------------------------------------------------------------------
+
+
+# F-1 AC-01 — 앞선 attempt 가 decision 을 commit 했으면 소진돼도 실패를 알리지 않는다.
+#
+# 시나리오: reviewer 가 승인을 누른다 → 1차 시도가 결정을 **기록하는 데 성공**하고 Result
+# Card 를 대기열에 올리지만 완료 도장을 찍는 마지막 쓰기가 실패한다 → lease 가 만료되고
+# 재claim 된다 → 마지막 시도가 실패한다.
+#
+# 승격이 `committed_decision()` 을 안 보면 reviewer 는 "승인됨" Card 와 "처리하지 못했습니다"
+# 를 둘 다 받는다. `D-038` 항목 6 이 lease 만료 종점에서 거부한 바로 그 모순이다.
+def test_an_exhausted_command_whose_decision_committed_announces_nothing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2, lease_duration=timedelta(seconds=30)),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    # 1차 시도: 결정은 commit 되지만 완료 도장이 실패한다.
+    def _finalize_fails(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress completion write is busy")
+
+    monkeypatch.setattr(worker.ingress, "complete", _finalize_fails)
+    first = worker.process_next("slack-worker")
+    assert first is not None
+    assert worker.committed_decision(str(ack.command_id)) is not None, (
+        "전제: 결정이 실제로 기록됐다"
+    )
+    monkeypatch.undo()
+
+    # 2차(마지막) 시도: 결정 경로가 실패한다.
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    now[0] = now[0] + timedelta(minutes=10)
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    second = worker.process_next("slack-worker")
+    assert second is not None
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is not None
+    assert settled.state is IngressState.RECOVERY_HOLD, "종결은 유지한다"
+    assert settled.last_error_code == "INGRESS_DECISION_COMMITTED_UNRECONCILED"
+
+    assert feedback.calls == [], "배달된 Result Card 와 모순되는 실패 통지를 보내지 않는다"
+    assert worker.committed_decision(str(ack.command_id)) is not None
+
+    # operator 가시성은 유지한다. 결정은 됐는데 장부가 안 맞으니 사람이 봐야 한다.
+    stranded = ingress.stranded()
+    assert [view.command_id for view in stranded] == [ack.command_id]
+
+
+# F-1 AC-02 — 결정이 기록되지 않은 소진은 여전히 unavailable 을 알린다. 두 종점을 가른다.
+def test_an_exhausted_command_without_a_decision_still_announces_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+    for _ in range(2):
+        assert worker.process_next("slack-worker") is not None
+        now[0] = now[0] + timedelta(minutes=10)
+
+    assert worker.committed_decision(str(ack.command_id)) is None
+    assert feedback.calls == [(ack.command_id, SafeInteractionOutcome.UNAVAILABLE)]
+
+
+# F-1 AC-03 — 침묵 code 는 recovery hold 에서만 침묵시킨다. 다른 종결을 삼키지 않는다.
+def test_the_silent_hold_code_does_not_swallow_other_outcomes() -> None:
+    silent = IngressWorkerResult(
+        command_id="CMD-1",
+        outcome=WorkerOutcome.RECOVERY_HOLD,
+        error_code="INGRESS_DECISION_COMMITTED_UNRECONCILED",
+    )
+    assert IngressDecisionWorker._safe_outcome(silent) is None
+
+    noisy = IngressWorkerResult(
+        command_id="CMD-1",
+        outcome=WorkerOutcome.RECOVERY_HOLD,
+        error_code="INGRESS_DECISION_UNAVAILABLE",
+    )
+    assert IngressDecisionWorker._safe_outcome(noisy) is SafeInteractionOutcome.UNAVAILABLE
+
+
+# RL-1 — 첫 성공 결정은 통지를 만들지 않는다. **실제 클릭으로** 고정한다.
+#
+# 기존 `test_a_first_successful_decision_sends_no_safe_feedback` 은 `decision=None` 을 넣어
+# `RECOVERY_HOLD` 관문에서 먼저 걸리므로 `result.decision.replayed` 조건에 닿지 않는다.
+# round 12 regression lens 가 그 조건을 지워도 1245건이 통과하는 것을 보였다 (`RL-1`).
+#
+# 그 조건이 없으면 첫 성공 결정이 `already_completed` 를 보내고, reviewer 는 "승인됨" Card 와
+# "이미 처리됨" 을 둘 다 받는다. `D-034` 가 막으려던 이중 통지다.
+def test_a_real_first_successful_decision_sends_no_feedback(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    assert boundary.submit(_envelope()).success
+    feedback = _CapturedFeedback()
+
+    result = _worker(store, ingress, feedback).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.COMPLETED
+    # 이 두 줄이 전제다 — 진짜 decision 이 있고, replay 가 아니다. 그래야 이 test 가
+    # `and result.decision.replayed` 조건을 실제로 지나간다.
+    assert result.decision is not None
+    assert result.decision.replayed is False
+
+    assert feedback.calls == [], "성공 통지는 Result Card 가 한다 (D-034, FR-024)"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T016 — 결정 장부를 읽지 못해도 worker loop 를 죽이지 않는다
+# (round 13 P1-1, D-042)
+# ---------------------------------------------------------------------------
+#
+# `_settle_exhausted_retry` 는 승격 전에 `committed_decision()` 을 읽는다. 그 호출이
+# `_finalize` 의 `try` **밖**에 있었고, 안에서 connection 두 개를 새로 연다. `_finalize` 의
+# 다른 store 호출은 전부 감싸져 있다 — **이 읽기 하나만 무방비였다.**
+#
+# **실패 모드가 상관돼 있다.** 재시도를 소진시킨 그 조건(store busy)이 이 읽기도 실패시킨다.
+# 드물어서 넘길 수 있는 종류가 아니다. round 13 이 실측한 결과다.
+#
+#     attempt2 RAISED OUT OF process_next: OperationalError database is locked
+#     state after: leased  attempts: 2  last_error: INGRESS_DECISION_UNAVAILABLE
+#     feedback calls: []
+#     reclaim attempt: None
+#
+# `D-042` 가 방향을 정했다. 읽기가 실패하면 **결정이 기록됐을 수 있다는 보수적 가정**으로
+# 침묵한다. 모르는 상태에서 `unavailable` 을 보내면 이미 배달된 Result Card 와 모순될 수
+# 있고 그 통지는 되돌릴 수 없다. 침묵은 `stranded()` 로 회수할 수 있다.
+
+
+def _exhausted_worker_with_unreadable_ledger(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: BaseException,
+) -> tuple[IngressService, _CapturedFeedback, str]:
+    """마지막 attempt 에서 결정 경로와 결정 장부가 **함께** 실패하는 worker 를 만든다."""
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    def _decision_busy(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _decision_busy)
+
+    # 첫 시도는 예산을 쓴다. 장부는 아직 읽을 수 있다.
+    assert worker.process_next("slack-worker") is not None
+    now[0] = now[0] + timedelta(minutes=10)
+
+    # 마지막 시도에서 장부까지 못 읽는다. 같은 store 가 busy 하니 같이 실패한다.
+    def _ledger_busy(*args: object, **kwargs: object) -> object:
+        raise failure
+
+    monkeypatch.setattr(worker, "committed_decision", _ledger_busy)
+    result = worker.process_next("slack-worker")
+    assert result is not None, "예외가 process_next 밖으로 나가면 여기 닿지 못한다"
+    return ingress, feedback, str(ack.command_id)
+
+
+# T016 AC-01/AC-02/AC-03/AC-04 — 장부를 못 읽어도 종결하고 침묵한다.
+@pytest.mark.parametrize(
+    "failure",
+    [
+        GovernanceStoreError("ingress decision connection is busy"),
+        sqlite3.OperationalError("database is locked"),
+    ],
+    ids=["governance-store-error", "sqlite-operational-error"],
+)
+def test_an_unreadable_decision_ledger_settles_the_command_instead_of_escaping(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: BaseException,
+) -> None:
+    ingress, feedback, command_id = _exhausted_worker_with_unreadable_ledger(
+        tmp_path, monkeypatch, failure
+    )
+
+    settled = ingress.get(command_id)
+    assert settled is not None
+    # AC-02 — `leased` 로 남으면 claim 조건이 `attempts < max_attempts` 라 다시 잡히지 않는다.
+    assert settled.state is IngressState.RECOVERY_HOLD, (
+        "leased 로 남으면 그 command 는 영영 다시 claim 되지 않는다"
+    )
+    assert settled.last_error_code == "INGRESS_DECISION_COMMITTED_UNRECONCILED"
+
+    # AC-03 — 모르는 상태에서 통지하지 않는다. 되돌릴 수 없는 모순을 만들 수 있다.
+    assert feedback.calls == [], "결정 기록 여부를 모르면 아무것도 알리지 않는다"
+
+    # AC-04 — operator 가 회수할 수 있다. 침묵의 대가를 이것이 갚는다.
+    stranded = ingress.stranded()
+    assert [entry.command_id for entry in stranded] == [command_id]
+
+
+# T016 AC-06 — 승격된 recovery hold 가 **원인 code 를 durable 에 남긴다** (round 13 `F-3`).
+#
+# `_settle_exhausted_retry` 의 마지막 `return ..., error_code` 를 `..., None` 으로 바꿔도
+# 전 suite 가 통과했다. `_transition` 이 `code = error_code or "INGRESS_DECISION_FAILED"` 를
+# 쓰므로 durable `last_error_code` 가 조용히 generic 이 되고, `stranded()` 를 보는 operator
+# 에게서 진짜 원인이 사라진다.
+#
+# **feedback 으로는 이것을 잡을 수 없다.** `_safe_outcome` 은 mapping 되지 않은 code 와
+# `None` 을 똑같이 `unavailable` 로 처리하므로 통지는 그대로다. durable 값을 직접 봐야 한다.
+# round 12 evidence 의 "`R-2` 의 주 경로 — 원인 code 가 살아남는다" 를 round 13 이 반증했다.
+def test_an_observed_exhaustion_keeps_the_cause_code_in_durable_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    ack = boundary.submit(_envelope())
+    worker = _worker(store, ingress, _CapturedFeedback())
+
+    def _decision_busy(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _decision_busy)
+    for _ in range(2):
+        assert worker.process_next("slack-worker") is not None
+        now[0] = now[0] + timedelta(minutes=10)
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is not None
+    assert settled.state is IngressState.RECOVERY_HOLD
+    assert settled.last_error_code == "INGRESS_DECISION_UNAVAILABLE", (
+        "승격이 원인 code 를 버리면 _transition 의 or 절이 generic 으로 덮어써서 "
+        "stranded() 를 보는 operator 가 왜 멈췄는지 알 수 없다"
+    )
+
+    # operator 가 보는 목록에도 그 code 가 그대로 있다.
+    stranded = ingress.stranded()
+    assert [entry.last_error_code for entry in stranded] == ["INGRESS_DECISION_UNAVAILABLE"]
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T024 — 정규화가 worker 의 세 지점을 실제로 덮는다
+# ---------------------------------------------------------------------------
+#
+# round 14 `P1-1`: `filesystem.py:166` 의 `GovernanceFilesystemError` 가 세 지점을 그대로
+# 뚫었다. 셋 다 `except (GovernanceStoreError, IngressError, sqlite3.Error)` 인데 그 class 는
+# 어디에도 없다.
+#
+#   `process_next` 의 `claim_next`            (`ingress_worker.py:186`)
+#   `_finalize` 의 `_transition`              (`:343`)
+#   `_settle_exhausted_retry` 의 `committed_decision()` (`:466-469`)
+#
+# **`committed_decision` 을 patch 하지 않는다.** 진짜 filesystem guard 에서 예외가 나게 해서
+# 재현한다 — round 14 가 쓴 방식이다. patch 하면 정규화가 실제 경로를 덮는지 알 수 없다.
+
+
+class _TrippingFilesystemProbe:
+    """`window` 안의 inspect 호출에만 network filesystem 이라고 답한다.
+
+    `connect()` 는 열 때 `validate()` 를 두 번 부른다 (before / after). 창을 좁게 열면
+    특정 호출 지점 하나만 막고 그 뒤 경로는 정상으로 둘 수 있다.
+    """
+
+    def __init__(self, *, window: tuple[int, int]) -> None:
+        self.calls = 0
+        self.window = window
+
+    def inspect(self, path: Path) -> FilesystemStatus:
+        self.calls += 1
+        first, last = self.window
+        local = not (first <= self.calls <= last)
+        return FilesystemStatus(
+            kind="apfs" if local else "nfs",
+            mount_point=path.parent,
+            local=local,
+        )
+
+
+def _trip_the_filesystem_guard(store: GovernanceStore, *, window: tuple[int, int]) -> None:
+    store.filesystem_guard = LocalFilesystemGuard(_TrippingFilesystemProbe(window=window))
+
+
+def test_a_filesystem_failure_in_claim_next_does_not_escape_process_next(
+    tmp_path: Path,
+) -> None:
+    """세 지점 중 첫째 (`ingress_worker.py:186`)."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    _trip_the_filesystem_guard(store, window=(1, 10**6))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED, "raw 예외가 `process_next` 밖으로 나갔다"
+
+
+def test_a_filesystem_failure_while_settling_an_exhausted_retry_stays_silent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """세 지점 중 셋째 (`ingress_worker.py:466-469`).
+
+    `D-042` 의 판단은 유지된다 — 읽기 실패는 침묵이고 command 는 recovery hold 로 남아
+    `stranded()` 에 보인다. 이 변경은 그 판단이 **도달하지 못하던 경로**를 여는 것이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    now = [NOW]
+    ingress = IngressService(
+        store,
+        _authenticator(),
+        config=IngressConfig(max_attempts=2),
+        clock=lambda: now[0],
+    )
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    feedback = _CapturedFeedback()
+    worker = _worker(store, ingress, feedback)
+
+    def _raise(*args: object, **kwargs: object) -> object:
+        raise GovernanceStoreError("ingress decision connection is busy")
+
+    monkeypatch.setattr(worker.decisions, "decide_ingress_in_transaction", _raise)
+
+    # 첫 시도는 예산을 쓴다.
+    assert worker.process_next("slack-worker") is not None
+    now[0] = now[0] + timedelta(minutes=10)
+
+    # 마지막 시도에서 `committed_decision()` 이 여는 connection **만** 막는다. 실측한
+    # `validate()` 호출 순서는 아래와 같다 (`connect()` 하나가 두 번 부른다).
+    #
+    #   1-2   `claim_next` 의 `_sweep_recoverable`
+    #   3-4   `_claim_one`
+    #   5-6   decision transaction
+    #   7-10  `committed_decision()` — `ingress.get` 과 `decisions.result_for`
+    #   11-12 `_transition` 의 `recovery_hold` 쓰기
+    #
+    # 7 하나만 막는다. `before` validate 가 raise 하면 그 `connect()` 는 `after` 를 부르지
+    # 않으므로 호출 하나만 쓰고, `committed_decision()` 은 첫 읽기에서 이미 멈춘다. 창을
+    # 넓게 잡으면 `_transition` 의 쓰기까지 막혀 command 가 `leased` 로 남는데, 그것은
+    # store 가 통째로 죽은 다른 경우다.
+    #
+    # **wave 11 이 sweep 을 claim transaction 밖으로 뺐다** (round 17 `F17-7`). 회수가
+    # 자기 connection 을 쓰므로 그 뒤가 전부 2씩 밀렸다 — 창은 5 에서 7 로 옮겼고 때리는
+    # 지점은 그대로 `committed_decision()` 의 첫 읽기다. 실측으로 다시 셌다.
+    _trip_the_filesystem_guard(store, window=(7, 7))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is not None
+    assert settled.state is not IngressState.LEASED, "command 가 `leased` 로 남았다"
+    assert feedback.calls == [], "결과를 모르는데 사용자에게 알렸다"
+    assert [command.command_id for command in ingress.stranded()] == [ack.command_id]
+
+
+def test_a_filesystem_failure_in_the_finalize_transition_does_not_escape(
+    tmp_path: Path,
+) -> None:
+    """세 지점 중 둘째 (`ingress_worker.py:343`).
+
+    `_transition` 이 여는 connection 만 막는다. 실측한 순서에서 성공 경로의 마지막 두
+    `validate()` 가 그 쓰기다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    #   1-2 `claim_next` 의 `_sweep_recoverable`, 3-4 `_claim_one`, 5-6 decision
+    #   transaction, 7- 그 뒤가 `_transition` 이다. 소진 전이라
+    #   `_settle_exhausted_retry` 는 읽기를 하지 않는다.
+    #
+    #   **wave 11 이 sweep 을 claim transaction 밖으로 뺐다** (round 17 `F17-7`). 회수가
+    #   자기 connection 을 쓰므로 그 뒤가 전부 2씩 밀렸다 — 창은 5 에서 7 로 옮겼고 때리는
+    #   지점은 그대로 `_transition` 이다. 실측으로 다시 셌다.
+    _trip_the_filesystem_guard(store, window=(7, 7))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+    assert result.outcome is WorkerOutcome.FINALIZE_FAILED
+    assert result.finalize_error_code is not None, "실패 원인이 사라졌다"
+    # decision 자체는 이미 resolve 됐다. lease 만료 뒤 replay 가 첫 결과로 수렴한다.
+    assert ingress.get(str(ack.command_id)) is not None
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T027 — 읽을 수 없는 row 가 큐를 멈추지 않는다 (D-045)
+# ---------------------------------------------------------------------------
+#
+# round 15 `F-1` (P0). `_view`(`ingress.py:600`)의 `json.loads` 와 `model_validate` 가
+# `ValueError` 를 내는데 `process_next` 의 except tuple 이 그것을 안 잡았다. `_view` 가 claim
+# transaction 안이라 claim 이 rollback 되고 row 는 `pending`·`attempts=0` 으로 돌아갔다.
+# `received_at` 순으로 다시 뽑히므로 **뒤 command 가 하나도 처리되지 않았다.** `pending` 이라
+# `stranded()` 에도 안 걸려 operator 가 볼 방법도 없었다.
+
+
+def _channel_payload() -> dict[str, str]:
+    """`_corrupt` 가 망가뜨린 `channel_json` 을 되돌릴 때 쓰는 정상 값."""
+    return {
+        "provider": "slack",
+        "workspace_id": "T123",
+        "channel_id": "C789",
+        "message_id": "1722387600.000200",
+    }
+
+
+def _corrupt(store: GovernanceStore, command_id: str) -> None:
+    """durable row 하나를 읽을 수 없게 만든다. `channel_json` 에 CHECK 제약이 없다."""
+    with store.connect() as connection:
+        changed = connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json = ? WHERE command_id = ?",
+            ("{bad", command_id),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+
+def _two_commands(store: GovernanceStore, ingress: IngressService) -> tuple[str, str]:
+    """받은 순서대로 command 둘. 앞의 것을 손상시킨다."""
+    boundary = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05))
+    boundary.submit(_envelope())
+    boundary.submit(_envelope(_body(_payload(trigger_id="999.888.second"))))
+    with store.connect() as connection:
+        rows = connection.execute(
+            "SELECT command_id FROM governance_ingress_commands ORDER BY received_at, command_id"
+        ).fetchall()
+    assert len(rows) == 2
+    return str(rows[0][0]), str(rows[1][0])
+
+
+def test_an_unreadable_command_row_does_not_escape_process_next(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+    _corrupt(store, str(ack.command_id))
+
+    # 예전에는 여기서 raw `json.decoder.JSONDecodeError` 가 나갔다.
+    worker.process_next("slack-worker")
+
+    settled = ingress.get(str(ack.command_id))
+    assert settled is None, "읽을 수 없는 row 는 view 로 나오지 않는다"
+    with store.connect() as connection:
+        state, code = connection.execute(
+            "SELECT state, last_error_code FROM governance_ingress_commands WHERE command_id = ?",
+            (str(ack.command_id),),
+        ).fetchone()
+    assert state == "dead_letter"
+    assert code == "INGRESS_COMMAND_UNREADABLE"
+
+
+def test_an_unreadable_command_row_does_not_block_the_ones_behind_it(tmp_path: Path) -> None:
+    """P0 의 실체. 이 test 가 head-of-line 차단을 고정한다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    worker = _worker(store, ingress)
+    _corrupt(store, poison)
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None
+    assert result.command_id == healthy, (
+        "손상 row 뒤의 command 가 같은 호출에서 처리돼야 한다 — 큐가 막히면 안 된다"
+    )
+    with store.connect() as connection:
+        states = dict(
+            connection.execute(
+                "SELECT command_id, state FROM governance_ingress_commands"
+            ).fetchall()
+        )
+    assert states[poison] == "dead_letter"
+    assert states[healthy] == "completed"
+
+
+def test_an_unreadable_row_is_visible_to_the_operator(tmp_path: Path) -> None:
+    """치웠으면 보여야 한다. 조용히 사라지면 침묵과 같다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+    _worker(store, ingress).process_next("slack-worker")
+
+    assert ingress.unreadable() == (str(ack.command_id),)
+
+
+def test_one_unreadable_row_does_not_hide_the_other_stranded_commands(
+    tmp_path: Path,
+) -> None:
+    """round 15 `F-2`. 예전에는 손상 row 하나가 목록 전체를 없앴다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    with store.connect() as connection:
+        connection.execute("UPDATE governance_ingress_commands SET state = 'dead_letter'")
+        connection.commit()
+    _corrupt(store, poison)
+
+    listed = ingress.stranded()
+
+    assert [view.command_id for view in listed] == [healthy], "읽을 수 있는 row 는 계속 나와야 한다"
+    assert ingress.unreadable() == (poison,), "건너뛴 것은 조용히 빠지지 않는다"
+
+
+def test_a_programming_error_inside_the_view_still_escapes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """정규화가 구현 결함을 durable dead letter 로 숨기면 안 된다.
+
+    `_UNREADABLE_ROW` 를 `Exception` 으로 넓히면 이 test 가 실패한다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    # `stranded()` 가 실제로 row 를 읽어야 `_view` 에 닿는다. `pending` 은 목록에서 빠진다.
+    with store.connect() as connection:
+        connection.execute("UPDATE governance_ingress_commands SET state = 'dead_letter'")
+        connection.commit()
+
+    def _bug(row: object) -> object:
+        raise AttributeError("구현자 실수를 흉내낸다")
+
+    monkeypatch.setattr(IngressService, "_view", staticmethod(_bug))
+
+    with pytest.raises(AttributeError):
+        ingress.get(str(ack.command_id))
+    with pytest.raises(AttributeError):
+        ingress.stranded()
+
+
+def test_a_healthy_queue_is_unchanged(tmp_path: Path) -> None:
+    """정상 경로가 안 바뀐다. dead-letter 로 새는 row 가 없다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+
+    result = _worker(store, ingress).process_next("slack-worker")
+
+    assert result is not None
+    assert result.outcome is WorkerOutcome.COMPLETED
+    assert result.command_id == str(ack.command_id)
+    assert ingress.unreadable() == ()
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T031 — dead-letter loop 가 진행을 보장하고 경합을 건드리지 않는다
+# ---------------------------------------------------------------------------
+#
+# round 16 blocker 넷이 T027 이 넣은 구조 하나에서 나왔다. `while True` + transaction 밖
+# write 를 도입하면서 그 구조가 요구하는 넷을 안 채웠다.
+
+
+def test_the_dead_letter_loop_terminates_when_the_write_changes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 16 `S-1` (P0). `rowcount` 를 안 보면 같은 row 가 다시 뽑혀 영원히 돈다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+
+    attempts = 0
+
+    def _never_changes_a_row(self: IngressService, command_id: str, claim_generation: int) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts > 10:
+            raise AssertionError("loop 가 끝나지 않는다")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _never_changes_a_row)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("slack-worker")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert attempts == 1, "치우지 못한 row 를 다시 뽑으면 안 된다"
+
+
+def test_the_dead_letter_write_does_not_touch_another_workers_live_lease(
+    tmp_path: Path,
+) -> None:
+    """round 16 `FR-1` (P1).
+
+    claim rollback 과 치우는 write 사이에 다른 worker 가 같은 row 를 정상 claim 할 수 있다.
+    guard 가 없으면 그 **살아 있는 lease 를 지운다.** 그 worker 는 governed decision 을
+    이미 commit 했을 수 있다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    command_id = str(ack.command_id)
+    _corrupt(store, command_id)
+
+    entered = threading.Event()
+    released = threading.Event()
+
+    class _PausingBeforeTheWrite(IngressService):
+        def _dead_letter_unreadable(self, command_id: str, claim_generation: int) -> None:
+            entered.set()
+            released.wait(20)
+            super()._dead_letter_unreadable(command_id, claim_generation)
+
+    paused = _PausingBeforeTheWrite(store, _authenticator(), clock=lambda: NOW)
+    worker_a = threading.Thread(target=lambda: paused.claim_next("worker-a"))
+    worker_a.start()
+    assert entered.wait(20), "worker A 가 치우기 직전까지 오지 않았다"
+
+    # 그 사이 row 가 고쳐지고 worker B 가 정상 claim 한다.
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json = ?",
+            (json.dumps(_channel_payload()),),
+        )
+        connection.commit()
+    claimed = ingress.claim_next("worker-b")
+    assert claimed is not None
+
+    released.set()
+    worker_a.join(20)
+
+    still_leased = ingress.get(command_id)
+    assert still_leased is not None
+    assert still_leased.state is IngressState.LEASED, "살아 있는 lease 를 지웠다"
+    assert still_leased.lease_owner == "worker-b"
+    # 그 worker 가 계속 진행할 수 있다.
+    ingress.complete(command_id, worker_id="worker-b", generation=claimed.claim_generation)
+
+
+def test_a_failing_dead_letter_write_closes_in_a_form_the_caller_knows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 16 `FR-2`. 조용히 `D-045` 가 거절한 상태로 돌아가지 않는다."""
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _corrupt(store, str(ack.command_id))
+
+    def _unavailable(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise GovernanceStoreError("store unavailable")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _unavailable)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("slack-worker")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert isinstance(caught.value.__cause__, GovernanceStoreError), "원인이 사라졌다"
+
+
+def test_an_unreadable_row_is_told_apart_from_one_with_no_decision(tmp_path: Path) -> None:
+    """round 16 `C16-1` (P1).
+
+    계약(`interaction-feedback.md:47-54`)이 "we know a decision landed" 와 "we cannot tell"
+    을 나눈다. `get()` 의 `None` 하나로는 그 둘이 뭉개진다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    ack = BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    command_id = str(ack.command_id)
+
+    assert ingress.is_unreadable(command_id) is False
+    assert ingress.is_unreadable("CMD-DEADBEEFDEADBEEF") is False, "없는 id 는 읽기 실패가 아니다"
+
+    _corrupt(store, command_id)
+
+    assert ingress.is_unreadable(command_id) is True
+    assert ingress.get(command_id) is None, "`get()` 은 여전히 None 이다"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T035 / T036 — 회수와 투기를 가르고, guard 를 각각 가른다 (round 17)
+# ---------------------------------------------------------------------------
+#
+# round 17 blocker 셋이 한 자리에서 나왔다. `_claim_one` 이 회수(sweep)와 투기(claim)를 한
+# transaction 에 묶어서, `_view` 실패가 claim 을 되돌리며 회수까지 되돌렸다. 손상 row 가
+# `leased`+만료로 durable 하게 남아 `_dead_letter_unreadable` 의 guard 가 0행을 냈고 큐가
+# 닫혔다 — round 15 `F-1` 의 head-of-line 차단이 되돌아온 것이다 (`F17-1`).
+
+
+_LEASE_EXPIRED_AT = IngressService._timestamp(NOW - timedelta(seconds=60))
+
+
+def _pin_state(
+    store: GovernanceStore,
+    command_id: str,
+    state: str,
+    *,
+    attempts: int = 1,
+) -> None:
+    """durable row 하나를 원하는 state 로 못박는다. state 별 CHECK 를 함께 맞춘다.
+
+    `leased` 는 `lease_owner`·`lease_expires_at` 이 NOT NULL 이어야 하고 다른 state 는 둘 다
+    NULL 이어야 한다. `retry_wait` 는 `retry_at`, `completed` 는 `completed_at` 이 필요하다
+    (`migrations.py:291-301`).
+    """
+    with store.connect() as connection:
+        changed = connection.execute(
+            "UPDATE governance_ingress_commands SET state=?, attempts=?, lease_owner=?, "
+            "lease_expires_at=?, retry_at=?, completed_at=? WHERE command_id=?",
+            (
+                state,
+                attempts,
+                "dead-worker" if state == "leased" else None,
+                _LEASE_EXPIRED_AT if state == "leased" else None,
+                _LEASE_EXPIRED_AT if state == "retry_wait" else None,
+                _LEASE_EXPIRED_AT if state == "completed" else None,
+                command_id,
+            ),
+        )
+        assert changed.rowcount == 1, f"{state} 로 못박지 못했다"
+        connection.commit()
+
+
+def _durable(store: GovernanceStore, command_id: str) -> tuple[str, int, str | None]:
+    with store.connect() as connection:
+        state, attempts, code = connection.execute(
+            "SELECT state, attempts, last_error_code FROM governance_ingress_commands "
+            "WHERE command_id = ?",
+            (command_id,),
+        ).fetchone()
+    return str(state), int(attempts), code
+
+
+def _generation(store: GovernanceStore, command_id: str) -> int:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT claim_generation FROM governance_ingress_commands WHERE command_id = ?",
+            (command_id,),
+        ).fetchone()
+    return int(row[0])
+
+
+def test_a_corrupt_row_holding_an_expired_lease_does_not_block_the_ones_behind_it(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-1` (P1). **round 15 의 head-of-line 차단이 되돌아왔던 자리다.**
+
+    손상 row 가 durable 하게 `leased`+만료면 `state IN ('pending','retry_wait')` guard 가
+    0행을 냈다. 치우지 못한 채 `cleared` 판정으로 `claim_next` 가 닫히고 뒤 command 는
+    영원히 `pending` 이었다. `attempts=0` 이라 `stranded()` 에도 안 보였다.
+
+    이제 `_sweep_recoverable` 이 claim **앞에서** 그 row 를 `retry_wait` 로 회수하므로
+    guard 가 맞는다. **guard 를 넓혀 고친 것이 아니다** — 넓히면 round 16 `FR-1` 이 막은
+    "살아 있는 lease 를 지운다" 가 되살아난다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "leased")
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None, "손상 row 뒤의 command 가 처리돼야 한다 — 큐가 막히면 안 된다"
+    assert claimed.command_id == healthy
+    assert _durable(store, poison)[0] == "dead_letter"
+    assert ingress.unreadable() == (poison,), "치운 것은 operator 에게 보여야 한다"
+
+
+def test_a_failed_claim_does_not_roll_back_another_rows_recovery(tmp_path: Path) -> None:
+    """round 17 `F17-7` (B-P2).
+
+    회수는 투기적이지 않다. lease 는 실제로 만료됐고 claim 실패가 그 사실을 바꾸지 않는다.
+    전에는 같은 transaction 이라 함께 되돌아가 죽은 worker 의 lease 가 `leased` 로
+    고정됐다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, healthy, "leased")
+
+    def _cannot_clear(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    original = IngressService._dead_letter_unreadable
+    try:
+        IngressService._dead_letter_unreadable = _cannot_clear  # type: ignore[method-assign]
+        with pytest.raises(IngressError):
+            ingress.claim_next("worker-b")
+    finally:
+        IngressService._dead_letter_unreadable = original  # type: ignore[method-assign]
+
+    state, _attempts, code = _durable(store, healthy)
+    assert state == "retry_wait", "만료 lease 회수가 실패한 claim 과 함께 되돌아갔다"
+    assert code == "INGRESS_LEASE_EXPIRED"
+
+
+def test_a_row_left_behind_by_a_failed_dead_letter_write_is_still_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 17 `F17-2` (P1). `D-047` 이 정한 것.
+
+    치우는 write 가 실패하면 row 가 `pending` 이나 `retry_wait` 로 남는데 `_stranded_rows`
+    의 WHERE 가 그것을 안 본다. `attempts` 는 rollback 되는 transaction 안에서만 증가하므로
+    **시간이 지나도 나타나지 않는다.** `D-045` 가 닫으려던 "operator 가 볼 방법이 없다" 가
+    다른 경로로 되살아난 것이다.
+
+    `stranded()` 의 계약은 그대로 두고 `unreadable()` 만 넓혔다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+
+    def _cannot_clear(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _cannot_clear)
+
+    with pytest.raises(IngressError) as caught:
+        ingress.claim_next("worker-b")
+
+    assert caught.value.code == "INGRESS_COMMAND_UNREADABLE"
+    assert _durable(store, poison)[0] == "pending", "치우지 못했으므로 그대로 남는다"
+    assert ingress.unreadable() == (poison,), "치우지 못한 row 가 operator 에게 보여야 한다"
+    assert ingress.stranded() == (), "`stranded()` 의 계약은 넓히지 않았다"
+
+
+def test_the_dead_letter_write_leaves_a_row_alone_when_only_the_generation_differs(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-3` — **`claim_generation` guard 만** 가른다.
+
+    state 는 `pending` 이라 state guard 는 참이다. generation 만 어긋난다. 그래서
+    `claim_generation = ?` 를 `? IS NOT NULL` 로 바꾸면 이 test 가 죽고, `state IN (...)`
+    를 지워도 이 test 는 통과한다. 두 guard 가 **같은 시나리오에서 참이던** 기존 race
+    test 와 다른 점이 이것이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    stale_generation = _generation(store, poison) + 1
+
+    ingress._dead_letter_unreadable(poison, stale_generation)
+
+    assert _durable(store, poison) == ("pending", 0, None), (
+        "generation 이 어긋나면 건드리지 않는다 — 그 사이 다른 claim 이 있었다는 뜻이다"
+    )
+
+
+def test_the_dead_letter_write_leaves_a_row_alone_when_only_the_state_differs(
+    tmp_path: Path,
+) -> None:
+    """round 17 `F17-3` — **state guard 만** 가른다.
+
+    generation 은 맞고 state 만 `completed` 다. state guard 를 지우면 `completed` row 에
+    `state='dead_letter'` 를 쓰면서 `completed_at` 이 남아 CHECK 를 위반해 `IntegrityError`
+    가 난다 (`migrations.py:299`). `claim_generation` guard 를 지워도 이 test 는 통과한다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    generation = _generation(store, poison)
+    _pin_state(store, poison, "completed", attempts=1)
+
+    ingress._dead_letter_unreadable(poison, generation)
+
+    assert _durable(store, poison)[0] == "completed", (
+        "이미 끝난 row 를 되돌리지 않는다 — 결정은 났는데 장부가 '읽을 수 없었다' 가 된다"
+    )
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T038 — 두 구조가 요구하는 것을 끝까지 센다 (round 18)
+# ---------------------------------------------------------------------------
+#
+# round 18 blocker 넷이 wave 11 이 넣은 두 구조에서 나왔다 — `unreadable()` 을 자기 조회로
+# 넓힌 것과 `_sweep_recoverable()` 을 분리한 것이다. `T035` evidence 가 "새 구조가 요구한 것
+# 다섯" 을 세었는데 그 목록 자체가 덜 셌다.
+
+
+def _fill_completed(store: GovernanceStore, count: int) -> None:
+    """읽을 수 있는 `completed` row 를 `received_at` 이 아주 이른 값으로 채운다.
+
+    `unreadable()` 의 정렬이 `received_at, command_id` 라 이 row 들이 앞을 차지한다.
+    `limit` 이 표 상한이면 뒤의 손상 row 가 창 밖으로 밀린다 (round 18 `N18-1`).
+    """
+    with store.connect() as connection:
+        template = connection.execute(
+            "SELECT provider, provider_installation_ref, credential_kind, credential_id, "
+            "credential_hash, action FROM governance_ingress_commands LIMIT 1"
+        ).fetchone()
+        provider, install, kind, credential_id, credential_hash, action = template
+        channel = json.dumps(_channel_payload(), separators=(",", ":"), sort_keys=True)
+        for index in range(count):
+            token = f"filler-{index}"
+            command_id = f"CMD-{hashlib.sha256(token.encode()).hexdigest()[:16].upper()}"
+            connection.execute(
+                "INSERT INTO governance_ingress_commands (command_id, provider, "
+                "provider_installation_ref, provider_fingerprint, raw_body_digest, "
+                "external_event_id, external_actor_key, channel_json, credential_kind, "
+                "credential_id, credential_hash, action, received_at, state, attempts, "
+                "claim_generation, completed_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'completed', 1, 1, ?)",
+                (
+                    command_id,
+                    provider,
+                    install,
+                    hashlib.sha256(f"fp-{token}".encode()).hexdigest(),
+                    f"sha256:{hashlib.sha256(f'body-{token}'.encode()).hexdigest()}",
+                    f"EVT-{token}",
+                    "U456",
+                    channel,
+                    kind,
+                    credential_id,
+                    credential_hash,
+                    action,
+                    "2020-01-01T00:00:00.000000Z",
+                    "2020-01-01T00:00:01.000000Z",
+                ),
+            )
+        connection.commit()
+
+
+def test_a_corrupt_row_stays_visible_behind_a_wall_of_completed_ones(tmp_path: Path) -> None:
+    """round 18 `N18-1` (P1). `D-048` 이 정한 것.
+
+    `unreadable()` 이 `LIMIT` 을 전체 표에 걸면 오래된 `completed` row 가 앞을 채워
+    손상 row 를 창 밖으로 민다. 실측에서 `completed` 150개 뒤의 손상 row 가
+    `limit=100` 에 안 나왔고 `governance stranded` 가 `NONE` 을 냈다.
+    `governance_ingress_commands` 를 지우는 코드가 없어 `completed` 는 무한히 쌓인다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "retry_wait", attempts=9)
+    _fill_completed(store, 150)
+
+    assert ingress.unreadable(limit=100) == (poison,), (
+        "종결 상태가 창을 채우면 손상 row 가 보이지 않는다 — limit 은 후보 상한이어야 한다"
+    )
+    assert ingress.unreadable(limit=200) == (poison,), "창을 넓혀도 같은 결과여야 한다"
+
+
+def test_an_exhausted_corrupt_row_is_still_visible_after_the_sweep_clears_it(
+    tmp_path: Path,
+) -> None:
+    """round 18 `N18-2`. 표에 없던 경로다.
+
+    `_sweep_recoverable` 의 첫째 UPDATE 가 `retry_at = now` 를 쓰므로 **같은 transaction
+    안에서** 둘째 UPDATE 의 `retry_at <= now` 가 참이 된다. `leased`+만료+소진 row 는
+    거기서 바로 `dead_letter` 로 가고 `_dead_letter_unreadable` 에 **도달하지 않는다.**
+
+    `last_error_code` 는 `INGRESS_LEASE_EXPIRED` 다. 둘 다 사실이다 — lease 가 만료됐고
+    시도가 소진됐다. **중요한 것은 회수 경로가 살아 있다는 것이다.**
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store, _authenticator(), config=IngressConfig(max_attempts=2), clock=lambda: NOW
+    )
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "leased", attempts=5)
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None and claimed.command_id == healthy, "큐가 막히면 안 된다"
+    state, _attempts, code = _durable(store, poison)
+    assert state == "dead_letter"
+    assert code == "INGRESS_LEASE_EXPIRED", (
+        "소진 sweep 이 먼저 치운 경로다. `_dead_letter_unreadable` 에 도달하지 않는다"
+    )
+    assert ingress.unreadable() == (poison,), "그래도 operator 에게는 보여야 한다"
+
+
+def test_a_sweep_failure_alone_still_closes_the_claim(tmp_path: Path) -> None:
+    """round 18 `F18-R1`. `T035` 가 "새 구조가 요구한 것" 첫째로 적고 test 를 안 만들었다.
+
+    기존 `..._filesystem_failure_in_claim_next_...` 는 `window=(1, 10**6)` 으로 store 를
+    통째로 막는다. 그래서 sweep 이 실패를 삼켜도 뒤이은 `_claim_one` 이 대신 실패해
+    `CLAIM_FAILED` 가 나온다 — **그 test 는 이 지점을 가르지 못한다.**
+
+    여기서는 **sweep 의 connect 하나만** 막는다. 실측한 `validate()` 순서에서 1-2 가
+    `_sweep_recoverable`, 3-4 가 `_claim_one` 이다. `before` validate 가 raise 하면 그
+    `connect()` 는 `after` 를 안 부르므로 창 하나면 충분하다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    worker = _worker(store, ingress)
+
+    _trip_the_filesystem_guard(store, window=(1, 1))
+
+    result = worker.process_next("slack-worker")
+
+    assert result is not None, "raw 예외가 `process_next` 밖으로 나갔다"
+    assert result.outcome is WorkerOutcome.CLAIM_FAILED, (
+        "sweep 실패를 삼키면 claim 이 그대로 진행돼 만료 lease 회수가 조용히 사라진다"
+    )
+
+
+def test_unreadable_rejects_a_non_positive_limit(tmp_path: Path) -> None:
+    """round 18 `F18-R2`. `unreadable()` 이 자기 조회가 되면서 guard 를 복제했는데 test 가
+    `stranded(limit=0)` 만 쳤다. guard 가 없으면 `LIMIT 0` 이 빈 결과를 내 "손상 row 없음"
+    이라는 거짓 음성이 된다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+
+    with pytest.raises(ValueError):
+        ingress.unreadable(limit=0)
+    with pytest.raises(ValueError):
+        ingress.unreadable(limit=-1)
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T041 — limit 은 출력 상한이다 (round 19)
+# ---------------------------------------------------------------------------
+#
+# `D-048` 은 종결 상태만 빼면 `unreadable()` 의 `limit` 이 `stranded()` 와 같은 뜻이 된다고
+# 봤다. 틀렸다 — **"읽을 수 없다" 는 SQL 로 판정할 수 없어서** `SQL LIMIT` 을 쓰는 한 어떤
+# state 집합을 골라도 그 안의 읽을 수 있는 row 가 손상 row 를 창 밖으로 민다 (round 19
+# `F19-1`, P1). `D-049` 가 `LIMIT` 을 python 출력 상한으로 옮겼다.
+
+_WALL_STATES = ("completed", "dead_letter", "recovery_hold", "pending", "retry_wait", "leased")
+
+
+def _readable_wall(store: GovernanceStore, state: str, count: int) -> None:
+    """읽을 수 있는 row 로 벽을 쌓는다. `received_at` 이 이르므로 정렬 앞을 차지한다.
+
+    state 별 CHECK 를 맞춘다 (`migrations.py:291-301`).
+    """
+    with store.connect() as connection:
+        template = connection.execute(
+            "SELECT provider, provider_installation_ref, credential_kind, credential_id, "
+            "credential_hash, action FROM governance_ingress_commands LIMIT 1"
+        ).fetchone()
+        provider, install, kind, credential_id, credential_hash, action = template
+        channel = json.dumps(_channel_payload(), separators=(",", ":"), sort_keys=True)
+        for index in range(count):
+            token = f"{state}-wall-{index}"
+            connection.execute(
+                "INSERT INTO governance_ingress_commands (command_id, provider, "
+                "provider_installation_ref, provider_fingerprint, raw_body_digest, "
+                "external_event_id, external_actor_key, channel_json, credential_kind, "
+                "credential_id, credential_hash, action, received_at, state, attempts, "
+                "claim_generation, lease_owner, lease_expires_at, retry_at, completed_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,1,?,?,?,?)",
+                (
+                    f"CMD-{hashlib.sha256(token.encode()).hexdigest()[:16].upper()}",
+                    provider,
+                    install,
+                    hashlib.sha256(f"fp-{token}".encode()).hexdigest(),
+                    f"sha256:{hashlib.sha256(f'b-{token}'.encode()).hexdigest()}",
+                    f"EVT-{token}",
+                    "U456",
+                    channel,
+                    kind,
+                    credential_id,
+                    credential_hash,
+                    action,
+                    "2020-01-01T00:00:00.000000Z",
+                    state,
+                    "wall-worker" if state == "leased" else None,
+                    _LEASE_EXPIRED_AT if state == "leased" else None,
+                    _LEASE_EXPIRED_AT if state == "retry_wait" else None,
+                    _LEASE_EXPIRED_AT if state == "completed" else None,
+                ),
+            )
+        connection.commit()
+
+
+@pytest.mark.parametrize("wall_state", _WALL_STATES)
+def test_no_wall_of_readable_rows_can_hide_a_corrupt_one(tmp_path: Path, wall_state: str) -> None:
+    """round 19 `F19-1` (P1). **벽 6종 전수.**
+
+    `SQL LIMIT` 을 쓰던 동안에는 `completed` 만 막혀 있었고 나머지 다섯이 그대로 뚫렸다.
+    `dead_letter` 와 `recovery_hold` 도 벗어나는 UPDATE·DELETE 가 `src` 에 없어 `completed`
+    와 똑같이 영구히 쌓인다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "retry_wait", attempts=9)
+    _readable_wall(store, wall_state, 150)
+
+    assert poison in ingress.unreadable(limit=100), (
+        f"`{wall_state}` 벽 150개가 손상 row 를 창 밖으로 밀었다 — "
+        "limit 은 후보 상한이 아니라 출력 상한이어야 한다"
+    )
+
+
+def test_a_queue_blocked_by_a_failing_clear_is_still_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 19 `F19-1` 재현 B — 가장 무거운 것.
+
+    치우기가 영구히 실패하면 큐가 **실제로 막힌다.** 그 상태에서 오래된 `dead_letter` 벽이
+    있으면 `governance stranded` 가 그 벽만 내고 손상 row 는 `UNREADABLE` 로 안 나왔다.
+    `D-047` 의 Consequence 가 `D-048` 뒤에도 거짓이었고 `D-049` 가 그것을 처음으로 참으로
+    만든다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _readable_wall(store, "dead_letter", 100)
+
+    def _never_clears(self: IngressService, command_id: str, claim_generation: int) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(IngressService, "_dead_letter_unreadable", _never_clears)
+    for _ in range(3):
+        with pytest.raises(IngressError):
+            ingress.claim_next("worker-b")
+
+    assert _durable(store, healthy)[0] == "pending", "큐가 막힌 상태를 만들지 못했다"
+    assert poison in ingress.unreadable(limit=100), "큐가 막힌 채 손상 row 가 operator 목록에 없다"
+
+
+def test_a_programming_error_inside_the_view_escapes_the_unreadable_scan(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """round 19 `R19-1`. **`unreadable()` 에 대해서는 아무도 이것을 치지 않았다.**
+
+    `T038` AC-06 표가 이 칸에 `..._a_programming_error_inside_the_view_still_escapes` 를
+    적었는데 그 test 는 `get()` 과 `stranded()` 만 부른다. 그래서 `unreadable()` 의
+    `except _UNREADABLE_ROW` 를 `except Exception` 으로 넓혀도 suite 가 전부 통과했다.
+
+    넓히면 `_view` 안의 구현 결함(`AttributeError`·`TypeError`)이 operator 에게 "이 row 는
+    손상됐다" 로 보고된다 — round 15 `F-2` 가 `stranded()` 에 대해 막은 거짓 양성이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+
+    def _bug(row: object) -> object:
+        raise AttributeError("구현자 실수를 흉내낸다")
+
+    monkeypatch.setattr(IngressService, "_view", staticmethod(_bug))
+
+    with pytest.raises(AttributeError):
+        ingress.unreadable()
+
+
+def test_unreadable_lists_corrupt_rows_in_arrival_order(tmp_path: Path) -> None:
+    """round 19 `R19-2`. 정렬은 장식이 아니다.
+
+    `limit` 이 출력 상한이라 **어떤 손상 row 가 그 안에 드는지**를 정렬이 정한다.
+    `stranded()` 와 같은 규칙(`received_at, command_id`)이어야 두 목록이 어긋나지 않는다.
+
+    `T038` AC-06 표는 "위 두 test 가 순서에 의존" 이라 적었지만 둘 다 의존하지 않았다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    first, second = _two_commands(store, ingress)
+    _corrupt(store, first)
+    _corrupt(store, second)
+
+    listed = ingress.unreadable()
+
+    assert listed == (first, second), "도착 순서가 아니다"
+    assert ingress.unreadable(limit=1) == (first,), (
+        "출력 상한을 채울 때 가장 오래된 것부터 나와야 한다"
+    )
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T044 — 적어 둔 계약을 test 로 묶는다 (round 20)
+# ---------------------------------------------------------------------------
+
+
+def test_unreadable_skips_a_corrupt_row_that_already_completed(tmp_path: Path) -> None:
+    """round 20 `F20-3`. **이 계약을 고정하는 test 가 없었다.**
+
+    `unreadable()` 의 docstring 이 "손상된 `completed` row 는 여기 안 나온다. **그것이
+    옳다**" 로 단언하고 `D-048` 이 그것을 승인 근거로 삼는데, `WHERE state != 'completed'`
+    를 통째로 지워도 전 suite 가 통과했다. round 19 `A19-R2` 가 Advisory 로 적었고 그 사이
+    같은 문장이 두 Decision 의 근거로 승격됐다.
+
+    `completed` 는 회수 대상이 아니다. 그런 row 를 조회해야 하면 `is_unreadable()` 이 id
+    단위로 답한다 — **그 대안 경로가 실제로 있는지도 함께 고정한다.**
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    poison, _healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    _pin_state(store, poison, "completed", attempts=1)
+
+    assert ingress.unreadable() == (), "종결 상태는 회수 대상이 아니다"
+    assert ingress.is_unreadable(poison) is True, "대안 경로가 답하지 못하면 대가가 너무 크다"
+
+
+@pytest.mark.parametrize("prior_code", ["INGRESS_AUTHORITY_DENIED", None])
+def test_the_exhaustion_sweep_leaves_the_prior_error_code_alone(
+    tmp_path: Path, prior_code: str | None
+) -> None:
+    """round 20 `R20-1`. 도달 안 하는 두 경로 중 **둘째만 test 가 없었다.**
+
+    `retry_wait` + `attempts >= max` + `retry_at <= now` 인 row 는 `_sweep_recoverable` 의
+    둘째 UPDATE 가 바로 `dead_letter` 로 옮긴다. 그 UPDATE 는 `last_error_code` 를 **안
+    건드리므로** 앞선 값이 그대로 남고, **없으면 `NULL` 로 남는다.**
+
+    첫째 경로(`leased`+만료+소진)는 `..._exhausted_corrupt_row_is_still_visible...` 이
+    `INGRESS_LEASE_EXPIRED` 를 단언해 지킨다. 이 test 가 나머지 절반이다.
+
+    **두 경우를 다 쳐야 한다.** 처음에는 값이 있는 경우만 쳤고, 그 test 는 둘째 UPDATE 에
+    `last_error_code = COALESCE(last_error_code, '…')` 를 더하는 mutation 을 **못 죽였다** —
+    `COALESCE` 는 `NULL` 일 때만 덮기 때문이다. `NULL` 인 경우가 round 20 이 실측한
+    `('dead_letter', 5, None)` 이고 CLI 가 `dead_letter … -` 를 내는 근거다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(
+        store, _authenticator(), config=IngressConfig(max_attempts=2), clock=lambda: NOW
+    )
+    poison, healthy = _two_commands(store, ingress)
+    _corrupt(store, poison)
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET state='retry_wait', attempts=5, "
+            "retry_at=?, lease_owner=NULL, lease_expires_at=NULL, "
+            "last_error_code=? WHERE command_id=?",
+            (_LEASE_EXPIRED_AT, prior_code, poison),
+        )
+        connection.commit()
+
+    claimed = ingress.claim_next("worker-b")
+
+    assert claimed is not None and claimed.command_id == healthy
+    assert _durable(store, poison) == ("dead_letter", 5, prior_code), (
+        "소진 sweep 은 `last_error_code` 를 안 건드린다 — 앞선 값이 그대로 남는다"
+    )
+    assert poison in ingress.unreadable(), "회수 경로는 살아 있어야 한다"

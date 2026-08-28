@@ -1,0 +1,195 @@
+{
+  "claude_hooks": [
+    {
+      "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/amplai_hook.py\" session-start",
+      "event": "SessionStart",
+      "timeout": 5
+    },
+    {
+      "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/amplai_hook.py\" session-end",
+      "event": "SessionEnd",
+      "timeout": 5
+    }
+  ],
+  "json_merges": [
+    {
+      "fragment": "policy-extension.json",
+      "path": ".ai-team/runtime/policy.json",
+      "required": true,
+      "sha256": "sha256:d56c9ccb6af67be8415af2f66300eb99217a7218261b05f2d0ef57f1fc332fb5"
+    }
+  ],
+  "markers": [
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "work.md",
+      "path": ".agents/skills/work/SKILL.md",
+      "required": true,
+      "sha256": "sha256:e6a2c5242c0c13224a8d7a6aacc38c4b28c617b3c467242d0e562addfabe4e1e"
+    },
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "design.md",
+      "path": ".agents/skills/design/SKILL.md",
+      "required": true,
+      "sha256": "sha256:a28fe81499e47a92cbd54a0fadc45102a809f36fc31c225c855c6d753e4c26b0"
+    },
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "create_if_missing": false,
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "handoff-wrapper.md",
+      "path": ".agents/skills/handoff/SKILL.md",
+      "required": false,
+      "sha256": "sha256:cf08ca94a7304124e75aefdd667fcaabef83643ade41caf3252c0579e17e71f2"
+    },
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "create_if_missing": false,
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "handoff-source.md",
+      "path": ".ai-team/skills/handoff/SKILL.md",
+      "required": false,
+      "sha256": "sha256:cf08ca94a7304124e75aefdd667fcaabef83643ade41caf3252c0579e17e71f2"
+    },
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "create_header": "# Autonomy Policy\n\nAMPLAI Loop Kit 이 이 파일을 생성했다. marker 밖 내용은 앱이 소유한다.\n",
+      "create_if_missing": true,
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "autonomy.md",
+      "path": ".ai-team/AUTONOMY_POLICY.md",
+      "required": false,
+      "sha256": "sha256:a7447284e513c181e8fd9c092c345a708ea7112d711ebfad77bd4f250d85db90"
+    },
+    {
+      "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
+      "end": "<!-- AMPLAI-ASYNC-END -->",
+      "fragment": "workflow.md",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "required": true,
+      "sha256": "sha256:0e36407d4012e62e02f31ee4989eab76987996e4a8eee8f3009f041193c9d334"
+    },
+    {
+      "begin": "# AMPLAI-LOCAL-BEGIN",
+      "create_if_missing": true,
+      "end": "# AMPLAI-LOCAL-END",
+      "fragment": "gitignore.md",
+      "path": ".gitignore",
+      "required": false,
+      "sha256": "sha256:3a36ef0fafca48824470715ceb942737d3044bf4ace46e71372bc818f982096d"
+    }
+  ],
+  "owned_files": [
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "sha256:77130cac9f4a925b53cdb11cb8bc045d8284591ec38a732fa8644c75faa11fe5"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/INSTALLATION.md",
+      "sha256": "sha256:56886ba8ee9d83c6aec1050ea2cf215824f59542d1bdec3ccf2dc68a2a038586"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/LOCAL_SUPERVISOR.md",
+      "sha256": "sha256:12e0dcccea4dcec6ba200fb6ee9e5cbf66ec4deceec5ffcf9030f0b69edbf335"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/app.template.json",
+      "sha256": "sha256:b120ed8997f2344898e233ba0c3a111e36987cde988154e835666ec0bd589a00"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/async-policy.json",
+      "sha256": "sha256:d1a389655edd1c6b59cb28d7295439ee789abba0323ea6b4bdaa392f67ac3ca9"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/app.schema.json",
+      "sha256": "sha256:f9b524f3368397b46c5b222168a0d661baa13d0f5bb5ddf48ccef48d18d2ed93"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/change.schema.json",
+      "sha256": "sha256:813d268631e7e3c4bb049b80d310e8b12fb230cdca36df228934bd6b12653779"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/contract.schema.json",
+      "sha256": "sha256:e21b94d63fd914fb4c4b248db293733e73208b426bde01f1f0fbfb98bc688e9f"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/decision.schema.json",
+      "sha256": "sha256:00477319a8ad4c2b368f09f9de8ba46539b2296c7fb2b913e4024d4ee0d9e49a"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/evidence.schema.json",
+      "sha256": "sha256:ee7d1da13245ce773daedd4788b2b0adf89277ec03e064251b2efce251d99624"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/project.schema.json",
+      "sha256": "sha256:e4ea3377b7156c77cc8628e249a10c885e8cc9e456c2cc50c19e590b07832d00"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/question.schema.json",
+      "sha256": "sha256:77ae58048a0279aed023ebe9dfbde8603c870ed94ed4721136d1f98db80fe191"
+    },
+    {
+      "mode": "644",
+      "path": ".ai-team/runtime/schemas/work.schema.json",
+      "sha256": "sha256:6d9cab43c2028be87716bb6567ed42b4cbab3e24535a7be2aea58ebe798ac893"
+    },
+    {
+      "mode": "755",
+      "path": "scripts/amplai.py",
+      "sha256": "sha256:7c3677b64fa1e20a8cf17631eda104d6386a6fd1644ff1b565f815c2c69dc2f7"
+    },
+    {
+      "mode": "755",
+      "path": "scripts/amplai_hook.py",
+      "sha256": "sha256:a203171388e58e862ed7ba548a95933f71bbc455f5a33d54bff1871ce21c5202"
+    },
+    {
+      "mode": "755",
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "sha256:9164255161cbda432b884013dc6f53fd70fcf6150a793a97febb53181102b1e7"
+    },
+    {
+      "mode": "755",
+      "path": "scripts/amplai_supervisor.py",
+      "sha256": "sha256:113270aa7f7f02b4d53e4c7ec28e159ceaeacb854b7432375b36d6b524407234"
+    },
+    {
+      "mode": "644",
+      "path": "tests/ai/test_amplai_async_runtime.py",
+      "sha256": "sha256:ec955c1a161d977b03e3553d84ebe00a5d16a2c418e916e1223d35dbe6814f02"
+    },
+    {
+      "mode": "644",
+      "path": "tests/ai/test_amplai_kit_installer.py",
+      "sha256": "sha256:d8cab93606648a27b6734c8307c18f46f97fedf4e30b158349d16fda412db67e"
+    },
+    {
+      "mode": "644",
+      "path": "tests/ai/test_amplai_kit_regressions.py",
+      "sha256": "sha256:26a8e01fe58704546400d5b247efa3d70cc6883f8d95f34f1f895962d5abf2dd"
+    }
+  ],
+  "required_paths": [
+    ".agents/skills/work/SKILL.md",
+    ".agents/skills/design/SKILL.md",
+    ".ai-team/runtime/WORKFLOW.md"
+  ],
+  "runtime_protocol": "amplai.async-cross-app.v1",
+  "schema_version": "1.0",
+  "version": "2.3.1"
+}

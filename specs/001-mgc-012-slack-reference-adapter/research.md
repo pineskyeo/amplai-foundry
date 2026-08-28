@@ -58,6 +58,13 @@ DLQ 를 두 벌 유지하게 되어 기각한다.
 (`events.py:2842`). `YamlProjectionDestination.reconcile` 은 local file read 라 비용이
 없지만 Slack 은 network read 다.
 
+> **정정 (2026-08-07, Package 4 research R-010).** 아래 "Tier 2 (S4)" 는 **틀렸다.**
+> S4 (rate-limits 문서) 는 어느 method 가 어느 tier 인지 적지 않는다 — Tier 1~4 의 정의만
+> 싣는다. tier 를 적는 것은 method 문서인 S2 이고 값은 **Tier 3 (분당 50+)** 다.
+> 영향은 안전한 쪽이다 — `SLACK_MAX_HISTORY_PAGES = 5` 가 필요보다 보수적일 뿐이라 값은
+> 바꾸지 않는다. 근거는 `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`
+> R-010 이다. 이 문서는 Package 3 gate 증거라 원문을 지우지 않고 위에 정정을 단다.
+
 `conversations.history` 는 Web API Tier 2 (분당 20+ 요청)다 (S4). `chat.postMessage` 는
 special tier 로 **channel 당 초당 1 message** 다 (S4). read 가 write 보다 먼저 조이는
 구조이므로 reconcile 의 조회 범위를 제한해야 한다 (R-004).
@@ -99,13 +106,19 @@ special tier 로 **channel 당 초당 1 message** 다 (S4). read 가 write 보�
 ## R-004 — Reconcile Search Is Bounded And Fail-Closed
 
 **Decision**: reconcile 은 `conversations.history` 를 최신부터 역순으로 훑되 조회 상한
-(page 수)을 갖는다. 판정 규칙은 셋이다.
+(page 수)을 갖는다. 판정 규칙은 넷이다 (원래 셋이었다 — 아래 갱신 참조).
 
 | 발견한 것 | 판정 |
 |---|---|
 | 이 event 의 marker | 전달 완료 — 그 receipt 를 반환한다 |
 | 같은 `destination_ref` 의 **더 낮은** `destination_sequence` marker 를 먼저 만남 | 미전송 — `None` 을 반환해 send 로 간다 |
-| 상한까지 훑어도 둘 다 못 만남 | **판정 불가 — `OutboxReconcileError` 를 던진다** |
+| `next_cursor` 가 없어 history 가 소진됐고 둘 다 못 만남 | 미전송 — `None` |
+| 상한까지 훑고 멈췄는데 둘 다 못 만남 | **판정 불가 — `OutboxReconcileError` 를 던진다** |
+
+**갱신 (D-023, 2026-08-05)**: 이 표는 원래 셋이었다. 세 번째 줄(history 소진)을 나중에
+더했고, 조회 자체를 건너뛰는 첫 시도 규칙이 앞에 붙었다. 셋만으로는 `destination_sequence`
+가 1 인 event 가 두 번째 규칙을 만족할 수 없어 **모든 destination 의 첫 Card 가 hold** 로
+떨어졌다. 확정 계약은 contracts C-2.2 다.
 
 **Rationale**: 세 번째가 핵심이다. "못 찾았으니 안 보낸 것" 으로 단정하면 조회 범위 밖에
 있던 메시지를 중복 발행한다. SPEC.md `Outbox Ordering` 은 "Reconcile 불가 시 DLQ와
@@ -118,11 +131,19 @@ operator hold를 생성한다" 고 못박았고, `deliver_next` 는 `OutboxRecon
 먼저 만났다면 N 은 아직 없다.
 
 **Alternatives considered**: 못 찾으면 미전송으로 보는 안. 중복 Card 를 만든다. User Story 2
-가 막으려는 바로 그 결과다. 기각한다.
+가 막으려는 바로 그 결과다. 기각한다. (D-023 이 이 중 **history 소진** 경우만 떼어 인정했다.
+범위를 다 못 본 경우와 구분되기 때문이다.)
+
+**미확인 (wave 3 review)**: `conversations.history` 가 **최신 message 부터** 돌려준다는 것을
+S2 에서 확인하지 못했다. 위 "역순으로 훑되" 는 그 가정 위에 서 있다. 순서가 뒤집히면 하위
+sequence marker 를 우리 marker 보다 먼저 만나 중복 Card 가 난다. destination 은 page 안에서만
+그 의존을 없앴고 page 사이는 못 막는다. contracts C-1 이 이것을 구현체 의무로 적었고 Package 4
+가 확정한다.
 
 **미확인**: 사람이 Card 를 지웠다가 다시 만든 경우 (SPEC.md 검증 항목 "deleted/recreated
-Provider message"). 지워진 message 는 `conversations.history` 에 없으므로 위 표의 세 번째
-줄로 떨어져 hold 가 걸린다. 이게 맞는 동작인지는 판단이 필요했고 `plan.md` P-001 이 hold 로 닫았다.
+Provider message"). 지워진 message 는 `conversations.history` 에 없으므로 위 표의 **네 번째**
+줄(상한 도달)로만 hold 가 걸린다. history 를 소진할 수 있는 작은 채널에서는 세 번째 줄로
+떨어져 재전송된다 — D-023 이 P-001 을 그렇게 좁혔다.
 
 ## R-005 — Receipt String Format
 
@@ -139,7 +160,7 @@ Provider message"). 지워진 message 는 `conversations.history` 에 없으므�
 는 그 조건을 만족한다.
 
 기존 `YamlProjectionDestination._receipt` 는 `yaml:{aggregate_sequence}:{payload_digest}`
-다 (`projections.py:191`). prefix 로 destination 종류를 구분하는 형태를 따른다.
+다 (`projections.py:195`). prefix 로 destination 종류를 구분하는 형태를 따른다.
 
 ## R-006 — Slack Error Classification
 

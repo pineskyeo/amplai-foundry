@@ -53,66 +53,90 @@
 
 `CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 Codex가 임의로 결정하지 않는다.
 
-## Spec-Kit Adoption
+## Public Workflow
 
-이 repository는 spec-kit(`/speckit-*`)과 기존 workstream 체계를 함께 쓴다. 원칙은 `.specify/memory/constitution.md`에 있고 그 문서는 이 파일의 파생이다. 두 문서가 어긋나면 이 파일이 이긴다.
-
-### Pipeline
+사용자가 직접 호출하는 개발 명령은 둘뿐이다.
 
 ```text
-(/grill-me)       → 계획 심문 (선택)
-/speckit-specify  → spec.md
-/speckit-plan     → plan.md
-/taskify          → task manifest
-/speckit-implement→ 구현
-subagent review   → contract / failure-recovery / regression 3인
-/pinesky-workstream-gate → PASS 기록
+/work <goal>       구현·검증·수렴·리뷰까지 완료한다
+/design <problem>  구현하지 않고 요구·설계·결정을 확정한다
 ```
 
-- `/speckit-tasks`는 `/taskify`와 중복이라 **제거했다** (skill 디렉터리 삭제, workflow step은 gate로 대체). 산출물을 두 벌 만들지 않는다.
-- `/speckit-clarify`는 `/speckit-plan` 전에, `/speckit-analyze`는 `/speckit-implement` 전에 선택적으로 쓴다.
-- **`/grill-me`의 후속은 `/speckit-specify`다.** grilling 산출물(다듬어진 계획·결정·확정된 fact)은 spec 입력이다. 심문이 끝나면 손으로 문서를 쓰지 말고 `/speckit-specify`에 넘긴다.
-- **spec·plan 성격 문서는 손으로 쓰지 않는다.** `/speckit-specify`·`/speckit-plan`으로 만든다. `docs/workstreams/`는 **조사 기록**(fact 수집·원본 대조·측정 log) 용이지 spec 대체가 아니다. 손문서로 spec을 대신하면 `specs/`가 안 생겨 `/taskify`·`/speckit-implement`가 소비할 산출물이 없어지고, 그 상태를 근거로 speckit을 건너뛰는 순환이 생긴다. 경위는 [docs/SPECKIT-GRILLME-CHAIN.md](docs/SPECKIT-GRILLME-CHAIN.md).
+`specify`, `clarify`, `plan`, `taskify`, `analyze`, `implement`, `converge`,
+`review`, `debug` 는 **internal capability** 다. 사용자가 그 순서를 지휘하게 하지 않는다
+(`D-046`).
 
-### Skill Routing
+```text
+/work
+  → classify / contract
+  → Knowledge Readiness
+       DISCOVER → repository/domain evidence scan → re-evaluate
+       BLOCKED  → human business/architecture decision
+  → Context Pack / Environment
+  → plan/tasks/analyze when needed
+  → implement ↔ verify/repair
+  → evidence → converge
+  → documentation freshness → review → incremental gardening
+  → handoff → DONE
+```
 
-겹칠 때 무엇을 부를지는 아래로 정한다.
+Documentation Freshness 는 review **앞**이다. reviewer 가 볼 때 코드와 문서가 이미 맞아야
+한다. Gardening 은 review **뒤**다. cleanup 이 본 기능을 흔들면 안 된다.
 
-| 하려는 일 | skill |
-|---|---|
-| 개념을 이해·설명 (Feynman 4단계, 모르는 곳 드러내기) | `/feynman` |
-| 코드베이스·subsystem·흐름 설명 | `/eli12` |
-| 계획·설계를 심문해 다듬기 | `/grill-me` |
-| spec의 모호성을 질문 5개로 좁히기 | `/speckit-clarify` |
-| spec 작성·갱신 | `/speckit-specify` |
-| 설계 계획 | `/speckit-plan` |
-| 작업 분해 → task manifest | `/taskify` |
-| 구현 | `/speckit-implement` |
-| spec/plan/tasks 정합성 점검 | `/speckit-analyze` |
-| 요구사항 품질 체크리스트 | `/speckit-checklist` |
-| 구현 후 잔여 작업 회수 | `/speckit-converge` |
-| task → GitHub issue | `/speckit-taskstoissues` |
-| 원칙 수립·개정 | `/speckit-constitution` |
+Domain-heavy/high Work 는 terminology·current behavior·boundary·invariant·source-of-truth·
+contradiction·acceptance·verifier 가 evidence-backed READY 가 되기 전에는 coding 하지 않는다.
 
-경계가 헷갈리는 짝:
+완료는 말이 아니라 executable evidence 로 판정한다. 기본 도구는 아래다.
 
-- `/feynman` vs `/eli12` — 개념이면 feynman, 이 repo의 코드면 eli12. eli12는 bug triage·code review에 쓰지 않는다 (skill 자체 선언).
-- `/grill-me` vs `/speckit-clarify` — grill-me는 형식 없는 심문이고 아무 단계에서나 쓴다. 다만 **산출물은 `/speckit-specify`로 넘긴다** (Pipeline 절). speckit-clarify는 spec 파일에 답을 써넣는 파이프라인 단계다.
-- `/speckit-analyze` vs `/speckit-checklist` — analyze는 artifact 3자 정합성, checklist는 요구사항 자체의 품질.
+```bash
+python3 scripts/loopctl.py doctor
+python3 scripts/loopctl.py classify --working
+python3 scripts/loopctl.py contract validate specs/<feature>/work-contract.json
+python3 scripts/loopctl.py readiness evaluate specs/<feature>/knowledge-readiness.json
+python3 scripts/loopctl.py context validate specs/<feature>/context-pack.json
+python3 scripts/loopctl.py permission check <action>
+python3 scripts/loopctl.py docs validate --repo
+python3 scripts/loopctl.py garden full --report-only
+scripts/eval.sh --feature specs/<feature> --slice S01
+python3 .ai-team/verifiers/run.py --profile v2
+```
 
-### Review Before Gate
+보조 skill 은 loop 밖에 있고 사용자가 직접 부른다 — `/grill-me`, `/feynman`, `/eli12`,
+`/grilling`. 개발 절차를 지휘하지 않는다.
 
-`/speckit-implement` 다음에는 반드시 subagent review를 돌린다.
+## Runtime Ownership
 
-- reviewer는 관점이 서로 다른 셋이다. contract, failure/recovery, regression.
-- P0, P1, Blocking-P2가 하나라도 있으면 gate를 열지 않는다.
-- Advisory는 기록하고 item별로 판단한다.
-- review를 실행하지 않았으면 gate 결과를 기록하지 않는다. 실행하지 않은 검증을 통과했다고 보고하지 않는다는 Completion Gate 규칙이 여기에도 적용된다.
+- `.ai-team/runtime/` — risk, state transition, human gate, escalation policy
+- `.ai-team/policy/` — Knowledge Readiness, permission, TDD, quadrant, documentation, gardening
+- `.ai-team/contracts/` — Work Contract schema
+- `.ai-team/verifiers/` — verifier registry 와 environment-aware runner
+- `.ai-team/knowledge/` — active source/claim/decision index 와 Context Resolver metadata
+- `.ai-team/evidence/` — evidence/provenance schema. canonical evidence 사본은 두지 않는다
 
-`.specify/workflows/speckit/workflow.yml`의 `review-implementation` step이 이 관문이다.
+canonical 지식은 `vault/` 에 있고 `.ai-team/` 은 그것을 복사하지 않는다. Decision 기록은
+`docs/workstreams/*/DECISIONS.md` 가 갖는다.
 
-### Scope
+## What Was Not Ported
 
-- spec-kit은 `specs/` 아래 문서만 만든다. canonical Vault와 Git state는 Codex Curation Contract를 따른다.
-- spec-kit script는 git branch를 만들지 않는다. `specs/NNN-name/` 디렉터리만 만든다.
-- `/speckit-implement`는 코드를 실제로 수정한다. 사용자가 직접 호출할 때만 실행한다.
+cortex 의 **semantic runtime** — ontology TTL, SHACL, competency question, 읽기 전용 MCP,
+project miner — 는 가져오지 않았다 (`D-046`). 이 저장소에는 그 기반이 없고 Knowledge Vault
+와 Proposal 모델이 그 자리를 대신한다. 그 층의 검사는 verifier registry 의 `vault-lint` 와
+`schema` check 가 맡는다.
+
+## Skill Layout
+
+**정본은 `.claude/skills/` 다.** `.agents/skills/` 는 Codex adapter 로 같은 workflow 를
+가리킨다. cortex 와 방향이 반대이므로 `loopctl doctor` 도 그렇게 맞춰 놓았다.
+
+## Review Before Gate
+
+`/work` 의 review 단계는 관점이 서로 다른 독립 reviewer 셋을 쓴다 — contract,
+failure/recovery, regression. P0·P1·Blocking-P2 가 하나라도 있으면 gate 를 열지 않는다.
+Advisory 는 기록하고 item 별로 판단한다. review 를 실행하지 않았으면 gate 결과를 기록하지
+않는다.
+
+reviewer 는 **순차로** 돌린다. 동시에 띄우면 세션 한도로 셋 다 잃는다. 각 reviewer 에게
+큰 파일을 통째로 읽지 말라는 예산 규율을 준다.
+
+`.specify/workflows/speckit/workflow.yml` 의 `review-implementation` step 이 아직 이 관문의
+문서상 근거다. `/work` 가 그것을 흡수하면 그때 정리한다.

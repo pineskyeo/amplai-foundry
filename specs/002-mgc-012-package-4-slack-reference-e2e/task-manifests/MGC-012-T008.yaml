@@ -1,0 +1,293 @@
+schema_version: "1.0"
+
+id: MGC-012-T008
+title: Readback self-check returns a typed startup outcome without heuristic recovery
+type: feature
+status: done
+
+goal:
+  outcome: >-
+    readback 과 cleanup 결과가 typed startup outcome 으로 분리된다. Cleanup-only 실패는
+    degraded 로 진행하고 readback 또는 lifecycle hard failure 는 기동을 거부한다.
+  user_value: >-
+    marker 를 못 읽는 결함의 결과는 hold 가 아니라 조용한 중복 Card 다. 사람이 매
+    재시도마다 Card 를 한 장씩 더 본다. 그 실패를 기동 시점의 시끄러운 거부로 바꾼다.
+
+source:
+  feature: MGC-012
+  files:
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md
+      section: FR-018, FR-023~FR-025, FR-029, FR-032, FR-034~FR-035
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md
+      section: H-3.1, H-3.2, H-3.4, H-3.5
+    - path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md
+      section: Wave 6R, P-006~P-009
+    - path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md
+      section: C-1.2
+  requirements:
+    - FR-018
+    - FR-023
+    - FR-024
+    - FR-025
+    - FR-029
+    - FR-032
+    - FR-034
+    - FR-035
+  decisions:
+    - D-024
+    - D-029
+    - D-030
+    - D-031
+
+scope:
+  include:
+    - 기동 전 send → read → marker 복원 확인
+    - app_id 와 event_payload 네 필드 대조
+    - 하나라도 안 맞으면 기동 거부
+    - scope 부족(missing_scope)을 이 시점에 드러내기
+    - readback 과 cleanup 결과를 typed outcome 으로 분리
+    - cleanup-only 실패를 DEGRADED_CLEANUP 으로 판정
+    - readback 실패의 primary cause 와 secondary cleanup data 보존
+    - FR-035 closed primary failure enum과 post 뒤 12개 cleanup 조합
+    - response channel mismatch의 zero configured-history와 confirmed identity cleanup
+    - immutable CleanupFailureDetail cardinality 0..1과 safe field 두 개
+    - exception/log/metric/persisted diagnostic surface의 safe typed boundary
+    - supplied lifecycle state 의 no-post 판정
+    - 이전 probe history scan 과 silent reclaim 제거
+  exclude:
+    - 실제 Slack workspace 상대 실행 (T010 소유)
+    - GovernanceStore lifecycle persistence 와 atomic claim (T013 소유)
+    - restart persistence 와 production operator output (T013 소유)
+    - operator recovery mutation (별도 governed work item)
+    - reconcile 판정 규칙 변경
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
+  forbidden_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - src/amplai_foundry/governance/slack.py
+    - src/amplai_foundry/governance/events.py
+    - src/amplai_foundry/governance/projections.py
+
+dependencies:
+  tasks:
+    - MGC-012-T006
+    - MGC-012-T007
+  external: []
+
+implementation:
+  guidance:
+    - 이 검사가 잡는 것은 destination 안에서 판정할 수 없는 것들이다 — 값이 틀린 app_id,
+      metadata 를 안 옮기는 구현, event_type 개명, scope 부족 (contracts H-3).
+    - destination 의 SlackProjectionMetadataUnreadableError 는 지문으로 일부만 잡는다.
+      이 검사가 나머지를 덮는다 (D-024 항목 2).
+    - fake server 로 각 결함을 하나씩 재현한다. 실제 Slack 은 T010 이다.
+    - 기존 _reclaim_probes 의 최근 history scan, metadata sentinel 탐색, silent failure 는
+      제거한다. 정확한 이전 probe recovery 는 T013 의 durable state 없이는 시도하지 않는다.
+    - 이 task 는 supplied lifecycle state 로 판정만 검증한다. 실제 persistence 를 넣지 않는다.
+    - ReadbackFailureCode는 FR-035 일곱 값의 closed enum이다. Provider error code를 primary
+      failure code로 재사용하지 않는다.
+    - RESPONSE_CHANNEL_MISMATCH는 history absence로 alias하지 않는다. Configured history를
+      조회하지 않고 provider-confirmed channel + ts로 cleanup한다.
+    - CleanupFailureDetail은 immutable value이며 count와 allowlisted provider code만 가진다.
+  invariants:
+    - cleanup-only 실패는 DEGRADED_CLEANUP 이며 startup 거부 예외가 아니다.
+    - readback 실패는 worker activation 을 거부하고 원래 cause 가 primary 다.
+    - supplied cause state가 unresolved/ambiguous로 남았거나 필수 state operation이 실패하면
+      startup outcome은 HARD_BLOCKED_NO_POST다.
+    - HARD_BLOCKED_NO_POST를 durable lifecycle state로 저장하거나 cause state를 덮어쓰지 않는다.
+    - 판정 계층은 credential 과 operator output 을 log 하지 않는다.
+    - 이전 probe 를 text, prefix, metadata, app ID, 위치, 최근 N건, 시간 window 로 찾지 않는다.
+    - secondary_cleanup_failure cardinality는 0..1이고 primary readback code를 대체하지 않는다.
+    - raw exception chain, 자유형 error, provider body/header는 typed outcome에 포함하지 않는다.
+  non_goals:
+    - 운영 중 주기적 재검사.
+    - durable lifecycle schema 와 production wiring.
+    - ambiguous post 또는 이전 probe 자동 복구.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: fake server 가 우리가 보낸 marker 를 그대로 되돌려주는 상태
+      when: 자가검사를 돌리면
+      then: 통과하고 기동을 허용한다
+    - id: AC-02
+      given: fake server 가 metadata 를 빼고 돌려주는 상태
+      when: 자가검사를 돌리면
+      then: 기동을 거부하고 원인을 보고한다
+    - id: AC-03
+      given: fake server 가 app_id 를 안 싣는 상태
+      when: 자가검사를 돌리면
+      then: 기동을 거부한다
+    # 2026-08-08 정정. 원문은 "필드 하나를 빠뜨린" 이었는데 대응 test 는 값을 **바꾼다**.
+    # 누락도 거부되지만 그것은 "복원 실패" 라는 다른 경로이고 message 도 다르다.
+    # 문장을 test 에 맞춘다 (wave 6 contract review Advisory).
+    - id: AC-04
+      given: fake server 가 event_payload 의 필드 하나를 바꿔서 돌려주는 상태
+      when: 자가검사를 돌리면
+      then: 기동을 거부한다
+    - id: AC-05
+      given: fake server 가 read 에 missing_scope 를 돌려주는 상태
+      when: 자가검사를 돌리면
+      then: 기동을 거부한다. 첫 재시도까지 기다리지 않는다
+    # 2026-08-08 추가. wave 6 review round 1 의 P0 다. D-029 와 contracts H-3.1 이 근거다.
+    - id: AC-06
+      given: 호출자가 진짜 destination 의 destination_ref 를 단 probe_marker 를 넘긴 상태
+      when: 자가검사를 돌리면
+      then: >-
+        message 를 **보내기 전에** 거부한다. 보낸 뒤에 알면 probe 가 채널에 남아
+        reconcile 이 그것을 Card 로 오인한다
+    - id: AC-07
+      given: 채널에 남의 message 가 probe 앞뒤로 있는 상태
+      when: 자가검사를 돌리면
+      then: >-
+        방금 보낸 ts 로 probe 를 찾아 통과한다. 위치로 찾으면 남의 message 를 검사해
+        엉뚱한 이유로 기동을 거부한다
+    # 2026-08-08 round 2 추가. D-030 과 contracts H-3.2 가 근거다. 격리만으로는 부족했다 —
+    # probe 가 조회 예산을 먹어 진짜 Card 를 묻으면 판정 불가로 되돌릴 수 없는 hold 가 된다.
+    - id: AC-08
+      given: 자가검사가 통과한 상태
+      when: 끝나면
+      then: probe message 를 지운다
+    - id: AC-09
+      given: 자가검사가 실패한 상태
+      when: 끝나면
+      then: >-
+        그래도 probe 를 지운다. 실패하는 상태가 곧 재시작 loop 이 도는 상태이고 거기서
+        누적이 가장 빨리 쌓인다
+    - id: AC-10
+      given: 자가검사는 통과했지만 지우기가 실패하는 상태
+      when: 자가검사를 돌리면
+      then: >-
+        DEGRADED_CLEANUP 을 반환하고 worker activation 을 허용한다. 판정 계층은 operator
+        output 을 직접 만들지 않는다
+    - id: AC-11
+      given: 자가검사도 실패하고 지우기도 실패하는 상태
+      when: 자가검사를 돌리면
+      then: >-
+        worker activation 을 거부한다. 원래 readback cause 가 primary 이고 cleanup 실패는
+        safe secondary data 로 보존된다
+    - id: AC-12
+      given: >-
+        supplied lifecycle cause가 unresolved/ambiguous로 남았거나 claim 실패 또는 resolution
+        commit 실패를 나타내는 상태
+      when: startup outcome 을 판정하면
+      then: >-
+        cause state를 보존하고 HARD_BLOCKED_NO_POST outcome을 반환하며 post_message를 호출하지
+        않는다. HARD_BLOCKED_NO_POST를 lifecycle state로 쓰지 않는다
+    - id: AC-13
+      given: 이전 실행의 probe 가 channel history 에 남아 있는 상태
+      when: startup outcome 을 판정하면
+      then: >-
+        text, prefix, metadata, app ID, 위치, 최근 N건 또는 시간 window 로 찾지 않는다.
+        _reclaim_probes 같은 best-effort scan 을 호출하지 않는다
+    - id: AC-14
+      given: 어떤 readback outcome 이든
+      when: typed diagnostic data 를 검사하면
+      then: >-
+        FR-030 allowlist field 밖의 값, credential, HTTP 원문, exception repr 가 없고
+        readback 계층의 log 와 stderr output 은 0건이다
+    - id: AC-15
+      given: >-
+        PROBE_INPUT_INVALID와 post 뒤 HISTORY_READ_FAILED, PROBE_NOT_FOUND, APP_ID_MISMATCH,
+        MARKER_UNREADABLE, MARKER_MISMATCH, RESPONSE_CHANNEL_MISMATCH 각각을 재현하는 fake
+        transport 상태
+      when: self-check outcome과 cleanup 호출을 열거하면
+      then: >-
+        PROBE_INPUT_INVALID는 post와 cleanup이 각각 0회다. Post 뒤 여섯 code는 cleanup
+        성공·실패와 조합한 12개 case에서 선택한 primary code를 100% 보존하고 activation은 0회다.
+        RESPONSE_CHANNEL_MISMATCH 두 case는 configured history 조회가 0회이고 cleanup은
+        provider-confirmed channel + ts만 사용한다
+    - id: AC-16
+      given: readback은 12개 post-readback case 모두에서 실패하고 cleanup은 그중 6개에서 실패하는 상태
+      when: typed outcome과 모든 diagnostic surface를 검사하면
+      then: >-
+        secondary_cleanup_failure는 1개 이하이고 field는 cleanup_failure_count와 allowlisted
+        provider_error_code뿐이다. Raw exception chain, 자유형 error, provider body/header와
+        disallowed metric label은 각각 0건이다
+  commands:
+    - id: unit
+      kind: test
+      run: python -m pytest tests/test_slack_http.py
+      required: true
+    - id: regression
+      kind: test
+      run: python -m pytest
+      required: true
+    - id: lint
+      kind: lint
+      run: python -m ruff check .
+      required: true
+    - id: typecheck
+      kind: typecheck
+      run: python -m mypy
+      required: true
+    - id: knowledge_lint
+      kind: lint
+      run: amplai-foundry lint vault/
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: unit
+      required: true
+    - type: command_output
+      source: regression
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - 검사가 실제 채널에 message 를 하나 남긴다. T010 의 채널 오염과 같은 문제다.
+    - 검사가 너무 엄격하면 정상 배포가 기동 못 한다.
+    - 기존 구현과 AC-10 이 D-031과 정면 충돌한다.
+  approvals:
+    - Wave 6R 종료 시 contract·failure-recovery·regression 3 lens review
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  # 2026-08-12 D-031 revalidation evidence. AC-01~11은 READY, closed readback failure와
+  # DEGRADED_CLEANUP typed outcome으로 다시 검증했다. missing_scope는 HISTORY_READ_FAILED가
+  # primary이고 allowlisted provider code가 safe diagnostic에만 남는다. AC-12는 supplied
+  # lifecycle cause 다섯 값 모두 network 0회의 HARD_BLOCKED_NO_POST를 반환한다. AC-13은
+  # _reclaim_probes 제거와 첫 request=chat.postMessage로 history heuristic 0회를 증명한다.
+  # AC-14는 dataclass field set, caplog와 capsys로 closed surface/output 0건을 증명한다.
+  # AC-15~16은 complete local marker validation과 post 뒤 failure 여섯 종류 x cleanup
+  # 성공·실패 12개 matrix를 검증하며 malformed input은 post/delete 0회다. Response channel
+  # mismatch는 configured history를 조회하지 않고 provider-confirmed identity를 cleanup한다.
+  #
+  # Frozen implementation evidence:
+  # slack_http.py sha256 f1a31f2816469a880267ec739dbcf2fc7c03e466adad05e6f12fe5f3a4d57f3a
+  # test_slack_http.py sha256 9a467bde9aa1eac04af2f146da361c9d3aa28f705fe6b1f88ccc32a65cc740e7
+  # combined source/test evidence sha256 0009be7bc702705f776ee057bb717d607db0168e11c8d86feb3623e428c1f20f
+  # Commands actually run on these hashes: targeted 189 passed, 1 deselected; full pytest 1087
+  # passed, 1 deselected; Ruff check+format, mypy and knowledge lint all exit 0;
+  # amplai-foundry verify 7/7 PASS.
+  # Final three-lens closure: contract 0 blockers, failure/recovery 0 blockers,
+  # regression 10 mutations killed / 0 survived. P0/P1/Blocking-P2/Advisory 모두 0건이다.
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-12T11:27:46+09:00"
+  evidence_paths:
+    - src/amplai_foundry/governance/slack_http.py
+    - tests/test_slack_http.py
+
+handoff:
+  expected_changes:
+    - src/amplai_foundry/governance/slack_http.py 확장
+    - tests/test_slack_http.py 확장
+  notes:
+    - D-031 ledger dependency E-6은 2026-08-11 D-031과 APR-016 기록으로 닫혔다.
+    - 기존 D-030 구현과 test evidence 는 삭제하지 않는다. D-031 기준으로 revalidation 한다.
+    - T013 production evidence 전에는 W3-transport-readback-selfcheck 를 닫지 않는다.
+    - network 없이 돈다. 실제 workspace 검증은 T010 이다.
+    - CLEANUP_PENDING exact recovery와 durable RESOLVED 뒤 fresh self-check sequence는 T013 소유다.
+    - FR-033 lifecycle record validation과 FR-036 crash compensation은 T013 소유다.

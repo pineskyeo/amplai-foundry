@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:amplai:handoff:1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "work_id",
+    "status",
+    "context_pack_hash",
+    "completed_slices",
+    "open_slices",
+    "last_verification",
+    "next_action",
+    "blockers",
+    "git_checkpoint"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "work_id": {"type": "string"},
+    "status": {"enum": ["ready", "executing", "blocked", "review", "done"]},
+    "current_slice": {"type": ["string", "null"]},
+    "context_pack_hash": {"type": "string"},
+    "completed_slices": {"type": "array", "items": {"type": "string"}},
+    "open_slices": {"type": "array", "items": {"type": "string"}},
+    "last_verification": {"type": ["object", "null"]},
+    "next_action": {"type": "string"},
+    "blockers": {"type": "array", "items": {"type": "string"}},
+    "git_checkpoint": {"type": "string"}
+  }
+}

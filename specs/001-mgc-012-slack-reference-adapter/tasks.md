@@ -11,52 +11,14 @@
 
 **Design source**: `specs/001-mgc-012-slack-reference-adapter/spec.md`, `specs/001-mgc-012-slack-reference-adapter/plan.md`, `specs/001-mgc-012-slack-reference-adapter/research.md`, `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`, `specs/001-mgc-012-slack-reference-adapter/data-model.md`, `docs/workstreams/messenger-governance-closure-v3/DECISIONS.md`
 
-## Phase 1
-
-- [ ] MGC-012-T002 Slack projection send path with marker and receipt
-  - manifest: `task-manifests/MGC-012-T002.yaml`
-  - depends on: MGC-012-T001
-  - files: `src/amplai_foundry/governance/slack_projection.py`, `tests/test_slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-
-## Phase 2
-
-- [ ] MGC-012-T003 Bounded fail-closed reconcile by message marker read-back
-  - manifest: `task-manifests/MGC-012-T003.yaml`
-  - depends on: MGC-012-T002
-  - files: `src/amplai_foundry/governance/slack_projection.py`, `tests/test_slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-
-## Phase 3
-
-- [ ] MGC-012-T004 Ordered delivery and supersession through the real dispatcher
-  - manifest: `task-manifests/MGC-012-T004.yaml`
-  - depends on: MGC-012-T003
-  - files: `tests/test_slack_projection.py`, `src/amplai_foundry/governance/slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-- [ ] MGC-012-T005 Crash recovery, hold on undecidable reconcile and failure matrix
-  - manifest: `task-manifests/MGC-012-T005.yaml`
-  - depends on: MGC-012-T003
-  - files: `tests/test_slack_projection.py`, `src/amplai_foundry/governance/slack_projection.py`
-  - verify: `python -m pytest tests/test_slack_projection.py`
-  - verify: `python -m pytest`
-  - verify: `python -m ruff check .`
-  - verify: `python -m mypy`
-  - verify: `amplai-foundry lint`
-  - verify: `amplai-foundry verify`
-
 ## Not scheduled
 
 - MGC-012-T001 (done) Slack transport Protocol and error classification
+- MGC-012-T002 (done) Slack projection send path with marker and receipt
+- MGC-012-T003 (done) Bounded fail-closed reconcile by message marker read-back
+- MGC-012-T004 (done) Ordered delivery and supersession through the real dispatcher
+- MGC-012-T005 (done) Crash recovery, hold on undecidable reconcile and failure matrix
 
 ## Open questions
 
-- **OQ-001** max_history_pages 의 확정 값은 얼마인가. 너무 작으면 정상 상황이 hold 로 떨어지고 너무 크면 conversations.history Tier 2 rate limit 을 민다.
 - **OQ-003** Slack message metadata 의 크기 상한은 얼마인가. 공식 문서에서 찾지 못했다 (research.md R-003 미확인).

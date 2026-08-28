@@ -1,0 +1,258 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T026
+title: Make the silent ending recoverable by exposing the two reads an operator needs
+type: feature
+status: done
+
+goal:
+  outcome: >-
+    운영자가 CLI 로 두 가지를 읽을 수 있다 — 어떤 command 가 다시 claim 되지 않는지
+    (`stranded()`), 그리고 그 command 의 결정이 실제로 commit 됐는지
+    (`committed_decision()`). **조회만이고 governed mutation 은 없다.**
+  user_value: >-
+    `D-042` 가 침묵을 고른 근거 전체가 "침묵은 `stranded()` 로 회수할 수 있다" 이고 `T017` 이
+    그것을 계약에 "operator's entry point" 로 적었다. **그 수단이 실재하지 않는다** — 호출자가
+    test 와 docstring 뿐이다. 계약이 존재하지 않는 메커니즘을 단정하고 있다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: BP2-1
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-044
+    - path: specs/003-slack-proposal-card/contracts/interaction-feedback.md
+      section: stranded
+  requirements:
+    - FR-024
+    - FR-026
+    - SC-004
+  decisions:
+    - D-042
+    - D-044
+
+scope:
+  include:
+    - >-
+      `stranded()` 를 read-only CLI command 로 노출한다. 기존 typer sub-app
+      패턴(`cli.py:56-69`)을 따른다.
+    - >-
+      `committed_decision()` 을 read-only CLI command 로 노출한다. 침묵 종점을 만난 운영자가
+      알아야 하는 것이 정확히 "결정이 실제로 났는가" 다.
+    - 두 command 의 출력이 credential 을 담지 않음을 고정하는 test.
+    - store 경로 해석과 오류 처리 — 기존 `cli.py:514` 패턴을 따른다.
+  exclude:
+    - >-
+      **governed mutation 일체.** `recovery_hold` 나 `dead_letter` 에서 빼내는 경로는
+      `D-044` 가 명시적으로 범위 밖으로 두었다. ActionToken 과 authority 계약을 건드리므로
+      별도 item 이고 `D-038` 항목 1 이 알려진 한계로 기록해 두었다.
+    - "`IngressService` 의 공개 API 변경. 두 method 는 이미 있다."
+    - "`stranded()` 의 SQL 이나 판정 조건 변경."
+    - "새 출력 형식(JSON 등)의 계약화. 사람이 읽는 목록이면 충분하다."
+    - "`slack_http.py`, `events.py`, `ingress_worker.py` 의 동작 변경."
+  allowed_paths:
+    - src/amplai_foundry/cli.py
+    - src/amplai_foundry/governance/__init__.py
+    - tests/test_cli.py
+    - tests/test_ingress.py
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/ingress.py
+    - src/amplai_foundry/governance/ingress_worker.py
+    - src/amplai_foundry/governance/slack_http.py
+    - src/amplai_foundry/governance/events.py
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T022
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **먼저 지금 상태를 확인한다.** `grep -rn "stranded"` 로 호출자를 전수 열거해 test 와
+      docstring 뿐임을 실측한다. round 14 가 그렇게 확인했고, 착수 시점에도 같은지 본다.
+    - >-
+      **기존 패턴을 따른다.** `cli.py:51-69` 가 `typer.Typer()` 로 sub-app 을 만들고
+      `app.add_typer(...)` 로 붙인다. store 경로 해석은 `cli.py:514` 가
+      `GovernanceStore(workspace / ".amplai/runtime/governance.db")` 를 쓰고 `:524-525` 가
+      `GovernanceStoreError` 와 `GovernanceMigrationError` 를 잡는다. **새 패턴을 만들지
+      않는다.**
+    - >-
+      **출력에 credential 이 없어야 한다.** `IngressCommandView` 와 `DecisionResult` 가 어떤
+      필드를 담는지 먼저 확인한다. `credential_id`, `token_id`, `provider_fingerprint` 같은
+      값이 사람이 읽는 출력에 들어가는지 판단하고, 들어가면 왜 안전한지 근거를 적거나 뺀다.
+      **FR-018 과 SC-005 가 이 판단의 기준이다.**
+    - >-
+      운영자가 실제로 쓸 수 있는 정보를 낸다 — command id, state, attempts,
+      `last_error_code`, 그리고 결정 여부. `last_error_code` 가
+      `INGRESS_DECISION_COMMITTED_UNRECONCILED` 인 것이 침묵 종점의 표시이고, 그때
+      `committed_decision` 조회가 답을 준다.
+    - >-
+      **`committed_decision()` 은 `IngressDecisionWorker` 의 method 다.** CLI 에서 그것을
+      부르려면 worker 를 세워야 하는지, 아니면 더 낮은 층에서 같은 질문을 할 수 있는지 본다.
+      worker 를 세우는 것이 부작용을 낳으면(claim 등) 안 된다 — **읽기만 한다.**
+    - >-
+      `D-044` 의 범위를 지킨다. 해소 경로를 만들고 싶어지면 멈춘다 — governed mutation 이고
+      Decision 이 여러 개 필요하다.
+    - >-
+      **계약 문장이 참이 되는지 확인한다.** `contracts/interaction-feedback.md` 가
+      "operator's entry point" 라고 적는다. 이 task 뒤에 그 문장이 실제 command 를 가리키는지
+      본다. 계약 문서 자체는 이 task 의 `allowed_paths` 밖이므로, 문구 조정이 필요하면
+      finding 으로 남긴다.
+  invariants:
+    - "governed state 를 바꾸지 않는다. 두 command 는 읽기만 한다."
+    - "`claim_next` 나 lease 를 건드리지 않는다."
+    - "출력에 raw credential 이 나타나지 않는다 (FR-018, SC-005)."
+    - "`IngressService` 와 `IngressDecisionWorker` 의 동작이 바뀌지 않는다."
+    - "기존 CLI command 의 동작이 바뀌지 않는다."
+  non_goals:
+    - recovery hold 해제.
+    - 재처리 트리거.
+    - 기계 판독 출력 계약 확정.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 착수 전 저장소.
+      when: "`stranded` 와 `committed_decision` 의 호출자를 전수 열거한다."
+      then: >-
+        test 와 docstring 뿐임을 보인다. 사람이 부를 수 있는 진입점이 없음을 실측으로 적는다.
+    - id: AC-02
+      given: 재claim 되지 않는 command 가 있는 store.
+      when: 새 CLI command 로 목록을 조회한다.
+      then: >-
+        그 command 가 보이고 state, attempts, `last_error_code` 를 읽을 수 있다.
+    - id: AC-03
+      given: 결정이 commit 됐으나 완료 도장을 못 찍은 command.
+      when: 새 CLI command 로 결정 여부를 조회한다.
+      then: 결정이 있다고 답한다.
+    - id: AC-04
+      given: 결정이 commit 되지 않은 command.
+      when: 같은 조회를 한다.
+      then: 결정이 없다고 답한다.
+    - id: AC-05
+      given: 두 command 의 출력.
+      when: raw credential 을 검색한다.
+      then: 없다. token id 나 fingerprint 를 낸다면 왜 안전한지 근거가 evidence 에 있다.
+    - id: AC-06
+      given: 두 command 를 실행한 전후.
+      when: governed state 를 대조한다.
+      then: 바뀌지 않았다. lease 도 claim 도 일어나지 않았다.
+    - id: AC-07
+      given: store 가 없거나 열리지 않는 상태.
+      when: 두 command 를 실행한다.
+      then: >-
+        기존 CLI 오류 처리와 같은 형태로 실패한다. traceback 을 그대로 내보내지 않는다.
+    - id: AC-08
+      given: 신규 test.
+      when: CLI command 등록을 제거한다.
+      then: test 가 실패한다.
+    - id: AC-09
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: round 14 기준(1301 passed, 4 deselected) 이상으로 통과하고 실패가 없다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_cli.py tests/test_ingress.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01 의 착수 전 호출자 전수
+      required: true
+    - type: note
+      source: AC-05 의 출력 필드 판단 근거
+      required: true
+    - type: note
+      source: 두 command 의 실제 출력 예시 (실제 값 없이)
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      운영자 도구가 governed state 를 읽는다. 출력에 credential 이 새면 FR-018·SC-005 위반이고
+      그것은 P0 급이다.
+    - >-
+      `committed_decision()` 을 부르려고 worker 를 세우면 부작용(claim, lease)이 생길 수 있다.
+      읽기만 하는 경로를 확인한다.
+    - >-
+      해소 경로까지 만들고 싶어지는 유혹이 있다. `D-044` 가 조회만으로 범위를 그었다.
+  approvals:
+    - >-
+      `D-044` 가 2026-08-18 에 승인됐다 — `stranded()` 와 `committed_decision()` 을 read-only
+      CLI 로 노출하고 governed mutation 은 범위 밖이다.
+
+loop:
+  max_attempts: 4
+  replan_after_same_failure: 3
+  stop_conditions:
+    - output_would_expose_a_credential
+    - read_path_requires_a_side_effect
+    - governed_mutation_would_be_required
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
+
+handoff:
+  expected_changes:
+    - governance sub-app 과 두 read-only command.
+    - 두 command 의 test.
+  notes:
+    - >-
+      **조회만이다.** 해소(recovery hold 에서 빼내기)는 `D-038` 항목 1 이 기록한 별도 item 이고
+      `D-044` 가 명시적으로 범위 밖으로 두었다.
+    - >-
+      이 task 뒤에 계약의 "operator's entry point" 문장이 실재하는 command 를 가리키게 된다.
+    - >-
+      **MGC-012-P5-T022 뒤에 둔다.** 둘 다 `src/amplai_foundry/governance/__init__.py` 를
+      allowed_paths 에 갖는다. wave 15 note 는 "shares no path" 라고 썼는데 틀렸다.
+      2026-08-18 `/speckit-analyze` 가 wave 8 착수 전에 `F1` 으로 잡았다.

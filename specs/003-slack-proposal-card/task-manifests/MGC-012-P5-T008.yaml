@@ -1,0 +1,163 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T008
+title: Recover the unmeasured regression evidence
+type: verification
+status: done
+
+goal:
+  outcome: >-
+    round 10 이 미측정으로 남긴 항목이 깨끗한 격리 환경에서 측정되고, 새로 추가한 test 가
+    실제로 해당 mutation 을 죽이는지 확인된다.
+  user_value: >-
+    측정하지 않은 것을 측정했다고 말하지 않는다. round 10 의 일부 결과는 격리 복제본 동시
+    접근 구간에서 나왔고 두 subsystem 은 아예 측정되지 않았다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review.md
+      section: Could Not Verify, Method Defect
+    - path: .specify/memory/constitution.md
+      section: III. Evidence-Based Completion
+  requirements:
+    - SC-003
+    - SC-004
+    - SC-005
+  decisions: []
+
+scope:
+  include:
+    - MGC-012-P5-T005 와 T006 이 추가한 test 가 대상 mutation 을 죽이는지 확인한다.
+    - round 10 에서 오염 구간에 나온 survivor 를 깨끗한 복제본에서 재현한다.
+    - result_identity_exceeds_body_limit 의 도달 가능성을 판정한다.
+    - token consume rowcount 가 1이 아닌 상황이 현재 schema 제약 아래 실현 가능한지 판정한다.
+    - migrations.py 와 slack_http.py 의 회귀 방어 수준을 측정한다.
+  exclude:
+    - test 추가. T005 와 T006 이 맡는다.
+    - 구현 변경.
+    - 계약 문서 변경.
+  allowed_paths:
+    - specs/003-slack-proposal-card/evidence/
+  forbidden_paths:
+    - src/amplai_foundry/
+    - tests/
+    - vault/
+    - .github/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T005
+    - MGC-012-P5-T006
+  external:
+    - id: EXT-ISOLATED-COPY
+      name: 저장소 밖의 격리 복제본과 전용 venv. 한 번에 한 작업만 접근한다.
+      status: available
+
+implementation:
+  guidance:
+    - round 10 의 방법론 결함이 격리 복제본 동시 접근이었다. 이번에는 한 번에 한 작업만
+      복제본에 접근한다.
+    - mutation 은 anchor 가 정확히 1회 매칭될 때만 적용한다. 아니면 건너뛰고 그 사실을 남긴다.
+    - SURVIVED 판정은 targeted 가 아니라 full suite green 으로만 내린다.
+    - 매 mutation 후 복원하고 복원을 검증한다. 종료 시 복제본이 원본과 byte 단위로 같아야 한다.
+    - 도달 불가로 판정된 guard 는 그 근거를 적고 MGC-012-P5-T007 로 넘긴다.
+  invariants:
+    - 실제 저장소는 읽기만 한다. mutation 은 격리 복제본에만 적용한다.
+    - 측정하지 않은 항목을 측정했다고 기록하지 않는다.
+    - 복제본 최종 상태가 원본과 다르면 그 회차 결과를 신뢰하지 않는다.
+  non_goals:
+    - gate 판정. 그것은 three-lens review 의 몫이다.
+    - 새 mutation 도구를 저장소에 추가하는 것.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: T005 와 T006 이 추가한 test 가 들어간 격리 복제본.
+      when: 각 test 가 겨냥한 guard 를 하나씩 무력화한다.
+      then: 각 경우에 적어도 하나의 test 가 실패한다.
+    - id: AC-02
+      given: 깨끗한 격리 복제본.
+      when: round 10 의 오염 구간 survivor 를 다시 적용한다.
+      then: 각 판정이 재현되거나, 재현되지 않는다는 사실이 기록된다.
+    - id: AC-03
+      given: result_identity_exceeds_body_limit 와 token consume rowcount guard.
+      when: 실제 입력과 schema 제약으로 도달 가능성을 판정한다.
+      then: 도달 가능 여부가 근거와 함께 확정된다.
+    - id: AC-04
+      given: migrations.py 와 slack_http.py.
+      when: 두 파일에 mutation 을 적용해 측정한다.
+      then: killed 와 survived 가 파일별로 기록된다.
+    - id: AC-05
+      given: 측정 종료 시점의 격리 복제본.
+      when: 원본과 대조하고 full suite 를 돌린다.
+      then: 차이가 없고 baseline 이 초록이다.
+  commands:
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks:
+    - id: MC-01
+      observer: Workstream governor
+      action: >-
+        저장소 밖 격리 복제본과 전용 venv 를 만들고, 한 번에 하나씩 mutation 을 적용해 full
+        suite 를 돌린 뒤 복원한다. anchor 가 정확히 1회 매칭될 때만 적용하고, 매 회차 결과를
+        journal 에 즉시 append 한다. 종료 시 복제본을 원본과 대조한다.
+      expected: >-
+        각 mutation 의 killed 또는 survived 판정과 그 근거 명령 출력이 남고, 종료 시 복제본이
+        원본과 byte 단위로 같으며 baseline 이 초록이다.
+      reason_not_automated: >-
+        측정 절차가 저장소 코드를 일시적으로 훼손하므로 저장소 안 gate 로 만들 수 없다.
+        저장소에 mutation 도구를 추가하지 않는다는 Change Scope 제약도 있다.
+  evidence:
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: file
+      source: specs/003-slack-proposal-card/evidence/mutation-round-11.md
+      required: true
+
+risk:
+  level: low
+  concerns:
+    - 격리 복제본 동시 접근이 다시 일어나면 판정을 신뢰할 수 없다.
+    - 실제 저장소에 mutation 이 새어 들어가면 review target freeze 가 깨진다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - isolated_copy_diverges_from_source_at_end
+    - mutation_leaks_into_the_real_repository
+    - anchor_cannot_be_made_unique
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-13T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/mutation-round-11.md
+    - specs/003-slack-proposal-card/evidence/3lens-review-round-11.md
+    # wave 11 이 채운 `full-pytest` 출력 (round 17 `F17-4`).
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T008.md
+
+handoff:
+  expected_changes:
+    - specs/003-slack-proposal-card/evidence/mutation-round-11.md
+  notes:
+    - T005 와 T006 이 끝나기 전에는 의미가 없다. 그래서 처음에는 blocked 였다.
+    - round 11 regression lens 가 이 task 를 겸해 수행했다. mutation 43종, 29 killed,
+      kill rate 67%. 요구한 open item 넷을 모두 닫았다.
+    - 이 측정이 T006 evidence 의 판단 하나를 뒤집었다. review-card 무결성 대조는 전부 도달
+      불가가 아니다. payload_json 성분은 별도 guard 가 없어 무방비다 (round 11 R-7).

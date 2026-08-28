@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "completed_slices": [],
+  "context_pack_hash": "3daa7a7a1a9c567900258921e5220d243014ed9af7200954c1c1ac753e8c6f4a",
+  "current_slice": null,
+  "git_checkpoint": "ee715d78e6cd764281ff7a4e54e48e055119cb2f",
+  "last_verification": null,
+  "next_action": "이 feature 는 닫혔다. ALR-002 와 ALR-003 이 commit f61ca1c 와 6922c53 에 있다. 다음 작업은 MGC-012 Package 5 wave 11 이고 docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md 가 진입점이다",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "executing",
+  "work_id": "ALR-003"
+}

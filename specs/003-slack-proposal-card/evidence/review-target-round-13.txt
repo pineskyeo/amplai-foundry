@@ -1,0 +1,100 @@
+# Review Target — Round 13
+
+frozen at: 2026-08-16
+aggregate: 9573d51c632f4806803e20ef92d229bf9a5a710727f778bb87f5bbe2b03b9349
+supersedes: round 2-12 targets
+
+## Composition (D-035)
+
+**포함한다.** spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts/*.md,
+checklists/*.md, **모든** per-task manifest YAML, review 대상 src/ 와 tests/ 파일,
+.specify/feature.json. 총 40개.
+
+**제외한다.** task-manifests/index.yaml, tasks.md, evidence/** 전부.
+제외 셋의 실제 등장 횟수는 아래 line 목록에서 각각 0건이다.
+
+## Scope Of This Round
+
+wave 6 이 round 12 의 blocker 9건을 전부 닫았다고 주장한다. 기록은
+evidence/wave-6-round-12-closure.md 와 evidence/3lens-review-round-12.md 다.
+
+| id | 등급 | task | Decision |
+|---|---|---|---|
+| F-1 | P1 | 승격 전 committed_decision() 확인 | D-039 |
+| F-2 | Blocking-P2 | guard 를 _call 안으로 | - |
+| C-1 | Blocking-P2 | __init__.py 확장 기록 | - |
+| C-2 | Blocking-P2 | FR-021 원문 복구 + FR-027 우선 명시 | D-040 |
+| RL-1..RL-5 | Blocking-P2 x5 | 회귀 test 추가 | - |
+
+## Measurements At Freeze Time
+
+- full pytest: 1274 passed, 4 deselected (round 12 target 1245 -> +29)
+- amplai-foundry verify: 7/7 PASS
+- Ruff check / format: exit 0
+- mypy: no issues in 102 source files
+- task manifest validator: PASS 14/14
+- git diff --check: PASS
+
+## Claims The Review Should Not Take On Trust
+
+1. **wave 6 mutation 12종이 전부 killed 다.** wave-6-round-12-closure.md 에 mutation 과 죽은
+   test 이름이 있다. round 12 regression lens 가 evidence 를 믿지 않고 직접 재현해서 21종
+   주장이 사실임을 확인한 전례가 있다. 같은 방식으로 볼 것.
+2. **결함을 만든 상태를 재현한 mutation 이 잡힌다** — G1(committed_decision 확인 제거),
+   H1(_call guard 제거).
+3. **token 누출이 진짜로 닫혔는지.** wave 6 에서 첫 test 가 repr(f_locals) 를 훑어
+   아무것도 고정하지 못했고, mutation 이 살아남아 그것을 드러냈다. request.headers 를
+   직접 보도록 고치자 세 경로에서 진짜 누출이 나왔다. 지금 test 가 실제로 고정하는지 볼 것.
+
+## Known Limits Carried Forward, Not Fixed
+
+- **operator hold 는 여전히 되돌릴 수 없다.** D-038 항목 1, spec.md Assumptions.
+- **lease 만료 소진은 여전히 침묵한다.** D-038 항목 6, contracts/interaction-feedback.md,
+  spec.md FR-026. wave 6 이 닫은 것은 **결정이 이미 기록된** 경우이고 이것과 다르다.
+- **_clear_exception_frames 는 네 사본이다.** D-038 항목 4.
+- **round 12 Advisory 9건 중 RL-6~RL-10 은 열려 있다.** 코드->값 mapping 미고정,
+  두 cardinality guard 의 0 방향, migration future-version guard, isinstance 좁히기.
+- **D-039 의 잔여 위험**: 승격 전 committed_decision() 읽기가 실패하는 경우를 측정하지 않았다.
+
+## Files
+
+6920aa2e9690391645559a59589f472120b4e65d1cdbf51f84dab1c63cb49bd5  .specify/feature.json
+dd2e1b46ef095e2d0d7ced6a05b9d4a3f2ddccc57eaff8d36371d5deb5ab7fd6  specs/003-slack-proposal-card/checklists/requirements.md
+df2f4d6e1ec633b3a9ca2c47399ac319686f0544e620b90664637e072ca5bf24  specs/003-slack-proposal-card/contracts/interaction-feedback.md
+f76b826456281a6ef4cfdeb679bf1b899ba748bb26693c80d737ce3a425d2a41  specs/003-slack-proposal-card/contracts/review-card-lifecycle.md
+675cc923fed52f622baf1d188d5d8e832ed5e543ea41e9c655b5ad41ef252222  specs/003-slack-proposal-card/contracts/slack-card-payloads.md
+ea42191d775fb0fd9e4adaf32b03925e2a9884722acb349dae43e58414e60dd3  specs/003-slack-proposal-card/data-model.md
+e5b4a76be142e52d20086e2f34cb6892533ef77561f5e795bed9e836e5eb537d  specs/003-slack-proposal-card/plan.md
+e2c70f070ad2199706fa629866eab7f583d2fc6668ecf5e44611010c269c7900  specs/003-slack-proposal-card/quickstart.md
+9e5a95895c174bb04369b67c531c14960c473b0df9b6f2b9c29911c72f36cb64  specs/003-slack-proposal-card/research.md
+e6bdc2a29f554f8f64d3eab75ab4a7011058c3aa59023556058be0cf0759caf2  specs/003-slack-proposal-card/spec.md
+f38192d4ff7c55674fc625ef24d5492d9d6871099e1507c18b8831796b581ec5  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T001.yaml
+2948809091e52e55c3659d7751d95c9c444469394e53d5de3dac458124b5f223  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T002.yaml
+d5296b5a116fd270b8bd2fdb1f38b850e8f4a7a60c9cd9926dd582972860b4f8  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T003.yaml
+b613157f8ae85ccc2ececdd5e2a4917accd9c6c88b3dfab4ebc52039c93b5363  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T004.yaml
+0db74c91cca1f1f8ca4a9ffaafcefa52379ff4bcd18b987dab3a90498b39c3bd  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T005.yaml
+14dc31e9bd7fe3d6d3d051ae284df63912046ebe7c8073caefe63df443da829a  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T006.yaml
+57ebed662458d29745a293708c68c6b88147e8beedc3a5ad95f4e6b3a69712c3  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T007.yaml
+4cef7f9bbc521547991d9b55fe69ef26551dc1efdb00f7b3f843c700ed713890  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T008.yaml
+ab62c8d8e90f90ccb9ab52f0552f941b9a23a0deceb05c1cc7795d2d93d74842  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T009.yaml
+0ee4ac4bcb6971ca42023a4e6ebac5b759793c820e783e4502a0d79c2ee9e9ff  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T010.yaml
+9f698762d44f37a452bfe2ed6d8b228c5427d5288e829bef63cc5338ac85d4c1  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T011.yaml
+3d886888baf1264695e12eba37a71f1b67ab862dc7e242bd4ad36b74c4ecaea5  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T012.yaml
+a369538f7b59df012556c70ee3589796e9b92e1dbd0a05fab97b6b548c8921e8  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T013.yaml
+5775441cc27513ccf35a37a1f813772185b8a04c53906f51307cec9893e52417  specs/003-slack-proposal-card/task-manifests/MGC-012-P5-T014.yaml
+2fd0c5e9a9c78099d4113a879643efb113ac9d46067d5d78f42ee9bd69fb0b49  src/amplai_foundry/governance/__init__.py
+3ed94dae7eebea13eedc4c3b069f65382456a26a525a3954f140ea3086001829  src/amplai_foundry/governance/events.py
+2ed9aae8051ffcdc90cb14f48ae3ce0bc3a13bc6bfa354737daabc02a55cd166  src/amplai_foundry/governance/ingress.py
+6ce4cc9deaea7ee6fe58b24dce129ecbdf2aae234d1d23fef9126049285cf1c3  src/amplai_foundry/governance/ingress_worker.py
+be8180d5307d6257315f6902a43e6e9cd480ba8aec6164c13a419fa1fc626524  src/amplai_foundry/governance/migrations.py
+91961b048703675b8c5aa100de9e80e09a5a582b023c56c6cf293164dfa32103  src/amplai_foundry/governance/review_cards.py
+44d006bf0d6217a9b9ced1b824fe7d8081751871114548a63f6eb66e18a6238b  src/amplai_foundry/governance/slack_http.py
+99505ac23c3f8afab83408d309cf188f36f055721c9a8229e900a1178cfaacc6  src/amplai_foundry/governance/slack_projection.py
+ccee00f254eb904a693648f8cf28beaeb240ea05f4f4f4e7234b8687d842ff7e  src/amplai_foundry/governance/store.py
+b31f0483ce9f5c43630ec617e8bd2db88d467f3b635e6da9381b84383d4f415a  tests/test_governance_events.py
+96a2a187fd518e5dace8b04a3e80aa5b7640d56dd17ba4600a40f36709f8f270  tests/test_governance_migrations.py
+a91a7da8524e04471cabdf9e09d4ffa1077199874207ab9f3210e3728c699a87  tests/test_ingress.py
+ab12faf857ef461c93758c64f17a92dccec0c770d9354690635964d989c4ba75  tests/test_review_cards.py
+06c65f9065eb1821ad0260701e3ba4e84cf1d631d7cb18ded86b9afb605515f4  tests/test_slack_ack_boundary.py
+d98bcafa89f2db8b93db2f656b269d0b6d94e75ca64d24e9e2907e252f41ff7e  tests/test_slack_http.py
+5a3b69199d632889f812cb575ee8983274fc221d703d3464f3f5748b9fcd83f3  tests/test_slack_projection.py

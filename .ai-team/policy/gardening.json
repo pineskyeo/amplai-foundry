@@ -1,0 +1,281 @@
+{
+  "schema_version": "1.0",
+  "purpose": "stale/obsolete/dead/orphan artifact 를 언제 어떻게 분류하고 무엇만 자동 정리할 수 있는지 정한다. 삭제 자체가 목표가 아니다.",
+  "domains": [
+    "documentation",
+    "knowledge",
+    "ontology",
+    "harness",
+    "repository"
+  ],
+  "modes": {
+    "incremental": {
+      "description": "일반 /work 기본값. changed scope 주변만 본다.",
+      "scope": [
+        "work contract scope",
+        "changed files",
+        "dependency neighborhood",
+        "related tests/config/docs"
+      ],
+      "repository_wide": false
+    },
+    "full": {
+      "description": "explicit repository gardening Work 또는 audit 에서만 실행한다.",
+      "scope": [
+        "repository 전체"
+      ],
+      "repository_wide": true,
+      "default_apply": false
+    }
+  },
+  "safety_levels": {
+    "SAFE_AUTO": {
+      "description": "자동 정리 가능한 명백한 garbage. 정리 후 lightweight verify 한다.",
+      "auto_apply": true
+    },
+    "EVIDENCE_REQUIRED": {
+      "description": "reference/build/test/packaging scan 근거가 모두 모여야 같은 Work 에서 제거할 수 있다.",
+      "auto_apply": false,
+      "required_evidence": [
+        "reference_scan",
+        "build_target_scan",
+        "test_scan",
+        "packaging_scan"
+      ]
+    },
+    "HUMAN_GATED": {
+      "description": "dead 처럼 보여도 candidate/proposal 까지만 만든다. 명시적 사람 승인 없이 삭제하지 않는다.",
+      "auto_apply": false,
+      "gate": "destructive_change"
+    }
+  },
+  "candidate_types": [
+    "generated_garbage",
+    "temporary_backup",
+    "prunable_worktree",
+    "orphan_test_fixture",
+    "obsolete_script",
+    "unused_helper",
+    "duplicate_fixture",
+    "stale_config",
+    "orphan_document",
+    "broken_reference",
+    "legacy_ai_artifact",
+    "dead_code"
+  ],
+  "safe_auto_patterns": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/*.bak",
+    "**/*.bak.*",
+    "**/*.orig",
+    "**/*.rej",
+    "**/*~",
+    "**/*.swp",
+    "**/*.swo",
+    "**/.DS_Store",
+    "**/.fuse_hidden*"
+  ],
+  "safe_auto_requires": {
+    "untracked_or_ignored": true,
+    "reason": "git 이 추적하는 파일은 SAFE_AUTO 로 지우지 않는다. 되돌릴 수 없는 삭제를 만들지 않기 위해서다."
+  },
+  "human_gated_paths": [
+    "vault/**",
+    "src/amplai_foundry/**",
+    "docs/decisions/**",
+    "docs/workstreams/**",
+    "specs/**/task-manifests/**",
+    "specs/**/evidence/**",
+    ".specify/**",
+    ".agents/skills/**",
+    ".ai-team/**",
+    "pyproject.toml"
+  ],
+  "classification_patterns": {
+    "public_api": [
+      "include/**",
+      "sdk/algorithms/**",
+      "sdk/authoring/**",
+      "sdk/**/schema/**",
+      "conf/testplan/**",
+      "schemas/**",
+      "docs/**/schemas/**"
+    ],
+    "conditional_build": [
+      "Makefile",
+      "mk/**",
+      "tools/build/**",
+      "cortex.spec",
+      "**/*_32.c",
+      "**/*_hpux.c",
+      "**/*rhel*"
+    ],
+    "plugin_entry": [
+      "plugins/**",
+      "sdk/actions/**",
+      "src/plugin/**",
+      "src/runtime/cortex_action_engine.c"
+    ],
+    "production_path": [
+      "plugins/cortex-production/**",
+      "conf/**",
+      "cortex.spec",
+      "scripts/*.service",
+      "scripts/cortex-result-outbox-run",
+      "rpmbuild/**"
+    ]
+  },
+  "reference_scan_extensions": [
+    ".py",
+    ".sh",
+    ".pl",
+    ".pm",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".md"
+  ],
+  "reference_scan_exclude": [
+    "specs",
+    ".specify/eval"
+  ],
+  "reference_scan_exclude_reason": "Work artifact 는 조사 기록이지 코드 참조가 아니다. domain-discovery.json 은 repository 경로를 evidence 로 대량 나열하므로, 그것을 참조로 세면 어떤 파일도 orphan 이 되지 않는다.",
+  "discovery_entry_patterns": [
+    {
+      "pattern": "**/__init__.py",
+      "evidence": "Python package marker — 이름으로 참조되지 않는 것이 정상이다"
+    },
+    {
+      "pattern": "**/__main__.py",
+      "evidence": "python3 -m <package> entry point — 이름으로 참조되지 않는 것이 정상이다"
+    },
+    {
+      "pattern": "tests/ai/**",
+      "evidence": ".ai-team/verifiers/registry.json#loop-runtime-tests — unittest discover 가 수집한다"
+    },
+    {
+      "pattern": "tests/functional/test_*.c",
+      "evidence": "tests/functional/run_functional.sh:65 — test_*.c glob 으로 컴파일·실행한다"
+    },
+    {
+      "pattern": "tests/functional/test_*.sh",
+      "evidence": "tests/functional/run_functional.sh:472 — test_*.sh glob 으로 실행한다"
+    },
+    {
+      "pattern": "tests/converters/**",
+      "evidence": "tools/ci/run_converter_tests.sh:23 — TEST_DIRS 가 디렉토리 단위로 수집한다"
+    },
+    {
+      "pattern": "tools/cal/**",
+      "evidence": "tools/ci/run_converter_tests.sh:23 — TEST_DIRS 가 디렉토리 단위로 수집한다"
+    },
+    {
+      "pattern": "tools/ci/tests/scenarios_user/**",
+      "evidence": "tools/ci/tests/run_tests.sh:202,227 — --user-scenario-dir 로 디렉토리를 넘긴다"
+    },
+    {
+      "pattern": "tools/ci/tests/generators/**",
+      "evidence": "tools/ci/tests/run_tests.sh 가 generator 를 디렉토리로 호출한다"
+    }
+  ],
+  "discovery_entry_rule": "runner 가 glob 또는 디렉토리로 수집하는 파일은 이름 참조가 없는 것이 정상이다. orphan candidate 로 만들지 않는다.",
+  "scan_limits": {
+    "incremental_reference_scan": 120,
+    "full_reference_scan": 400,
+    "reason": "reference scan 은 파일당 git grep 을 돌린다. 상한을 넘기면 report 에 남기고 멈춘다 — 조용히 잘라내지 않는다."
+  },
+  "dynamic_entry_evidence": [
+    {
+      "id": "plugin-dlopen",
+      "source": "src/plugin/plugin_loader.c",
+      "locator": "dlopen + CORTEX_PLUGIN_ENTRY_SYMBOL",
+      "meaning": "plugin entry 는 static caller 없이 runtime 에 resolve 된다"
+    },
+    {
+      "id": "action-dlopen",
+      "source": "src/runtime/cortex_action_engine.c",
+      "locator": "dlopen + CORTEX_ACTION_ENTRY_SYMBOL",
+      "meaning": "action entry 도 runtime resolve 다"
+    },
+    {
+      "id": "conditional-build",
+      "source": "Makefile",
+      "locator": "rhel5/rhel7/rhel8/hpux target, -m32, -DRHEL5_COMPAT",
+      "meaning": "특정 target 에서만 compile 되는 경로가 있다"
+    },
+    {
+      "id": "packaging-install",
+      "source": "cortex.spec",
+      "locator": "%install section",
+      "meaning": "32-bit variant 를 포함해 packaging 이 참조하는 artifact 가 있다"
+    },
+    {
+      "id": "action-stub",
+      "source": "sdk/actions",
+      "locator": "sec_*_stub.cpp",
+      "meaning": "action stub 은 외부에서 로드된다"
+    }
+  ],
+  "evidence_scans": [
+    {
+      "id": "reference_scan",
+      "description": "repository 전체 텍스트 참조"
+    },
+    {
+      "id": "build_target_scan",
+      "description": "Makefile/spec build target 참조"
+    },
+    {
+      "id": "test_scan",
+      "description": "tests/ 와 tools/ci 참조"
+    },
+    {
+      "id": "packaging_scan",
+      "description": "cortex.spec install/files 참조"
+    },
+    {
+      "id": "runtime_config_scan",
+      "description": "conf/ 와 runtime config 참조"
+    },
+    {
+      "id": "git_history",
+      "description": "삭제/이동 이력"
+    }
+  ],
+  "no_static_reference_is_not_dead": {
+    "enabled": true,
+    "reason": "amplai-foundry 는 Typer sub-app 등록, pydantic model 자동 수집, entry-point, skill/manifest 의 문자열 참조를 쓴다. 텍스트 참조가 없다는 사실만으로 dead code 라고 판정하지 않는다.",
+    "requires_for_dead_code": [
+      "reference_scan",
+      "build_target_scan",
+      "packaging_scan",
+      "dynamic_entry_review"
+    ]
+  },
+  "pass_criteria": [
+    "발견된 모든 candidate 가 safety level 과 classification 을 가진다",
+    "모든 candidate 가 evidence 를 가진다",
+    "HUMAN_GATED candidate 가 자동 삭제되지 않았다",
+    "삭제된 artifact 에 verifier evidence 가 있다",
+    "broken reference 가 남지 않았다"
+  ],
+  "pass_is_not": "garbage candidate 가 0 개",
+  "post_apply_loop": {
+    "always": [
+      "verify",
+      "converge",
+      "documentation_freshness"
+    ],
+    "review_required_when": [
+      "behavior change",
+      "public API change",
+      "architecture change"
+    ],
+    "review_not_required_when": [
+      "SAFE_AUTO generated garbage 삭제만 수행"
+    ]
+  },
+  "rule": "candidate 는 삭제 제안이지 삭제가 아니다. proposal only — harness/ontology/production 자산을 자동 수정하지 않는다."
+}

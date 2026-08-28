@@ -9,12 +9,26 @@ import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Literal, Protocol, cast
+from typing import Annotated, Literal, Protocol, TypedDict, cast
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
-from amplai_foundry.governance.models import AuthorityContext, Digest, ProposalRef
+from amplai_foundry.governance.models import (
+    AuthorityContext,
+    ChannelProvider,
+    ChannelRef,
+    Digest,
+    ProposalRef,
+)
 from amplai_foundry.governance.store import GovernanceStore, governance_transaction
+from amplai_foundry.proposals.models import OperationType
 
 
 def _system_now() -> datetime:
@@ -33,6 +47,16 @@ class OutboxLeaseConflictError(GovernanceEventError):
 
 class OutboxReconcileError(GovernanceEventError):
     pass
+
+
+class OutboxRetryableError(GovernanceEventError):
+    """One delivery failure worth another attempt, carrying its own cause code.
+
+    `deliver_next` 의 `except Exception` 도 재시도로 흐르지만 그쪽은 예외를 보지 않고
+    `OUTBOX_DELIVERY_FAILED` 를 박는다. 그러면 재시도 기록과 소진 후 dead letter 가 원인을
+    가리키지 않는다 — round 11 `R-1` 이 정확히 그 형태를 결함으로 셌다. 이 형은 예산을
+    쓰면서 원인 code 를 보존한다.
+    """
 
 
 class OutboxState(StrEnum):
@@ -64,6 +88,56 @@ class DecisionProjectionPayload(BaseModel):
     decision_epoch: int = Field(ge=1)
     proposal_status: str = Field(pattern=r"^(approved|rejected|changes_requested)$")
     state_revision: int = Field(ge=2)
+
+
+ReviewOperationTitle = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=256),
+]
+SlackReviewerExternalKey = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Z0-9]+$",
+    ),
+]
+
+
+class ReviewProjectionPayload(BaseModel):
+    """Secret-free presentation source for one reviewed Proposal snapshot."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    aggregate_ref: ProposalRef
+    active_definition_digest: Digest
+    content_revision: int = Field(ge=1)
+    state_revision: int = Field(ge=1)
+    decision_epoch: int = Field(ge=1)
+    reviewer_actor_id: str = Field(pattern=r"^ACT-[A-Z0-9-]+$")
+    reviewer_external_key: SlackReviewerExternalKey
+    bound_channel_ref: ChannelRef
+    expires_at: AwareDatetime
+    operation_count: int = Field(ge=1)
+    operation_counts: dict[str, int] = Field(min_length=1)
+    operation_titles: tuple[ReviewOperationTitle, ...] = Field(min_length=1, max_length=3)
+    remaining_operation_count: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_summary(self) -> ReviewProjectionPayload:
+        if self.bound_channel_ref.provider is not ChannelProvider.SLACK:
+            raise ValueError("Review Card channel은 Slack이어야 합니다.")
+        allowed_operation_types = {operation_type.value for operation_type in OperationType}
+        if not set(self.operation_counts).issubset(allowed_operation_types):
+            raise ValueError("지원하지 않는 operation type이 있습니다.")
+        if any(count < 1 for count in self.operation_counts.values()):
+            raise ValueError("operation type count는 1 이상이어야 합니다.")
+        if sum(self.operation_counts.values()) != self.operation_count:
+            raise ValueError("operation type count 합계가 전체와 다릅니다.")
+        if self.remaining_operation_count != self.operation_count - len(self.operation_titles):
+            raise ValueError("remaining operation count가 preview와 다릅니다.")
+        return self
 
 
 class LegacyMigrationProjectionPayload(BaseModel):
@@ -209,6 +283,32 @@ class AuditEventView(BaseModel):
     occurred_at: AwareDatetime
 
 
+class _ExpectedAudit(TypedDict, total=False):
+    """`reconcile_connection` 의 감사 대조 하나가 기대하는 값 집합 (MGC-012-P5-T023).
+
+    **`TypedDict` 인 이유.** 예전에는 여덟 곳이 각각 `or` 로 이어진 비교 사슬이었고, 필드를
+    하나 빠뜨려도 눈에 띄지 않았다. 착수 전 실측에서 72성분 중 62개가 무방비였다 — 여섯
+    블록은 통째로 무력화해도 전 suite 가 통과했다. mapping 으로 바꾸면 빠진 필드가 보이지만
+    평범한 `Mapping[str, object]` 로 받으면 `actor_idd` 같은 오타를 mypy 가 더는 못 잡는다.
+    `TypedDict` 는 둘 다 준다 — 호출 지점마다 key 이름과 값 type 을 mypy 가 검사한다.
+
+    **값은 저장 형태다.** row 에서 읽은 값과 비교하므로 `occurred_at` 은 `datetime` 이 아니라
+    timestamp 문자열이다. 그 한 변환만 `_assert_audit_matches` 안에 있다.
+    """
+
+    event_type: str
+    proposal_ref: ProposalRef
+    actor_id: str
+    actor_type: str
+    policy_snapshot_id: str
+    before_state: str
+    after_state: str
+    definition_digest: str
+    occurred_at: str
+    destination_manifest_digest: str
+    destination_count: int
+
+
 class OutboxEventView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -299,6 +399,63 @@ class GovernanceEventService:
             destinations=self._decision_destinations(ref, authority),
             before_state="reviewed",
             after_state=payload.proposal_status,
+            definition_digest=payload.active_definition_digest,
+            source_state_revision=payload.state_revision,
+            payload=payload,
+        )
+
+    def _append_review_card_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        ref: ProposalRef,
+        *,
+        request_key: str,
+        authority: AuthorityContext,
+        payload: ReviewProjectionPayload,
+    ) -> tuple[AuditEventView, tuple[OutboxEventView, ...]]:
+        if not connection.in_transaction:
+            raise GovernanceEventError("GOVERNANCE_TRANSACTION_REQUIRED")
+        if authority.project_ref != ref.project_ref:
+            raise GovernanceEventError("AUTHORITY_DENIED")
+        command = connection.execute(
+            """
+            SELECT project_namespace, project_id, proposal_id,
+                   active_definition_digest, content_revision, state_revision,
+                   decision_epoch, reviewer_actor_id, reviewer_actor_type,
+                   reviewer_external_key, channel_json, expires_at,
+                   payload_digest, payload_json
+            FROM governance_review_card_commands WHERE idempotency_key = ?
+            """,
+            (request_key,),
+        ).fetchone()
+        payload_json = self._canonical_json(payload.model_dump(mode="json"))
+        expected = (
+            *self._identity(ref),
+            payload.active_definition_digest,
+            payload.content_revision,
+            payload.state_revision,
+            payload.decision_epoch,
+            authority.actor_ref.actor_id,
+            authority.actor_ref.actor_type.value,
+            payload.reviewer_external_key,
+            self._canonical_json(payload.bound_channel_ref.model_dump(mode="json")),
+            self._timestamp(payload.expires_at),
+            self._digest(payload_json.encode("utf-8")),
+            payload_json,
+        )
+        if command is None or tuple(command) != expected:
+            raise GovernanceEventError("REVIEW_CARD_AUDIT_SOURCE_MISMATCH")
+        return self._append_verified_event_in_transaction(
+            connection,
+            ref,
+            command_id=self._review_card_command_id(request_key),
+            event_type="proposal.review_card_requested",
+            actor_id=authority.actor_ref.actor_id,
+            actor_type=authority.actor_ref.actor_type.value,
+            policy_snapshot_id=self._policy_snapshot(authority),
+            destinations=(self._review_destination(ref, payload.bound_channel_ref),),
+            before_state="reviewed",
+            after_state="reviewed",
             definition_digest=payload.active_definition_digest,
             source_state_revision=payload.state_revision,
             payload=payload,
@@ -895,7 +1052,17 @@ class GovernanceEventService:
                OR t.allowed_action != r.action
                OR t.allowed_actor_id != r.actor_id
                OR t.allowed_actor_type != r.actor_type
-               OR t.bound_channel_json != r.channel_json
+               OR (
+                    t.bound_channel_json != r.channel_json
+                    AND (
+                        json_extract(t.bound_channel_json, '$.provider') != 'slack'
+                        OR json_extract(r.channel_json, '$.provider') != 'slack'
+                        OR json_extract(t.bound_channel_json, '$.workspace_id')
+                           IS NOT json_extract(r.channel_json, '$.workspace_id')
+                        OR json_extract(t.bound_channel_json, '$.channel_id')
+                           IS NOT json_extract(r.channel_json, '$.channel_id')
+                    )
+               )
                OR t.active_definition_digest != r.active_definition_digest
                OR t.content_revision != r.content_revision
                OR t.state_revision + 1 != r.state_revision
@@ -1031,6 +1198,195 @@ class GovernanceEventService:
         if active_apply_mismatch is not None:
             raise GovernanceEventError("APPLY_RESULT_ROOT_MISMATCH")
         decision_commands: dict[str, tuple[str, int, str, int]] = {}
+        has_review_cards = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_schema WHERE type = 'table' "
+                "AND name = 'governance_review_card_commands'"
+            ).fetchone()
+            is not None
+        )
+        review_rows = (
+            connection.execute(
+                """
+                SELECT idempotency_key, request_fingerprint, project_namespace,
+                       project_id, proposal_id, active_definition_digest,
+                       content_revision, state_revision, decision_epoch,
+                       reviewer_actor_id, reviewer_actor_type,
+                       reviewer_external_key, provider_installation_ref,
+                       channel_json, expires_at, payload_digest, payload_json,
+                       requested_at
+                FROM governance_review_card_commands
+                ORDER BY project_namespace, project_id, proposal_id, state_revision
+                """
+            ).fetchall()
+            if has_review_cards
+            else ()
+        )
+        for review in review_rows:
+            try:
+                slack_review_payload = ReviewProjectionPayload.model_validate_json(str(review[16]))
+            except ValueError as error:
+                raise GovernanceEventError("REVIEW_CARD_ROOT_MISMATCH") from error
+            ref = cls._proposal_ref(review[2], review[3], review[4])
+            channel_json = cls._canonical_json(
+                slack_review_payload.bound_channel_ref.model_dump(mode="json")
+            )
+            payload_json = cls._canonical_json(slack_review_payload.model_dump(mode="json"))
+            payload_root = (
+                slack_review_payload.aggregate_ref,
+                slack_review_payload.active_definition_digest,
+                slack_review_payload.content_revision,
+                slack_review_payload.state_revision,
+                slack_review_payload.decision_epoch,
+                slack_review_payload.reviewer_actor_id,
+                slack_review_payload.reviewer_external_key,
+                channel_json,
+                cls._timestamp(slack_review_payload.expires_at),
+            )
+            expected_root = (
+                ref,
+                str(review[5]),
+                int(review[6]),
+                int(review[7]),
+                int(review[8]),
+                str(review[9]),
+                str(review[11]),
+                str(review[13]),
+                str(review[14]),
+            )
+            if (
+                payload_root != expected_root
+                or str(review[10]) != "human"
+                or str(review[15]) != cls._digest(payload_json.encode("utf-8"))
+                or str(review[16]) != payload_json
+            ):
+                raise GovernanceEventError("REVIEW_CARD_ROOT_MISMATCH")
+            command_id = cls._review_card_command_id(str(review[0]))
+            destination = cls._review_destination(ref, slack_review_payload.bound_channel_ref)
+            manifest_digest = cls._destination_manifest_digest((destination,))
+            decision_commands[command_id] = (
+                str(review[15]),
+                int(review[7]),
+                manifest_digest,
+                1,
+            )
+            audits = connection.execute(
+                "SELECT * FROM governance_audit_events WHERE command_id = ?",
+                (command_id,),
+            ).fetchall()
+            if len(audits) != 1:
+                raise GovernanceEventError("REVIEW_CARD_AUDIT_MISMATCH")
+            audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": "proposal.review_card_requested",
+                    "proposal_ref": ref,
+                    "actor_id": str(review[9]),
+                    "actor_type": str(review[10]),
+                    "before_state": "reviewed",
+                    "after_state": "reviewed",
+                    "definition_digest": str(review[5]),
+                    "destination_manifest_digest": manifest_digest,
+                    "destination_count": 1,
+                },
+                "REVIEW_CARD_AUDIT_MISMATCH",
+            )
+        if has_review_cards:
+            review_by_command = {
+                cls._review_card_command_id(str(row[0])): row for row in review_rows
+            }
+            action_rows = connection.execute(
+                """
+                SELECT s.event_id, s.generation, s.approve_token_id,
+                       s.request_changes_token_id, s.reject_token_id,
+                       s.state, s.issued_at, s.expires_at, s.resolved_at,
+                       a.command_id
+                FROM governance_review_action_sets s
+                JOIN governance_outbox_events o ON o.event_id = s.event_id
+                JOIN governance_audit_events a
+                  ON a.project_namespace = o.project_namespace
+                 AND a.project_id = o.project_id AND a.proposal_id = o.proposal_id
+                 AND a.aggregate_sequence = o.aggregate_sequence
+                ORDER BY s.event_id, s.generation
+                """
+            ).fetchall()
+            previous_event: str | None = None
+            expected_generation = 0
+            for action_set in action_rows:
+                event_id = str(action_set[0])
+                if event_id != previous_event:
+                    previous_event = event_id
+                    expected_generation = 1
+                else:
+                    expected_generation += 1
+                if int(action_set[1]) != expected_generation:
+                    raise GovernanceEventError("REVIEW_ACTION_SET_ROOT_MISMATCH")
+                command = review_by_command.get(str(action_set[9]))
+                if command is None:
+                    raise GovernanceEventError("REVIEW_ACTION_SET_ROOT_MISMATCH")
+                action_review_payload = ReviewProjectionPayload.model_validate_json(
+                    str(command[16])
+                )
+                token_ids = tuple(str(value) for value in action_set[2:5])
+                tokens = connection.execute(
+                    f"""
+                    SELECT token_id, active_definition_digest, content_revision,
+                           state_revision, decision_epoch, allowed_action,
+                           allowed_actor_id, allowed_actor_type, bound_channel_json,
+                           issued_at, expires_at, state, resolved_at
+                    FROM governance_action_tokens
+                    WHERE token_id IN ({",".join("?" for _ in token_ids)})
+                    ORDER BY allowed_action
+                    """,
+                    token_ids,
+                ).fetchall()
+                token_by_action = {str(token[5]): token for token in tokens}
+                if set(token_by_action) != {"approve", "request_changes", "reject"}:
+                    raise GovernanceEventError("REVIEW_ACTION_SET_ROOT_MISMATCH")
+                expected_states = {
+                    "issued": (0, 0, 3),
+                    "consumed": (1, 2, 0),
+                    "revoked": (0, 3, 0),
+                    "expired": (0, 0, 0),
+                }
+                states = tuple(str(token[11]) for token in tokens)
+                consumed = states.count("consumed")
+                revoked = states.count("revoked")
+                issued = states.count("issued")
+                if (consumed, revoked, issued) != expected_states[str(action_set[5])] and not (
+                    str(action_set[5]) == "expired" and states.count("expired") == 3
+                ):
+                    raise GovernanceEventError("REVIEW_ACTION_SET_ROOT_MISMATCH")
+                expected_channel = cls._canonical_json(
+                    action_review_payload.bound_channel_ref.model_dump(
+                        mode="json", exclude_none=True
+                    )
+                )
+                for token in tokens:
+                    if (
+                        str(token[1]) != action_review_payload.active_definition_digest
+                        or int(token[2]) != action_review_payload.content_revision
+                        or int(token[3]) != action_review_payload.state_revision
+                        or int(token[4]) != action_review_payload.decision_epoch
+                        or str(token[6]) != action_review_payload.reviewer_actor_id
+                        or str(token[7]) != "human"
+                        or str(token[8]) != expected_channel
+                        or str(token[9]) != str(action_set[6])
+                        or str(token[10]) != str(action_set[7])
+                    ):
+                        raise GovernanceEventError("REVIEW_ACTION_SET_ROOT_MISMATCH")
+            collision = connection.execute(
+                """
+                SELECT idempotency_key FROM (
+                    SELECT idempotency_key FROM governance_review_card_commands
+                    UNION ALL SELECT idempotency_key FROM governance_decision_results
+                    UNION ALL SELECT idempotency_key FROM governance_apply_request_results
+                ) GROUP BY idempotency_key HAVING COUNT(*) != 1 LIMIT 1
+                """
+            ).fetchone()
+            if collision is not None:
+                raise GovernanceEventError("IDEMPOTENCY_CONFLICT")
         has_legacy_import_commands = (
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' "
@@ -1150,19 +1506,22 @@ class GovernanceEventService:
                     f"{legacy_payload.validation_policy_ref}"
                 ).encode()
             )
-            if (
-                audit.event_type != str(legacy[7])
-                or audit.actor_id != str(legacy[8])
-                or audit.actor_type != str(legacy[9])
-                or audit.policy_snapshot_id != expected_policy
-                or audit.before_state != str(legacy[17])
-                or audit.after_state != str(legacy[19])
-                or audit.definition_digest != str(legacy[13])
-                or cls._timestamp(audit.occurred_at) != str(legacy[10])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 1
-            ):
-                raise GovernanceEventError("LEGACY_MIGRATION_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": str(legacy[7]),
+                    "actor_id": str(legacy[8]),
+                    "actor_type": str(legacy[9]),
+                    "policy_snapshot_id": expected_policy,
+                    "before_state": str(legacy[17]),
+                    "after_state": str(legacy[19]),
+                    "definition_digest": str(legacy[13]),
+                    "occurred_at": str(legacy[10]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 1,
+                },
+                "LEGACY_MIGRATION_AUDIT_MISMATCH",
+            )
             hold = connection.execute(
                 """
                 SELECT reason_code, source_artifact_digest
@@ -1227,19 +1586,22 @@ class GovernanceEventService:
                 if len(audits) != 1:
                     raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
                 audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-                if (
-                    audit.event_type != review_payload.event_type
-                    or audit.actor_id != str(review[7])
-                    or audit.actor_type != str(review[8])
-                    or audit.policy_snapshot_id != cls._digest(b"legacy-approval-human-review:v1")
-                    or audit.before_state != review_payload.before_status
-                    or audit.after_state != review_payload.after_status
-                    or audit.definition_digest != str(review[13])
-                    or cls._timestamp(audit.occurred_at) != str(review[9])
-                    or audit.destination_manifest_digest != manifest_digest
-                    or audit.destination_count != 1
-                ):
-                    raise GovernanceEventError("LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH")
+                cls._assert_audit_matches(
+                    audit,
+                    {
+                        "event_type": review_payload.event_type,
+                        "actor_id": str(review[7]),
+                        "actor_type": str(review[8]),
+                        "policy_snapshot_id": cls._digest(b"legacy-approval-human-review:v1"),
+                        "before_state": review_payload.before_status,
+                        "after_state": review_payload.after_status,
+                        "definition_digest": str(review[13]),
+                        "occurred_at": str(review[9]),
+                        "destination_manifest_digest": manifest_digest,
+                        "destination_count": 1,
+                    },
+                    "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH",
+                )
             uncovered_item = connection.execute(
                 """
                 SELECT 1
@@ -1381,20 +1743,23 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != recovery_payload.event_type
-                or audit.proposal_ref != ref
-                or audit.actor_id != str(recovery[19])
-                or audit.actor_type != str(recovery[20])
-                or audit.policy_snapshot_id != cls._digest(b"legacy-forward-recovery:v1")
-                or audit.before_state != recovery_payload.previous_status
-                or audit.after_state != recovery_payload.next_status
-                or audit.definition_digest != recovery_payload.next_definition_digest
-                or cls._timestamp(audit.occurred_at) != str(recovery[18])
-                or audit.destination_manifest_digest != manifest_digest
-                or audit.destination_count != 1
-            ):
-                raise GovernanceEventError("LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": recovery_payload.event_type,
+                    "proposal_ref": ref,
+                    "actor_id": str(recovery[19]),
+                    "actor_type": str(recovery[20]),
+                    "policy_snapshot_id": cls._digest(b"legacy-forward-recovery:v1"),
+                    "before_state": recovery_payload.previous_status,
+                    "after_state": recovery_payload.next_status,
+                    "definition_digest": recovery_payload.next_definition_digest,
+                    "occurred_at": str(recovery[18]),
+                    "destination_manifest_digest": manifest_digest,
+                    "destination_count": 1,
+                },
+                "LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH",
+            )
         if has_forward_recovery:
             idempotency_collision = connection.execute(
                 """
@@ -1430,24 +1795,16 @@ class GovernanceEventService:
                 state_revision=int(decision[10]),
             )
             expected_payload_json = cls._canonical_json(decision_payload.model_dump(mode="json"))
-            channel = cast(dict[str, object], json.loads(str(decision[12])))
-            channel_digest = hashlib.sha256(
-                cls._canonical_json(channel).encode("utf-8")
-            ).hexdigest()
+            channel = ChannelRef.model_validate_json(str(decision[12]))
             expected_destinations = (
                 OutboxDestination(
                     destination_ref=f"yaml:{decision[1]}:{decision[2]}:{decision[3]}"
                 ),
-                OutboxDestination(
-                    destination_ref=f"provider:{channel['provider']}:{channel_digest}",
-                    supersession_key=f"proposal-card:{decision[3]}",
-                ),
+                cls._provider_destination(decision_payload.aggregate_ref, channel),
             )
-            decision_commands[command_id] = (
-                cls._digest(expected_payload_json.encode("utf-8")),
-                int(decision[10]),
-                cls._destination_manifest_digest(expected_destinations),
-                len(expected_destinations),
+            legacy_destinations = (
+                expected_destinations[0],
+                cls._legacy_provider_destination(decision_payload.aggregate_ref, channel),
             )
             audits = connection.execute(
                 """
@@ -1460,17 +1817,33 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != f"proposal.{decision[7]}"
-                or audit.actor_id != str(decision[5])
-                or audit.actor_type != str(decision[6])
-                or audit.before_state != "reviewed"
-                or audit.after_state != str(decision[7])
-                or audit.definition_digest != str(decision[8])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != decision_commands[command_id][3]
-            ):
+            destination_manifests = {
+                cls._destination_manifest_digest(expected_destinations): expected_destinations,
+                cls._destination_manifest_digest(legacy_destinations): legacy_destinations,
+            }
+            reconciled_destinations = destination_manifests.get(audit.destination_manifest_digest)
+            if reconciled_destinations is None:
                 raise GovernanceEventError("DECISION_AUDIT_MISMATCH")
+            decision_commands[command_id] = (
+                cls._digest(expected_payload_json.encode("utf-8")),
+                int(decision[10]),
+                audit.destination_manifest_digest,
+                len(reconciled_destinations),
+            )
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"proposal.{decision[7]}",
+                    "actor_id": str(decision[5]),
+                    "actor_type": str(decision[6]),
+                    "before_state": "reviewed",
+                    "after_state": str(decision[7]),
+                    "definition_digest": str(decision[8]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": decision_commands[command_id][3],
+                },
+                "DECISION_AUDIT_MISMATCH",
+            )
         apply_rows = (
             connection.execute(
                 """
@@ -1505,22 +1878,14 @@ class GovernanceEventService:
                 state_revision=int(apply[13]),
             )
             expected_payload_json = cls._canonical_json(payload.model_dump(mode="json"))
-            channel = cast(dict[str, object], json.loads(str(apply[9])))
-            channel_digest = hashlib.sha256(
-                cls._canonical_json(channel).encode("utf-8")
-            ).hexdigest()
+            channel = ChannelRef.model_validate_json(str(apply[9]))
             apply_destinations = (
                 OutboxDestination(destination_ref=f"yaml:{apply[1]}:{apply[2]}:{apply[3]}"),
-                OutboxDestination(
-                    destination_ref=f"provider:{channel['provider']}:{channel_digest}",
-                    supersession_key=f"proposal-card:{apply[3]}",
-                ),
+                cls._provider_destination(ref, channel),
             )
-            decision_commands[command_id] = (
-                cls._digest(expected_payload_json.encode("utf-8")),
-                int(apply[13]),
-                cls._destination_manifest_digest(apply_destinations),
-                len(apply_destinations),
+            legacy_apply_destinations = (
+                apply_destinations[0],
+                cls._legacy_provider_destination(ref, channel),
             )
             audits = connection.execute(
                 """
@@ -1533,17 +1898,35 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != "proposal.apply_requested"
-                or audit.actor_id != str(apply[4])
-                or audit.actor_type != str(apply[5])
-                or audit.before_state != "approved"
-                or audit.after_state != "apply_requested"
-                or audit.definition_digest != str(apply[10])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != decision_commands[command_id][3]
-            ):
+            destination_manifests = {
+                cls._destination_manifest_digest(apply_destinations): apply_destinations,
+                cls._destination_manifest_digest(
+                    legacy_apply_destinations
+                ): legacy_apply_destinations,
+            }
+            reconciled_destinations = destination_manifests.get(audit.destination_manifest_digest)
+            if reconciled_destinations is None:
                 raise GovernanceEventError("APPLY_AUDIT_MISMATCH")
+            decision_commands[command_id] = (
+                cls._digest(expected_payload_json.encode("utf-8")),
+                int(apply[13]),
+                audit.destination_manifest_digest,
+                len(reconciled_destinations),
+            )
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": "proposal.apply_requested",
+                    "actor_id": str(apply[4]),
+                    "actor_type": str(apply[5]),
+                    "before_state": "approved",
+                    "after_state": "apply_requested",
+                    "definition_digest": str(apply[10]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": decision_commands[command_id][3],
+                },
+                "APPLY_AUDIT_MISMATCH",
+            )
         has_job_events = (
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' "
@@ -1617,17 +2000,20 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != f"apply_job.{job_event[4]}"
-                or audit.actor_id != str(job_event[5])
-                or audit.actor_type != "service"
-                or audit.before_state != str(job_event[6])
-                or audit.after_state != str(job_event[7])
-                or audit.definition_digest != str(job_event[20])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 2
-            ):
-                raise GovernanceEventError("APPLY_JOB_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"apply_job.{job_event[4]}",
+                    "actor_id": str(job_event[5]),
+                    "actor_type": "service",
+                    "before_state": str(job_event[6]),
+                    "after_state": str(job_event[7]),
+                    "definition_digest": str(job_event[20]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 2,
+                },
+                "APPLY_JOB_AUDIT_MISMATCH",
+            )
         has_publish_resolution_events = (
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' "
@@ -1771,17 +2157,20 @@ class GovernanceEventService:
             if len(audits) != 1:
                 raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_MISMATCH")
             audit = cls._audit_view(cast(tuple[object, ...], audits[0]))
-            if (
-                audit.event_type != f"publish.{resolution[4]}"
-                or audit.actor_id != str(resolution[17])
-                or audit.actor_type != "service"
-                or audit.before_state != str(resolution[19])
-                or audit.after_state != str(resolution[6])
-                or audit.definition_digest != str(resolution[18])
-                or audit.destination_manifest_digest != decision_commands[command_id][2]
-                or audit.destination_count != 2
-            ):
-                raise GovernanceEventError("PUBLISH_RESOLUTION_AUDIT_MISMATCH")
+            cls._assert_audit_matches(
+                audit,
+                {
+                    "event_type": f"publish.{resolution[4]}",
+                    "actor_id": str(resolution[17]),
+                    "actor_type": "service",
+                    "before_state": str(resolution[19]),
+                    "after_state": str(resolution[6]),
+                    "definition_digest": str(resolution[18]),
+                    "destination_manifest_digest": decision_commands[command_id][2],
+                    "destination_count": 2,
+                },
+                "PUBLISH_RESOLUTION_AUDIT_MISMATCH",
+            )
         if has_job_events:
             jobs = connection.execute(
                 """
@@ -2227,20 +2616,25 @@ class GovernanceEventService:
             rows = connection.execute(
                 """
                 SELECT destination_sequence, payload_digest, payload_json, state,
-                       source_state_revision
+                       source_state_revision, project_namespace, project_id, proposal_id
                 FROM governance_outbox_events
                 WHERE destination_ref = ? ORDER BY destination_sequence
                 """,
                 (destination_ref,),
             ).fetchall()
             sequences = tuple(int(row[0]) for row in rows)
-            previous_source_revision = 0
+            previous_source_revisions: dict[tuple[str, str, str], int] = {}
             for row in rows:
                 if cls._digest(str(row[2]).encode("utf-8")) != str(row[1]):
                     raise GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")
+                aggregate_identity = (str(row[5]), str(row[6]), str(row[7]))
+                previous_source_revision = previous_source_revisions.get(
+                    aggregate_identity,
+                    0,
+                )
                 if int(row[4]) <= previous_source_revision:
                     raise GovernanceEventError("OUTBOX_SOURCE_REVISION_CONFLICT")
-                previous_source_revision = int(row[4])
+                previous_source_revisions[aggregate_identity] = int(row[4])
                 if int(row[0]) <= int(delivered_sequence) and str(row[3]) not in {
                     OutboxState.DELIVERED.value,
                     OutboxState.SUPERSEDED.value,
@@ -2259,7 +2653,9 @@ class GovernanceEventService:
             ).fetchone()
             if (has_blocking_hold is not None) != bool(operator_hold):
                 raise GovernanceEventError("OUTBOX_OPERATOR_HOLD_MISMATCH")
-            for sequence, _digest, _payload, state, _source_revision in rows:
+            for row in rows:
+                sequence = int(row[0])
+                state = str(row[3])
                 event_id_row = connection.execute(
                     """
                     SELECT event_id FROM governance_outbox_events
@@ -2329,9 +2725,11 @@ class GovernanceEventService:
         previous = connection.execute(
             """
             SELECT source_state_revision FROM governance_outbox_events
-            WHERE destination_ref = ? ORDER BY destination_sequence DESC LIMIT 1
+            WHERE destination_ref = ?
+              AND project_namespace = ? AND project_id = ? AND proposal_id = ?
+            ORDER BY destination_sequence DESC LIMIT 1
             """,
-            (destination.destination_ref,),
+            (destination.destination_ref, *self._identity(ref)),
         ).fetchone()
         if previous is not None and source_state_revision <= int(previous[0]):
             raise GovernanceEventError("OUTBOX_SOURCE_REVISION_CONFLICT")
@@ -2430,10 +2828,6 @@ class GovernanceEventService:
         ref: ProposalRef,
         authority: AuthorityContext,
     ) -> tuple[OutboxDestination, OutboxDestination]:
-        channel_json = GovernanceEventService._canonical_json(
-            authority.source.channel.model_dump(mode="json", exclude_none=True)
-        )
-        channel_digest = hashlib.sha256(channel_json.encode("utf-8")).hexdigest()
         return (
             OutboxDestination(
                 destination_ref=(
@@ -2441,12 +2835,43 @@ class GovernanceEventService:
                     f"{ref.project_ref.project_id}:{ref.proposal_id}"
                 )
             ),
-            OutboxDestination(
-                destination_ref=(
-                    f"provider:{authority.source.channel.provider.value}:{channel_digest}"
-                ),
-                supersession_key=f"proposal-card:{ref.proposal_id}",
-            ),
+            GovernanceEventService._provider_destination(ref, authority.source.channel),
+        )
+
+    @staticmethod
+    def _provider_destination(ref: ProposalRef, channel: ChannelRef) -> OutboxDestination:
+        if channel.provider is ChannelProvider.SLACK:
+            return GovernanceEventService._review_destination(ref, channel)
+        return GovernanceEventService._legacy_provider_destination(ref, channel)
+
+    @staticmethod
+    def _review_destination(ref: ProposalRef, channel: ChannelRef) -> OutboxDestination:
+        channel_json = GovernanceEventService._canonical_json(
+            {
+                "provider": channel.provider.value,
+                "workspace_id": channel.workspace_id,
+                "channel_id": channel.channel_id,
+            }
+        )
+        channel_digest = hashlib.sha256(channel_json.encode("utf-8")).hexdigest()
+        return OutboxDestination(
+            destination_ref=f"provider:{channel.provider.value}:{channel_digest}",
+            supersession_key=f"proposal-card:{ref.proposal_id}",
+        )
+
+    @staticmethod
+    def _legacy_provider_destination(
+        ref: ProposalRef,
+        channel: ChannelRef,
+    ) -> OutboxDestination:
+        """Recompute the pre-Card stream identity for immutable stored events only."""
+        channel_json = GovernanceEventService._canonical_json(
+            channel.model_dump(mode="json", exclude_none=True)
+        )
+        channel_digest = hashlib.sha256(channel_json.encode("utf-8")).hexdigest()
+        return OutboxDestination(
+            destination_ref=f"provider:{channel.provider.value}:{channel_digest}",
+            supersession_key=f"proposal-card:{ref.proposal_id}",
         )
 
     @staticmethod
@@ -2471,9 +2896,37 @@ class GovernanceEventService:
         return f"decision:sha256:{digest}"
 
     @staticmethod
+    def _review_card_command_id(idempotency_key: str) -> str:
+        digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+        return f"review-card:sha256:{digest}"
+
+    @staticmethod
     def _apply_command_id(idempotency_key: str) -> str:
         digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
         return f"apply:sha256:{digest}"
+
+    @classmethod
+    def _assert_audit_matches(
+        cls,
+        audit: AuditEventView,
+        expected: _ExpectedAudit,
+        code: str,
+    ) -> None:
+        """감사 row 가 기대한 값 집합과 일치하지 않으면 `code` 로 거부한다.
+
+        여덟 호출 지점이 이 하나를 쓴다. 예전에는 같은 비교가 여덟 벌로 흩어져 있어서 어느
+        블록이 어느 필드를 빠뜨렸는지 세어야 알 수 있었다. 이제 `expected` mapping 을 나란히
+        놓고 보면 드러난다.
+
+        `or` 사슬은 첫 불일치에서 멈췄고 이 loop 도 그렇다. 같은 입력에 같은 code 를 낸다.
+        """
+        for field, want in expected.items():
+            actual: object = getattr(audit, field)
+            if field == "occurred_at":
+                # view 는 `datetime`, row 는 문자열이다. 저장 형태로 맞춘 뒤 비교한다.
+                actual = cls._timestamp(cast(datetime, actual))
+            if actual != want:
+                raise GovernanceEventError(code)
 
     @staticmethod
     def _audit_view(row: tuple[object, ...]) -> AuditEventView:
@@ -2835,6 +3288,11 @@ class OutboxDispatcher:
         dispatcher_id: str,
         destination: ProjectionDestination,
     ) -> OutboxEventView | None:
+        config_validator = getattr(destination, "validate_dispatcher_config", None)
+        if config_validator is not None:
+            if not callable(config_validator):
+                raise ValueError("destination config validator가 호출 가능하지 않습니다.")
+            config_validator(self.config)
         event = self.claim_next(dispatcher_id, destination_ref=destination.destination_ref)
         if event is None:
             return None
@@ -2860,6 +3318,14 @@ class OutboxDispatcher:
                 generation=event.claim_generation,
                 error_code=error.code,
                 unreconcilable=True,
+            )
+        except OutboxRetryableError as error:
+            # 예산을 쓰되 원인을 남긴다. 소진되면 `fail()` 이 알아서 dead letter 로 보낸다.
+            return self.fail(
+                event.event_id,
+                dispatcher_id=dispatcher_id,
+                generation=event.claim_generation,
+                error_code=error.code,
             )
         except Exception:
             return self.fail(

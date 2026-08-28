@@ -135,11 +135,16 @@ attempts 전이를 확인한다.
 
 - destination 의 첫 event 인데 `destination_sequence` 가 1 이 아니면 어떻게 되나 —
   `YamlProjectionDestination` 은 `YAML_SEQUENCE_CAS_CONFLICT` 로 거부한다
-  (`projections.py:68`). Slack 쪽 대응 동작을 정의해야 한다.
+  (`projections.py:72`). **Slack 쪽은 거부하지 않고 그냥 보낸다** (D-023). 첫 시도면
+  reconcile 이 조회 없이 미전송으로 답하고, 순서 보장은 reconcile 이 아니라 `claim_next`
+  가 한다 — 앞 sequence 가 `delivered` 나 `superseded` 가 아니면 다음 event 를 claim 하지
+  않는다 (`events.py:2648`). 그래서 Slack 쪽에는 CAS 대응물이 필요 없다.
 - payload digest 가 event 의 `payload_digest` 와 다르면 —
-  `OUTBOX_PAYLOAD_INTEGRITY_FAILURE` 로 전송 전에 멈춘다 (`projections.py:57` 대응).
+  `OUTBOX_PAYLOAD_INTEGRITY_FAILURE` 로 전송 전에 멈춘다 (`projections.py:61` 대응).
+  재시도하지 않고 곧바로 DLQ + operator hold 다 (D-022).
 - event 의 `destination_ref` 가 destination 자신의 것과 다르면 —
-  `OUTBOX_DESTINATION_MISMATCH` (`projections.py:54` 대응).
+  `OUTBOX_DESTINATION_MISMATCH` (`projections.py:58` 대응). 이것도 재시도 없이
+  DLQ + operator hold 다 (D-022).
 - 사람이 Slack 에서 Card message 를 지웠다가 다시 만든 경우 — SPEC.md 검증 항목
   "deleted/recreated Provider message" 에 있다. marker read-back 이 못 찾는 상황이다.
 - 두 dispatcher 가 같은 destination 을 동시에 claim — lease 와 fencing 으로 직렬화한다.
@@ -193,6 +198,8 @@ Package 3 범위. 각 항목은 원본 근거를 단다.
 - **Slack transport Protocol** (신규): send 와 read 를 갖는다. 구체 signature 는
   `research.md` 가 Slack 공식 문서로 receipt 필드를 고정한 뒤 `contracts/` 에서 정한다.
 - **Message marker** (신규): 전송 메시지에 담기는 event 식별자. reconcile 의 판정 근거다.
+  전용 type 이 아니라 `build_slack_marker()` 가 만드는 dict 다. 되읽은 결과만
+  `SlackMarkerView` dataclass 로 받는다.
 
 ## Success Criteria *(mandatory)*
 
@@ -207,9 +214,12 @@ SPEC.md `Verification Matrix` 의 Outbox·Provider 절에서 Package 3 에 해�
 - **SC-003**: old event supersede test 가 통과한다.
 - **SC-004**: "send 후 local mark 전 kill" test 가 통과한다 — 재기동 후 중복 Card 를 만들지
   않는다.
-- **SC-005**: "deleted/recreated Provider message" test 가 통과한다 — reconcile 이 판정하거나
-  명시적 hold 를 만든다. 둘 중 무엇인지는 `research.md` 이후 `plan.md` 가 정한다.
-- **SC-006**: 기존 709 test 가 회귀 없이 통과한다.
+- **SC-005**: "deleted/recreated Provider message" test 가 통과한다. `plan.md` P-001 이
+  hold 로 정했고 D-023 이 그것을 좁혔다 — `next_cursor` 가 남은 채 상한에 걸린 경우만
+  hold 다. history 를 소진할 수 있는 작은 채널에서는 재전송된다.
+- **SC-006**: `python -m pytest` 전량이 회귀 없이 통과한다. **숫자를 고정하지 않는다** —
+  test 는 wave 마다 늘고, 고정 숫자를 성공 기준으로 두면 갱신 장치가 없어 판정이 불가능해진다
+  (2026-08-05 `/speckit-analyze` I1). T004·T005 의 `regression` command 가 이 기준이다.
 - **SC-007**: `amplai-foundry verify` 7 stage 가 통과한다.
 - **SC-008**: wave 마다 contract·failure-recovery·regression 3 lens review 에서
   P0·P1·Blocking-P2 가 0건이다. 근거: D-019 항목 4, `QUALITY_GATES.md`.
@@ -220,7 +230,10 @@ SPEC.md `Verification Matrix` 의 Outbox·Provider 절에서 Package 3 에 해�
   둔다. Package 3 는 그 뒤단의 message projection 만 채운다.
 - `OutboxDispatcher` 의 lease·backoff·`max_attempts`·`operator_hold` 계약은 이미 검증됐고
   (MGC-008 gate PASS at `e989566`) Package 3 는 그것을 쓴다.
-- Slack API 의 receipt 필드와 error code 는 **아직 모른다.** `research.md` 가 공식 문서로
-  고정하기 전에는 transport Protocol signature 를 확정하지 않는다.
-- Slack channel 조회로 marker 를 찾는 것이 가능한지는 공식 문서 확인 대상이다. 불가하면
-  D-018 항목 3 이 전제한 reconcile 방식을 다시 정해야 한다.
+- ~~Slack API 의 receipt 필드와 error code 는 아직 모른다.~~ **해소.** `research.md`
+  R-005·R-006 이 S1 에서 고정했다.
+- ~~Slack channel 조회로 marker 를 찾는 것이 가능한지는 확인 대상이다.~~ **해소.**
+  `research.md` R-003 이 S3 로 확정했다 — `chat.postMessage` 의 `metadata` 로 심고
+  `conversations.history` 를 `include_all_metadata=true` 로 읽는다.
+- **남은 미확인**: `conversations.history` 가 최신 message 부터 돌려주는지 S2 에서 확인하지
+  못했다 (research R-004 미확인, contracts C-1). Package 4 가 확정한다.

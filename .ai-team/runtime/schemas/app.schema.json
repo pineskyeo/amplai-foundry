@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://amplai.local/schemas/app.schema.json",
+  "title": "AMPLAI Logical App Registration",
+  "type": "object",
+  "required": ["schema_version", "kind", "app_id", "display_name", "status", "capabilities", "max_concurrency", "created_at", "updated_at", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "app"},
+    "app_id": {"type": "string"},
+    "display_name": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ACTIVE", "DISABLED"]},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "max_concurrency": {"type": "integer", "minimum": 1},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "content_hash": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,57 @@
+{
+  "decision": {
+    "auto_requires_evidence": true,
+    "challenge_classes": [
+      "architecture",
+      "compatibility",
+      "persistence",
+      "performance_architecture",
+      "cross_app_contract"
+    ],
+    "challenge_requires_independent_review": true,
+    "human_classes": [
+      "domain",
+      "product",
+      "production",
+      "safety",
+      "security",
+      "privacy",
+      "legal",
+      "destructive",
+      "public_contract"
+    ],
+    "human_requires_approval_evidence": true
+  },
+  "evidence": {
+    "max_parallel_lanes": 3,
+    "max_subagent_depth": 1,
+    "parallelizable_only": true,
+    "parent_owns_decision": true
+  },
+  "forbidden_automatic_actions": [
+    "invent cross-app goals or affected apps",
+    "lower AUTO/CHALLENGE/HUMAN authority below policy minimum",
+    "resolve domain/product/production/safety/security/privacy/legal decisions without human evidence",
+    "merge, push, deploy, release, or perform destructive production operations",
+    "treat rendered handoff text as the source of truth",
+    "launch work in DRAFT, BLOCKED, HUMAN_REQUIRED, FAILED, DONE, or CANCELLED"
+  ],
+  "runtime_protocol": "amplai.async-cross-app.v1",
+  "schema_version": "1.0",
+  "supervisor": {
+    "auto_retry_worker_failures": true,
+    "heartbeat_seconds": 30,
+    "lease_seconds": 300,
+    "lock_stale_seconds": 120,
+    "lock_wait_seconds": 10,
+    "poll_seconds": 5,
+    "retry_backoff_max_seconds": 900,
+    "retry_backoff_seconds": 30,
+    "worker_timeout_seconds": 7200
+  },
+  "work": {
+    "default_app_concurrency": 1,
+    "default_max_attempts": 3,
+    "done_requires_evidence": true
+  }
+}

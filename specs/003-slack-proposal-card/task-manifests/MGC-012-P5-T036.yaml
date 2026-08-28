@@ -1,0 +1,202 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T036
+title: Write the scenarios that tell each guard apart instead of passing when either is gone
+type: test
+status: done
+
+goal:
+  outcome: >-
+    `claim_generation` guard 와 state guard 를 **하나씩 지우면 각각 test 가 죽는다.**
+    `cli.py` 의 세 번째 `sqlite3.Error` 포획도 그렇다.
+  user_value: >-
+    round 17 `F17-3`·`F17-8`. **고침은 들어갔고 그것을 지키는 test 가 부분적이다** —
+    round 15 `R-1`, round 16 `R16-2` 와 **같은 형태로 세 라운드째**다. mutation 9개 중
+    3개가 SURVIVED 했다. 지금 test 는 두 조건이 동시에 참인 시나리오뿐이라 어느 하나를
+    지워도 통과한다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-17.md
+      section: New Blockers
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-17.md
+      section: Three Roots
+  requirements:
+    - FR-024
+  decisions:
+    - D-045
+    - D-047
+
+scope:
+  include:
+    - >-
+      **`F17-3`** — 두 guard 를 **가르는** 시나리오 둘. `_dead_letter_unreadable` 의
+      docstring 이 스스로 이름을 댄다 — generation 만 어긋난 경우(claim → lease 만료 →
+      `pending` 복귀)와 state 만 어긋난 경우(`completed` 가 되어 `completed_at` CHECK 위반).
+    - >-
+      **`F17-8`** — `cli.py` 의 `governance decision` 안쪽 포획. **`is_unreadable()` 만
+      실패하는 상태**를 만들어야 한다. 기존 test 4종은 `committed_decision()` 단계에서 이미
+      터져 안쪽에 도달하지 못한다.
+    - "`T035` 가 넣은 sweep 분리와 넓힌 `unreadable()` 을 고정하는 test."
+  exclude:
+    - "구현 변경. `T035` 가 소유한다."
+    - "manifest·evidence 문서. `T037` 이 소유한다."
+    - "Outbox test."
+  allowed_paths:
+    - tests/test_slack_ack_boundary.py
+    - tests/test_cli.py
+    - tests/test_ingress.py
+  forbidden_paths:
+    - vault/
+    - src/
+    - specs/003-slack-proposal-card/spec.md
+    - .github/
+
+dependencies:
+  tasks:
+    - MGC-012-P5-T035
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **fixture 가 검사 대상을 지우는지 본다.** 지금 유일한 race test 가 worker B 를 정상
+      claim 시키는데 그 claim 이 generation 과 state 를 **동시에** 바꾼다. 그래서 두 조건이
+      같은 시나리오에서 참이고 어느 하나만 지워도 통과한다. 가르려면 **한 번에 하나만**
+      어긋나게 만든다.
+    - >-
+      **mutation 으로 확인한다.** test 를 쓴 뒤 guard 를 하나씩 지워 KILLED 를 본다.
+      SURVIVED 면 코드보다 test 를 먼저 의심한다 — 세 라운드째 같은 형태다.
+    - >-
+      **`F17-8` 은 `committed_decision()` 을 성공시켜야 한다.** `None` 을 반환하게 두고
+      `is_unreadable()` 만 `sqlite3.Error` 를 내게 한다. 그래야 안쪽 포획에 도달한다.
+    - >-
+      **되돌린 것도 test 로 묶는다** (round 16 `R16-2`). `T035` 가 바꾼 sweep 경계와
+      넓어진 `unreadable()` 을 각각 고정한다.
+  invariants:
+    - "test 를 지우지 않는다."
+    - "기존 test 의 의도를 바꾸지 않는다."
+    - "구현 파일을 수정하지 않는다."
+  non_goals:
+    - 구현 변경.
+    - Outbox test.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: "`_dead_letter_unreadable` 의 `claim_generation = ?` 를 `? IS NOT NULL` 로 바꾼다."
+      when: suite 를 돌린다.
+      then: 실패한다. 어떤 test 가 죽는지 evidence 에 적는다.
+    - id: AC-02
+      given: "`_dead_letter_unreadable` 의 `state IN (...)` 조건을 지운다."
+      when: suite 를 돌린다.
+      then: 실패한다. AC-01 과 **다른** test 가 죽는다.
+    - id: AC-03
+      given: "`cli.py` 의 `governance decision` 안쪽 `sqlite3.Error` 포획을 지운다."
+      when: suite 를 돌린다.
+      then: 실패한다.
+    - id: AC-04
+      given: "`T035` 의 sweep 분리를 되돌린다."
+      when: suite 를 돌린다.
+      then: 실패한다.
+    - id: AC-05
+      given: "`T035` 가 넓힌 `unreadable()` 조회를 되돌린다."
+      when: suite 를 돌린다.
+      then: 실패한다.
+    - id: AC-06
+      given: 전체 test suite.
+      when: 돌린다.
+      then: 통과하고 test 수가 줄지 않는다. 두 방법으로 세어 둘 다 적는다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py tests/test_cli.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: lint
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks:
+    - id: mutation-table
+      observer: 구현자
+      action: >-
+        AC-01~AC-05 의 다섯 mutation 을 하나씩 넣고 `.venv/bin/python -m pytest` 를 돌린 뒤
+        되돌린다.
+      expected: >-
+        다섯 전부 KILLED 다. AC-01 과 AC-02 를 죽이는 test 가 서로 다르다.
+      reason_not_automated: >-
+        mutation 은 구현 파일을 일시적으로 바꾸는 것이라 suite 안에서 자동화하면 그 자체가
+        검사 대상을 지운다.
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: mutation 표 (다섯, KILLED 와 죽은 test 이름)
+      required: true
+    - type: note
+      source: test 수 두 방법 계수
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      **세 라운드 연속 같은 형태로 실패했다.** test 를 쓰고 통과하는 것으로 끝내지 않는다.
+      mutation 을 실제로 넣어 KILLED 를 본다.
+  approvals: []
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - a_guard_cannot_be_isolated_without_changing_the_implementation
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-26T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T036.md
+
+handoff:
+  expected_changes:
+    - "두 guard 를 가르는 test 둘."
+    - "`is_unreadable()` 만 실패시키는 CLI test."
+    - "sweep 분리와 넓힌 `unreadable()` 을 고정하는 test."
+  notes:
+    - >-
+      **mutation 이 살아남으면 코드보다 test 를 먼저 의심한다.**

@@ -1,0 +1,374 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-046",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Move workflow ordering from the human procedure to the /work controller",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-052",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "The Project Store owns the supervisor's code and its right to run",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "tools/amplai-loop-kit/ — VERSION, manifest.json, CHECKSUMS.sha256, PROVENANCE.md",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_async_runtime.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_regressions.py",
+    "tools/amplai-loop-kit/distribution/targets.json",
+    "scripts/kit_distribute.py — --verify 의 expect_installed 존중",
+    "specs/008-cortex-redeploy/",
+    "docs/workstreams/amplai-loop-runtime-adoption/{KIT-DISTRIBUTION.md,CURRENT_ITEM.md}",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md — D-054 append",
+    ".ai-team/knowledge/decisions.index.json",
+    "설치 산출물 — amplai-foundry, synapse, cortex",
+    "cortex:tests/ai/test_loop_runtime_v2.py — guard test 하나",
+    "cortex:.ai-team/README.md — 예외 각주"
+  ],
+  "content_hash": "ae17fcfc1d9e11cf87f4c511ac1f2fafe15ab53fe9c3a70e74679b7ac4cb67f3",
+  "generated_from": {
+    "claims_sha256": "da6f3e2591defcff8bd57b17cd698b2fd3c8c70f6c105e69530904e9f25a4360",
+    "commit": "5e67cd84d1a924b5a0e05ffd4f17d5ba4d611503",
+    "contract_sha256": "2966a8023e880618f21c1daaf14ff44fc60c5dccab20c7dc9bfd22bda30382f7",
+    "discovery_sha256": "",
+    "generated_at": "2026-08-28T10:06:08Z",
+    "knowledge_map_sha256": "9a7cb461c9ea4a239be2060a29a4caf956049c98609ab1d8d892d1d4c87cc9f4",
+    "readiness_sha256": "5d80e94c0924a58ad5f02507476e8fbf65a0dbbb16176ed2a536f60e044d70d8",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "cortex 의 test_ai_team_has_no_new_top_level_directory 를 삭제하지 않고 kit 3개(install·local·backups)만 예외로 허용하도록 완화한 뒤, kit 을 cortex 에 배포해 D-053 의 fleet 셋을 채운다. 선행으로 kit 의 hook test 가 세션 env(AMPLAI_PROJECT_HOME·AMPLAI_APP_ID)에 오염되는 결함을 고친다 — 그 변수를 심는 것이 kit 자신의 SessionStart hook 이라, 고치지 않고 배포하면 cortex 의 loop-runtime-tests block check 가 Claude 세션 안에서 항상 FAIL 한다.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-adoption-facts",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "reason": "keyword:cortex,ai,docs,workstreams,amplai-loop-runtime-adoption",
+      "source_sha256": "0bac3c41898ca3378fb1a9f8be68684f595be343e29d4db37369e3f46590ef12",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-adoption-port-log",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "reason": "keyword:cortex,ai,docs,workstreams,amplai-loop-runtime-adoption",
+      "source_sha256": "f63f9036135639d07ef428e38a5fafe8ede91d9aad041ee87cd3f4f2f4cdf454",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "keyword:test,check,ai-team,ai",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:ai-team,ai,knowledge,readme.md",
+      "source_sha256": "6f45aa3c3fe693c28f348821dde28eae93ebc3da026c95f7e0fe14eb100759dd",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "mgc-decisions",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "keyword:docs,workstreams,messenger-governance-closure-v3,decisions.md",
+      "source_sha256": "d8a7e78858e0a993d5d435d53ca592279d8d2ec289df6082d25dbd87bf71f7c0",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:ai-team,ai",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:ai-team,ai",
+      "source_sha256": "1e2dbfe10958900a18722d36e1f52830a9281f9565c1a3cd122f41b240f29b09",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "knowledge-rules",
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "reason": "keyword:docs,knowledge",
+      "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "memory-domain-model",
+      "path": "docs/MEMORY-DOMAIN-MODEL.md",
+      "reason": "keyword:ai,docs",
+      "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "knowledge-intake",
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "reason": "keyword:docs,knowledge",
+      "source_sha256": "e6215e6ad872f1bf984fe7db5849a97baa28ca7720dfa0b6354453571c83e31d",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "project-pack",
+      "path": "docs/PROJECT-PACK.md",
+      "reason": "keyword:install,docs",
+      "source_sha256": "ea0d88131449dde33cdca05076605e7d9a3c54a5c1b4e24f4472d93220edb919",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "versioning",
+      "path": "docs/VERSIONING.md",
+      "reason": "keyword:version,docs",
+      "source_sha256": "130b08e680cf6a185c9ab5142b76025504f1b338e93fe7cf2805b12fa8ec49b1",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "vision",
+      "path": "docs/VISION.md",
+      "reason": "keyword:ai,docs",
+      "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:knowledge",
+      "source_sha256": "b4aaa56d861e942c8e310c2ff9e5e829cd576c61ff39a14d06f490941c3110f7",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "canonical-vault",
+      "path": "vault/projects/amplai",
+      "reason": "keyword:ai",
+      "source_sha256": "",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:claude",
+      "source_sha256": "3bc238e6e58205d1113392701f221b1ea992de8f21b1e22ac5d1daaad972133e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "lifecycle",
+      "path": "docs/LIFECYCLE.md",
+      "reason": "keyword:docs",
+      "source_sha256": "1c05a8a47c8a48ef8a5d6c453efd534068be52709d7ff71e2919bfce49743f9f",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "messenger-proposal-control",
+      "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
+      "reason": "keyword:docs",
+      "source_sha256": "08b4a0b7795a6b3ae57b1e597852bfd294d836ff27398f6521eda5fab42997a0",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "proposals",
+      "path": "docs/PROPOSALS.md",
+      "reason": "keyword:docs",
+      "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "relationships",
+      "path": "docs/RELATIONSHIPS.md",
+      "reason": "keyword:docs",
+      "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "source-ingestion",
+      "path": "docs/SOURCE-INGESTION.md",
+      "reason": "keyword:docs",
+      "source_sha256": "b38f4051c3c062f89f0657b7135bb600b800d94db1a71f9f3779ee41ba6cf5eb",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "feature-specs",
+      "path": "specs/",
+      "reason": "keyword:specs",
+      "source_sha256": "",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "roadmap",
+      "path": "docs/ROADMAP.md",
+      "reason": "keyword:docs",
+      "source_sha256": "25e2761fcf9eb9f73f734593a87e350da31f4ca6fff1e581b014a95a7692a13d",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "high-priority-core",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Runtime Ownership",
+          "path": "AGENTS.md",
+          "type": "doc"
+        },
+        {
+          "path": "vault/projects/amplai",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-canonical-knowledge-in-vault",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "b4aaa56d861e942c8e310c2ff9e5e829cd576c61ff39a14d06f490941c3110f7",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "public_commands",
+          "path": ".ai-team/runtime/policy.json",
+          "type": "policy"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-loop-public-surface",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "active claim",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "What Was Not Ported",
+          "path": "AGENTS.md",
+          "type": "doc"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-semantic-runtime-not-ported",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "b4aaa56d861e942c8e310c2ff9e5e829cd576c61ff39a14d06f490941c3110f7",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "profiles",
+          "path": ".ai-team/verifiers/registry.json",
+          "type": "artifact"
+        },
+        {
+          "locator": "doctor - verifier profile 집합 불일치",
+          "path": "scripts/loopctl.py",
+          "type": "code"
+        }
+      ],
+      "id": "claim-verifier-profile-single-source",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "active claim",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "6f45aa3c3fe693c28f348821dde28eae93ebc3da026c95f7e0fe14eb100759dd",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_amplai_kit_regressions.py",
+    "tests/fixtures/codex-workflow/README.md",
+    "tests/fixtures/invalid-lifecycle/30-decisions/decision.md",
+    "tests/test_decisions.py",
+    "tests/test_kit_distribute.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "ALR-007"
+}

@@ -3995,6 +3995,138 @@ INITIAL_MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=31,
+        name="slack-review-card-lifecycle",
+        statements=(
+            """
+            CREATE TABLE governance_review_card_commands (
+                idempotency_key TEXT PRIMARY KEY NOT NULL,
+                request_fingerprint TEXT NOT NULL,
+                project_namespace TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                proposal_id TEXT NOT NULL,
+                active_definition_digest TEXT NOT NULL,
+                content_revision INTEGER NOT NULL CHECK (content_revision >= 1),
+                state_revision INTEGER NOT NULL CHECK (state_revision >= 1),
+                decision_epoch INTEGER NOT NULL CHECK (decision_epoch >= 1),
+                reviewer_actor_id TEXT NOT NULL,
+                reviewer_actor_type TEXT NOT NULL CHECK (reviewer_actor_type = 'human'),
+                reviewer_external_key TEXT NOT NULL,
+                provider_installation_ref TEXT NOT NULL,
+                channel_json TEXT NOT NULL CHECK (json_valid(channel_json) = 1),
+                expires_at TEXT NOT NULL,
+                payload_digest TEXT NOT NULL,
+                payload_json TEXT NOT NULL CHECK (json_valid(payload_json) = 1),
+                requested_at TEXT NOT NULL,
+                FOREIGN KEY (project_namespace, project_id, proposal_id)
+                    REFERENCES governance_active_proposals(
+                        project_namespace, project_id, proposal_id
+                    ) ON DELETE RESTRICT,
+                CHECK (
+                    length(request_fingerprint) = 64
+                    AND request_fingerprint NOT GLOB '*[^0-9a-f]*'
+                    AND length(active_definition_digest) = 71
+                    AND substr(active_definition_digest, 1, 7) = 'sha256:'
+                    AND substr(active_definition_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                    AND length(payload_digest) = 71
+                    AND substr(payload_digest, 1, 7) = 'sha256:'
+                    AND substr(payload_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE UNIQUE INDEX governance_review_card_one_channel_scope
+            ON governance_review_card_commands(
+                project_namespace, project_id, proposal_id,
+                active_definition_digest, state_revision, reviewer_actor_id,
+                json_extract(channel_json, '$.provider'),
+                json_extract(channel_json, '$.workspace_id'),
+                json_extract(channel_json, '$.channel_id')
+            )
+            """,
+            """
+            CREATE TABLE governance_review_action_sets (
+                event_id TEXT NOT NULL,
+                generation INTEGER NOT NULL CHECK (generation >= 1),
+                approve_token_id TEXT NOT NULL,
+                request_changes_token_id TEXT NOT NULL,
+                reject_token_id TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (
+                    state IN ('issued', 'consumed', 'expired', 'revoked')
+                ),
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                resolved_at TEXT,
+                PRIMARY KEY (event_id, generation),
+                FOREIGN KEY (event_id)
+                    REFERENCES governance_outbox_events(event_id) ON DELETE RESTRICT,
+                FOREIGN KEY (approve_token_id)
+                    REFERENCES governance_action_tokens(token_id) ON DELETE RESTRICT,
+                FOREIGN KEY (request_changes_token_id)
+                    REFERENCES governance_action_tokens(token_id) ON DELETE RESTRICT,
+                FOREIGN KEY (reject_token_id)
+                    REFERENCES governance_action_tokens(token_id) ON DELETE RESTRICT,
+                CHECK (
+                    approve_token_id != request_changes_token_id
+                    AND approve_token_id != reject_token_id
+                    AND request_changes_token_id != reject_token_id
+                ),
+                CHECK (
+                    (state = 'issued' AND resolved_at IS NULL)
+                    OR (state != 'issued' AND resolved_at IS NOT NULL)
+                )
+            ) WITHOUT ROWID
+            """,
+            """
+            CREATE UNIQUE INDEX governance_review_action_sets_one_issued
+            ON governance_review_action_sets(event_id) WHERE state = 'issued'
+            """,
+            """
+            CREATE TRIGGER governance_review_card_commands_no_update
+            BEFORE UPDATE ON governance_review_card_commands
+            BEGIN SELECT RAISE(ABORT, 'review card command is immutable'); END
+            """,
+            """
+            CREATE TRIGGER governance_review_card_commands_no_delete
+            BEFORE DELETE ON governance_review_card_commands
+            BEGIN SELECT RAISE(ABORT, 'review card command is durable'); END
+            """,
+            """
+            CREATE TRIGGER governance_review_action_sets_immutable_issuance
+            BEFORE UPDATE ON governance_review_action_sets
+            WHEN OLD.event_id != NEW.event_id
+              OR OLD.generation != NEW.generation
+              OR OLD.approve_token_id != NEW.approve_token_id
+              OR OLD.request_changes_token_id != NEW.request_changes_token_id
+              OR OLD.reject_token_id != NEW.reject_token_id
+              OR OLD.issued_at != NEW.issued_at
+              OR OLD.expires_at != NEW.expires_at
+              OR OLD.state != 'issued'
+              OR NEW.state = 'issued'
+              OR NEW.resolved_at IS NULL
+            BEGIN SELECT RAISE(ABORT, 'review action set transition is invalid'); END
+            """,
+            """
+            CREATE TRIGGER governance_review_action_sets_no_delete
+            BEFORE DELETE ON governance_review_action_sets
+            BEGIN SELECT RAISE(ABORT, 'review action set is durable'); END
+            """,
+        ),
+    ),
+    Migration(
+        version=32,
+        name="slack-review-card-one-snapshot",
+        statements=(
+            """
+            CREATE UNIQUE INDEX governance_review_card_one_snapshot
+            ON governance_review_card_commands(
+                project_namespace, project_id, proposal_id,
+                active_definition_digest, content_revision, state_revision, decision_epoch
+            )
+            """,
+        ),
+    ),
 )
 
 
@@ -4719,6 +4851,42 @@ class MigrationRunner:
                 ("approval_hold_reason_code", "TEXT", 0, 0),
                 ("approval_hold_source_artifact_digest", "TEXT", 0, 0),
                 ("approval_hold_created_at", "TEXT", 0, 0),
+            )
+        if schema_version >= 31:
+            expected_columns.update(
+                {
+                    "governance_review_card_commands": (
+                        ("idempotency_key", "TEXT", 1, 1),
+                        ("request_fingerprint", "TEXT", 1, 0),
+                        ("project_namespace", "TEXT", 1, 0),
+                        ("project_id", "TEXT", 1, 0),
+                        ("proposal_id", "TEXT", 1, 0),
+                        ("active_definition_digest", "TEXT", 1, 0),
+                        ("content_revision", "INTEGER", 1, 0),
+                        ("state_revision", "INTEGER", 1, 0),
+                        ("decision_epoch", "INTEGER", 1, 0),
+                        ("reviewer_actor_id", "TEXT", 1, 0),
+                        ("reviewer_actor_type", "TEXT", 1, 0),
+                        ("reviewer_external_key", "TEXT", 1, 0),
+                        ("provider_installation_ref", "TEXT", 1, 0),
+                        ("channel_json", "TEXT", 1, 0),
+                        ("expires_at", "TEXT", 1, 0),
+                        ("payload_digest", "TEXT", 1, 0),
+                        ("payload_json", "TEXT", 1, 0),
+                        ("requested_at", "TEXT", 1, 0),
+                    ),
+                    "governance_review_action_sets": (
+                        ("event_id", "TEXT", 1, 1),
+                        ("generation", "INTEGER", 1, 2),
+                        ("approve_token_id", "TEXT", 1, 0),
+                        ("request_changes_token_id", "TEXT", 1, 0),
+                        ("reject_token_id", "TEXT", 1, 0),
+                        ("state", "TEXT", 1, 0),
+                        ("issued_at", "TEXT", 1, 0),
+                        ("expires_at", "TEXT", 1, 0),
+                        ("resolved_at", "TEXT", 0, 0),
+                    ),
+                }
             )
         for table, expected in expected_columns.items():
             rows = connection.execute(f"PRAGMA table_info({table})").fetchall()

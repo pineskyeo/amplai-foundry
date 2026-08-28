@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import sqlite3
@@ -38,6 +39,7 @@ from amplai_foundry.governance import (
     OutboxDispatcher,
     OutboxLeaseConflictError,
     OutboxReconcileError,
+    OutboxRetryableError,
     OutboxState,
     ProposalDefinitionManifest,
     ProposalRef,
@@ -45,6 +47,7 @@ from amplai_foundry.governance import (
     YamlProjectionDestination,
     canonicalize_definition,
 )
+from amplai_foundry.governance import events as events_module
 from amplai_foundry.governance.events import (
     DecisionProjectionPayload,
     GovernanceEventService,
@@ -93,6 +96,35 @@ def _authority() -> AuthorityContext:
         source=AuthoritySource(request_id="request-1", channel=CHANNEL),
         authenticated_at=NOW,
     )
+
+
+def test_non_slack_destinations_remain_distinct_per_chat() -> None:
+    first_channel = ChannelRef(
+        provider=ChannelProvider.TELEGRAM,
+        chat_id="CHAT-1",
+        thread_id="THREAD-1",
+        message_id="MESSAGE-1",
+    )
+    second_channel = first_channel.model_copy(
+        update={"chat_id": "CHAT-2", "message_id": "MESSAGE-2"}
+    )
+    first_authority = _authority().model_copy(
+        update={
+            "source": AuthoritySource(request_id="telegram-1", channel=first_channel),
+        }
+    )
+    second_authority = _authority().model_copy(
+        update={
+            "source": AuthoritySource(request_id="telegram-2", channel=second_channel),
+        }
+    )
+
+    first = GovernanceEventService._decision_destinations(PROPOSAL, first_authority)[1]
+    second = GovernanceEventService._decision_destinations(PROPOSAL, second_authority)[1]
+
+    assert first.destination_ref != second.destination_ref
+    assert first == GovernanceEventService._legacy_provider_destination(PROPOSAL, first_channel)
+    assert second == GovernanceEventService._legacy_provider_destination(PROPOSAL, second_channel)
 
 
 def _approval(index: int) -> BindingApproval:
@@ -1219,3 +1251,668 @@ def test_yaml_projection_reconcile_rejects_self_inconsistent_record(tmp_path: Pa
 
     with pytest.raises(OutboxReconcileError, match="YAML_PROJECTION_DIVERGED"):
         projection.reconcile(yaml_event)
+
+
+# D-022 — 두 사전 검증 실패는 `OutboxReconcileError` 다. 부모인 `GovernanceEventError` 로
+# 던지면 `deliver_next` 의 unreconcilable 경로를 못 타고 generic handler 로 떨어져 원인이
+# `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. 두 조건은 event row 의 불변 column 에서 나오므로
+# 재시도가 확정적으로 무의미하다. 부모 관계 때문에 타입 검사만으로는 방향이 안 잡혀
+# `type(...) is` 로 못박는다.
+def test_yaml_projection_pre_send_validation_is_unreconcilable(tmp_path: Path) -> None:
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _audit, outbox = _append(events, store, command_id="command-yaml", state_revision=2)
+    yaml_event = next(event for event in outbox if event.destination_ref.startswith("yaml:"))
+    projection = YamlProjectionDestination(
+        tmp_path / "projection/proposal.yaml",
+        destination_ref=yaml_event.destination_ref,
+    )
+
+    with pytest.raises(OutboxReconcileError) as mismatch:
+        projection.send(yaml_event.model_copy(update={"destination_ref": "yaml:other"}))
+    assert type(mismatch.value) is OutboxReconcileError
+    assert mismatch.value.code == "OUTBOX_DESTINATION_MISMATCH"
+
+    with pytest.raises(OutboxReconcileError) as integrity:
+        projection.send(yaml_event.model_copy(update={"payload": {"tampered": True}}))
+    assert type(integrity.value) is OutboxReconcileError
+    assert integrity.value.code == "OUTBOX_PAYLOAD_INTEGRITY_FAILURE"
+    assert not (tmp_path / "projection/proposal.yaml").exists()
+
+
+def test_the_used_tokens_own_raw_value_is_rejected_as_idempotency_key(tmp_path: Path) -> None:
+    """이번 호출의 raw token 이 idempotency key 에 섞이면 거부된다.
+
+    `test_any_raw_action_token_is_rejected_as_idempotency_key` 는 **sibling** token 의 raw
+    값만 넣는다. 그 test 는 `_contains_persisted_secret` scan 을 지킨다. 같은 token 의 raw
+    값을 넣는 경우는 `decisions.py` 의 `raw_token in idempotency_key` guard 가 막는데,
+    그 guard 를 지워도 아무 test 가 실패하지 않았다 (round 10 regression `C-12`).
+
+    이 guard 가 없으면 raw credential 이 섞인 key 가 그대로
+    `governance_decision_results.idempotency_key` 로 영구 저장된다 (FR-018, SC-005).
+    """
+    store, active, decisions = _decision_fixture(tmp_path)
+    tokens = decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+    approve = next(item for item in tokens if item.record.allowed_action is DecisionAction.APPROVE)
+
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
+        decisions.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=approve.raw_token,
+            idempotency_key=f"prefix-{approve.raw_token}-suffix",
+            request_fingerprint=hashlib.sha256(b"own-raw-token-key").hexdigest(),
+        )
+
+    assert active.get(PROPOSAL).status is ActiveProposalStatus.REVIEWED  # type: ignore[union-attr]
+    assert decisions.get_token(approve.record.token_id).state.value == "issued"
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_decision_results"
+        ).fetchone() == (0,)
+        stored_keys = connection.execute(
+            "SELECT idempotency_key FROM governance_decision_results"
+        ).fetchall()
+    assert all(approve.raw_token not in str(row[0]) for row in stored_keys)
+
+
+def test_the_raw_token_is_rejected_even_as_the_entire_idempotency_key(tmp_path: Path) -> None:
+    _store, _active, decisions = _decision_fixture(tmp_path)
+    tokens = decisions.issue_tokens(PROPOSAL, authority_request=_authority_request())
+    approve = next(item for item in tokens if item.record.allowed_action is DecisionAction.APPROVE)
+
+    with pytest.raises(DecisionError, match="IDEMPOTENCY_CONFLICT"):
+        decisions.decide(
+            PROPOSAL,
+            action=DecisionAction.APPROVE,
+            authority_request=_authority_request(),
+            raw_token=approve.raw_token,
+            idempotency_key=approve.raw_token,
+            request_fingerprint=hashlib.sha256(b"exact-raw-token-key").hexdigest(),
+        )
+
+    assert decisions.get_token(approve.record.token_id).state.value == "issued"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T010 — 재시도 가능한 배달 실패는 예산을 쓰고 원인을 남긴다 (round 11 R-2)
+# ---------------------------------------------------------------------------
+
+
+class _RetryableRemote:
+    """재시도 가능한 실패를 자기 code 와 함께 알리는 destination."""
+
+    def __init__(self, destination_ref: str) -> None:
+        self.destination_ref = destination_ref
+        self.sends = 0
+
+    def reconcile(self, event):
+        return None
+
+    def send(self, event):
+        self.sends += 1
+        raise OutboxRetryableError("DEMO_TRANSIENT_CAUSE")
+
+
+def _one_provider_event(tmp_path: Path):
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _audit, outbox = _append(
+        events,
+        store,
+        command_id="command-1",
+        state_revision=2,
+        destinations=(OutboxDestination(destination_ref="provider:slack:C456"),),
+    )
+    provider = next(event for event in outbox if event.supersession_key is not None)
+    return store, provider
+
+
+# T010 AC-01 — 예산을 쓴다. destination 은 멈추지 않는다.
+def test_a_retryable_delivery_failure_spends_its_budget(tmp_path: Path) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+
+    result = OutboxDispatcher(store, clock=lambda: NOW).deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.state is OutboxState.RETRY_WAIT
+    with store.connect() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM governance_outbox_dead_letters"
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM governance_operator_holds").fetchone() == (
+            0,
+        )
+
+
+# T010 AC-01 — 원인 code 를 보존한다.
+#
+# `except Exception` 경로도 재시도로 흐르지만 예외를 보지 않고 `OUTBOX_DELIVERY_FAILED` 를
+# 박는다. round 11 `R-1` 이 원인 아닌 dead letter code 를 결함으로 셌으므로 같은 형태를
+# 만들지 않는다. 이 비교가 그 mutation 을 죽인다.
+def test_a_retryable_delivery_failure_keeps_its_own_cause_code(tmp_path: Path) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+
+    result = OutboxDispatcher(store, clock=lambda: NOW).deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.last_error_code == "DEMO_TRANSIENT_CAUSE"
+    assert result.last_error_code != "OUTBOX_DELIVERY_FAILED"
+
+
+# T010 AC-02 — 예산을 소진하면 여전히 dead letter 와 operator hold 에 도달하고, 그 dead
+# letter 가 원인 code 를 가진다. 재분류가 안전망을 없애지 않는다.
+def test_a_retryable_delivery_failure_dead_letters_once_the_budget_is_spent(
+    tmp_path: Path,
+) -> None:
+    store, provider = _one_provider_event(tmp_path)
+    destination = _RetryableRemote(provider.destination_ref)
+    clock = MutableClock()
+    dispatcher = OutboxDispatcher(store, clock=clock, config=OutboxConfig(max_attempts=3))
+
+    result = None
+    for _ in range(3):
+        clock.advance(timedelta(minutes=10))
+        result = dispatcher.deliver_next("worker", destination)
+
+    assert result is not None
+    assert result.state is OutboxState.DEAD_LETTER
+    assert destination.sends == 3, "예산만큼 실제로 시도한다"
+    with store.connect() as connection:
+        dead = connection.execute(
+            "SELECT error_code FROM governance_outbox_dead_letters"
+        ).fetchall()
+        holds = connection.execute("SELECT reason_code FROM governance_operator_holds").fetchall()
+    assert dead == [("DEMO_TRANSIENT_CAUSE",)]
+    assert holds == [("DEMO_TRANSIENT_CAUSE",)]
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T023 — 여덟 감사 대조가 helper 하나를 쓴다
+# ---------------------------------------------------------------------------
+#
+# 착수 전 실측: `reconcile_connection` 의 감사 대조는 여덟 블록 72성분이었고 **62개가
+# 무방비**였다. 블록을 통째로 무력화(`if False and (...)`)해도 전 suite 가 통과한 블록이
+# 여섯이다 — `LEGACY_MIGRATION`, `LEGACY_APPROVAL_REVIEW`, `DECISION`, `APPLY`,
+# `APPLY_JOB`, `PUBLISH_RESOLUTION`. `REVIEW_CARD` 만 T018 이 9/9 를 고정해 뒀다.
+#
+# 성분을 하나씩 test 로 덮는 대신(그것이 superseded 된 T020 이었다) 비교를 helper 하나로
+# 모았다. 아래 셋이 그 구조를 고정한다.
+#
+#   1. helper 자신 — 주어진 필드 하나만 어긋나도 지정된 code 로 거부한다.
+#   2. or-chain 이 되돌아오지 않는다 (AST).
+#   3. 각 호출 지점이 기대하는 필드 집합과 code 가 기록과 같다 (AST).
+#
+# 2 와 3 이 함께 72성분을 덮는다. mapping 에서 key 를 빼면 3 이 실패하고, 비교를 무력화하면
+# 1 과 아래 실행 test 들이 실패한다.
+
+
+def _audit_row(store: GovernanceStore, event_type: str) -> tuple[object, ...]:
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT * FROM governance_audit_events WHERE event_type = ?",
+            (event_type,),
+        ).fetchone()
+    assert row is not None, f"{event_type} 감사 row 가 없다"
+    return tuple(row)
+
+
+_HELPER_FIELDS = (
+    ("event_type", "proposal.tampered"),
+    ("actor_id", "ACT-OTHER"),
+    ("actor_type", "service"),
+    ("policy_snapshot_id", "sha256:" + "c" * 64),
+    ("before_state", "draft"),
+    ("after_state", "superseded"),
+    ("definition_digest", "sha256:" + "d" * 64),
+    ("destination_manifest_digest", "sha256:" + "e" * 64),
+    ("destination_count", 7),
+)
+
+
+@pytest.mark.parametrize(
+    ("field", "wrong"), _HELPER_FIELDS, ids=[name for name, _ in _HELPER_FIELDS]
+)
+def test_the_audit_helper_rejects_every_field_it_is_given(
+    tmp_path: Path, field: str, wrong: object
+) -> None:
+    """helper 는 `expected` 의 **모든** key 를 본다. 하나라도 어긋나면 주어진 code 로 막는다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-helper", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    truthful = {
+        "event_type": audit.event_type,
+        "actor_id": audit.actor_id,
+        "actor_type": audit.actor_type,
+        "policy_snapshot_id": audit.policy_snapshot_id,
+        "before_state": audit.before_state,
+        "after_state": audit.after_state,
+        "definition_digest": audit.definition_digest,
+        "destination_manifest_digest": audit.destination_manifest_digest,
+        "destination_count": audit.destination_count,
+    }
+    GovernanceEventService._assert_audit_matches(audit, truthful, "SHOULD_NOT_RAISE")
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService._assert_audit_matches(
+            audit, {**truthful, field: wrong}, "HELPER_TEST_CODE"
+        )
+    assert "HELPER_TEST_CODE" in str(caught.value)
+
+
+def test_the_audit_helper_compares_occurred_at_in_its_stored_form(tmp_path: Path) -> None:
+    """`occurred_at` 만 변환을 거친다. view 는 `datetime`, row 는 문자열이다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-occurred", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    stored = GovernanceEventService._timestamp(audit.occurred_at)
+    GovernanceEventService._assert_audit_matches(audit, {"occurred_at": stored}, "UNUSED")
+
+    with pytest.raises(GovernanceEventError, match="OCCURRED_AT_CODE"):
+        GovernanceEventService._assert_audit_matches(
+            audit, {"occurred_at": "2000-01-01T00:00:00.000000Z"}, "OCCURRED_AT_CODE"
+        )
+
+
+def test_the_audit_helper_ignores_fields_the_call_site_did_not_name(tmp_path: Path) -> None:
+    """비대칭은 의도다. 주지 않은 필드는 보지 않는다 — 그 사실을 고정한다."""
+    store, _active, _draft = _active_proposal(tmp_path)
+    events = GovernanceEventService(store, clock=lambda: NOW)
+    _append(events, store, command_id="command-partial", state_revision=2)
+    audit = GovernanceEventService._audit_view(_audit_row(store, "proposal.approved"))
+
+    GovernanceEventService._assert_audit_matches(audit, {"event_type": audit.event_type}, "UNUSED")
+
+
+# --- AST — 구조 자체를 고정한다 ------------------------------------------------
+#
+# 아래 둘이 T020(60성분을 하나씩 test 로 덮기)을 대체한다. mapping 에서 key 를 하나 빼면
+# `..._expects_its_recorded_field_set` 이 실패하고, or-chain 으로 되돌리면
+# `..._uses_the_shared_helper` 가 실패한다. 성분을 세는 일이 사라진다.
+
+_EXPECTED_AUDIT_CALL_SITES: dict[str, frozenset[str]] = {
+    "REVIEW_CARD_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "proposal_ref",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_MIGRATION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "LEGACY_FORWARD_RECOVERY_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "proposal_ref",
+            "actor_id",
+            "actor_type",
+            "policy_snapshot_id",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "occurred_at",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "DECISION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "APPLY_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "APPLY_JOB_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+    "PUBLISH_RESOLUTION_AUDIT_MISMATCH": frozenset(
+        {
+            "event_type",
+            "actor_id",
+            "actor_type",
+            "before_state",
+            "after_state",
+            "definition_digest",
+            "destination_manifest_digest",
+            "destination_count",
+        }
+    ),
+}
+
+
+def _reconcile_ast() -> ast.FunctionDef:
+    source = Path(events_module.__file__).read_text(encoding="utf-8")
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.FunctionDef) and node.name == "reconcile_connection":
+            return node
+    raise AssertionError("reconcile_connection 을 찾지 못했다")
+
+
+def _audit_call_sites() -> dict[str, frozenset[str]]:
+    sites: dict[str, frozenset[str]] = {}
+    for node in ast.walk(_reconcile_ast()):
+        if not isinstance(node, ast.Call):
+            continue
+        target = node.func
+        if not (isinstance(target, ast.Attribute) and target.attr == "_assert_audit_matches"):
+            continue
+        assert len(node.args) == 3, "helper 는 (audit, expected, code) 셋을 받는다"
+        mapping, code = node.args[1], node.args[2]
+        assert isinstance(mapping, ast.Dict), "`expected` 는 literal mapping 이어야 눈에 보인다"
+        assert isinstance(code, ast.Constant), "code 는 literal 이어야 한 눈에 읽힌다"
+        keys = frozenset(key.value for key in mapping.keys if isinstance(key, ast.Constant))
+        assert len(keys) == len(mapping.keys), "mapping key 는 전부 문자열 literal 이다"
+        assert str(code.value) not in sites, f"error code 가 두 지점에 있다: {code.value}"
+        sites[str(code.value)] = keys
+    return sites
+
+
+def test_every_audit_comparison_uses_the_shared_helper() -> None:
+    """`or` 사슬로 되돌아가지 않는다.
+
+    되돌아가면 다시 성분을 세야 하고, 그 세기가 다섯 라운드 연속 틀렸다.
+    """
+    chains = [
+        node
+        for node in ast.walk(_reconcile_ast())
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.BoolOp)
+        and isinstance(node.test.op, ast.Or)
+        and any(
+            isinstance(sub, ast.Attribute)
+            and isinstance(sub.value, ast.Name)
+            and sub.value.id == "audit"
+            for sub in ast.walk(node.test)
+        )
+    ]
+    assert chains == [], f"감사 대조 or-chain 이 되살아났다: {[n.lineno for n in chains]}"
+    assert len(_audit_call_sites()) == len(_EXPECTED_AUDIT_CALL_SITES)
+
+
+def test_each_audit_comparison_expects_its_recorded_field_set() -> None:
+    """호출 지점의 `expected` mapping 에서 필드를 빼면 여기서 걸린다.
+
+    이 하나가 72성분을 덮는다. 예전에는 성분마다 test 가 필요했고 62개가 비어 있었다.
+    """
+    assert _audit_call_sites() == _EXPECTED_AUDIT_CALL_SITES
+
+
+# --- 실행 test — 각 호출 지점이 자기 code 로 막는다 -------------------------------
+#
+# 위의 AST test 는 mapping 을 **읽어서** 고정한다. 그 mapping 이 실제로 그 code 로 거부하는지는
+# 실행해야 안다. 착수 전 실측에서 여섯 지점은 통째로 무력화해도 실패하는 test 가 0건이었다.
+#
+# state 를 만드는 helper 는 다른 test module 에서 **수정 없이 import** 한다. 같은 fixture 를
+# 두 벌 만들면 그것이 다음 형제가 된다 — `test_slack_http` 가 이미 이 방식을 쓴다.
+import test_apply_jobs as apply_fixtures  # noqa: E402
+
+
+def _tamper_audit(store: GovernanceStore, event_type: str, column: str, value: object) -> None:
+    with store.connect() as connection:
+        connection.execute("DROP TRIGGER governance_audit_events_no_update")
+        changed = connection.execute(
+            f"UPDATE governance_audit_events SET {column} = ? WHERE event_type = ?",
+            (value, event_type),
+        )
+        assert changed.rowcount == 1, f"{event_type} 감사 row 하나만 바꾼다"
+        connection.commit()
+
+
+# `_publish_pending_job_fixture` 하나가 decision, apply, apply_job 세 지점의 감사 row 를
+# 남긴다. 세 지점 모두 착수 전 무방비였다.
+_EXECUTED_AUDIT_SITES = [
+    ("proposal.approved", "actor_id", "ACT-OTHER-HUMAN", "DECISION_AUDIT_MISMATCH"),
+    ("proposal.approved", "before_state", "draft", "DECISION_AUDIT_MISMATCH"),
+    ("proposal.apply_requested", "actor_id", "ACT-OTHER-HUMAN", "APPLY_AUDIT_MISMATCH"),
+    ("proposal.apply_requested", "after_state", "applied", "APPLY_AUDIT_MISMATCH"),
+    ("apply_job.claimed", "actor_type", "human", "APPLY_JOB_AUDIT_MISMATCH"),
+    ("apply_job.started", "after_state", "queued", "APPLY_JOB_AUDIT_MISMATCH"),
+]
+
+
+@pytest.mark.parametrize(
+    ("event_type", "column", "wrong_value", "expected_code"),
+    _EXECUTED_AUDIT_SITES,
+    ids=[f"{event}-{column}" for event, column, _, _ in _EXECUTED_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_audit_with_the_code_of_its_own_call_site(
+    tmp_path: Path,
+    event_type: str,
+    column: str,
+    wrong_value: str,
+    expected_code: str,
+) -> None:
+    """대조가 잡았다는 증거는 **그 지점의 code** 다.
+
+    audit row 를 고치면 hash chain 도 깨져 `AUDIT_HASH_CHAIN_INVALID` 가 대신 잡을 수 있다.
+    code 를 확인하지 않으면 겨냥한 대조를 고정한 것이 아니다 (T018 이 쓴 방식).
+    """
+    store, _job_id = apply_fixtures._publish_pending_job_fixture(tmp_path)
+    _tamper_audit(store, event_type, column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert expected_code in str(caught.value), (
+        f"{event_type}.{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# legacy migration import 는 `LEGACY_MIGRATION_AUDIT_MISMATCH` 지점의 감사 row 를 남긴다.
+# 그 지점도 착수 전 무방비였다 (블록 전체를 무력화해도 실패 0건).
+import test_legacy_migration as legacy_fixtures  # noqa: E402
+from amplai_foundry.governance import legacy_migration as legacy_approval_review  # noqa: E402
+
+
+def _legacy_imported_store(tmp_path: Path) -> GovernanceStore:
+    root = legacy_fixtures._legacy_tree(tmp_path / "project", revision=7)
+    store, _objects, dry_run, service, backup = legacy_fixtures._import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=legacy_fixtures._freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.prepare(plan, backup)
+    service.import_state(plan, backup)
+    return store
+
+
+_LEGACY_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-HUMAN"),
+    ("actor_type", "agent"),
+    ("policy_snapshot_id", "sha256:" + "f" * 64),
+    ("after_state", "approved"),
+    ("occurred_at", "2000-01-01T00:00:00.000000Z"),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _LEGACY_AUDIT_SITES,
+    ids=[column for column, _ in _LEGACY_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_legacy_migration_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    store = _legacy_imported_store(tmp_path)
+    with store.connect() as connection:
+        event_type = connection.execute(
+            "SELECT event_type FROM governance_audit_events LIMIT 1"
+        ).fetchone()[0]
+    _tamper_audit(store, str(event_type), column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "LEGACY_MIGRATION_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# publish resolution 은 실제 git repository 를 세우고 CAS 를 돌려야 감사 row 가 생긴다.
+# `test_apply_jobs` 가 그 fixture 를 이미 갖고 있다.
+_PUBLISH_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-SERVICE"),
+    ("actor_type", "human"),
+    ("before_state", "queued"),
+    ("definition_digest", "sha256:" + "9" * 64),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _PUBLISH_AUDIT_SITES,
+    ids=[column for column, _ in _PUBLISH_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_publish_resolution_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    store, repository, _git, prepared, _base, _candidate = (
+        apply_fixtures._real_prepared_publish_fixture(tmp_path)
+    )
+    coordinator = apply_fixtures.FencedGitPublishCoordinator(
+        store,
+        repository,
+        coordinator_id="publisher-audit-probe",
+        clock=lambda: apply_fixtures.NOW,
+    )
+    assert (
+        coordinator.publish_prepared_ref(prepared.intent_id) is apply_fixtures.GitCASOutcome.UPDATED
+    )
+    apply_fixtures.PublishResolutionService(
+        store,
+        apply_fixtures.SubprocessGitCandidateInspector(repository),
+        coordinator_id="recovery-audit-probe",
+        clock=lambda: apply_fixtures.NOW,
+    ).recover(prepared.intent_id)
+
+    _tamper_audit(store, "publish.published", column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "PUBLISH_RESOLUTION_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )
+
+
+# 마지막 지점. `legacy_approval_review_required` 로 들어온 항목을 사람이 검토하면
+# `migration.synthetic_approval_reviewed` 감사 row 가 생기고
+# `LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH` 대조가 그것을 본다. 여기도 착수 전 무방비였다.
+_LEGACY_REVIEW_AUDIT_SITES = [
+    ("actor_id", "ACT-OTHER-HUMAN"),
+    ("actor_type", "service"),
+    ("policy_snapshot_id", "sha256:" + "7" * 64),
+    ("before_state", "approved"),
+    ("occurred_at", "2000-01-01T00:00:00.000000Z"),
+]
+
+
+@pytest.mark.parametrize(
+    ("column", "wrong_value"),
+    _LEGACY_REVIEW_AUDIT_SITES,
+    ids=[column for column, _ in _LEGACY_REVIEW_AUDIT_SITES],
+)
+def test_reconcile_rejects_a_tampered_legacy_approval_review_audit(
+    tmp_path: Path, column: str, wrong_value: str
+) -> None:
+    root = legacy_fixtures._legacy_tree(tmp_path / "project", status="approved")
+    store, _objects, dry_run, service, backup = legacy_fixtures._import_fixture(
+        tmp_path / "fixture",
+        root,
+    )
+    plan = dry_run.create_plan(
+        freeze=legacy_fixtures._freeze(root),
+        base_revision="a13d92f",
+        validation_policy_ref="policy/migration/v1",
+    )
+    service.prepare(plan, backup)
+    service.import_state(plan, backup)
+    legacy_approval_review.LegacyApprovalReviewService(
+        store,
+        AuthorityService(store, clock=lambda: legacy_fixtures.NOW),
+        clock=lambda: legacy_fixtures.NOW,
+    ).resolve(
+        plan.proposals[0].proposal_ref,
+        authority_request=legacy_fixtures._migration_authority(store),
+        reason="human reviewed untrusted legacy approval",
+        idempotency_key="audit-probe:legacy-review:1",
+        request_fingerprint="b" * 64,
+    )
+
+    _tamper_audit(store, "migration.synthetic_approval_reviewed", column, wrong_value)
+
+    with pytest.raises(GovernanceEventError) as caught:
+        GovernanceEventService(store).reconcile()
+
+    assert "LEGACY_APPROVAL_REVIEW_AUDIT_MISMATCH" in str(caught.value), (
+        f"{column} 을 바꿨는데 다른 검사가 먼저 잡았다: {caught.value}"
+    )

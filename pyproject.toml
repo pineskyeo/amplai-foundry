@@ -20,7 +20,11 @@ dependencies = [
 dev = [
   "mypy>=1.11,<2",
   "pytest>=8.3,<9",
-  "ruff>=0.6,<1",
+  # 상한을 두는 이유: CI 는 매번 최신을 받고 로컬은 설치된 것을 쓴다. 0.16 이 markdown
+  # 코드 블록 포맷을 켜면서 로컬 verifier 는 PASS 인데 CI 만 FAIL 인 상태가 됐다.
+  # 그 대상에 DECISIONS.md 같은 역사 기록이 들어 있어 포맷터에 맞춰 다시 쓸 수 없다.
+  # 올릴 때는 별도 Work 로 diff 를 보고 올린다.
+  "ruff>=0.15.21,<0.16",
   "types-pyyaml>=6.0.12.20240808",
 ]
 
@@ -31,18 +35,50 @@ amplai-foundry = "amplai_foundry.cli:app"
 packages = ["src/amplai_foundry"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+# `-m "not slack_e2e"` 가 E2E 를 기본 실행에서 뺀다. `amplai-foundry verify` 는 인자 없이
+# `python -m pytest` 를 부르므로 (verification/runner.py:37) 이 한 줄이 verify 를 network
+# 없이 유지한다 — verify 에 stage 를 더하지 않는다 (FR-020, SC-014).
+# 명령줄의 `-m` 이 이것을 이긴다. `python -m pytest -m slack_e2e` 로 E2E 만 돌린다.
+addopts = "-q -m \"not slack_e2e\""
 testpaths = ["tests"]
+markers = [
+  "slack_e2e: 실제 Slack workspace 를 치는 test. 기본 실행에서 deselect 된다 (contracts H-5.1)",
+]
+# tests/test_slack_projection.py 가 test_governance_events 를 top-level 로 import 한다.
+# 이것 없이는 pytest 의 prepend import mode 가 tests/ 를 sys.path 에 넣어 주는 것에 의존하고,
+# import mode 를 바꾸면 조용히 깨진다. 의존을 명시로 바꾼다 (index.yaml W2-pytest-import-mode).
+pythonpath = ["tests"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
 src = ["src", "tests"]
 # Vendored agent skill assets keep their upstream formatting so updates stay clean.
-extend-exclude = [".agents", ".ai-team", ".claude", ".specify"]
+# tools/amplai-loop-kit 도 같은 이유다 — kit 은 Python 3.6 호환을 유지하려고 % 포맷을
+# 쓰고, 이 저장소가 정본이 된 뒤에도 그 형식을 지켜야 배포 대상들과 어긋나지 않는다
+# (D-053). kit 을 부르는 이 저장소 코드(scripts/kit_distribute.py)는 lint 대상이다.
+extend-exclude = [
+    ".agents", ".ai-team", ".claude", ".specify",
+    # kit 정본과 그것이 설치한 파일. kit 은 Python 3.6 호환을 유지해야 배포 대상들과
+    # 어긋나지 않으므로 % 포맷과 open alias 가 남는다. 여기서 고치면 다음 설치가
+    # 되돌리므로 tools/amplai-loop-kit/payload/ 에서만 고친다 (D-051, D-053).
+    "tools/amplai-loop-kit",
+    "scripts/amplai.py", "scripts/amplai_hook.py",
+    "scripts/amplai_runtime.py", "scripts/amplai_supervisor.py",
+    "tests/ai",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+# cortex main 3a3eb46b 에서 이식한 loop runtime (D-046). 자동 수정 가능한 168건은 이미
+# 적용했고, 남은 것들은 upstream 과 diff 를 유지하기 위해 남긴다 — cortex 가 이 파일들을
+# 계속 고치므로 재이식 때 충돌을 줄이는 쪽이 이득이다.
+#
+# 이 예외는 `scripts/` 의 두 파일에만 걸린다. `src/` 와 `tests/` 는 그대로 strict 다.
+[tool.ruff.lint.per-file-ignores]
+"scripts/loopctl.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
+"scripts/loopv2.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 
 [tool.ruff.format]
 quote-style = "double"

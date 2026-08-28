@@ -41,10 +41,20 @@ read-back 으로 판정하므로 read 가 없으면 계약이 성립하지 않�
   terminal 이어야 할 `invalid_auth` 가 조용히 재시도된 뒤 attempt 소진으로만 멈춘다.
   `SlackProjectionDestination` 도 새어 나온 예외를 재감싸지만 (T002) 그건 **두 번째
   방어선**이지 이 의무의 대체가 아니다. 구현체가 code 를 실어 보내야 원인이 남는다.
-- **호출 시간을 `OutboxConfig.lease_seconds` 보다 확실히 짧게 묶는다.** lease 만료 뒤에
+- **호출 시간을 묶는다. 기준은 `reconcile()` + `send()` 전체다.** lease 만료 뒤에
   실패하면 dispatcher 의 `fail()` 이 `_require_lease` 에서 `OutboxLeaseConflictError` 로
   터져 **terminal 판정이 통째로 버려진다** — dead letter 도 hold 도 안 생기고, 나중에
-  sweep 이 `OUTBOX_LEASE_EXPIRED` 로 되돌려 영구 실패를 다시 시도한다.
+  sweep 이 `OUTBOX_LEASE_EXPIRED` 로 되돌려 영구 실패를 다시 시도한다. 한 번의
+  `deliver_next` 는 `read_history` 를 최대 `max_history_pages` 회 부른 뒤 `post_message`
+  를 한 번 부른다. **호출 하나하나가 lease 안에 들어와도 합이 넘으면 같은 결과다**
+  (wave 3 review). 예산은 호출당이 아니라 그 합에 걸어야 한다.
+- **`read_history` 는 최신 message 부터 돌려준다.** page 안에서도, page 사이에서도
+  그렇다. C-2.2 의 판정은 "먼저 만난 것이 이긴다" 이므로 순서가 뒤집히면 하위 sequence
+  marker 를 우리 marker 보다 먼저 만나 이미 나간 Card 를 한 장 더 만든다. **이 사실을
+  Slack 공식 문서에서 확인하지 못했다** — research S2 에 근거가 없다. 그래서 계약으로
+  적고 Package 4 의 확인 항목으로 남긴다. destination 은 page **안**에서는 우리 marker 를
+  먼저 찾는 방식으로 이 의존을 없앴지만 (T003), page **사이**는 cursor 를 우리가 만들지
+  않아 막을 수 없다.
 
 ### C-1.1 — `post_message`
 
@@ -62,7 +72,13 @@ read-back 으로 판정하므로 read 가 없으면 계약이 성립하지 않�
   불가능하다.
 - `limit` 상한은 999 다 (research S2).
 - 반환은 message 목록과 `next_cursor` 를 갖는 page 다. `next_cursor` 가 없으면 마지막 page 다.
-- 각 message 는 `ts`, `metadata`, `app_id` 를 갖는다 (data-model.md).
+- 각 message 는 `ts`, `metadata`, `app_id` 를 갖는다 (data-model.md). **Slack 응답의
+  `metadata` object 를 그대로 옮긴다. 없는 key 를 `None` 으로 채우지 않는다.**
+- **기동 전에 readback 자가검사를 한다.** 자기가 방금 보낸 message 를 `read_history` 로
+  되읽어 marker 가 복원되는지 확인하고, 실패하면 기동을 거부한다. 이것이 유일하게
+  `app_id` 오설정·metadata 매핑 누락·`event_type` 개명을 **전부** 한 번에 잡는 검사다
+  (wave 3 round 2 review). destination 은 그중 일부만 지문으로 잡을 수 있고, 못 잡는
+  경우의 결과는 hold 가 아니라 **조용한 중복 Card** 다. Package 4 의 exit criteria 다.
 
 ## C-2 — `SlackProjectionDestination`
 
@@ -76,7 +92,9 @@ class SlackProjectionDestination:
         *,
         destination_ref: str,
         channel: str,
-        max_history_pages: int,
+        app_id: str,
+        max_attempts: int,
+        max_history_pages: int = SLACK_MAX_HISTORY_PAGES,
     ) -> None: ...
 
     destination_ref: str
@@ -90,38 +108,154 @@ class SlackProjectionDestination:
 
 `channel` 은 별도로 받는다. `channel_digest` 는 digest 라 역산이 안 된다.
 
+`app_id` 는 **우리 app 의 Slack app id** 다. `reconcile()` 이 history message 의 `app_id` 와
+대조해 다른 app 이 심은 metadata 를 배제한다 (research S3, T003 AC-04). 이 값이 없으면 그
+배제를 할 수 없다 — marker 의 모양은 공개된 구조라 다른 app 이 같은 모양을 심을 수 있고,
+그것을 우리 marker 로 읽으면 남의 message 를 우리 Card 로 확정한다. **T003 구현 중에
+추가했다** — AC-04 가 요구하는데 C-2 에 자리가 없었다. 빈 문자열은 생성자가 거부한다.
+어긋나면 어떤 marker 도 우리 것으로 인정되지 않는데, 그 결과는 **hold 가 아니라 중복 Card**
+다 — history 소진이 미전송으로 판정되어 (D-023 항목 3) 매 재시도마다 Card 가 한 장씩 는다.
+조용히 일어나므로 더 나쁘다.
+
+`max_attempts` 는 C-3.1 이 쓴다. **호출자는 이 값을 그 destination 을 도는
+`OutboxDispatcher` 의 `OutboxConfig.max_attempts` 와 같게 준다.** 더 크면 C-3.1 이 안 돌아
+retryable 원인이 그대로 사라지고, 더 작으면 아직 남은 attempt 를 두고 되돌릴 수 없는 hold 를
+만든다. destination 은 dispatcher config 를 읽을 경로가 없어 검증하지 못한다. **T003 이
+그 표면을 넓혔다** — `reconcile` 의 read 실패도 C-3.1 을 타므로 일시적 read 실패 하나가
+남은 attempt 를 버리고 hold 를 만든다 (wave 3 round 2 review).
+
+**생성자가 거부하는 값 다섯.** dispatcher config 와의 일치는 검증하지 못하지만 그 자체로 말이
+안 되는 값은 막는다. 다섯 다 `ValueError` 다.
+
+| 조건 | 막는 이유 |
+|---|---|
+| `destination_ref` 가 공백뿐이거나 보이지 않는 문자를 포함 | 어떤 event 도 claim 되지 않아 조용히 멈춘다 |
+| `channel` 이 공백뿐이거나 보이지 않는 문자를 포함 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |
+| `app_id` 가 공백뿐이거나 보이지 않는 문자를 포함 | 어떤 marker 도 못 읽어 매 재시도마다 중복 Card 가 난다 |
+| `max_history_pages < 1` | reconcile 이 아무것도 안 훑어 첫 전달부터 판정불가로 떨어진다 |
+| `max_attempts < 1` | 첫 transient 실패가 곧바로 C-3.1 을 타 되돌릴 수 없는 hold 를 만든다 |
+
+`destination_ref`·`channel`·`app_id` 는 앞뒤 공백을 **지워서 저장한다.** 그리고 지운 뒤에도
+보이지 않는 문자(`\u200b`, `\ufeff`, `\u200e`)가 남으면 거부한다 — `str.strip()` 이 그것들을
+지우지 않는다. `app_id` 에 섞이면 `reconcile` 이 우리 marker 를 하나도 못 알아보고 history
+소진을 미전송으로 읽어 **중복 Card** 를 만든다 (wave 3 review). 검사만 하면 env var 나
+YAML scalar 에서 온 개행이 그대로 Slack 에 나가 `channel_not_found` (allowlist 밖 → terminal
+→ 되돌릴 수 없는 hold) 를 부르고, `reconcile()` 이 정규화된 config 로 만든 receipt 와 갈린다.
+
+뒤 둘의 하한은 `OutboxConfig` 의 `ge=1` 과 같다 (`events.py:2553`). config 를 안 읽고도
+검사된다.
+
 ### C-2.1 — `send()` 계약
 
 | 조건 | 결과 |
 |---|---|
-| `event.destination_ref != self.destination_ref` | `GovernanceEventError("OUTBOX_DESTINATION_MISMATCH")` |
-| payload digest 불일치 | `GovernanceEventError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")` |
+| `event.destination_ref != self.destination_ref` | `OutboxReconcileError("OUTBOX_DESTINATION_MISMATCH")` |
+| payload digest 불일치 | `OutboxReconcileError("OUTBOX_PAYLOAD_INTEGRITY_FAILURE")` |
 | transport 성공 | `"slack:{channel}:{ts}"` 반환 |
-| transport 실패 | C-3 분류에 따른 예외 |
+| transport 실패, retryable 분류 | 원래 예외. 단 마지막 attempt 는 C-3.1 |
+| transport 실패, terminal 분류 | `SlackProjectionTerminalError`. attempt 와 무관하다 |
 
-검증 순서는 `YamlProjectionDestination.send` 와 같다 (`projections.py:53`–`57`). transport 를
+검증 순서는 `YamlProjectionDestination.send` 와 같다 (`projections.py:57`–`61`). transport 를
 부르기 전에 둘 다 통과해야 한다.
+
+**두 검증 실패는 `OutboxReconcileError` 다** (D-022). 부모인 `GovernanceEventError` 로 던지면
+`deliver_next` 의 `except OutboxReconcileError` (`events.py:2856`)가 못 잡고 generic handler 로
+떨어져 원인이 `OUTBOX_DELIVERY_FAILED` 상수로 덮인다. 두 조건은 event row 의 불변 column 에서
+나오므로 재시도가 확정적으로 무의미하다. `YamlProjectionDestination` 도 같이 바꿨다 — 두
+destination 이 같은 조건을 다르게 다루면 안 된다.
+
+**receipt 의 `{channel}` 은 생성자가 받은 `channel` 이다.** `SlackSendResult.channel` 이
+아니다. `reconcile()` 은 `conversations.history` 응답에서 channel 을 얻지 못해 생성자 값밖에
+쓸 수 없다 (C-1.2 의 message 필드는 `ts`·`metadata`·`app_id` 셋뿐이다). Slack 이 우리가 보낸
+channel 과 다른 표현을 돌려주면 (이름으로 보내고 ID 를 받는 경우) 두 경로의 receipt 가
+갈라지고 C-2.3 이 깨진다. `ts` 는 `SlackSendResult.ts` 를 그대로 쓴다.
 
 ### C-2.2 — `reconcile()` 계약
 
-최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 판정은 셋이다.
+**먼저 첫 시도를 가른다.** 아래 둘이 **모두** 참이면 Slack 을 조회하지 않고 곧바로 `None`
+을 반환한다 (D-023 항목 2).
+
+```text
+event.attempts == 1  AND  event.last_error_code is None
+```
+
+- outbox row 는 언제나 `attempts=0`·`last_error_code=NULL` 로 생성되고 (`events.py:2358`-`2359`)
+  그 값을 되돌리는 곳은 `mark_delivered` 하나뿐인데 (`events.py:2729`) 그 row 는
+  `delivered` 라 `claim_next` 가 다시 claim 하지 않는다. `claim_next` 는 자기 transaction 을 commit 하므로
+  `attempts=1` 은 `post_message` 보다 **먼저** durable 하다. 그래서 이 조건은 "이 event 로
+  Slack 을 부른 적이 한 번도 없다" 와 같다.
+- **두 조건을 함께 봐야 한다.** `attempts` 증가는 `CASE WHEN attempts < max_attempts` 라
+  상한에서 멈춘다 (`events.py:2672`). `max_attempts == 1` 구성에서는 두 번째 claim 도
+  `attempts == 1` 로 보인다. 그 재claim 은 `last_error_code = 'OUTBOX_LEASE_EXPIRED'` 를
+  요구하므로 (`events.py:2644`) 두 번째 조건이 그것을 막는다.
+- 조회를 건너뛰는 것은 의도다. 찾을 marker 가 정의상 없고 `conversations.history` 는
+  Tier 2 다 (research S4). 대부분의 Card 가 첫 시도에 성공하므로 평상시 history 조회가
+  0회가 된다.
+
+그 밖의 경우에만 최신부터 역순으로 최대 `max_history_pages` page 를 훑는다. 표의 판정은
+넷이고, 아래 bullet 이 규정하는 두 가지 fail-closed 가 그보다 앞선다.
 
 | 먼저 만난 것 | 반환 |
 |---|---|
 | 이 event 의 marker (`event_id` 일치 + `destination_ref` 일치 + `payload_digest` 일치) | `"slack:{channel}:{ts}"` |
 | 같은 `destination_ref` 의 **더 낮은** `destination_sequence` marker | `None` |
-| 상한까지 훑어도 둘 다 없음 | `OutboxReconcileError` |
+| `next_cursor` 가 없어 **history 가 소진**됐고 위 둘 다 없음 | `None` |
+| 상한까지 훑고 멈췄는데 위 둘 다 없음 | `OutboxReconcileError` |
 
 - 다른 app 이 심은 metadata 는 `app_id` 로 배제한다 (research S3).
 - 두 번째 규칙이 "아직 안 보냈다"의 증거다. `claim_next` 가 이전 sequence 미확정 시 다음
   event 를 claim 하지 않으므로 (`events.py:2648`) 역순 조회에서 N-1 을 N 보다 먼저 만나면
   N 은 아직 없다.
-- 세 번째가 fail-closed 다. `deliver_next` 가 `OutboxReconcileError` 를
+- **세 번째 규칙이 첫 Card 를 살린다** (D-023 항목 3). `destination_sequence` 가 1 이면
+  두 번째 규칙이 성립할 수 없어 — 더 낮은 sequence 가 존재하지 않는다 — 그 규칙만으로는
+  첫 Card 가 일시 오류를 한 번만 만나도 영구 hold 가 된다. P-001 이 막으려던 사고는
+  "Card 가 채널에 **실제로 있는데** 조회 범위 밖이라 못 찾고 재전송해 **두 장**이 되는
+  것" 이고, 그 사고는 범위를 다 못 본 경우에만 성립한다. history 가 소진됐으면 없는 것이
+  확정이라 두 장이 될 수 없다.
+- **세 번째와 네 번째를 구분하는 것은 `next_cursor` 하나다** (C-1.2). 마지막 page 를 받고도
+  못 찾았으면 소진, `next_cursor` 가 남았는데 page 상한에 걸려 멈췄으면 판정 불가다.
+- 네 번째가 fail-closed 다. `deliver_next` 가 `OutboxReconcileError` 를
   `fail(..., unreconcilable=True)` 로 보내고 (`events.py:2856`–`2863`), 그것이 attempts 와
   무관하게 DLQ + operator hold 를 만든다 (`events.py:2780`, `events.py:2903`).
-- **`event_id` 는 같은데 `payload_digest` 가 다른 marker 를 만나면 판정하지 않고 계속
-  훑는다.** 같은 event 의 다른 내용이 이미 나갔다는 뜻이라 정상 경로에서 나올 수 없다.
-  상한까지 못 찾으면 세 번째 규칙으로 hold 가 걸린다.
+- **네 번째의 code 는 다른 hold 원인과 구분돼야 한다** (D-023 항목 4). `max_history_pages`
+  가 작아서 생긴 hold 인지 아닌지를 그 문자열로 알 수 있어야 한다. 구분이 없으면 값이
+  작았다는 것을 사후에 알 방법이 없다.
+
+### C-2.2.1 — Search Bounds
+
+| 값 | 확정값 | 근거 |
+|---|---|---|
+| page 당 `limit` | **999** | S2 의 상한. Slack 은 message 수가 아니라 호출 수를 세므로 (S4) 한 번에 꽉 채우는 쪽이 손해가 없다 |
+| `max_history_pages` | **5** | 판단이다. 아래 참조 |
+
+**5 는 측정이 아니라 판단이다.** 근거로 쓸 수 있는 fact 는 셋뿐이다 — page 당 999 상한
+(S2), Tier 2 분당 20+ 요청 (S4), 그리고 이 조회가 재시도 때만 일어난다는 것 (위 첫 시도
+규칙). 정작 필요한 숫자인 "Card 한 장과 다음 Card 사이에 쌓이는 message 수" 는 workspace
+에 달렸고 **모른다.** 최악 5회 호출은 Tier 2 예산의 4분의 1이다. 실측은 Package 4 몫이다
+(D-023 항목 4).
+- **`event_id` 는 같은데 `payload_digest` 가 다른 marker 를 만나면 즉시 멈춘다** —
+  `SlackProjectionMarkerDigestMismatchError`. 같은 event 의 다른 내용이 이미 나갔다는
+  뜻이라 정상 경로에서 나올 수 없다. 이 문서의 이전 판은 "계속 훑는다" 였는데, D-023 이
+  history 소진을 미전송으로 인정하면서 그 경로가 **재전송으로 새게 됐다** (wave 3
+  review). D-023 이 "Card 가 두 장이 되는 일은 어느 쪽에서도 없다" 고 약속했으므로
+  fail-closed 로 고쳤다. code 를 따로 두는 이유는 원인이 상한 부족이나 지워진 Card 와
+  전혀 다르기 때문이다.
+- **우리 `event_type` 을 단 message 인데 `app_id` 나 `event_payload` 가 없으면 즉시
+  멈춘다** — `SLACK_PROJECTION_METADATA_UNREADABLE` (D-024 항목 2). 이것은 한 message 의
+  문제가 아니라 **조회 방식**의 결함이다. `include_all_metadata` 를 안 붙이면 `event_type`
+  만 오고 (research S3), adapter 가 `app_id` 를 안 옮기면 대조가 전부 실패한다. 어느 쪽이든
+  marker 를 하나도 못 읽고, 그러면 history 소진이 미전송으로 판정되어 **매 재시도마다 Card
+  가 한 장씩 는다.** hold 가 아니라 중복이라 조용하다. `event_payload` 는 key 부재와 `None`
+  을 함께 본다 — adapter 가 `md.get(...)` 로 채우면 없는 key 가 `None` 이 된다.
+
+  **수용한 오탐이 하나 있다.** 제3의 app 이 우리 `event_type` 을 쓰면서 `app_id` 없이
+  보내면 이 규칙에 걸려 되돌릴 수 없는 hold 가 된다. Slack 이 app message 에 `app_id` 를
+  **항상** 붙이는지는 research S2·S3 에서 확인하지 못했다 — 확인된 것은 "각 message 는
+  `app_id` 를 갖고 있어 어느 app 이 보냈는지 구분할 수 있다" 까지다. 방향 때문에
+  수용한다: 안 막으면 조용한 중복 Card, 막으면 시끄러운 hold 다. 확정은 Package 4 다.
+- **page 안에서는 우리 marker 가 이긴다.** 위 표는 "먼저 만난 것" 이라고 쓰지만, 한 page
+  안에서는 순서에 기대지 않고 우리 marker 를 먼저 찾는다. C-1 의 정렬 의무를 signature
+  로 강제할 수 없어 만든 방어선이다 (wave 3 review).
 
 ### C-2.3 — Receipt Stability
 
@@ -183,6 +317,40 @@ code 가 없으면 `unknown` 이다. 저장 대상 두 table 이 append-only 라
 
 `Retry-After` header 값은 예외에 실어 올리되 backoff 계산에 넣지 않는다 (research R-007).
 `fail()` 에 지연을 주입할 인자가 없고, 그걸 만드는 것은 MGC-008 계약 변경이다.
+
+### C-3.1 — Last Attempt Carries The Retryable Cause
+
+D-020 항목 6 을 여기서 닫는다. retryable 로 분류된 실패가 attempt 를 소진하면
+`deliver_next` 의 generic handler 가 예외를 버리고 `OUTBOX_DELIVERY_FAILED` 상수만 남긴다
+(`events.py:2864`). 그 상수가 dead letter 와 operator hold 에 그대로 적혀
+(`events.py:2903` `_dead_letter`), 연결 실패·timeout·`ratelimited`·`internal_error` 가 전부
+같은 row 가 된다.
+
+**`event.attempts >= max_attempts` 인 호출에서만 retryable 을 terminal 로 올린다.**
+
+```text
+SLACK_PROJECTION_RETRY_EXHAUSTED:{suffix}
+```
+
+- `attempts` 는 `claim_next` 가 claim 시점에, **`attempts < max_attempts` 인 동안** 증가시킨다
+  (`events.py:2672` 의 `CASE WHEN attempts < ?`). 그래서 `send()` 안에서 보는
+  `event.attempts` 가 현재 시도 번호이고 상한을 넘지 않는다. 증가하지 않는 재claim 은
+  lease 만료 replay 하나뿐인데 그 경로는 `deliver_next` 가 `send()` 앞에서 가로채
+  `OUTBOX_POST_SEND_RECONCILE_REQUIRED` 로 끝낸다 (`events.py:2843`-`2853`).
+- `fail()` 은 `exhausted or unreconcilable` 을 같은 `_dead_letter` 로 보낸다
+  (`events.py:2778`). 마지막 attempt 라면 state 전이는 **바뀌지 않고** error_code 만
+  달라진다. 재시도를 한 번도 줄이지 않는다.
+- dispatcher 는 안 고친다. `events.py` 는 T002 의 `forbidden_paths` 다.
+- `suffix` 는 `persisted_code_suffix` 가 만든다. Slack code 가 있으면 그 code, transport 층
+  실패라 code 가 없으면 원인 예외의 class 이름을 `transport_{name}` 으로 넣는다. 둘 다
+  없으면 `no_slack_code` 다.
+
+마지막 attempt 가 아니면 원래 예외를 그대로 올린다. 분류 규칙 C-3 자체는 바뀌지 않는다 —
+이것은 **소진 시점의 기록**이지 재분류가 아니다.
+
+**terminal 로 분류된 실패에는 적용하지 않는다.** 마지막 attempt 에 terminal code 가 오면
+`SLACK_PROJECTION_TERMINAL_ERROR:{code}` 가 이긴다 — 둘 다 dead letter 로 가지만 그쪽이 더
+정확한 원인이다.
 
 ## C-4 — What This Contract Forbids
 

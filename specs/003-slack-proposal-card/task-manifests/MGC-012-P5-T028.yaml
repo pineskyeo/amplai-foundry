@@ -1,0 +1,255 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T028
+title: Make the operator queries actually read-only and honest about it
+type: fix
+status: done
+
+goal:
+  outcome: >-
+    `governance stranded` 와 `governance decision` 이 write lock 을 잡지 않고, 열리지 않는
+    store 에서 raw traceback 을 내지 않으며, manifest 가 배제한 출력 형식을 만들지 않는다.
+  user_value: >-
+    round 15 가 이 CLI 하나에서 blocker 넷을 냈다 — `C-1`(P1), `F-3`(P1), `C-2`(B-P2),
+    `F-4`(B-P2). 뿌리는 하나다. `check_startup()` 이 읽기 전용이 아닌데 그것을 확인하지 않고
+    "조회만" 을 help 와 주석 두 곳에 썼다. 회수 도구가 회수해야 할 상황에서 실패한다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+      section: C-1
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-15.md
+      section: F-3
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-044
+  requirements:
+    - FR-024
+    - FR-026
+    - SC-004
+  decisions:
+    - D-044
+
+scope:
+  include:
+    - >-
+      `_governance_worker` 에서 `check_startup()` 을 뺀다. 그것은 `PRAGMA integrity_check`
+      (전체 스캔), migration verify, `_probe_wal_write`(`BEGIN IMMEDIATE` + `UPDATE`)를 한다.
+      조회 둘에는 필요 없고 worker 와 write lock 을 다툰다 (`F-3`, `F-4`).
+    - >-
+      store 가 없거나 열리지 않을 때 기존 CLI 형태로 실패한다. `connect()` 안의 filesystem
+      검증은 `T024` 가 이미 `GovernanceStoreError` 로 정규화했으므로 그것을 쓴다 (`C-1`).
+    - >-
+      **`--json` 을 뺀다.** `T026` 의 `scope.exclude` 가 "새 출력 형식(JSON 등)의 계약화.
+      사람이 읽는 목록이면 충분하다" 로 배제했다 (`C-3`). 배제를 뒤집으려면 Decision 이
+      필요하고 그것을 받지 않았다.
+    - "help 문구와 주석을 실제 동작에 맞춘다 (`F-4`)."
+    - "`T026` evidence 의 거짓 문장 정정 (`C-2`)."
+    - 열리지 않는 store 와 worker 가 write lock 을 쥔 상태 둘을 고정하는 test.
+  exclude:
+    - "governed mutation 추가. `D-044` 의 범위 제한은 그대로다."
+    - "`store.py` 의 `check_startup` 이나 `_probe_wal_write` 변경. T029 가 store 를 맡는다."
+    - "`ingress.py`. T027 이 맡는다."
+    - 새 조회 command 추가.
+  allowed_paths:
+    - src/amplai_foundry/cli.py
+    - tests/test_cli.py
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/ingress.py
+    - src/amplai_foundry/governance/ingress_worker.py
+    - src/amplai_foundry/governance/store.py
+    - src/amplai_foundry/governance/events.py
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **먼저 재현한다.** (a) network filesystem probe 를 심어 raw
+      `GovernanceFilesystemError` 가 나가는 것, (b) 다른 connection 이 `BEGIN IMMEDIATE` 를
+      쥔 채 CLI 를 돌려 `WAL/SHM write probe 실패` 로 죽는 것 둘을 실측한다.
+    - >-
+      **`check_startup()` 을 무엇으로 바꿀지 정한다.** 그냥 빼면 store 가 없을 때 어떤
+      오류가 나는지 확인한다. `connect()` 는 파일이 없어도 sqlite 가 만들어 버릴 수 있다 —
+      **가정하지 말고 실측한다.** 없는 store 를 조용히 만들어 `NONE` 을 내면 operator 를
+      속이는 것이다.
+    - >-
+      **schema 검증을 잃는지 판단한다.** `check_startup()` 은 migration verify 도 한다.
+      빼면 낡은 schema 에서 조회가 이상한 답을 낼 수 있는지 보고, 필요하면 읽기 전용
+      검증만 남긴다. 근거를 적는다.
+    - >-
+      **`--json` 제거가 test 를 약화시키지 않게 한다.** credential 부재 test 가 `--json` 에
+      의존한다. text 출력으로 옮기고 token id 와 signing secret 부재 확인을 유지한다.
+    - >-
+      **help 와 주석에 사실만 적는다.** "조회만" 이라고 쓰려면 write 가 없어야 한다. 남는
+      write 가 있으면 그것을 적는다.
+    - >-
+      **`T026` evidence 를 정정한다.** `:86` 의 "traceback 을 내보내지 않는다" 는 거짓이었다.
+      **지우지 말고 무엇이 틀렸는지 적는다.** `T024` evidence 의 `A-1` 이 같은 결함에
+      "cli.py 는 T024 범위 밖" 이라는 면제를 달았는데 cli.py 는 `T026` 범위 안이었다 —
+      그 면제가 왜 잘못이었는지도 적는다.
+  invariants:
+    - "두 command 가 durable state 를 바꾸지 않는다."
+    - "두 command 가 write lock 을 잡지 않는다."
+    - "출력에 raw credential 이 없다 (FR-018, SC-005)."
+    - "실패가 기존 CLI 형태다. traceback 을 그대로 내보내지 않는다."
+    - "`store.py`, `ingress.py`, `ingress_worker.py` 를 수정하지 않는다."
+    - governed mutation command 가 생기지 않는다.
+  non_goals:
+    - recovery hold 해제.
+    - 기계 판독 출력 계약.
+    - store 의 startup 검사 변경.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 착수 전 코드와 network filesystem 을 답하는 probe.
+      when: 두 command 를 돌린다.
+      then: raw `GovernanceFilesystemError` 가 나가는 것을 실측한다.
+    - id: AC-02
+      given: 착수 전 코드와 write transaction 을 쥔 다른 connection.
+      when: 두 command 를 돌린다.
+      then: "`WAL/SHM write probe 실패` 로 죽는 것을 실측한다. 소요 시간도 적는다."
+    - id: AC-03
+      given: 고친 코드와 같은 filesystem probe.
+      when: 두 command 를 돌린다.
+      then: "`_fatal` 형태로 실패한다. traceback 이 나가지 않는다."
+    - id: AC-04
+      given: 고친 코드와 write transaction 을 쥔 다른 connection.
+      when: 두 command 를 돌린다.
+      then: 정상 결과를 낸다. write lock 을 다투지 않는다.
+    - id: AC-05
+      given: 고친 코드.
+      when: 두 command 가 내는 SQL 을 전수로 관측한다.
+      then: "`BEGIN IMMEDIATE`, `UPDATE`, `INSERT`, `DELETE` 가 하나도 없다."
+    - id: AC-06
+      given: 존재하지 않는 store.
+      when: 두 command 를 돌린다.
+      then: >-
+        exit 1 로 실패하고 store 가 **생성되지 않는다.** 조용히 `NONE` 을 내지 않는다.
+    - id: AC-07
+      given: 고친 코드.
+      when: "`--json` 을 준다."
+      then: 그런 option 이 없다고 실패한다.
+    - id: AC-08
+      given: 고친 코드의 출력.
+      when: raw credential 을 검색한다.
+      then: token id, signing secret, raw ActionToken 이 없다.
+    - id: AC-09
+      given: 갱신된 help 와 주석.
+      when: 읽는다.
+      then: 실제 동작과 일치한다. 남는 write 가 있으면 적혀 있다.
+    - id: AC-10
+      given: 갱신된 `T026` evidence.
+      when: 읽는다.
+      then: >-
+        거짓 문장이 정정돼 있고 무엇이 왜 틀렸는지 적혀 있다. `T024-A1` 의 면제가 왜
+        잘못이었는지도 있다.
+    - id: AC-11
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: 실패가 없다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_cli.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01 과 AC-02 의 착수 전 재현
+      required: true
+    - type: note
+      source: AC-05 의 SQL 전수 관측
+      required: true
+    - type: note
+      source: schema 검증을 잃는지의 판단 근거
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      `check_startup()` 을 빼면 잃는 검증이 있다. 무엇을 잃는지 세지 않고 빼면 낡은 schema
+      에서 조회가 잘못된 답을 낼 수 있다.
+    - >-
+      store 가 없을 때 `connect()` 가 빈 파일을 만들면 operator 가 "stranded 없음" 으로
+      오해한다. 실측으로 확인한다.
+    - >-
+      `--json` 제거가 credential 부재 test 를 약하게 만들 수 있다. text 경로로 같은 강도를
+      유지한다.
+  approvals:
+    - >-
+      `D-044` 의 조회 전용 범위를 지키는 방향의 수정이다. 새 Decision 이 필요하지 않다 —
+      `--json` 제거는 `T026` manifest 가 이미 배제한 상태로 되돌리는 것이다.
+
+loop:
+  max_attempts: 4
+  replan_after_same_failure: 3
+  stop_conditions:
+    - removing_check_startup_would_lose_a_verification_with_no_read_only_substitute
+    - a_missing_store_would_be_created_silently
+    - credential_absence_test_would_weaken
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T028.md
+
+handoff:
+  expected_changes:
+    - "`_governance_worker` 가 `check_startup()` 을 부르지 않는다."
+    - "`--json` option 제거."
+    - "help 와 주석이 사실과 일치한다."
+    - "`T026` evidence 의 정정 절."
+  notes:
+    - >-
+      blocker 넷이 한 뿌리다. `check_startup()` 이 읽기 전용이 아니라는 것을 확인하지 않고
+      "조회만" 을 두 곳에 썼다.

@@ -1,0 +1,69 @@
+# Probe Cleanup Requirements Checklist: MGC-012 Package 4
+
+**Purpose**: Review D-031 probe cleanup requirements for completeness, clarity, consistency, measurable acceptance, and safe recovery boundaries before taskification
+**Created**: 2026-08-11
+**Feature**: [spec.md](../spec.md)
+
+**Note**: This checklist evaluates the written requirements. It does not validate implementation behavior.
+
+## Requirement Completeness
+
+- [x] CHK001 Are requirements documented for every outcome class: ready, cleanup-only degraded, readback hard failure, unresolved lifecycle, ambiguous post, and lifecycle state access failure? [Completeness, Spec §FR-023–FR-028] — Resolved by [FR-023–FR-028](../spec.md#functional-requirements), [ReadbackOutcome](../data-model.md#readbackoutcome-d-031), and [H-3.2–H-3.4](../contracts/slack-http-transport.md#h-32--cleanup-is-attempted-on-both-paths).
+- [x] CHK002 Are cleanup-attempt obligations defined for both successful and failed readback without weakening the different startup decisions? [Completeness, Spec §FR-024–FR-025, §FR-032] — [H-3.2](../contracts/slack-http-transport.md#h-32--cleanup-is-attempted-on-both-paths) requires both attempts and preserves distinct activation outcomes.
+- [x] CHK003 Does the spec define the required disposition for every durable lifecycle state, including unknown, corrupt, or unsupported state values? [Gap, Spec §Edge Cases, Plan §P-005] — Resolved by [FR-033 and SC-025](../spec.md#functional-requirements): malformed and unsupported records return a typed lifecycle failure without mutation, readback, post, or activation.
+- [x] CHK004 Is the ownership and permitted mechanism for resolving a permanently blocked probe explicitly defined or explicitly deferred with a follow-up requirement? [Gap, Spec §User Story 4, Plan §Out Of Scope] — [Deferred Requirements](../spec.md#deferred-requirements) and [H-3.4](../contracts/slack-http-transport.md#h-34--ambiguous-post-is-not-recovered-by-guessing) defer mutation to a governed recovery work item and keep T013 blocked.
+- [x] CHK005 Are the requirements for production pre-claim gating, diagnostic emission, and worker activation each assigned to exactly one delivery boundary? [Completeness, Spec §Delivery Boundaries] — [Delivery Boundaries](../spec.md#delivery-boundaries) assigns pure outcome work to T008 and production persistence, reporting, and activation to T013.
+
+## Requirement Clarity
+
+- [x] CHK006 Are `READY`, `DEGRADED_CLEANUP`, typed hard failure, and `HARD_BLOCKED_NO_POST` defined with mutually exclusive entry conditions and deterministic precedence? [Clarity, Spec §FR-023–FR-028, Plan §P-006] — [H-3.2](../contracts/slack-http-transport.md#h-32--cleanup-is-attempted-on-both-paths) defines the result matrix and the lifecycle-commit failure override; [H-3.3](../contracts/slack-http-transport.md#h-33--durable-state-precedes-network) gates prior state before readback.
+- [x] CHK007 Is the channel/app scope of the one-unresolved-probe limit defined with stable identifiers and without relying on display names or inferred identity? [Clarity, Spec §FR-027] — [ProbeIdentity](../data-model.md#probeidentity-d-031) and [ProbeCleanupLifecycle](../data-model.md#probecleanuplifecycle-d-031) use stable `app_id` and `channel_id`.
+- [x] CHK008 Does “explicit probe identity” distinguish locally assigned lifecycle identity from Slack-confirmed `channel + ts`, including the point at which each becomes authoritative? [Ambiguity, Spec §FR-026, §U-006] — [ProbeIdentity](../data-model.md#probeidentity-d-031) distinguishes pre-network `probe_id` from provider-confirmed `message_ts` and forbids scan-based filling.
+- [x] CHK009 Is “exactly once” diagnostic emission scoped precisely—for example, per startup evaluation, per lifecycle transition, or per unresolved probe? [Ambiguity, Spec §FR-030, §SC-017] — [FR-030](../spec.md#functional-requirements) scopes it to each production startup evaluation and treats a restart as a new evaluation.
+- [x] CHK010 Is the safe diagnostic field allowlist exhaustive, and is “recovery guidance” bounded so it cannot expose credentials, raw provider data, or exception representations? [Clarity, Spec §FR-029–FR-030, §SC-021] — [OperatorDiagnostic](../data-model.md#operatordiagnostic-d-031) is a closed field list and uses a stable action code.
+- [x] CHK011 Is “preserve the original readback cause” defined in a form that also specifies how secondary cleanup failure information is represented? [Clarity, Spec §FR-025, §SC-020] — Resolved by [FR-034 and SC-026](../spec.md#functional-requirements): one optional typed `CleanupFailureDetail` carries only count and allowlisted provider code.
+
+## Requirement Consistency
+
+- [x] CHK012 Is the exact clause superseded by D-031 consistent across Derivation, FR-032, the decision ledger prerequisite, and all downstream acceptance artifacts? [Consistency, Spec §Derivation, §FR-032] — [Derivation](../spec.md#derivation), FR-032, D-030/D-031, and the retaskified T008 all limit supersession to delete-only startup refusal.
+- [x] CHK013 Are T008’s pure typed-outcome responsibility and T013’s persistence, restart, diagnostic, and production-wiring responsibility stated consistently across spec, plan, and quickstart? [Consistency, Spec §Delivery Boundaries, Plan §P-007] — [Delivery Boundaries](../spec.md#delivery-boundaries), [P-007](../plan.md#p-007--t013-stays-blocked), and [Quickstart D](../quickstart.md#d-d-031-validation-boundary) use the same split.
+- [x] CHK014 Has the existing T008 acceptance that requires startup refusal on delete-only failure been identified as stale and required to be replaced before implementation? [Conflict, Tasks §MGC-012-T008 AC-10, Spec §FR-024] — T008 AC-10 now requires `DEGRADED_CLEANUP`; its completion note invalidates the prior D-030 evidence pending revalidation.
+- [x] CHK015 Does the channel/app upper bound distinguish the number of locally unresolved lifecycle records from the number of remote Slack messages when a post result is ambiguous? [Consistency, Spec §FR-027, §U-009] — [H-3.3](../contracts/slack-http-transport.md#h-33--durable-state-precedes-network) bounds local rows; [H-3.4](../contracts/slack-http-transport.md#h-34--ambiguous-post-is-not-recovered-by-guessing) explicitly leaves the remote global cap blocked.
+- [x] CHK016 Is the requirement to keep operator recovery mutation out of this plan consistent with the need to eventually leave `HARD_BLOCKED_NO_POST`? [Conflict, Plan §Out Of Scope, Spec §User Story 4] — The [deferred governed-recovery requirement](../spec.md#deferred-requirements) owns eventual resolution; Package 4 must not bypass it.
+
+## Acceptance Criteria Quality
+
+- [x] CHK017 Can every combination of readback result, cleanup result, and prior lifecycle state be mapped to one outcome and one activation decision without reviewer interpretation? [Measurability, Spec §User Story 4, §FR-023–FR-028] — The H-3.2 matrix covers readback/cleanup, lifecycle precedence covers known prior states, and [FR-033](../spec.md#functional-requirements) closes malformed and unsupported inputs.
+- [x] CHK018 Can the one-diagnostic requirement be measured at a named observation boundary without counting internal typed results as operator output? [Measurability, Spec §FR-029–FR-030, §SC-017] — [H-3.5](../contracts/slack-http-transport.md#h-35--outcome-and-diagnostic-ownership) names the production composition root as the sole observation/output boundary.
+- [x] CHK019 Does the ten-startup criterion define the initial durable state, channel/app scope, and prohibited additional-post count precisely enough to be reproducible? [Acceptance Criteria, Spec §SC-018] — SC-018 plus FR-027 define an unresolved channel/app lifecycle, ten startup evaluations, zero additional posts, and the exact recovery precondition.
+- [x] CHK020 Is the no-heuristics criterion exhaustive and objectively reviewable for every recovery path, rather than only the current history-scan path? [Acceptance Criteria, Spec §FR-026, §SC-023] — [H-3.4](../contracts/slack-http-transport.md#h-34--ambiguous-post-is-not-recovered-by-guessing) enumerates prohibited keys and SC-023 applies zero-use acceptance to every cleanup target.
+- [x] CHK021 Are the minimum necessary and sufficient forms of production wiring evidence defined before FR-018 or the Package 4 gate can be completed? [Gap, Spec §FR-031, §SC-022] — [T013 Production Evidence](../spec.md#t013-production-evidence) requires both a composition-root integration result and a same-revision configured startup trace and defines their observation fields.
+- [x] CHK022 Is “all validations” in the combined readback-and-cleanup failure criterion bounded by an explicit failure taxonomy? [Ambiguity, Spec §SC-020] — [FR-035 and SC-020](../spec.md#functional-requirements) define seven closed failure codes, twelve post/cleanup combinations, and one pre-post validation. The response-channel mismatch cases also require zero configured-channel history reads and exact cleanup against the provider-confirmed identity.
+
+## Recovery And Edge-Case Coverage
+
+- [x] CHK023 Are concurrent startup attempts addressed so that the one-unresolved-state requirement remains meaningful under contention? [Coverage, Gap, Spec §FR-027] — FR-027, [lifecycle rules](../data-model.md#state-transitions), and SC-019 require one atomic claim winner and zero loser posts.
+- [x] CHK024 Are crash boundaries specified before durable intent, after intent but before post, after post with no response, and after response but before confirmed identity persistence? [Coverage, Spec §U-007–U-009, Plan §P-005] — [FR-036 and SC-027](../spec.md#functional-requirements) explicitly map all four boundaries and bound exact compensation.
+- [x] CHK025 Is the required state defined when Slack deletion succeeds but durable lifecycle resolution cannot be recorded? [Edge Case, Gap, Spec §FR-026–FR-028] — FR-026 and SC-024 preserve the last committed cause and return `HARD_BLOCKED_NO_POST` with no activation or new post.
+- [x] CHK026 Are repeated exact-cleanup failures specified without permitting a new probe or silently converting the state to ready? [Coverage, Spec §FR-027–FR-028] — FR-027–FR-028 and [lifecycle rules](../data-model.md#state-transitions) preserve the cause and prohibit fresh intent/post until exact cleanup plus durable resolution succeeds.
+- [x] CHK027 Are malformed, version-incompatible, or unreadable durable lifecycle records required to fail closed before any post? [Edge Case, Gap, Spec §Edge Cases] — [FR-033 and SC-025](../spec.md#functional-requirements) require typed failure, record preservation, and zero readback/post/activation.
+- [x] CHK028 Is the readback-failure-plus-cleanup-failure scenario complete about activation, primary cause, secondary diagnostic data, and output ownership? [Coverage, Spec §FR-025, §FR-029, §SC-020] — [FR-034–FR-035 and SC-020/SC-026](../spec.md#functional-requirements) fix primary taxonomy, secondary shape/cardinality, activation, and safe output surfaces.
+
+## Non-Functional Requirements
+
+- [x] CHK029 Are confidentiality requirements defined for every diagnostic surface, including structured logs, exception chaining, metrics labels, and persisted lifecycle data? [Security, Gap, Spec §FR-029–FR-030, §SC-021] — [FR-034 and SC-026](../spec.md#functional-requirements) define closed surface-specific fields and prohibit raw exception chains, free-form errors, and provider data.
+- [x] CHK030 Are durability and atomicity requirements stated strongly enough to support the no-additional-post guarantee across process restarts? [Reliability, Spec §FR-026–FR-028, §U-007] — FR-026–FR-028 and [H-3.3](../contracts/slack-http-transport.md#h-33--durable-state-precedes-network) require an atomic durable claim before network and persistent cause state on failure.
+- [x] CHK031 Is the bounded-recovery policy explicit about availability trade-offs when the provider cannot supply an exact recovery contract? [Reliability, Spec §U-006, §U-009] — [H-3.4](../contracts/slack-http-transport.md#h-34--ambiguous-post-is-not-recovered-by-guessing) deliberately trades availability for fail-closed safety and leaves T013 blocked.
+
+## Dependencies And Assumptions
+
+- [x] CHK032 Does each T013 blocker name the evidence and approving authority required to move it from blocked to ready? [Dependency, Plan §External Dependencies] — [FR-037](../spec.md#functional-requirements) names the E-7–E-10 evidence records, required content, and user approval through the governed workstream workflow.
+- [x] CHK033 Is the absence of a documented provider-supported ambiguous-post recovery mechanism recorded as a blocker rather than an implementation assumption? [Assumption, Spec §U-006, §U-009] — U-006/U-009 and [H-3.4](../contracts/slack-http-transport.md#h-34--ambiguous-post-is-not-recovered-by-guessing) explicitly block rather than guess.
+- [x] CHK034 Is D-031 decision-ledger synchronization required through the governed decision workflow before task execution or gate completion? [Dependency, Constitution §I, Spec §Derivation] — [Derivation](../spec.md#derivation) records D-031/APR-016 and D-030 supersession; plan E-6 and T008 handoff record this prerequisite as closed.
+- [x] CHK035 Are the production composition root and lifecycle storage approval explicitly excluded from T008 readiness while remaining mandatory for T013 readiness? [Dependency, Spec §Delivery Boundaries, Plan §P-007] — [Delivery Boundaries](../spec.md#delivery-boundaries) and [P-007](../plan.md#p-007--t013-stays-blocked) keep them outside T008 and mandatory blockers for T013.
+
+## Notes
+
+- Check items off as completed: `[x]`.
+- Add findings inline with links to the requirement artifact that resolves them.
+- A checked item means the requirement writing is sufficient; it does not mean the implementation passed.

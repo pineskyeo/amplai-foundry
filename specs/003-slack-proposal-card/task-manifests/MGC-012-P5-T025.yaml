@@ -1,0 +1,251 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T025
+title: Give each rule one home and make the other mentions point at it
+type: docs
+status: done
+
+goal:
+  outcome: >-
+    소진 종점 규칙과 safe outcome 열거가 각각 **한 곳**에만 서술되고 나머지 언급은 그곳을
+    가리킨다. 그리고 종점 3 의 조건이 `D-043` 대로 사용자 원답변으로 복원된다.
+  user_value: >-
+    지금 `spec.md:102` 가 FR-026 과 **모순**된다 — 32줄 아래에서 금지한 통지를 무조건 하라고
+    적는다. 사본이 넷이면 하나를 고칠 때 나머지가 뒤처지고, 그것이 round 12 `C-2`,
+    round 13 `CT-2`, round 14 `BP2-3` 으로 세 번 반복됐다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: BP2-3
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: BP2-4
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: Advisory
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-043
+  requirements:
+    - FR-024
+    - FR-026
+  decisions:
+    - D-039
+    - D-041
+    - D-042
+    - D-043
+
+scope:
+  include:
+    - >-
+      **`D-043` 적용.** 종점 3 의 조건을 "worker 가 마지막 attempt 의 결과를 관측하지 못한
+      경우" 로 되돌린다. `spec.md` FR-026 마지막 문장과
+      `contracts/interaction-feedback.md:51-52`. 코드는 안 고친다.
+    - >-
+      `spec.md:102`·`:103` 의 Edge Cases 항목을 FR-026 을 가리키게 바꾼다. 지금 `:102` 는
+      무조건 `unavailable` 을 알린다고 적어 FR-026 과 모순된다.
+    - >-
+      `plan.md:117-118` 과 `research.md:61` 의 safe outcome 열거를
+      `contracts/interaction-feedback.md` 를 가리키게 바꾼다 (round 14 `A-5`).
+    - >-
+      `contracts/interaction-feedback.md:26` 의 `unavailable` 행에 `COMMITTED_UNRECONCILED`
+      예외를 표 안에서 보이게 한다 (round 14 `A-6`).
+  exclude:
+    - "코드 변경. `D-041`·`D-043` 이 코드는 옳다고 확정했다."
+    - "safe outcome enum 에 값 추가."
+    - "FR-021·FR-027 문구. `D-040` 이 확정했다."
+    - >-
+      FR-026 문장 2 와 문장 4 의 겹침 (round 14 `A-4`). Advisory 이고 문장 4 를 override 로
+      읽으면 해소된다. 이번 wave 밖이다.
+    - "`OQ-001` 의 FR 신설. 계약 변경이라 Decision 이 필요하다."
+    - "evidence 문서의 줄 번호 오류 (round 14 `A-9`). frozen set 밖이다."
+  allowed_paths:
+    - specs/003-slack-proposal-card/spec.md
+    - specs/003-slack-proposal-card/contracts/interaction-feedback.md
+    - specs/003-slack-proposal-card/plan.md
+    - specs/003-slack-proposal-card/research.md
+  forbidden_paths:
+    - vault/
+    - src/
+    - tests/
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **`D-043` 은 원상복구다.** 사용자가 `spec.md:26` 에 기록한 답변이 "without any worker
+      observing the outcome" 이고 그것이 코드의 실제 조건이다. wave 7 이 "no attempt ever
+      completed" 로 좁혔고 `D-041` 은 그 좁힘을 승인하지 않았다. **원답변 문구를 근거로
+      삼는다.**
+    - >-
+      좁힌 조건에서 어디에도 안 들어가던 경우를 확인한다 — attempt 1 이 완료해 `RETRY` 를
+      내고, 마지막 attempt 가 claim 된 채 worker 가 죽어 lease 만료 sweep 이 `dead_letter` 로
+      옮기는 경우. **동작은 이미 그러하다.** 계약이 그것을 서술하게 될 뿐이다.
+    - >-
+      **사본을 셀 때 문구 변형을 함께 센다.** round 14 `BP2-3` 은 `exhaust`/`retry budget`
+      으로 grep 해서 "runs out of retries" 를 놓친 것이다. 최소한 이 변형들을 함께 찾는다 —
+      `exhaust`, `retry budget`, `runs out of retries`, `attempts`, `unavailable`,
+      `operator recovery`, `recovery hold`, `소진`. **찾은 목록을 evidence 에 적는다.**
+    - >-
+      **Edge Cases 는 요약이지 규칙이 아니다.** `spec.md:102`·`:103` 을 지우지 말고 FR-026 을
+      가리키게 고친다. 독자가 그 절만 읽고 잘못된 규칙을 얻지 않게 하는 것이 목적이다.
+    - >-
+      `plan.md`·`research.md` 의 enum 사본은 **지금 값이 일치해 무해하다.** 그래도 참조로
+      바꾸는 이유는 다음 변경 때 뒤처지기 때문이다. wave 5 에서 그 사본들이
+      `/speckit-analyze` HIGH 를 냈다.
+    - >-
+      **`A-6`** — 계약의 `unavailable` 행이 "recovery hold without a more specific public
+      result" 인데 `COMMITTED_UNRECONCILED` 도 그 서술에 해당하면서 침묵해야 한다. 표만 읽는
+      독자가 틀린 답을 얻는다. 표 안에 예외를 보이게 한다.
+    - >-
+      **기존 요구를 약화하지 않는다.** round 12 `C-2` 가 그 사고였다. 고친 뒤 원문과 diff 로
+      대조해 MUST 가 내려간 곳이 없음을 보인다.
+  invariants:
+    - "코드를 수정하지 않는다."
+    - "FR-021, FR-024, FR-025, FR-027 의 문구가 바뀌지 않는다."
+    - "safe outcome enum 의 값 다섯이 그대로다."
+    - "사용자가 기록한 Clarifications 답변 원문이 보존된다."
+    - "어떤 MUST 도 약해지지 않는다."
+    - "계약이 서술하는 종점 집합이 코드의 종점 집합과 같다."
+  non_goals:
+    - 새 요구사항 번호 도입.
+    - Decision 신설.
+    - 코드 동작 변경.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: "`specs/003-slack-proposal-card/` 전체 (evidence 제외)."
+      when: >-
+        소진 종점 규칙의 언급을 **여덟 가지 이상의 문구 변형**으로 전수 검색한다.
+      then: >-
+        찾은 목록과 사용한 검색어를 evidence 에 적는다. **round 14 가 놓쳤다고 지적한
+        `spec.md:102`·`:103` 이 그 안에 있다.**
+    - id: AC-02
+      given: 갱신된 FR-026.
+      when: 종점 3 의 조건을 읽는다.
+      then: >-
+        "worker 가 마지막 attempt 의 결과를 관측하지 못한 경우" 다. `spec.md:26` 의 사용자
+        원답변 문구와 같은 뜻임을 보인다.
+    - id: AC-03
+      given: 갱신된 FR-026 과 계약.
+      when: round 14 가 제시한 반례를 대입한다 — attempt 1 완료 → attempt 2 claim 후 사망.
+      then: 종점 3 에 들어간다. 세 종점이 그 경우를 덮는다.
+    - id: AC-04
+      given: 갱신된 `spec.md:102`·`:103`.
+      when: 읽는다.
+      then: FR-026 과 모순되지 않는다. 규칙을 다시 적지 않고 가리킨다.
+    - id: AC-05
+      given: 갱신된 `plan.md`·`research.md`.
+      when: safe outcome 열거를 찾는다.
+      then: 값을 다시 적지 않고 계약을 가리킨다.
+    - id: AC-06
+      given: 갱신된 계약의 outcome 표.
+      when: "`unavailable` 행만 읽는다."
+      then: "`COMMITTED_UNRECONCILED` 가 예외임을 표 안에서 알 수 있다."
+    - id: AC-07
+      given: 변경 전후.
+      when: diff 를 본다.
+      then: 어떤 MUST 도 약해지지 않았음을 보인다.
+    - id: AC-08
+      given: 코드의 실제 종점.
+      when: 계약이 적은 종점 집합과 대조한다.
+      then: 같다. 대조표를 evidence 에 적는다.
+    - id: AC-09
+      given: 갱신된 문서.
+      when: "`/speckit-analyze` 를 돌린다."
+      then: >-
+        새 CRITICAL 이나 HIGH 가 없고, **`spec.md` 내부 모순이 남아 있지 않다** (round 14 가
+        analyze 가 `:102` 를 놓쳤다고 지적했다).
+  commands:
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+    - id: diff-check
+      kind: lint
+      run: git diff --check
+      required: true
+  manual_checks:
+    - id: MC-01
+      observer: implementation agent
+      action: >-
+        `/speckit-analyze` 를 호출해 `spec.md`, `plan.md`, `tasks.md` 정합성을 본다 (AC-09).
+      expected: >-
+        새 CRITICAL·HIGH 가 없고 `spec.md` 내부 모순이 없다. 결과 요약과 finding 등급을
+        evidence 에 적는다.
+      reason_not_automated: >-
+        `/speckit-analyze` 는 skill 로만 호출되고 저장소에 동등한 CLI command 가 없다.
+  evidence:
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: command_output
+      source: diff-check
+      required: true
+    - type: note
+      source: AC-01 의 문구 변형별 검색 결과와 사본 전수 목록
+      required: true
+    - type: note
+      source: AC-07 의 원문 대조 diff
+      required: true
+    - type: note
+      source: AC-08 의 코드 종점 대 계약 종점 대조표
+      required: true
+    - type: note
+      source: MC-01 의 `/speckit-analyze` 결과
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - >-
+      계약 문서를 고치는 일이라 요구를 약화하는 방향으로 흐르기 쉽다. round 12 `C-2` 가 그
+      사고였고 되돌리는 데 한 wave 를 썼다.
+    - >-
+      "가리키게 한다" 가 지나치면 독자가 규칙을 찾기 어려워진다. Edge Cases 는 요약으로서
+      가치가 있으므로 지우지 말고 모순만 없앤다.
+    - >-
+      `spec.md` 수정은 `index.yaml` 의 source revision 을 낡게 만든다. 이번 wave 의 마지막
+      기록 task 가 갱신한다.
+  approvals:
+    - >-
+      `D-043` 이 2026-08-18 에 승인됐다 — 종점 3 의 조건을 사용자 원답변으로 되돌린다.
+    - >-
+      사용자가 같은 날 "구조를 먼저 고친다" 를 선택했고 문서 사본 축소가 그 범위다.
+
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 2
+  stop_conditions:
+    - change_would_weaken_an_existing_requirement
+    - code_change_would_be_required
+    - contract_endings_would_not_cover_the_counterexample
+    - analyze_reports_new_high_or_critical
+    - scope_boundary_must_expand
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md
+
+handoff:
+  expected_changes:
+    - FR-026 종점 3 조건 복원과 Edge Cases 참조화.
+    - plan/research 의 enum 사본 참조화.
+    - 계약 outcome 표의 예외 표기.
+  notes:
+    - >-
+      코드 변경이 없다. `D-041`·`D-043` 이 코드는 옳고 문서가 틀렸다고 확정했다.

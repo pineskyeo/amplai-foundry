@@ -1,0 +1,82 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        "specs/006-supervisor-ownership/work-contract.json"
+      ],
+      "notes": "AC-001~AC-009 가 판정 기준이다. AC-003(단일 인스턴스 락)과 AC-004(버전 드리프트 fail-closed)가 핵심이고 둘 다 재현으로 확인된다. AC-008 은 막을 수 없는 우회 경로를 기록으로 남기는 항목이다. 도메인 blocking unknown 은 없다 — kit 2.2.0 코드를 직접 읽어 확인했다. 남은 것은 사용자 결정(D-051 은 APPROVED 이나 2.2.0 반영 보류 + 설치 미실행)이고 work-contract 의 blocked_by 가 담는다. readiness 의 blocking_unknowns 는 domain discovery 로 푸는 항목이라 여기 넣지 않는다.",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        "kit reference/SYNAPSE_INTEGRATION.md 아키텍처 그림 — Supervisor 가 Store 아래 별도 층",
+        "kit manifest.json owned_files — scripts/amplai_supervisor.py 가 모든 앱 repo 에 복사된다",
+        ".ai-team/runtime/LOCAL_SUPERVISOR.md — 어느 앱이 돌리는지 정하지 않는다"
+      ],
+      "notes": "kit 안에 개념과 배포의 어긋남이 있다. 개념은 'Store 하나에 supervisor 하나'인데 배포는 앱마다 복사한다. D-052 가 Store 소유로 정리해 해소했다. 미해결 충돌은 없다.",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        "grep 'lock|pid|flock|singleton' scripts/amplai_supervisor.py → 0건 (단일 인스턴스 장치 없음)",
+        "claim_work 이 with self.lock() 안에서 active_work_count 를 재검사한다 (amplai_runtime.py:1127~)",
+        "Supervisor.launchable 이 store.list_apps() 를 순회한다 (amplai_supervisor.py:256)",
+        "build_parser 에 --project-home 만 있고 --app 이 없다",
+        "self.max_workers = max(1, len(store.list_apps())) — 프로세스 로컬이다"
+      ],
+      "notes": "supervisor 가 둘 떠도 같은 Work 를 중복 실행하지는 않는다 — Store 락이 막는다. 그러나 프로세스가 둘 뜨는 것 자체는 아무것도 막지 않고, --max-workers 가 프로세스 로컬이라 전체 worker 총량 상한이 인스턴스 수만큼 흐려진다. 이것이 이 feature 가 고치는 대상이다.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-052 Consequence·Scope",
+        "specs/006-supervisor-ownership/work-contract.json scope.exclude"
+      ],
+      "notes": "불변식 셋이다. (1) kit 원본을 안 고친다 — PR #81 과 독립이어야 한다. (2) kit 이 소유한 Store 경로를 안 건드린다. (3) 버전 드리프트는 fail-closed 로 막는다 — 조용히 도는 것보다 안 도는 것이 낫다. AC-007 과 AC-004 가 각각 (2)(3)을 검사한다.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        "kit initialize() 가 만드는 Store 디렉토리 목록 (amplai_runtime.py:468~)",
+        "write_managed_gitignore 가 .amplai/local/ 과 .amplai/locks/ 를 제외한다"
+      ],
+      "notes": "Store 가 Work/CR/Decision/Evidence 의 SSOT 다. supervisor 는 그것을 읽어 worker 에 연결할 뿐 상태를 발명하지 않는다. 락은 host-local 이 맞다 — Store .gitignore 가 .amplai/locks/ 를 제외하므로 git 으로 공유되지 않는다. 새로 쓰는 supervisor/ 는 kit 이 만들지 않는 영역이라 소유가 겹치지 않는다.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        "kit reference/SYNAPSE_INTEGRATION.md 아키텍처 그림",
+        "vault/projects/amplai/40-architecture/ARC-0003 — Work Manager 역할"
+      ],
+      "notes": "supervisor 는 개발 도구 층이고 Store 아래 별도 층이다. 앱(amplai-foundry·synapse·cortex) 안이 아니다. 이 feature 는 그 경계를 파일 배치로 실현한다. 제품 층(src/, vault/)은 건드리지 않는다.",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        ".ai-team/runtime/LOCAL_SUPERVISOR.md 책임/비책임 절",
+        "D-052 Decision 절"
+      ],
+      "notes": "'소유' 를 두 층으로 나눠 쓴다 — 실행 권한(락이 Store 에 있다)과 코드 위치(파일이 Store 에 있다). D-052 는 둘 다 Store 로 정했다. '공급' 은 세 번째 축이고 amplai-foundry 다 — 코드의 정본 출처를 뜻하며 소유와 다르다.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        ".ai-team/verifiers/registry.json — v2 profile",
+        "amplai.py project verify"
+      ],
+      "notes": "이 feature 는 저장소 코드를 거의 안 바꾸므로 v2 profile 은 회귀 확인용이다. 실질 판정은 AC 별 재현 실행이다 — 동시 실행 거부, SIGKILL 후 락 회수, 버전 불일치 거부, Store 경로 불변. Store 쪽은 project verify 가 본다.",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "7f59d5be67021d5de434d9c0d9891f8f59fa6285",
+    "contract": "specs/006-supervisor-ownership/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "ALR-005",
+  "work_type": "architecture"
+}

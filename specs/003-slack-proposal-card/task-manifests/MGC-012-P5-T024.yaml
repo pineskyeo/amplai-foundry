@@ -1,0 +1,280 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T024
+title: Normalize every store connection failure at the boundary instead of listing exception classes
+type: fix
+status: done
+
+goal:
+  outcome: >-
+    `GovernanceStore.connect()` 가 여는 과정에서 나는 모든 실패가 `GovernanceStoreError` 로
+    정규화된다. 호출자는 예외 class 목록을 유지할 필요가 없고, **새 실패 종류가 생겨도
+    호출자를 세지 않아도 된다.**
+  user_value: >-
+    round 14 `P1-1` 이 실측했다 — `GovernanceFilesystemError` 는 `RuntimeError` 를 상속해
+    `(GovernanceStoreError, IngressError, sqlite3.Error)` 밖이고, `connect()` 가 연결마다
+    filesystem guard 를 두 번 부른다. 그래서 raw 예외가 `process_next` 를 뚫고 나가 worker
+    loop 를 죽이고 command 를 `leased` 로 남긴다. round 13 `P1-1` 의 피해가 그대로 재현된다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: P1-1
+    - path: specs/003-slack-proposal-card/evidence/3lens-review-round-14.md
+      section: BP2-2
+    - path: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md
+      section: D-042
+  requirements:
+    - FR-024
+    - FR-026
+    - SC-004
+  decisions:
+    - D-042
+
+scope:
+  include:
+    - >-
+      `store.connect()`(`store.py:183`)의 여는 단계에서 나는 실패를 `GovernanceStoreError` 로
+      정규화한다. 대상은 `filesystem_guard.validate()`(`:189`, `:193`)가 내는
+      `GovernanceFilesystemError` 와 `path.parent.mkdir()`(`:190`)이 내는 `OSError` 다.
+      **원인을 `from error` 로 보존한다.**
+    - >-
+      정규화가 실제로 `ingress_worker.py` 의 세 지점을 덮는지 확인 — `_settle_exhausted_retry`
+      의 `committed_decision()`(`:466-469`), `_finalize` 의 `_transition`(`:343`),
+      `process_next` 의 `claim_next`(`:186`).
+    - 각 지점에서 raw 예외가 밖으로 나가지 않음을 고정하는 test.
+    - "`decisions.py:752-764` 의 `ValueError` 경로 조사 — 같은 축으로 처리되는지."
+  exclude:
+    - >-
+      `except` 절에 예외 class 를 더 나열하는 방식. **그것이 이 결함의 형태다.** 정규화로
+      해결하고, 못 하면 stop condition 으로 멈춘다.
+    - "`D-042` 의 침묵 판단 변경. 읽기 실패는 여전히 침묵이다."
+    - "`filesystem.py` 의 guard 로직 변경. 무엇을 검사하는지는 바꾸지 않는다."
+    - "`store.connect()` 안의 다른 검증(identity 변경, database_list 대조) 변경."
+    - "`slack_http.py`, `events.py`. 각각 T021/T022, T023 이 맡는다."
+  allowed_paths:
+    - src/amplai_foundry/governance/store.py
+    - src/amplai_foundry/governance/ingress_worker.py
+    - tests/test_governance_store.py
+    - tests/test_ingress.py
+    - tests/test_slack_ack_boundary.py
+  forbidden_paths:
+    - vault/
+    - .github/
+    - src/amplai_foundry/governance/filesystem.py
+    - src/amplai_foundry/governance/slack_http.py
+    - src/amplai_foundry/governance/events.py
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - >-
+      **먼저 재현한다.** round 14 가 `committed_decision` 을 patch 하지 않고 진짜
+      `filesystem.py:166` 에서 예외가 나게 해서 재현했다. 같은 방식으로 세 지점(`:466-469`,
+      `:343`, `:186`)에서 raw 예외가 나가는 것을 각각 실측한다. **재현 없이 고치지 않는다.**
+    - >-
+      **경계에서 정규화하는 이유.** `connect()` 호출 지점이 15개 모듈에 62곳이다. 호출자마다
+      `except` 를 고치면 62곳을 세야 하고, 그것이 다섯 라운드 연속 실패한 바로 그 작업이다.
+      `connect()` 안에서 정규화하면 **호출자를 하나도 안 건드리고** 새 실패 종류에도 견딘다.
+    - >-
+      **`GovernanceStoreError` 와 `GovernanceFilesystemError` 는 형제다** — 둘 다
+      `RuntimeError` 를 상속한다(`store.py:18`, `filesystem.py:13`). 상속 관계로 만들어
+      해결하려는 유혹이 있는데, 그러면 `filesystem.py` 가 `store.py` 를 알아야 하거나 반대가
+      되어 import 방향이 꼬인다. **정규화가 더 단순하다.**
+    - >-
+      **원인을 보존한다.** `raise GovernanceStoreError(...) from error` 로 감싼다. 진단이
+      사라지면 operator 가 왜 멈췄는지 알 수 없다. 다만 그 chain 이 credential 을 든 frame 을
+      붙잡지 않는지 확인한다 — `store.connect()` 는 token 을 다루지 않지만 확인은 한다.
+    - >-
+      **`check_startup()` 을 확인한다.** `cli.py:515` 가 그것을 부르고 `cli.py:524-525` 가
+      `GovernanceStoreError` 와 `GovernanceMigrationError` 를 잡는다. 정규화가 startup 진단을
+      뭉개지 않는지 본다 — filesystem 문제와 schema 문제를 사람이 구분할 수 있어야 한다.
+    - >-
+      **`_finalize` 의 `try` 밖 호출도 함께 본다.** `_settle_exhausted_retry` 호출이 `:332`
+      로 `try` 밖에 있다. 정규화가 `GovernanceStoreError` 를 보장하면 그 안의 `except` 가
+      잡는다. 그래도 **호출을 `try` 안으로 옮길지 판단하고 근거를 적는다** — `D-042` 가 그
+      최소 변경안을 기각한 이유(승격이 안 일어나 영구 침묵 복귀)를 다시 읽는다.
+    - >-
+      **형제를 전수로 센다.** `connect()` 의 여는 단계에서 예외를 낼 수 있는 문장을 전부
+      열거한다. `validate()` 둘, `mkdir` 하나 외에 더 있는지 본다. `_raw_connection` 과
+      `_configure` 도 센다.
+    - >-
+      **`decisions.py:752-764`** 의 `_replayed_decision` 이 durable column 에 대해
+      `DecisionAction(...)`, `int(...)`, `_parse_timestamp(...)` 를 돌린다. round 14 가
+      그것도 escape 한다고 실측했다. 이것은 `connect()` 밖이므로 정규화로 덮이지 않는다.
+      **덮이는지 확인하고, 안 덮이면 finding 으로 기록한다** — 별도 판단이 필요하다.
+  invariants:
+    - "`connect()` 성공 경로의 동작이 바뀌지 않는다."
+    - "실패 원인이 `__cause__` 로 보존된다."
+    - "`filesystem.py` 의 검사 내용이 바뀌지 않는다."
+    - "`D-042` 의 침묵 판단이 유지된다 — 읽기 실패는 recovery hold + 침묵이다."
+    - "`process_next` 가 store 실패로 raw 예외를 밖으로 내보내지 않는다."
+    - "프로그래밍 오류(`AttributeError`, `TypeError`)는 여전히 시끄럽게 나간다."
+    - "`slack_http.py`, `events.py` 를 수정하지 않는다."
+  non_goals:
+    - filesystem guard 의 검사 강화나 완화.
+    - "`except` 절에 class 추가."
+    - operator hold 해제 경로 신설.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 착수 전 코드.
+      when: >-
+        `filesystem_guard.validate()` 가 `GovernanceFilesystemError` 를 내는 상태에서
+        `process_next` 를 부른다.
+      then: >-
+        raw 예외가 밖으로 나가는 것을 실측으로 보인다. 세 지점(`:466-469`, `:343`, `:186`)
+        각각에 대해 재현한다.
+    - id: AC-02
+      given: 정규화한 코드.
+      when: AC-01 과 같은 상태.
+      then: >-
+        예외가 `process_next` 밖으로 나오지 않는다. command 가 `leased` 로 남지 않는다.
+    - id: AC-03
+      given: 정규화한 코드.
+      when: "`mkdir` 이 `OSError(ENOSPC)` 를 내는 상태로 같은 실험을 한다."
+      then: 같은 결과다.
+    - id: AC-04
+      given: 정규화한 코드.
+      when: 올라온 예외의 `__cause__` 를 본다.
+      then: 원래 예외가 보존돼 있다.
+    - id: AC-05
+      given: 정규화한 코드.
+      when: 프로그래밍 오류(`AttributeError`)를 `connect()` 안에 주입한다.
+      then: >-
+        그것은 정규화되지 **않고** 그대로 나간다. 결함이 침묵하지 않는다.
+    - id: AC-06
+      given: "`connect()` 의 여는 단계."
+      when: 예외를 낼 수 있는 문장을 전수 열거한다.
+      then: >-
+        표로 적고, 각각이 정규화되는지 보인다. 안 되는 것이 있으면 왜 안전한지 근거를 적는다.
+    - id: AC-07
+      given: 신규 test.
+      when: 정규화 코드를 제거한다.
+      then: test 가 실패한다. 세 지점 각각에 대해 확인한다.
+    - id: AC-08
+      given: "`cli.py` 의 startup 경로."
+      when: filesystem 문제와 schema 문제를 각각 만든다.
+      then: >-
+        사람이 둘을 구분할 수 있다. 정규화가 진단을 뭉개지 않았음을 보인다.
+    - id: AC-09
+      given: "`decisions.py:752-764` 의 `ValueError` 경로."
+      when: 그것이 정규화로 덮이는지 확인한다.
+      then: >-
+        덮이면 보이고, 안 덮이면 finding 으로 기록한다. **가정하지 않는다.**
+    - id: AC-10
+      given: 전체 test suite.
+      when: 아무것도 바꾸지 않고 돌린다.
+      then: round 14 기준(1301 passed, 4 deselected) 이상으로 통과하고 실패가 없다.
+  commands:
+    - id: targeted-store
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_governance_store.py
+      required: true
+    - id: targeted-ingress
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted-store
+      required: true
+    - type: command_output
+      source: targeted-ingress
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+    - type: note
+      source: AC-01 의 세 지점 재현 출력
+      required: true
+    - type: note
+      source: AC-06 의 connect() 실패 문장 전수 표
+      required: true
+    - type: note
+      source: AC-09 의 decisions.py ValueError 경로 판단
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - >-
+      `connect()` 는 15개 모듈 62곳이 부른다. 정규화가 잘못되면 그 전부의 실패 처리가 바뀐다.
+      성공 경로 불변과 프로그래밍 오류 통과를 acceptance 로 고정한 이유다.
+    - >-
+      너무 넓게 잡으면 프로그래밍 오류까지 `GovernanceStoreError` 가 되어 결함이 durable 하게
+      숨는다. AC-05 가 그 경계를 잰다.
+    - >-
+      startup 진단이 뭉개지면 운영자가 filesystem 문제와 schema 문제를 구분하지 못한다.
+  approvals:
+    - >-
+      사용자가 2026-08-18 에 "구조를 먼저 고친다" 를 선택했다. 예외 class 를 열거하는 대신
+      경계에서 정규화하는 것이 그 방향이다.
+    - >-
+      `P1-1` 은 round 14 가 실제 코드 경로로 재현한 P1 이다. `D-042` 의 침묵 판단은 유지하며
+      그 판단이 도달하지 못하던 경로를 여는 것이므로 새 Decision 이 필요하지 않다.
+
+loop:
+  max_attempts: 4
+  replan_after_same_failure: 3
+  stop_conditions:
+    - normalization_would_swallow_programming_errors
+    - startup_diagnosis_would_be_flattened
+    - normalization_at_the_boundary_proves_impossible
+    - silence_judgment_of_d042_would_change
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-18T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md
+
+handoff:
+  expected_changes:
+    - "`store.connect()` 가 여는 단계의 실패를 `GovernanceStoreError` 로 정규화한다."
+    - 세 지점의 회귀 test.
+  notes:
+    - >-
+      **호출자 62곳을 하나도 안 건드리는 것이 목표다.** 건드려야 한다면 그 자체가 설계가
+      틀렸다는 신호다.

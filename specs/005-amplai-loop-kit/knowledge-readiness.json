@@ -1,0 +1,88 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        "specs/005-amplai-loop-kit/work-contract.json",
+        "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md"
+      ],
+      "notes": "AC-001~AC-010 이 판정 기준이다. AC-009(제거 가능성)가 핵심 — D-051 이 '제거 가능한 층' 을 조건으로 걸었다. 모든 AC 가 실행 가능한 명령으로 확인된다.",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        ".ai-team/README.md Scope freeze 절",
+        ".ai-team/README.md Directory ownership 절",
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-051"
+      ],
+      "notes": "규약 두 개와 문구상 어긋남이 있다 — Scope freeze 가 'Work DAG scheduler 는 V3' 라 적었는데 kit Supervisor 가 그 축소판이고, Directory ownership 이 '.ai-team 은 정책과 schema 만' 인데 kit 이 문서 3개와 install/·backups/ 를 넣는다. D-051 (3) 이 각주로 예외를 표시하는 것으로 해소했다 — 본문은 안 고친다. 미해결 충돌은 없다.",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        "복제본 실측: 설치 전 doctor PASS / verifier v2 PASS",
+        "복제본 실측: 설치 후 doctor PASS / verifier v2 FAIL (ruff 223건, 전부 kit 파일)",
+        "복제본 실측: 제거 후 git status 빈 출력, doctor PASS, ruff All checks passed, pytest 1409",
+        "kit selftest.py ok: true (check 7개)",
+        "install.py --dry-run 27 action, 충돌 0"
+      ],
+      "notes": "이 저장소 복제본에 실제로 설치하고 제거해 봤다. 깨지는 것은 ruff 하나이고 원인과 선례가 모두 확인됐다 (pyproject.toml:63 의 loopctl.py·loopv2.py per-file-ignores). mypy 는 packages 범위 밖이라 영향이 없다.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-051 Scope 절",
+        "specs/005-amplai-loop-kit/work-contract.json scope.exclude"
+      ],
+      "notes": "불변식 셋이다. (1) 모든 변경이 git checkout + rm 으로 되돌아간다. (2) src/amplai_foundry/ 와 vault/ 를 건드리지 않는다. (3) kit marker 안쪽을 고치지 않는다 — 고치면 다음 업데이트에서 충돌한다. 셋 다 실행으로 확인 가능하다.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-051 (2)",
+        ".ai-team/README.md Directory ownership — Work Memory 는 specs/<feature>/ 다",
+        "kit amplai_hook.py SessionStart additionalContext"
+      ],
+      "notes": "kit hook 이 매 세션 'rendered handoff text is only a view' 를 주입하고 이 저장소는 handoff.json 이 SSOT 다. D-051 (2) 가 두 층으로 나눠 해소했다 — Project Store Work 는 앱 간 조율 단위, specs/<feature>/handoff.json 은 feature 내부 slice 진행 상태다. 어느 쪽도 상대의 SSOT 가 아니다.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        "vault/projects/amplai/40-architecture/ARC-0003 역할 경계",
+        "README.md — 이 저장소는 Knowledge Foundry 다",
+        "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md — cortex 판 loop runtime 이식 (D-046)"
+      ],
+      "notes": "두 층이다. 제품 층(src/, vault/, MGC-*)은 Knowledge Foundry 이고 개발 도구 층(.ai-team/, scripts/loopctl, /work·/design)은 cortex 판 AMPLAI Loop Runtime V2.1 이다. kit 은 개발 도구 층에만 얹힌다. kit 의 SessionEnd checkpoint 도 Project Store(개발 층)에 쓰이고 vault/ 를 안 건드린다 — ARC-0003 이 그은 선이 지켜진다.",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        "vault/projects/amplai/40-architecture/ARC-0007 — Hermes 는 Client Partner",
+        "vault/projects/amplai/40-architecture/ARC-0003 — Hermes 는 Work Manager 후보",
+        "kit reference/SYNAPSE_INTEGRATION.md — Hermes 는 Global AMPLAI 상위 조정자",
+        "docs/workstreams/messenger-governance-closure-v3/BACKLOG.md MGC-014"
+      ],
+      "notes": "같은 이름이 두 층에서 다른 것을 가리킨다. 제품 층 Hermes 는 자연어를 IntentRequest 로 구조화하는 Client Partner(ARC-0007, MGC-014, CON-0010 은 candidate)이고 kit 의 Hermes 는 앱 Runtime 을 조율하는 개발 층 상위자다. 'Work' 도 두 뜻이다 — Project Store Work vs specs/<feature>/ Work. D-051 Scope 가 둘을 합치지 않는다고 명시했다.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        ".ai-team/verifiers/registry.json — v2 profile",
+        "pyproject.toml:63 per-file-ignores 선례 (loopctl.py, loopv2.py)",
+        "복제본 실측: ruff check . (kit 파일 제외) → All checks passed"
+      ],
+      "notes": "판정은 verifier --profile v2 와 doctor 가 한다. 설치가 깨뜨리는 것은 ruff 하나이고 해법이 이미 이 저장소에 있다 — D-046 이식 때 같은 문제를 per-file-ignores 로 처리했다. src/ 와 tests/ 는 strict 그대로 둔다 (AC-004 가 그것을 검사한다).",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "ab14ffc659c1928c227894dfe3f24bb1fddd38de",
+    "contract": "specs/005-amplai-loop-kit/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "ALR-004",
+  "work_type": "architecture"
+}

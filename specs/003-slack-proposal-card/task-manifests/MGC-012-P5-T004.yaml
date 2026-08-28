@@ -1,0 +1,164 @@
+schema_version: "1.0"
+
+id: MGC-012-P5-T004
+title: Classify ordinary delivery exceptions as recoverable outbox failures
+type: bugfix
+status: done
+
+goal:
+  outcome: >-
+    Review Card 배달 중 일어난 평범한 Exception 이 dead letter 와 operator hold 를 만들고,
+    bare BaseException 이 dispatcher 밖으로 나가지 않는다.
+  user_value: >-
+    SQLite 동시 writer 처럼 흔한 실패에서 operator 가 신호를 받고 worker 가 살아남는다.
+    지금은 durable 기록 없이 조용히 죽는다.
+
+source:
+  feature: MGC-012-P5
+  files:
+    - path: specs/003-slack-proposal-card/evidence/3lens-review.md
+      section: C-1
+    - path: specs/003-slack-proposal-card/contracts/review-card-lifecycle.md
+      section: Crash Matrix
+    - path: specs/003-slack-proposal-card/spec.md
+      section: FR-021
+  requirements:
+    - FR-021
+    - SC-003
+  decisions: []
+
+scope:
+  include:
+    - send 경로의 interruption 판별을 cleanup 경로와 같은 기준으로 맞춘다.
+    - 오분류로 새던 예외를 OutboxReconcileError 로 닫아 dead letter 와 hold 를 만든다.
+    - 두 실패 class 에 대한 회귀 test 를 추가한다.
+  exclude:
+    - cleanup 경로의 기존 분기 변경.
+    - interruption 의미 자체(KeyboardInterrupt, SystemExit)의 재정의.
+    - retry, lease, supersession 정책 변경.
+  allowed_paths:
+    - src/amplai_foundry/governance/slack_projection.py
+    - tests/test_slack_projection.py
+    - tests/test_review_cards.py
+  forbidden_paths:
+    - vault/
+    - src/amplai_foundry/memory/
+    - src/amplai_foundry/proposals/apply.py
+    - src/amplai_foundry/cli.py
+    - .github/
+
+dependencies:
+  tasks: []
+  external: []
+
+implementation:
+  guidance:
+    - cleanup 경로 `_abandon_review_closed` 가 이미 `cleanup_failure_kind != "exception"` 일 때만
+      interruption 을 재던지고 `"exception"` 은 `OutboxReconcileError` 로 닫는다. send 경로에
+      같은 분기를 넣는다. 새 정책을 만드는 것이 아니라 누락을 메운다.
+    - dispatcher 의 `deliver_next` 는 `OutboxReconcileError` 와 `Exception` 만 잡는다. 이 task 는
+      그 계약을 바꾸지 않고, send 경로가 그 둘 중 하나를 던지도록 맞춘다.
+  invariants:
+    - KeyboardInterrupt 와 SystemExit 는 여전히 interruption 으로 전파된다.
+    - 실패 시 raw ActionToken credential 은 durable state, log, exception, traceback 에 남지 않는다.
+    - 이 변경은 성공 경로의 동작을 바꾸지 않는다.
+    - 중복 Card 를 만들지 않는다. 재claim 시 reconcile 이 먼저 돈다.
+  non_goals:
+    - test 공백 회수. MGC-012-P5-T005 와 MGC-012-P5-T006 이 맡는다.
+    - 계약 문서 정렬. MGC-012-P5-T007 이 맡는다.
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: Review outbox event 배달 중 action set 준비가 sqlite3.OperationalError 를 던지는 상태.
+      when: dispatcher 가 그 event 를 배달한다.
+      then: OutboxReconcileError 계열로 닫혀 dead letter 와 operator hold 가 생기고 deliver_next 밖으로 예외가 나가지 않는다.
+    - id: AC-02
+      given: renderer 가 TypeError 를 던지는 상태.
+      when: dispatcher 가 그 event 를 배달한다.
+      then: 같은 방식으로 닫히고 그 attempt 의 action set generation 만 revoke 된다.
+    - id: AC-03
+      given: 배달 중 KeyboardInterrupt 가 발생한 상태.
+      when: dispatcher 가 그 event 를 배달한다.
+      then: interruption 으로 전파되고 기존 interruption 계약이 그대로 유지된다.
+    - id: AC-04
+      given: AC-01 과 AC-02 의 실패 경로.
+      when: 실패 후 durable state, exception, traceback locals 를 검사한다.
+      then: raw ActionToken credential 이 발견되지 않는다.
+  commands:
+    - id: targeted
+      kind: test
+      run: .venv/bin/python -m pytest tests/test_slack_projection.py tests/test_review_cards.py
+      required: true
+    - id: full-pytest
+      kind: test
+      run: .venv/bin/python -m pytest
+      required: true
+    - id: ruff-check
+      kind: lint
+      run: .venv/bin/python -m ruff check .
+      required: true
+    - id: ruff-format
+      kind: lint
+      run: .venv/bin/python -m ruff format --check .
+      required: true
+    - id: mypy
+      kind: typecheck
+      run: .venv/bin/python -m mypy
+      required: true
+    - id: verify
+      kind: integration
+      run: .venv/bin/python -m amplai_foundry.cli verify --root .
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: targeted
+      required: true
+    - type: command_output
+      source: full-pytest
+      required: true
+    - type: command_output
+      source: ruff-check
+      required: true
+    - type: command_output
+      source: ruff-format
+      required: true
+    - type: command_output
+      source: mypy
+      required: true
+    - type: command_output
+      source: verify
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - interruption 판별을 너무 넓게 잡으면 실제 process interruption 이 삼켜진다.
+    - 예외 class 를 바꾸면 상위 worker loop 의 처리 경로가 달라진다.
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - cleanup_path_semantics_would_change
+    - interruption_semantics_would_change
+    - raw_secret_appears_in_any_evidence
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-13T00:00:00+09:00"
+  evidence_paths:
+    - specs/003-slack-proposal-card/evidence/MGC-012-P5-T004.md
+
+handoff:
+  expected_changes:
+    - src/amplai_foundry/governance/slack_projection.py 의 send 경로 예외 분류.
+    - 두 실패 class 회귀 test.
+  notes:
+    - 이것이 round 10 review 에서 나온 유일한 실제 동작 결함이다. 나머지 finding 은 회귀 방어 부재다.

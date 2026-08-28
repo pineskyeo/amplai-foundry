@@ -247,6 +247,8 @@ def test_initialize_creates_versioned_store_with_required_runtime_profile(tmp_pa
         (28, "legacy-atomic-exact-root-rollback"),
         (29, "legacy-rollback-hold-provenance"),
         (30, "legacy-forward-recovery-evidence"),
+        (31, "slack-review-card-lifecycle"),
+        (32, "slack-review-card-one-snapshot"),
     ]
     assert INITIAL_MIGRATIONS[19].checksum == (
         "5d9331e304f641a85006352e40583cca3a469baa1c370db90cc4cd4274314bf5"
@@ -1040,3 +1042,232 @@ def test_corrupt_database_is_reported_as_store_error(tmp_path: Path) -> None:
 
     with pytest.raises((GovernanceStoreError, sqlite3.DatabaseError)):
         store.check_startup()
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T024 — connect() 의 여는 단계 실패를 경계에서 정규화한다
+# ---------------------------------------------------------------------------
+#
+# round 14 `P1-1` 은 `filesystem.py:166` 의 `GovernanceFilesystemError` 가
+# `ingress_worker` 의 세 지점을 그대로 뚫고 `process_next` 밖으로 나가는 것을 실측했다.
+# 세 지점 모두 `except (GovernanceStoreError, IngressError, sqlite3.Error)` 인데
+# `GovernanceFilesystemError` 는 그 어디에도 없다.
+#
+# 호출자마다 class 를 더하는 대신 `connect()` 안에서 정규화한다. `connect()` 호출 지점이
+# 15개 module 62곳이라 세는 쪽은 이번 wave 가 없애려는 바로 그 작업이다.
+
+
+class _FlippingFilesystemProbe:
+    """`connect()` 안에서 filesystem 판정이 바뀌는 상황을 만든다."""
+
+    def __init__(self, *, local_calls: int) -> None:
+        self.calls = 0
+        self.local_calls = local_calls
+
+    def inspect(self, path: Path) -> FilesystemStatus:
+        self.calls += 1
+        local = self.calls <= self.local_calls
+        return FilesystemStatus(
+            kind="apfs" if local else "nfs",
+            mount_point=path.parent,
+            local=local,
+        )
+
+
+@pytest.mark.parametrize(
+    ("local_calls", "which"),
+    [(0, "before"), (1, "after")],
+    ids=["before-validate", "after-validate"],
+)
+def test_connect_normalizes_a_filesystem_guard_failure(
+    tmp_path: Path, local_calls: int, which: str
+) -> None:
+    """`GovernanceFilesystemError` 가 raw 로 나가지 않는다. 원인은 보존된다."""
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    store = GovernanceStore(
+        path,
+        filesystem_guard=LocalFilesystemGuard(_FlippingFilesystemProbe(local_calls=local_calls)),
+    )
+
+    with pytest.raises(GovernanceStoreError) as caught, store.connect() as connection:
+        connection.execute("SELECT 1")
+
+    assert isinstance(caught.value.__cause__, GovernanceFilesystemError), (
+        f"{which}-validate 실패의 원인이 사라졌다: {caught.value.__cause__!r}"
+    )
+    assert "verified local filesystem" in str(caught.value.__cause__)
+
+
+def test_connect_normalizes_an_os_error_from_creating_the_parent_directory(
+    tmp_path: Path,
+) -> None:
+    """`mkdir` 의 `OSError` 도 같은 경계에서 정규화된다."""
+    blocker = tmp_path / "blocked"
+    blocker.write_text("이 경로는 파일이라 parent directory 를 만들 수 없다", encoding="utf-8")
+    store = GovernanceStore(blocker / "nested" / "governance.db")
+
+    with pytest.raises(GovernanceStoreError) as caught, store.connect():
+        pass
+
+    assert isinstance(caught.value.__cause__, OSError)
+
+
+def test_connect_does_not_swallow_a_programming_error(tmp_path: Path) -> None:
+    """정규화가 결함을 숨기면 안 된다.
+
+    `AttributeError`·`TypeError` 는 `_OPEN_FAILURES` 에 없으므로 그대로 시끄럽게 나간다.
+    `except Exception` 으로 넓혔다면 이 test 가 실패한다.
+    """
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+
+    class BrokenProbe:
+        def inspect(self, path: Path) -> FilesystemStatus:
+            raise AttributeError("구현자 실수를 흉내낸다")
+
+    store = GovernanceStore(path, filesystem_guard=LocalFilesystemGuard(BrokenProbe()))
+
+    with pytest.raises(AttributeError), store.connect():
+        pass
+
+
+def test_connect_leaves_an_already_normalized_error_alone(tmp_path: Path) -> None:
+    """`GovernanceStoreError` 는 `RuntimeError` 라 다시 감싸이지 않는다.
+
+    identity 변경 검사가 내는 오류가 두 겹으로 싸이면 진단이 흐려진다.
+    """
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+
+    class DriftingProbe:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def inspect(self, path: Path) -> FilesystemStatus:
+            self.calls += 1
+            return FilesystemStatus(
+                kind="apfs" if self.calls == 1 else "hfs",
+                mount_point=path.parent,
+                local=True,
+            )
+
+    store = GovernanceStore(path, filesystem_guard=LocalFilesystemGuard(DriftingProbe()))
+
+    with pytest.raises(GovernanceStoreError) as caught, store.connect():
+        pass
+
+    assert "filesystem identity가 connection open 중 변경됐습니다" in str(caught.value)
+    assert caught.value.__cause__ is None, "이미 정규화된 오류를 다시 감쌌다"
+
+
+def test_connect_does_not_normalize_what_the_caller_raises(tmp_path: Path) -> None:
+    """`yield` 는 두 `try` 밖이다. 호출자의 예외를 삼키면 안 된다."""
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    store = GovernanceStore(path)
+
+    with pytest.raises(sqlite3.OperationalError), store.connect() as connection:
+        connection.execute("SELECT * FROM table_that_does_not_exist")
+
+
+# MGC-012-P5-T029 — `sqlite3.Error` 는 정규화하지 않는다 (round 15 `R-1`)
+#
+# T024 가 open 단계의 `sqlite3.Error` 까지 `GovernanceStoreError` 로 바꿨는데,
+# `legacy_*.py` 의 `try` 열이 `sqlite3.Error` 를 잡아 domain error 로 닫고 있었다. 그
+# 봉쇄가 사라져 raw `GovernanceStoreError` 가 module 경계를 넘었다. **test 가 없어서
+# suite 는 조용했다.** 아래 둘이 그 침묵을 없앤다.
+
+
+def test_connect_does_not_normalize_a_sqlite_error_from_configuring(tmp_path: Path) -> None:
+    """`_configure` 의 `sqlite3.Error` 는 그대로 나간다.
+
+    round 14 `P1-1` 이 요구한 것은 `GovernanceFilesystemError` 하나였다. `sqlite3.Error`
+    까지 덮으면 `sqlite3.Error` 를 잡던 호출자 열의 봉쇄가 사라진다.
+    """
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    store = GovernanceStore(path)
+
+    def _boom(connection: sqlite3.Connection, *, busy_timeout_ms: int | None = None) -> None:
+        raise sqlite3.OperationalError("disk I/O error")
+
+    store._configure = _boom  # type: ignore[method-assign]
+
+    with pytest.raises(sqlite3.OperationalError), store.connect():
+        pass
+
+
+def test_connect_still_normalizes_the_failure_round_14_asked_for(tmp_path: Path) -> None:
+    """좁혔다고 `P1-1` 이 다시 열리면 안 된다."""
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    store = GovernanceStore(
+        path,
+        filesystem_guard=LocalFilesystemGuard(_FlippingFilesystemProbe(local_calls=0)),
+    )
+
+    with pytest.raises(GovernanceStoreError) as caught, store.connect():
+        pass
+
+    assert isinstance(caught.value.__cause__, GovernanceFilesystemError)
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-T033 — T029 가 되돌린 세 지점을 전부 고정한다 (round 16 R16-2)
+# ---------------------------------------------------------------------------
+#
+# `T029` 는 `_OPEN_FAILURES` 에서 `sqlite3.Error` 를 빼서 `legacy_*.py` 의 `try` 열의
+# 봉쇄를 되살렸다. 그런데 test 는 `_configure` 지점 하나만 고정했다. 착수 전 실측에서
+# **세 지점 중 둘이 무방비**였다 — `_raw_connection` 의 PRAGMA 와 `PRAGMA database_list`.
+# 둘 다 다시 감싸는 mutation 이 40건을 전부 통과했다.
+#
+# round 15 `R-1` 이 잡은 것이 "test 가 없어서 suite 는 조용했다" 였다. 그 고침 자체가
+# 같은 상태였다.
+
+
+class _FailingConnection:
+    """지정한 SQL 에서만 `sqlite3.OperationalError` 를 내는 얇은 wrapper."""
+
+    def __init__(self, inner: sqlite3.Connection, failing_prefix: str) -> None:
+        self._inner = inner
+        self._failing_prefix = failing_prefix
+
+    def execute(self, sql: str, *args: object) -> object:
+        if sql.strip().upper().startswith(self._failing_prefix.upper()):
+            raise sqlite3.OperationalError(f"injected failure: {sql.strip()}")
+        return self._inner.execute(sql, *args)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+
+@pytest.mark.parametrize(
+    ("failing_sql", "point"),
+    [
+        ("PRAGMA busy_timeout", "_raw_connection"),
+        ("PRAGMA database_list", "connect"),
+    ],
+    ids=["raw-connection-pragma", "database-list"],
+)
+def test_connect_leaves_a_sqlite_error_raw_at_every_revert_point(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failing_sql: str, point: str
+) -> None:
+    """`T029` 가 정규화하지 않기로 한 지점이 실제로 raw 로 나간다.
+
+    어느 하나를 다시 `GovernanceStoreError` 로 감싸면 이 test 가 실패한다. 그 봉쇄에
+    `legacy_*.py` 의 `try` 열이 의존한다.
+    """
+    path = tmp_path / "governance.db"
+    GovernanceStore(path).initialize()
+    store = GovernanceStore(path)
+
+    real_connect = sqlite3.connect
+
+    def _wrapping_connect(*args: object, **kwargs: object) -> object:
+        return _FailingConnection(real_connect(*args, **kwargs), failing_sql)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(sqlite3, "connect", _wrapping_connect)
+
+    with pytest.raises(sqlite3.OperationalError, match="injected failure"), store.connect():
+        pass

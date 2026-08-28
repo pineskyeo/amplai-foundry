@@ -1,0 +1,167 @@
+schema_version: "1.0"
+
+id: ALR-006-T003
+title: supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
+type: feature
+status: done
+
+goal:
+  outcome: >
+    amplai_supervisor.py 가 자기 안에서 Store 의 .amplai/locks/supervisor.lock 을 잡는다.
+    두 번째 실행이 거부되고, 앱 repo 사본을 직접 실행해도 같은 락을 잡으므로 막힌다.
+    install.py 가 Store 에 supervisor/ 진입점을 설치한다.
+  user_value: >
+    supervisor 가 하나만 산다는 것이 규약이 아니라 코드로 보장된다. D-052 가 한계로
+    인정한 우회 경로가 닫힌다.
+
+source:
+  feature: ALR-006
+  files:
+    - path: specs/007-kit-source-and-distribution/plan.md
+      section: "3. supervisor 를 kit 안으로"
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      section: AC-005
+  requirements:
+    - AC-005
+    - AC-006
+    - AC-007
+  decisions:
+    - D-052
+    - D-053
+
+scope:
+  include:
+    - amplai_supervisor.py 가 시작 시 Store 락을 잡고 두 번째 실행을 거부한다
+    - stale 락 회수 — kit project lock 의 rename 단독 승자 방식을 따른다
+    - install.py 가 <PROJECT_HOME>/supervisor/{run,VERSION} 을 설치한다
+    - Store 가 없으면 supervisor 설치를 건너뛰고 그 사실을 보고한다
+    - 회귀 test 를 kit 의 tests/ai/ 에 추가한다
+  exclude:
+    - supervisor 를 켜는 것 (--run). 이 task 는 락만 다룬다
+    - worktree 인식·알림·활성 세션 라우팅 (HANDOFF 3의 개선 후보)
+    - Store 에 amplai_runtime.py 사본을 두는 것 — D-053 이 앱 사본 하나로 줄였다
+  allowed_paths:
+    - tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py
+    - tools/amplai-loop-kit/payload/store/**
+    - tools/amplai-loop-kit/payload/tests/ai/**
+    - tools/amplai-loop-kit/install.py
+    - tools/amplai-loop-kit/manifest.json
+    - tools/amplai-loop-kit/CHECKSUMS.sha256
+    - tools/amplai-loop-kit/payload/.ai-team/runtime/LOCAL_SUPERVISOR.md
+    - specs/007-kit-source-and-distribution/**
+  forbidden_paths:
+    - src/**
+    - vault/**
+    - tools/amplai-loop-kit/payload/scripts/amplai_runtime.py
+
+dependencies:
+  tasks:
+    - ALR-006-T001
+  external: []
+
+implementation:
+  guidance:
+    - 락 위치는 discover_project_home() 이 찾은 Store 아래다. Store 를 못 찾으면 기존대로 실패한다
+    - stale 회수는 rename 하나로 단독 승자를 만든다. rmtree 경쟁을 쓰지 않는다 (2.2.0 C1 이 고친 형태)
+    - 두 번째 실행은 조용히 대기하지 않는다. 거부하고 exit code 로 구분한다
+    - 새 구조가 요구하는 것을 착수 전에 표로 만들고, 각 항목에 처리와 그 처리를 지키는 test 두 칸을 둔다
+    - 표의 칸은 mutation 으로 확인하기 전에 채우지 않는다 (round 19 R19-1·R19-2)
+    - 양쪽 끝을 다 센다 — 락 획득 실패, 프로세스 죽음, Store 부재, 권한 없음 (round 21 F21-2)
+  invariants:
+    - Store 가 없으면 앱 설치는 진행되고 supervisor 설치만 건너뛴다
+    - 락은 host-local 이다. Store .gitignore 가 .amplai/locks/ 를 제외한다
+    - amplai_runtime.py 를 건드리지 않는다
+  non_goals:
+    - supervisor 의 실행 정책(auto_start, --run)을 바꾸는 것
+    - 앱 repo 에서 amplai_supervisor.py 를 제거하는 것
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: Store 가 있고 supervisor 가 하나 돌고 있다
+      when: 두 번째 supervisor 를 띄운다
+      then: 거부되고 exit code 가 정상 종료와 다르다
+    - id: AC-02
+      given: supervisor 가 락을 잡은 채 SIGKILL 로 죽었다
+      when: 다음 supervisor 를 띄운다
+      then: stale 락이 회수되고 실행이 성공한다
+    - id: AC-03
+      given: Store 의 supervisor/run 이 돌고 있다
+      when: 앱 repo 의 scripts/amplai_supervisor.py 를 직접 실행한다
+      then: 같은 락에 걸려 거부된다. 반대 순서로도 같다
+    - id: AC-04
+      given: Store 가 있는 상태
+      when: install.py 로 설치한다
+      then: <PROJECT_HOME>/supervisor/run 과 VERSION 이 생긴다
+    - id: AC-05
+      given: Store 가 없는 상태
+      when: install.py 로 설치한다
+      then: 앱 설치는 성공하고 supervisor 설치를 건너뛴 사실이 출력에 있다
+  commands:
+    - id: kit-tests
+      kind: test
+      run: .venv/bin/python -m pytest tools/amplai-loop-kit/payload/tests/ai -q
+      required: false
+    - id: selftest
+      kind: test
+      run: python3 tools/amplai-loop-kit/selftest.py
+      required: true
+    - id: doctor
+      kind: lint
+      run: python3 scripts/loopctl.py doctor
+      required: true
+  manual_checks:
+    - id: MC-01
+      observer: implementation agent
+      action: >-
+        Store 복제본에서 supervisor 를 하나 띄운 뒤 두 번째를 띄우고 exit code 를 기록한다.
+        이어 첫 프로세스를 SIGKILL 하고 다음 실행이 성공하는지 확인한다. 마지막으로 앱 repo
+        사본을 직접 실행해 같은 락에 걸리는지 양방향으로 확인한다.
+      expected: >-
+        두 번째 실행이 정상 종료와 다른 exit code 로 거부되고, SIGKILL 뒤에는 회수돼 성공하며,
+        앱 사본 직접 실행도 순서와 무관하게 거부된다.
+      reason_not_automated: >-
+        프로세스 강제 종료 뒤의 stale 락 회수는 in-process test 만으로 충분히 증명되지 않는다.
+  evidence:
+    - type: command_output
+      source: selftest
+      required: true
+    - type: command_output
+      source: kit-tests
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - 락 구현이 틀리면 supervisor 가 아예 못 뜨거나 둘 다 뜬다. 양쪽 다 재현으로 확인해야 한다
+    - stale 회수가 살아 있는 락을 뺏으면 2.2.0 C1 이 고친 결함이 되살아난다
+    - payload/tests 를 늘리면 설치 후 이 저장소 pytest 수가 그만큼 더 움직인다
+  approvals:
+    - architecture_change
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py
+    - tools/amplai-loop-kit/payload/store/supervisor/run
+    - tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_regressions.py
+
+handoff:
+  expected_changes:
+    - tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py
+    - tools/amplai-loop-kit/payload/store/supervisor/run (신규)
+    - tools/amplai-loop-kit/install.py — Store 설치 단계
+    - tools/amplai-loop-kit/payload/tests/ai/ — 락 회귀 test
+  notes:
+    - D-052 가 한계로 적은 우회 경로가 이 task 로 닫힌다. 그 문장과 대조해 확인한다
