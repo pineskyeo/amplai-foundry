@@ -68,7 +68,8 @@ def installed_version(repo):
     if not os.path.isfile(record):
         return None
     try:
-        return read_json(record).get("version")
+        # The install record names this field package_version.
+        return read_json(record).get("package_version")
     except (ValueError, OSError):
         return None
 

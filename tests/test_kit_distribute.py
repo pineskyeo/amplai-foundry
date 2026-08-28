@@ -95,7 +95,10 @@ class TestOrdering:
 class TestVerify:
     def test_a_version_mismatch_names_the_app(self, config, tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
-        _write(tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json", {"version": "1.0.0"})
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "1.0.0"},
+        )
         rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
         payload = json.loads(capsys.readouterr().out)
         assert rc == kd.EXIT_ERROR
@@ -104,7 +107,10 @@ class TestVerify:
 
     def test_matching_versions_pass(self, config, tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
-        _write(tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json", {"version": "9.9.9"})
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "9.9.9"},
+        )
         rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
         payload = json.loads(capsys.readouterr().out)
         assert rc == kd.EXIT_OK
@@ -280,6 +286,19 @@ class TestRealPackage:
             text=True,
         )
         assert result.returncode == 0, f"{rel} is not git-ignored"
+
+    def test_installed_version_reads_the_field_the_installer_writes(self):
+        """The install record names it package_version, not version.
+
+        A mock that invents the field name let this pass while every target
+        reported as mismatched, so this reads a record the installer produced.
+        """
+        record = REPO_ROOT / kd.INSTALL_RECORD
+        if not record.is_file():
+            pytest.skip("the kit is not installed in this repository")
+        raw = json.loads(record.read_text(encoding="utf-8"))
+        assert "package_version" in raw
+        assert kd.installed_version(REPO_ROOT) == raw["package_version"]
 
     def test_kit_version_matches_the_manifest(self):
         manifest = json.loads((kd.KIT_ROOT / "manifest.json").read_text(encoding="utf-8"))

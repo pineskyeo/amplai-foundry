@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: ALR-006-T006
 title: 세 앱에 kit 2.3.0 을 실제로 배포한다
 type: operations
-status: blocked
+status: done
 
 goal:
   outcome: >
@@ -151,10 +151,14 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - pyproject.toml
+    - .ai-team/README.md
+    - docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md
+    - ~/workspace/amplai-project (Project Store)
 
 handoff:
   expected_changes:
@@ -162,4 +166,8 @@ handoff:
     - pyproject.toml, .ai-team/README.md 각주
     - docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md — test 기준선
   notes:
-    - status 가 blocked 인 이유는 git_publish 승인이 없기 때문이다. 승인되면 ready 로 올린다
+    - >-
+      2026-08-28 사용자가 git_publish 를 승인해 ready 로 올렸다. 대상 두 곳의
+      uncommitted 변경이 kit 설치 경로와 겹치지 않는 것을 기계적으로 확인했다
+      (synapse 31/2/겹침 0, cortex 29/2/겹침 0). 설치는 파일만 놓고 commit 하지 않으므로
+      각 저장소의 커밋은 그쪽에서 판단한다.

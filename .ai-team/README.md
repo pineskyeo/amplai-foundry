@@ -64,6 +64,19 @@ Canonical project assets는 복사하지 않는다.
 
 `.ai-team`은 문서 내용도, Work별 report 이력도 쌓지 않는다. 정책과 schema만 둔다.
 
+> **예외 — AMPLAI Loop Kit 이 설치된 동안 (`D-051`, `D-053`).** kit 이 `.ai-team` 에 다음을
+> 놓는다. 정책·schema 가 아닌 것이 셋이다.
+>
+> ```text
+> 정책·schema (규약에 맞음)   runtime/async-policy.json, runtime/schemas/*, runtime/app.template.json
+> 문서 (예외)                 runtime/{DECISION_ASYNC_PROTOCOL,LOCAL_SUPERVISOR,INSTALLATION}.md
+> 이력 (예외)                 install/amplai-loop-kit.json, backups/amplai-loop-kit/
+> identity (예외)             app.json, AUTONOMY_POLICY.md
+> ```
+>
+> kit 은 앱 단위 설치 도구라 이 경로들을 쓸 수밖에 없다. **규약 본문은 고치지 않았고**
+> kit 을 제거하면 이 각주도 함께 지운다.
+
 ## V2 work flow
 
 ```text
@@ -241,3 +254,10 @@ Done은 아래 evidence가 모두 있을 때만 선언한다.
 ## Scope freeze
 
 V2에는 parallel worker, fan-out/fan-in, Work DAG scheduler, remote worker, resource scheduler, multi-repo merge coordinator가 없다. 그것은 V3다.
+
+> **예외 — AMPLAI Loop Kit 이 설치된 동안 (`D-051`, `D-053`).** kit 의 Local Supervisor 는
+> claim·lease·heartbeat·app capacity 를 다루고 WAITING/READY dependency 를 돈다. 위 문구가
+> V3 로 미뤄 둔 것과 겹친다. kit 은 `default_app_concurrency: 1` 로 한 앱 한 Work 를
+> 강제하고 global planning·merge scheduling·publish/deploy 를 구현하지 않으므로 V3
+> execution fabric 은 아니다. **`auto_start` 는 `false` 이고 supervisor 를 켜는 것은
+> 아직 정하지 않았다.** kit 을 제거하면 이 각주도 함께 지운다.

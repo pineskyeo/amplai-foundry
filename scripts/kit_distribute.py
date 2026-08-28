@@ -135,13 +135,19 @@ def git_is_dirty(path: Path) -> bool | None:
 
 
 def installed_version(path: Path) -> str | None:
+    """The kit version recorded in a target's install record.
+
+    The field is ``package_version``; reading ``version`` here silently
+    reported every target as mismatched.
+    """
     record = path / INSTALL_RECORD
     if not record.is_file():
         return None
     try:
-        return str(read_json(record).get("version"))
+        value = read_json(record).get("package_version")
     except (ValueError, OSError):
         return None
+    return str(value) if value is not None else None
 
 
 def run_installer(

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://amplai.local/schemas/evidence.schema.json",
+  "title": "AMPLAI Evidence",
+  "type": "object",
+  "required": ["schema_version", "kind", "evidence_id", "change_id", "evidence_type", "summary", "source", "facts", "metadata", "created_by", "created_at", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "evidence"},
+    "evidence_id": {"type": "string"},
+    "change_id": {"type": "string"},
+    "work_id": {"type": ["string", "null"]},
+    "evidence_type": {"enum": ["code", "test", "runtime", "documentation", "git", "web", "benchmark", "contract", "review", "human_approval", "artifact", "other"]},
+    "summary": {"type": "string", "minLength": 1},
+    "source": {"type": "object", "required": ["kind", "locator", "observed_at"]},
+    "facts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "metadata": {"type": "object"},
+    "created_by": {"type": "string"},
+    "created_at": {"type": "string"},
+    "content_hash": {"type": "string"}
+  },
+  "additionalProperties": false
+}

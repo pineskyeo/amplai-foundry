@@ -53,7 +53,16 @@ src = ["src", "tests"]
 # tools/amplai-loop-kit 도 같은 이유다 — kit 은 Python 3.6 호환을 유지하려고 % 포맷을
 # 쓰고, 이 저장소가 정본이 된 뒤에도 그 형식을 지켜야 배포 대상들과 어긋나지 않는다
 # (D-053). kit 을 부르는 이 저장소 코드(scripts/kit_distribute.py)는 lint 대상이다.
-extend-exclude = [".agents", ".ai-team", ".claude", ".specify", "tools/amplai-loop-kit"]
+extend-exclude = [
+    ".agents", ".ai-team", ".claude", ".specify",
+    # kit 정본과 그것이 설치한 파일. kit 은 Python 3.6 호환을 유지해야 배포 대상들과
+    # 어긋나지 않으므로 % 포맷과 open alias 가 남는다. 여기서 고치면 다음 설치가
+    # 되돌리므로 tools/amplai-loop-kit/payload/ 에서만 고친다 (D-051, D-053).
+    "tools/amplai-loop-kit",
+    "scripts/amplai.py", "scripts/amplai_hook.py",
+    "scripts/amplai_runtime.py", "scripts/amplai_supervisor.py",
+    "tests/ai",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
