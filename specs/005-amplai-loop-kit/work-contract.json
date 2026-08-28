@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
   "id": "ALR-004",
-  "title": "AMPLAI Loop Kit 2.1.0 을 제거 가능한 층으로 설치한다",
-  "goal": "synapse 판 kit 2.1.0 을 중앙 Project Store 와 함께 설치해 Decision authority 기계 강제를 쓴다. 어떤 변경도 git checkout 과 rm 으로 되돌아가는 상태를 유지한다. 지금 얻으려는 것은 cross-app 조율이 아니라 human_requires_approval_evidence / done_requires_evidence 강제다 — round 21 의 C21-3 이 승인 ledger 누락을 사람도 기계도 못 잡은 사례였다.",
+  "title": "[SUPERSEDED by ALR-006] AMPLAI Loop Kit 2.1.0 을 제거 가능한 층으로 설치한다",
+  "goal": "SUPERSEDED — ALR-006(specs/007)이 흡수했다. 이 contract 는 kit 2.1.0 설치를 다뤘는데 2.2.0 이 전제 넷을 무효화했고(AUTONOMY_POLICY 불필요, 27→29 action, policy 병합 방식, --uninstall) 실제 설치는 2.3.0 으로 이뤄졌다. D-051 이 정한 조건 — 제거 가능한 층, 규약 각주, handoff 두 층 — 은 ALR-006 이 전부 지켰다. synapse 판 kit 2.1.0 을 중앙 Project Store 와 함께 설치해 Decision authority 기계 강제를 쓴다. 어떤 변경도 git checkout 과 rm 으로 되돌아가는 상태를 유지한다. 지금 얻으려는 것은 cross-app 조율이 아니라 human_requires_approval_evidence / done_requires_evidence 강제다 — round 21 의 C21-3 이 승인 ledger 누락을 사람도 기계도 못 잡은 사례였다.",
   "source": [
     "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
     "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-051"
@@ -163,5 +163,5 @@
     "D-046"
   ],
   "blocked_by": [],
-  "status": "ready"
+  "status": "done"
 }

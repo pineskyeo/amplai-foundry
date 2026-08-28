@@ -348,6 +348,26 @@ wave 14 는 round 16·18 의 뿌리를 막으려고 **새 구조가 요구하는
 
 blocker 6건을 닫는다. `/work` 로 타고 `/taskify` 를 건너뛰지 않는다.
 
+### 착수 전에 알아야 할 것 — 그 사이 저장소가 바뀌었다
+
+`ALR-006`(2026-08-28)이 **AMPLAI Loop Kit 2.3.0 을 이 저장소에 설치했다.** Package 5 와
+무관한 작업이지만 두 가지가 review 에 걸린다.
+
+```text
+test 기준선   1409 → 1515  (래퍼 24 + kit tests/ai 82)
+              round 22 는 1515 를 기준으로 센다
+새 경로       tools/amplai-loop-kit/, scripts/amplai*.py, scripts/kit_distribute.py,
+              tests/ai/, .ai-team/{app.json,install/,runtime/schemas/,...}
+              전부 Package 5 범위 밖이다
+verifier      kit-seal check 가 늘어 v2 가 11 check 다
+```
+
+**freeze target 을 다시 만들 때 그 경로들을 넣지 않는다.** Package 5 의 target 은
+`specs/003-slack-proposal-card/` 와 그것이 건드리는 `src/`·`tests/` 다. kit 설치물은
+`ALR-006` 의 소관이고 `docs/workstreams/amplai-loop-runtime-adoption/` 이 담는다.
+
+자세한 것은 그 workstream 의 `CURRENT_ITEM.md` 를 본다.
+
 ```text
 전문   : specs/003-slack-proposal-card/evidence/3lens-review-round-21.md
 lens별 : specs/003-slack-proposal-card/evidence/round-21-lens-{contract,failure,regression}.md

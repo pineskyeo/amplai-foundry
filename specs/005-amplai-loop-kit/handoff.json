@@ -3,11 +3,11 @@
   "completed_slices": [],
   "context_pack_hash": "4f01dc6df191244bc516f47df44d64a242e0d72901d570f35bb19fd4a94b4127",
   "current_slice": null,
-  "git_checkpoint": "ab14ffc659c1928c227894dfe3f24bb1fddd38de",
+  "git_checkpoint": "20b23f0a43005ecd20227df0033b4b3a2f9b81ad",
   "last_verification": null,
-  "next_action": "S01 을 실행한다 — .ai-team/AUTONOMY_POLICY.md 를 policy.json 의 human_gates 7개와 forbidden_automatic_actions 를 산문으로 푸는 형태로 쓰고, pyproject.toml per-file-ignores 에 kit 4파일을 추가한 뒤 install.py --dry-run 으로 27 action 을 확인한다. 설치(S02) 는 그 다음이다. 근거는 D-051 과 docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md 다.",
+  "next_action": "superseded by ALR-006 (specs/007-kit-source-and-distribution). D-051 은 유효하고 그 조건을 007 이 지켰다. 후속 작업 없음.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "ready",
+  "status": "done",
   "work_id": "ALR-004"
 }

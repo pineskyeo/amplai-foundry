@@ -1,5 +1,11 @@
 # AMPLAI Loop Kit 2.1.0 도입
 
+> **SUPERSEDED by `specs/007-kit-source-and-distribution` (`ALR-006`, `D-053`).**
+> 2.2.0 이 이 문서의 전제 넷을 무효화했고(`AUTONOMY_POLICY.md` 불필요, 27→29 action,
+> `policy.json` 병합 방식, `--uninstall` 추가) 실제 설치는 **2.3.0** 으로 이뤄졌다.
+> **`D-051` 은 APPROVED 로 유효하고** 그것이 정한 조건 셋(제거 가능한 층, 규약 각주,
+> handoff 두 층)을 `ALR-006` 이 전부 지켰다. 이 문서는 그 경위의 기록으로 남긴다.
+
 `ALR-004`. `D-051` 이 승인한 설치를 실행 가능한 형태로 적는다.
 
 ## What
