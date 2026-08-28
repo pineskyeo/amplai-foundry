@@ -1733,3 +1733,73 @@
 - Affected item: `MGC-012-P5` wave 14. `src/amplai_foundry/cli.py`.
 - Source: 사용자 선택 2026-08-26. 근거는 round 20 `F20-1`·`F20-2` 의 임계값 실측과
   `A19-F2`·`A20-F2` 의 두 라운드 연속 지적.
+
+## D-051 — Install AMPLAI Loop Kit 2.1.0 As A Removable Layer, Not A Replacement
+
+- Status: APPROVED
+- Decision: synapse 판 **AMPLAI Loop Kit 2.1.0** 을 이 저장소에 설치한다. 중앙 Project
+  Store 까지 만들어 실제로 쓰고, 언제든 흔적 없이 제거할 수 있는 형태를 유지한다. 세 가지를
+  함께 정한다.
+
+  **(1) Store 를 만든다.** `--project-home` 으로 저장소 밖에 Project Store 를 만들고
+  `--app-id amplai-foundry` 로 등록한다. `auto_start` 는 `false` 로 둔다.
+
+  **(2) handoff 는 두 층으로 나눈다.** kit 의 Project Store Work 는 **앱 간 조율 단위**이고,
+  `specs/<feature>/handoff.json` 은 **feature 내부 slice 진행 상태**다. 서로 다른 것을
+  다루므로 어느 쪽도 상대의 SSOT 가 아니다. kit hook 이 주입하는 "rendered handoff text is
+  only a view" 는 **Project Store Work 의 rendered view 를 가리키는 문장**으로 읽는다.
+  경계를 `.ai-team/README.md` 의 Directory ownership 절 각주에 명시한다.
+
+  **(3) 규약 위반은 각주로 표시한다.** `.ai-team/README.md` 의 Scope freeze 와 Directory
+  ownership 을 **고치지 않고**, "kit 2.1.0 이 설치된 동안의 예외" 를 각주로 단다. 제거할 때
+  각주만 지우면 규약이 원문으로 돌아온다.
+
+- Reason: kit 은 이물질이 아니다. `ARC-0003` 이 이미 같은 구조를 설계해 뒀다 — "Hermes는
+  Work Manager 후보이고 Claude Code와 Codex는 Implementation Agent 역할을 수행할 수 있다".
+  kit 의 `Human → Hermes → Global AMPLAI → Project Store → App Runtimes` 가 그것이다.
+  **가려는 방향의 선행 구현이므로 잠시 쓰는 데 방향 위험이 없다.**
+
+  제거 가능성을 실측으로 확인했다. 저장소 복제본에 설치한 뒤 `git checkout` 5개와 `rm -rf`
+  로 지우니 `git status` 가 비고 doctor·ruff·test 수가 전부 원상이다. **uninstall 명령은
+  없지만 남는 것이 전부 git 추적 대상이고 경계가 명확하다.**
+
+  Store 없이 설치하는 안은 버렸다. `discover_project_home` 이 기본값 없이 `NotFoundError` 를
+  던지므로 **파일 27개가 늘고 아무 기능도 안 돈다** — 얻는 것이 없는데 ruff 만 깨진다.
+
+  규약을 고치는 안도 버렸다. Scope freeze 와 Directory ownership 은 장기 규약인데 임시
+  설치를 위해 바꾸면 되돌리기 어렵다. 각주는 제거와 함께 사라진다.
+
+- Consequence: 다음이 바뀐다.
+
+  ```text
+  ruff        per-file-ignores 에 kit 4파일 추가 (선례: loopctl.py·loopv2.py)
+  test        1409 → 1425 (kit tests/ai/ 16개). review 기준선이 이동한다
+  .ai-team    문서 3개 + install/ + backups/ + app.json 이 생긴다 (각주로 예외 표시)
+  /work       SKILL.md 에 marker 절이 붙는다. 절 번호 `## 11.` 이 중복된다
+  세션        SessionStart 가 Project Store 상태를 주입하고 sessionTitle 을 덮는다
+  ```
+
+  **`limit` 처럼 이것도 없애는 것이 아니라 관리하는 것이다** — 규약 위반과 절 번호 중복은
+  각주와 기록으로 보이게 두고, 제거 절차를 문서에 확정해 둔다.
+
+- Evidence: 복제본 실측이다. 전문은
+  `docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md`.
+
+  ```text
+  kit selftest                 ok: true, check 7개
+  dry-run                      27 action, 충돌 0
+  설치 전 doctor / verifier    PASS / PASS
+  설치 후 doctor / verifier    PASS / FAIL (ruff 223건, 전부 kit 파일)
+  설치 후 mypy                 Success (102 files) — packages 범위 밖이라 영향 없음
+  kit test                     16개 전부 통과
+  제거 후 git status           빈 출력
+  제거 후 doctor / ruff / test PASS / All checks passed / 1409 (기준선 일치)
+  ```
+
+- Source: `ARC-0003`(역할 경계), `ARC-0007`(Hermes 는 제품 층 Client Partner),
+  `.ai-team/README.md`(Scope freeze, Directory ownership), `D-046`(cortex 판 이식),
+  kit `manifest.json`·`selftest.py:47`·`amplai_runtime.py:1825`·`amplai_hook.py`.
+
+- Scope: 이 Decision 은 개발 도구 층에만 적용된다. `src/` 제품 코드와 `vault/` canonical
+  knowledge 는 건드리지 않는다. **`MGC-014` 의 Hermes(제품 층 Client Partner)와 kit 의
+  Hermes(개발 층 조정자)는 다른 것이고 이 Decision 이 둘을 합치지 않는다.**

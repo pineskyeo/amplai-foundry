@@ -6,21 +6,52 @@
       "status": "active",
       "title": "Move workflow ordering from the human procedure to the /work controller",
       "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
-      "scope": [".ai-team", ".agents", ".claude", ".specify", "scripts", "AGENTS.md", "CLAUDE.md"]
+      "scope": [
+        ".ai-team",
+        ".agents",
+        ".claude",
+        ".specify",
+        "scripts",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ]
+    },
+    {
+      "id": "D-051",
+      "status": "active",
+      "title": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        ".ai-team",
+        ".agents",
+        ".claude",
+        "scripts",
+        "tests/ai",
+        "pyproject.toml"
+      ]
     },
     {
       "id": "amplai-constitution",
       "status": "active",
       "title": "AMPLAI foundry constitution",
       "path": ".specify/memory/constitution.md",
-      "scope": ["vault", "src", "docs"]
+      "scope": [
+        "vault",
+        "src",
+        "docs"
+      ]
     },
     {
       "id": "MGC-012",
       "status": "active",
       "title": "Messenger governance closure — Slack interaction authority and proposal cards",
       "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
-      "scope": ["src/amplai_foundry", "specs/001-mgc-012-slack-reference-adapter", "specs/002-mgc-012-package-4-slack-reference-e2e", "specs/003-slack-proposal-card"]
+      "scope": [
+        "src/amplai_foundry",
+        "specs/001-mgc-012-slack-reference-adapter",
+        "specs/002-mgc-012-package-4-slack-reference-e2e",
+        "specs/003-slack-proposal-card"
+      ]
     }
   ]
 }
