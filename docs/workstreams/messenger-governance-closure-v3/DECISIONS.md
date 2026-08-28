@@ -1874,6 +1874,98 @@
   kit 2.2.0 `scripts/amplai_supervisor.py`·`amplai_runtime.py`·`manifest.json`,
   `.ai-team/runtime/LOCAL_SUPERVISOR.md`.
 
+- **Amended by `D-053` (2026-08-28).** 이 Decision 의 제약 "kit 원본을 고치지 않는다 —
+  PR #81 과 독립이어야 한다" 가 무효화됐다. PR #81 이 머지됐고 `D-053` 이 kit 정본을
+  amplai-foundry 로 이관했다. **정본을 가지면 단일 인스턴스 락을 `amplai_supervisor.py`
+  안에 넣을 수 있고, 이 Decision 이 한계로 인정한 우회 경로(앱 repo 사본 직접 실행)가
+  사라진다.** 결정의 실질 — Store 가 supervisor 의 코드와 실행 권한을 갖는다 — 은 그대로다.
+  구현은 `specs/007` 이 받고 `specs/006` 은 superseded 다.
 - Scope: 이 Decision 은 **Store 의 구조와 supervisor 실행 규약**을 정한다. supervisor 를
   실제로 켤 것인지(`--run`)는 정하지 않는다 — HANDOFF §3 이 활성 세션 라우팅 확인 전까지
   `--run` 을 쓰지 말라 했고 그 판단은 그대로 남는다. **켜지 않아도 이 구조는 필요하다.**
+
+## D-053 — amplai-foundry Owns The Kit Source And Distributes It To The Other Apps
+
+- Status: APPROVED
+- Decision: **kit 정본을 amplai-foundry 로 이관하고 여기서 공용 kit 2.3.0 을 만든다.**
+  synapse 의 `tools/amplai-loop-kit/` 는 이관 뒤 **지운다.** 이후 synapse 와 cortex 는
+  정본이 아니라 **배포 대상**이다.
+
+  **(1) 정본 위치.** `tools/amplai-loop-kit/` — synapse 관행을 따른다. 출처는 synapse
+  `main:1c05001b`(PR #81, 2026-08-28 머지)이고 provenance 를 kit 안에 남긴다.
+
+  **(2) 2.3.0 이 담는 것.** 2.2.0 + supervisor 설치 + 공용화.
+
+  ```text
+  payload/store/          신규 — Store 에 설치될 supervisor (D-052 구조)
+  distribution/           신규 — 배포 대상 설정
+  문서 중립화             synapse 전제를 걷어낸다
+  ```
+
+  **(3) supervisor 를 kit 이 설치한다.** `D-052` 가 정한
+  `<PROJECT_HOME>/supervisor/` 와 `.amplai/locks/supervisor.lock` 을 `install.py` 가
+  만든다. **단일 인스턴스 락을 `amplai_supervisor.py` 안에 넣는다.**
+
+  **(4) 배포 경로 설정을 두 층으로 나눈다.**
+
+  ```text
+  tools/amplai-loop-kit/distribution/targets.json   커밋. app_id·project_id·role·path_hint
+  .ai-team/local/kit-targets.json                   host-local(gitignore). 실제 절대경로
+  scripts/kit_distribute.py                         배포 래퍼
+  ```
+
+- Reason: `install.py --target` 은 **경로를 하나만** 받는다. 세 앱에 배포하려면 래퍼가
+  필요하고, 그 래퍼가 읽을 대상 목록이 있어야 한다.
+
+  **경로를 두 층으로 나누는 근거는 kit 자신에 있다.** kit 은 `apps/<id>.json`(커밋, 논리
+  정보)과 `.amplai/local/apps/<id>.json`(host-local, `repo_path` 같은 절대경로)을 이미
+  나눈다. 절대경로를 커밋하면 다른 머신에서 깨지므로 같은 패턴을 따른다.
+
+  **정본을 옮기는 이유는 kit 이 synapse 를 전제하고 만들어졌기 때문이다.** 실측했다 —
+  설치 로직(`manifest.json`·`install.py`·`fragments/*`)에는 synapse 가 **0건**이고 중립이다.
+  그러나 marker 대상 셋이 **synapse 에만 존재한다.**
+
+  | marker 대상 | required | amplai-foundry | synapse | cortex |
+  |---|---|---|---|---|
+  | `.agents/skills/handoff/SKILL.md` | false | 없음 | 있음 | 없음 |
+  | `.ai-team/skills/handoff/SKILL.md` | false | 없음 | 있음 | 없음 |
+  | `.ai-team/AUTONOMY_POLICY.md` | false | 없음 | 있음 | 없음 |
+
+  `handoff` skill 은 synapse 고유 개념이다. `required: false` 라 설치는 되지만 **공용
+  kit 이 특정 앱의 파일 배치를 전제하고 있다.** 문서 쪽은 더 노골적이다 — `README.md` 가
+  "Synapse의 AMPLAI Loop V2를 기준으로" 로 시작하고 `reference/SYNAPSE_INTEGRATION.md` 는
+  파일 이름부터 한 앱을 가리킨다. 전체 56건이다.
+
+- Consequence: **`D-052` 의 제약 하나가 무효화된다.** `D-052` 는 "kit 원본을 고치지
+  않는다 — PR #81 과 독립이어야 한다" 를 걸었고 그 대가로 **우회 경로를 한계로 인정**했다
+  (앱 repo 사본을 직접 실행하면 락을 안 잡는다). 정본을 가지면 락을 kit 안에 넣을 수 있고
+  **그 한계가 사라진다.** `D-052` 를 amend 한다 — 결정의 실질(Store 가 supervisor 를
+  소유한다)은 유지되고 수단만 나아진다.
+
+  `specs/006-supervisor-ownership` 의 S01·S02 가 kit 기능으로 **흡수된다.** 006 은
+  superseded 로 표시하고 이 feature 가 받는다.
+
+  **synapse 사본 삭제는 synapse 쪽 PR 이 하나 더 필요하다.** 그 저장소의 작업이 kit 을
+  참조하고 있으면 깨지므로 삭제 전에 확인해야 한다.
+
+  세 앱 모두 2.2.0 dry-run 이 통과하는 것을 확인했다. 2.3.0 도 같아야 하고 그것이
+  배포의 전제 조건이다.
+
+- Evidence: 실측이다.
+
+  ```text
+  PR #81                MERGED 2026-08-28T04:29:44Z, merge sha 1c05001b
+  kit 2.2.0 정본        synapse main:tools/amplai-loop-kit/ (VERSION = 2.2.0)
+  설치 현황             synapse 만. amplai-foundry·cortex 는 미설치
+  cortex dry-run        ok: true (required_paths 셋 다 있다)
+  selftest 2.2.0        ok: true, check 10개
+  synapse 언급          56건 — 문서 20, 테스트 fixture 36. 설치 로직은 0건
+  install.py --target   단일 경로만 받는다 (install.py:894)
+  ```
+
+- Source: synapse `main:1c05001b` `tools/amplai-loop-kit/`,
+  `HANDOFF_2026-08-28_amplai-loop-kit-2.2.0.md`, `D-052`(supervisor 소유),
+  `D-051`(kit 설치), kit `manifest.json`·`install.py`.
+
+- Scope: 개발 도구 층이다. `src/` 제품 코드와 `vault/` canonical knowledge 를 건드리지
+  않는다. **supervisor 를 켜는 것(`--run`)은 여전히 정하지 않는다** — `D-052` Scope 와 같다.

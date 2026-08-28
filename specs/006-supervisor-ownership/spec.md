@@ -1,5 +1,11 @@
 # Project Store 가 Supervisor 를 소유한다
 
+> **SUPERSEDED by `specs/007-kit-source-and-distribution` (`ALR-006`, `D-053`).**
+> S01·S02 가 kit 2.3.0 기능으로 흡수됐다 — kit 정본을 amplai-foundry 가 가지면
+> 단일 인스턴스 락을 `amplai_supervisor.py` 안에 넣을 수 있고, 이 문서가 한계로
+> 적은 우회 경로가 사라진다. **`D-052` 의 실질(Store 가 supervisor 를 소유한다)은
+> 그대로 유효하고** `D-053` 이 amend 했다. 이 문서는 그 경위의 기록으로 남긴다.
+
 `ALR-005`. `D-052` 가 승인한 구조를 실행 가능한 형태로 적는다.
 
 ## What

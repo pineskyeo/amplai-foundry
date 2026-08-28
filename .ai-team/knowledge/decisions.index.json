@@ -42,6 +42,18 @@
       ]
     },
     {
+      "id": "D-053",
+      "status": "active",
+      "title": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "tools/amplai-loop-kit",
+        "scripts",
+        ".ai-team",
+        "docs/workstreams/amplai-loop-runtime-adoption"
+      ]
+    },
+    {
       "id": "amplai-constitution",
       "status": "active",
       "title": "AMPLAI foundry constitution",

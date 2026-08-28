@@ -1,13 +1,13 @@
 {
   "blockers": [],
   "completed_slices": [],
-  "context_pack_hash": "75c8880a720024a006715fbe09947f3de0ae29f1a86b13c06f75150d652b9505",
+  "context_pack_hash": "c8d33d0b93f818423de338ecb68ff89e26aab6789634f40b6256bdf3c036fa26",
   "current_slice": null,
-  "git_checkpoint": "7f59d5be67021d5de434d9c0d9891f8f59fa6285",
+  "git_checkpoint": "154125f0cd7789d35a16e88808b28838775dd52e",
   "last_verification": null,
-  "next_action": "D-051 을 먼저 정한다 — supervisor/ 에 놓을 코드의 정본이 amplai-foundry 사본인데 kit 이 아직 안 깔렸다. 경로 A(D-051 을 2.2.0 기준으로 amend 하고 설치)가 D-052 서술과 맞다. 정해지면 S01(Store 생성 + supervisor/ 배치 + 동기화 명령)부터 탄다. 근거는 D-052 와 specs/006-supervisor-ownership/spec.md 다.",
+  "next_action": "superseded by ALR-006 (specs/007-kit-source-and-distribution). 후속 작업 없음.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "blocked",
+  "status": "done",
   "work_id": "ALR-005"
 }

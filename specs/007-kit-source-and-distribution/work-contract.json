@@ -1,0 +1,208 @@
+{
+  "schema_version": "2.0",
+  "id": "ALR-006",
+  "title": "kit 정본을 이관해 공용 2.3.0 을 만들고 세 앱에 배포한다",
+  "goal": "kit 정본을 synapse main:1c05001b 에서 amplai-foundry 로 옮기고, supervisor 설치와 배포 설정을 더해 공용 2.3.0 으로 만든 뒤 amplai-foundry·synapse·cortex 에 배포한다. install.py --target 이 경로를 하나만 받으므로 배포 래퍼가 필요하고, 경로는 커밋되는 논리 목록과 host-local 절대경로 두 층으로 나눈다 — kit 자신이 apps/<id>.json 과 .amplai/local/apps/<id>.json 을 나누는 것과 같은 패턴이다. 단일 인스턴스 락을 kit 안에 넣어 D-052 가 한계로 인정한 우회 경로를 닫는다.",
+  "source": [
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-053",
+    "specs/007-kit-source-and-distribution/spec.md",
+    "specs/007-kit-source-and-distribution/plan.md"
+  ],
+  "work_type": "architecture",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "tools/amplai-loop-kit/",
+      "scripts/kit_distribute.py",
+      ".ai-team/local/kit-targets.json",
+      ".gitignore",
+      "specs/007-kit-source-and-distribution/",
+      "docs/workstreams/amplai-loop-runtime-adoption/",
+      "<PROJECT_HOME>/supervisor/",
+      "<PROJECT_HOME>/.amplai/locks/supervisor.lock",
+      "설치 산출물 — scripts/amplai*.py, .ai-team/runtime/, .ai-team/app.json, tests/ai/",
+      "배포 대상 저장소 — synapse, cortex (설치 산출물만)"
+    ],
+    "exclude": [
+      "src/amplai_foundry/ 제품 코드",
+      "vault/ canonical knowledge",
+      "supervisor 를 켜는 것(--run) — D-052·D-053 Scope 와 같다",
+      "HANDOFF §3 의 개선 후보 1(worktree 인식)·2(알림)·3(활성 세션 라우팅)",
+      "테스트 fixture 의 앱 이름 중립화 — 편향이 아니라 예시 데이터다",
+      "kit 을 외부에 배포하는 것 (PyPI, tarball 릴리스)",
+      "synapse tools/amplai-loop-kit/ 삭제 PR 의 머지 — 내용만 준비하고 사람이 머지한다",
+      "Store 를 여러 개 운영하는 것"
+    ]
+  },
+  "non_goals": [
+    "kit 코드를 이 저장소 lint 규칙에 맞게 고치는 것 — upstream diff 를 유지한다 (D-051)",
+    "cortex 와 synapse 의 저장소 규약을 바꾸는 것 — 설치 산출물만 넣는다",
+    "Store 를 두 개 이상 만드는 것"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "tools/amplai-loop-kit/ 가 synapse main:1c05001b 의 내용과 파일 목록이 같고, 바뀐 파일은 2.3.0 이 의도적으로 바꾼 것뿐이다. PROVENANCE.md 가 출처 commit 과 이관 일자를 적는다.",
+      "evidence": [
+        "git ls-tree 로 synapse main:tools/amplai-loop-kit/ 파일 목록을 뽑아 이쪽과 대조",
+        "바뀐 파일 목록이 2.3.0 변경 목록과 정확히 일치하는지 확인",
+        "PROVENANCE.md 의 commit sha 가 실재하는지 확인"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "selftest.py 가 통과하고 CHECKSUMS.sha256 이 실제 파일 hash 와 일치한다.",
+      "evidence": [
+        "python3 selftest.py 출력",
+        "CHECKSUMS 의 각 행을 재계산해 대조"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "문서에서 synapse 전제가 제거됐다 — README.md 첫 줄, reference/SYNAPSE_INTEGRATION.md(이름 포함), INSTALLATION.md·QUICKSTART 의 예시. 테스트 fixture 는 제외하고 센다.",
+      "evidence": [
+        "grep -ric synapse 를 tests 제외하고 재계수 — 이관 전 20건이 기준이다",
+        "남은 건수마다 왜 남았는지 적혀 있는지 확인 (TEST_REPORT 는 기록이라 보존)"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "marker 대상 중 특정 앱에만 있는 셋(handoff 둘, AUTONOMY_POLICY.md)이 왜 optional 인지 문서에 적혀 있다.",
+      "evidence": [
+        "세 앱에서 각 marker 대상의 존재 여부를 다시 표로 확인",
+        "그 설명이 manifest 또는 README 에 있는지 확인"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "install.py 가 <PROJECT_HOME>/supervisor/ 와 .amplai/locks/ 를 설치한다. Store 가 없으면 건너뛰고 보고한다.",
+      "evidence": [
+        "Store 있는 상태로 설치 후 supervisor/run 과 VERSION 이 생기는지 확인",
+        "Store 없는 상태로 설치 후 건너뛴 사실이 출력에 있는지 확인"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "amplai_supervisor.py 가 자기 안에서 .amplai/locks/supervisor.lock 을 잡는다. 두 번째 실행이 거부되고 exit code 로 구분된다. 첫 번째를 SIGKILL 하면 락이 회수돼 다음 실행이 성공한다.",
+      "evidence": [
+        "동시 실행 재현 — 두 번째 exit code 가 성공과 다름",
+        "SIGKILL 후 다음 실행 성공 확인",
+        "락 디렉토리가 Store .gitignore 에 걸려 git 에 안 올라가는 것 확인"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "우회 경로가 없다. 앱 repo 의 scripts/amplai_supervisor.py 를 직접 실행해도 같은 락을 잡으므로 두 번째가 거부된다.",
+      "evidence": [
+        "Store 의 run 을 띄운 상태에서 앱 사본을 직접 실행해 거부되는 것을 재현",
+        "반대 순서로도 재현",
+        "D-052 가 한계로 적은 문장과 대조해 닫힌 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "distribution/targets.json 이 세 앱을 담고 절대경로를 담지 않는다. .ai-team/local/kit-targets.json 이 실제 경로를 담고 .gitignore 에 걸려 있다.",
+      "evidence": [
+        "targets.json 에 / 로 시작하거나 ~ 로 시작하는 값이 없는지 전수 확인",
+        "git check-ignore 로 kit-targets.json 이 무시되는지 확인",
+        "kit 이 넣는 .ai-team/local/ 줄과 중복되지 않는지 확인"
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "kit_distribute.py --dry-run 이 세 대상 전부의 계획을 보이고 아무것도 안 바꾼다. 하나라도 실패하면 실제 배포가 시작되지 않는다.",
+      "evidence": [
+        "--dry-run 실행 후 세 대상의 git status 가 안 바뀐 것을 확인",
+        "대상 하나를 일부러 깨뜨리고 --all 이 아무것도 설치하지 않는 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-010",
+      "statement": "kit_distribute.py --all 이 세 앱에 2.3.0 을 설치한다. 각 대상의 install record 가 2.3.0 이다.",
+      "evidence": [
+        "세 앱의 .ai-team/install/amplai-loop-kit.json 버전 확인",
+        "synapse 는 2.2.0 → 2.3.0 갱신 경로를 탔는지 확인"
+      ]
+    },
+    {
+      "id": "AC-011",
+      "statement": "배포 중 한 대상이 실패하면 그 지점에서 멈추고 무엇까지 설치됐는지 보고한다.",
+      "evidence": [
+        "중간 대상을 일부러 실패시켜 재현",
+        "출력에 성공한 앱과 실패한 앱이 구분돼 있는지 확인",
+        "앞선 앱이 되돌려지지 않은 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-012",
+      "statement": "kit_distribute.py --verify 가 각 대상의 설치 버전을 kit VERSION 과 대조하고 어긋난 앱을 이름으로 보고한다.",
+      "evidence": [
+        "한 앱의 install record 버전을 바꿔 넣고 --verify 가 그 앱을 지목하는지 확인",
+        "원복 후 통과 확인"
+      ]
+    },
+    {
+      "id": "AC-013",
+      "statement": "synapse tools/amplai-loop-kit/ 삭제 PR 의 내용이 준비돼 있고, 그 저장소에서 kit 을 참조하는 자리를 전수로 세어 깨지는 것이 없음을 확인했다.",
+      "evidence": [
+        "synapse 전역에서 tools/amplai-loop-kit 참조를 grep 으로 전수",
+        "각 참조가 삭제 후에도 유효한지 판정한 표"
+      ]
+    },
+    {
+      "id": "AC-014",
+      "statement": "세 앱 전부에서 설치 후 각자의 검증이 통과한다.",
+      "evidence": [
+        "amplai-foundry — loopctl doctor + verifier --profile v2 + pytest",
+        "synapse — 그 저장소의 doctor + 기존 tests/ai",
+        "cortex — 그 저장소의 doctor"
+      ]
+    },
+    {
+      "id": "AC-015",
+      "statement": "제거 절차가 있다. install.py --uninstall 로 각 앱을 되돌리고 Store 의 supervisor/ 를 지우면 원상이다.",
+      "evidence": [
+        "복제본에서 --uninstall 실행 후 git status 가 비는 것을 확인",
+        "Store 복제본에서 supervisor/ 제거 후 project verify 통과 확인"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "python3 scripts/loopctl.py doctor",
+      ".venv/bin/python .ai-team/verifiers/run.py --profile v2"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-053",
+    "D-052",
+    "D-051"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

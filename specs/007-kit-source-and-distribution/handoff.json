@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "completed_slices": [],
+  "context_pack_hash": "386c8af49b0c0192f479dd816b9452ea7b385ecdcf429497210b6b24a402d7a0",
+  "current_slice": null,
+  "git_checkpoint": "154125f0cd7789d35a16e88808b28838775dd52e",
+  "last_verification": null,
+  "next_action": "S01(정본 이관 + 공용화)부터 탄다. synapse main:1c05001b 의 tools/amplai-loop-kit/ 를 tools/ 로 가져오고 PROVENANCE.md 를 남긴 뒤 문서의 synapse 전제를 걷어낸다(테스트 fixture 제외, 기준 20건). 배포는 S04 이고 그 전에 S02(락을 kit 안으로)·S03(배포 설정과 래퍼)이 끝나야 한다. 근거는 D-053 과 specs/007-kit-source-and-distribution/{spec,plan}.md 다.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "ready",
+  "work_id": "ALR-006"
+}
