@@ -204,5 +204,23 @@
     "D-051"
   ],
   "blocked_by": [],
-  "status": "ready"
+  "status": "done",
+  "review": {
+    "lenses": [
+      "contract",
+      "failure",
+      "regression"
+    ],
+    "blockers_found": {
+      "P1": 8,
+      "Blocking-P2": 11
+    },
+    "blockers_closed": 19,
+    "note": "세 lens 를 순차로 돌렸다. contract 6, failure 6, regression 7 을 전부 닫았다. cortex 는 규약 test 파손(C-3)으로 kit 을 제거했고 그 저장소가 규약을 갱신하면 다시 배포한다. AC-014 는 그래서 두 앱에 대해서만 충족된다.",
+    "evidence": [
+      "specs/007-kit-source-and-distribution/evidence/review-contract.md",
+      "specs/007-kit-source-and-distribution/evidence/review-failure.md",
+      "specs/007-kit-source-and-distribution/evidence/review-regression.md"
+    ]
+  }
 }

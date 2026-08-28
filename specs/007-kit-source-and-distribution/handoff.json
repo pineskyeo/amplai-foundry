@@ -3,11 +3,11 @@
   "completed_slices": [],
   "context_pack_hash": "386c8af49b0c0192f479dd816b9452ea7b385ecdcf429497210b6b24a402d7a0",
   "current_slice": null,
-  "git_checkpoint": "10f64f5b4a07af94cea7566339debdb2359dcd0b",
+  "git_checkpoint": "39f389a1aaf7198fff0cbf91774d3f09b34f747e",
   "last_verification": null,
-  "next_action": "T006(실제 배포)만 남았고 human gate 다. permission check 가 git_publish 를 prohibited 로 낸다. 착수 전에 둘을 정한다 — (1) Store 경로(AMPLAI_PROJECT_HOME). kit README 예시는 ~/workspace/amplai-project 이고 .ai-team/local/kit-targets.json 에 그 값이 있다. (2) synapse·cortex 의 working tree 를 정리하거나 --allow-dirty 를 쓸지. 승인되면 '.venv/bin/python scripts/kit_distribute.py --dry-run' 으로 확인한 뒤 '--all' 로 배포하고, 각 저장소의 doctor 와 이 저장소의 verifier v2·pytest 로 검증한다. 배포 뒤 D-051 이 요구한 것 셋도 함께 한다 — ruff per-file-ignores, .ai-team/README.md 규약 각주, CURRENT_ITEM 의 test 기준선 재갱신.",
+  "next_action": "ALR-006 완료. 남은 후속 둘 — (1) cortex 는 .ai-team 최상위를 7개로 못박은 test 때문에 kit 을 제거했다. 그 저장소가 규약을 갱신하면 'kit_distribute.py --app cortex --all' 로 다시 배포한다. (2) synapse 의 tools/amplai-loop-kit/ 삭제 PR — 참조 전수표가 KIT-DISTRIBUTION.md 에 있고 삭제로 깨지는 것은 없다. kit uninstall 의 policy.json 표기 비대칭은 append_to_json_array 의 역함수가 필요해 후속 과제로 남겼다.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "blocked",
+  "status": "done",
   "work_id": "ALR-006"
 }
