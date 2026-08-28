@@ -810,7 +810,7 @@ class SlackProjectionDestination:
         self,
         page: SlackHistoryPage,
         event: OutboxEventView,
-    ) -> str | None | _Undecided:
+    ) -> str | _Undecided | None:
         """Judge one page. **Our own marker wins inside the page, whatever the order.**
 
         page 안에서는 message 순서에 기대지 않는다. C-1.2 는 transport 에 정렬 순서를
