@@ -31,6 +31,17 @@
       ]
     },
     {
+      "id": "D-052",
+      "status": "active",
+      "title": "The Project Store owns the supervisor's code and its right to run",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        ".ai-team",
+        "scripts",
+        "docs/workstreams/amplai-loop-runtime-adoption"
+      ]
+    },
+    {
       "id": "amplai-constitution",
       "status": "active",
       "title": "AMPLAI foundry constitution",

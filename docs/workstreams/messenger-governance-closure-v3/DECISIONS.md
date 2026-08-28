@@ -1803,3 +1803,77 @@
 - Scope: 이 Decision 은 개발 도구 층에만 적용된다. `src/` 제품 코드와 `vault/` canonical
   knowledge 는 건드리지 않는다. **`MGC-014` 의 Hermes(제품 층 Client Partner)와 kit 의
   Hermes(개발 층 조정자)는 다른 것이고 이 Decision 이 둘을 합치지 않는다.**
+
+## D-052 — The Project Store Owns The Supervisor's Code And Its Right To Run
+
+- Status: APPROVED
+- Decision: Local Supervisor 는 **Project Store 가 소유한다.** 코드도 Store 에 두고 실행
+  권한도 Store 가 통제한다. 앱 repo 에 깔리는 `scripts/amplai_supervisor.py` 는 kit 이
+  배포한 사본일 뿐 실행 대상이 아니다.
+
+  ```text
+  <PROJECT_HOME>/                    Store (git repo)
+  ├── project.json, policy.json      kit 소유
+  ├── apps/, contracts/, changes/    kit 소유
+  ├── .amplai/locks/                 host-local (Store .gitignore 가 제외한다)
+  │   ├── project.lock               kit
+  │   └── supervisor.lock            신규 — 단일 인스턴스를 여기서 강제한다
+  └── supervisor/                    신규 — kit 이 만들지 않는 영역이라 충돌이 없다
+      ├── amplai_supervisor.py       amplai-foundry 에서 동기화한 사본
+      ├── amplai_runtime.py          같음
+      ├── VERSION                    동기화된 kit 버전
+      └── run                        진입점. 락을 잡고 supervisor 를 부른다
+  ```
+
+  **소유는 Store, 공급은 amplai-foundry 다.** Store 의 supervisor 코드는 amplai-foundry 의
+  사본을 정본으로 삼아 동기화하고, 그 동기화 명령도 amplai-foundry 가 제공한다.
+
+- Reason: supervisor 는 **개념상 이미 앱의 물건이 아니다.** kit 의 아키텍처 그림이 그것을
+  Store 아래 별도 층으로 그리고, 코드도 `--app` 인자 없이 `list_apps()` 로 등록된 앱 전부를
+  순회한다. Store 하나에 supervisor 하나가 원래 모델이다.
+
+  그런데 kit 이 `scripts/amplai_supervisor.py` 를 `owned_files` 로 **모든 앱 repo 에
+  복사한다.** 앱 단위 설치 도구라 코드를 놓을 자리가 앱 밖에 없기 때문이다. 그 결과 세
+  저장소에 같은 파일이 생기고 **어느 것을 돌려야 하는지 아무 문서도 정하지 않는다.**
+  개념과 배포가 어긋나 있다.
+
+  **단일 인스턴스 보장 장치가 전혀 없다** — `grep` 으로 확인했고 pid 파일도 락도 0건이다.
+  `claim_work` 이 Store 락 안에서 `max_concurrency` 를 재검사하므로 *같은 Work 의 중복
+  실행*은 막히지만, supervisor 프로세스가 둘 뜨는 것 자체는 아무것도 막지 않는다.
+  `--max-workers` 는 프로세스 로컬(`max(1, len(list_apps()))`)이라 전체 worker 총량 상한도
+  인스턴스 수만큼 흐려진다.
+
+  락을 Store 에 두면 **누가 어디서 실행하든 Store 가 통제한다.** 코드까지 Store 에 두는
+  것은 개념과 배포를 일치시키는 조치다.
+
+- Consequence: 버전 드리프트가 새 위험으로 들어온다. `amplai_supervisor.py` 는 같은
+  디렉토리의 `amplai_runtime.py` 를 import 하므로(`sys.path` 에 `SCRIPT_DIR` 삽입) Store 에
+  두려면 runtime 사본도 함께 가야 한다. **같은 파일이 앱과 Store 두 곳에 존재하게 된다.**
+
+  그래서 `supervisor/VERSION` 과 각 앱의 `.ai-team/install/amplai-loop-kit.json` 버전을
+  대조하고 **불일치면 fail-closed 한다.** 조용히 도는 것보다 안 도는 것이 낫다.
+
+  **우회 경로가 남는다.** 앱 repo 의 `scripts/amplai_supervisor.py` 를 직접 실행하면 Store
+  락을 잡지 않는다. kit 원본을 고치지 않는 한 코드로는 못 막으므로 규약과 문서로 막고,
+  근본 해결은 upstream 제안으로 올린다. **이 한계를 숨기지 않고 적는다.**
+
+- Evidence: kit 2.2.0 소스 확인이다.
+
+  ```text
+  아키텍처 그림    reference/SYNAPSE_INTEGRATION.md — Supervisor 가 Store 아래 별도 층
+  인자             --project-home 만. --app 없음
+  순회             for app in self.store.list_apps()
+  배포             manifest.json owned_files 에 scripts/amplai_supervisor.py
+  단일성 장치      grep "lock|pid|flock|singleton" → 0건
+  capacity 재검사  claim_work 이 with self.lock() 안에서 active_work_count 확인
+  Store 구조       initialize() 가 apps/contracts/changes/.amplai/{local,locks} 만 만든다
+  락 성질          write_managed_gitignore 가 .amplai/locks/ 를 제외 — host-local 이다
+  ```
+
+- Source: `HANDOFF_2026-08-28_amplai-loop-kit-2.2.0.md` §3(supervisor 설계 과제),
+  kit 2.2.0 `scripts/amplai_supervisor.py`·`amplai_runtime.py`·`manifest.json`,
+  `.ai-team/runtime/LOCAL_SUPERVISOR.md`.
+
+- Scope: 이 Decision 은 **Store 의 구조와 supervisor 실행 규약**을 정한다. supervisor 를
+  실제로 켤 것인지(`--run`)는 정하지 않는다 — HANDOFF §3 이 활성 세션 라우팅 확인 전까지
+  `--run` 을 쓰지 말라 했고 그 판단은 그대로 남는다. **켜지 않아도 이 구조는 필요하다.**
