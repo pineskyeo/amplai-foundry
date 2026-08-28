@@ -44,6 +44,16 @@ V2는 V1 dev-loop를 재구현하지 않는다. Knowledge/Evidence/Governance pl
 └── rules/        # Cortex-specific engineering guards
 ```
 
+`.ai-team` 밖에는 개발 도구 자산이 하나 더 있다.
+
+```text
+tools/amplai-loop-kit/   AMPLAI Loop Kit 정본 (D-053). 배포 대상은 이 저장소와
+                         synapse·cortex 이고 scripts/kit_distribute.py 가 배포한다.
+                         upstream 형식을 유지하므로 ruff 의 벤더링 예외에 있다.
+                         운영은 docs/workstreams/amplai-loop-runtime-adoption/
+                         KIT-DISTRIBUTION.md 를 본다.
+```
+
 Canonical project assets는 복사하지 않는다.
 
 - canonical knowledge note: `vault/projects/<project>/`

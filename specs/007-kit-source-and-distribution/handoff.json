@@ -3,11 +3,11 @@
   "completed_slices": [],
   "context_pack_hash": "386c8af49b0c0192f479dd816b9452ea7b385ecdcf429497210b6b24a402d7a0",
   "current_slice": null,
-  "git_checkpoint": "154125f0cd7789d35a16e88808b28838775dd52e",
+  "git_checkpoint": "10f64f5b4a07af94cea7566339debdb2359dcd0b",
   "last_verification": null,
-  "next_action": "S01(정본 이관 + 공용화)부터 탄다. synapse main:1c05001b 의 tools/amplai-loop-kit/ 를 tools/ 로 가져오고 PROVENANCE.md 를 남긴 뒤 문서의 synapse 전제를 걷어낸다(테스트 fixture 제외, 기준 20건). 배포는 S04 이고 그 전에 S02(락을 kit 안으로)·S03(배포 설정과 래퍼)이 끝나야 한다. 근거는 D-053 과 specs/007-kit-source-and-distribution/{spec,plan}.md 다.",
+  "next_action": "T006(실제 배포)만 남았고 human gate 다. permission check 가 git_publish 를 prohibited 로 낸다. 착수 전에 둘을 정한다 — (1) Store 경로(AMPLAI_PROJECT_HOME). kit README 예시는 ~/workspace/amplai-project 이고 .ai-team/local/kit-targets.json 에 그 값이 있다. (2) synapse·cortex 의 working tree 를 정리하거나 --allow-dirty 를 쓸지. 승인되면 '.venv/bin/python scripts/kit_distribute.py --dry-run' 으로 확인한 뒤 '--all' 로 배포하고, 각 저장소의 doctor 와 이 저장소의 verifier v2·pytest 로 검증한다. 배포 뒤 D-051 이 요구한 것 셋도 함께 한다 — ruff per-file-ignores, .ai-team/README.md 규약 각주, CURRENT_ITEM 의 test 기준선 재갱신.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "ready",
+  "status": "blocked",
   "work_id": "ALR-006"
 }
