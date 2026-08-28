@@ -190,21 +190,73 @@ created_paths   kit 이 만든 파일을 내용 확인 없이 지웠다. 앱이 
                 사라진다. marker 밖에 우리 헤더 말고 다른 것이 있으면 이제 남긴다
 ```
 
-## 다음 할 일
+## `ALR-007` 이 1·2 를 닫았다 (2026-08-28)
 
-`ALR-007` 이 1번을 연다 — `D-054`(2026-08-28)가 완화안을 승인했다. 설계는
-`specs/008-cortex-redeploy/` 이고 `/work` 가 아직 안 돌았다.
+`D-054` 가 cortex 의 `.ai-team` 최상위 guard 를 **삭제가 아니라 kit 3개 예외로 완화**
+하기로 정했고, 그것을 실행해 fleet 셋이 전부 2.3.1 이 됐다.
 
 ```text
-1. cortex 재배포     ALR-007 로 열렸다. cortex guard test 를 삭제가 아니라 kit 3개
-                     예외로 완화하고, 선행으로 kit hook test 의 env 오염을 고친다(2.3.1)
-2. synapse 정리      tools/amplai-loop-kit/ 삭제 PR. 참조 전수표가
-                     KIT-DISTRIBUTION.md 에 있고 삭제로 깨지는 것은 없다.
-                     그 저장소의 PR 이라 여기서 열지 않았다
-3. policy.json 대칭  제거가 표기를 원복하지 못한다. 내용은 정확히 같다.
+amplai-foundry   PR #2     merge   kit 2.3.1 정본 + 설치.  main 에 들어갔다
+cortex           PR #146   squash  규약 완화 + 각주 + 설치.  CI 셋 전부 PASS 확인 후
+synapse          PR #82    squash  설치 갱신 + 벤더링 정본 삭제 (D-053 남은 것 2)
+```
+
+### 그 과정이 드러낸 것 셋
+
+**hook test 가 실제 Store 를 읽고 있었다.** `discover_project_home()` 이
+`AMPLAI_PROJECT_HOME` 을 repo-local binding 보다 먼저 보는데, 그 변수를 심는 것이 kit 의
+SessionStart hook 자신이다. kit 이 설치된 저장소의 agent 세션에서는 그 test 가 **항상**
+실패했고, 사람이 맨 터미널에서 돌리면 통과해서 안 보였다. 2.3.1 이 고쳤다.
+
+```text
+사람이 터미널에서   1515 passed
+agent 세션 안에서   1 failed, 1514 passed
+```
+
+**로컬 gate 와 CI gate 가 다른 도구를 쓰고 있었다.** `ruff>=0.6,<1` 이라 CI 는 매번 최신을
+받는다. 0.16 이 markdown 코드 블록 포맷을 켜면서 문서 여섯이 걸렸고 그중 하나가
+append-only 인 `DECISIONS.md` 였다. 역사 기록을 포맷터에 맞춰 다시 쓰는 대신
+`>=0.15.21,<0.16` 으로 고정했다. **올릴 때는 별도 Work 로 diff 를 보고 올린다.**
+
+**정본을 안 지우면 실제로 깨진다.** synapse 에서 2.2.0 소스와 2.3.1 설치본이 공존하면
+installer test 가 둘을 대조하다 실패한다 (실패 5 + 오류 6). 삭제가 그것을 없앤다.
+
+### CI 없이 머지한 구간
+
+머지 시점에 계정 전체의 GitHub Actions 가 과금 문제로 멈춰 있었다. 세 저장소 모든 job 이
+`steps=0` 으로 3초 만에 죽었다. **cortex 만 중단 직전에 CI 셋을 통과했고**,
+amplai-foundry 와 synapse 는 로컬 검증만으로 admin merge 했다.
+
+```text
+amplai-foundry   verifier --profile v2 PASS (block check 11개), pytest 1519 passed
+synapse          181 tests, 실패 2 — main baseline 에도 있는 무관한 둘
+```
+
+**`PR #2` 의 나머지 41 commit 은 CI 로 확인된 적이 없다.** 생성 이후 여섯 번 전부
+`RUF036` 으로 실패했고 그것을 고쳤지만, 고친 뒤의 전체 실행을 인프라 때문에 못 봤다.
+Actions 가 복구되면 `main` 에서 한 번 돌려 보는 것이 남는다.
+
+## 다음 할 일
+
+```text
+1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 은
+                     CI 로 확인된 적이 없다
+2. policy.json 대칭  제거가 표기를 원복하지 못한다. 내용은 정확히 같다.
                      append_to_json_array 의 역함수가 필요하다
-4. supervisor 켜기   HANDOFF §3 의 활성 세션 라우팅 확인이 선행이다.
+3. supervisor 켜기   HANDOFF §3 의 활성 세션 라우팅 확인이 선행이다.
                      확인 결과에 따라 worktree 인식·알림 설계가 갈린다
+4. ruff 0.16         핀을 올릴지. markdown 포맷이 문서 여섯을 건드리고 그중 하나가
+                     DECISIONS.md 다
+5. A-F1              --all 과 --app 조합이 경고 없이 좁혀진다. help 문구와 실제가 다르다
+```
+
+그리고 다른 저장소에 남긴 것 둘.
+
+```text
+cortex    high-risk-ack 이 kit 의 async schema 여덟을 equipment 계약으로 잡는다.
+          경로 조건을 좁힐지는 그 저장소가 정한다
+synapse   .ai-team/runtime/policy.json 의 path_rule 이 tools/amplai-loop-kit/** 를
+          가리켜 죽은 rule 이 됐다. 그 pattern 은 kit fragment 소유라 정본에서 고쳐야 한다
 ```
 
 `.ai-team/README.md` 가 "Cortex AMPLAI Loop Runtime V2" 로 시작하는 문구 정리는 여전히
