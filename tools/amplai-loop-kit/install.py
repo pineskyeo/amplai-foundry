@@ -859,7 +859,52 @@ class Installer(object):
                 "run `amplai.py project set-policy --from .ai-team/runtime/async-policy.json` "
                 "to adopt it" % ", ".join(drift)
             )
-        return {"status": store.status_summary(), "policy_drift": drift}
+        supervisor = self.install_store_supervisor(home)
+        return {
+            "status": store.status_summary(),
+            "policy_drift": drift,
+            "supervisor": supervisor,
+        }
+
+    def install_store_supervisor(self, home):
+        """Place the Store's supervisor entry point.
+
+        The Store owns the right to run a supervisor, so its entry point lives
+        here rather than in any application repository.  Only the entry point
+        and a version marker are copied -- the supervisor itself runs from an
+        application's installed copy, which keeps a single implementation.
+        """
+        source_dir = os.path.join(PACKAGE_ROOT, "payload", "store", "supervisor")
+        if not os.path.isdir(source_dir):
+            return {"installed": False, "reason": "package has no store payload"}
+        dest_dir = os.path.join(home, "supervisor")
+        ensure_dir(dest_dir)
+        written = []
+        for name in sorted(os.listdir(source_dir)):
+            src = os.path.join(source_dir, name)
+            if not os.path.isfile(src):
+                continue
+            mode = 0o755 if name == "run" else 0o644
+            atomic_write(os.path.join(dest_dir, name), read_bytes(src), mode)
+            written.append(name)
+        atomic_write(
+            os.path.join(dest_dir, "VERSION"),
+            (self.manifest["version"] + "\n").encode("utf-8"), 0o644,
+        )
+        written.append("VERSION")
+        # Record which application copy this entry point should execute.  The
+        # most recent install wins; `run --source-app <id>` overrides it.
+        atomic_write(
+            os.path.join(dest_dir, "source.json"),
+            canonical_json({
+                "schema_version": "1.0",
+                "app_id": self.args.app_id,
+                "kit_version": self.manifest["version"],
+            }),
+            0o644,
+        )
+        written.append("source.json")
+        return {"installed": True, "path": dest_dir, "files": sorted(set(written))}
 
     def execute(self):
         if self.args.uninstall:

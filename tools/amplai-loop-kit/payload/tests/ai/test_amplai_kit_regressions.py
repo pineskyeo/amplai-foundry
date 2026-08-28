@@ -512,3 +512,119 @@ class HookQuietTest(StoreTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SupervisorSingleInstanceTest(unittest.TestCase):
+    """2.3.0: the Store owns the right to run a supervisor.
+
+    Before this, nothing stopped a second supervisor from starting.  The lock
+    lives in the Store rather than in an application repository, so it holds
+    whichever copy of the script is started -- that is what closes the bypass
+    the design had previously accepted as a limitation.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.mkdtemp(prefix="amplai-supervisor-lock-")
+        self.store = ProjectStore.initialize(
+            os.path.join(self.temp, "store"), "lock-lab", git_init=False,
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.temp, ignore_errors=True)
+
+    def test_lock_lives_in_the_store_not_the_application(self):
+        lock = self.store.supervisor_lock()
+        self.assertTrue(lock.lock_dir.startswith(self.store.home))
+        self.assertTrue(lock.lock_dir.endswith(os.path.join(".amplai", "locks", "supervisor.lock")))
+
+    def test_second_holder_is_refused_without_waiting(self):
+        first = self.store.supervisor_lock()
+        first.acquire()
+        try:
+            second = self.store.supervisor_lock()
+            started = time.time()
+            with self.assertRaises(LockError):
+                second.acquire()
+            # A refusal, not a queue: the caller must learn immediately that a
+            # supervisor is already running.
+            self.assertLess(time.time() - started, 1.0)
+        finally:
+            first.release()
+
+    def test_refusal_reports_who_holds_it(self):
+        first = self.store.supervisor_lock()
+        first.acquire()
+        try:
+            owner = self.store.supervisor_lock().describe_owner()
+            self.assertEqual(owner["pid"], os.getpid())
+            self.assertEqual(owner["host"], socket.gethostname())
+            self.assertIsNotNone(owner["heartbeat_at"])
+        finally:
+            first.release()
+
+    def test_heartbeat_keeps_a_long_run_from_being_reclaimed(self):
+        lock = self.store.supervisor_lock()
+        lock.acquire()
+        try:
+            # Age the marker instead of sleeping: utc_now() has one-second
+            # resolution, so a sub-second stale window cannot be tested by
+            # waiting without making the test slow and flaky.
+            aged = read_json(lock.owner_path)
+            aged["heartbeat_at"] = "2000-01-01T00:00:00Z"
+            aged["created_at"] = "2000-01-01T00:00:00Z"
+            write_json_atomic(lock.owner_path, aged)
+            self.assertTrue(lock._stale())
+
+            self.assertTrue(lock.heartbeat())
+            # After a heartbeat the same lock is live again, so a contender
+            # that would have reclaimed it now loses.
+            self.assertFalse(lock._stale())
+            refreshed = read_json(lock.owner_path)
+            self.assertNotEqual(refreshed["heartbeat_at"], "2000-01-01T00:00:00Z")
+            # created_at is preserved so the record still shows when the run
+            # actually started.
+            self.assertEqual(refreshed["created_at"], lock.created_at)
+        finally:
+            lock.release()
+
+    def test_heartbeat_refuses_after_the_lock_was_reclaimed(self):
+        first = AtomicDirectoryLock(
+            os.path.join(self.temp, "locks", "supervisor.lock"),
+            wait_seconds=0, stale_seconds=0.0,
+        )
+        first.acquire()
+        second = AtomicDirectoryLock(
+            os.path.join(self.temp, "locks", "supervisor.lock"),
+            wait_seconds=1, stale_seconds=0.0,
+        )
+        second.acquire()
+        try:
+            # The first holder lost the lock to a stale reclaim.  Writing a
+            # heartbeat here would resurrect a lock it no longer owns.
+            self.assertFalse(first.heartbeat())
+            self.assertEqual(second._owner_token(), second.token)
+        finally:
+            second.release()
+
+    def test_stale_lock_is_reclaimed_by_the_next_supervisor(self):
+        first = self.store.supervisor_lock()
+        first.acquire()
+        owner_path = first.owner_path
+        stale = read_json(owner_path)
+        stale["heartbeat_at"] = "2000-01-01T00:00:00Z"
+        stale["created_at"] = "2000-01-01T00:00:00Z"
+        write_json_atomic(owner_path, stale)
+        second = self.store.supervisor_lock()
+        second.acquire()
+        try:
+            self.assertEqual(second._owner_token(), second.token)
+        finally:
+            second.release()
+
+    def test_supervisor_passes_its_heartbeat_into_the_scan_loop(self):
+        calls = []
+        supervisor = Supervisor(self.store, heartbeat=lambda: calls.append(1))
+        supervisor.run_until_quiescent(persistent=False)
+        # An empty store still completes one scan, and that scan must have
+        # refreshed the lock.
+        self.assertGreaterEqual(len(calls), 1)

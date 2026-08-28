@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""Entry point for the Project Store's one supervisor.
+
+The Store owns the right to run a supervisor.  This script is what an operator
+starts; it resolves which application copy of ``amplai_supervisor.py`` to
+execute, refuses to run a copy whose kit version disagrees with the Store, and
+then hands over.
+
+It deliberately holds no logic of its own beyond that.  The single-instance
+lock lives inside ``amplai_supervisor.py`` so that starting an application copy
+directly is refused too -- this entry point is the convenient way in, not the
+only enforced one.
+"""
+from __future__ import print_function
+
+import io
+import json
+import os
+import subprocess
+import sys
+
+HOME = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+EXIT_ERROR = 2
+EXIT_VERSION_MISMATCH = 4
+
+
+def fail(message, **extra):
+    payload = {"ok": False, "error": message}
+    payload.update(extra)
+    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), file=sys.stderr)
+
+
+def read_json(path):
+    with io.open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def read_text(path):
+    with io.open(path, "r", encoding="utf-8") as handle:
+        return handle.read().strip()
+
+
+def resolve_source_app(explicit):
+    """Which application's supervisor script to run."""
+    if explicit:
+        return explicit
+    path = os.path.join(HOME, "supervisor", "source.json")
+    if not os.path.isfile(path):
+        return None
+    try:
+        return read_json(path).get("app_id")
+    except (ValueError, OSError):
+        return None
+
+
+def repo_path_for(app_id):
+    local = os.path.join(HOME, ".amplai", "local", "apps", "%s.json" % app_id)
+    if not os.path.isfile(local):
+        return None
+    try:
+        return read_json(local).get("repo_path")
+    except (ValueError, OSError):
+        return None
+
+
+def installed_version(repo):
+    record = os.path.join(repo, ".ai-team", "install", "amplai-loop-kit.json")
+    if not os.path.isfile(record):
+        return None
+    try:
+        return read_json(record).get("version")
+    except (ValueError, OSError):
+        return None
+
+
+def main(argv):
+    argv = list(argv)
+    explicit_app = None
+    if "--source-app" in argv:
+        i = argv.index("--source-app")
+        try:
+            explicit_app = argv[i + 1]
+        except IndexError:
+            fail("--source-app needs a value")
+            return EXIT_ERROR
+        del argv[i:i + 2]
+
+    app_id = resolve_source_app(explicit_app)
+    if not app_id:
+        fail("no source application recorded for this Store",
+             hint="reinstall the kit into an application, or pass --source-app <id>",
+             store=HOME)
+        return EXIT_ERROR
+
+    repo = repo_path_for(app_id)
+    if not repo or not os.path.isdir(repo):
+        fail("source application is not registered on this host",
+             app_id=app_id, store=HOME)
+        return EXIT_ERROR
+
+    script = os.path.join(repo, "scripts", "amplai_supervisor.py")
+    if not os.path.isfile(script):
+        fail("source application has no supervisor script",
+             app_id=app_id, expected=script)
+        return EXIT_ERROR
+
+    # A Store entry point that ran a differently-versioned supervisor would be
+    # worse than not running at all: the schema and lock semantics it assumes
+    # would be someone else's.  Refuse instead of guessing.
+    store_version = None
+    version_file = os.path.join(HOME, "supervisor", "VERSION")
+    if os.path.isfile(version_file):
+        store_version = read_text(version_file)
+    app_version = installed_version(repo)
+    if store_version and app_version and store_version != app_version:
+        fail("kit version mismatch between this Store and the source application",
+             store_version=store_version, app_id=app_id, app_version=app_version,
+             hint="redistribute the kit so both sides agree")
+        return EXIT_VERSION_MISMATCH
+
+    env = dict(os.environ)
+    env.setdefault("AMPLAI_PROJECT_HOME", HOME)
+    return subprocess.call([sys.executable, script] + argv, cwd=repo, env=env)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

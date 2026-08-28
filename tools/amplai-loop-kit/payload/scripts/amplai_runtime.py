@@ -357,6 +357,7 @@ class AtomicDirectoryLock(object):
         self.stale_seconds = float(stale_seconds)
         self.token = str(uuid.uuid4())
         self.acquired = False
+        self.created_at = None
 
     @property
     def owner_path(self):
@@ -371,7 +372,11 @@ class AtomicDirectoryLock(object):
     def _stale(self):
         try:
             owner = read_json(self.owner_path)
-            created = parse_time(owner.get("created_at"))
+            # A long-lived holder refreshes heartbeat_at; a short-lived one only
+            # ever writes created_at.  Prefer the newer field when present so a
+            # supervisor that is still running is not reclaimed underneath it.
+            marker = owner.get("heartbeat_at") or owner.get("created_at")
+            created = parse_time(marker)
             age = (utc_naive_now() - created).total_seconds()
             return age > self.stale_seconds
         except Exception:
@@ -407,14 +412,50 @@ class AtomicDirectoryLock(object):
                     raise LockError("timed out acquiring project lock: %s" % self.lock_dir)
                 time.sleep(0.05)
                 continue
+            self.created_at = utc_now()
             write_json_atomic(self.owner_path, {
                 "token": self.token,
                 "pid": os.getpid(),
                 "host": socket.gethostname(),
-                "created_at": utc_now(),
+                "created_at": self.created_at,
+                "heartbeat_at": self.created_at,
             })
             self.acquired = True
             return self
+
+    def describe_owner(self):
+        """Who holds this lock, for a refusal message.  Never raises."""
+        try:
+            owner = read_json(self.owner_path)
+        except Exception:
+            return None
+        return {
+            "pid": owner.get("pid"),
+            "host": owner.get("host"),
+            "created_at": owner.get("created_at"),
+            "heartbeat_at": owner.get("heartbeat_at"),
+        }
+
+    def heartbeat(self):
+        """Refresh the liveness marker of a lock this process still owns.
+
+        A holder that runs for longer than ``stale_seconds`` must call this or
+        another contender will reclaim the lock as stale.  Refusing to write
+        when the token no longer matches keeps a reclaimed lock from being
+        resurrected by its former owner.
+        """
+        if not self.acquired:
+            return False
+        if self._owner_token() != self.token:
+            return False
+        write_json_atomic(self.owner_path, {
+            "token": self.token,
+            "pid": os.getpid(),
+            "host": socket.gethostname(),
+            "created_at": self.created_at,
+            "heartbeat_at": utc_now(),
+        })
+        return True
 
     def release(self):
         if not self.acquired:
@@ -525,6 +566,26 @@ class ProjectStore(object):
             os.path.join(self.home, ".amplai", "locks", "project.lock"),
             supervisor.get("lock_wait_seconds", 10),
             supervisor.get("lock_stale_seconds", 120),
+        )
+
+    def supervisor_lock(self):
+        """The Store's single-supervisor lock.
+
+        The Store owns the right to run a supervisor, so this lock lives beside
+        the project lock rather than in any application repository.  Whichever
+        copy of ``amplai_supervisor.py`` starts, it contends for this one
+        directory, which is what makes "only one supervisor" enforceable
+        instead of merely conventional.
+
+        It does not wait: a second supervisor is refused immediately rather
+        than queued.  The holder must call ``heartbeat()`` because a supervisor
+        outlives the stale window by design.
+        """
+        supervisor = self.policy.get("supervisor") or {}
+        return AtomicDirectoryLock(
+            os.path.join(self.home, ".amplai", "locks", "supervisor.lock"),
+            0,
+            supervisor.get("supervisor_lock_stale_seconds", 300),
         )
 
     def _read_sealed(self, path, label=None):

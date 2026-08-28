@@ -23,9 +23,14 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 from amplai_runtime import (  # noqa: E402
-    ACTIVE_WORK_STATUSES, AmplaiError, ConflictError, NotFoundError,
+    ACTIVE_WORK_STATUSES, AmplaiError, ConflictError, LockError, NotFoundError,
     ProjectStore, ValidationError, discover_project_home, ensure_dir, utc_now,
 )
+
+# A refused start is not the same failure as a broken Store, so callers can tell
+# "someone else is already running" apart from "this run went wrong".
+EXIT_ERROR = 2
+EXIT_ALREADY_RUNNING = 3
 
 
 def recursive_session_id(value):
@@ -241,11 +246,13 @@ class WorkerRunner(object):
 
 
 class Supervisor(object):
-    def __init__(self, store, include_manual=False, max_workers=None):
+    def __init__(self, store, include_manual=False, max_workers=None, heartbeat=None):
         self.store = store
         self.include_manual = include_manual
         self.max_workers = int(max_workers or max(1, len(store.list_apps())))
         self.worker_prefix = "%s:%s" % (socket.gethostname(), os.getpid())
+        # Called once per scan so a long-lived run keeps its Store lock alive.
+        self.heartbeat = heartbeat or (lambda: None)
 
     def launchable(self):
         self.store.reconcile()
@@ -304,6 +311,7 @@ class Supervisor(object):
         futures = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as pool:
             while True:
+                self.heartbeat()
                 for work in self.launchable():
                     if len(futures) >= self.max_workers:
                         break
@@ -357,27 +365,57 @@ def main(argv=None):
     try:
         home = discover_project_home(os.getcwd(), args.project_home)
         store = ProjectStore(home)
-        supervisor = Supervisor(
-            store, include_manual=args.include_manual, max_workers=args.max_workers,
-        )
+
         if args.dry_run:
+            # A plan costs nothing and claims nothing, so it must not be able to
+            # lock out the supervisor that is actually running.
+            supervisor = Supervisor(
+                store, include_manual=args.include_manual, max_workers=args.max_workers,
+            )
             value = {
                 "ok": True,
                 "launchable": supervisor.dry_run(),
                 "deferred_by_backoff": supervisor.deferred(),
             }
-        else:
+            print(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True))
+            return 0
+
+        # Only one supervisor may run against a Store.  The lock lives in the
+        # Store, not in any application repository, so it holds no matter which
+        # copy of this script was started.
+        lock = store.supervisor_lock()
+        try:
+            lock.acquire()
+        except LockError:
+            owner = lock.describe_owner()
+            print(json.dumps({
+                "ok": False,
+                "error": "another supervisor already holds this Project Store",
+                "lock": lock.lock_dir,
+                "held_by": owner,
+            }, ensure_ascii=False, indent=2, sort_keys=True), file=sys.stderr)
+            return EXIT_ALREADY_RUNNING
+        try:
+            supervisor = Supervisor(
+                store, include_manual=args.include_manual, max_workers=args.max_workers,
+                heartbeat=lock.heartbeat,
+            )
             value = {
                 "ok": True,
                 "mode": "run" if args.run else "once",
                 "results": supervisor.run_until_quiescent(persistent=args.run),
                 "status": store.status_summary(),
             }
+        finally:
+            try:
+                lock.release()
+            except LockError as exc:
+                print("WARNING: %s" % exc, file=sys.stderr)
         print(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
     except (AmplaiError, ValidationError, OSError) as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
-        return 2
+        return EXIT_ERROR
 
 
 if __name__ == "__main__":

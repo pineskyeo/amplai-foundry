@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: ALR-006-T003
 title: supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >
@@ -149,10 +149,13 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py
+    - tools/amplai-loop-kit/payload/store/supervisor/run
+    - tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_regressions.py
 
 handoff:
   expected_changes:

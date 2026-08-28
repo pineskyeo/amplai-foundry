@@ -3,7 +3,7 @@ schema_version: "1.0"
 id: ALR-006-T004
 title: 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
 type: feature
-status: ready
+status: done
 
 goal:
   outcome: >
@@ -106,10 +106,12 @@ loop:
     - same_failure_class_reaches_replan_threshold
 
 completion:
-  all_acceptance_passed: false
-  required_evidence_present: false
-  completed_at: null
-  evidence_paths: []
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - tools/amplai-loop-kit/distribution/targets.json
+    - .gitignore
 
 handoff:
   expected_changes:

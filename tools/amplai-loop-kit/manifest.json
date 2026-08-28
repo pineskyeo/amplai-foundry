@@ -161,12 +161,12 @@
     {
       "mode": "755",
       "path": "scripts/amplai_runtime.py",
-      "sha256": "sha256:bea0a348fb3e10b60d20fc6ee4467e6939f22d7622b75d5bec2e143b1d6e9f4c"
+      "sha256": "sha256:aabb334ab88741f4b273e73e2fc29c4e5567de994b9f6e1e311d757f277429ed"
     },
     {
       "mode": "755",
       "path": "scripts/amplai_supervisor.py",
-      "sha256": "sha256:4c7dbaaf6969bb0d862093dd437f124363e5c65652c5a58d28c83766068d453c"
+      "sha256": "sha256:18454add3e454b568c2c77149639d4f29736bdded97222c98e04f733ca1539a0"
     },
     {
       "mode": "644",
@@ -181,7 +181,7 @@
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_kit_regressions.py",
-      "sha256": "sha256:93a413a1429b59a307b9cc591f989e1f83fbfc1124e4ec01b36d8d40264c90d8"
+      "sha256": "sha256:11428c0e35c4cd1e1d927b5c8503dd7011f69492acecd43212b82006491ad92c"
     }
   ],
   "required_paths": [
