@@ -1,0 +1,196 @@
+{
+  "$id": "https://amplai.local/schemas/work.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "attempts": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "blocked_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "change_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "type": "string"
+    },
+    "claimed_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "claimed_host": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "content_hash": {
+      "type": "string"
+    },
+    "contract_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "decision_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "depends_on": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "goal": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "human_gate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "input_evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "kind": {
+      "const": "work"
+    },
+    "last_error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lease_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "max_attempts": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "priority": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "question_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "result": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "retry_not_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "source_app": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "WAITING",
+        "READY",
+        "CLAIMED",
+        "RUNNING",
+        "BLOCKED",
+        "HUMAN_REQUIRED",
+        "FAILED",
+        "DONE",
+        "CANCELLED"
+      ]
+    },
+    "target_app": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "work_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*-W[0-9]{3,}$",
+      "type": "string"
+    },
+    "work_type": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "work_id",
+    "change_id",
+    "work_type",
+    "source_app",
+    "target_app",
+    "goal",
+    "status",
+    "priority",
+    "depends_on",
+    "acceptance",
+    "contract_refs",
+    "decision_refs",
+    "question_refs",
+    "input_evidence_refs",
+    "evidence_refs",
+    "attempts",
+    "max_attempts",
+    "result",
+    "created_at",
+    "updated_at",
+    "content_hash"
+  ],
+  "title": "AMPLAI App Work",
+  "type": "object"
+}

@@ -1,0 +1,194 @@
+schema_version: "1.0"
+
+feature:
+  id: ALR-006
+  title: kit 정본을 이관해 공용 2.3.0 을 만들고 세 앱에 배포한다
+  source_status: approved
+
+source:
+  files:
+    - path: specs/007-kit-source-and-distribution/spec.md
+      revision: 245fc37
+    - path: specs/007-kit-source-and-distribution/plan.md
+      revision: 245fc37
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      revision: 245fc37
+  generated_from:
+    - spec
+    - plan
+    - contract
+  generated_at: "2026-08-28"
+
+tasks:
+  - id: ALR-006-T001
+    title: kit 정본을 이 저장소로 이관하고 2.3.0 개발본을 연다
+    status: ready
+    depends_on: []
+    requirements:
+      - AC-001
+      - AC-002
+  - id: ALR-006-T002
+    title: kit 문서에서 특정 앱 전제를 걷어내 공용 패키지로 만든다
+    status: ready
+    depends_on:
+      - ALR-006-T001
+    requirements:
+      - AC-003
+      - AC-004
+  - id: ALR-006-T003
+    title: supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
+    status: ready
+    depends_on:
+      - ALR-006-T001
+    requirements:
+      - AC-005
+      - AC-006
+      - AC-007
+  - id: ALR-006-T004
+    title: 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
+    status: ready
+    depends_on:
+      - ALR-006-T001
+    requirements:
+      - AC-008
+  - id: ALR-006-T005
+    title: 배포 래퍼가 여러 대상을 안전하게 순회한다
+    status: ready
+    depends_on:
+      - ALR-006-T002
+      - ALR-006-T004
+    requirements:
+      - AC-009
+      - AC-011
+      - AC-012
+  - id: ALR-006-T006
+    title: 세 앱에 kit 2.3.0 을 실제로 배포한다
+    status: blocked
+    depends_on:
+      - ALR-006-T003
+      - ALR-006-T005
+    requirements:
+      - AC-010
+      - AC-014
+  - id: ALR-006-T007
+    title: 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
+    status: ready
+    depends_on:
+      - ALR-006-T005
+    requirements:
+      - AC-013
+      - AC-015
+
+execution:
+  waves:
+    - wave: 1
+      tasks:
+        - ALR-006-T001
+    - wave: 2
+      tasks:
+        - ALR-006-T002
+        - ALR-006-T003
+        - ALR-006-T004
+    - wave: 3
+      tasks:
+        - ALR-006-T005
+    - wave: 4
+      tasks:
+        - ALR-006-T007
+    - wave: 5
+      tasks:
+        - ALR-006-T006
+  critical_path:
+    - ALR-006-T001
+    - ALR-006-T002
+    - ALR-006-T005
+    - ALR-006-T006
+
+coverage:
+  requirements:
+    - id: AC-001
+      status: covered
+      tasks:
+        - ALR-006-T001
+    - id: AC-002
+      status: covered
+      tasks:
+        - ALR-006-T001
+    - id: AC-003
+      status: covered
+      tasks:
+        - ALR-006-T002
+    - id: AC-004
+      status: covered
+      tasks:
+        - ALR-006-T002
+    - id: AC-005
+      status: covered
+      tasks:
+        - ALR-006-T003
+    - id: AC-006
+      status: covered
+      tasks:
+        - ALR-006-T003
+    - id: AC-007
+      status: covered
+      tasks:
+        - ALR-006-T003
+    - id: AC-008
+      status: covered
+      tasks:
+        - ALR-006-T004
+    - id: AC-009
+      status: covered
+      tasks:
+        - ALR-006-T005
+    - id: AC-010
+      status: covered
+      tasks:
+        - ALR-006-T006
+    - id: AC-011
+      status: covered
+      tasks:
+        - ALR-006-T005
+    - id: AC-012
+      status: covered
+      tasks:
+        - ALR-006-T005
+    - id: AC-013
+      status: covered
+      tasks:
+        - ALR-006-T007
+    - id: AC-014
+      status: covered
+      tasks:
+        - ALR-006-T006
+    - id: AC-015
+      status: covered
+      tasks:
+        - ALR-006-T007
+  deferred: []
+  excluded: []
+  uncovered: []
+
+open_questions:
+  - id: OQ-01
+    question: >
+      Store(AMPLAI_PROJECT_HOME)를 어느 경로에 만들 것인가. kit README 예시는
+      ~/workspace/amplai-project 이지만 이 저장소가 정한 값이 없다.
+    blocks:
+      - ALR-006-T006
+    note: >
+      T003 은 Store 없는 경로도 다루므로 막히지 않는다. T006 착수 전에 사람이 정해야 한다.
+  - id: OQ-02
+    question: git_publish 승인. permission check 가 prohibited 를 낸다.
+    blocks:
+      - ALR-006-T006
+    note: 다른 저장소(synapse·cortex)를 실제로 바꾸는 것은 이 승인 없이는 못 한다.
+
+update_history:
+  - date: "2026-08-28"
+    summary: >
+      최초 taskification. Slice 다섯을 task 일곱으로 나눴다. 이번 세션 목표는
+      "배포할 수 있는 환경 제공" 이므로 T006(실제 배포)만 blocked 로 두고 나머지를 ready 로
+      둔다. T006 은 git_publish 승인과 Store 경로 결정이 있으면 ready 로 올린다.
+    source_revision: 245fc37

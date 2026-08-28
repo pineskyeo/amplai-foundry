@@ -1,0 +1,140 @@
+schema_version: "1.0"
+
+id: ALR-006-T001
+title: kit 정본을 이 저장소로 이관하고 2.3.0 개발본을 연다
+type: feature
+status: done
+
+goal:
+  outcome: >
+    tools/amplai-loop-kit/ 에 kit 정본이 있고 selftest 가 통과한다. 파일 목록이 synapse
+    main:1c05001b 과 같고, 바뀐 것은 VERSION(2.3.0)과 새로 추가한 PROVENANCE.md 뿐이다.
+  user_value: >
+    이 저장소가 kit 을 고칠 수 있게 된다. 이후 supervisor 통합·공용화·배포가 전부 여기서
+    이뤄지고, 다른 앱은 정본이 아니라 배포 대상이 된다.
+
+source:
+  feature: ALR-006
+  files:
+    - path: specs/007-kit-source-and-distribution/spec.md
+      section: What
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      section: AC-001
+  requirements:
+    - AC-001
+    - AC-002
+  decisions:
+    - D-053
+
+scope:
+  include:
+    - synapse main:1c05001b 의 tools/amplai-loop-kit/ 를 이 저장소로 가져온다
+    - VERSION 을 2.3.0 으로 올린다
+    - PROVENANCE.md 를 만들어 출처 commit·이관 일자·정본 위치를 적는다
+    - CHECKSUMS.sha256 을 재생성한다
+  exclude:
+    - 문서의 synapse 전제 제거 (T002 가 한다)
+    - supervisor 통합 (T003)
+    - 배포 설정 (T004, T005)
+    - 어떤 앱에도 설치하지 않는다
+  allowed_paths:
+    - tools/amplai-loop-kit/**
+    - pyproject.toml
+    - specs/007-kit-source-and-distribution/**
+  forbidden_paths:
+    - src/**
+    - vault/**
+    - scripts/amplai*.py
+    - .ai-team/runtime/**
+
+dependencies:
+  tasks: []
+  external:
+    - id: EXT-SYNAPSE-READ
+      name: synapse 저장소를 읽을 수 있어야 한다 (origin/main:1c05001b)
+
+implementation:
+  guidance:
+    - git archive 로 꺼낸다. 손으로 파일을 골라 복사하지 않는다
+    - PROVENANCE.md 는 정본이 둘인 기간을 명시한다 — synapse 사본 삭제 전까지는 이쪽을 고친다
+    - CHECKSUMS 는 재생성한 뒤 selftest 로 검증한다. 손으로 편집하지 않는다
+    - 표를 만들면 칸 수와 검증 수를 대조한다 (round 21 R21-1·R21-2)
+    - 이관하면 tools/ 가 ruff 대상이 되어 334건이 뜬다. kit 코드를 고치지 말고
+      pyproject 의 벤더링 예외(.agents·.ai-team·.claude·.specify 와 같은 자리)에 더한다.
+      착수 시 allowed_paths 에 pyproject.toml 이 없어 실행 중 넓혔다 — 이관이 만든
+      문제라 이 task 가 닫는 것이 맞다
+  invariants:
+    - 파일 목록이 원본과 같다. 의도한 추가(PROVENANCE.md) 외에 늘거나 줄지 않는다
+    - kit 코드의 동작이 안 바뀐다 — 이 task 는 이관과 버전 표기만 한다
+    - src/ 와 vault/ 를 건드리지 않는다
+  non_goals:
+    - kit 코드를 이 저장소 lint 규칙에 맞게 고치는 것
+    - synapse 사본을 지우는 것 (T007 이 PR 내용만 준비한다)
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: synapse main:1c05001b 의 tools/amplai-loop-kit/ 파일 목록
+      when: 이관 후 이 저장소의 tools/amplai-loop-kit/ 목록과 대조한다
+      then: PROVENANCE.md 하나만 늘어나 있고 사라진 파일이 없다
+    - id: AC-02
+      given: 이관된 kit
+      when: python3 tools/amplai-loop-kit/selftest.py 를 돌린다
+      then: ok 가 true 이고 check 가 10개다
+    - id: AC-03
+      given: 이관된 kit 의 CHECKSUMS.sha256
+      when: 각 행의 hash 를 재계산해 대조한다
+      then: 어긋난 행이 0이다
+    - id: AC-04
+      given: VERSION 과 PROVENANCE.md
+      when: 내용을 읽는다
+      then: VERSION 이 2.3.0 이고 PROVENANCE 가 출처 commit 1c05001b 와 이관 일자를 적는다
+  commands:
+    - id: selftest
+      kind: test
+      run: python3 tools/amplai-loop-kit/selftest.py
+      required: true
+    - id: doctor
+      kind: lint
+      run: python3 scripts/loopctl.py doctor
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: selftest
+      required: true
+    - type: command_output
+      source: doctor
+      required: true
+
+risk:
+  level: medium
+  concerns:
+    - 정본이 둘인 기간이 생긴다. PROVENANCE 가 어느 쪽을 고칠지 명시하지 않으면 드리프트한다
+    - CHECKSUMS 를 손으로 고치면 selftest 가 통과해도 무결성이 깨진다
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-08-28"
+  evidence_paths:
+    - tools/amplai-loop-kit/
+    - pyproject.toml
+
+handoff:
+  expected_changes:
+    - tools/amplai-loop-kit/ 전체 (신규)
+    - tools/amplai-loop-kit/VERSION → 2.3.0
+    - tools/amplai-loop-kit/PROVENANCE.md (신규)
+  notes:
+    - 이 task 뒤에도 아무 앱에 설치되지 않는다. 설치는 T006 이다

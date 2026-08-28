@@ -1,0 +1,150 @@
+schema_version: "1.0"
+
+id: ALR-006-T005
+title: 배포 래퍼가 여러 대상을 안전하게 순회한다
+type: feature
+status: ready
+
+goal:
+  outcome: >
+    scripts/kit_distribute.py 가 targets.json 과 host-local 경로를 읽어 dry-run·배포·검증을
+    수행한다. 전체 dry-run 이 통과해야 실제 배포를 시작하고, 실패하면 그 지점에서 멈추고
+    무엇까지 됐는지 보고한다.
+  user_value: >
+    install.py 는 경로를 하나만 받는다. 세 앱 배포를 한 명령으로 하되, 잘못된 상태에서
+    남의 저장소를 건드리지 않는다.
+
+source:
+  feature: ALR-006
+  files:
+    - path: specs/007-kit-source-and-distribution/plan.md
+      section: "2. 배포 래퍼"
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      section: AC-009
+  requirements:
+    - AC-009
+    - AC-011
+    - AC-012
+  decisions:
+    - D-053
+
+scope:
+  include:
+    - --dry-run, --all, --app <id>, --verify, --uninstall
+    - preflight — selftest, CHECKSUMS, 경로 해석, 대상 working tree 청결
+    - 전체 dry-run 이 통과해야 실제 배포 시작
+    - 순차 배포, 실패 지점에서 중단하고 성공·실패를 구분해 보고
+    - --verify 가 각 대상 install record 를 kit VERSION 과 대조
+    - 래퍼 자신의 test
+  exclude:
+    - 실제 배포 실행 (T006 이 human gate 아래서 한다)
+    - kit install.py 의 동작 변경
+  allowed_paths:
+    - scripts/kit_distribute.py
+    - tests/**
+    - specs/007-kit-source-and-distribution/**
+  forbidden_paths:
+    - src/**
+    - vault/**
+    - tools/amplai-loop-kit/install.py
+
+dependencies:
+  tasks:
+    - ALR-006-T002
+    - ALR-006-T004
+  external: []
+
+implementation:
+  guidance:
+    - source(amplai-foundry) 를 먼저, 그다음 target 을 targets.json 순서로 돈다
+    - 경로를 못 정하면 후보를 제시하고 멈춘다. 추측한 경로로 install.py 를 부르지 않는다
+    - 실패해도 앞선 앱을 되돌리지 않는다. kit 이 앱별로 rollback 한다
+    - 출력은 기계가 읽을 수 있는 JSON 한 덩어리다. install.py 형식을 따른다
+    - 실패 주입으로 AC 를 확인한다. 표의 칸을 검증 없이 채우지 않는다
+    - lint 예외가 필요하면 loopctl.py·loopv2.py 선례(per-file-ignores)를 따른다
+  invariants:
+    - --dry-run 은 어떤 대상도 바꾸지 않는다
+    - dry-run 이 하나라도 실패하면 아무것도 설치되지 않는다
+    - 대상 working tree 가 더러우면 그 대상을 건너뛰고 보고한다
+  non_goals:
+    - 병렬 배포
+    - 실패한 대상을 자동 재시도하는 것
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: 세 대상이 설정돼 있다
+      when: --dry-run 을 돌린다
+      then: 세 대상의 계획이 나오고 어떤 대상의 git status 도 안 바뀐다
+    - id: AC-02
+      given: 대상 하나의 dry-run 이 실패하도록 만든 상태
+      when: --all 을 돌린다
+      then: 아무 대상에도 설치되지 않고 실패한 대상이 이름으로 보고된다
+    - id: AC-03
+      given: 배포 도중 두 번째 대상이 실패하는 상태
+      when: --all 을 돌린다
+      then: 그 지점에서 멈추고 첫 대상은 설치된 채 남으며 출력이 성공·실패를 구분한다
+    - id: AC-04
+      given: 한 대상의 install record 버전을 kit VERSION 과 다르게 만든 상태
+      when: --verify 를 돌린다
+      then: 그 대상을 이름으로 지목한다. 원복하면 통과한다
+    - id: AC-05
+      given: host-local 경로 설정이 없는 상태
+      when: --dry-run 을 돌린다
+      then: 후보를 제시하고 멈춘다. install.py 를 부르지 않는다
+  commands:
+    - id: wrapper-tests
+      kind: test
+      run: .venv/bin/python -m pytest tests -k kit_distribute -q
+      required: true
+    - id: dryrun-all
+      kind: integration
+      run: .venv/bin/python scripts/kit_distribute.py --dry-run
+      required: true
+    - id: lint
+      kind: lint
+      run: .venv/bin/ruff check scripts/kit_distribute.py
+      required: true
+    - id: verifier
+      kind: test
+      run: .venv/bin/python .ai-team/verifiers/run.py --profile v2
+      required: true
+  manual_checks: []
+  evidence:
+    - type: command_output
+      source: dryrun-all
+      required: true
+    - type: command_output
+      source: wrapper-tests
+      required: true
+
+risk:
+  level: high
+  concerns:
+    - 이 래퍼가 다른 저장소를 바꾼다. dry-run 게이트가 유일한 자동 방어선이다
+    - 경로 해석이 틀리면 엉뚱한 디렉토리에 설치한다. 못 정하면 멈추는 것이 그 방어다
+  approvals:
+    - architecture_change
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - scripts/kit_distribute.py (신규)
+    - tests/ — 래퍼 test
+    - pyproject.toml — 필요 시 lint 예외
+  notes:
+    - 이 task 가 끝나면 "배포할 수 있는 환경" 이 갖춰진다. 실제 배포는 T006 이다

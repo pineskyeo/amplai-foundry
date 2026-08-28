@@ -1,0 +1,125 @@
+schema_version: "1.0"
+
+id: ALR-006-T007
+title: 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
+type: feature
+status: ready
+
+goal:
+  outcome: >
+    kit 을 되돌리는 절차가 문서에 확정돼 있고 복제본에서 확인됐다. synapse 의
+    tools/amplai-loop-kit/ 를 지우는 PR 내용이 준비돼 있고, 그 저장소에서 kit 을
+    참조하는 자리를 전수로 세어 깨지는 것이 없음을 확인했다.
+  user_value: >
+    설치가 되돌릴 수 있는 결정으로 남는다. 정본이 둘인 기간을 닫을 준비가 된다.
+
+source:
+  feature: ALR-006
+  files:
+    - path: specs/007-kit-source-and-distribution/work-contract.json
+      section: AC-013
+  requirements:
+    - AC-013
+    - AC-015
+  decisions:
+    - D-053
+    - D-051
+
+scope:
+  include:
+    - install.py --uninstall 로 되돌아가는 것을 복제본에서 확인한다
+    - Store 의 supervisor/ 제거 후 project verify 통과를 확인한다
+    - synapse 전역에서 tools/amplai-loop-kit 참조를 전수로 세고 삭제 후 유효성을 판정한 표를 만든다
+    - 삭제 PR 의 본문 초안을 준비한다
+  exclude:
+    - synapse 삭제 PR 을 실제로 여는 것 — 사람이 한다
+    - 다른 저장소를 바꾸는 것
+  allowed_paths:
+    - docs/workstreams/amplai-loop-runtime-adoption/**
+    - specs/007-kit-source-and-distribution/**
+  forbidden_paths:
+    - src/**
+    - vault/**
+
+dependencies:
+  tasks:
+    - ALR-006-T005
+  external:
+    - id: EXT-SYNAPSE-READ
+      name: synapse 저장소를 읽을 수 있어야 한다
+
+implementation:
+  guidance:
+    - 참조 전수는 두 방법으로 센다 — 경로 grep 과 파일명 grep. 두 값을 다 적는다
+    - 전수라 쓸 때 그 표가 실제로 전부를 담는지 다시 센다 (round 19 C19-4)
+    - 제거는 복제본에서 실행한다. 실제 저장소에서 시험하지 않는다
+    - 재설치가 각주와 lint 예외를 되돌리는지 여부를 절차에 적는다
+  invariants:
+    - 실제 synapse 저장소를 바꾸지 않는다
+    - 제거 절차는 복제본에서 실행으로 확인된 것만 적는다
+  non_goals:
+    - synapse 의 다른 정리 작업
+
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: kit 이 설치된 저장소 복제본
+      when: install.py --uninstall 을 실행한다
+      then: git status 가 비고 doctor 가 통과한다
+    - id: AC-02
+      given: supervisor 가 설치된 Store 복제본
+      when: supervisor/ 와 락을 지운다
+      then: project verify 가 통과하고 kit 이 만든 경로가 그대로다
+    - id: AC-03
+      given: synapse 전역
+      when: tools/amplai-loop-kit 참조를 두 방법으로 센다
+      then: 두 값이 적혀 있고 각 참조가 삭제 후 유효한지 판정된 표가 있다
+  commands:
+    - id: doctor
+      kind: lint
+      run: python3 scripts/loopctl.py doctor
+      required: true
+  manual_checks:
+    - id: MC-01
+      observer: implementation agent
+      action: >-
+        저장소 복제본과 Store 복제본을 만들고 install.py --uninstall 과 supervisor/ 제거를
+        실행한 뒤 git status·doctor·project verify 를 기록한다.
+      expected: >-
+        복제본의 git status 가 비고 doctor 가 통과하며, Store 는 kit 이 만든 경로만 남고
+        project verify 가 통과한다.
+      reason_not_automated: >-
+        제거는 파괴적이라 실제 저장소에서 시험하지 않는다. 복제본 준비가 수동 단계다.
+  evidence:
+    - type: command_output
+      source: doctor
+      required: true
+    - type: document
+      source: docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md
+      required: false
+
+risk:
+  level: medium
+  concerns:
+    - 참조를 덜 세면 삭제 PR 이 synapse 를 깨뜨린다
+  approvals: []
+
+loop:
+  max_attempts: 5
+  replan_after_same_failure: 3
+  stop_conditions:
+    - acceptance_conflicts_with_approved_spec
+    - required_external_dependency_missing
+    - scope_boundary_must_expand
+    - same_failure_class_reaches_replan_threshold
+
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+
+handoff:
+  expected_changes:
+    - docs/workstreams/amplai-loop-runtime-adoption/ — 제거 절차 확정본과 참조 전수표
+  notes: []

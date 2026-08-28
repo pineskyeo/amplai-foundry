@@ -50,7 +50,10 @@ target-version = "py311"
 line-length = 100
 src = ["src", "tests"]
 # Vendored agent skill assets keep their upstream formatting so updates stay clean.
-extend-exclude = [".agents", ".ai-team", ".claude", ".specify"]
+# tools/amplai-loop-kit 도 같은 이유다 — kit 은 Python 3.6 호환을 유지하려고 % 포맷을
+# 쓰고, 이 저장소가 정본이 된 뒤에도 그 형식을 지켜야 배포 대상들과 어긋나지 않는다
+# (D-053). kit 을 부르는 이 저장소 코드(scripts/kit_distribute.py)는 lint 대상이다.
+extend-exclude = [".agents", ".ai-team", ".claude", ".specify", "tools/amplai-loop-kit"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
