@@ -125,6 +125,43 @@ class TestVerify:
         assert rc == kd.EXIT_ERROR
         assert payload["targets"][0]["installed"] is None
 
+    def test_a_target_we_meant_to_skip_is_not_a_mismatch(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """expect_installed: false 인 target 의 부재는 정상이다.
+
+        그것이 없으면 의도적으로 비워 둔 fleet 에서 --verify 가 항상 rc=2 를 내고,
+        늘 실패하는 check 는 아무도 안 읽는다.
+        """
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        rc = kd.cmd_verify(
+            config,
+            [{"app_id": "alpha", "path": str(tmp_path), "expect_installed": False}],
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_OK
+        assert payload["mismatched"] == []
+        assert payload["targets"][0]["expect_installed"] is False
+        assert payload["targets"][0]["installed"] is None
+
+    def test_a_target_we_meant_to_skip_but_found_installed_is_a_mismatch(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """반대 방향도 잡는다 — 안 넣기로 한 곳에 누가 넣었으면 그것도 어긋남이다."""
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "9.9.9"},
+        )
+        rc = kd.cmd_verify(
+            config,
+            [{"app_id": "alpha", "path": str(tmp_path), "expect_installed": False}],
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_ERROR
+        assert payload["mismatched"] == ["alpha"]
+        assert payload["targets"][0]["installed"] == "9.9.9"
+
 
 class TestRunGates:
     """The wrapper must refuse before it writes, not apologise afterwards."""

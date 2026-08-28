@@ -171,7 +171,7 @@
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_async_runtime.py",
-      "sha256": "sha256:7431301130999218285852b81de9a9d0564e4e2d7f4388cdbfa94299c9b22491"
+      "sha256": "sha256:ec955c1a161d977b03e3553d84ebe00a5d16a2c418e916e1223d35dbe6814f02"
     },
     {
       "mode": "644",
@@ -181,7 +181,7 @@
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_kit_regressions.py",
-      "sha256": "sha256:3cd9e60f7162f716ed6c5ba4db38cced6a7f64c8c47778e34e230a5a4374f206"
+      "sha256": "sha256:26a8e01fe58704546400d5b247efa3d70cc6883f8d95f34f1f895962d5abf2dd"
     }
   ],
   "required_paths": [
@@ -191,5 +191,5 @@
   ],
   "runtime_protocol": "amplai.async-cross-app.v1",
   "schema_version": "1.0",
-  "version": "2.3.0"
+  "version": "2.3.1"
 }

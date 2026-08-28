@@ -223,13 +223,27 @@ def select(targets: list[dict[str, Any]], app_id: str | None) -> list[dict[str, 
 
 
 def cmd_verify(config: dict[str, Any], resolved: list[dict[str, Any]]) -> int:
+    """Compare installed versions with the kit.
+
+    A target may be listed and deliberately not installed — cortex was, while
+    its `.ai-team` convention still forbade the kit's directories (`D-054`).
+    Without a way to say so, `--verify` reported that as a mismatch and failed
+    on a fleet that was in its intended state, which trains people to ignore it.
+    `expect_installed: false` records the intent; an unexpected *presence* is
+    still a mismatch, because that means someone installed what we said we
+    would not.
+    """
     expected = kit_version()
     rows = []
     mismatched = []
     for target in resolved:
         found = installed_version(Path(target["path"]))
-        agree = found == expected
-        rows.append({"app_id": target["app_id"], "installed": found, "matches": agree})
+        wanted = target.get("expect_installed", True)
+        agree = (found == expected) if wanted else (found is None)
+        row = {"app_id": target["app_id"], "installed": found, "matches": agree}
+        if not wanted:
+            row["expect_installed"] = False
+        rows.append(row)
         if not agree:
             mismatched.append(target["app_id"])
     emit(

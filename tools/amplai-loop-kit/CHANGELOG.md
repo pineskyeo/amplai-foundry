@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.3.1
+
+Test isolation fix found deploying to a third application (`D-054`).
+
+- `AmplaiHookTest` builds a temporary Project Store, but `discover_project_home()`
+  reads `AMPLAI_PROJECT_HOME` before any repository-local binding — and the kit's
+  own SessionStart hook exports that variable into the session.  So in any
+  repository where the kit is installed, running the suite from an agent session
+  made the hook test read the *real* Store and fail, while running it from a bare
+  terminal passed.  Where that test is wired into a blocking verifier check, the
+  whole gate failed for a reason that had nothing to do with the change under test.
+  The hook's precedence is intentional and is unchanged; the test now clears every
+  `AMPLAI_*` variable in `setUp` and restores it in `tearDown`.
+- Added regression coverage: one test runs the hook test with a decoy Store named in
+  the environment, another pins the precedence itself so the reason stays visible.
+  Both live in `test_amplai_kit_regressions.py`.
+- That regression file now puts its own directory on `sys.path`.  Applications differ
+  on whether `tests/ai` is a package, and the sibling import broke under some runners.
+
 ## 2.3.0 (in progress)
 
 Ownership moved to amplai-foundry (`D-053`); see `PROVENANCE.md`.

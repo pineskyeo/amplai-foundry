@@ -1975,3 +1975,124 @@
 
 - Scope: 개발 도구 층이다. `src/` 제품 코드와 `vault/` canonical knowledge 를 건드리지
   않는다. **supervisor 를 켜는 것(`--run`)은 여전히 정하지 않는다** — `D-052` Scope 와 같다.
+
+## D-054 — Relax cortex's `.ai-team` Top-Level Guard To Allow The Kit's Three, Not Delete It
+
+- Status: APPROVED (**완화안** — 사용자 선택 2026-08-28)
+- Follows: `D-051`(kit 설치), `D-053`(정본 소유와 배포). 둘 다 뒤집히지 않는다.
+- Decision: **cortex 의 `test_ai_team_has_no_new_top_level_directory` 를 삭제하지 않고
+  kit 3개만 예외로 허용하도록 완화한 뒤, kit 2.3.1 을 cortex 에 배포한다.**
+
+  **(1) 완화의 형태.** 단언을 둘로 쪼갠다. BASE 7개는 반드시 존재하고, kit 3개
+  (`install`·`local`·`backups`) 밖의 새 최상위 디렉토리는 계속 금지다.
+
+  ```python
+  core = {"contracts", "evidence", "knowledge", "policy",
+          "rules", "runtime", "verifiers"}
+  kit  = {"install", "local", "backups"}
+  self.assertTrue(core <= actual, core - actual)
+  self.assertEqual(set(), actual - core - kit)
+  ```
+
+  **(2) 각주를 함께 단다.** cortex `.ai-team/README.md` 에 foundry `D-051` 각주와 같은
+  형식으로 예외를 적고 **"kit 을 제거하면 이 각주도 함께 지운다"** 를 포함한다.
+
+  **(3) 선행 조건 — kit 을 먼저 고친다.** kit 의 hook test 가 세션 env 에 오염된다.
+  고치지 않고 배포하면 cortex 의 gate 를 우리가 깨뜨린다. 2.3.1 로 올린다.
+
+  **(4) `ALR-006` contract 의 `non_goals` 하나를 이 Decision 이 무효화한다** — "cortex 와
+  synapse 의 저장소 규약을 바꾸는 것". cortex 만 해당하고 synapse 는 그대로다.
+
+- Reason: **cortex 만 그 규약을 test 로 강제했고, 그 test 가 fleet 배포를 막는
+  유일한 것이다.** 실측이다 — cortex `c7837d06` 복제본에 kit 2.3.0 을 실제 설치했다.
+
+  ```text
+  설치 전                   Ran 99 tests            OK
+  설치 후                   Ran 181 tests           FAILED (failures=1, skipped=21)
+                            verifier --profile v2   FAIL — loop-runtime-tests 하나만
+                            doctor                  PASS
+  guard test 제거 후        Ran 180 tests           OK (skipped=21)
+                            verifier --profile v2   PASS
+  ```
+
+  **삭제가 아니라 완화를 고르는 이유는 둘이다.**
+
+  첫째, **foundry 기준과 충돌하지 않는다.** foundry 는 이식할 때 cortex 의
+  `V22DoneContractTests` 를 가져오지 않았다(실측 — foundry 에 `top_level` guard 0건).
+  그 자리가 비어 있으므로 cortex 가 완화된 test 를 갖는 것은 foundry 기준 위반이 아니다.
+
+  둘째, **삭제하면 foundry 보다도 느슨해진다.** foundry 는 test 를 안 가지는 대신
+  `D-051` 각주로 예외 셋을 문서화했다(`.ai-team/README.md:67-77`). cortex 에서 test 만
+  지우면 규약 문장("정책과 schema만 둔다")은 남고 강제도 기록도 없어진다.
+
+  **세 앱의 처리가 원래 달랐다.** 실측이다.
+
+  | 앱 | 규약 | 강제 |
+  |---|---|---|
+  | cortex | 있다 — 정확히 일곱 | test (`V22DoneContractTests`) |
+  | amplai-foundry | 같은 문장이 README 에 | 없다. `D-051` 각주로 예외 명시 |
+  | synapse | 없다 | 없다. `.ai-team` 에 40개 넘는 디렉토리 |
+
+  kit 이 더하는 셋 중 `backups/` 는 말 그대로 이력 누적이라 **규약이 막으려던 바로
+  그것이다.** 그래서 우회가 아니라 명시적 예외로 처리한다.
+
+- Consequence: **kit 결함 하나를 먼저 고쳐야 한다.**
+  `tests/ai/test_amplai_async_runtime.py:387` (`AmplaiHookTest`) 이 temp repo·temp Store 로
+  격리해 놓고 `AMPLAI_PROJECT_HOME`·`AMPLAI_APP_ID` 를 지우지 않는다. 그 둘이 있으면
+  `session_start` 가 실제 Store 를 읽고 단언이 깨진다.
+
+  **그 변수를 심는 것이 kit 자신이다** — `payload/scripts/amplai_hook.py:75-76` 의
+  SessionStart hook 이 세션에 export 한다. 즉 kit 이 설치된 저장소에서 Claude 세션으로
+  test 를 돌리면 항상 실패한다. cortex 에서는 그것이 `loop-runtime-tests` block check 를
+  통해 gate 전체를 FAIL 로 만든다.
+
+  **이건 지금 foundry 에서도 재현된다.**
+
+  ```text
+  tests/ai, 이 세션 shell (AMPLAI_* 설정됨)               FAILED 1건
+  tests/ai, env -u AMPLAI_PROJECT_HOME -u AMPLAI_APP_ID   82 passed
+  전 suite, AMPLAI_* 설정됨                               1 failed, 1514 passed, 4 deselected
+  전 suite, AMPLAI_* 지움                                 1515 passed, 4 deselected
+  ```
+
+  두 값이 맞물린다 — `1514 + 1 = 1515`.
+
+  env 민감 test 는 정확히 이 하나다. 나머지 1514 개는 영향 없다. **이 저장소의 gate 가
+  지금 그것 때문에 FAIL 이다** — v2 의 block check `pytest` 하나만 실패하고 나머지 열은
+  전부 PASS 다. 앞 세션의 `1515 passed` 는 그 변수가 없는 shell 에서 잰 값이라 틀리지
+  않았다. kit 을 설치한 세션에서 재는 순간 드러나는 결함이다. 고칠 것은 test 의 격리이고
+  `session_start` 가 env 로 Store 를 찾는 동작은 의도된 것이라 안 바꾼다.
+
+  **`A-F5` 가 함께 닫힌다.** cortex 가 설치되면 `--verify` 는 `rc=0` 이 되지만, "의도적으로
+  배포하지 않음" 을 표현할 수단이 없다는 본질은 남는다. `targets.json` 에
+  `expect_installed` 를 더한다.
+
+  cortex 변경은 **그 저장소의 PR** 이다. 이 저장소에서 머지하지 않는다.
+
+- Rejected: **guard test 삭제 (foundry 와 완전히 같은 모양).** foundry 기준을 그대로
+  따르는 것이 논리적으로 일관되지만, 위에 적은 대로 강제도 기록도 없이 규약 문장만
+  남는다. 완화가 같은 배포를 가능하게 하면서 `.ai-team` 우발적 비대화를 잡는 장치를
+  살린다.
+- Rejected: **kit 을 고쳐 최상위를 안 늘린다 (`.ai-team/runtime/` 아래로, 2.4.0).**
+  cortex 를 안 건드리는 것이 장점이지만 foundry·synapse 의 설치 record 경로가 바뀌어
+  migration 이 필요하다. 그리고 `backups/` 를 `runtime/` 아래로 옮기는 것은 위치만 바꿀 뿐
+  "이력을 `.ai-team` 에 쌓지 않는다" 는 의도를 똑같이 어긴다 — test 만 피하는 셈이다.
+  앱 루트 `.amplai/` 로 옮기는 변형도 **막힌다** — foundry 가 그 경로를 이미 다른 용도로
+  쓰고 있다(실측: `agents`·`ontology`·`policies` 등).
+- Rejected: **cortex 를 배포 대상에서 확정 제외.** `targets.json` 에 `expect_installed: false`
+  를 넣으면 `A-F5` 는 닫히지만 `D-053` 의 전제(세 앱 fleet)가 둘로 줄고, cortex 는 async
+  cross-app 층을 못 쓴다. `A-F5` 는 이 Decision 안에서 따로 닫는다.
+- Unchanged: `D-051`(kit 은 제거 가능한 층), `D-052`(Store 가 supervisor 를 소유),
+  `D-053`(foundry 가 정본을 소유하고 배포). supervisor 를 켜는 것은 **여전히 정하지
+  않는다** — `auto_start` 는 `false` 다.
+- Owner: Workstream governor.
+- Date: 2026-08-28
+- Affected item: `ALR-007`. `specs/008-cortex-redeploy/`.
+  `docs/workstreams/amplai-loop-runtime-adoption/{CURRENT_ITEM,KIT-DISTRIBUTION}.md` 의
+  "남은 것 1" 이 이것으로 열린다.
+- Source: 사용자 선택 2026-08-28 (완화안). 근거는 `specs/008-cortex-redeploy/spec.md`
+  의 실측 — cortex `c7837d06` 복제본 설치, foundry env 민감도 측정,
+  `cortex:tests/ai/test_loop_runtime_v2.py:895`,
+  `cortex:specs/007-amplai-v21-doc-freshness-gardening/tasks.md:46`,
+  `.ai-team/README.md:67-77`, `tools/amplai-loop-kit/install.py:29,30,580`,
+  `tools/amplai-loop-kit/payload/scripts/amplai_hook.py:75-76`.

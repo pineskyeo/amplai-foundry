@@ -344,6 +344,17 @@ if __name__ == "__main__":
 
 class AmplaiHookTest(unittest.TestCase):
     def setUp(self):
+        # 이 test 는 임시 Store 를 세우지만 discover_project_home() 은
+        # AMPLAI_PROJECT_HOME 을 repo-local binding 보다 먼저 본다
+        # (amplai_runtime.py:2381). 그 변수를 심는 것이 이 kit 의 SessionStart
+        # hook 자신이므로, kit 이 설치된 저장소의 세션에서 돌리면 실제 Store 를
+        # 읽어 버린다. 격리는 test 의 책임이다 — hook 의 동작은 의도된 것이다.
+        self._saved_env = {
+            name: value for name, value in os.environ.items()
+            if name.startswith("AMPLAI_")
+        }
+        for name in self._saved_env:
+            del os.environ[name]
         self.temp = tempfile.mkdtemp(prefix="amplai-hook-")
         self.repo = os.path.join(self.temp, "app")
         self.home = os.path.join(self.temp, "project")
@@ -364,6 +375,9 @@ class AmplaiHookTest(unittest.TestCase):
         }), mode=0o600)
 
     def tearDown(self):
+        for name in [n for n in os.environ if n.startswith("AMPLAI_")]:
+            del os.environ[name]
+        os.environ.update(self._saved_env)
         shutil.rmtree(self.temp)
 
     def test_session_hooks_inject_and_checkpoint_without_owning_work_state(self):

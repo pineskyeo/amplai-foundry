@@ -43,6 +43,17 @@ Store supervisor 설치          install.py 가 <PROJECT_HOME>/supervisor/ 를 �
 
 `CHANGELOG.md` 가 항목별 내용을 담는다.
 
+## 2.3.0 → 2.3.1 이 고치는 것
+
+```text
+hook test 격리    AmplaiHookTest 가 AMPLAI_* 를 안 지워 실제 Store 를 읽던 것
+회귀 test 둘      decoy Store 로 그것을 고정하고, precedence 자체도 고정한다
+sibling import    tests/ai 가 package 인 앱과 아닌 앱에서 모두 돌게 한다
+```
+
+`D-054` 가 근거다. cortex 배포를 준비하다 드러났고 **foundry 에서도 재현됐다** —
+kit 이 설치된 저장소의 agent 세션에서는 그 test 가 항상 실패했다.
+
 ## 상류 변경을 받을 때
 
 synapse 나 다른 곳에서 이 kit 의 후속 판이 나오면 **덮어쓰지 않는다.** 이 파일에 그

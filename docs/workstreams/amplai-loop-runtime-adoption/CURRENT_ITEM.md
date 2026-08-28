@@ -169,6 +169,17 @@ cortex 에는 `.ai-team` 최상위를 **정확히 일곱으로 못박은 test** 
 **그 저장소가 규약을 갱신하면 `--app cortex --all` 로 바로 배포된다.** `targets.json` 항목은
 사유와 함께 남겨 뒀다.
 
+**`D-054` 가 그 방향을 정했다 (2026-08-28).** 규약을 버리는 것이 아니라 kit 3개
+(`install`·`local`·`backups`)만 예외로 허용하도록 **완화한다.** 삭제하면 cortex 의 규약
+문장은 남고 강제도 기록도 없어져 foundry 보다 느슨해진다 — foundry 는 test 를 안 가지는
+대신 `D-051` 각주로 예외를 문서화했다.
+
+배포 전에 kit 결함 하나를 먼저 고친다. `AmplaiHookTest` 가 `AMPLAI_PROJECT_HOME`·
+`AMPLAI_APP_ID` 를 안 지워 실제 Store 를 읽는데, **그 변수를 심는 것이 kit 자신의
+SessionStart hook 이다** (`amplai_hook.py:75-76`). 고치지 않고 배포하면 cortex 의
+`loop-runtime-tests` block check 가 Claude 세션 안에서 항상 FAIL 한다. **지금 foundry
+에서도 재현된다.** 설계는 `specs/008-cortex-redeploy/` 다.
+
 ### 그 과정이 드러낸 kit 결함 둘
 
 ```text
@@ -181,9 +192,12 @@ created_paths   kit 이 만든 파일을 내용 확인 없이 지웠다. 앱이 
 
 ## 다음 할 일
 
+`ALR-007` 이 1번을 연다 — `D-054`(2026-08-28)가 완화안을 승인했다. 설계는
+`specs/008-cortex-redeploy/` 이고 `/work` 가 아직 안 돌았다.
+
 ```text
-1. cortex 재배포     그 저장소가 .ai-team 규약을 갱신하면
-                     `.venv/bin/python scripts/kit_distribute.py --app cortex --all`
+1. cortex 재배포     ALR-007 로 열렸다. cortex guard test 를 삭제가 아니라 kit 3개
+                     예외로 완화하고, 선행으로 kit hook test 의 env 오염을 고친다(2.3.1)
 2. synapse 정리      tools/amplai-loop-kit/ 삭제 PR. 참조 전수표가
                      KIT-DISTRIBUTION.md 에 있고 삭제로 깨지는 것은 없다.
                      그 저장소의 PR 이라 여기서 열지 않았다
