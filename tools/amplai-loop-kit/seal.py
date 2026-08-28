@@ -82,7 +82,58 @@ def reseal_checksums():
     return len(rows)
 
 
+def verify():
+    """Report mismatches without writing.  Exit 1 when the seal is broken.
+
+    Nothing else reads CHECKSUMS.sha256, so a stale seal survived two commits
+    unnoticed.  This mode exists to be wired into a verifier.
+    """
+    mismatched = []
+    missing = []
+    listed = set()
+    path = os.path.join(ROOT, CHECKSUMS)
+    with io.open(path, "r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.rstrip("\n")
+            if not line.strip():
+                continue
+            digest, rel = line.split("  ", 1)
+            listed.add(rel)
+            target = os.path.join(ROOT, rel)
+            if not os.path.isfile(target):
+                missing.append(rel)
+            elif sha256_file(target) != digest:
+                mismatched.append(rel)
+    unlisted = sorted(set(package_files()) - listed)
+
+    manifest_stale = []
+    with io.open(os.path.join(ROOT, "manifest.json"), "r", encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    for item in manifest.get("owned_files", []):
+        target = os.path.join(ROOT, "payload", item["path"])
+        if os.path.isfile(target) and item.get("sha256") != "sha256:" + sha256_file(target):
+            manifest_stale.append("owned_files:" + item["path"])
+    for key in ("markers", "json_merges"):
+        for item in manifest.get(key, []):
+            target = os.path.join(ROOT, "fragments", item["fragment"])
+            if os.path.isfile(target) and item.get("sha256") != "sha256:" + sha256_file(target):
+                manifest_stale.append("%s:%s" % (key, item["fragment"]))
+
+    ok = not (mismatched or missing or unlisted or manifest_stale)
+    print(json.dumps({
+        "ok": ok,
+        "checksum_mismatched": mismatched,
+        "checksum_missing_file": missing,
+        "not_in_checksums": unlisted,
+        "manifest_stale": sorted(manifest_stale),
+        "hint": None if ok else "run `python3 seal.py` after changing payload or fragments",
+    }, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0 if ok else 1
+
+
 def main():
+    if "--verify" in sys.argv[1:]:
+        return verify()
     # Manifest first: it is itself a package file, so its hash must settle
     # before CHECKSUMS is written.
     changed = reseal_manifest()

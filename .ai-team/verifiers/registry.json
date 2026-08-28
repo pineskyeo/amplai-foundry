@@ -47,7 +47,8 @@
       "checks": [
         "schema",
         "vault-lint",
-        "project-pack"
+        "project-pack",
+        "kit-seal"
       ]
     },
     "v2": {
@@ -56,7 +57,9 @@
         "runtime",
         "full"
       ],
-      "checks": []
+      "checks": [
+        "kit-seal"
+      ]
     }
   },
   "checks": [
@@ -136,6 +139,13 @@
       "severity": "warn",
       "source": ".ai-team/runtime/WORKFLOW.md",
       "description": "loop 가 부르는 shell script 문법."
+    },
+    {
+      "id": "kit-seal",
+      "command": "python3 tools/amplai-loop-kit/seal.py --verify",
+      "severity": "block",
+      "source": "AGENTS.md",
+      "description": "kit 의 CHECKSUMS 와 manifest 해시가 실제 파일과 맞는지 본다. 이 검사가 없던 동안 봉인이 두 번 깨진 채 commit 됐다 — selftest 는 manifest 만 보고 CHECKSUMS 는 아무도 안 읽었다."
     }
   ]
 }

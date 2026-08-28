@@ -8,6 +8,7 @@ import shutil
 import socket
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -628,3 +629,127 @@ class SupervisorSingleInstanceTest(unittest.TestCase):
         # An empty store still completes one scan, and that scan must have
         # refreshed the lock.
         self.assertGreaterEqual(len(calls), 1)
+
+
+class SupervisorLockRaceTest(unittest.TestCase):
+    """2.3.0 review: the lock must not let two supervisors live.
+
+    A first pass made the single-instance lock hold for the simple cases and
+    still lose under contention -- a heartbeat whose failure was discarded, a
+    stale reclaim that could take a lock created moments earlier, and a raw
+    OSError escaping acquire().
+    """
+
+    def setUp(self):
+        self.temp = tempfile.mkdtemp(prefix="amplai-lock-race-")
+        self.lock_dir = os.path.join(self.temp, "locks", "supervisor.lock")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp, ignore_errors=True)
+
+    def _lock(self, wait=0, stale=300):
+        return AtomicDirectoryLock(self.lock_dir, wait_seconds=wait, stale_seconds=stale)
+
+    def test_reclaim_does_not_steal_a_lock_created_after_the_judgement(self):
+        """The window between "this is stale" and the rename must be closed."""
+        victim = self._lock(stale=0.0)
+        victim.acquire()
+        stale, token = victim._stale_owner()
+        self.assertTrue(stale)
+
+        # The judged holder releases and a fresh one takes the slot before the
+        # reclaim lands.  Reclaiming on the old judgement would evict a live
+        # owner.
+        victim.release()
+        fresh = self._lock()
+        fresh.acquire()
+        try:
+            contender = self._lock()
+            self.assertFalse(contender._reclaim_stale(token))
+            self.assertTrue(os.path.isdir(self.lock_dir))
+            self.assertEqual(fresh._owner_token(), fresh.token)
+        finally:
+            fresh.release()
+
+    def test_reclaim_without_a_token_still_works(self):
+        """A lock with no readable owner file has no token to pin."""
+        holder = self._lock(stale=0.0)
+        holder.acquire()
+        os.unlink(holder.owner_path)
+        self.assertTrue(self._lock()._reclaim_stale(None))
+        self.assertFalse(os.path.isdir(self.lock_dir))
+
+    def test_contention_raises_lock_error_not_a_bare_os_error(self):
+        """Callers separate "someone else has it" from "the Store is broken"."""
+        blocker = self._lock()
+        blocker.acquire()
+        try:
+            with self.assertRaises(LockError):
+                self._lock().acquire()
+        finally:
+            blocker.release()
+
+    def test_concurrent_acquire_yields_exactly_one_holder(self):
+        held = []
+        errors = []
+
+        def attempt():
+            # The real stale window is 300s.  Setting it below one second makes
+            # every holder look stale to every other -- utc_now() has one-second
+            # resolution -- so the test would be measuring reclaim, not mutual
+            # exclusion.
+            lock = self._lock(wait=0.5, stale=300)
+            try:
+                lock.acquire()
+            except LockError:
+                return
+            except Exception as exc:          # noqa: BLE001 - the point of the test
+                errors.append(exc)
+                return
+            held.append(lock)
+
+        threads = [threading.Thread(target=attempt) for _ in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        try:
+            # A bare OSError escaping acquire() is a failure even if only one
+            # thread ended up holding the lock.
+            self.assertEqual(errors, [])
+            self.assertEqual(len(held), 1)
+        finally:
+            for lock in held:
+                try:
+                    lock.release()
+                except LockError:
+                    pass
+
+
+class SupervisorStopsWhenItLosesTheLockTest(unittest.TestCase):
+    """A supervisor whose heartbeat fails must stop, not keep scanning."""
+
+    def setUp(self):
+        self.temp = tempfile.mkdtemp(prefix="amplai-lost-lock-")
+        self.store = ProjectStore.initialize(
+            os.path.join(self.temp, "store"), "lost-lock", git_init=False,
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.temp, ignore_errors=True)
+
+    def test_a_failed_heartbeat_stops_the_scan_loop(self):
+        calls = []
+
+        def heartbeat():
+            calls.append(1)
+            return False
+
+        supervisor = Supervisor(self.store, heartbeat=heartbeat)
+        with self.assertRaises(LockError):
+            supervisor.run_until_quiescent(persistent=True)
+        self.assertEqual(len(calls), 1)
+
+    def test_a_healthy_heartbeat_does_not_stop_it(self):
+        supervisor = Supervisor(self.store, heartbeat=lambda: True)
+        supervisor.run_until_quiescent(persistent=False)

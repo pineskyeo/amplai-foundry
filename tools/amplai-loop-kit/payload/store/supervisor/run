@@ -108,12 +108,19 @@ def main(argv):
     # A Store entry point that ran a differently-versioned supervisor would be
     # worse than not running at all: the schema and lock semantics it assumes
     # would be someone else's.  Refuse instead of guessing.
-    store_version = None
     version_file = os.path.join(HOME, "supervisor", "VERSION")
-    if os.path.isfile(version_file):
-        store_version = read_text(version_file)
-    app_version = installed_version(repo)
-    if store_version and app_version and store_version != app_version:
+    store_version = read_text(version_file) if os.path.isfile(version_file) else ""
+    app_version = installed_version(repo) or ""
+    if not store_version or not app_version:
+        # An absent or empty version on either side used to skip the comparison
+        # entirely, which turned a guard into a suggestion.  Not knowing the
+        # versions is exactly when running is least safe.
+        fail("cannot compare kit versions between this Store and the source application",
+             store_version=store_version or None, app_id=app_id,
+             app_version=app_version or None,
+             hint="redistribute the kit so both sides record a version")
+        return EXIT_VERSION_MISMATCH
+    if store_version != app_version:
         fail("kit version mismatch between this Store and the source application",
              store_version=store_version, app_id=app_id, app_version=app_version,
              hint="redistribute the kit so both sides agree")

@@ -252,7 +252,8 @@ class Supervisor(object):
         self.max_workers = int(max_workers or max(1, len(store.list_apps())))
         self.worker_prefix = "%s:%s" % (socket.gethostname(), os.getpid())
         # Called once per scan so a long-lived run keeps its Store lock alive.
-        self.heartbeat = heartbeat or (lambda: None)
+        # It returns False once the lock has been reclaimed by someone else.
+        self.heartbeat = heartbeat or (lambda: True)
 
     def launchable(self):
         self.store.reconcile()
@@ -311,7 +312,13 @@ class Supervisor(object):
         futures = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as pool:
             while True:
-                self.heartbeat()
+                # Losing the lock means another supervisor now owns this Store.
+                # Continuing would put two of them on the same work, which is
+                # exactly what the lock exists to prevent, so stop instead.
+                if self.heartbeat() is False:
+                    raise LockError(
+                        "lost the supervisor lock to another holder; stopping"
+                    )
                 for work in self.launchable():
                     if len(futures) >= self.max_workers:
                         break

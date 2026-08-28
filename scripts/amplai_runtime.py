@@ -221,8 +221,19 @@ def sha256_file(path):
 
 
 def ensure_dir(path):
-    if not os.path.isdir(path):
+    """Create a directory, tolerating a concurrent creator.
+
+    Checking isdir() first and then calling makedirs() is a race: two workers
+    contending for the same Store both pass the check and one of them gets
+    FileExistsError.  That surfaced as a raw OSError out of lock acquisition.
+    """
+    if os.path.isdir(path):
+        return
+    try:
         os.makedirs(path)
+    except OSError:
+        if not os.path.isdir(path):
+            raise
 
 
 def read_json(path):
@@ -370,6 +381,10 @@ class AtomicDirectoryLock(object):
             return None
 
     def _stale(self):
+        return self._stale_owner()[0]
+
+    def _stale_owner(self):
+        """(is_stale, owner_token).  The token pins which holder we judged."""
         try:
             owner = read_json(self.owner_path)
             # A long-lived holder refreshes heartbeat_at; a short-lived one only
@@ -378,23 +393,47 @@ class AtomicDirectoryLock(object):
             marker = owner.get("heartbeat_at") or owner.get("created_at")
             created = parse_time(marker)
             age = (utc_naive_now() - created).total_seconds()
-            return age > self.stale_seconds
+            return age > self.stale_seconds, owner.get("token")
         except Exception:
             # A lock directory without a readable owner file is either being
             # created right now or was left behind by a crash.  Fall back to
             # the directory mtime so a half-written lock is not stolen.
             try:
                 age = time.time() - os.path.getmtime(self.lock_dir)
-                return age > self.stale_seconds
+                # No readable owner file means no token to pin, so the reclaim
+                # cannot be checked; it stays best-effort for this case.
+                return age > self.stale_seconds, None
             except OSError:
-                return False
+                return False, None
 
-    def _reclaim_stale(self):
+    def _reclaim_stale(self, expected_token=None):
+        """Move a stale lock aside so exactly one contender can win.
+
+        The rename is atomic, but the decision that preceded it was not: the
+        holder we judged stale may have released and a fresh holder may have
+        taken the directory in between.  Renaming then would steal a live lock.
+        So the moved directory is checked against the owner we judged, and put
+        back when it turns out to be someone else's.
+        """
         aside = "%s.stale-%s" % (self.lock_dir, uuid.uuid4().hex)
         try:
             os.rename(self.lock_dir, aside)
         except OSError:
             return False
+        if expected_token is not None:
+            try:
+                moved = read_json(os.path.join(aside, "owner.json")).get("token")
+            except Exception:
+                moved = None
+            if moved != expected_token:
+                try:
+                    os.rename(aside, self.lock_dir)
+                    return False
+                except OSError:
+                    # The slot was taken again while we held the directory
+                    # aside; dropping it here would delete that owner's lock,
+                    # so leave the copy and let the caller retry.
+                    return False
         shutil.rmtree(aside, ignore_errors=True)
         return True
 
@@ -405,9 +444,19 @@ class AtomicDirectoryLock(object):
             try:
                 os.mkdir(self.lock_dir)
             except OSError:
-                if os.path.isdir(self.lock_dir) and self._stale():
-                    if self._reclaim_stale():
+                try:
+                    stale, owner_token = (
+                        self._stale_owner() if os.path.isdir(self.lock_dir) else (False, None)
+                    )
+                    if stale and self._reclaim_stale(owner_token):
                         continue
+                except OSError as exc:
+                    # A contender removing the directory underneath us is a
+                    # lost race, not a broken Store.  Callers distinguish
+                    # LockError from a real failure.
+                    raise LockError(
+                        "failed while contending for %s: %s" % (self.lock_dir, exc)
+                    )
                 if time.time() >= deadline:
                     raise LockError("timed out acquiring project lock: %s" % self.lock_dir)
                 time.sleep(0.05)

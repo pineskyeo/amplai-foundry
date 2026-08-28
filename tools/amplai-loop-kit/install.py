@@ -676,10 +676,18 @@ class Installer(object):
             if stripped == "":
                 removals.append(rel)
                 continue
-            if rel in created:
-                # The kit brought this file into existence, so what remains
-                # after stripping is only the header the kit wrote.  Leaving it
-                # would make an uninstall look incomplete.
+            if rel in created and not self._only_kit_header(rel, stripped, item):
+                # We created the file, but the application has written into it
+                # since.  Deleting it would take their content with ours, so
+                # strip our section and leave the rest.
+                self.notes.append(
+                    "%s was created by this kit but now has content outside the "
+                    "managed section; the section was removed and the file kept" % rel
+                )
+            elif rel in created:
+                # The kit brought this file into existence and nothing but our
+                # own header remains, so leaving it would make an uninstall
+                # look incomplete.
                 removals.append(rel)
                 continue
             mode = stat.S_IMODE(os.stat(dest).st_mode)
@@ -780,6 +788,21 @@ class Installer(object):
         report["removed_directories"] = self._prune_empty_dirs(emptied)
         report["backup_dir"] = backup_dir
         return report
+
+    @staticmethod
+    def _only_kit_header(rel, stripped, item):
+        """True when what survives stripping is just the header we wrote.
+
+        `create_header` is what the installer puts at the top of a file it had
+        to create.  Anything beyond it belongs to the application.
+        """
+        header = (item.get("create_header") or "").strip()
+        remainder = (stripped or "").strip()
+        if not remainder:
+            return True
+        if not header:
+            return False
+        return remainder == header.strip()
 
     def _prune_empty_dirs(self, candidates):
         """Delete directories this uninstall emptied, walking upwards.
