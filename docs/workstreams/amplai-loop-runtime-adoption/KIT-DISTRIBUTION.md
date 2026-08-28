@@ -9,6 +9,35 @@
 배포 명령   scripts/kit_distribute.py
 ```
 
+## 현재 설치 상태 (2026-08-28)
+
+```text
+amplai-foundry   2.3.0   설치됨
+synapse          2.3.0   설치됨
+cortex           미설치   배포했다가 제거했다 — 아래 참조
+```
+
+### cortex 를 제거한 이유
+
+cortex 에는 `.ai-team` 최상위 디렉토리를 **정확히 일곱으로 못박은 test** 가 있다.
+
+```python
+# cortex:tests/ai/test_loop_runtime_v2.py — test_ai_team_has_no_new_top_level_directory
+self.assertEqual(
+    {"contracts", "evidence", "knowledge", "policy", "rules", "runtime", "verifiers"},
+    actual)
+```
+
+kit 이 `install`·`local`·`backups` 셋을 더해 이 test 가 깨졌다. **세 앱 중 cortex 에만
+있는 규약이다** — synapse 의 `.ai-team` 에는 이미 40개 넘는 디렉토리가 있고 그 test 가
+없으며, 이 저장소는 `D-051` 이 각주로 처리했다.
+
+그 test 를 고치는 것은 `ALR-006` contract 의 `non_goals`(대상 저장소의 규약을 바꾸는 것)가
+막는다. **cortex 가 규약을 갱신하면 다시 배포한다.** `targets.json` 의 항목은 그대로 두어
+근거를 남겼다.
+
+제거는 완전했다 — `git status` 에 kit 흔적 0, `tests/ai` 99 passed, `doctor` PASS.
+
 ## 경로 설정 — 두 층
 
 절대경로는 커밋하지 않는다. kit 자신이 `apps/<id>.json`(커밋)과
@@ -90,6 +119,11 @@ python3 tools/amplai-loop-kit/install.py --target <path> --uninstall
 ```
 
 복제본에서 실행해 확인한 결과다. **17건이 설치되고 제거 후 2건이 남는다.**
+
+2.3.0 은 **비워진 디렉토리도 정리한다.** 파일만 지우면 `.ai-team/install`·`.ai-team/local`
+같은 빈 디렉토리가 남는데, `git` 이 빈 디렉토리를 추적하지 않아 `git status` 로는 안 보인다.
+cortex 에서 그것 때문에 규약 test 가 제거 후에도 실패했고, 그 발견으로 고쳤다. 위로 올라가며
+지우되 **비어 있지 않은 디렉토리에서 멈추므로** 앱이 쓰는 경로는 살아남는다.
 
 | 남는 것 | 성격 | 처리 |
 |---|---|---|

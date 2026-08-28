@@ -11,64 +11,15 @@
 
 **Design source**: `specs/007-kit-source-and-distribution/spec.md`, `specs/007-kit-source-and-distribution/plan.md`, `specs/007-kit-source-and-distribution/work-contract.json`
 
-## Phase 1
+## Not scheduled
 
-- [ ] ALR-006-T001 kit 정본을 이 저장소로 이관하고 2.3.0 개발본을 연다
-  - manifest: `task-manifests/ALR-006-T001.yaml`
-  - files: `tools/amplai-loop-kit/**`, `specs/007-kit-source-and-distribution/**`
-  - verify: `python3 tools/amplai-loop-kit/selftest.py`
-  - verify: `python3 scripts/loopctl.py doctor`
-
-## Phase 2
-
-- [ ] ALR-006-T002 kit 문서에서 특정 앱 전제를 걷어내 공용 패키지로 만든다
-  - manifest: `task-manifests/ALR-006-T002.yaml`
-  - depends on: ALR-006-T001
-  - files: `tools/amplai-loop-kit/README.md`, `tools/amplai-loop-kit/reference/**`, `tools/amplai-loop-kit/examples/**`, `tools/amplai-loop-kit/payload/.ai-team/runtime/INSTALLATION.md`, `tools/amplai-loop-kit/manifest.json`, `tools/amplai-loop-kit/CHECKSUMS.sha256`, `specs/007-kit-source-and-distribution/**`
-  - verify: `python3 tools/amplai-loop-kit/selftest.py`
-  - verify: `python3 tools/amplai-loop-kit/install.py --target . --app-id amplai-foundry --project-id ai-platform --dry-run`
-  - verify: `python3 scripts/loopctl.py doctor`
-- [ ] ALR-006-T003 supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
-  - manifest: `task-manifests/ALR-006-T003.yaml`
-  - depends on: ALR-006-T001
-  - files: `tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py`, `tools/amplai-loop-kit/payload/store/**`, `tools/amplai-loop-kit/payload/tests/ai/**`, `tools/amplai-loop-kit/install.py`, `tools/amplai-loop-kit/manifest.json`, `tools/amplai-loop-kit/CHECKSUMS.sha256`, `tools/amplai-loop-kit/payload/.ai-team/runtime/LOCAL_SUPERVISOR.md`, `specs/007-kit-source-and-distribution/**`
-  - verify: `python3 tools/amplai-loop-kit/selftest.py`
-  - verify: `python3 scripts/loopctl.py doctor`
-- [ ] ALR-006-T004 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
-  - manifest: `task-manifests/ALR-006-T004.yaml`
-  - depends on: ALR-006-T001
-  - files: `tools/amplai-loop-kit/distribution/**`, `.ai-team/local/kit-targets.json`, `.gitignore`, `specs/007-kit-source-and-distribution/**`
-  - verify: `git check-ignore -v .ai-team/local/kit-targets.json`
-  - verify: `python3 scripts/loopctl.py doctor`
-
-## Phase 3
-
-- [ ] ALR-006-T005 배포 래퍼가 여러 대상을 안전하게 순회한다
-  - manifest: `task-manifests/ALR-006-T005.yaml`
-  - depends on: ALR-006-T002, ALR-006-T004
-  - files: `scripts/kit_distribute.py`, `tests/**`, `specs/007-kit-source-and-distribution/**`
-  - verify: `.venv/bin/python -m pytest tests -k kit_distribute -q`
-  - verify: `.venv/bin/python scripts/kit_distribute.py --dry-run`
-  - verify: `.venv/bin/ruff check scripts/kit_distribute.py`
-  - verify: `.venv/bin/python .ai-team/verifiers/run.py --profile v2`
-
-## Phase 4
-
-- [ ] ALR-006-T007 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
-  - manifest: `task-manifests/ALR-006-T007.yaml`
-  - depends on: ALR-006-T005
-  - files: `docs/workstreams/amplai-loop-runtime-adoption/**`, `specs/007-kit-source-and-distribution/**`
-  - verify: `python3 scripts/loopctl.py doctor`
-
-## Blocked — DO NOT EXECUTE
-
-아래는 외부 의존이 안 풀려 실행 단계에 넣지 않았다. 의존이 풀리면 manifest 의 status 를 바꾸고 이 파일을 재생성한다.
-
-- ALR-006-T006 세 앱에 kit 2.3.0 을 실제로 배포한다
-  - manifest: `task-manifests/ALR-006-T006.yaml`
-  - blocked by EXT-GIT-PUBLISH: git_publish 승인 — permission check 가 prohibited 를 낸다
-  - blocked by EXT-TARGET-CLEAN: synapse·cortex 저장소의 working tree 가 깨끗해야 한다
-  - blocked by EXT-STORE-PATH: Store 경로(AMPLAI_PROJECT_HOME)를 사람이 정해야 한다
+- ALR-006-T001 (done) kit 정본을 이 저장소로 이관하고 2.3.0 개발본을 연다
+- ALR-006-T002 (done) kit 문서에서 특정 앱 전제를 걷어내 공용 패키지로 만든다
+- ALR-006-T003 (done) supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
+- ALR-006-T004 (done) 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
+- ALR-006-T005 (done) 배포 래퍼가 여러 대상을 안전하게 순회한다
+- ALR-006-T006 (done) 세 앱에 kit 2.3.0 을 실제로 배포한다
+- ALR-006-T007 (done) 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
 
 ## Open questions
 

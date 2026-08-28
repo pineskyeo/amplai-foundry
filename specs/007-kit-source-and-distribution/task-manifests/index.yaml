@@ -22,14 +22,14 @@ source:
 tasks:
   - id: ALR-006-T001
     title: kit 정본을 이 저장소로 이관하고 2.3.0 개발본을 연다
-    status: ready
+    status: done
     depends_on: []
     requirements:
       - AC-001
       - AC-002
   - id: ALR-006-T002
     title: kit 문서에서 특정 앱 전제를 걷어내 공용 패키지로 만든다
-    status: ready
+    status: done
     depends_on:
       - ALR-006-T001
     requirements:
@@ -37,7 +37,7 @@ tasks:
       - AC-004
   - id: ALR-006-T003
     title: supervisor 가 스스로 단일 인스턴스 락을 잡아 우회 경로를 닫는다
-    status: ready
+    status: done
     depends_on:
       - ALR-006-T001
     requirements:
@@ -46,14 +46,14 @@ tasks:
       - AC-007
   - id: ALR-006-T004
     title: 배포 대상 경로를 커밋본과 host-local 두 층으로 설정한다
-    status: ready
+    status: done
     depends_on:
       - ALR-006-T001
     requirements:
       - AC-008
   - id: ALR-006-T005
     title: 배포 래퍼가 여러 대상을 안전하게 순회한다
-    status: ready
+    status: done
     depends_on:
       - ALR-006-T002
       - ALR-006-T004
@@ -63,7 +63,7 @@ tasks:
       - AC-012
   - id: ALR-006-T006
     title: 세 앱에 kit 2.3.0 을 실제로 배포한다
-    status: blocked
+    status: done
     depends_on:
       - ALR-006-T003
       - ALR-006-T005
@@ -72,7 +72,7 @@ tasks:
       - AC-014
   - id: ALR-006-T007
     title: 제거 절차를 확정하고 synapse 사본 삭제 PR 을 준비한다
-    status: ready
+    status: done
     depends_on:
       - ALR-006-T005
     requirements:
@@ -171,7 +171,9 @@ coverage:
   uncovered: []
 
 open_questions:
+  # 둘 다 2026-08-28 에 해소됐다. 기록으로 남긴다.
   - id: OQ-01
+    resolved: "2026-08-28 — ~/workspace/amplai-project 로 정했고 Store 가 생성됐다"
     question: >
       Store(AMPLAI_PROJECT_HOME)를 어느 경로에 만들 것인가. kit README 예시는
       ~/workspace/amplai-project 이지만 이 저장소가 정한 값이 없다.
@@ -180,6 +182,7 @@ open_questions:
     note: >
       T003 은 Store 없는 경로도 다루므로 막히지 않는다. T006 착수 전에 사람이 정해야 한다.
   - id: OQ-02
+    resolved: "2026-08-28 — 사용자가 승인했다"
     question: git_publish 승인. permission check 가 prohibited 를 낸다.
     blocks:
       - ALR-006-T006
@@ -192,3 +195,9 @@ update_history:
       "배포할 수 있는 환경 제공" 이므로 T006(실제 배포)만 blocked 로 두고 나머지를 ready 로
       둔다. T006 은 git_publish 승인과 Store 경로 결정이 있으면 ready 로 올린다.
     source_revision: 245fc37
+  - date: "2026-08-28"
+    summary: >
+      일곱 task 를 전부 실행했다. OQ-01·OQ-02 가 해소돼 T006 을 blocked 에서 done 으로
+      옮겼다. contract lens 가 index 와 per-task manifest 의 status 가 어긋난 것을
+      잡아 여기서 맞췄다 (C-4).
+    source_revision: 5febffa

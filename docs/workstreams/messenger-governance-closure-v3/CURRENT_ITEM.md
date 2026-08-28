@@ -49,7 +49,7 @@ message projection과 retry는 background path에서 수행한다.
   `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
   round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
   세 reviewer 가 착수·종료에 확인했고 regression 은 mutation 9회 전후로도 확인했다. 무손상
-- **Tests: `1494 passed, 4 deselected` (2026-08-28, `ALR-006` 완료).** 기준선이 1409 에서
+- **Tests: `1496 passed, 4 deselected` (2026-08-28, `ALR-006` review 반영 후).** 기준선이 1409 에서
   두 번 움직였다. 두 방법으로 셌다 — collect 1494 / 실행 1494.
 
   ```text
@@ -59,9 +59,11 @@ message projection과 retry는 background path에서 수행한다.
   +64   tests/ai/                          (T006 배포로 kit 이 설치됐다)
   +1    test_kit_distribute.py 에 1건 추가 (install record 필드명 회귀)
   = 1494
+  +2    tests/ai/ 에 빈 디렉토리 회귀 test (review C-3 후속)
+  = 1496
   ```
 
-  **`round 22 는 1494 를 기준으로 센다.`** `tests/ai/` 는 kit 이 설치한 것이라 이 저장소가
+  **`round 22 는 1496 을 기준으로 센다.`** `tests/ai/` 는 kit 이 설치한 것이라 이 저장소가
   직접 쓰지 않는다 — 정본은 `tools/amplai-loop-kit/payload/tests/ai/` 이고 거기서 고친다
 - (이전) Tests: full `1409 passed, 4 deselected` (wave 8 착수 시 1301 → +108, wave 11 이 +6,
   12 가 +4, 13 이 +9, 14 가 +8). 두 방법으로 셌다 — `--collect-only` 가 1409

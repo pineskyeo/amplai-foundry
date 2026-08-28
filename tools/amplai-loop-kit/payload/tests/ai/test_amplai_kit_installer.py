@@ -210,6 +210,42 @@ class InstallerTest(unittest.TestCase):
         self.assertEqual([rule["id"] for rule in policy["path_rules"]], ["app-owned"])
         self.assertEqual(policy["forbidden_automatic_actions"], ["app owned prohibition"])
 
+    def test_uninstall_leaves_no_directory_it_created(self):
+        """An app that counts its own top-level directories must see none of ours.
+
+        Removing only files left `.ai-team/install`, `.ai-team/local` and
+        friends behind as empty directories.  A target whose convention pins
+        the set of `.ai-team` subdirectories still failed after a "successful"
+        uninstall, and `git status` did not show it because git does not track
+        empty directories.
+        """
+        before = sorted(os.listdir(os.path.join(self.target, ".ai-team")))
+        self.run_install()
+        stdout, _stderr = self.run_install(extra=["--uninstall"])
+        report = json.loads(stdout)
+
+        after = sorted(os.listdir(os.path.join(self.target, ".ai-team")))
+        created_and_left = [name for name in after if name not in before]
+        # backups is deliberate: it holds the copies taken before removal.
+        self.assertEqual(created_and_left, ["backups"])
+
+        for rel in (".ai-team/install", ".ai-team/local", ".ai-team/runtime/schemas"):
+            self.assertFalse(
+                os.path.isdir(os.path.join(self.target, rel)),
+                "%s survived the uninstall" % rel,
+            )
+        self.assertIn(".ai-team/install", report["removed_directories"])
+
+    def test_uninstall_keeps_a_directory_the_app_still_uses(self):
+        """Pruning walks upward but must stop at anything not empty."""
+        keep = os.path.join(self.target, "scripts", "app_tool.py")
+        write(keep, "# owned by the application\n")
+        self.run_install()
+        self.run_install(extra=["--uninstall"])
+        # scripts/ held our files and one of theirs; theirs keeps it alive.
+        self.assertTrue(os.path.isdir(os.path.join(self.target, "scripts")))
+        self.assertTrue(os.path.exists(keep))
+
     def test_project_store_is_created_and_registered(self):
         home = os.path.join(self.temp, "store")
         stdout, _stderr = self.run_install(

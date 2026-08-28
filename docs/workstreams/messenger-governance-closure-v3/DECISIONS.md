@@ -1874,6 +1874,12 @@
   kit 2.2.0 `scripts/amplai_supervisor.py`·`amplai_runtime.py`·`manifest.json`,
   `.ai-team/runtime/LOCAL_SUPERVISOR.md`.
 
+- **Amended by `ALR-006` 구현 (2026-08-28).** 이 Decision 의 그림은 `supervisor/` 에 넷을
+  뒀다 — `amplai_supervisor.py`, `amplai_runtime.py`, `VERSION`, `run`. **구현은 셋이다** —
+  `run`, `VERSION`, `source.json`. 락이 `amplai_supervisor.py` 안으로 들어가면서(`D-053`)
+  Store 가 코드 사본을 가질 이유가 없어졌고, 대신 어느 앱 사본을 실행할지 가리키는
+  `source.json` 이 필요해졌다. **이 Decision 이 걱정한 runtime 사본 드리프트가 그래서
+  아예 생기지 않는다.** 실행은 앱 사본을 쓰고 `run` 이 버전을 대조해 fail-closed 한다.
 - **Amended by `D-053` (2026-08-28).** 이 Decision 의 제약 "kit 원본을 고치지 않는다 —
   PR #81 과 독립이어야 한다" 가 무효화됐다. PR #81 이 머지됐고 `D-053` 이 kit 정본을
   amplai-foundry 로 이관했다. **정본을 가지면 단일 인스턴스 락을 `amplai_supervisor.py`

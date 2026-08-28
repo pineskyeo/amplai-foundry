@@ -768,12 +768,39 @@ class Installer(object):
         self.backup_dir = backup_dir
         for action in actions:
             atomic_write(safe_destination(self.target, action.rel), action.data, action.mode)
+        emptied = set()
         for rel in removals:
             dest = safe_destination(self.target, rel)
             if os.path.exists(dest):
                 os.unlink(dest)
+                emptied.add(os.path.dirname(dest))
+        # Removing only files leaves the directories this kit created behind.
+        # A target whose convention counts its own top-level directories still
+        # sees them, so an uninstall that stops at files is not an uninstall.
+        report["removed_directories"] = self._prune_empty_dirs(emptied)
         report["backup_dir"] = backup_dir
         return report
+
+    def _prune_empty_dirs(self, candidates):
+        """Delete directories this uninstall emptied, walking upwards.
+
+        Stops at the target root and never touches a directory that still has
+        anything in it, so a path shared with the application survives.
+        """
+        removed = []
+        root = os.path.abspath(self.target)
+        for start in sorted(candidates, key=len, reverse=True):
+            current = os.path.abspath(start)
+            while current.startswith(root) and current != root:
+                try:
+                    if os.listdir(current):
+                        break
+                    os.rmdir(current)
+                except OSError:
+                    break
+                removed.append(os.path.relpath(current, root).replace(os.sep, "/"))
+                current = os.path.dirname(current)
+        return sorted(set(removed))
 
     def plan(self):
         self.validate_package()
