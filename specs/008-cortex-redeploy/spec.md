@@ -198,24 +198,19 @@ cortex tree                       untracked 둘, 세션 시작 시점과 동일
 다음에 같은 실험을 하려면 **`--project-home` 에 임시 Store 를 준다.** 실제 Store 를 주면
 그 실험이 fleet 상태를 바꾼다.
 
-## Documentation impact — Work 수준 `STALE` 은 상속된 것이다
+## Documentation impact — 상속된 `STALE` 이었고 확인됐다
+
+설계 시점에는 이랬다.
 
 ```text
-docs validate --repo                      FRESH   (documents_scanned 9, errors 0)
+docs validate --repo                      FRESH
 docs impact specs/008-cortex-redeploy     STALE   (impacted 8건)
 ```
 
-**둘이 어긋나는 이유는 도구의 기준점이다.** `loopv2.py:1383 work_base_commit()` 이
-`merge-base HEAD origin/main` 을 쓰고, 이 브랜치는 origin/main 대비 41 commit 이다. 그래서
-`collect_changed_sources` 가 **이 브랜치의 모든 앞선 Work 가 바꾼 파일** 을 ALR-007 의
-변경으로 돌린다.
+`loopv2.py:1383 work_base_commit()` 이 `merge-base HEAD origin/main` 을 쓰는데 그때
+브랜치가 main 대비 41 commit 이라, **앞선 Work 들이 바꾼 파일까지 이 Work 의 변경으로**
+돌아갔다. impacted 에 `docs/VISION.md`·`docs/ROADMAP.md` 처럼 cortex guard test 와 아무
+관계 없는 것들이 들어 있었다.
 
-impacted 목록이 그것을 보여 준다 — `docs/VISION.md`, `docs/ROADMAP.md`,
-`docs/MEMORY-DOMAIN-MODEL.md` 는 cortex guard test 와 아무 관계가 없다. `specs/007` 의
-`doc-impact.json` 은 `RESOLVED` 이고, 그 Work 들은 각자 자기 doc impact 를 이미 닫았다.
-
-**이 설계가 만든 staleness 가 아니다.** `/work` 가 실제로 코드를 바꾼 뒤 다시 생성하면
-그 시점의 변경만 잡힌다. 이 파일을 지우지 않고 남기는 이유는 판단 근거를 함께 남기기
-위해서다.
-
-`/design` 의 Documentation Freshness 판정 기준은 repository 수준이고 그것은 `FRESH` 다.
+**`PR #2` 가 머지된 뒤 다시 생성하니 `NOT_APPLICABLE`(impacted 0)이 나왔다.** 기준점이
+정상화되자 사라진 것이므로 이 Work 가 만든 staleness 가 아니었다는 것이 확인됐다.

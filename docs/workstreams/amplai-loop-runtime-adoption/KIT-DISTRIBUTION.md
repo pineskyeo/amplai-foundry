@@ -12,14 +12,18 @@
 ## 현재 설치 상태 (2026-08-28)
 
 ```text
-amplai-foundry   2.3.0   설치됨
-synapse          2.3.0   설치됨
-cortex           미설치   배포했다가 제거했다 — 아래 참조
+amplai-foundry   2.3.1   설치됨
+synapse          2.3.1   설치됨.  벤더링된 정본은 지웠다 (D-053, PR #82)
+cortex           2.3.1   설치됨.  규약 완화가 선행됐다 (D-054, PR #146)
 ```
 
-### cortex 를 제거한 이유
+**`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** 세 저장소의 `main` 이 전부 2.3.1
+이어도 로컬 작업 사본이 다른 브랜치에 있으면 mismatch 로 보고한다. 그게 맞는 동작이다 —
+배포는 파일시스템에 하는 것이지 remote 에 하는 것이 아니다.
 
-cortex 에는 `.ai-team` 최상위 디렉토리를 **정확히 일곱으로 못박은 test** 가 있다.
+### cortex 를 되돌렸다가 다시 넣은 경위
+
+cortex 에는 `.ai-team` 최상위 디렉토리를 **정확히 일곱으로 못박은 test** 가 있었다.
 
 ```python
 # cortex:tests/ai/test_loop_runtime_v2.py — test_ai_team_has_no_new_top_level_directory
@@ -29,14 +33,22 @@ self.assertEqual(
 ```
 
 kit 이 `install`·`local`·`backups` 셋을 더해 이 test 가 깨졌다. **세 앱 중 cortex 에만
-있는 규약이다** — synapse 의 `.ai-team` 에는 이미 40개 넘는 디렉토리가 있고 그 test 가
+있는 규약이었다** — synapse 의 `.ai-team` 에는 이미 40개 넘는 디렉토리가 있고 그 test 가
 없으며, 이 저장소는 `D-051` 이 각주로 처리했다.
 
-그 test 를 고치는 것은 `ALR-006` contract 의 `non_goals`(대상 저장소의 규약을 바꾸는 것)가
-막는다. **cortex 가 규약을 갱신하면 다시 배포한다.** `targets.json` 의 항목은 그대로 두어
-근거를 남겼다.
+`ALR-006` 은 그 test 를 고치는 것이 contract 의 `non_goals` 에 막혀 되돌렸다.
+**`D-054` 가 그 제약을 풀었다** — 삭제가 아니라 kit 3개 예외로 **완화**한다. 단언을 둘로
+나눠 핵심 일곱의 부재와 예외 밖 디렉토리를 각각 잡는다.
 
-제거는 완전했다 — `git status` 에 kit 흔적 0, `tests/ai` 99 passed, `doctor` PASS.
+```text
+cortex PR #146    test 완화 + .ai-team/README.md 예외 각주 + kit 2.3.1 설치
+검증              183 tests OK (skipped 21), verifier v2 PASS, doctor PASS
+                  .ai-team/zzz 생성과 .ai-team/rules 제거로 양방향 FAIL 을 실행 확인
+```
+
+`high-risk-ack` 이 kit 의 schema 여덟을 잡아서 `[contract-ok]` 로 명시 승인했다. 그 rule 은
+equipment deploy·recipe 생성 계약을 겨냥한 것인데 경로만 겹친다 — kit 갱신마다 걸릴 것이라
+경로 조건을 좁힐지는 cortex 가 정할 일이다.
 
 ## 경로 설정 — 두 층
 
@@ -167,7 +179,20 @@ Store 는 제거 대상이 아니다 — `install.py --uninstall` 이 건드리�
 
 **삭제로 깨지는 것은 없다.** 정리할 것은 죽은 path_rule 하나다.
 
-삭제 PR 은 그 저장소의 일이므로 여기서 열지 않는다. 위 표가 그 PR 의 근거다.
+**삭제는 끝났다** — synapse PR #82 (2026-08-28 머지)가 위 표를 근거로 39파일을 지웠다.
+설치 산출물은 2.3.1 로 함께 갱신됐다.
+
+정본을 안 지우면 실제로 깨진다는 것을 실측했다. 2.2.0 소스와 2.3.1 설치본이 공존하면
+installer/supervisor test 가 벤더링된 payload 와 설치본을 대조하다 실패한다.
+
+```text
+main baseline            154 tests, 실패 3
+2.3.1 설치만             181 tests, 실패 5 + 오류 6
+2.3.1 설치 + 정본 삭제   181 tests, 실패 2 (skipped 21)
+```
+
+남은 둘(`test_claim_evidence_paths_exist`, `test_knowledge_garden_scan_passes`)은
+`origin/main` 에서도 실패하는 무관한 것이다.
 
 ## 재설치가 되돌리는 것
 
