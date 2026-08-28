@@ -20,7 +20,11 @@ dependencies = [
 dev = [
   "mypy>=1.11,<2",
   "pytest>=8.3,<9",
-  "ruff>=0.6,<1",
+  # 상한을 두는 이유: CI 는 매번 최신을 받고 로컬은 설치된 것을 쓴다. 0.16 이 markdown
+  # 코드 블록 포맷을 켜면서 로컬 verifier 는 PASS 인데 CI 만 FAIL 인 상태가 됐다.
+  # 그 대상에 DECISIONS.md 같은 역사 기록이 들어 있어 포맷터에 맞춰 다시 쓸 수 없다.
+  # 올릴 때는 별도 Work 로 diff 를 보고 올린다.
+  "ruff>=0.15.21,<0.16",
   "types-pyyaml>=6.0.12.20240808",
 ]
 
