@@ -7,6 +7,9 @@ with FastAPI/ASGI later; the contract remains the service methods below.
 from __future__ import annotations
 
 import json
+import sqlite3
+import sys
+import traceback
 from collections.abc import Callable, Iterable
 from dataclasses import asdict
 from http import HTTPStatus
@@ -19,12 +22,16 @@ from amplai_foundry.control_plane.errors import (
     ConflictError,
     ControlPlaneError,
     NotFoundError,
+    PayloadTooLargeError,
     ValidationError,
 )
 from amplai_foundry.control_plane.projections import ProjectionService
 from amplai_foundry.control_plane.service import ControlPlaneService
 
 StartResponse = Callable[[str, list[tuple[str, str]]], Any]
+
+# 신뢰 경계다. 클라이언트가 선언한 길이를 그대로 읽지 않는다.
+MAX_BODY_BYTES = 1 << 20
 
 
 class ControlPlaneWSGIApp:
@@ -45,10 +52,23 @@ class ControlPlaneWSGIApp:
             status, payload = 404, {"error": str(error)}
         except ConflictError as error:
             status, payload = 409, {"error": str(error)}
+        except PayloadTooLargeError as error:
+            status, payload = 413, {"error": str(error)}
         except (ValidationError, ValueError, json.JSONDecodeError) as error:
             status, payload = 400, {"error": str(error)}
         except ControlPlaneError as error:
             status, payload = 500, {"error": str(error)}
+        except sqlite3.IntegrityError:
+            status, payload = 409, {"error": "STATE_CONFLICT"}
+            self._log_unexpected()
+        except sqlite3.Error:
+            status, payload = 503, {"error": "STORE_UNAVAILABLE"}
+            self._log_unexpected()
+        except Exception:
+            # A WSGI application must answer even when something below it is
+            # broken.  The detail goes to the log, never to the client.
+            status, payload = 500, {"error": "INTERNAL_ERROR"}
+            self._log_unexpected()
         body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         phrase = HTTPStatus(status).phrase
         start_response(
@@ -110,6 +130,11 @@ class ControlPlaneWSGIApp:
         raise NotFoundError("ROUTE_NOT_FOUND")
 
     @staticmethod
+    def _log_unexpected() -> None:
+        print("control-plane: unhandled error", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+
+    @staticmethod
     def _bearer(environ: dict[str, Any]) -> str:
         header = str(environ.get("HTTP_AUTHORIZATION") or "")
         prefix = "Bearer "
@@ -118,10 +143,33 @@ class ControlPlaneWSGIApp:
         return header[len(prefix) :].strip()
 
     @staticmethod
-    def _body(environ: dict[str, Any]) -> dict[str, Any]:
+    def _content_length(environ: dict[str, Any]) -> int:
+        """Decide how much to read before touching the stream.
+
+        The declared length is attacker-controlled, so it is validated and capped
+        first.  Reading it unchecked let a client name an arbitrary size, and a
+        negative value turned into `read(-1)` — read until EOF (`D-056`).
+        """
+        declared = str(environ.get("CONTENT_LENGTH") or "").strip()
+        if not declared:
+            return 0
+        try:
+            length = int(declared)
+        except ValueError:
+            raise ValidationError("CONTENT_LENGTH_INVALID") from None
+        if length < 0:
+            raise ValidationError("CONTENT_LENGTH_INVALID")
+        if length > MAX_BODY_BYTES:
+            raise PayloadTooLargeError("PAYLOAD_TOO_LARGE")
+        return length
+
+    @classmethod
+    def _body(cls, environ: dict[str, Any]) -> dict[str, Any]:
+        length = cls._content_length(environ)
         stream = environ.get("wsgi.input")
-        length = int(environ.get("CONTENT_LENGTH") or 0)
         raw = stream.read(length) if stream is not None and length else b"{}"
+        if length and len(raw) != length:
+            raise ValidationError("REQUEST_BODY_TRUNCATED")
         value = json.loads(raw.decode("utf-8"))
         if not isinstance(value, dict):
             raise ValidationError("JSON_OBJECT_REQUIRED")

@@ -29,3 +29,7 @@ class LeaseError(ControlPlaneError):
 
 class ValidationError(ControlPlaneError):
     """A request violates a Control Plane contract."""
+
+
+class PayloadTooLargeError(ControlPlaneError):
+    """A request body exceeds the boundary's declared maximum."""

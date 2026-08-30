@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ from amplai_foundry.control_plane.errors import (
     LeaseError,
     NotFoundError,
 )
+from amplai_foundry.control_plane.http_api import MAX_BODY_BYTES
 
 
 @pytest.fixture
@@ -333,3 +335,167 @@ def test_two_tenants_sharing_a_project_id_do_not_collide(platform) -> None:
             project_id="project-a",
             raw_token=token_b.raw_token,
         )
+
+
+def raw_wsgi(app, *, environ: dict[str, object]):
+    """Drive the app with a hand-built environ and report whether it kept the contract.
+
+    A WSGI application must call `start_response` and return an iterable body for
+    every outcome, including failures.  These tests assert that, so the helper
+    reports the escape rather than swallowing it.
+    """
+    captured: dict[str, object] = {}
+
+    def start_response(status, headers):
+        captured["status"] = status
+        captured["headers"] = headers
+
+    body = b"".join(app(environ, start_response))
+    return captured.get("status"), json.loads(body)
+
+
+def authed_environ(token: str, *, body: bytes, path: str, idem: str = "guard-1"):
+    return {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": path,
+        "CONTENT_LENGTH": str(len(body)),
+        "wsgi.input": io.BytesIO(body),
+        "HTTP_AUTHORIZATION": f"Bearer {token}",
+        "HTTP_IDEMPOTENCY_KEY": idem,
+    }
+
+
+@pytest.mark.parametrize(
+    "limit",
+    [[1], {"a": 1}, True, 0, 501],
+    ids=["list", "object", "bool", "zero", "above-max"],
+)
+def test_context_request_rejects_a_limit_that_is_not_a_bounded_int(platform, limit) -> None:
+    _store, _auth, token, service = platform
+    app = ControlPlaneWSGIApp(service)
+    raw = json.dumps({"query": "q", "limit": limit}).encode("utf-8")
+    status, body = raw_wsgi(
+        app,
+        environ=authed_environ(
+            token.raw_token,
+            body=raw,
+            path="/v1/projects/project-a/context-requests",
+            idem=f"limit-{limit!r}",
+        ),
+    )
+    assert status is not None and status.startswith("400"), status
+    assert "LIMIT" in body["error"]
+
+
+@pytest.mark.parametrize("attempts", [0, 11, "many"], ids=["zero", "above-max", "text"])
+def test_context_request_rejects_an_out_of_range_max_attempts(platform, attempts) -> None:
+    _store, _auth, token, service = platform
+    app = ControlPlaneWSGIApp(service)
+    raw = json.dumps({"query": "q", "max_attempts": attempts}).encode("utf-8")
+    status, body = raw_wsgi(
+        app,
+        environ=authed_environ(
+            token.raw_token,
+            body=raw,
+            path="/v1/projects/project-a/context-requests",
+            idem=f"attempts-{attempts!r}",
+        ),
+    )
+    assert status is not None and status.startswith("400"), status
+    assert "MAX_ATTEMPTS" in body["error"]
+
+
+def test_context_request_accepts_a_numeric_string_limit(platform) -> None:
+    _store, _auth, token, service = platform
+    _status, response = service.request_context(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="limit-string",
+        request={"query": "q", "limit": "25"},
+    )
+    job = service.get_job(
+        job_id=response["job_id"], project_id="project-a", raw_token=token.raw_token
+    )
+    assert job.payload["limit"] == 25
+
+
+class RefusingStream:
+    """A body stream that fails the test if the boundary reads it."""
+
+    def read(self, size: int = -1) -> bytes:  # pragma: no cover - must not run
+        raise AssertionError("the oversized body must be rejected before it is read")
+
+
+def test_oversized_declared_body_is_rejected_without_reading_it(platform) -> None:
+    _store, _auth, token, service = platform
+    app = ControlPlaneWSGIApp(service)
+    status, body = raw_wsgi(
+        app,
+        environ={
+            "REQUEST_METHOD": "POST",
+            "PATH_INFO": "/v1/projects/project-a/decision",
+            "CONTENT_LENGTH": str(MAX_BODY_BYTES + 1),
+            "wsgi.input": RefusingStream(),
+            "HTTP_AUTHORIZATION": f"Bearer {token.raw_token}",
+            "HTTP_IDEMPOTENCY_KEY": "oversized-1",
+        },
+    )
+    assert status is not None and status.startswith("413"), status
+    assert body["error"] == "PAYLOAD_TOO_LARGE"
+
+
+@pytest.mark.parametrize("length", ["-1", "abc"], ids=["negative", "not-an-int"])
+def test_unusable_content_length_is_rejected(platform, length) -> None:
+    _store, _auth, token, service = platform
+    app = ControlPlaneWSGIApp(service)
+    status, body = raw_wsgi(
+        app,
+        environ={
+            "REQUEST_METHOD": "POST",
+            "PATH_INFO": "/v1/projects/project-a/decision",
+            "CONTENT_LENGTH": length,
+            "wsgi.input": RefusingStream(),
+            "HTTP_AUTHORIZATION": f"Bearer {token.raw_token}",
+            "HTTP_IDEMPOTENCY_KEY": f"length-{length}",
+        },
+    )
+    assert status is not None and status.startswith("400"), status
+    assert body["error"] == "CONTENT_LENGTH_INVALID"
+
+
+class ExplodingService:
+    """Stands in for any unexpected failure below the boundary."""
+
+    def __init__(self, service, error: BaseException) -> None:
+        self._service = service
+        self._error = error
+        self.store = service.store
+        self.auth = service.auth
+
+    def publish_reference(self, **_kwargs):
+        raise self._error
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_status"),
+    [
+        (sqlite3.IntegrityError("UNIQUE constraint failed: cp_objects.canonical_ref"), "409"),
+        (sqlite3.OperationalError("database is locked"), "503"),
+        (TypeError("int() argument must be a string"), "500"),
+        (RuntimeError("a leaked internal detail"), "500"),
+    ],
+    ids=["integrity", "operational", "type", "unexpected"],
+)
+def test_every_failure_still_produces_a_wsgi_response(platform, error, expected_status) -> None:
+    _store, _auth, token, service = platform
+    app = ControlPlaneWSGIApp(ExplodingService(service, error))
+    raw = json.dumps(envelope("decision", "CR-9-BOOM")).encode("utf-8")
+    status, body = raw_wsgi(
+        app,
+        environ=authed_environ(
+            token.raw_token, body=raw, path="/v1/projects/project-a/decision", idem="boom-1"
+        ),
+    )
+    assert status is not None and status.startswith(expected_status), status
+    assert "error" in body
+    assert str(error) not in json.dumps(body), "the boundary must not echo internal detail"

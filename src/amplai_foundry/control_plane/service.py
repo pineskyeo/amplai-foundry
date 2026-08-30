@@ -17,6 +17,30 @@ from amplai_foundry.control_plane.store import ControlPlaneStore, canonical_json
 
 IdempotentOperation = Callable[[sqlite3.Connection, Principal, str], tuple[int, dict[str, Any]]]
 
+CONTEXT_LIMIT_RANGE = (1, 500)
+CONTEXT_MAX_ATTEMPTS_RANGE = (1, 10)
+
+
+def bounded_int(value: object, *, default: int, minimum: int, maximum: int, field: str) -> int:
+    """Coerce a request field to an int inside a stated range, or refuse it.
+
+    `int()` on arbitrary JSON raised `TypeError` for a list or object, which the
+    WSGI boundary did not classify — the request escaped as an unhandled error
+    rather than a 400 (`D-056`).  `bool` is excluded explicitly because
+    `isinstance(True, int)` is true.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValidationError(f"{field}_INVALID")
+    try:
+        parsed = int(value)
+    except ValueError:
+        raise ValidationError(f"{field}_INVALID") from None
+    if not minimum <= parsed <= maximum:
+        raise ValidationError(f"{field}_OUT_OF_RANGE")
+    return parsed
+
 
 class ControlPlaneService:
     def __init__(self, store: ControlPlaneStore, auth: ApiTokenService | None = None) -> None:
@@ -221,10 +245,24 @@ class ControlPlaneService:
             tenant_id = principal.tenant_id
             job_id = f"job-{uuid.uuid4().hex}"
             now = utc_now()
+            limit = bounded_int(
+                request.get("limit"),
+                default=20,
+                minimum=CONTEXT_LIMIT_RANGE[0],
+                maximum=CONTEXT_LIMIT_RANGE[1],
+                field="LIMIT",
+            )
+            max_attempts = bounded_int(
+                request.get("max_attempts"),
+                default=3,
+                minimum=CONTEXT_MAX_ATTEMPTS_RANGE[0],
+                maximum=CONTEXT_MAX_ATTEMPTS_RANGE[1],
+                field="MAX_ATTEMPTS",
+            )
             payload = {
                 "query": query.strip(),
                 "filters": request.get("filters") or {},
-                "limit": int(request.get("limit") or 20),
+                "limit": limit,
                 "correlation_id": correlation_id,
             }
             connection.execute(
@@ -241,7 +279,7 @@ class ControlPlaneService:
                     project_id,
                     "context.build",
                     canonical_json(payload),
-                    int(request.get("max_attempts") or 3),
+                    max_attempts,
                     now,
                     now,
                 ),
