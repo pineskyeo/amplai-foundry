@@ -9,33 +9,57 @@
 배포 명령   scripts/kit_distribute.py
 ```
 
-## 현재 설치 상태 (2026-08-30, `ALR-008`)
+## 현재 설치 상태 (2026-08-30, `ALR-009`)
 
 ```text
 amplai-foundry   2.4.0   정본 + repository-local 설치 완료
-synapse          2.3.1   마지막 확인 상태. 2.4.0 미배포
-cortex           2.3.1   마지막 확인 상태. 2.4.0 미배포
+synapse          2.4.0   PR #83  MERGED
+cortex           2.4.0   PR #195 MERGED
 ```
 
-2.4.0 을 fleet 에 보내는 것은 `ALR-009` 다 — 설계는
-`specs/010-kit-2-4-fleet-distribution/` 이 갖는다. 실측한 사전 조건은 다음이다.
+**fleet 셋이 전부 kit 2.4.0 이다.** 배포는 각 저장소의 `origin/main` 에서 뜬 worktree 에
+`--project-home` 없이 설치하고 PR 로 넣었다. 사용자의 로컬 작업 사본은 건드리지 않았다 —
+시작·종료 시점의 branch 와 dirty 수가 같다 (synapse `feat/chuck-max-temperature-rename`
+dirty 27, cortex `feat/card-id-and-prober-id` dirty 2).
+
+### 실측한 결과
 
 ```text
-required_paths   2.3.1 과 동일하고 두 대상 origin/main 에 셋 다 있다
-owned_files      20 -> 23.  scripts/amplai_hosts.py 와 tests/ai 의 새 test 둘
-.ai-team 최상위  runtime 하나뿐이라 cortex 의 완화된 guard(D-054)를 안 깬다
-.codex/hooks.json  2.4.0 이 새로 additive merge 한다.  synapse 는 이미 이 파일이 있고
-                 kit 의 merge_hooks 를 그 실제 파일로 돌려 기존 SessionStart(matcher)와
-                 PostToolUse 셋이 보존되는 것을 확인했다.  cortex 는 새로 생긴다
-lint             두 대상 tracked 파일 전체에 ruff/mypy 문자열이 없다.
-                 amplai_hosts.py 의 3.6 문법이 그쪽에서 문제가 되지 않는다
+synapse   tests/ai   181 → 197.  실패 둘은 설치 전과 같은 것이고 무관하다
+                     (test_claim_evidence_paths_exist, test_knowledge_garden_scan_passes)
+          verifier   설치 전후 모두 FAIL, 같은 두 check.  origin/main 이 이미 빨간불이었다
+          doctor     PASS
+          .codex/hooks.json 이 이미 있었고 merge 가 기존 SessionStart(matcher)와
+          PostToolUse 셋을 보존했다
+
+cortex    tests/ai   183 → 199, 전부 OK
+          verifier   PASS.  commit profile 11 check 도 PASS
+          doctor     PASS
+          .ai-team 최상위가 core 7 + install + backups — D-054 예외 안이다
+          .codex/hooks.json 은 새로 생겼다
 ```
 
-**`--project-home` 없이 설치한다.** `install.py:935-936` 이 그 인자가 없으면
-`configure_project_store` 를 즉시 반환하므로 `store.register_app(..., repo_path=...)` 이
-안 불린다 — `ALR-007` 이 겪은 Store `repo_path` 덮어쓰기 사고의 원인이 그 줄이다. 건너뛰는
-것은 gitignore 된 `.ai-team/local/project.json` 하나뿐이라 **대상의 로컬 작업 사본을
-동기화하거나 정리하지 않고 `origin/main` worktree 에서 배포할 수 있다.**
+### `high-risk-ack` 가 cortex commit 을 한 번 막았다
+
+`.ai-team/runtime/schemas/{decision,evidence}.schema.json` 을 equipment 계약 경로로 잡는다.
+**둘 다 kit 소유의 Loop Runtime async schema 이고 두 diff 전체에서 `equipment`·`recipe`·
+`deploy` 가 0건이다.** `D-055`·`D-056` 이 이미 사람 승인을 갖고 있어 gate 가 요구하는 대로
+`[contract-ok]` 를 근거와 함께 붙여 통과시켰다.
+
+**그 path 조건을 좁힐지는 cortex 가 정한다.** 배포 때마다 반복되는 항목이다.
+
+### `--verify` 는 여전히 mismatch 다 — 정상이다
+
+```text
+amplai-foundry   2.4.0   matches
+synapse          2.3.0   mismatch
+cortex           null    mismatch
+```
+
+`--verify` 는 **이 호스트의 로컬 체크아웃**을 본다. synapse 로컬은 미commit 2.3.0 설치가
+남은 feature 브랜치에 있고 cortex 로컬은 kit 이전 브랜치에 있다. **배포 누락이 아니라 로컬
+미동기화다.** remote `main` 셋은 전부 2.4.0 이다. 로컬을 맞추려면 각자 `main` 을 받아야
+한다 — 이 Work 의 범위 밖이다.
 
 **`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** remote branch가 같은 version이어도 로컬
 작업 사본이 다른 branch에 있으면 mismatch로 보고한다. 배포는 파일시스템에 하는 것이므로
