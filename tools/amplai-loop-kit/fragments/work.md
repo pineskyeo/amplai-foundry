@@ -1,8 +1,8 @@
 <!-- AMPLAI-ASYNC-BEGIN -->
-## 11. Decision & Async Cross-App Runtime
+## Decision & Async Cross-App Runtime
 
 `AMPLAI_PROJECT_HOME`과 `.ai-team/app.json`이 있으면 현재 작업을 공용 Work와 연결한다.
-사용자에게 `/decision`, `/cr`, `/handoff` 선택을 요구하지 않는다.
+사용자에게 internal Decision/CR/Handoff 단계를 선택하게 하지 않는다.
 
 1. supervised 실행이면 `AMPLAI_WORK_ID`의 Context를 먼저 읽는다.
 

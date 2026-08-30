@@ -4,22 +4,38 @@
 `ALR-006` 이 만들었다.
 
 ```text
-정본        amplai-foundry:tools/amplai-loop-kit/   (2.3.0)
+정본        amplai-foundry:tools/amplai-loop-kit/   (2.3.2)
 배포 대상   amplai-foundry(source), synapse, cortex
 배포 명령   scripts/kit_distribute.py
 ```
 
-## 현재 설치 상태 (2026-08-28)
+## 현재 설치 상태 (2026-08-29)
 
 ```text
-amplai-foundry   2.3.1   설치됨
-synapse          2.3.1   설치됨.  벤더링된 정본은 지웠다 (D-053, PR #82)
-cortex           2.3.1   설치됨.  규약 완화가 선행됐다 (D-054, PR #146)
+amplai-foundry   2.3.2   정본 + repository-local 설치 완료
+synapse          2.3.1   마지막 확인 상태. 2.3.2 미배포
+cortex           2.3.1   마지막 확인 상태. 2.3.2 미배포
 ```
 
-**`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** 세 저장소의 `main` 이 전부 2.3.1
-이어도 로컬 작업 사본이 다른 브랜치에 있으면 mismatch 로 보고한다. 그게 맞는 동작이다 —
-배포는 파일시스템에 하는 것이지 remote 에 하는 것이 아니다.
+이번 patch는 업로드된 amplai-foundry 작업 사본만 변경했다. synapse와 cortex에 실제 배포했다고
+간주하지 않는다. 2.3.2를 fleet에 보낼 때는 `--dry-run` 뒤 각 대상의 자체 test/verifier와 host
+smoke를 통과시킨다.
+
+**`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** remote branch가 같은 version이어도 로컬
+작업 사본이 다른 branch에 있으면 mismatch로 보고한다. 배포는 파일시스템에 하는 것이므로
+그게 맞는 동작이다.
+
+### Claude Code / Codex host contract
+
+```text
+Claude Code   /work, /design    claude-code runner    .claude/settings.json
+Codex         $work, $design    codex runner          .codex/hooks.json
+공통 정본     .agents/skills/   Project Store         .amplai/
+```
+
+Codex project-local hook은 설치만으로 활성화됐다고 보지 않는다. 저장소에서 `/hooks`를 열어
+명령을 검토하고 신뢰해야 하며 installer는 trust나 sandbox/approval bypass를 자동으로 추가하지
+않는다.
 
 ### cortex 를 되돌렸다가 다시 넣은 경위
 
@@ -196,8 +212,8 @@ main baseline            154 tests, 실패 3
 
 ## 재설치가 되돌리는 것
 
-`install.py` 는 idempotent update 라 재설치 때 marker 와 `.claude/settings.json` 을 다시
-쓴다. 다음은 kit 소유가 아니므로 살아남는다.
+`install.py` 는 idempotent update 라 재설치 때 marker와 host hook 설정
+(`.claude/settings.json`, `.codex/hooks.json`)을 additive merge한다. 다음은 kit 소유가 아니므로 살아남는다.
 
 ```text
 pyproject.toml 의 벤더링 lint 예외

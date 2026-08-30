@@ -1,1 +1,1 @@
-"""Codex curation context construction."""
+"""Agent-neutral curation context construction."""

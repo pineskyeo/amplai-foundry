@@ -395,6 +395,14 @@ class PolicyReportTest(StoreTestBase):
         messages = [f["message"] for f in self.store.verify()["findings"]]
         self.assertTrue(any("bypasses permission" in m for m in messages), messages)
 
+    def test_verify_warns_about_codex_danger_full_access(self):
+        self.store.register_app(
+            "cortex", repo_path=self.repo, auto_start=True, runner_type="codex",
+            runner_args=["--sandbox", "danger-full-access"],
+        )
+        messages = [f["message"] for f in self.store.verify()["findings"]]
+        self.assertTrue(any("danger-full-access" in m for m in messages), messages)
+
 
 class SupervisorPollingTest(StoreTestBase):
     """H2: the poll loop reconciled the whole store several times a second."""

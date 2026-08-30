@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Internal independent V2 quality gate. Review a completed diff against contract, Context Pack, active evidence, Cortex rules, verifier environment, safety policy, and semantic regression, then emit a machine-readable verdict.
+description: Internal independent V2 quality gate. Review a completed diff against contract, Context Pack, active evidence, repository rules, verifier environment, safety policy, and semantic regression, then emit a machine-readable verdict.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -11,7 +11,7 @@ disable-model-invocation: false
 
 - converge: 만들기로 한 것이 모두 구현됐는가
 - review: 구현이 정확하고 안전한가
-- semantic review: 지식/ontology 의미가 근거와 일치하는가
+- knowledge review: 지식 의미와 lifecycle이 근거와 일치하는가
 
 ## 반드시 읽을 evidence
 
@@ -20,7 +20,7 @@ disable-model-invocation: false
 - actual diff와 관련 코드
 - evaluator report와 environment fingerprint
 - evidence trace
-- active decisions/claims, 관련 ontology/binding/evidence
+- active decisions/claims, 관련 Vault knowledge/evidence
 - 변경 경로에 해당하는 `.ai-team/rules/`와 permission policy
 
 실행하지 않은 테스트를 PASS라고 쓰지 않는다. superseded 지식을 current truth로 사용하지
@@ -33,9 +33,9 @@ disable-model-invocation: false
 3. correctness, error/failure path, resource lifetime
 4. public API/schema/ABI/registry와 semantic compatibility
 5. concurrency, retry/idempotency, partial recovery
-6. C99/RHEL/HP-UX/Python compatibility 및 environment 차이
+6. project language/runtime/platform compatibility 및 environment 차이
 7. verifier의 판정력, RED→GREEN/회귀 evidence
-8. active/superseded conflict, provenance, ontology candidate lifecycle
+8. active/superseded conflict, provenance, knowledge candidate lifecycle
 9. permission/containment/security/privacy
 10. maintainability와 불필요한 framework/Skill/V3 scope creep
 

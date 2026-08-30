@@ -5,7 +5,7 @@ The installer is intentionally conservative:
 - validates every package payload before touching the target;
 - owns whole files only when their previous installed hash still matches;
 - owns only marked sections inside existing skills/policies;
-- merges Claude Code hooks without changing permissions;
+- merges Claude Code and Codex hooks without changing permissions;
 - backs up and rolls back target files on write failure.
 
 Python 3.6+; standard library only.
@@ -455,6 +455,25 @@ class Installer(object):
             mode = stat.S_IMODE(os.stat(dest).st_mode) if os.path.exists(dest) else 0o644
             self.add_action(Action(rel, data, mode, "additive Claude hook merge"))
 
+    def plan_codex_hooks(self):
+        rel = ".codex/hooks.json"
+        dest = safe_destination(self.target, rel)
+        if not os.path.exists(dest):
+            self.created_paths.add(rel)
+        settings = read_json(dest) if os.path.exists(dest) else {}
+        merged = merge_hooks(settings, self.manifest.get("codex_hooks", []))
+        if merged != settings:
+            data = (json.dumps(merged, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+            mode = stat.S_IMODE(os.stat(dest).st_mode) if os.path.exists(dest) else 0o644
+            self.add_action(Action(rel, data, mode, "additive Codex hook merge"))
+        if self.manifest.get("codex_hooks"):
+            note = (
+                "Codex project-local hooks require review/trust with `/hooks` before "
+                "they run; the installer never bypasses hook trust"
+            )
+            if note not in self.notes:
+                self.notes.append(note)
+
     def plan_json_merges(self):
         previous = self.state.get("json_objects") or {}
         for item in self.manifest.get("json_merges", []):
@@ -640,6 +659,7 @@ class Installer(object):
             "marker_sections": markers,
             "json_objects": json_objects,
             "claude_hooks": self.manifest.get("claude_hooks", []),
+            "codex_hooks": self.manifest.get("codex_hooks", []),
             "created_paths": created,
         }
         data = (json.dumps(seal(state), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
@@ -738,6 +758,18 @@ class Installer(object):
                 self.add_action(Action(settings_rel, data,
                                        stat.S_IMODE(os.stat(settings_dest).st_mode),
                                        "remove AMPLAI hooks"))
+        codex_rel = ".codex/hooks.json"
+        codex_dest = safe_destination(self.target, codex_rel)
+        if os.path.exists(codex_dest):
+            settings = read_json(codex_dest)
+            merged = remove_hooks(settings, self.state.get("codex_hooks") or [])
+            if codex_rel in created and not merged:
+                removals.append(codex_rel)
+            elif merged != settings:
+                data = (json.dumps(merged, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+                self.add_action(Action(codex_rel, data,
+                                       stat.S_IMODE(os.stat(codex_dest).st_mode),
+                                       "remove AMPLAI Codex hooks"))
         for rel in (".ai-team/app.json", ".ai-team/local/project.json", STATE_REL):
             dest = safe_destination(self.target, rel)
             if os.path.exists(dest):
@@ -832,6 +864,7 @@ class Installer(object):
         self.plan_markers()
         self.plan_json_merges()
         self.plan_claude_settings()
+        self.plan_codex_hooks()
         self.plan_identity()
         self.plan_local_binding()
         if self.conflicts:
@@ -1022,8 +1055,14 @@ def build_parser():
     parser.add_argument("--project-name")
     parser.add_argument("--app-name")
     parser.add_argument("--project-home")
-    parser.add_argument("--runner", choices=["claude-code", "command"], default="claude-code")
-    parser.add_argument("--runner-command", default="claude")
+    parser.add_argument(
+        "--runner", choices=["claude-code", "codex", "command"],
+        default="claude-code",
+    )
+    parser.add_argument(
+        "--runner-command",
+        help="worker executable; defaults to claude or codex for native runners",
+    )
     parser.add_argument("--runner-arg", action="append", default=[])
     parser.add_argument("--max-concurrency", type=int, default=1)
     parser.add_argument("--worker-timeout", type=int)

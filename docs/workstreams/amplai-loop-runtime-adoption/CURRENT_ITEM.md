@@ -8,6 +8,30 @@ cortex 의 AMPLAI Loop Runtime V2.1 을 amplai-foundry 로 이식해 **이 저�
 
 근거: `D-046`. 출처: cortex main `3a3eb46b`.
 
+## 현재 갱신 — Kit 2.3.2와 Codex 실행 호환 (2026-08-29)
+
+`D-055`가 Claude Code와 Codex를 같은 Loop Runtime의 host adapter로 정의했다. 이전
+`ALR-002`~`ALR-007` 절은 당시 이식·2.3.1 배포의 역사 기록이고, **현재 정본은 다음**이다.
+
+```text
+kit 정본         tools/amplai-loop-kit/   2.3.2
+공통 skill 정본  .agents/skills/
+Claude mirror    .claude/skills/* -> ../../.agents/skills/*
+공개 진입        Claude /work·/design, Codex $work·$design
+worker           claude-code | codex | command
+hook             .claude/settings.json + .codex/hooks.json (additive merge)
+```
+
+2.3.2는 Codex 문서 노출만 추가한 버전이 아니다. `codex exec --json`, thread ID 회수,
+`codex exec resume`, SessionStart/SessionEnd adapter, internal skill의 implicit invocation 차단,
+권한 우회 경고와 uninstall 소유권까지 포함한다. amplai-foundry에는 설치를 끝냈지만 synapse와
+cortex의 2.3.2 배포는 이 작업 범위에서 실행하지 않았다. 두 저장소의 마지막 확인 기록은
+2.3.1이며, 배포 전 각 저장소 자체 gate를 다시 통과해야 한다.
+
+장기 Platform(`src/amplai_foundry`)과 Loop Kit은 같은 저장소에 있어도 별도 제품이다. Platform
+domain/application은 Kit·`.ai-team`·Claude/Codex runtime을 import하지 않는다. 상세 점검과 후속
+구조는 `docs/reviews/2026-08-29-platform-kit-audit.md`를 따른다.
+
 ## 상태 — 이식이 닫혔다
 
 ```text
@@ -259,8 +283,8 @@ synapse   .ai-team/runtime/policy.json 의 path_rule 이 tools/amplai-loop-kit/*
           가리켜 죽은 rule 이 됐다. 그 pattern 은 kit fragment 소유라 정본에서 고쳐야 한다
 ```
 
-`.ai-team/README.md` 가 "Cortex AMPLAI Loop Runtime V2" 로 시작하는 문구 정리는 여전히
-남아 있다. 동작에 영향은 없다.
+`.ai-team/README.md`의 Cortex 잔여 제목은 2.3.2 점검에서 amplai-foundry 기준으로
+정리했다.
 
 ## 해소된 실패 하나 — interpreter 문제였다
 
@@ -298,8 +322,9 @@ dependency 가 없는 interpreter 에 붙는다. registry 의 `loop-runtime-doct
 - cortex 를 다시 당겨올 때 `scripts/loopctl.py` 는 **이 저장소용으로 고쳐져 있다.** 통째로
   덮으면 semantic required path 와 skill 정본 방향이 되돌아가고, `ALR-002` 가 넣은 정합
   검사도 함께 사라진다. `PORT-LOG.md` 의 "이 저장소에 맞춘 것" 절이 그 목록이다.
-- **skill 정본은 `.claude/skills/` 다.** cortex 는 반대다. 이식 중 한 번 뒤집어 `taskify` 를
-  cortex 판으로 덮었다가 되돌렸다.
+- **현재 skill 정본은 `.agents/skills/` 하나다 (`D-055`).** `.claude/skills/`는 exact symlink
+  mirror이며 `doctor`가 집합·방향·visibility를 block으로 검사한다. 이 항목은 2026-08-19
+  port 당시의 반대 방향 결정을 2.3.2가 supersede한 결과다.
 - `.ai-team/` 은 canonical 지식을 복사하지 않는다. `vault/` 가 정본이고 Decision 은
   `docs/workstreams/*/DECISIONS.md` 가 갖는다.
 
@@ -327,7 +352,7 @@ dependency 가 없는 interpreter 에 붙는다. registry 의 `loop-runtime-doct
   1초 미만 stale 창은 시험할 수 없다. 그리고 **두 필드를 다 늙히면 어느 쪽이 우선인지
   시험하지 못한다** — 고치려던 것과 다른 것을 재게 된다
 
-## Out Of Scope
+## ALR-002~ALR-007 당시 Out Of Scope
 
 - semantic runtime (ontology, SHACL, competency question, MCP, project miner)
 - AMPLAI V3 (분산 실행) — cortex 도 의도적으로 미구현

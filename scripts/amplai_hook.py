@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""Claude Code hook adapter for the AMPLAI Project Store.
+"""Claude Code and Codex hook adapter for the AMPLAI Project Store.
 
 SessionStart injects compact, factual work state. SessionEnd only records a
 best-effort local checkpoint; durable Work transitions must happen inside
-/work before the session ends.
+/work (Claude Code) or $work (Codex) before the session ends.
 """
 from __future__ import print_function
 
 import argparse
-import io
 import json
 import os
-import shlex
 import sys
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -22,6 +20,7 @@ from amplai_runtime import (  # noqa: E402
     ACTIVE_WORK_STATUSES, AmplaiError, NotFoundError, ProjectStore,
     discover_project_home, load_app_identity,
 )
+from amplai_hosts import detect_hook_adapter  # noqa: E402
 
 
 def stdin_json():
@@ -32,19 +31,23 @@ def stdin_json():
         return {}
 
 
-def append_env(name, value):
-    path = os.environ.get("CLAUDE_ENV_FILE")
-    if not path or value is None:
-        return
-    try:
-        with io.open(path, "a", encoding="utf-8") as handle:
-            handle.write("export %s=%s\n" % (name, shlex.quote(str(value))))
-    except Exception:
-        pass
+def detect_host(payload, requested="auto"):
+    """Compatibility helper; new code uses HostAdapter directly."""
+    return detect_hook_adapter(payload, requested).hook_name
+
+
+def append_env(name, value, host="auto"):
+    adapter = detect_hook_adapter({}, host)
+    adapter.append_environment(name, value, os.environ)
 
 
 def repo_root(payload):
-    return os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd()
+    return (
+        os.environ.get("AMPLAI_REPO_ROOT")
+        or os.environ.get("CLAUDE_PROJECT_DIR")
+        or payload.get("cwd")
+        or os.getcwd()
+    )
 
 
 def open_store(payload):
@@ -65,18 +68,20 @@ def open_store(payload):
     return ProjectStore(home), identity["app_id"]
 
 
-def session_start(payload):
+def session_start(payload, host="auto"):
+    adapter = detect_hook_adapter(payload, host)
+    host = adapter.hook_name
     opened = open_store(payload)
     if opened is None:
         return None
     store, app_id = opened
     active = store.list_work(target_app=app_id, statuses=ACTIVE_WORK_STATUSES)
     ready = store.next_ready(app_id)
-    append_env("AMPLAI_PROJECT_HOME", store.home)
-    append_env("AMPLAI_APP_ID", app_id)
+    adapter.append_environment("AMPLAI_PROJECT_HOME", store.home, os.environ)
+    adapter.append_environment("AMPLAI_APP_ID", app_id, os.environ)
     if active:
-        append_env("AMPLAI_WORK_ID", active[0]["work_id"])
-        append_env("AMPLAI_CHANGE_ID", active[0]["change_id"])
+        adapter.append_environment("AMPLAI_WORK_ID", active[0]["work_id"], os.environ)
+        adapter.append_environment("AMPLAI_CHANGE_ID", active[0]["change_id"], os.environ)
     lines = [
         "AMPLAI Project State",
         "Project: %s" % store.project["project_id"],
@@ -98,22 +103,24 @@ def session_start(payload):
         lines.append("No active or READY Work is assigned to this app.")
     lines.append("CR/Work/Decision/Evidence in the Project Store are authoritative; rendered handoff text is only a view.")
     title = "%s:%s" % (store.project["project_id"], app_id)
-    return {
-        "hookSpecificOutput": {
-            "hookEventName": "SessionStart",
-            "additionalContext": "\n".join(lines),
-            "sessionTitle": title,
-        }
-    }
+    return adapter.hook_output(
+        "SessionStart", "\n".join(lines), title=title
+    )
 
 
-def session_end(payload):
+def session_end(payload, host="auto"):
+    adapter = detect_hook_adapter(payload, host)
+    host = adapter.hook_name
     opened = open_store(payload)
     if opened is None:
         return None
     store, app_id = opened
     work_id = os.environ.get("AMPLAI_WORK_ID")
-    session_id = payload.get("session_id")
+    if not work_id:
+        active = store.list_work(target_app=app_id, statuses=ACTIVE_WORK_STATUSES)
+        if len(active) == 1:
+            work_id = active[0]["work_id"]
+    session_id = adapter.session_id_from_hook_payload(payload)
     store.update_session(
         app_id,
         work_id=work_id,
@@ -123,14 +130,16 @@ def session_end(payload):
             "reason": payload.get("reason"),
             "cwd": payload.get("cwd"),
             "transcript_path": payload.get("transcript_path"),
+            "host": host,
         },
     )
     return None
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="AMPLAI Claude Code hook adapter")
+    parser = argparse.ArgumentParser(description="AMPLAI Claude Code/Codex hook adapter")
     parser.add_argument("event", choices=["session-start", "session-end"])
+    parser.add_argument("--host", choices=["auto", "claude", "codex"], default="auto")
     return parser
 
 
@@ -138,7 +147,11 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     payload = stdin_json()
     try:
-        value = session_start(payload) if args.event == "session-start" else session_end(payload)
+        value = (
+            session_start(payload, args.host)
+            if args.event == "session-start"
+            else session_end(payload, args.host)
+        )
         if value is not None:
             print(json.dumps(value, ensure_ascii=False))
         return 0

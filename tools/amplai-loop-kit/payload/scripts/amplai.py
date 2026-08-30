@@ -116,13 +116,19 @@ def cmd_app(args):
     store = store_from_args(args)
     if args.app_action == "register":
         repo = os.path.abspath(args.repo) if args.repo else None
+        runner_command = args.runner_command
+        if runner_command is None:
+            runner_command = {
+                "claude-code": "claude",
+                "codex": "codex",
+            }.get(args.runner)
         value = store.register_app(
             args.id,
             repo_path=repo,
             display_name=args.name,
             max_concurrency=args.max_concurrency,
             runner_type=args.runner,
-            command=args.runner_command,
+            command=runner_command,
             runner_args=args.runner_arg,
             auto_start=args.auto_start,
             timeout_seconds=args.timeout,
@@ -414,8 +420,14 @@ def build_parser():
     areg.add_argument("--repo")
     areg.add_argument("--name")
     areg.add_argument("--max-concurrency", type=int, default=1)
-    areg.add_argument("--runner", default="claude-code", choices=["claude-code", "command"])
-    areg.add_argument("--command", dest="runner_command", default="claude")
+    areg.add_argument(
+        "--runner", default="claude-code",
+        choices=["claude-code", "codex", "command"],
+    )
+    areg.add_argument(
+        "--command", dest="runner_command",
+        help="worker executable; defaults to claude or codex for native runners",
+    )
     areg.add_argument("--runner-arg", action="append", default=[])
     areg.add_argument("--auto-start", action="store_true")
     areg.add_argument("--timeout", type=int)

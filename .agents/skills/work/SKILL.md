@@ -1,12 +1,15 @@
 ---
 name: work
-description: Cortex의 기본 개발 entry point. 목표를 risk와 domain knowledge readiness로 분류하고, Context Pack과 evidence-governed contract를 준비한 뒤 dev-loop로 구현·검증·수렴·리뷰까지 완료한다.
+description: AMPLAI의 기본 개발 entry point. 목표를 risk와 domain knowledge readiness로 분류하고, Context Pack과 evidence-governed contract를 준비한 뒤 dev-loop로 구현·검증·수렴·리뷰까지 완료한다.
 argument-hint: "구현하거나 고칠 목표, 또는 specs/<feature> 경로"
 user-invocable: true
 disable-model-invocation: false
 ---
 
-# /work — AMPLAI V2 Controller
+# work — AMPLAI V2 Controller
+
+Claude Code는 `/work`, Codex는 `$work`로 호출한다. 이 문서의 `work`/`design` 표기는
+host-neutral entry point를 뜻한다.
 
 사용자 입력:
 
@@ -14,7 +17,7 @@ disable-model-invocation: false
 $ARGUMENTS
 ```
 
-`/work`는 Skill 순서를 사용자에게 떠넘기지 않는다. 현재 Work의 상태, 위험도, 지식 준비도,
+`work`는 Skill 순서를 사용자에게 떠넘기지 않는다. 현재 Work의 상태, 위험도, 지식 준비도,
 근거와 검증 환경을 확인하고 필요한 내부 capability만 선택한다.
 
 ## 절대 원칙
@@ -25,7 +28,7 @@ $ARGUMENTS
 - repository에서 확인 가능한 내용을 사용자에게 먼저 묻지 않는다.
 - active와 superseded 지식이 충돌하면 임의 선택하지 않고 conflict로 표면화한다.
 - LLM 자기평가를 PASS로 쓰지 않는다.
-- ontology candidate를 canonical active graph에 직접 append하지 않는다.
+- knowledge candidate를 canonical Vault에 직접 반영하지 않는다.
 - production/deploy/push/merge/release는 policy대로 gate 또는 차단한다.
 - Humanize KR은 설명문에만 적용하고 코드·명령·로그·식별자는 바꾸지 않는다.
 
@@ -109,7 +112,7 @@ source of truth / contradictions / acceptance / verifier
 python3 scripts/loopctl.py discovery scan <feature-dir>
 ```
 
-code/test/API/schema/config/docs/decision/git/runtime evidence와 ontology neighborhood를 먼저
+code/test/API/schema/config/docs/decision/git/runtime evidence와 관련 Vault knowledge를 먼저
 조사한다. 후보 evidence를 실제 사실로 검토한 뒤 readiness를 갱신한다. business 또는
 architecture decision만 사용자에게 질문한다.
 
@@ -123,14 +126,14 @@ python3 scripts/loopctl.py context validate <feature-dir>/context-pack.json
 python3 scripts/loopctl.py environment capture <feature-dir>
 ```
 
-Context Pack은 active knowledge, active decisions, ontology refs, code/test scope, verifier profile,
+Context Pack은 active knowledge, active decisions, Vault refs, code/test scope, verifier profile,
 unknown을 Work ID에 맞게 조립한다. superseded/rejected 지식은 기본 선택에서 제외한다.
 
 새 session에서도 이 artifact로 같은 context를 재생성해야 한다.
 
 ## 6. Design / Plan / Slice
 
-다음이면 internal `/design` route로 이동한다.
+다음이면 internal `design` route로 이동한다.
 
 - acceptance를 결정할 수 없음
 - architecture/ownership/public contract 결정 필요
@@ -194,7 +197,7 @@ python3 scripts/loopctl.py docs validate <feature-dir>
 ```
 
 behavior/API/schema/config semantics/state transition/architecture/ownership/domain rule/
-operational behavior/ontology semantic이 바뀌었으면 impact를 평가한다. formatting, comment,
+operational behavior/knowledge semantics가 바뀌었으면 impact를 평가한다. formatting, comment,
 local typo만 바뀐 Work는 `NOT_APPLICABLE`로 끝난다.
 
 후보는 `.ai-team/policy/documentation.json`이 정한 다섯 축의 deterministic evidence로 먼저
@@ -217,9 +220,9 @@ python3 scripts/loopctl.py garden apply <feature-dir>     # SAFE_AUTO만 삭제�
 ```
 
 `garden apply`는 SAFE_AUTO만 지운다. EVIDENCE_REQUIRED와 HUMAN_GATED는 candidate로 남기고
-사람에게 넘긴다. Cortex에서 static reference가 없다는 사실만으로 dead code라고 판정하지
-않는다 — dlopen entry, conditional build, 32-bit variant, packaging, configuration-driven
-invocation을 함께 본다.
+사람에게 넘긴다. static reference가 없다는 사실만으로 dead code라고 판정하지 않는다 —
+dynamic loading, plugin/entry point, conditional build, packaging, configuration-driven invocation을
+함께 본다.
 
 repository 전체 scan은 사용자가 명시적으로 요청한 cleanup Work에서만 한다.
 
@@ -241,21 +244,19 @@ garden change → verify → converge → documentation freshness → (필요하
 
 SAFE_AUTO generated garbage 삭제만으로 heavyweight review를 다시 요구하지 않는다.
 
-## 11. Semantic change handling
+## 11. Knowledge change handling
 
-개발 중 새 domain concept/relation/invariant를 발견하면 canonical TTL을 직접 고치지 않는다.
+이 repository에는 Cortex의 ontology/SHACL/CQ/MCP semantic runtime을 이식하지 않았다(`D-046`).
+존재하지 않는 `semanticctl.py`나 ontology command를 호출하지 않는다. 개발 중 새 domain
+concept/relation/invariant를 발견하면 다음 경로로 candidate를 남긴다.
 
 ```text
-discovery → candidate + evidence → RDF parse → SHACL → CQ regression
-→ semantic diff → promotion gate → active/reject
+discovery → 원문 Source 보존 → active Vault/Decision 검색 → Proposal candidate
+→ proposal validate/diff + vault/schema lint → governed review/apply 또는 reject
 ```
 
-일반 query는 project-scoped read-only MCP 또는 `semanticctl.py`를 사용한다.
-
-```bash
-python3 tools/ontology/semanticctl.py search "retest verdict"
-python3 tools/ontology/semanticctl.py describe dct:Verdict
-```
+Canonical Vault를 작업 편의상 직접 덮어쓰지 않는다. 현재 governance apply가 준비되지 않았으면
+Proposal과 evidence까지만 만들고 `APPLY_ACTION_DEFERRED`로 남긴다.
 
 ## 12. Handoff / DONE
 
@@ -285,10 +286,10 @@ DONE은 다음을 모두 만족해야 한다.
 최종 보고는 `결론 → 사용법/변경 → 검증 → 남은 gate` 순으로 자연스러운 한국어로 한다.
 
 <!-- AMPLAI-ASYNC-BEGIN -->
-## 11. Decision & Async Cross-App Runtime
+## Decision & Async Cross-App Runtime
 
 `AMPLAI_PROJECT_HOME`과 `.ai-team/app.json`이 있으면 현재 작업을 공용 Work와 연결한다.
-사용자에게 `/decision`, `/cr`, `/handoff` 선택을 요구하지 않는다.
+사용자에게 internal Decision/CR/Handoff 단계를 선택하게 하지 않는다.
 
 1. supervised 실행이면 `AMPLAI_WORK_ID`의 Context를 먼저 읽는다.
 

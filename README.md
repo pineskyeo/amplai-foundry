@@ -2,6 +2,38 @@
 
 AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 가능한 지식 변경안으로 전환하는 결정론적 Knowledge Foundry다. 저장 방식과 독립된 `MemoryObject`를 정의하고 Markdown + YAML Front Matter를 첫 repository adapter로 사용한다.
 
+## Product Boundaries
+
+이 repository에는 서로 다른 두 release train이 함께 있다.
+
+1. **AMPLAI Platform / Foundry (`src/amplai_foundry/`, 현재 `0.4.0`)** — 장기 제품이다.
+   지식 intake, provenance, project identity, governance, decision, audit/outbox와 향후
+   knowledge-aware agent control plane을 소유한다.
+2. **AMPLAI Loop Kit (`tools/amplai-loop-kit/`, 현재 `2.4.0`)** — 위 플랫폼과 각 앱을
+   개발하기 위한 제거 가능한 development runtime이다. Contract, Work, evidence, local
+   supervisor, installer와 Claude Code/Codex host adapter를 소유한다.
+
+의존 방향은 한쪽이다. **Kit은 Platform을 개발·검증할 수 있지만 Platform domain code는
+Kit, `.ai-team/`, Claude Code, Codex에 import 또는 runtime 의존하지 않는다.** Host 차이는
+runner/hook/skill adapter에서 끝내고 Project Store protocol과 product domain으로 새지 않게 한다.
+두 구성요소는 version, changelog, compatibility matrix와 release gate를 독립적으로 관리한다.
+
+Agent entry point는 Claude Code에서 `/work`, `/design`, Codex에서 `$work`, `$design`이다.
+공통 skill 정본은 `.agents/skills/`이고 `.claude/skills/`는 symlink mirror다.
+
+
+### Platform 0.4 Control Plane
+
+`src/amplai_foundry/control_plane/`은 기존 Governance Store를 재작성하지 않고 추가된 독립 경계다.
+프로젝트 범위 bearer token, 쓰기 idempotency, Decision/Evidence canonical reference, lease 기반
+Context Job, transactional outbox, connector secret reference, replayable projection과 dependency-free WSGI API를 제공한다.
+
+```bash
+amplai-foundry control-plane init --db .amplai/control-plane.db
+amplai-foundry control-plane token-issue --tenant local --project amplai --permission evidence:publish --permission decision:publish --permission context:request --permission context:read --permission reference:read --permission projection:read
+amplai-foundry control-plane serve --db .amplai/control-plane.db
+```
+
 ## Scope
 
 현재 구현은 다음 범위를 포함한다.
@@ -15,14 +47,15 @@ AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 �
 - Source → Classification → Candidate → Semantic Compare → Proposal Intake
 - versioned roadmap change, impact analysis, replan
 - Phase 1 artifact별 최소 평가 기록과 30-case semantic golden set
-- Codex Curator Harness와 Context Bundle
+- Agent-neutral Curator Harness와 Context Bundle
 - Obsidian에서 바로 열 수 있는 `vault/`
 - 결정론적 `lint`, `stats`, `show`, `schema`, `verify` CLI
 - 53개 AMPLAI canonical/source note
 - offline unit/CLI test
 
-외부 LLM 연결, 범용 의미 변경 자동 승인, vector DB, embedding, MCP server, web UI,
-중앙 server와 실행 event 저장은 포함하지 않는다. 의미가 불명확한 입력은 생성으로
+Platform 제품 본체에는 외부 LLM 연결, 범용 의미 변경 자동 승인, vector DB, embedding,
+MCP server, web UI, 중앙 server와 agent execution event 저장을 아직 포함하지 않는다.
+Loop Kit의 로컬 Project Store와 worker event는 별도 development-runtime 범위다. 의미가 불명확한 입력은 생성으로
 추정하지 않고 `HOLD`한다. Intake는 canonical state를 자동 적용하지 않는다.
 
 ## Install

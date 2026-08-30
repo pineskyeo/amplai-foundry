@@ -2096,3 +2096,69 @@
   `cortex:specs/007-amplai-v21-doc-freshness-gardening/tasks.md:46`,
   `.ai-team/README.md:67-77`, `tools/amplai-loop-kit/install.py:29,30,580`,
   `tools/amplai-loop-kit/payload/scripts/amplai_hook.py:75-76`.
+
+## D-055 — Make Claude Code And Codex First-Class Hosts Without Forking The Loop
+
+- Status: APPROVED
+- Date: 2026-08-29
+- Decision: **AMPLAI Loop Kit 2.3.2부터 Claude Code와 Codex를 같은 Work protocol의
+  first-class host로 지원한다.** host별 표기와 실행 형식만 adapter가 맡고, Contract·Work·Question·
+  Evidence·Decision·Project Store 의미는 하나로 유지한다.
+
+  **(1) 공개 의미와 host 표기.** 공개 controller는 `work`, `design` 둘이다.
+
+  ```text
+  Claude Code   /work, /design
+  Codex         $work, $design
+  ```
+
+  저장 상태와 공용 문서에는 host-neutral 의미를 쓰고, prompt를 만들 때만 runner에 맞게 표기한다.
+
+  **(2) skill 정본.** `.agents/skills/`를 유일한 공통 정본으로 한다. `.claude/skills/*`는
+  모두 `../../.agents/skills/*` exact symlink mirror다. 두 디렉토리에 workflow 파일을 각각
+  복사해 두는 구조는 금지한다.
+
+  **(3) controller 우회 금지.** `work`와 `design`이 조정해야 하는 내부 Codex capability는
+  `agents/openai.yaml`의 `allow_implicit_invocation: false`를 갖는다. 사용자가 내부 skill을
+  명시적으로 호출하는 것은 별도 행위지만, 일반 개발 요청이 암묵적으로 controller를 우회하면
+  안 된다. `loopctl doctor`가 이 정책과 mirror 구조를 검사한다.
+
+  **(4) native Codex adapter.** Local Supervisor는 `codex exec --json`을 실행하고,
+  JSONL의 `thread.started.thread_id`를 checkpoint로 회수하며 다음 Work에서 `resume`한다. 실제
+  prompt는 run metadata에서 `<prompt>`로 가린다. Claude Code의 기존 session resume 동작은
+  유지한다.
+
+  **(5) lifecycle hook.** Installer는 `.claude/settings.json`뿐 아니라 `.codex/hooks.json`에도
+  SessionStart/SessionEnd를 additive merge한다. 기존 필드와 hook을 보존하고 uninstall은 install
+  record에 적힌 AMPLAI handler만 제거한다. hook은 Context와 host-local checkpoint를 돕지만
+  Project Store의 durable state를 대신하지 않는다.
+
+  **(6) 권한 경계.** Installer는 Claude permissions 또는 Codex sandbox/approval을 자동으로
+  높이지 않는다. native runner args는 operator가 명시한다. unattended `auto_start=true`와
+  permission/sandbox bypass를 함께 쓰면 `project verify`가 WARNING을 낸다.
+
+  **(7) 장기 플랫폼 경계.** `src/amplai_foundry`의 domain/application code는 Loop Kit,
+  `.ai-team`, Claude Code 또는 Codex에 역의존하지 않는다. host-specific integration은 CLI/
+  adapter edge에 둔다. 따라서 기존 `curate` command의 계약은 유지하되 Context Bundle 자체는
+  agent-neutral 이름과 절차를 사용한다.
+
+- Reason: 이전 2.3.1은 `AGENTS.md`와 `.agents/skills`를 두어 Codex가 일부 문서를 읽을 수는
+  있었지만 실제 worker command, JSONL thread continuation, lifecycle hook 설치는 Claude Code
+  전용이었다. 더구나 문서는 `.claude/skills`를 정본이라고 설명한 반면 Git layout은
+  `.agents/skills`를 정본처럼 사용해 workflow drift가 가능한 상태였다. provider별 Loop를 둘로
+  복제하면 Contract와 verifier가 갈라지므로 adapter 경계에서 흡수한다.
+
+- Consequence:
+  - Kit version은 `2.3.2`로 올라가고 Platform version `0.2.0`과 독립적으로 배포한다.
+  - Kit release gate는 Claude/Codex command construction, continuation, hook merge/uninstall,
+    dangerous-permission warning, shared skill mirror를 포함한다.
+  - 실제 `codex` 또는 `claude` binary가 없는 검증 환경에서는 deterministic adapter test까지만
+    통과로 기록하고, `auto_start` 전에 해당 host의 foreground smoke evidence를 별도로 남긴다.
+  - 이 Decision은 `D-053`의 foundry ownership과 `D-051`의 removable layer를 유지한다.
+
+- Rejected: `.claude/skills`와 `.agents/skills`를 각각 독립 정본으로 유지. 같은 변경을 두 번
+  적용해야 하고 어느 쪽이 최신인지 기계적으로 보장하기 어렵다.
+- Rejected: Codex에서 기존 Claude 명령 문자열을 그대로 prompt로 흉내 내기. 실행 결과와 session
+  protocol이 달라 resume·hook·감사 로그가 불완전해진다.
+- Scope: Loop Runtime host compatibility와 Platform의 provider boundary다. Hermes/Global AMPLAI,
+  distributed scheduling, multi-host lease, merge orchestration은 이 Decision에 포함하지 않는다.

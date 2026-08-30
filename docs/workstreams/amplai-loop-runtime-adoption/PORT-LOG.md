@@ -4,6 +4,10 @@
 **근거:** `D-046`
 **작성:** 2026-08-19
 
+> **현재 상태 주의 (2026-08-29):** 아래는 2026-08-19 port 당시의 사실 기록이다.
+> `D-055` / Kit 2.3.2가 skill 방향을 supersede하여 현재 정본은 `.agents/skills/`,
+> `.claude/skills/`는 exact symlink mirror다.
+
 ## 무엇을 가져왔나
 
 | 대상 | 내용 |

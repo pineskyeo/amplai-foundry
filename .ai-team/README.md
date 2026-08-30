@@ -1,6 +1,6 @@
-# Cortex AMPLAI Loop Runtime V2
+# AMPLAI Loop Runtime V2 — amplai-foundry
 
-`.ai-team/`은 agent/skill 모음이 아니라 Cortex 개발을 반복 가능하게 만드는 **얇은 project-local runtime/policy layer**다.
+`.ai-team/`은 agent/skill 모음이 아니라 amplai-foundry 개발을 반복 가능하게 만드는 **얇은 project-local runtime/policy layer**다.
 
 ```text
 Goal
@@ -16,9 +16,12 @@ Goal
 사용자가 기억할 command는 둘뿐이다.
 
 ```text
-/work <goal>       구현·검증·수렴·리뷰까지 끝낸다
-/design <problem>  구현하지 않고 요구·대안·architecture decision을 확정한다
+Claude Code   /work <goal>       /design <problem>
+Codex         $work <goal>       $design <problem>
 ```
+
+두 host의 의미와 절차는 같다. `.agents/skills/`가 공통 정본이고 `.claude/skills/`는 exact
+symlink mirror다.
 
 `readiness`, `discovery`, `context`, `mine`, `semantic`, `review`, `debug`는 internal capability 또는 deterministic tool이다. 새 user-facing command로 늘리지 않는다.
 
@@ -41,7 +44,7 @@ V2는 V1 dev-loop를 재구현하지 않는다. Knowledge/Evidence/Governance pl
 ├── verifiers/    # executable PASS/FAIL registry + environment evidence
 ├── knowledge/    # knowledge map/index/status/provenance metadata + artifact schema
 ├── evidence/     # evidence/provenance schema와 정책
-└── rules/        # Cortex-specific engineering guards
+└── rules/        # amplai-foundry-specific engineering guards
 ```
 
 `.ai-team` 밖에는 개발 도구 자산이 하나 더 있다.
@@ -114,7 +117,7 @@ garden change → verify → converge → documentation freshness → (필요하
 
 SAFE_AUTO generated garbage 삭제만으로는 heavyweight review를 다시 요구하지 않는다.
 
-`/design`은 code를 구현하지 않으므로 Repository Gardening을 실행하지 않고 Documentation
+`design`은 code를 구현하지 않으므로 Repository Gardening을 실행하지 않고 Documentation
 Freshness만 적용한다.
 
 ## Four memory types

@@ -45,6 +45,8 @@ QUESTION_STATUSES = ("OPEN", "RESOLVED", "DEFERRED", "CANCELLED")
 DECISION_AUTHORITIES = ("AUTO", "CHALLENGE", "HUMAN")
 AUTHORITY_RANK = {"AUTO": 0, "CHALLENGE": 1, "HUMAN": 2}
 EVIDENCE_MODES = ("DIRECT", "LOCAL", "PARALLEL")
+FEDERATION_STATUSES = ("LOCAL", "CANDIDATE", "SUBMITTED", "ACCEPTED", "REJECTED")
+
 EVIDENCE_TYPES = (
     "code", "test", "runtime", "documentation", "git", "web",
     "benchmark", "contract", "review", "human_approval", "artifact", "other",
@@ -71,6 +73,8 @@ ENFORCED_PROHIBITIONS = {
 UNATTENDED_BYPASS_FLAGS = (
     "--dangerously-skip-permissions",
     "--allow-dangerously-skip-permissions",
+    "--dangerously-bypass-approvals-and-sandbox",
+    "--yolo",
 )
 RESEALABLE_KINDS = (
     "project", "policy", "app", "contract", "change", "work",
@@ -722,7 +726,7 @@ class ProjectStore(object):
 
     def register_app(self, app_id, repo_path=None, display_name=None,
                      max_concurrency=None, runner_type="claude-code",
-                     command="claude", runner_args=None, auto_start=False,
+                     command=None, runner_args=None, auto_start=False,
                      timeout_seconds=None, actor="human"):
         validate_id(app_id, "app_id")
         work_policy = self.policy.get("work") or {}
@@ -733,8 +737,13 @@ class ProjectStore(object):
         max_concurrency = int(max_concurrency)
         if max_concurrency < 1:
             raise ValidationError("max_concurrency must be >= 1")
-        if runner_type not in ("claude-code", "command"):
+        if runner_type not in ("claude-code", "codex", "command"):
             raise ValidationError("unsupported runner type: %s" % runner_type)
+        if command is None:
+            command = {
+                "claude-code": "claude",
+                "codex": "codex",
+            }.get(runner_type)
         if not isinstance(command, str) or not command.strip():
             raise ValidationError("runner command must be a non-empty string")
         validated_repo_path = None
@@ -1713,6 +1722,22 @@ class ProjectStore(object):
                 return work
         return None
 
+    def _local_federation(self, object_ref):
+        return {
+            "scope": "local",
+            "origin": {
+                "store": "amplai-project-store",
+                "project_id": self.project["project_id"],
+                "object_ref": object_ref,
+            },
+            "promotion_status": "LOCAL",
+            "submission_id": None,
+            "canonical_ref": None,
+            "submitted_at": None,
+            "resolved_at": None,
+            "rejection_reason": None,
+        }
+
     def add_evidence(self, cr_id, evidence_type, summary, source_kind,
                      source_locator, work_id=None, app_id=None, facts=None,
                      metadata=None, actor="agent"):
@@ -1744,6 +1769,7 @@ class ProjectStore(object):
                 },
                 "facts": unique_strings(facts or [], "facts"),
                 "metadata": copy.deepcopy(metadata or {}),
+                "federation": self._local_federation(evidence_id),
                 "created_by": actor,
                 "created_at": now,
             }
@@ -1973,6 +1999,7 @@ class ProjectStore(object):
             "review_trigger": review_trigger,
             "supersedes": supersedes,
             "superseded_by": None,
+            "federation": self._local_federation(decision_id),
             "decided_by": actor,
             "created_at": now,
             "updated_at": now,
@@ -2010,6 +2037,121 @@ class ProjectStore(object):
             {"authority": authority, "question_id": question_id, "supersedes": supersedes},
         )
         return value
+
+    def _federated_object(self, kind, object_id):
+        if kind == "decision":
+            return self.get_decision(object_id), self.decision_path
+        if kind == "evidence":
+            return self.get_evidence(object_id), self.evidence_path
+        raise ValidationError("federation kind must be decision or evidence")
+
+    def _write_federated_object_unlocked(self, kind, value, actor, event_type, data):
+        object_id = value["decision_id"] if kind == "decision" else value["evidence_id"]
+        path = self.decision_path(value["change_id"], object_id) if kind == "decision" else self.evidence_path(value["change_id"], object_id)
+        value = self._write_sealed(path, value)
+        self._append_event_unlocked(event_type, kind, object_id, actor, data)
+        return value
+
+    def mark_promotion_candidate(self, kind, object_id, actor="agent"):
+        """Mark one local Decision/Evidence as a candidate for Platform promotion.
+
+        This does not send data or change the local object's authority.  Promotion
+        is an explicit second-plane lifecycle so the Project Store remains useful
+        even when the Platform is offline.
+        """
+        with self.lock():
+            value, _path = self._federated_object(kind, object_id)
+            federation = copy.deepcopy(value.get("federation") or self._local_federation(object_id))
+            status = federation.get("promotion_status") or "LOCAL"
+            if status not in ("LOCAL", "REJECTED"):
+                raise ConflictError("promotion candidate requires LOCAL or REJECTED, got %s" % status)
+            federation.update({
+                "promotion_status": "CANDIDATE",
+                "submission_id": None,
+                "canonical_ref": None,
+                "submitted_at": None,
+                "resolved_at": None,
+                "rejection_reason": None,
+            })
+            value["federation"] = federation
+            if kind == "decision":
+                value["updated_at"] = utc_now()
+            return self._write_federated_object_unlocked(
+                kind, value, actor, "%s.promotion_candidate" % kind, {"status": "CANDIDATE"}
+            )
+
+    def promotion_envelope(self, kind, object_id):
+        value, _path = self._federated_object(kind, object_id)
+        federation = value.get("federation") or self._local_federation(object_id)
+        if federation.get("promotion_status") != "CANDIDATE":
+            raise ConflictError("promotion envelope requires CANDIDATE status")
+        body = copy.deepcopy(value)
+        body.pop(HASH_FIELD, None)
+        canonical = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return {
+            "schema_version": "1.0",
+            "kind": kind,
+            "origin": copy.deepcopy(federation["origin"]),
+            "origin_content_hash": value.get(HASH_FIELD),
+            "idempotency_key": "kit:%s:%s" % (kind, hashlib.sha256(canonical.encode("utf-8")).hexdigest()),
+            "payload": body,
+        }
+
+    def mark_promotion_submitted(self, kind, object_id, submission_id, actor="agent"):
+        with self.lock():
+            value, _path = self._federated_object(kind, object_id)
+            federation = copy.deepcopy(value.get("federation") or self._local_federation(object_id))
+            status = federation.get("promotion_status") or "LOCAL"
+            if status != "CANDIDATE":
+                raise ConflictError("promotion submit requires CANDIDATE, got %s" % status)
+            federation.update({
+                "promotion_status": "SUBMITTED",
+                "submission_id": validate_nonempty(submission_id, "submission_id"),
+                "submitted_at": utc_now(),
+                "resolved_at": None,
+                "canonical_ref": None,
+                "rejection_reason": None,
+            })
+            value["federation"] = federation
+            if kind == "decision":
+                value["updated_at"] = utc_now()
+            return self._write_federated_object_unlocked(
+                kind, value, actor, "%s.promotion_submitted" % kind,
+                {"submission_id": submission_id},
+            )
+
+    def resolve_promotion(self, kind, object_id, accepted, canonical_ref=None, reason=None, actor="platform"):
+        with self.lock():
+            value, _path = self._federated_object(kind, object_id)
+            federation = copy.deepcopy(value.get("federation") or self._local_federation(object_id))
+            status = federation.get("promotion_status") or "LOCAL"
+            if status != "SUBMITTED":
+                raise ConflictError("promotion resolution requires SUBMITTED, got %s" % status)
+            if accepted:
+                canonical_ref = validate_nonempty(canonical_ref, "canonical_ref")
+                federation.update({
+                    "promotion_status": "ACCEPTED",
+                    "canonical_ref": canonical_ref,
+                    "resolved_at": utc_now(),
+                    "rejection_reason": None,
+                })
+            else:
+                federation.update({
+                    "promotion_status": "REJECTED",
+                    "canonical_ref": None,
+                    "resolved_at": utc_now(),
+                    "rejection_reason": validate_nonempty(reason, "reason"),
+                })
+            value["federation"] = federation
+            if kind == "decision":
+                value["updated_at"] = utc_now()
+            return self._write_federated_object_unlocked(
+                kind, value, actor, "%s.promotion_resolved" % kind,
+                {
+                    "status": federation["promotion_status"],
+                    "canonical_ref": federation.get("canonical_ref"),
+                },
+            )
 
     def build_work_context(self, work_id):
         work = self.get_work(work_id)
@@ -2130,7 +2272,7 @@ class ProjectStore(object):
             lines.append("- none")
         lines.extend([
             "", "## Resume", "",
-            "Use `/work` in the target app. Read the durable Work Context first, then update the same Work object before ending the run.",
+            "Use `/work` (Claude Code) or `$work` (Codex) in the target app. Read the durable Work Context first, then update the same Work object before ending the run.",
             "",
             "Context hash: `%s`" % context[HASH_FIELD],
             "",
@@ -2255,6 +2397,16 @@ class ProjectStore(object):
                 continue
             args = [str(item) for item in (local.get("runner") or {}).get("args") or []]
             bypass = [flag for flag in UNATTENDED_BYPASS_FLAGS if flag in args]
+            for index, value in enumerate(args):
+                if value in ("--sandbox", "-s") and index + 1 < len(args):
+                    if args[index + 1] == "danger-full-access":
+                        bypass.append("%s danger-full-access" % value)
+                elif value in (
+                    "--sandbox=danger-full-access",
+                    "-s=danger-full-access",
+                ):
+                    bypass.append(value)
+            bypass = sorted(set(bypass))
             if bypass:
                 findings.append({
                     "severity": "WARNING", "object": "app:%s" % app["app_id"],

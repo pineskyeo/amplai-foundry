@@ -104,6 +104,12 @@ class InstallerTest(unittest.TestCase):
         self.assertIn("AMPLAI-ASYNC-BEGIN", created)
 
     def test_existing_content_hooks_and_permissions_are_preserved(self):
+        write(os.path.join(self.target, ".codex/hooks.json"), json.dumps({
+            "hooks": {"SessionStart": [
+                {"hooks": [{"type": "command", "command": "echo codex-existing"}]}
+            ]},
+            "custom": {"preserve": True},
+        }, indent=2) + "\n")
         self.run_install()
         skill = read(os.path.join(self.target, ".agents/skills/work/SKILL.md"))
         self.assertIn("Keep this app rule.", skill)
@@ -118,6 +124,18 @@ class InstallerTest(unittest.TestCase):
         ]
         self.assertIn("echo existing-hook", commands)
         self.assertTrue(any("amplai_hook.py" in command for command in commands))
+
+        codex = read_json(os.path.join(self.target, ".codex/hooks.json"))
+        self.assertEqual(codex["custom"], {"preserve": True})
+        codex_commands = [
+            hook["command"]
+            for wrapper in codex["hooks"]["SessionStart"]
+            for hook in wrapper["hooks"]
+        ]
+        self.assertIn("echo codex-existing", codex_commands)
+        self.assertTrue(any("--host codex" in command for command in codex_commands))
+        end_hooks = codex["hooks"]["SessionEnd"]
+        self.assertEqual(end_hooks[-1]["hooks"][0]["timeout"], 3)
 
         policy = read_json(os.path.join(self.target, ".ai-team/runtime/policy.json"))
         rule_ids = [rule["id"] for rule in policy["path_rules"]]
@@ -185,6 +203,12 @@ class InstallerTest(unittest.TestCase):
         self.assertIn("newer than this package", stderr)
 
     def test_uninstall_restores_the_app_and_keeps_foreign_content(self):
+        write(os.path.join(self.target, ".codex/hooks.json"), json.dumps({
+            "hooks": {"SessionStart": [
+                {"hooks": [{"type": "command", "command": "echo codex-existing"}]}
+            ]},
+            "custom": {"preserve": True},
+        }, indent=2) + "\n")
         self.run_install()
         self.run_install(extra=["--uninstall"])
 
@@ -206,9 +230,26 @@ class InstallerTest(unittest.TestCase):
         self.assertEqual(commands, ["echo existing-hook"])
         self.assertEqual(settings["custom"], {"preserve": True})
 
+        codex = read_json(os.path.join(self.target, ".codex/hooks.json"))
+        codex_commands = [
+            hook["command"]
+            for wrapper in codex.get("hooks", {}).get("SessionStart", [])
+            for hook in wrapper["hooks"]
+        ]
+        self.assertEqual(codex_commands, ["echo codex-existing"])
+        self.assertEqual(codex["custom"], {"preserve": True})
+
         policy = read_json(os.path.join(self.target, ".ai-team/runtime/policy.json"))
         self.assertEqual([rule["id"] for rule in policy["path_rules"]], ["app-owned"])
         self.assertEqual(policy["forbidden_automatic_actions"], ["app owned prohibition"])
+
+    def test_created_codex_hook_file_and_directory_are_removed(self):
+        codex = os.path.join(self.target, ".codex")
+        self.assertFalse(os.path.exists(codex))
+        self.run_install()
+        self.assertTrue(os.path.isfile(os.path.join(codex, "hooks.json")))
+        self.run_install(extra=["--uninstall"])
+        self.assertFalse(os.path.exists(codex))
 
     def test_uninstall_keeps_a_created_file_the_app_wrote_into(self):
         """Creating a file does not make its later content ours to delete.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "amplai-foundry"
-version = "0.2.0"
+version = "0.4.0"
 description = "Deterministic knowledge foundation for the AMPLAI Memory Layer"
 readme = "README.md"
 requires-python = ">=3.11"
