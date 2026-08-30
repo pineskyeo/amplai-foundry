@@ -1,8 +1,104 @@
 {
-  "acknowledged": [],
+  "acknowledged": [
+    ".ai-team/runtime/WORKFLOW.md",
+    ".ai-team/runtime/WORKFLOW.md,.ai-team/verifiers/README.md,.specify/memory/constitution.md,docs/KNOWLEDGE-INTAKE.md,docs/KNOWLEDGE-RULES.md,docs/LIFECYCLE.md,docs/MESSENGER-PROPOSAL-CONTROL.md,docs/PROJECT-PACK.md,docs/SOURCE-INGESTION.md,docs/VERSIONING.md,docs/VISION.md",
+    ".ai-team/verifiers/README.md",
+    ".specify/memory/constitution.md",
+    "docs/KNOWLEDGE-INTAKE.md",
+    "docs/KNOWLEDGE-RULES.md",
+    "docs/LIFECYCLE.md",
+    "docs/MESSENGER-PROPOSAL-CONTROL.md",
+    "docs/PROJECT-PACK.md",
+    "docs/SOURCE-INGESTION.md",
+    "docs/VERSIONING.md",
+    "docs/VISION.md"
+  ],
   "broken_references": [],
-  "changed_sources": [],
-  "content_hash": "4e190164d301165fa41396f6cd31c13a3d41998f6b607edbfec23d2a8c1a66e1",
+  "changed_sources": [
+    ".agents/skills/code-review/SKILL.md",
+    ".agents/skills/code-review/agents/openai.yaml",
+    ".agents/skills/design/SKILL.md",
+    ".agents/skills/dev-loop/agents/openai.yaml",
+    ".agents/skills/feynman/SKILL.md",
+    ".agents/skills/feynman/commands/explain.md",
+    ".agents/skills/feynman/commands/feynman.md",
+    ".agents/skills/feynman/commands/simplify.md",
+    ".agents/skills/feynman/references/examples.md",
+    ".agents/skills/speckit-analyze/SKILL.md",
+    ".agents/skills/speckit-analyze/agents/openai.yaml",
+    ".agents/skills/speckit-checklist/SKILL.md",
+    ".agents/skills/speckit-checklist/agents/openai.yaml",
+    ".agents/skills/speckit-clarify/SKILL.md",
+    ".agents/skills/speckit-clarify/agents/openai.yaml",
+    ".agents/skills/speckit-constitution/SKILL.md",
+    ".agents/skills/speckit-constitution/agents/openai.yaml",
+    ".agents/skills/speckit-converge/SKILL.md",
+    ".agents/skills/speckit-converge/agents/openai.yaml",
+    ".agents/skills/speckit-implement/SKILL.md",
+    ".agents/skills/speckit-implement/agents/openai.yaml",
+    ".agents/skills/speckit-plan/SKILL.md",
+    ".agents/skills/speckit-plan/agents/openai.yaml",
+    ".agents/skills/speckit-specify/SKILL.md",
+    ".agents/skills/speckit-specify/agents/openai.yaml",
+    ".agents/skills/speckit-taskstoissues/SKILL.md",
+    ".agents/skills/speckit-taskstoissues/agents/openai.yaml",
+    ".agents/skills/systematic-debugging/agents/openai.yaml",
+    ".agents/skills/taskify/agents/openai.yaml",
+    ".agents/skills/work/SKILL.md",
+    ".ai-team/knowledge/decisions.index.json",
+    ".ai-team/policy/approvals.jsonl",
+    ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+    ".ai-team/runtime/INSTALLATION.md",
+    ".ai-team/runtime/LOCAL_SUPERVISOR.md",
+    ".ai-team/runtime/schemas/decision.schema.json",
+    ".ai-team/runtime/schemas/evidence.schema.json",
+    ".claude/skills/feynman",
+    ".claude/skills/grilling",
+    ".claude/skills/grilling/SKILL.md",
+    ".claude/skills/grilling/agents/openai.yaml",
+    ".claude/skills/speckit-analyze",
+    ".claude/skills/speckit-analyze/SKILL.md",
+    ".claude/skills/speckit-checklist",
+    ".claude/skills/speckit-checklist/SKILL.md",
+    ".claude/skills/speckit-clarify",
+    ".claude/skills/speckit-clarify/SKILL.md",
+    ".claude/skills/speckit-constitution",
+    ".claude/skills/speckit-constitution/SKILL.md",
+    ".claude/skills/speckit-converge",
+    ".claude/skills/speckit-converge/SKILL.md",
+    ".claude/skills/speckit-implement",
+    ".claude/skills/speckit-implement/SKILL.md",
+    ".claude/skills/speckit-plan",
+    ".claude/skills/speckit-plan/SKILL.md",
+    ".claude/skills/speckit-specify",
+    ".claude/skills/speckit-specify/SKILL.md",
+    ".claude/skills/speckit-taskstoissues",
+    ".claude/skills/speckit-taskstoissues/SKILL.md",
+    "pyproject.toml",
+    "scripts/amplai.py",
+    "scripts/amplai_hook.py",
+    "scripts/amplai_hosts.py",
+    "scripts/amplai_runtime.py",
+    "scripts/amplai_supervisor.py",
+    "scripts/loopctl.py",
+    "src/amplai_foundry/__init__.py",
+    "src/amplai_foundry/cli.py",
+    "src/amplai_foundry/control_plane/__init__.py",
+    "src/amplai_foundry/control_plane/auth.py",
+    "src/amplai_foundry/control_plane/connectors.py",
+    "src/amplai_foundry/control_plane/errors.py",
+    "src/amplai_foundry/control_plane/events.py",
+    "src/amplai_foundry/control_plane/http_api.py",
+    "src/amplai_foundry/control_plane/models.py",
+    "src/amplai_foundry/control_plane/outbox.py",
+    "src/amplai_foundry/control_plane/projections.py",
+    "src/amplai_foundry/control_plane/service.py",
+    "src/amplai_foundry/control_plane/store.py",
+    "src/amplai_foundry/control_plane/worker.py",
+    "src/amplai_foundry/curation/__init__.py",
+    "src/amplai_foundry/curation/context_builder.py"
+  ],
+  "content_hash": "4a6c43b6b832392f189cbfe25740b5b8872683445a0cb3504ac56d98aee0bd45",
   "evidence": [
     "changed_files",
     "impact_rules",
@@ -11,18 +107,451 @@
     "doc_reference"
   ],
   "generated_from": {
-    "commit": "b191edf67bd0af827cf34026e89267bf0007ae12",
-    "contract_sha256": "276ba5039a1372a302219e985cc54850c1b25f02efdc451c28c09cb80f909d96",
-    "generated_at": "2026-08-30T00:23:24Z",
+    "commit": "a6d4e6435a1c581668800934e1beecf7b1313cd3",
+    "contract_sha256": "e6e22b26e7b255d5306a2bfe0e9dfc34ece0ca72eb46be14c09b1b7205e5b7bb",
+    "generated_at": "2026-08-30T01:14:20Z",
     "policy_sha256": "8d6b3014867a1e0f3b876f3daa1c0abf810b0a74402e9e09050b38ce84bef6a0",
     "worktree_dirty": true,
     "worktree_state": "WORKTREE"
   },
-  "impacted_documents": [],
-  "non_semantic_sources": [],
-  "reason": "의미 변경 경로가 없다",
+  "impacted_documents": [
+    {
+      "action": "update",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        ".ai-team/knowledge/map.json#loop-runtime-readme",
+        "git grep -F .ai-team/knowledge/decisions.index.json"
+      ],
+      "handled": true,
+      "path": ".ai-team/README.md",
+      "reason": "loop runtime contract change; keyword evidence,knowledge,plane; 문서가 .ai-team/knowledge/decisions.index.json 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        ".ai-team/knowledge/map.json#loop-runtime-workflow"
+      ],
+      "handled": true,
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "loop runtime contract change; keyword converge,review",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "runtime_contract",
+      "discovered_by": [
+        "impact_rules"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs"
+      ],
+      "handled": true,
+      "path": ".ai-team/verifiers/README.md",
+      "reason": "loop runtime contract change",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "runtime_design",
+      "discovered_by": [
+        "knowledge_map",
+        "decision_index"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#constitution",
+        ".ai-team/knowledge/decisions.index.json#amplai-constitution"
+      ],
+      "handled": true,
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword constitution; active decision amplai-constitution",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "impact_rules"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs"
+      ],
+      "handled": true,
+      "path": "AGENTS.md",
+      "reason": "loop runtime contract change",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#loop-runtime-to-runtime-docs",
+        ".ai-team/knowledge/map.json#root-claude-contract"
+      ],
+      "handled": true,
+      "path": "CLAUDE.md",
+      "reason": "loop runtime contract change; keyword claude,skill",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#knowledge-pipeline-to-docs",
+        ".ai-team/knowledge/map.json#knowledge-intake"
+      ],
+      "handled": true,
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "reason": "knowledge intake or vault behavior change; keyword curation",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "impact_rules",
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#knowledge-pipeline-to-docs",
+        ".ai-team/knowledge/map.json#knowledge-rules"
+      ],
+      "handled": true,
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "reason": "knowledge intake or vault behavior change; keyword knowledge",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "impact_rules"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#knowledge-pipeline-to-docs"
+      ],
+      "handled": true,
+      "path": "docs/LIFECYCLE.md",
+      "reason": "knowledge intake or vault behavior change",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#messenger-proposal-control"
+      ],
+      "handled": true,
+      "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
+      "reason": "keyword decision,outbox",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#project-pack"
+      ],
+      "handled": true,
+      "path": "docs/PROJECT-PACK.md",
+      "reason": "keyword installation",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "architecture",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#roadmap"
+      ],
+      "handled": true,
+      "path": "docs/ROADMAP.md",
+      "reason": "keyword plan",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "impact_rules"
+      ],
+      "evidence": [
+        ".ai-team/policy/documentation.json#knowledge-pipeline-to-docs"
+      ],
+      "handled": true,
+      "path": "docs/SOURCE-INGESTION.md",
+      "reason": "knowledge intake or vault behavior change",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "architecture",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .claude/skills/grilling"
+      ],
+      "handled": true,
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reason": "문서가 .claude/skills/grilling 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#versioning"
+      ],
+      "handled": true,
+      "path": "docs/VERSIONING.md",
+      "reason": "keyword schema",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "architecture",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#vision"
+      ],
+      "handled": true,
+      "path": "docs/VISION.md",
+      "reason": "keyword amplai",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/policy/approvals.jsonl"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+      "reason": "문서가 .ai-team/policy/approvals.jsonl 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#loop-adoption-facts"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "reason": "keyword evidence,loop,runtime",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .agents/skills/design/SKILL.md"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+      "reason": "문서가 .agents/skills/design/SKILL.md, .agents/skills/work/SKILL.md, .ai-team/runtime/DECISION_ASYNC_PROTOCOL.md 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/runtime/INSTALLATION.md"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+      "reason": "문서가 .ai-team/runtime/INSTALLATION.md 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#loop-adoption-port-log"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "reason": "keyword loop,runtime,skill",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "knowledge_map",
+        "decision_index",
+        "doc_reference"
+      ],
+      "evidence": [
+        ".ai-team/knowledge/map.json#mgc-decisions",
+        ".ai-team/knowledge/decisions.index.json#D-046",
+        ".ai-team/knowledge/decisions.index.json#D-051",
+        ".ai-team/knowledge/decisions.index.json#D-052",
+        ".ai-team/knowledge/decisions.index.json#D-053",
+        ".ai-team/knowledge/decisions.index.json#MGC-012"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "keyword decision,outbox; active decision D-046; active decision D-051",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "supersede",
+      "category": "decision",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/policy/approvals.jsonl"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+      "reason": "문서가 .ai-team/policy/approvals.jsonl 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .agents/skills/work/SKILL.md"
+      ],
+      "handled": true,
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "문서가 .agents/skills/work/SKILL.md, .ai-team/runtime/DECISION_ASYNC_PROTOCOL.md, .ai-team/runtime/INSTALLATION.md 를 직접 언급",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "update",
+      "category": "other",
+      "discovered_by": [
+        "doc_reference"
+      ],
+      "evidence": [
+        "git grep -F .ai-team/runtime/DECISION_ASYNC_PROTOCOL.md"
+      ],
+      "handled": true,
+      "path": "tools/amplai-loop-kit/reference/REFERENCE_INTEGRATION.md",
+      "reason": "문서가 .ai-team/runtime/DECISION_ASYNC_PROTOCOL.md, .ai-team/runtime/INSTALLATION.md, .ai-team/runtime/LOCAL_SUPERVISOR.md 를 직접 언급",
+      "state": "ACTIVE"
+    }
+  ],
+  "non_semantic_sources": [
+    ".ai-team/README.md",
+    ".ai-team/install/amplai-loop-kit.json",
+    ".codex/hooks.json",
+    ".github/workflows/ci.yml",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "README.md",
+    "ai-team/knowledge/decisions.index.json",
+    "docs/ROADMAP.md",
+    "docs/SPECKIT-TASKIFY-BRIDGE.md",
+    "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+    "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+    "docs/reviews/2026-08-29-platform-kit-audit.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+    "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+    "skills-lock.json",
+    "specs/010-kit-2-4-fleet-distribution/context-pack.json",
+    "specs/010-kit-2-4-fleet-distribution/environment.json",
+    "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+    "specs/010-kit-2-4-fleet-distribution/knowledge-readiness.json",
+    "specs/010-kit-2-4-fleet-distribution/plan.md",
+    "specs/010-kit-2-4-fleet-distribution/spec.md",
+    "specs/010-kit-2-4-fleet-distribution/work-contract.json",
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_amplai_federation.py",
+    "tests/ai/test_amplai_host_adapters.py",
+    "tests/ai/test_amplai_kit_installer.py",
+    "tests/ai/test_amplai_kit_regressions.py",
+    "tests/test_control_plane.py",
+    "tests/test_curation.py",
+    "tools/amplai-loop-kit/CHANGELOG.md",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256",
+    "tools/amplai-loop-kit/README.md",
+    "tools/amplai-loop-kit/VERSION",
+    "tools/amplai-loop-kit/examples/PROJECT_STORE_QUICKSTART.md",
+    "tools/amplai-loop-kit/fragments/design.md",
+    "tools/amplai-loop-kit/fragments/work.md",
+    "tools/amplai-loop-kit/install.py",
+    "tools/amplai-loop-kit/manifest.json",
+    "tools/amplai-loop-kit/payload/.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+    "tools/amplai-loop-kit/payload/.ai-team/runtime/INSTALLATION.md",
+    "tools/amplai-loop-kit/payload/.ai-team/runtime/LOCAL_SUPERVISOR.md",
+    "tools/amplai-loop-kit/payload/.ai-team/runtime/schemas/decision.schema.json",
+    "tools/amplai-loop-kit/payload/.ai-team/runtime/schemas/evidence.schema.json",
+    "tools/amplai-loop-kit/payload/scripts/amplai.py",
+    "tools/amplai-loop-kit/payload/scripts/amplai_hook.py",
+    "tools/amplai-loop-kit/payload/scripts/amplai_hosts.py",
+    "tools/amplai-loop-kit/payload/scripts/amplai_runtime.py",
+    "tools/amplai-loop-kit/payload/scripts/amplai_supervisor.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_async_runtime.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_federation.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_host_adapters.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_installer.py",
+    "tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_regressions.py",
+    "tools/amplai-loop-kit/reference/REFERENCE_INTEGRATION.md",
+    "tools/amplai-loop-kit/reference/SECURITY_AND_RECOVERY.md",
+    "tools/amplai-loop-kit/reference/TEST_REPORT.md"
+  ],
+  "reason": "impacted document 25 건을 이번 Work 에서 모두 갱신했다",
   "schema_version": "1.0",
-  "semantic_change": false,
-  "status": "NOT_APPLICABLE",
+  "semantic_change": true,
+  "status": "RESOLVED",
   "work_id": "ALR-008"
 }

@@ -8,7 +8,29 @@ cortex 의 AMPLAI Loop Runtime V2.1 을 amplai-foundry 로 이식해 **이 저�
 
 근거: `D-046`. 출처: cortex main `3a3eb46b`.
 
-## 현재 갱신 — Kit 2.3.2와 Codex 실행 호환 (2026-08-29)
+## 현재 갱신 — Kit 2.4.0 / Platform 0.4.0 (2026-08-30, `ALR-008`)
+
+번들 `AMPLAI_2.3.1_to_Kit_2.4.0_Platform_0.4.0.zip` 을 적용했다. 번들은 그대로 넣으면 block
+gate 셋(`ruff-check`·`ruff-format`·`mypy`)이 깨지고 documentation freshness 가 STALE 이 되며,
+control plane 에 재현되는 결함 넷이 함께 들어온다. `D-056` 이 그것을 닫고 들이기로 정했다.
+
+```text
+kit 정본     tools/amplai-loop-kit/   2.4.0
+Platform     0.4.0  — src/amplai_foundry/control_plane/ 신규 bounded context
+skill        feynman 제거.  .claude/skills 18개, 전부 .agents/skills symlink
+gate         verifier --profile v2 PASS (block 11/11), pytest 1560, docs FRESH
+```
+
+닫은 결함 넷은 `CP-1` canonical_ref 충돌(같은 내용·다른 origin, 그리고 tenant 간),
+`CP-2` 숫자 필드 타입·범위 미검증, `CP-3` 요청 body 상한 없음, `CP-4` 예외 분류 누락이다.
+앞의 둘과 뒤의 둘 전부 WSGI 계약을 깨고 밖으로 나가던 경로였다.
+
+**gate 가 깨진 원인은 kit 이 설치하는 `scripts/amplai_hosts.py` 가 `pyproject.toml` 의 ruff
+예외 목록에 없던 것이다.** 배포 대상 두 곳은 `ruff`·`mypy` 를 쓰지 않아 그쪽에서는 잠복이다.
+
+fleet 배포는 `ALR-009` 로 뗐다 — `specs/010-kit-2-4-fleet-distribution/`.
+
+## 이전 갱신 — Kit 2.3.2와 Codex 실행 호환 (2026-08-29)
 
 `D-055`가 Claude Code와 Codex를 같은 Loop Runtime의 host adapter로 정의했다. 이전
 `ALR-002`~`ALR-007` 절은 당시 이식·2.3.1 배포의 역사 기록이고, **현재 정본은 다음**이다.
@@ -263,8 +285,10 @@ Actions 가 복구되면 `main` 에서 한 번 돌려 보는 것이 남는다.
 ## 다음 할 일
 
 ```text
-1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 은
-                     CI 로 확인된 적이 없다
+1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 과
+                     ALR-008 둘 다 CI 로 확인된 적이 없다
+1b. fleet 배포       ALR-009 — kit 2.4.0 을 synapse·cortex 에.  설계는
+                     specs/010-kit-2-4-fleet-distribution/ 에 있다.  ALR-008 머지가 선행
 2. policy.json 대칭  제거가 표기를 원복하지 못한다. 내용은 정확히 같다.
                      append_to_json_array 의 역함수가 필요하다
 3. supervisor 켜기   HANDOFF §3 의 활성 세션 라우팅 확인이 선행이다.
