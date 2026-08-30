@@ -48,18 +48,25 @@ cortex    tests/ai   183 → 199, 전부 OK
 
 **그 path 조건을 좁힐지는 cortex 가 정한다.** 배포 때마다 반복되는 항목이다.
 
-### `--verify` 는 여전히 mismatch 다 — 정상이다
+### `--verify` 는 로컬이 main 이 아닌 것을 구분해 말한다
+
+이 호스트의 주 체크아웃은 늘 feature 브랜치에 있고 `main` 은 별도 worktree 가 들고 있다.
+그래서 remote `main` 이 최신인데도 `--verify` 가 mismatch 를 냈고, **"배포 누락이 아니라 로컬
+미동기화" 라는 해명을 이 문서가 두 번 적었다.** 도구가 그 둘을 구분하게 고쳤다.
 
 ```text
-amplai-foundry   2.4.0   matches
-synapse          2.3.0   mismatch
-cortex           null    mismatch
+amplai-foundry   2.4.0   MATCH
+synapse          2.3.0   LOCAL_NOT_ON_MAIN   branch=feat/chuck-max-temperature-rename
+                                             origin/main 은 2.4.0
+cortex           null    LOCAL_NOT_ON_MAIN   branch=feat/card-id-and-prober-id
+                                             origin/main 은 2.4.0
+
+ok: true   mismatched []   local_not_on_main [synapse, cortex]
 ```
 
-`--verify` 는 **이 호스트의 로컬 체크아웃**을 본다. synapse 로컬은 미commit 2.3.0 설치가
-남은 feature 브랜치에 있고 cortex 로컬은 kit 이전 브랜치에 있다. **배포 누락이 아니라 로컬
-미동기화다.** remote `main` 셋은 전부 2.4.0 이다. 로컬을 맞추려면 각자 `main` 을 받아야
-한다 — 이 Work 의 범위 밖이다.
+**둘이 함께 성립할 때만 봐준다** — 체크아웃이 default branch 밖에 있고, `origin/<default>` 의
+install record 가 실제로 이 kit 버전을 담고 있을 때다. `origin/main` 을 못 읽으면 그대로
+`MISMATCH` 다. 볼 수 없을 때 무죄추정하는 check 는 없느니만 못하다.
 
 **`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** remote branch가 같은 version이어도 로컬
 작업 사본이 다른 branch에 있으면 mismatch로 보고한다. 배포는 파일시스템에 하는 것이므로

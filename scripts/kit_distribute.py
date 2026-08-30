@@ -150,6 +150,55 @@ def installed_version(path: Path) -> str | None:
     return str(value) if value is not None else None
 
 
+def _git(path: Path, *args: str) -> str | None:
+    """Read-only git query against a target checkout.  None when it cannot answer."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(path), *args],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return None
+    if done.returncode != 0:
+        return None
+    value = done.stdout.strip()
+    return value or None
+
+
+def checkout_state(path: Path) -> dict[str, Any]:
+    """Which branch this checkout is on, and whether that is the default branch.
+
+    `--verify` reads the filesystem, so a checkout parked on a feature branch
+    looks exactly like a target that never received the kit.  Knowing the branch
+    is what lets the two be told apart.
+    """
+    branch = _git(path, "rev-parse", "--abbrev-ref", "HEAD")
+    head = _git(path, "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+    default = head.rsplit("/", 1)[-1] if head else "main"
+    return {"branch": branch, "on_default": branch == default, "default_branch": default}
+
+
+def default_branch_version(path: Path) -> str | None:
+    """The kit version recorded on the target's `origin/<default>`.
+
+    Read from the remote-tracking ref, not the working tree, so it answers
+    "what did we actually ship" independently of what is checked out.
+    """
+    head = _git(path, "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+    ref = head if head else "refs/remotes/origin/main"
+    raw = _git(path, "show", f"{ref}:{INSTALL_RECORD.as_posix()}")
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw).get("package_version")
+    except ValueError:
+        return None
+    return str(value) if value is not None else None
+
+
 def run_installer(
     target: dict[str, Any],
     config: dict[str, Any],
@@ -236,16 +285,40 @@ def cmd_verify(config: dict[str, Any], resolved: list[dict[str, Any]]) -> int:
     expected = kit_version()
     rows = []
     mismatched = []
+    off_main = []
     for target in resolved:
-        found = installed_version(Path(target["path"]))
+        path = Path(target["path"])
+        found = installed_version(path)
         wanted = target.get("expect_installed", True)
         agree = (found == expected) if wanted else (found is None)
-        row = {"app_id": target["app_id"], "installed": found, "matches": agree}
+        row: dict[str, Any] = {
+            "app_id": target["app_id"],
+            "installed": found,
+            "matches": agree,
+            "state": "MATCH" if agree else "MISMATCH",
+        }
         if not wanted:
             row["expect_installed"] = False
+        if not agree and wanted:
+            state = checkout_state(path)
+            shipped = default_branch_version(path)
+            row["branch"] = state["branch"]
+            # Only the combination excuses the disagreement: the checkout is
+            # parked elsewhere *and* the default branch really carries this kit.
+            # An unreadable default branch stays a mismatch — a check that
+            # assumes innocence when it cannot look is worse than none.
+            if not state["on_default"] and shipped == expected:
+                row["state"] = "LOCAL_NOT_ON_MAIN"
+                row["matches"] = True
+                row["default_branch_installed"] = shipped
+                row["default_branch"] = state.get("default_branch")
+            elif shipped is not None:
+                row["default_branch_installed"] = shipped
         rows.append(row)
-        if not agree:
+        if row["state"] == "MISMATCH":
             mismatched.append(target["app_id"])
+        elif row["state"] == "LOCAL_NOT_ON_MAIN":
+            off_main.append(target["app_id"])
     emit(
         {
             "ok": not mismatched,
@@ -253,6 +326,7 @@ def cmd_verify(config: dict[str, Any], resolved: list[dict[str, Any]]) -> int:
             "kit_version": expected,
             "targets": rows,
             "mismatched": mismatched,
+            "local_not_on_main": off_main,
         }
     )
     return EXIT_OK if not mismatched else EXIT_ERROR
