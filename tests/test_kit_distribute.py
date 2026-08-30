@@ -163,6 +163,101 @@ class TestVerify:
         assert payload["targets"][0]["installed"] == "9.9.9"
 
 
+class TestVerifyLocalBranchState:
+    """`--verify` 는 로컬 디스크를 본다.  그것이 배포 상태와 다를 수 있다.
+
+    이 호스트의 주 체크아웃은 늘 feature 브랜치에 있고 `main` 은 별도 worktree 가
+    들고 있다.  그러면 remote `main` 이 최신인데도 `--verify` 가 mismatch 를 냈고,
+    "배포 누락이 아니라 로컬 미동기화" 라는 해명을 인계 문서가 두 번 적었다.
+    도구가 그 둘을 구분해서 말하면 해명이 필요 없다.
+    """
+
+    def test_a_checkout_off_main_is_reported_apart_from_a_real_gap(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "1.0.0"},
+        )
+        monkeypatch.setattr(
+            kd, "checkout_state", lambda path: {"branch": "feat/x", "on_default": False}
+        )
+        monkeypatch.setattr(kd, "default_branch_version", lambda path: "9.9.9")
+        rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
+        payload = json.loads(capsys.readouterr().out)
+        row = payload["targets"][0]
+        assert rc == kd.EXIT_OK
+        assert payload["mismatched"] == []
+        assert payload["ok"] is True
+        assert row["state"] == "LOCAL_NOT_ON_MAIN"
+        assert row["branch"] == "feat/x"
+        assert row["default_branch_installed"] == "9.9.9"
+        assert payload["local_not_on_main"] == ["alpha"]
+
+    def test_a_real_gap_is_still_a_mismatch_even_off_main(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """origin/main 도 낡았으면 그것은 진짜 배포 누락이다."""
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "1.0.0"},
+        )
+        monkeypatch.setattr(
+            kd, "checkout_state", lambda path: {"branch": "feat/x", "on_default": False}
+        )
+        monkeypatch.setattr(kd, "default_branch_version", lambda path: "1.0.0")
+        rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_ERROR
+        assert payload["mismatched"] == ["alpha"]
+        assert payload["targets"][0]["state"] == "MISMATCH"
+
+    def test_an_unreadable_default_branch_stays_a_mismatch(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """origin/main 을 못 읽으면 무죄추정하지 않는다."""
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        monkeypatch.setattr(
+            kd, "checkout_state", lambda path: {"branch": "feat/x", "on_default": False}
+        )
+        monkeypatch.setattr(kd, "default_branch_version", lambda path: None)
+        rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_ERROR
+        assert payload["targets"][0]["state"] == "MISMATCH"
+
+    def test_a_checkout_on_main_that_disagrees_is_a_mismatch(
+        self, config, tmp_path, monkeypatch, capsys
+    ):
+        """main 위에 있는데 어긋나면 변명의 여지가 없다."""
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "1.0.0"},
+        )
+        monkeypatch.setattr(
+            kd, "checkout_state", lambda path: {"branch": "main", "on_default": True}
+        )
+        monkeypatch.setattr(kd, "default_branch_version", lambda path: "9.9.9")
+        rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_ERROR
+        assert payload["targets"][0]["state"] == "MISMATCH"
+
+    def test_a_match_is_still_a_match(self, config, tmp_path, monkeypatch, capsys):
+        monkeypatch.setattr(kd, "kit_version", lambda: "9.9.9")
+        _write(
+            tmp_path / ".ai-team" / "install" / "amplai-loop-kit.json",
+            {"package_version": "9.9.9"},
+        )
+        rc = kd.cmd_verify(config, [{"app_id": "alpha", "path": str(tmp_path)}])
+        payload = json.loads(capsys.readouterr().out)
+        assert rc == kd.EXIT_OK
+        assert payload["targets"][0]["state"] == "MATCH"
+
+
 class TestRunGates:
     """The wrapper must refuse before it writes, not apologise afterwards."""
 
