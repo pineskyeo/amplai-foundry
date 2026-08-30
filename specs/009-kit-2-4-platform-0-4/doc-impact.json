@@ -1,0 +1,28 @@
+{
+  "acknowledged": [],
+  "broken_references": [],
+  "changed_sources": [],
+  "content_hash": "4e190164d301165fa41396f6cd31c13a3d41998f6b607edbfec23d2a8c1a66e1",
+  "evidence": [
+    "changed_files",
+    "impact_rules",
+    "knowledge_map",
+    "decision_index",
+    "doc_reference"
+  ],
+  "generated_from": {
+    "commit": "b191edf67bd0af827cf34026e89267bf0007ae12",
+    "contract_sha256": "276ba5039a1372a302219e985cc54850c1b25f02efdc451c28c09cb80f909d96",
+    "generated_at": "2026-08-30T00:23:24Z",
+    "policy_sha256": "8d6b3014867a1e0f3b876f3daa1c0abf810b0a74402e9e09050b38ce84bef6a0",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "impacted_documents": [],
+  "non_semantic_sources": [],
+  "reason": "의미 변경 경로가 없다",
+  "schema_version": "1.0",
+  "semantic_change": false,
+  "status": "NOT_APPLICABLE",
+  "work_id": "ALR-008"
+}

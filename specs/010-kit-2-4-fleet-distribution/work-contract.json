@@ -1,0 +1,156 @@
+{
+  "schema_version": "2.0",
+  "id": "ALR-009",
+  "title": "kit 2.4.0 을 synapse 와 cortex 에 배포한다",
+  "goal": "ALR-008 이 확정한 kit 2.4.0 을 배포 대상 둘에 넣어 D-053 의 fleet 셋을 2.4.0 으로 맞춘다. 각 저장소의 origin/main 에서 뜬 worktree 에 --project-home 없이 설치한다 — 그 인자가 없으면 install.py:935-936 이 configure_project_store 를 즉시 반환하므로 store.register_app 의 repo_path 덮어쓰기(ALR-007 사고 경로)가 구조적으로 닫힌다. 그 결과 사용자의 dirty 로컬 작업 사본(synapse 27건/68 뒤, cortex 2건/279 뒤)을 동기화하거나 정리하지 않고도 배포할 수 있다. 2.4.0 이 새로 하는 것은 .codex/hooks.json additive merge 와 owned_files 셋 추가(scripts/amplai_hosts.py, tests/ai/test_amplai_{host_adapters,federation}.py)뿐이고 required_paths 는 2.3.1 과 같다.",
+  "source": [
+    "specs/010-kit-2-4-fleet-distribution/spec.md",
+    "specs/010-kit-2-4-fleet-distribution/plan.md",
+    "specs/009-kit-2-4-platform-0-4/work-contract.json",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-053",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-054",
+    "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md#D-055",
+    "tools/amplai-loop-kit/distribution/targets.json",
+    "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md"
+  ],
+  "work_type": "architecture",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "synapse: kit 2.3.1 → 2.4.0 설치 산출물과 PR",
+      "cortex: kit 2.3.1 → 2.4.0 설치 산출물과 PR",
+      "foundry: docs/workstreams/amplai-loop-runtime-adoption/{KIT-DISTRIBUTION.md,CURRENT_ITEM.md}",
+      "specs/010-kit-2-4-fleet-distribution/"
+    ],
+    "exclude": [
+      "두 저장소의 로컬 작업 사본과 브랜치 — origin/main worktree 에서만 만진다",
+      "Project Store — --project-home 을 주지 않는다",
+      ".ai-team/local/project.json — gitignore 된 host-local 파일이다",
+      "kit 정본 tools/amplai-loop-kit/ 수정 — ALR-008 이 확정한 것을 그대로 쓴다",
+      "cortex 의 Project Store 바인딩 — 설계된 휴지 상태를 유지한다",
+      "supervisor 를 켜는 것"
+    ]
+  },
+  "non_goals": [
+    "사용자의 로컬 체크아웃 동기화 — 이 Work 는 필요로 하지 않는다. 하려면 dirty diff 를 먼저 보고 살릴 것을 정해야 한다",
+    "--project-home 을 주는 설치 — Store repo_path 를 덮는다. 바인딩이 필요하면 배포와 분리해 실제 체크아웃에서 한다",
+    "kit_distribute.py --verify 가 일치를 보고하게 만드는 것 — --verify 는 로컬 디스크를 본다. 배포 성공과 별개다",
+    "Codex hook trust — 사용자가 각 저장소에서 /hooks 로 직접 한다. installer 는 trust 를 우회하지 않는다",
+    "실제 Claude/Codex 계정 E2E — 별도 release gate 다"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "두 저장소 모두 origin/main worktree 에 kit 2.4.0 이 설치되고 install record 의 package_version 이 2.4.0 이다.",
+      "evidence": [
+        "각 worktree 의 .ai-team/install/amplai-loop-kit.json",
+        "설치 전 버전을 먼저 읽어 기록한다 — 2.3.1 이어야 한다"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Project Store 가 바뀌지 않는다. 설치 전후로 Store 의 app repo_path 가 동일하다.",
+      "evidence": [
+        "설치 전후 Project Store 의 apps 레코드를 덤프해 대조",
+        "설치 명령줄에 --project-home 이 없는 것을 기록",
+        "각 worktree 의 git status 에 .ai-team/local/project.json 이 없다"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "synapse 의 기존 .codex/hooks.json 이 보존된다. SessionStart 의 matcher 항목과 PostToolUse 3개가 그대로이고 kit hook 이 추가로 붙는다.",
+      "evidence": [
+        "git diff .codex/hooks.json",
+        "설계 단계에서 merge_hooks 를 실제 파일로 돌린 결과와 대조 — SessionStart 그룹 2개, PostToolUse 보존, SessionEnd 추가"
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "cortex 에 .codex/hooks.json 이 새로 생기고 kit hook 둘만 들어 있다.",
+      "evidence": [
+        "cortex worktree 의 .codex/hooks.json 전문",
+        "기존 .codex/config.toml 이 그대로인 것을 확인"
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "cortex 의 완화된 .ai-team 최상위 guard 가 통과한다. 설치가 새 최상위 디렉토리를 만들지 않는다.",
+      "evidence": [
+        "cortex: python3 -m unittest tests.ai.test_loop_runtime_v2 -q",
+        "설치 전후 .ai-team 최상위 디렉토리 목록을 찍어 비교",
+        "D-054 의 예외 셋(install·local·backups) 밖이 없는지 확인"
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "두 저장소의 tests/ai 가 통과한다. 새로 설치된 test 둘이 함께 돌고 test 수가 늘어난다.",
+      "evidence": [
+        "각 저장소: python3 -m unittest discover -s tests/ai -t .",
+        "설치 전 수와 설치 후 수를 각각 세어서 적는다 — 추정하지 않는다",
+        "test_amplai_host_adapters 와 test_amplai_federation 이 수집되는지 확인",
+        "AMPLAI_PROJECT_HOME 을 지운 채와 둔 채 둘 다 실행한다 (D-054 전례)"
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "두 저장소의 verifier v2 와 doctor 가 PASS 다.",
+      "evidence": [
+        "각 저장소: python3 .ai-team/verifiers/run.py --profile v2",
+        "각 저장소: python3 scripts/loopctl.py doctor"
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "사용자의 로컬 작업 사본이 변하지 않는다. 두 저장소의 브랜치·dirty 파일 수가 시작 때와 같다.",
+      "evidence": [
+        "시작 전후로 git -C <repo> status --porcelain | wc -l 과 rev-parse --abbrev-ref HEAD 를 기록해 대조",
+        "시작 시점 값: synapse dirty 27 / feat/chuck-max-temperature-rename, cortex dirty 2 / feat/card-id-and-prober-id"
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "배포 결과가 문서에 기록된다. --verify 의 결과를 있는 그대로 적고, 로컬 미동기화로 인한 mismatch 는 배포 누락이 아니라고 명시한다.",
+      "evidence": [
+        ".venv/bin/python scripts/kit_distribute.py --verify 의 출력 전문",
+        "KIT-DISTRIBUTION.md 의 해당 절"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "specs/010-kit-2-4-fleet-distribution/knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "specs/010-kit-2-4-fleet-distribution/context-pack.json",
+    "domain_discovery": "required_if_not_ready"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "synapse: python3 -m unittest discover -s tests/ai -t .",
+      "synapse: python3 .ai-team/verifiers/run.py --profile v2",
+      "cortex: python3 -m unittest discover -s tests/ai -t .",
+      "cortex: python3 .ai-team/verifiers/run.py --profile v2",
+      "foundry: .venv/bin/python scripts/kit_distribute.py --verify"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "specs/010-kit-2-4-fleet-distribution/environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-053",
+    "D-054",
+    "D-055"
+  ],
+  "status": "draft"
+}
