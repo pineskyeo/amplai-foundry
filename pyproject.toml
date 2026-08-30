@@ -62,8 +62,10 @@ extend-exclude = [
     # kit 정본과 그것이 설치한 파일. kit 은 Python 3.6 호환을 유지해야 배포 대상들과
     # 어긋나지 않으므로 % 포맷과 open alias 가 남는다. 여기서 고치면 다음 설치가
     # 되돌리므로 tools/amplai-loop-kit/payload/ 에서만 고친다 (D-051, D-053).
+    # kit 이 설치 목록에 script 를 더하면 이 목록에도 같이 더한다. kit 2.4.0 이
+    # amplai_hosts.py 를 더했을 때 그러지 않아 block gate 셋이 한 번에 깨졌다 (D-056).
     "tools/amplai-loop-kit",
-    "scripts/amplai.py", "scripts/amplai_hook.py",
+    "scripts/amplai.py", "scripts/amplai_hook.py", "scripts/amplai_hosts.py",
     "scripts/amplai_runtime.py", "scripts/amplai_supervisor.py",
     "tests/ai",
 ]
