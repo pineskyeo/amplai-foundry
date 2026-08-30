@@ -33,6 +33,9 @@ def test_curate_context_bundle_contains_required_sections(tmp_path: Path) -> Non
     assert "## Related Search Results" in bundle
     assert "## Open Questions" in bundle
     assert "## Allowed Operations" in bundle
+    assert "# AMPLAI Curate Context Bundle" in bundle
+    assert "## Agent Procedure" in bundle
+    assert "Codex" not in bundle
     assert "공식 지식을 직접 수정하지 않는다" in bundle
 
 

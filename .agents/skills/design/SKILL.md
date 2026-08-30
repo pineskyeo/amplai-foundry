@@ -1,15 +1,16 @@
 ---
 name: design
-description: Cortex의 설계 전용 entry point. 구현하지 않고 repository evidence, Knowledge Readiness, ontology/software map을 이용해 요구·scope·acceptance·대안·architecture 결정을 확정한다.
+description: AMPLAI의 설계 전용 entry point. 구현하지 않고 repository evidence, Knowledge Readiness, project knowledge/software map을 이용해 요구·scope·acceptance·대안·architecture 결정을 확정한다.
 argument-hint: "설계할 문제, 목표, 또는 specs/<feature> 경로"
 user-invocable: true
 disable-model-invocation: false
 ---
 
-# /design — Evidence-grounded Shape and Architecture
+# design — Evidence-grounded Shape and Architecture
 
-`/design`은 source code를 구현하지 않는다. `/work`가 제품 결정을 다시 열지 않고 실행할 수
-있도록 Design Ready 상태를 만드는 것이 목적이다.
+Claude Code는 `/design`, Codex는 `$design`으로 호출한다. 이 문서의 `design`/`work` 표기는
+host-neutral entry point를 뜻한다. `design`은 source code를 구현하지 않고, `work`가 제품 결정을
+다시 열지 않고 실행할 수 있도록 Design Ready 상태를 만든다.
 
 ## 1. Knowledge before design
 
@@ -18,7 +19,7 @@ disable-model-invocation: false
 - `AGENTS.md`, runtime/policy/permission
 - current code/interface/test/build path
 - active decisions와 Context Pack
-- relevant ontology neighborhood, binding, evidence
+- relevant active Vault notes, claims, decisions와 evidence
 - 관련 spec/docs/SOP/git history
 
 도메인 지식이 부족하면 그럴듯한 설계를 상상하지 않는다. `knowledge-readiness.json`을 만들고
@@ -53,7 +54,7 @@ context-pack.json       readiness가 READY일 때 생성
 environment.json        verifier environment baseline
 ```
 
-Canonical product docs/ontology를 `.ai-team`에 복사하지 않는다. `.ai-team`은 index/policy만
+Canonical product docs/knowledge를 `.ai-team`에 복사하지 않는다. `.ai-team`은 index/policy만
 소유한다.
 
 ## 4. Design coverage
@@ -63,22 +64,22 @@ Canonical product docs/ontology를 `.ai-team`에 복사하지 않는다. `.ai-te
 - Goal/non-goal, terminology와 source of truth
 - current behavior와 system/ownership boundary
 - public/internal contract와 compatibility
-- domain invariant와 SHACL/structural guard 가능성
+- domain invariant와 schema/lint/structural guard 가능성
 - state/data lifecycle, concurrency, retry/idempotency
 - failure path와 observability/evidence trace
 - security/privacy/permission/human gate
 - environment/fixture/target reproducibility
 - migration/rollback/production impact
 - independently verifiable Slice
-- semantic change candidate와 canonical promotion 필요 여부
+- knowledge change candidate와 governed Proposal 필요 여부
 
 ## 5. Documentation and decision impact
 
-`/design`은 code를 구현하지 않으므로 Repository Gardening을 실행하지 않는다. Documentation
+`design`은 code를 구현하지 않으므로 Repository Gardening을 실행하지 않는다. Documentation
 Freshness만 적용한다.
 
 ```text
-/design → architecture / decision → documentation / decision impact
+design → architecture / decision → documentation / decision impact
         → update or supersede → DESIGN READY
 ```
 
@@ -89,8 +90,9 @@ python3 scripts/loopctl.py docs impact <feature-dir>
 python3 scripts/loopctl.py docs validate --repo
 ```
 
-과거 결정을 뒤집었으면 옛 항목을 지우지 않는다. `docs/decisions/cortex-decisions.md`는 D-NN
-append-only이고 뒤집힌 항목에 `(superseded by D-MM)`을 단다.
+과거 결정을 뒤집었으면 옛 항목을 지우지 않는다. 관련
+`docs/workstreams/*/DECISIONS.md`에 새 Decision을 append하고 이전 항목을 `superseded`로
+연결한다.
 `.ai-team/knowledge/decisions.index.json`에는 `status: superseded`와 `superseded_by`를 남긴다.
 
 중요한 architecture decision이 문서화되지 않은 상태로 `DESIGN READY`를 선언하지 않는다.
@@ -98,7 +100,7 @@ append-only이고 뒤집힌 항목에 `(superseded by D-MM)`을 단다.
 ## 6. Decision and stop condition
 
 - 모든 blocking unknown 해결 + verifier/acceptance 정의 가능 → `READY`
-- architecture/public/ontology/production gate 미승인 → `awaiting_approval`
+- architecture/public contract/knowledge/production gate 미승인 → `awaiting_approval`
 - 근거 부족 또는 conflict 미해결 → `blocked`
 
 ```text
@@ -110,15 +112,15 @@ DESIGN READY
 - risk / verifier / environment
 - documentation/decision impact와 처리 결과
 - 남은 human gate
-- /work가 처음 실행할 Slice
+- work가 처음 실행할 Slice
 ```
 
-코드를 수정하지 않고 멈춘다. 이후 사용자는 `/work <feature-dir>`만 호출하면 된다.
+코드를 수정하지 않고 멈춘다. 이후 사용자는 Claude Code의 `/work <feature-dir>` 또는 Codex의 `$work <feature-dir>`를 호출한다.
 
 <!-- AMPLAI-ASYNC-BEGIN -->
-## 7. Decision-ready and Cross-App Design
+## Decision-ready and Cross-App Design
 
-중앙 Project Store가 연결된 경우 `/design`은 cross-app 상태를 설계할 수 있지만 실행하지 않는다.
+중앙 Project Store가 연결된 경우 `design`은 cross-app 상태를 설계할 수 있지만 실행하지 않는다.
 
 - 변경이 여러 앱의 계약/동작에 영향을 주는 것이 evidence로 확인되면 CR 하나를 만든다.
 - 앱별 Goal, Acceptance, Contract reference, dependency를 Work로 만들되 상태는 `DRAFT`로 둔다.
@@ -131,5 +133,5 @@ DESIGN READY
   Evidence에서 렌더링한다.
 
 `DESIGN READY`에는 CR/Work ID, DRAFT dependency, blocking Question, authority, Contract와 첫 실행
-Work를 포함한다. `/work` 또는 사람이 명시적으로 activate하기 전에는 Supervisor가 실행하지 않는다.
+Work를 포함한다. `work` 또는 사람이 명시적으로 activate하기 전에는 Supervisor가 실행하지 않는다.
 <!-- AMPLAI-ASYNC-END -->

@@ -15,4 +15,4 @@ policy:
   - codex
   - api
   - atlas
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

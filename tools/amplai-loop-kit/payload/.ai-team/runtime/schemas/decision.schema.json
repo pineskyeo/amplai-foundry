@@ -3,29 +3,204 @@
   "$id": "https://amplai.local/schemas/decision.schema.json",
   "title": "AMPLAI Decision",
   "type": "object",
-  "required": ["schema_version", "kind", "decision_id", "change_id", "work_id", "question_id", "statement", "rationale", "authority", "status", "evidence_refs", "review_evidence_refs", "approval_evidence_refs", "alternatives", "decided_by", "created_at", "updated_at", "content_hash"],
+  "required": [
+    "schema_version",
+    "kind",
+    "decision_id",
+    "change_id",
+    "work_id",
+    "question_id",
+    "statement",
+    "rationale",
+    "authority",
+    "status",
+    "evidence_refs",
+    "review_evidence_refs",
+    "approval_evidence_refs",
+    "alternatives",
+    "decided_by",
+    "created_at",
+    "updated_at",
+    "content_hash"
+  ],
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "kind": {"const": "decision"},
-    "decision_id": {"type": "string"},
-    "change_id": {"type": "string"},
-    "work_id": {"type": "string"},
-    "question_id": {"type": "string"},
-    "statement": {"type": "string", "minLength": 1},
-    "rationale": {"type": "string", "minLength": 1},
-    "authority": {"enum": ["AUTO", "CHALLENGE", "HUMAN"]},
-    "status": {"enum": ["ACTIVE", "SUPERSEDED", "REJECTED"]},
-    "evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
-    "review_evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-    "approval_evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-    "alternatives": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-    "review_trigger": {"type": ["string", "null"]},
-    "supersedes": {"type": ["string", "null"]},
-    "superseded_by": {"type": ["string", "null"]},
-    "decided_by": {"type": "string"},
-    "created_at": {"type": "string"},
-    "updated_at": {"type": "string"},
-    "content_hash": {"type": "string"}
+    "schema_version": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "decision"
+    },
+    "decision_id": {
+      "type": "string"
+    },
+    "change_id": {
+      "type": "string"
+    },
+    "work_id": {
+      "type": "string"
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority": {
+      "enum": [
+        "AUTO",
+        "CHALLENGE",
+        "HUMAN"
+      ]
+    },
+    "status": {
+      "enum": [
+        "ACTIVE",
+        "SUPERSEDED",
+        "REJECTED"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "review_evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "approval_evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "review_trigger": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "supersedes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "superseded_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decided_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "content_hash": {
+      "type": "string"
+    },
+    "federation": {
+      "type": "object",
+      "required": [
+        "scope",
+        "origin",
+        "promotion_status",
+        "submission_id",
+        "canonical_ref",
+        "submitted_at",
+        "resolved_at",
+        "rejection_reason"
+      ],
+      "properties": {
+        "scope": {
+          "const": "local"
+        },
+        "origin": {
+          "type": "object",
+          "required": [
+            "store",
+            "project_id",
+            "object_ref"
+          ],
+          "properties": {
+            "store": {
+              "const": "amplai-project-store"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "object_ref": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "promotion_status": {
+          "enum": [
+            "LOCAL",
+            "CANDIDATE",
+            "SUBMITTED",
+            "ACCEPTED",
+            "REJECTED"
+          ]
+        },
+        "submission_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "canonical_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "submitted_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rejection_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

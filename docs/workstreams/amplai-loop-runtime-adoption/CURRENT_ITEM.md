@@ -8,6 +8,52 @@ cortex 의 AMPLAI Loop Runtime V2.1 을 amplai-foundry 로 이식해 **이 저�
 
 근거: `D-046`. 출처: cortex main `3a3eb46b`.
 
+## 현재 갱신 — Kit 2.4.0 / Platform 0.4.0 (2026-08-30, `ALR-008`)
+
+번들 `AMPLAI_2.3.1_to_Kit_2.4.0_Platform_0.4.0.zip` 을 적용했다. 번들은 그대로 넣으면 block
+gate 셋(`ruff-check`·`ruff-format`·`mypy`)이 깨지고 documentation freshness 가 STALE 이 되며,
+control plane 에 재현되는 결함 넷이 함께 들어온다. `D-056` 이 그것을 닫고 들이기로 정했다.
+
+```text
+kit 정본     tools/amplai-loop-kit/   2.4.0
+Platform     0.4.0  — src/amplai_foundry/control_plane/ 신규 bounded context
+skill        feynman 제거.  .claude/skills 18개, 전부 .agents/skills symlink
+gate         verifier --profile v2 PASS (block 11/11), pytest 1560, docs FRESH
+```
+
+닫은 결함 넷은 `CP-1` canonical_ref 충돌(같은 내용·다른 origin, 그리고 tenant 간),
+`CP-2` 숫자 필드 타입·범위 미검증, `CP-3` 요청 body 상한 없음, `CP-4` 예외 분류 누락이다.
+앞의 둘과 뒤의 둘 전부 WSGI 계약을 깨고 밖으로 나가던 경로였다.
+
+**gate 가 깨진 원인은 kit 이 설치하는 `scripts/amplai_hosts.py` 가 `pyproject.toml` 의 ruff
+예외 목록에 없던 것이다.** 배포 대상 두 곳은 `ruff`·`mypy` 를 쓰지 않아 그쪽에서는 잠복이다.
+
+fleet 배포는 `ALR-009` 로 뗐다 — `specs/010-kit-2-4-fleet-distribution/`.
+
+## 이전 갱신 — Kit 2.3.2와 Codex 실행 호환 (2026-08-29)
+
+`D-055`가 Claude Code와 Codex를 같은 Loop Runtime의 host adapter로 정의했다. 이전
+`ALR-002`~`ALR-007` 절은 당시 이식·2.3.1 배포의 역사 기록이고, **현재 정본은 다음**이다.
+
+```text
+kit 정본         tools/amplai-loop-kit/   2.3.2
+공통 skill 정본  .agents/skills/
+Claude mirror    .claude/skills/* -> ../../.agents/skills/*
+공개 진입        Claude /work·/design, Codex $work·$design
+worker           claude-code | codex | command
+hook             .claude/settings.json + .codex/hooks.json (additive merge)
+```
+
+2.3.2는 Codex 문서 노출만 추가한 버전이 아니다. `codex exec --json`, thread ID 회수,
+`codex exec resume`, SessionStart/SessionEnd adapter, internal skill의 implicit invocation 차단,
+권한 우회 경고와 uninstall 소유권까지 포함한다. amplai-foundry에는 설치를 끝냈지만 synapse와
+cortex의 2.3.2 배포는 이 작업 범위에서 실행하지 않았다. 두 저장소의 마지막 확인 기록은
+2.3.1이며, 배포 전 각 저장소 자체 gate를 다시 통과해야 한다.
+
+장기 Platform(`src/amplai_foundry`)과 Loop Kit은 같은 저장소에 있어도 별도 제품이다. Platform
+domain/application은 Kit·`.ai-team`·Claude/Codex runtime을 import하지 않는다. 상세 점검과 후속
+구조는 `docs/reviews/2026-08-29-platform-kit-audit.md`를 따른다.
+
 ## 상태 — 이식이 닫혔다
 
 ```text
@@ -239,8 +285,10 @@ Actions 가 복구되면 `main` 에서 한 번 돌려 보는 것이 남는다.
 ## 다음 할 일
 
 ```text
-1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 은
-                     CI 로 확인된 적이 없다
+1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 과
+                     ALR-008 둘 다 CI 로 확인된 적이 없다
+1b. fleet 배포       ALR-009 — kit 2.4.0 을 synapse·cortex 에.  설계는
+                     specs/010-kit-2-4-fleet-distribution/ 에 있다.  ALR-008 머지가 선행
 2. policy.json 대칭  제거가 표기를 원복하지 못한다. 내용은 정확히 같다.
                      append_to_json_array 의 역함수가 필요하다
 3. supervisor 켜기   HANDOFF §3 의 활성 세션 라우팅 확인이 선행이다.
@@ -259,8 +307,8 @@ synapse   .ai-team/runtime/policy.json 의 path_rule 이 tools/amplai-loop-kit/*
           가리켜 죽은 rule 이 됐다. 그 pattern 은 kit fragment 소유라 정본에서 고쳐야 한다
 ```
 
-`.ai-team/README.md` 가 "Cortex AMPLAI Loop Runtime V2" 로 시작하는 문구 정리는 여전히
-남아 있다. 동작에 영향은 없다.
+`.ai-team/README.md`의 Cortex 잔여 제목은 2.3.2 점검에서 amplai-foundry 기준으로
+정리했다.
 
 ## 해소된 실패 하나 — interpreter 문제였다
 
@@ -298,8 +346,9 @@ dependency 가 없는 interpreter 에 붙는다. registry 의 `loop-runtime-doct
 - cortex 를 다시 당겨올 때 `scripts/loopctl.py` 는 **이 저장소용으로 고쳐져 있다.** 통째로
   덮으면 semantic required path 와 skill 정본 방향이 되돌아가고, `ALR-002` 가 넣은 정합
   검사도 함께 사라진다. `PORT-LOG.md` 의 "이 저장소에 맞춘 것" 절이 그 목록이다.
-- **skill 정본은 `.claude/skills/` 다.** cortex 는 반대다. 이식 중 한 번 뒤집어 `taskify` 를
-  cortex 판으로 덮었다가 되돌렸다.
+- **현재 skill 정본은 `.agents/skills/` 하나다 (`D-055`).** `.claude/skills/`는 exact symlink
+  mirror이며 `doctor`가 집합·방향·visibility를 block으로 검사한다. 이 항목은 2026-08-19
+  port 당시의 반대 방향 결정을 2.3.2가 supersede한 결과다.
 - `.ai-team/` 은 canonical 지식을 복사하지 않는다. `vault/` 가 정본이고 Decision 은
   `docs/workstreams/*/DECISIONS.md` 가 갖는다.
 
@@ -327,7 +376,7 @@ dependency 가 없는 interpreter 에 붙는다. registry 의 `loop-runtime-doct
   1초 미만 stale 창은 시험할 수 없다. 그리고 **두 필드를 다 늙히면 어느 쪽이 우선인지
   시험하지 못한다** — 고치려던 것과 다른 것을 재게 된다
 
-## Out Of Scope
+## ALR-002~ALR-007 당시 Out Of Scope
 
 - semantic runtime (ontology, SHACL, competency question, MCP, project miner)
 - AMPLAI V3 (분산 실행) — cortex 도 의도적으로 미구현

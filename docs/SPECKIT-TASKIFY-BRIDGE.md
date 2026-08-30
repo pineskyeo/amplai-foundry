@@ -109,3 +109,11 @@ protocol 요지: 질문은 한 번에 하나씩, fact 는 환경에서 직접 �
 
 `grilling` 만 symlink 가 아니라 양쪽에 실파일로 들어 있다. 지금 오작동은 없으나 갱신할 때
 한쪽만 바뀔 수 있다. symlink 로 통일할지는 별도 결정으로 남긴다.
+
+> **해소됐다 (2026-08-30, `D-055` / `ALR-008`).** 이 절은 조사 시점의 기록이다. `D-055` 가
+> `.agents/skills/` 를 유일한 공통 정본으로 정했고 `.claude/skills/<name>` 은 **전부**
+> `../../.agents/skills/<name>` 을 가리키는 exact symlink 가 됐다 — 위 표의 `grilling` 실
+> 디렉터리도 포함해서다. `taskify` 의 실체도 `.ai-team/skills/taskify` 가 아니라
+> `.agents/skills/taskify` 다. `loopctl doctor` 가 집합·visibility·symlink 방향을 block 으로
+> 검사하므로 한쪽만 바뀌는 상태가 다시 생기지 않는다. 같은 작업에서 `feynman` 을 제거해
+> skill 은 18개다.

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Speckit Constitution"
+  short_description: "Internal AMPLAI capability invoked by a controller"
+policy:
+  allow_implicit_invocation: false

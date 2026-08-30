@@ -60,7 +60,7 @@ app = typer.Typer(
 )
 source_app = typer.Typer(help="List, show, and verify immutable Sources.")
 proposal_app = typer.Typer(help="Validate, review, approve, and apply Proposals.")
-curate_app = typer.Typer(help="Prepare Codex curation context bundles.")
+curate_app = typer.Typer(help="Prepare agent-neutral curation context bundles.")
 schema_app = typer.Typer(help="Generate and check Pydantic-derived JSON Schemas.")
 project_app = typer.Typer(help="Inspect, validate, rebuild, and archive Project Packs.")
 intake_app = typer.Typer(help="Process intent and artifacts through governed knowledge intake.")
@@ -72,6 +72,7 @@ governance_app = typer.Typer(
         "contends with a running worker."
     )
 )
+control_plane_app = typer.Typer(help="Operate the AMPLAI Platform 0.4 Control Plane.")
 app.add_typer(source_app, name="source")
 app.add_typer(proposal_app, name="proposal")
 app.add_typer(curate_app, name="curate")
@@ -80,6 +81,7 @@ app.add_typer(project_app, name="project")
 app.add_typer(intake_app, name="intake")
 app.add_typer(roadmap_app, name="roadmap")
 app.add_typer(governance_app, name="governance")
+app.add_typer(control_plane_app, name="control-plane")
 
 
 def _fatal(message: str, *, code: int = 2) -> Never:
@@ -830,6 +832,75 @@ def governance_decision_command(
         f"{decision.proposal_ref.proposal_id}  {decision.action.value}  "
         f"{decision.proposal_status.value}  state_revision={decision.state_revision}"
     )
+
+
+@control_plane_app.command("init")
+def control_plane_init_command(
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+) -> None:
+    """Initialize the independent Platform 0.4 Control Plane store."""
+    from amplai_foundry.control_plane import ControlPlaneStore
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    typer.echo(str(store.path))
+
+
+@control_plane_app.command("token-issue")
+def control_plane_token_issue_command(
+    tenant: Annotated[str, typer.Option("--tenant")],
+    project: Annotated[str, typer.Option("--project")],
+    permission: Annotated[list[str], typer.Option("--permission")],
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+) -> None:
+    """Issue one project-scoped bearer token. The raw token is printed once."""
+    from amplai_foundry.control_plane import ApiTokenService, ControlPlaneStore
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    issued = ApiTokenService(store).issue(
+        tenant_id=tenant, project_id=project, permissions=set(permission)
+    )
+    typer.echo(json.dumps(asdict(issued), ensure_ascii=False, indent=2))
+
+
+@control_plane_app.command("projection-rebuild")
+def control_plane_projection_rebuild_command(
+    tenant: Annotated[str, typer.Option("--tenant")],
+    project: Annotated[str, typer.Option("--project")],
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+) -> None:
+    """Rebuild the project summary projection from the append-only event log."""
+    from amplai_foundry.control_plane import ControlPlaneStore, ProjectionService
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    state = ProjectionService(store).rebuild(tenant_id=tenant, project_id=project)
+    typer.echo(json.dumps(state, ensure_ascii=False, indent=2))
+
+
+@control_plane_app.command("serve")
+def control_plane_serve_command(
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8765,
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+) -> None:
+    """Run the dependency-free WSGI API for local/on-prem deployments."""
+    from wsgiref.simple_server import make_server
+
+    from amplai_foundry.control_plane import (
+        ApiTokenService,
+        ControlPlaneService,
+        ControlPlaneStore,
+        ControlPlaneWSGIApp,
+    )
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    service = ControlPlaneService(store, ApiTokenService(store))
+    typer.echo(f"AMPLAI Control Plane listening on http://{host}:{port}")
+    with make_server(host, port, ControlPlaneWSGIApp(service)) as server:
+        server.serve_forever()
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ runtime_protocol: amplai.async-cross-app.v1
 
 ## 1. 변하지 않는 경계
 
-- 사용자 진입점은 계속 `/design`, `/work`다.
+- 공개 의미는 `design`, `work`다. Claude Code에서는 `/design`, `/work`; Codex에서는 `$design`, `$work`로 호출한다.
 - Question, Evidence, Decision, CR, Work, Handoff는 내부 capability다.
 - Handoff Markdown은 SSOT가 아니다. CR·Work·Contract·Decision·Evidence의 현재 projection이다.
 - 같은 앱의 다음 세션은 handoff가 아니라 durable Work Context와 session checkpoint로 재개한다.
@@ -124,7 +124,7 @@ WAITING ─ dependency DONE ─ READY ─ atomic claim ─ CLAIMED ─ start ─
                                                                  └─ CANCELLED
 ```
 
-- `DRAFT`: `/design` 산출물. Supervisor가 실행하지 않는다.
+- `DRAFT`: `design` 산출물. Supervisor가 실행하지 않는다.
 - `WAITING`: 구조화된 dependency가 끝나면 자동으로 `READY`가 된다.
 - `BLOCKED`: 자동 해제 조건이 아직 Work dependency로 모델링되지 않았다.
 - `HUMAN_REQUIRED`: 사람의 결정/승인이 없이는 자동 재개하지 않는다.
@@ -163,9 +163,9 @@ claim된다. 간격은 `supervisor.retry_backoff_seconds`에서 시작해 attemp
 Work는 이 호스트에서 lease가 보이지 않아도 회수하지 않으며, `project verify`가 WARNING으로
 보고한다. 여러 호스트에서 동시에 Supervisor를 돌리지 않는다.
 
-## 6. `/design`과 `/work`
+## 6. `design`과 `work`
 
-### `/design`
+### `design` (Claude `/design`, Codex `$design`)
 
 - Open Question을 구조화한다.
 - Evidence 계획과 authority minimum을 정한다.
@@ -173,7 +173,7 @@ Work는 이 호스트에서 lease가 보이지 않아도 회수하지 않으며,
 - Contract/acceptance/dependency를 설계하지만 실행하지 않는다.
 - HUMAN 결정이 필요하면 질문과 추천안을 남기고 `DESIGN READY` 또는 `awaiting_approval`로 끝낸다.
 
-### `/work`
+### `work` (Claude `/work`, Codex `$work`)
 
 - 현재 앱의 READY Work 또는 명시된 DRAFT Work를 가져온다.
 - Work Context를 읽고 Evidence를 조사한다.
@@ -196,7 +196,7 @@ CR + target Work + Contract + active Decision + upstream result/evidence
 같은 앱의 세션 교체:
 
 ```text
-Work Context + Project Store + host-local Claude session_id/checkpoint
+Work Context + Project Store + host-local agent session/thread checkpoint
                               ↓
                            resume
 ```
@@ -206,7 +206,7 @@ Work Context + Project Store + host-local Claude session_id/checkpoint
 
 ## 8. 미래 Hermes/Global AMPLAI와의 호환성
 
-현재 App Runtime은 repository 내부의 Context·Evidence·Decision·Implementation·Verify를 담당한다.
+현재 App Runtime은 host-neutral repository protocol과 Claude/Codex adapter를 통해 Context·Evidence·Decision·Implementation·Verify를 담당한다.
 미래 Global AMPLAI는 Goal·CR·Contract coordination·Work Graph·priority·cross-app verification을
 담당한다. Global AMPLAI는 앱 내부 구현을 대신하지 않고 동일한 Project Store/Work protocol로
 각 App Runtime을 호출한다.

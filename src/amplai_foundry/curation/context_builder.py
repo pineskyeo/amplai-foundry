@@ -1,4 +1,4 @@
-"""Build a self-contained Codex curation context bundle."""
+"""Build a self-contained, agent-neutral curation context bundle."""
 
 from pathlib import Path
 
@@ -69,7 +69,7 @@ class CurateContextBuilder:
         )
 
         sections = [
-            "# Codex Curate Context Bundle",
+            "# AMPLAI Curate Context Bundle",
             "",
             "## Safety Instructions",
             "",
@@ -136,7 +136,7 @@ class CurateContextBuilder:
                 "",
                 "`CREATE`, `UPDATE`, `LINK`, `MERGE`, `SPLIT`, `SUPERSEDE`, `CONFLICT`, `IGNORE`",
                 "",
-                "## Codex Procedure",
+                "## Agent Procedure",
                 "",
                 "1. Source ID와 원문을 확인한다.",
                 "2. 기존 active knowledge를 먼저 검색한다.",

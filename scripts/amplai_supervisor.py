@@ -26,6 +26,7 @@ from amplai_runtime import (  # noqa: E402
     ACTIVE_WORK_STATUSES, AmplaiError, ConflictError, LockError, NotFoundError,
     ProjectStore, ValidationError, discover_project_home, ensure_dir, utc_now,
 )
+from amplai_hosts import continuation_id_from_output, get_host_adapter  # noqa: E402
 
 # A refused start is not the same failure as a broken Store, so callers can tell
 # "someone else is already running" apart from "this run went wrong".
@@ -33,39 +34,9 @@ EXIT_ERROR = 2
 EXIT_ALREADY_RUNNING = 3
 
 
-def recursive_session_id(value):
-    if isinstance(value, dict):
-        for key in ("session_id", "sessionId"):
-            if isinstance(value.get(key), str) and value.get(key):
-                return value.get(key)
-        for child in value.values():
-            found = recursive_session_id(child)
-            if found:
-                return found
-    elif isinstance(value, list):
-        for child in value:
-            found = recursive_session_id(child)
-            if found:
-                return found
-    return None
-
-
-def read_last_json(path):
-    if not os.path.exists(path):
-        return None
-    with io.open(path, "r", encoding="utf-8", errors="replace") as handle:
-        text = handle.read().strip()
-    if not text:
-        return None
-    try:
-        return json.loads(text)
-    except ValueError:
-        for line in reversed(text.splitlines()):
-            try:
-                return json.loads(line)
-            except ValueError:
-                continue
-    return None
+def session_id_from_output(path):
+    """Compatibility wrapper retained for external tests/tools."""
+    return continuation_id_from_output(path)
 
 
 class WorkerRunner(object):
@@ -78,9 +49,11 @@ class WorkerRunner(object):
         self.local = store.get_local_app(self.app_id)
         self.repo_path = self.local["repo_path"]
         self.runner = self.local["runner"]
+        self.host = get_host_adapter(self.runner)
         self.policy = store.policy.get("supervisor") or {}
 
     def _prompt(self):
+        entry_point = self.host.public_work_entry
         return "\n".join([
             "AMPLAI durable Work assignment",
             "",
@@ -89,7 +62,7 @@ class WorkerRunner(object):
             "Work ID: %s" % self.work["work_id"],
             "Change ID: %s" % self.work["change_id"],
             "",
-            "Use the repository's /work entry point. The Project Store is the source of truth.",
+            "Use the repository's %s entry point. The Project Store is the source of truth." % entry_point,
             "First inspect the Work Context with:",
             "  python3 scripts/amplai.py work context --id \"$AMPLAI_WORK_ID\"",
             "",
@@ -100,26 +73,21 @@ class WorkerRunner(object):
         ])
 
     def _command(self):
-        command = self.runner.get("command") or "claude"
-        args = list(self.runner.get("args") or [])
-        runner_type = self.runner.get("type") or "claude-code"
         session_id = self.store.session_id_for_work(self.app_id, self.work["work_id"])
-        if runner_type == "claude-code":
-            result = [command] + args + ["--output-format", "json"]
-            if session_id:
-                result += ["--resume", session_id]
-            result += ["-p", self._prompt()]
-            return result
-        if runner_type == "command":
-            mapping = {
-                "work_id": self.work["work_id"],
-                "change_id": self.work["change_id"],
-                "app_id": self.app_id,
-                "project_home": self.store.home,
-                "repo_path": self.repo_path,
-            }
-            return [command] + [str(item).format(**mapping) for item in args]
-        raise ValidationError("unsupported runner type: %s" % runner_type)
+        mapping = {
+            "work_id": self.work["work_id"],
+            "change_id": self.work["change_id"],
+            "app_id": self.app_id,
+            "project_home": self.store.home,
+            "repo_path": self.repo_path,
+        }
+        try:
+            return self.host.build_command(self._prompt(), session_id, mapping)
+        except ValueError as exc:
+            raise ValidationError(str(exc))
+
+    def _logged_command(self, command):
+        return self.host.redact_command(command)
 
     def _run_dir(self):
         stamp = utc_now().replace(":", "").replace("-", "")
@@ -139,10 +107,7 @@ class WorkerRunner(object):
         stderr_path = os.path.join(run_dir, "stderr.log")
         command_path = os.path.join(run_dir, "command.json")
         command = self._command()
-        if command and len(command) >= 2 and command[-2] == "-p":
-            logged_command = command[:-1] + ["<prompt>"]
-        else:
-            logged_command = list(command)
+        logged_command = self._logged_command(command)
         with io.open(command_path, "w", encoding="utf-8") as handle:
             json.dump({
                 "command": logged_command,
@@ -211,8 +176,7 @@ class WorkerRunner(object):
             returncode = process.poll()
             if returncode is None:
                 returncode = process.wait()
-        payload = read_last_json(stdout_path)
-        session_id = recursive_session_id(payload)
+        session_id = self.host.continuation_id_from_output(stdout_path)
         if session_id:
             self.store.update_session(
                 self.app_id, work_id=work_id, session_id=session_id,

@@ -15,7 +15,9 @@ from amplai_runtime import (  # noqa: E402
     ConflictError, ProjectStore, ValidationError, read_json, seal,
     write_json_atomic,
 )
-from amplai_supervisor import Supervisor, WorkerRunner  # noqa: E402
+from amplai_supervisor import (  # noqa: E402
+    Supervisor, WorkerRunner, session_id_from_output,
+)
 
 
 class AmplaiRuntimeTest(unittest.TestCase):
@@ -269,6 +271,33 @@ class AmplaiRuntimeTest(unittest.TestCase):
         self.assertEqual(command[-2], "-p")
         self.assertIn("Work ID", command[-1])
 
+    def test_codex_command_uses_jsonl_resume_and_masks_prompt(self):
+        work = self.make_work("cortex")
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="codex",
+            runner_args=["--sandbox", "workspace-write"], auto_start=True,
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        self.store.update_session(
+            "cortex", work_id=work["work_id"], session_id="thread-123",
+        )
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        command = runner._command()
+        self.assertEqual(command[:3], ["codex", "exec", "--json"])
+        self.assertIn("resume", command)
+        self.assertIn("thread-123", command)
+        self.assertIn("$work", command[-1])
+        self.assertEqual(runner._logged_command(command)[-1], "<prompt>")
+
+    def test_codex_jsonl_thread_id_is_recovered_from_first_event(self):
+        path = os.path.join(self.temp, "codex.jsonl")
+        with io.open(path, "w", encoding="utf-8") as handle:
+            handle.write('{"type":"thread.started","thread_id":"thread-jsonl"}\n')
+            handle.write('{"type":"turn.started"}\n')
+            handle.write('{"type":"turn.completed","usage":{}}\n')
+        self.assertEqual(session_id_from_output(path), "thread-jsonl")
+
 
 class AmplaiSupervisorGoldenTest(unittest.TestCase):
     def setUp(self):
@@ -407,3 +436,19 @@ class AmplaiHookTest(unittest.TestCase):
         finally:
             os.environ.clear()
             os.environ.update(old)
+
+    def test_codex_session_start_uses_shared_context_without_claude_title(self):
+        from amplai_hook import session_start
+        change = self.store.create_change(
+            "Codex hook test", "Expose READY Work", "synapse", change_id="CR-0201",
+        )
+        self.store.activate_change(change["change_id"])
+        work = self.store.create_work(
+            change["change_id"], "synapse", "Run from Codex hook context",
+            acceptance=["context injected"],
+        )
+        self.store.activate_work(work["work_id"])
+        value = session_start({"cwd": self.repo}, host="codex")
+        output = value["hookSpecificOutput"]
+        self.assertIn(work["work_id"], output["additionalContext"])
+        self.assertNotIn("sessionTitle", output)

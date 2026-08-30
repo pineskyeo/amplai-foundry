@@ -25,7 +25,7 @@
 - 실행하지 않은 검증을 통과했다고 보고하지 않는다.
 - 실패를 숨기지 않고 명령, exit code와 원인을 기록한다.
 
-## Codex Curation Contract
+## Agent Curation Contract
 
 사용자가 GPT 답변 파일 경로와 함께 AMPLAI 지식 정리를 요청하면 다음 순서를 따른다.
 
@@ -51,16 +51,20 @@
 5. 미준비 상태면 `DIRECT_MUTATION_DISABLED` 또는 `APPLY_ACTION_DEFERRED` 보고
 6. `MGC-009` 이전에는 canonical Vault와 Git state 미수정
 
-`CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 Codex가 임의로 결정하지 않는다.
+`CONFLICT` operation이 하나라도 있으면 전체 Proposal을 자동 apply하지 않는다. 충돌 없는 operation만 부분 적용할지 agent가 임의로 결정하지 않는다.
 
 ## Public Workflow
 
-사용자가 직접 호출하는 개발 명령은 둘뿐이다.
+사용자가 직접 호출하는 개발 entry point는 둘뿐이다. 의미는 host와 무관하고 호출 표기만
+다르다.
 
 ```text
-/work <goal>       구현·검증·수렴·리뷰까지 완료한다
-/design <problem>  구현하지 않고 요구·설계·결정을 확정한다
+Claude Code   /work <goal>       /design <problem>
+Codex         $work <goal>       $design <problem>
 ```
+
+`work`는 구현·검증·수렴·리뷰까지 완료하고, `design`은 구현하지 않고 요구·설계·결정을
+확정한다.
 
 `specify`, `clarify`, `plan`, `taskify`, `analyze`, `implement`, `converge`,
 `review`, `debug` 는 **internal capability** 다. 사용자가 그 순서를 지휘하게 하지 않는다
@@ -101,8 +105,9 @@ scripts/eval.sh --feature specs/<feature> --slice S01
 python3 .ai-team/verifiers/run.py --profile v2
 ```
 
-보조 skill 은 loop 밖에 있고 사용자가 직접 부른다 — `/grill-me`, `/feynman`, `/eli12`,
-`/grilling`. 개발 절차를 지휘하지 않는다.
+보조 skill은 loop 밖에 있고 사용자가 직접 부른다. Claude Code에서는 `/grill-me`,
+`/eli12`, `/grilling`, Codex에서는 같은 이름에 `$`를 붙인다. 개발 절차를
+지휘하지 않는다.
 
 ## Runtime Ownership
 
@@ -125,12 +130,15 @@ project miner — 는 가져오지 않았다 (`D-046`). 이 저장소에는 그 
 
 ## Skill Layout
 
-**정본은 `.claude/skills/` 다.** `.agents/skills/` 는 Codex adapter 로 같은 workflow 를
-가리킨다. cortex 와 방향이 반대이므로 `loopctl doctor` 도 그렇게 맞춰 놓았다.
+**공통 정본은 `.agents/skills/`다.** Codex가 이 경로를 직접 읽고,
+`.claude/skills/<name>`은 모두 정확히 `../../.agents/skills/<name>`을 가리키는 symlink다.
+내부 capability는 `.agents/skills/<name>/agents/openai.yaml`의
+`allow_implicit_invocation: false`로 Codex의 암묵적 호출을 막는다. `loopctl doctor`가 skill
+집합·visibility·symlink 방향을 검사한다.
 
 ## Review Before Gate
 
-`/work` 의 review 단계는 관점이 서로 다른 독립 reviewer 셋을 쓴다 — contract,
+`work` entry point의 review 단계는 관점이 서로 다른 독립 reviewer 셋을 쓴다 — contract,
 failure/recovery, regression. P0·P1·Blocking-P2 가 하나라도 있으면 gate 를 열지 않는다.
 Advisory 는 기록하고 item 별로 판단한다. review 를 실행하지 않았으면 gate 결과를 기록하지
 않는다.
@@ -139,4 +147,4 @@ reviewer 는 **순차로** 돌린다. 동시에 띄우면 세션 한도로 셋 �
 큰 파일을 통째로 읽지 말라는 예산 규율을 준다.
 
 `.specify/workflows/speckit/workflow.yml` 의 `review-implementation` step 이 아직 이 관문의
-문서상 근거다. `/work` 가 그것을 흡수하면 그때 정리한다.
+문서상 근거다. `work` controller가 그것을 흡수하면 그때 정리한다.

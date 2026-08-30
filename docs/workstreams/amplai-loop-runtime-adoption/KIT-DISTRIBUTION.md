@@ -4,22 +4,54 @@
 `ALR-006` 이 만들었다.
 
 ```text
-정본        amplai-foundry:tools/amplai-loop-kit/   (2.3.0)
+정본        amplai-foundry:tools/amplai-loop-kit/   (2.4.0)
 배포 대상   amplai-foundry(source), synapse, cortex
 배포 명령   scripts/kit_distribute.py
 ```
 
-## 현재 설치 상태 (2026-08-28)
+## 현재 설치 상태 (2026-08-30, `ALR-008`)
 
 ```text
-amplai-foundry   2.3.1   설치됨
-synapse          2.3.1   설치됨.  벤더링된 정본은 지웠다 (D-053, PR #82)
-cortex           2.3.1   설치됨.  규약 완화가 선행됐다 (D-054, PR #146)
+amplai-foundry   2.4.0   정본 + repository-local 설치 완료
+synapse          2.3.1   마지막 확인 상태. 2.4.0 미배포
+cortex           2.3.1   마지막 확인 상태. 2.4.0 미배포
 ```
 
-**`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** 세 저장소의 `main` 이 전부 2.3.1
-이어도 로컬 작업 사본이 다른 브랜치에 있으면 mismatch 로 보고한다. 그게 맞는 동작이다 —
-배포는 파일시스템에 하는 것이지 remote 에 하는 것이 아니다.
+2.4.0 을 fleet 에 보내는 것은 `ALR-009` 다 — 설계는
+`specs/010-kit-2-4-fleet-distribution/` 이 갖는다. 실측한 사전 조건은 다음이다.
+
+```text
+required_paths   2.3.1 과 동일하고 두 대상 origin/main 에 셋 다 있다
+owned_files      20 -> 23.  scripts/amplai_hosts.py 와 tests/ai 의 새 test 둘
+.ai-team 최상위  runtime 하나뿐이라 cortex 의 완화된 guard(D-054)를 안 깬다
+.codex/hooks.json  2.4.0 이 새로 additive merge 한다.  synapse 는 이미 이 파일이 있고
+                 kit 의 merge_hooks 를 그 실제 파일로 돌려 기존 SessionStart(matcher)와
+                 PostToolUse 셋이 보존되는 것을 확인했다.  cortex 는 새로 생긴다
+lint             두 대상 tracked 파일 전체에 ruff/mypy 문자열이 없다.
+                 amplai_hosts.py 의 3.6 문법이 그쪽에서 문제가 되지 않는다
+```
+
+**`--project-home` 없이 설치한다.** `install.py:935-936` 이 그 인자가 없으면
+`configure_project_store` 를 즉시 반환하므로 `store.register_app(..., repo_path=...)` 이
+안 불린다 — `ALR-007` 이 겪은 Store `repo_path` 덮어쓰기 사고의 원인이 그 줄이다. 건너뛰는
+것은 gitignore 된 `.ai-team/local/project.json` 하나뿐이라 **대상의 로컬 작업 사본을
+동기화하거나 정리하지 않고 `origin/main` worktree 에서 배포할 수 있다.**
+
+**`--verify` 는 이 호스트의 로컬 체크아웃을 본다.** remote branch가 같은 version이어도 로컬
+작업 사본이 다른 branch에 있으면 mismatch로 보고한다. 배포는 파일시스템에 하는 것이므로
+그게 맞는 동작이다.
+
+### Claude Code / Codex host contract
+
+```text
+Claude Code   /work, /design    claude-code runner    .claude/settings.json
+Codex         $work, $design    codex runner          .codex/hooks.json
+공통 정본     .agents/skills/   Project Store         .amplai/
+```
+
+Codex project-local hook은 설치만으로 활성화됐다고 보지 않는다. 저장소에서 `/hooks`를 열어
+명령을 검토하고 신뢰해야 하며 installer는 trust나 sandbox/approval bypass를 자동으로 추가하지
+않는다.
 
 ### cortex 를 되돌렸다가 다시 넣은 경위
 
@@ -196,12 +228,17 @@ main baseline            154 tests, 실패 3
 
 ## 재설치가 되돌리는 것
 
-`install.py` 는 idempotent update 라 재설치 때 marker 와 `.claude/settings.json` 을 다시
-쓴다. 다음은 kit 소유가 아니므로 살아남는다.
+`install.py` 는 idempotent update 라 재설치 때 marker와 host hook 설정
+(`.claude/settings.json`, `.codex/hooks.json`)을 additive merge한다. 다음은 kit 소유가 아니므로 살아남는다.
 
 ```text
 pyproject.toml 의 벤더링 lint 예외
 .ai-team/README.md 의 규약 예외 각주 (D-051)
 ```
+
+**kit 이 설치 목록에 script 를 더하면 `pyproject.toml` 의 예외 목록에도 같이 더한다.**
+2.4.0 이 `scripts/amplai_hosts.py` 를 더하면서 그러지 않아 이 저장소의 block gate 셋이 한
+번에 깨졌다 (`D-056`). 그 예외는 kit 소유가 아니므로 재설치가 되돌리지는 않지만, 새 script 를
+더할 때 사람이 같이 넣어야 한다.
 
 marker **안쪽**은 덮인다. 그 안을 고쳐야 하면 kit 의 `fragments/` 를 고치고 배포한다.

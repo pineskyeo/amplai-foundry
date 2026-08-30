@@ -16,13 +16,14 @@ adapter 지침이다.
 나머지 개발 capability(`speckit-*`, `taskify`, `code-review`, `dev-loop`,
 `systematic-debugging`)는 controller 가 내부에서 쓴다. 직접 부르지 않는다.
 
-loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/feynman`, `/eli12`,
-`/grilling`. 개발 절차를 지휘하지 않는다.
+loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/eli12`, `/grilling`.
+개발 절차를 지휘하지 않는다.
 
 ## Skill Layout
 
-**정본은 `.claude/skills/` 다.** `.agents/skills/` 는 Codex adapter 이고 같은 workflow 를
-가리킨다. cortex 와 방향이 반대다.
+공통 정본은 `.agents/skills/`다. `.claude/skills/<name>`은 같은 workflow를 가리키는
+symlink mirror이며 Claude 전용 사본을 따로 두지 않는다. skill 내용은 두 host에서 같고
+호출 표기만 Claude `/skill`, Codex `$skill`로 다르다.
 
 ## Communication
 

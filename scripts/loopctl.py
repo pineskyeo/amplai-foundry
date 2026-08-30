@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Small control-plane utilities for the Cortex Loop Runtime.
+"""Small control-plane utilities for the AMPLAI Loop Runtime.
 
 This is intentionally not an orchestration framework. It only makes policy,
-contract, and runtime structure deterministic enough for /work and /design.
+contract, and runtime structure deterministic enough for the work/design entry points.
 
 Commands:
   doctor
@@ -349,6 +349,22 @@ def read_frontmatter(path):
     return data
 
 
+def codex_implicit_invocation_disabled(path):
+    if not os.path.isfile(path):
+        return False
+    text = open(path, encoding="utf-8").read()
+    return bool(re.search(r"^\s*allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE))
+
+
+def hook_commands(settings, event):
+    commands = []
+    for wrapper in (settings.get("hooks") or {}).get(event) or []:
+        for hook in wrapper.get("hooks") or []:
+            if hook.get("type") == "command" and hook.get("command"):
+                commands.append(hook["command"])
+    return commands
+
+
 def doctor(root):
     required = [
         ".ai-team/README.md",
@@ -409,7 +425,8 @@ def doctor(root):
         ".opencode/plugins",
     ]
     # amplai-foundry 는 cortex 보다 skill 이 많다. 이식하지 않은 것들은 그대로 둔다 —
-    # `eli12`/`feynman`/`grilling` 은 설명·학습·심문용이고 loop 와 겹치지 않는다.
+    # `eli12`/`grilling` 은 설명·심문용이고 loop 와 겹치지 않는다. `feynman` 은
+    # 2026-08-30 에 제거했다 (ALR-008) — 쓰지 않기로 했다.
     # `speckit-checklist`/`speckit-constitution`/`speckit-taskstoissues` 도 유지한다.
     expected_skills = {
         "work",
@@ -425,7 +442,6 @@ def doctor(root):
         "code-review",
         "systematic-debugging",
         "eli12",
-        "feynman",
         "grill-me",
         "grilling",
         "speckit-checklist",
@@ -476,6 +492,7 @@ def doctor(root):
     shared_root = os.path.join(root, ".agents", "skills")
     shared_names = set()
     public = []
+    internal = []
     internal_wrong = []
     if not os.path.isdir(shared_root):
         errors.append(".agents/skills 없음")
@@ -489,7 +506,9 @@ def doctor(root):
             raw = fm.get("user-invocable", "true").lower()
             if raw == "true":
                 public.append(name)
-            elif raw != "false":
+            elif raw == "false":
+                internal.append(name)
+            else:
                 internal_wrong.append(f"{name} user-invocable={raw}")
     if shared_names != expected_skills:
         missing = sorted(expected_skills - shared_names)
@@ -498,23 +517,10 @@ def doctor(root):
             errors.append("필수 shared skill 없음: {}".format(", ".join(missing)))
         if extra:
             errors.append("허용되지 않은/legacy shared skill: {}".format(", ".join(extra)))
-    # **정본 위치가 cortex 와 반대다.** amplai-foundry 는 `.claude/skills/` 가 실물이고
-    # `.agents/skills/` 가 Codex adapter stub 이다 (AGENTS.md 의 Spec-Kit Adoption 절).
-    # 그래서 user-invocable 판정도 `.claude/skills/` 쪽 frontmatter 로 한다.
-    claude_public = []
-    claude_skill_root = os.path.join(root, ".claude", "skills")
-    if os.path.isdir(claude_skill_root):
-        for name in sorted(os.listdir(claude_skill_root)):
-            skill = os.path.join(claude_skill_root, name, "SKILL.md")
-            if not os.path.isfile(skill):
-                continue
-            fm = read_frontmatter(skill)
-            if fm.get("user-invocable", "true").lower() == "true":
-                claude_public.append(name)
-    # 개발 loop 의 공개 표면은 work/design 둘이다 (D-046). 그 외 user-invocable 은
-    # loop 밖 보조 skill 만 허용한다.
-    allowed_public = {"work", "design", "eli12", "feynman", "grill-me", "grilling"}
-    stray = sorted(set(claude_public) - allowed_public)
+
+    # 개발 loop의 공개 표면은 work/design 둘이고 나머지 public skill은 loop 밖 보조 기능이다.
+    allowed_public = {"work", "design", "eli12", "grill-me", "grilling"}
+    stray = sorted(set(public) - allowed_public)
     if stray:
         errors.append(
             "개발 skill 은 work/design 만 user-invocable 이어야 함: {}".format(", ".join(stray))
@@ -522,15 +528,34 @@ def doctor(root):
     if internal_wrong:
         errors.extend(f"invalid skill visibility: {x}" for x in internal_wrong)
 
+    # Codex는 `.agents/skills`를 직접 읽는다. 내부 capability가 prompt만으로 암묵 호출되면
+    # public work/design controller를 우회하므로 invocation policy도 doctor가 강제한다.
+    for name in internal:
+        metadata = os.path.join(shared_root, name, "agents", "openai.yaml")
+        if not codex_implicit_invocation_disabled(metadata):
+            errors.append(
+                "Codex internal skill invocation policy 없음/오류: "
+                f".agents/skills/{name}/agents/openai.yaml"
+            )
+
+    # `.agents/skills`가 유일한 workflow 정본이고 Claude는 exact symlink mirror다.
     claude_root = os.path.join(root, ".claude", "skills")
     claude_names = set()
     if os.path.isdir(claude_root):
         for name in sorted(os.listdir(claude_root)):
             path = os.path.join(claude_root, name)
             claude_names.add(name)
-            # cortex 와 방향이 반대다. 여기서는 `.claude/skills/` 가 실물이거나
-            # `.agents/skills/` 를 가리키는 symlink 둘 다 허용한다. 깨진 link 만 잡는다.
-            if os.path.islink(path) and not os.path.exists(path):
+            expected_target = os.path.join("..", "..", ".agents", "skills", name)
+            if not os.path.islink(path):
+                errors.append(f"Claude skill은 shared 정본의 symlink여야 함: .claude/skills/{name}")
+                continue
+            actual_target = os.readlink(path)
+            if actual_target != expected_target:
+                errors.append(
+                    f"Claude skill symlink 방향 오류: .claude/skills/{name} -> {actual_target} "
+                    f"(expected {expected_target})"
+                )
+            elif not os.path.exists(path):
                 errors.append(f"Claude skill symlink 가 깨졌다: .claude/skills/{name}")
     else:
         errors.append(".claude/skills 없음")
@@ -541,6 +566,28 @@ def doctor(root):
             errors.append("Claude adapter symlink 없음: {}".format(", ".join(missing)))
         if extra:
             errors.append("Claude adapter에 legacy skill 남음: {}".format(", ".join(extra)))
+
+    # Kit 2.3.2+가 설치된 repository는 Codex lifecycle hook도 설치 record와 함께 가져야 한다.
+    install_state_path = os.path.join(root, ".ai-team", "install", "amplai-loop-kit.json")
+    if os.path.isfile(install_state_path):
+        try:
+            install_state = load_json(install_state_path)
+        except Exception as exc:
+            errors.append(f"invalid JSON {install_state_path}: {exc}")
+        else:
+            codex_hooks = install_state.get("codex_hooks") or []
+            if codex_hooks:
+                hooks_path = os.path.join(root, ".codex", "hooks.json")
+                try:
+                    settings = load_json(hooks_path)
+                except Exception as exc:
+                    errors.append(f"Codex hook 설정 없음/오류: {hooks_path}: {exc}")
+                else:
+                    for item in codex_hooks:
+                        event = item.get("event")
+                        command = item.get("command")
+                        if command not in hook_commands(settings, event):
+                            errors.append(f"설치 record의 Codex hook 없음: {event} -> {command}")
 
     if registry is not None:
         check_ids = []
@@ -660,7 +707,7 @@ def doctor(root):
         if not os.path.isfile(path):
             continue
         text = open(path, encoding="utf-8").read()
-        # `/grill-me`·`/feynman` 은 amplai-foundry 가 유지하는 loop 밖 보조 skill 이라
+        # `/grill-me` 는 amplai-foundry 가 유지하는 loop 밖 보조 skill 이라
         # legacy 가 아니다 (D-046). `.ai-team/skills/` 만 legacy 로 본다.
         for old in (
             ".ai-team/gates/",
@@ -691,7 +738,7 @@ def doctor(root):
             print(f"- {error}")
         return 1
     print("LOOP DOCTOR: PASS")
-    print("- public skills: /work, /design")
+    print("- public entry points: Claude /work,/design | Codex $work,$design")
     print("- internal capabilities: %d" % (len(shared_names) - 2))
     print("- legacy runtime directories: absent")
     print("- policy/contract/verifier JSON: valid")
@@ -703,7 +750,10 @@ def doctor(root):
     print("- Semantic Runtime: 이식 제외 (D-046). Vault lint 가 대신한다")
     print("- Harness quadrant coverage: complete")
     print("- contract template: valid")
-    print("- Claude skills: exact shared-skill symlink set")
+    print("- skill SSOT: .agents/skills; Claude mirror: exact symlink set")
+    print("- Codex internal skill policy: implicit invocation disabled")
+    if os.path.isfile(os.path.join(root, ".codex", "hooks.json")):
+        print("- Codex hooks: installed and consistent with Kit state")
     return 0
 
 

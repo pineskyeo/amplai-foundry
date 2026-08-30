@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.4.0
+
+Host abstraction and Platform federation boundary.
+
+- Extracted Claude Code, Codex, and generic command execution into `amplai_hosts.py`; Supervisor and lifecycle hook no longer own provider-specific argv/session logic.
+- Preserved `/work` for Claude Code and `$work` for Codex while sharing the same durable Work contract.
+- Added non-destructive Decision/Evidence promotion metadata and fail-closed lifecycle: `LOCAL → CANDIDATE → SUBMITTED → ACCEPTED/REJECTED`.
+- Added deterministic promotion envelopes with origin provenance and idempotency keys for Platform 0.4.
+- Added host-adapter and federation regression suites and included them in the distributable payload.
+
+## 2.3.2
+
+First-class Codex compatibility and shared-skill ownership correction (`D-055`).
+
+- Added a native `codex` supervisor runner using `codex exec --json`, explicit
+  session resume, JSONL `thread.started.thread_id` recovery, `$work` prompting,
+  and prompt redaction in run metadata.
+- Added non-destructive project-local Codex `SessionStart`/`SessionEnd` hook
+  installation in `.codex/hooks.json`; existing hooks and unrelated fields are
+  preserved and uninstall removes only AMPLAI-owned handlers.
+- Generalized the hook adapter for Claude Code and Codex. Codex receives the same
+  Project Store context without Claude-only `sessionTitle`/environment export.
+- Made `.agents/skills/` the shared canonical skill tree and converted every
+  `.claude/skills/*` entry to a symlink mirror. Internal Codex capabilities now
+  set `allow_implicit_invocation: false` so development requests enter through
+  `$work` or `$design` rather than bypassing the controller.
+- Added Codex unattended-safety warnings for `danger-full-access`, `--yolo`, and
+  approval/sandbox bypass flags.
+- Added runtime, installer, hook, JSONL-resume, permission, mirror-layout, and
+  uninstall regressions.
+
 ## 2.3.1
 
 Test isolation fix found deploying to a third application (`D-054`).

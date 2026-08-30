@@ -4,6 +4,10 @@
 **근거:** `D-046`
 **작성:** 2026-08-19
 
+> **현재 상태 주의 (2026-08-29):** 아래는 2026-08-19 port 당시의 사실 기록이다.
+> `D-055` / Kit 2.3.2가 skill 방향을 supersede하여 현재 정본은 `.agents/skills/`,
+> `.claude/skills/`는 exact symlink mirror다.
+
 ## 무엇을 가져왔나
 
 | 대상 | 내용 |
@@ -57,6 +61,11 @@ cortex 의 check 30개를 버리고 이 저장소 것 12개로 갈아 끼웠다.
 | legacy 목록에서 `/grill-me`·`/feynman` 제거 | 이 저장소가 유지하는 보조 skill 이다 |
 | forbidden 에서 `.specify/workflows` 제거 | `workflow.yml` 이 아직 three-lens gate 의 문서상 근거다 |
 | semantic runtime check 블록 제거 | 이식 대상이 아니다 |
+
+> 이 표는 이식 시점(2026-08)의 기록이다. 두 줄이 그 뒤에 뒤집혔다. **skill 정본 방향**은
+> `D-055` 로 `.agents/skills/` 가 됐고 `.claude/skills/` 는 exact symlink mirror 가 됐다 —
+> cortex 와 같은 방향이다. **`feynman`** 은 2026-08-30 `ALR-008` 에서 제거했다. 쓰지
+> 않기로 했다. `expected_skills` 와 `allowed_public` 양쪽에서 뺐다.
 
 ### 4. `.ai-team/skills` 정리
 

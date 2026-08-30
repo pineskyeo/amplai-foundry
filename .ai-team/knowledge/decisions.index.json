@@ -87,6 +87,32 @@
         "docs/workstreams/amplai-loop-runtime-adoption",
         "specs/008-cortex-redeploy"
       ]
+    },
+    {
+      "id": "D-055",
+      "status": "active",
+      "title": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        ".agents/skills",
+        ".claude/skills",
+        "scripts",
+        "tools/amplai-loop-kit",
+        ".codex"
+      ]
+    },
+    {
+      "id": "D-056",
+      "status": "active",
+      "title": "Adopt the Platform 0.4.0 control plane with its reachable defects closed first",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/control_plane",
+        "tests/test_control_plane.py",
+        "pyproject.toml",
+        "specs/009-kit-2-4-platform-0-4",
+        "specs/010-kit-2-4-fleet-distribution"
+      ]
     }
   ]
 }
