@@ -25,8 +25,10 @@ def utc_now() -> str:
 
 
 def utc_after(seconds: int) -> str:
-    return (datetime.now(UTC) + timedelta(seconds=seconds)).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
+    return (
+        (datetime.now(UTC) + timedelta(seconds=seconds))
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
     )
 
 

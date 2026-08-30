@@ -60,7 +60,9 @@ class OutboxQueue:
                 (status, utc_now(), row["outbox_id"]),
             )
 
-    def claim_next(self, *, destination: str | None = None, lease_seconds: int = 60) -> OutboxItem | None:
+    def claim_next(
+        self, *, destination: str | None = None, lease_seconds: int = 60
+    ) -> OutboxItem | None:
         with self.store.transaction() as connection:
             self._recover_expired(connection)
             clause = ""
@@ -69,7 +71,9 @@ class OutboxQueue:
                 clause = " AND destination=?"
                 params.append(destination)
             row = connection.execute(
-                "SELECT * FROM cp_outbox WHERE status='pending'" + clause + " ORDER BY created_at,outbox_id LIMIT 1",
+                "SELECT * FROM cp_outbox WHERE status='pending'"
+                + clause
+                + " ORDER BY created_at,outbox_id LIMIT 1",
                 tuple(params),
             ).fetchone()
             if row is None:
@@ -93,7 +97,7 @@ class OutboxQueue:
 
     def delivered(self, outbox_id: str, lease_token: str, receipt: str) -> OutboxItem:
         with self.store.transaction() as connection:
-            row = self._require_lease(connection, outbox_id, lease_token)
+            self._require_lease(connection, outbox_id, lease_token)
             connection.execute(
                 """
                 UPDATE cp_outbox SET status='delivered', lease_token=NULL,
@@ -102,7 +106,9 @@ class OutboxQueue:
                 """,
                 (receipt, utc_now(), outbox_id),
             )
-            current = connection.execute("SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)).fetchone()
+            current = connection.execute(
+                "SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)
+            ).fetchone()
             assert current is not None
             return _item(current)
 
@@ -117,13 +123,17 @@ class OutboxQueue:
                 """,
                 (status, error, utc_now(), outbox_id),
             )
-            current = connection.execute("SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)).fetchone()
+            current = connection.execute(
+                "SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)
+            ).fetchone()
             assert current is not None
             return _item(current)
 
     @staticmethod
     def _require_lease(connection: sqlite3.Connection, outbox_id: str, token: str) -> sqlite3.Row:
-        row = connection.execute("SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)).fetchone()
+        row: sqlite3.Row | None = connection.execute(
+            "SELECT * FROM cp_outbox WHERE outbox_id=?", (outbox_id,)
+        ).fetchone()
         if row is None:
             raise NotFoundError("OUTBOX_NOT_FOUND")
         if row["status"] != "running" or row["lease_token"] != token:

@@ -25,7 +25,10 @@ class EnvironmentSecretResolver:
         self.prefix = prefix
 
     def resolve(self, secret_ref: str) -> bytes:
-        if not secret_ref or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-." for char in secret_ref):
+        if not secret_ref or any(
+            char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-."
+            for char in secret_ref
+        ):
             raise ValidationError("SECRET_REF_INVALID")
         name = self.prefix + secret_ref.upper().replace("-", "_").replace(".", "_")
         value = os.environ.get(name)
@@ -66,16 +69,22 @@ class FileDropConnector:
             "aggregate_ref": item.aggregate_ref,
             "payload": item.payload,
         }
-        canonical = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        canonical = json.dumps(
+            body, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
         if self.secret_ref is not None:
             if self.secret_resolver is None:
                 raise ValidationError("SECRET_RESOLVER_REQUIRED")
             secret = self.secret_resolver.resolve(self.secret_ref)
-            body["signature"] = "hmac-sha256:" + hmac.new(secret, canonical, hashlib.sha256).hexdigest()
+            body["signature"] = (
+                "hmac-sha256:" + hmac.new(secret, canonical, hashlib.sha256).hexdigest()
+            )
         final = self.root / f"{item.outbox_id}.json"
         if final.exists():
             return f"file:{final.name}"
-        descriptor, name = tempfile.mkstemp(prefix=f".{item.outbox_id}.", suffix=".tmp", dir=self.root)
+        descriptor, name = tempfile.mkstemp(
+            prefix=f".{item.outbox_id}.", suffix=".tmp", dir=self.root
+        )
         temporary = Path(name)
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:

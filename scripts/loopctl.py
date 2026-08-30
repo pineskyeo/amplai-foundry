@@ -353,14 +353,12 @@ def codex_implicit_invocation_disabled(path):
     if not os.path.isfile(path):
         return False
     text = open(path, encoding="utf-8").read()
-    return bool(
-        re.search(r"^\s*allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE)
-    )
+    return bool(re.search(r"^\s*allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE))
 
 
 def hook_commands(settings, event):
     commands = []
-    for wrapper in ((settings.get("hooks") or {}).get(event) or []):
+    for wrapper in (settings.get("hooks") or {}).get(event) or []:
         for hook in wrapper.get("hooks") or []:
             if hook.get("type") == "command" and hook.get("command"):
                 commands.append(hook["command"])
@@ -525,9 +523,7 @@ def doctor(root):
     stray = sorted(set(public) - allowed_public)
     if stray:
         errors.append(
-            "개발 skill 은 work/design 만 user-invocable 이어야 함: {}".format(
-                ", ".join(stray)
-            )
+            "개발 skill 은 work/design 만 user-invocable 이어야 함: {}".format(", ".join(stray))
         )
     if internal_wrong:
         errors.extend(f"invalid skill visibility: {x}" for x in internal_wrong)
@@ -551,15 +547,13 @@ def doctor(root):
             claude_names.add(name)
             expected_target = os.path.join("..", "..", ".agents", "skills", name)
             if not os.path.islink(path):
-                errors.append(
-                    f"Claude skill은 shared 정본의 symlink여야 함: .claude/skills/{name}"
-                )
+                errors.append(f"Claude skill은 shared 정본의 symlink여야 함: .claude/skills/{name}")
                 continue
             actual_target = os.readlink(path)
             if actual_target != expected_target:
                 errors.append(
-                    "Claude skill symlink 방향 오류: .claude/skills/{} -> {} "
-                    "(expected {})".format(name, actual_target, expected_target)
+                    f"Claude skill symlink 방향 오류: .claude/skills/{name} -> {actual_target} "
+                    f"(expected {expected_target})"
                 )
             elif not os.path.exists(path):
                 errors.append(f"Claude skill symlink 가 깨졌다: .claude/skills/{name}")
@@ -574,9 +568,7 @@ def doctor(root):
             errors.append("Claude adapter에 legacy skill 남음: {}".format(", ".join(extra)))
 
     # Kit 2.3.2+가 설치된 repository는 Codex lifecycle hook도 설치 record와 함께 가져야 한다.
-    install_state_path = os.path.join(
-        root, ".ai-team", "install", "amplai-loop-kit.json"
-    )
+    install_state_path = os.path.join(root, ".ai-team", "install", "amplai-loop-kit.json")
     if os.path.isfile(install_state_path):
         try:
             install_state = load_json(install_state_path)
@@ -595,11 +587,7 @@ def doctor(root):
                         event = item.get("event")
                         command = item.get("command")
                         if command not in hook_commands(settings, event):
-                            errors.append(
-                                "설치 record의 Codex hook 없음: {} -> {}".format(
-                                    event, command
-                                )
-                            )
+                            errors.append(f"설치 record의 Codex hook 없음: {event} -> {command}")
 
     if registry is not None:
         check_ids = []

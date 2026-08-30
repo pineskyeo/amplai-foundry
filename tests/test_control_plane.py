@@ -61,7 +61,9 @@ def envelope(kind: str, ref: str = "CR-1-E1") -> dict[str, object]:
 
 def test_token_is_project_scoped_and_raw_value_is_not_persisted(platform) -> None:
     store, auth, token, _service = platform
-    principal = auth.authenticate(token.raw_token, project_id="project-a", permission="reference:read")
+    principal = auth.authenticate(
+        token.raw_token, project_id="project-a", permission="reference:read"
+    )
     assert principal.tenant_id == "tenant-a"
     with pytest.raises(AuthenticationError):
         auth.authenticate(token.raw_token, project_id="project-b")
@@ -147,7 +149,9 @@ def test_context_job_lease_retry_and_completion(platform) -> None:
     assert second is not None and second.lease_token
     done = queue.complete(second.job_id, second.lease_token, {"items": ["D1"]})
     assert done.status == "done"
-    read = service.get_job(job_id=response["job_id"], project_id="project-a", raw_token=token.raw_token)
+    read = service.get_job(
+        job_id=response["job_id"], project_id="project-a", raw_token=token.raw_token
+    )
     assert read.result == {"items": ["D1"]}
 
 
@@ -202,7 +206,15 @@ def test_projection_can_be_rebuilt_from_events(platform) -> None:
     assert projection.snapshot(tenant_id="tenant-a", project_id="project-a") == state
 
 
-def call_wsgi(app, *, method: str, path: str, token: str, body: dict[str, object] | None = None, idem: str | None = None):
+def call_wsgi(
+    app,
+    *,
+    method: str,
+    path: str,
+    token: str,
+    body: dict[str, object] | None = None,
+    idem: str | None = None,
+):
     raw = json.dumps(body or {}).encode("utf-8")
     environ = {
         "REQUEST_METHOD": method,

@@ -7,9 +7,10 @@ with FastAPI/ASGI later; the contract remains the service methods below.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Iterable
 from dataclasses import asdict
 from http import HTTPStatus
-from typing import Any, Callable, Iterable
+from typing import Any
 from urllib.parse import unquote
 
 from amplai_foundry.control_plane.errors import (
@@ -27,7 +28,9 @@ StartResponse = Callable[[str, list[tuple[str, str]]], Any]
 
 
 class ControlPlaneWSGIApp:
-    def __init__(self, service: ControlPlaneService, projection: ProjectionService | None = None) -> None:
+    def __init__(
+        self, service: ControlPlaneService, projection: ProjectionService | None = None
+    ) -> None:
         self.service = service
         self.projection = projection or ProjectionService(service.store)
 
@@ -50,7 +53,10 @@ class ControlPlaneWSGIApp:
         phrase = HTTPStatus(status).phrase
         start_response(
             f"{status} {phrase}",
-            [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body)))],
+            [
+                ("Content-Type", "application/json; charset=utf-8"),
+                ("Content-Length", str(len(body))),
+            ],
         )
         return [body]
 
@@ -87,7 +93,9 @@ class ControlPlaneWSGIApp:
             )
             return 200, asdict(reference)
         if method == "GET" and len(segments) == 5 and segments[3] == "jobs":
-            job = self.service.get_job(job_id=segments[4], project_id=project_id, raw_token=raw_token)
+            job = self.service.get_job(
+                job_id=segments[4], project_id=project_id, raw_token=raw_token
+            )
             return 200, asdict(job)
         if method == "GET" and segments[3:] == ["projection"]:
             principal = self.service.auth.authenticate(
@@ -95,7 +103,9 @@ class ControlPlaneWSGIApp:
             )
             state = self.projection.snapshot(tenant_id=principal.tenant_id, project_id=project_id)
             if state is None:
-                state = self.projection.rebuild(tenant_id=principal.tenant_id, project_id=project_id)
+                state = self.projection.rebuild(
+                    tenant_id=principal.tenant_id, project_id=project_id
+                )
             return 200, state
         raise NotFoundError("ROUTE_NOT_FOUND")
 

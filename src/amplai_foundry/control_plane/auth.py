@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
-import sqlite3
 import uuid
 
 from amplai_foundry.control_plane.errors import AuthenticationError, AuthorizationError

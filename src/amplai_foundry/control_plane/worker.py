@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import secrets
 import sqlite3
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from amplai_foundry.control_plane.errors import LeaseError, NotFoundError
 from amplai_foundry.control_plane.events import append_event
@@ -45,7 +46,12 @@ class JobQueue:
                     last_error='lease expired', not_before=?, updated_at=?
                 WHERE job_id=? AND status='running'
                 """,
-                (status, utc_after(min(60, 2**attempts)) if status == "pending" else None, now, row["job_id"]),
+                (
+                    status,
+                    utc_after(min(60, 2**attempts)) if status == "pending" else None,
+                    now,
+                    row["job_id"],
+                ),
             )
 
     def claim_next(
@@ -96,18 +102,24 @@ class JobQueue:
                 event_type="job.claimed",
                 aggregate_ref=str(current["job_id"]),
                 correlation_id=str(payload.get("correlation_id") or current["job_id"]),
-                payload={"job_id": current["job_id"], "worker_id": worker_id, "attempt": current["attempts"]},
+                payload={
+                    "job_id": current["job_id"],
+                    "worker_id": worker_id,
+                    "attempt": current["attempts"],
+                },
             )
             return _job_from_row(current)
 
     def heartbeat(self, job_id: str, lease_token: str, *, lease_seconds: int = 60) -> DurableJob:
         with self.store.transaction() as connection:
-            row = self._require_lease(connection, job_id, lease_token)
+            self._require_lease(connection, job_id, lease_token)
             connection.execute(
                 "UPDATE cp_jobs SET lease_expires_at=?, updated_at=? WHERE job_id=?",
                 (utc_after(lease_seconds), utc_now(), job_id),
             )
-            current = connection.execute("SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)).fetchone()
+            current = connection.execute(
+                "SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)
+            ).fetchone()
             assert current is not None
             return _job_from_row(current)
 
@@ -132,7 +144,9 @@ class JobQueue:
                 correlation_id=str(payload.get("correlation_id") or job_id),
                 payload={"job_id": job_id, "result": result},
             )
-            current = connection.execute("SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)).fetchone()
+            current = connection.execute(
+                "SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)
+            ).fetchone()
             assert current is not None
             return _job_from_row(current)
 
@@ -170,7 +184,9 @@ class JobQueue:
                 correlation_id=str(payload.get("correlation_id") or job_id),
                 payload={"job_id": job_id, "attempts": attempts, "error": error},
             )
-            current = connection.execute("SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)).fetchone()
+            current = connection.execute(
+                "SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)
+            ).fetchone()
             assert current is not None
             return _job_from_row(current)
 
@@ -178,7 +194,9 @@ class JobQueue:
     def _require_lease(
         connection: sqlite3.Connection, job_id: str, lease_token: str
     ) -> sqlite3.Row:
-        row = connection.execute("SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)).fetchone()
+        row: sqlite3.Row | None = connection.execute(
+            "SELECT * FROM cp_jobs WHERE job_id=?", (job_id,)
+        ).fetchone()
         if row is None:
             raise NotFoundError("JOB_NOT_FOUND")
         if row["status"] != "running" or row["lease_token"] != lease_token:
@@ -190,7 +208,9 @@ class JobQueue:
 
 
 class ContextWorker:
-    def __init__(self, queue: JobQueue, handler: JobHandler, *, worker_id: str = "context-worker") -> None:
+    def __init__(
+        self, queue: JobQueue, handler: JobHandler, *, worker_id: str = "context-worker"
+    ) -> None:
         self.queue = queue
         self.handler = handler
         self.worker_id = worker_id

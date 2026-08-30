@@ -6,7 +6,8 @@ import hashlib
 import json
 import sqlite3
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from amplai_foundry.control_plane.auth import ApiTokenService
 from amplai_foundry.control_plane.errors import ConflictError, NotFoundError, ValidationError
@@ -80,7 +81,9 @@ class ControlPlaneService:
         permission = f"{kind}:publish"
         route = f"POST:/v1/projects/{project_id}/{kind}"
 
-        def operation(connection: sqlite3.Connection, correlation_id: str) -> tuple[int, dict[str, Any]]:
+        def operation(
+            connection: sqlite3.Connection, correlation_id: str
+        ) -> tuple[int, dict[str, Any]]:
             origin = envelope.get("origin")
             payload = envelope.get("payload")
             if not isinstance(origin, dict) or not isinstance(payload, dict):
@@ -98,7 +101,13 @@ class ControlPlaneService:
                 WHERE tenant_id=(SELECT tenant_id FROM cp_api_tokens WHERE token_digest=?)
                   AND project_id=? AND kind=? AND origin_store=? AND origin_ref=?
                 """,
-                (hashlib.sha256(raw_token.encode("utf-8")).hexdigest(), project_id, kind, origin_store, origin_ref),
+                (
+                    hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),
+                    project_id,
+                    kind,
+                    origin_store,
+                    origin_ref,
+                ),
             ).fetchone()
             if existing is not None:
                 if existing["content_digest"] != content_digest:
@@ -179,7 +188,9 @@ class ControlPlaneService:
     ) -> tuple[int, dict[str, Any]]:
         route = f"POST:/v1/projects/{project_id}/context-requests"
 
-        def operation(connection: sqlite3.Connection, correlation_id: str) -> tuple[int, dict[str, Any]]:
+        def operation(
+            connection: sqlite3.Connection, correlation_id: str
+        ) -> tuple[int, dict[str, Any]]:
             query = request.get("query")
             if not isinstance(query, str) or not query.strip():
                 raise ValidationError("CONTEXT_QUERY_REQUIRED")
@@ -241,7 +252,9 @@ class ControlPlaneService:
     def get_reference(
         self, *, kind: str, canonical_ref: str, project_id: str, raw_token: str
     ) -> CanonicalReference:
-        principal = self.auth.authenticate(raw_token, project_id=project_id, permission="reference:read")
+        principal = self.auth.authenticate(
+            raw_token, project_id=project_id, permission="reference:read"
+        )
         with self.store.connect() as connection:
             row = connection.execute(
                 """
@@ -265,7 +278,9 @@ class ControlPlaneService:
         )
 
     def get_job(self, *, job_id: str, project_id: str, raw_token: str) -> DurableJob:
-        principal = self.auth.authenticate(raw_token, project_id=project_id, permission="context:read")
+        principal = self.auth.authenticate(
+            raw_token, project_id=project_id, permission="context:read"
+        )
         with self.store.connect() as connection:
             row = connection.execute(
                 "SELECT * FROM cp_jobs WHERE tenant_id=? AND project_id=? AND job_id=?",
