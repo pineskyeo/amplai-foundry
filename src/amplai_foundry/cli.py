@@ -779,9 +779,13 @@ def governance_stranded_command(
     if not commands and not unreadable:
         typer.echo("NONE")
     # **잘렸으면 말한다** (`D-050`). `limit` 이 있는 한 어떤 규칙도 완전할 수 없다 —
-    # `SQL LIMIT` 은 읽힐 벽이, python 상한은 **안 읽힐 벽**이 `limit + 1` 번째를 민다
-    # (round 19 `F19-1`, round 20 `F20-1`). **그것을 없애는 대신 보이게 만든다.**
-    # 이 줄이 없으면 operator 가 목록이 잘린 것을 알 방법이 없다.
+    # 무엇을 미느냐가 방식마다 다를 뿐이다 (round 19 `F19-1`, round 20 `F20-1`).
+    # **그것을 없애는 대신 보이게 만든다.** 이 줄이 없으면 operator 가 목록이 잘린 것을
+    # 알 방법이 없다.
+    #
+    # **두 조회 다 python 출력 상한이다** (`D-057`). `stranded()` 가 `SQL LIMIT` 이던
+    # 동안에는 위 판정이 거짓 음성을 냈다 — 가져온 개수와 반환 개수가 달랐다
+    # (round 21 `F21-1`). 이제 반환 개수가 곧 발견 개수라 `len(...) > limit` 이 참이다.
     if truncated:
         typer.echo(f"...  목록이 --limit {limit} 에서 잘렸다. 더 있다")
 

@@ -1,11 +1,11 @@
 {
   "schema_version": "2.0",
-  "id": "MGC-012-P5-W14",
-  "title": "잘린 목록을 잘렸다고 말한다",
-  "goal": "round 20 의 blocker 6건(P1 1 / Blocking-P2 5)을 닫는다. F20-1(P1)은 고칠 수 있는 종류가 아니다 — limit 이 있는 한 SQL LIMIT 은 읽힐 벽이, python 상한은 안 읽힐 벽이 limit+1 번째를 밀어낸다. D-050 이 그것을 없애는 대신 보이게 만든다. 나머지 다섯은 test 둘(F20-3·R20-1)과 문서 둘(C20-1·C20-2), 그리고 stranded() 에도 같은 뿌리가 있다는 것(F20-2)이다.",
+  "id": "MGC-012-P5-W15",
+  "title": "잘림 판정을 반환 개수가 아니라 목록 자체에서 낸다",
+  "goal": "round 21 의 blocker 6건(P1 1 / Blocking-P2 5)을 닫는다. F21-1(P1)의 뿌리는 stranded() 의 반환 개수와 SQL fetch 개수가 다른 것이다 — D-047 의 skip 이 그 차이를 만들고 D-050 이 앞의 둘을 안 셌다. D-057 이 D-049 를 stranded() 에도 적용해 limit 을 출력 상한으로 옮긴다. F21-2 는 같은 변경이 limit+1 의 SQL binding 을 없애는지 실측으로 확인하고, 선언 단계 guard 를 더할지는 그 결과를 보고 정한다. R21-1·R21-2 는 mutation 없이 채워진 AC-07 표의 두 칸이고, C21-3 은 D-050 의 승인 ledger 소급, C21-4 는 C20-1 정정의 형제 위치다.",
   "source": [
     "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
-    "specs/003-slack-proposal-card/evidence/3lens-review-round-20.md"
+    "specs/003-slack-proposal-card/evidence/3lens-review-round-21.md"
   ],
   "work_type": "logic_change",
   "risk": "high",
@@ -16,75 +16,87 @@
       "tests/test_slack_ack_boundary.py",
       "tests/test_cli.py",
       "specs/003-slack-proposal-card/",
-      "docs/workstreams/messenger-governance-closure-v3/"
+      "docs/workstreams/messenger-governance-closure-v3/",
+      ".ai-team/policy/approvals.jsonl"
     ],
     "exclude": [
       "dead_letter 정리 경로 신설 — D-038 항목 1 이 명시적으로 거절했고 D-050 이 그 판단을 유지한다",
-      "IngressService 의 signature 변경 — D-047·D-048·D-049 가 공통으로 건 불변이다",
+      "stranded()·unreadable() 의 signature 와 반환 타입 변경 — D-057 이 세 안 중 A 를 골라 그 불변을 지켰다",
       "OutboxDispatcher 와 apply_jobs.py (A18-6)",
       "spec.md 의 FR 신설 — OQ-001 은 여전히 wave 밖이다",
-      "MGC-012 Package 4 의 T010·T012·T013"
+      "MGC-012 Package 4 의 T010·T012·T013",
+      "tools/amplai-loop-kit/ 과 kit 설치물 — ALR-006 의 소관이다"
     ]
   },
   "non_goals": [
-    "F20-1·F20-2 를 없애는 것 — D-050 이 '없애는 것이 아니라 보이게 만든다' 를 명시했다",
+    "governance_ingress_commands 에 index 를 더하는 것 — 성능 Work 가 아니고 측정 근거가 없다",
     "unreadable() 의 scan 비용 최적화 (A20-F1 이 측정했다: 종결 아닌 row 당 5.5µs)",
-    "WAL checkpoint 지연 (A20-F6)",
-    "새 출력 형식(JSON 등)의 계약화 — T026 scope.exclude 가 배제했다"
+    "새 출력 형식(JSON 등)의 계약화 — T026 scope.exclude 가 배제했다",
+    "approvals.jsonl 을 agent 가 commit 하는 것 — 파일 첫 줄이 사람의 commit 을 요구한다"
   ],
   "acceptance": [
     {
       "id": "AC-001",
-      "statement": "governance stranded 가 목록이 limit 에서 잘렸을 때 그 사실을 출력한다. 안 잘리면 이전과 같은 출력이다.",
+      "statement": "창 안에 손상 row 가 있어도 목록이 잘렸으면 잘렸다고 말한다. 손상 개수와 무관하게 판정이 같다.",
       "evidence": [
-        "잘린 경우와 안 잘린 경우의 CLI 출력 실측",
-        "round 20 이 실측한 임계값(벽 99 보임 / 100 안 보임)에서 truncation 줄이 나오는 것",
+        "후보 200 / 손상 1 / --limit 100 의 CLI 출력 실측 — 잘림 표시가 켜진다",
+        "손상 0개 기준선과 같은 판정",
         "mutation 으로 KILLED 확인"
       ]
     },
     {
       "id": "AC-002",
-      "statement": "stranded 와 unreadable 두 목록 각각에 대해 잘림을 판정한다. 하나만 잘려도 알린다.",
+      "statement": "stranded() 의 limit 이 출력 상한이다. 읽을 수 있는 row 를 limit 개 모으면 멈추고, 손상 row 는 창을 소비하지 않는다.",
       "evidence": [
-        "두 목록을 각각 잘리게 만든 실측"
+        "읽을 수 있는 벽 뒤의 후보가 손상 row 개수와 무관하게 나오는 실측",
+        "SQL LIMIT 제거가 EXPLAIN QUERY PLAN 을 바꾸지 않는다는 실측 (index 부재)"
       ]
     },
     {
       "id": "AC-003",
-      "statement": "limit+1 을 요청하는 새 구조가 요구하는 것을 전수로 센다. 특히 --limit 0 이 여전히 거부되는지 확인한다.",
+      "statement": "--limit 의 양쪽 끝이 전부 fail-closed 다. int64 max 에서 raw traceback 이 없다.",
       "evidence": [
-        "새 구조 요구 표 — 항목마다 처리와 test",
-        "--limit 0 과 음수의 CLI 동작 실측"
+        "--limit 0 / -1 / 9223372036854775807 / 9223372036854775806 의 CLI 실측",
+        "OverflowError 가 구조적으로 사라졌는지 아니면 guard 가 잡는지를 구분해 기록"
       ]
     },
     {
       "id": "AC-004",
-      "statement": "unreadable() 이 종결 상태를 제외한다는 계약을 고정하는 test 가 있다. 그 WHERE 절을 지우면 test 가 죽는다.",
+      "statement": "정확히 limit 개일 때 잘렸다고 말하지 않는다는 것을 고정하는 test 가 있다. > 를 >= 로 바꾸면 죽는다.",
       "evidence": [
-        "WHERE state != 'completed' 제거 mutation 이 KILLED"
+        "len == limit 경계 입력의 test",
+        "mutation `>` → `>=` 가 KILLED"
       ]
     },
     {
       "id": "AC-005",
-      "statement": "retry_wait+소진 경로가 last_error_code 를 안 건드린다는 사실을 고정하는 test 가 있다.",
+      "statement": "unreadable 목록의 출력 상한을 고정하는 test 가 있다. unreadable[:limit] 을 지우면 죽는다.",
       "evidence": [
-        "둘째 UPDATE 에 COALESCE 를 넣는 mutation 이 KILLED"
+        "손상 row 가 limit 을 넘는 입력의 test",
+        "mutation `unreadable = unreadable[:limit]` 제거가 KILLED"
       ]
     },
     {
       "id": "AC-006",
-      "statement": "D-049 가 틀렸다고 지목한 문장에 정정 각주가 있고, D-049 의 Source 가 실제 근거와 맞는다.",
+      "statement": "D-048·D-049 가 틀렸다고 지목한 주장이 서 있는 자리를 전수로 세고 전부 정정 각주를 단다.",
       "evidence": [
-        "T038.md 의 해당 문장과 각주",
-        "D-049 Source 정정"
+        "grep 전수와 건수 세기 두 방법의 일치",
+        "T038.yaml 과 CURRENT_ITEM.md 를 포함한 모든 자리"
       ]
     },
     {
       "id": "AC-007",
+      "statement": "표를 만들면 칸 수와 mutation 수를 대조하고 둘 다 기록한다. 안 돌린 칸은 비워 둔다.",
+      "evidence": [
+        "표 칸 수와 mutation 목록의 건수 대조표"
+      ]
+    },
+    {
+      "id": "AC-008",
       "statement": "전 suite 가 통과하고 test 가 줄지 않는다. v2 profile 이 PASS 다.",
       "evidence": [
         ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
-        "test 수를 두 방법으로 세고 둘 다 기록"
+        "test 수를 두 방법으로 세고 둘 다 기록. round 22 기준선은 1515 다"
       ]
     }
   ],
@@ -99,8 +111,7 @@
   "verification": {
     "profile": "v2",
     "operational": [
-      ".venv/bin/python -m amplai_foundry.cli governance stranded --workspace <tmp>",
-      ".venv/bin/python -m amplai_foundry.cli governance decision <command_id> --workspace <tmp>"
+      ".venv/bin/python -m amplai_foundry.cli governance stranded --workspace <tmp> --limit <n>"
     ]
   },
   "environment": {
@@ -124,7 +135,8 @@
     "D-047",
     "D-048",
     "D-049",
-    "D-050"
+    "D-050",
+    "D-057"
   ],
   "blocked_by": [],
   "status": "ready"

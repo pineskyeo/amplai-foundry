@@ -497,6 +497,12 @@ def test_stranded_says_when_the_list_is_cut(tmp_path: Path) -> None:
     **`limit` 이 있는 한 어떤 규칙도 완전할 수 없다.** `SQL LIMIT` 은 읽힐 벽이, python
     출력 상한은 **안 읽힐 벽**이 `limit + 1` 번째를 민다. 없애는 대신 **보이게** 만든다.
     이 줄이 없으면 operator 가 목록이 잘린 것을 알 방법이 없다.
+
+    **정정 (wave 15, `D-057`).** 위 문단의 `SQL LIMIT` 서술은 **더는 현재 코드를 말하지
+    않는다.** `D-057` 이 `stranded()` 의 `limit` 도 python 출력 상한으로 옮겨 **두 조회 다
+    `SQL LIMIT` 을 안 쓴다.** 두 방식이 각각 무엇을 미는가는 round 19·20 이 실측한 사실로
+    남지만, 지금 이 코드가 쓰는 방식은 출력 상한 하나뿐이다. 이 test 가 지키는 것
+    ("잘렸으면 말한다") 은 그대로다.
     """
     workspace = _workspace(tmp_path)
     store, _command_id = _stranded_command(workspace)
@@ -566,3 +572,149 @@ def test_stranded_still_rejects_a_non_positive_limit(tmp_path: Path, bad_limit: 
     assert result.exception is None or isinstance(result.exception, SystemExit), (
         f"raw traceback 이 나갔다: {result.exception!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-W15 — 잘림 판정은 목록 자체에서 난다 (round 21)
+# ---------------------------------------------------------------------------
+
+
+def _corrupt_earliest(store: GovernanceStore, count: int) -> list[str]:
+    """정렬 앞의 row `count` 개를 읽을 수 없게 만든다. `channel_json` 에 CHECK 가 없다."""
+    with store.connect() as connection:
+        ids = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT command_id FROM governance_ingress_commands "
+                "ORDER BY received_at, command_id LIMIT ?",
+                (count,),
+            ).fetchall()
+        ]
+        for command_id in ids:
+            connection.execute(
+                "UPDATE governance_ingress_commands SET channel_json='{bad' WHERE command_id = ?",
+                (command_id,),
+            )
+        connection.commit()
+    return ids
+
+
+@pytest.mark.parametrize("corrupt", [0, 1, 2])
+def test_stranded_reports_the_cut_no_matter_how_many_rows_are_corrupt(
+    tmp_path: Path, corrupt: int
+) -> None:
+    """round 21 `F21-1` (P1). **`D-057` 이 닫은 것.**
+
+    예전에는 `stranded()` 의 `limit` 이 `SQL LIMIT` 이라 **가져온 개수와 반환 개수가
+    달랐다** — `_view` 가 터진 row 를 건너뛰기 때문이다 (`D-047`). 반환 개수로 잘림을
+    판정하던 `cli.py` 가 창 안에 손상 row 가 하나만 있어도 **거짓 음성**을 냈다.
+
+    실측(수정 전) — 후보 200 / 손상 1 / `--limit 100` → 출력 100줄 + `UNREADABLE` 1줄,
+    **잘림 표시 없음.** 숨은 후보가 99개였다. 손상 0개면 표시가 켜졌다.
+
+    손상 개수를 0·1·2 로 바꿔도 판정이 같아야 한다. 그것이 `D-057` 의 요구다.
+    """
+    workspace = _workspace(tmp_path)
+    store = _store(workspace)
+    ack_fixtures._seed(store)
+    ingress = IngressService(store, ack_fixtures._authenticator(), clock=lambda: ack_fixtures.NOW)
+    ack_fixtures.BoundedIngressAck(ingress, monotonic=ack_fixtures._monotonic(0.0, 0.05)).submit(
+        ack_fixtures._envelope()
+    )
+    ack_fixtures._readable_wall(store, "dead_letter", 8)
+    _corrupt_earliest(store, corrupt)
+
+    result = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", "3"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "잘렸다" in result.stdout, (
+        f"손상 {corrupt}개가 창 안에 있다고 잘림 표시가 꺼졌다 — 숨은 후보가 있다"
+    )
+    listed = [
+        line
+        for line in result.stdout.splitlines()
+        if line and "잘렸다" not in line and "UNREADABLE" not in line
+    ]
+    assert len(listed) == 3, "손상 row 가 출력 창을 소비했다"
+
+
+def test_stranded_stays_quiet_when_exactly_limit_rows_fit(tmp_path: Path) -> None:
+    """round 21 `R21-1`. **`>` 를 `>=` 로 바꿔도 1409개가 전부 통과했다.**
+
+    `T044.md:34` 의 AC-07 표 #3 이 요구를 "정확히 `limit` 개일 때 안 잘림" 으로 적고
+    test 칸에 `..._stays_quiet_when_the_list_fits` 를 채웠다. **그 test 는 후보 1개에
+    기본 `limit=100` 이라 경계에 안 선다.** `len == limit` 인 입력을 주는 test 가 suite 에
+    없었다. 등가 mutant 가 아니다 — mutant 는 없는 잘림을 보고한다.
+
+    후보는 `_stranded_command` 의 `recovery_hold` 1개 + `dead_letter` 벽 5개 = **6개**이고
+    `--limit 6` 이 정확히 경계다.
+    """
+    workspace = _workspace(tmp_path)
+    store, _command_id = _stranded_command(workspace)
+    ack_fixtures._readable_wall(store, "dead_letter", 5)
+
+    result = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", "6"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    rows = [line for line in result.stdout.splitlines() if line and "잘렸다" not in line]
+    assert len(rows) == 6, "경계에 서지 못했다 — 후보가 정확히 limit 개가 아니다"
+    assert "잘렸다" not in result.stdout, "정확히 limit 개인데 잘렸다고 말한다"
+
+
+def test_stranded_caps_the_unreadable_list_at_limit(tmp_path: Path) -> None:
+    """round 21 `R21-2`. **`unreadable = unreadable[:limit]` 을 지워도 전부 통과했다.**
+
+    `T044.md:37` 의 AC-07 표 #6 은 처리가 slicing **둘**인데 test 칸이 댄
+    `..._says_when_the_list_is_cut` 은 손상 row 0개 상황이라 `commands` 쪽만 센다.
+    등가 mutant 가 아니다 — `limit + 1` 로 요청한 그 한 줄이 출력에 샌다.
+    """
+    workspace = _workspace(tmp_path)
+    store, _command_id = _stranded_command(workspace)
+    ack_fixtures._readable_wall(store, "pending", 6)
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE governance_ingress_commands SET channel_json='{bad' WHERE state='pending'"
+        )
+        connection.commit()
+
+    result = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", "2"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert result.stdout.count("UNREADABLE") == 2, (
+        "손상 목록이 --limit 를 넘었다 — limit + 1 로 요청한 줄이 샜다"
+    )
+    assert "잘렸다" in result.stdout
+
+
+@pytest.mark.parametrize("limit", ["9223372036854775806", "9223372036854775807"])
+def test_stranded_survives_a_limit_at_the_top_of_int64(tmp_path: Path, limit: str) -> None:
+    """round 21 `F21-2`. **`limit + 1` 이 위쪽 끝에 raw traceback 을 열었다.**
+
+    `--limit 9223372036854775807` 이 `limit + 1 = 2**63` 으로 sqlite3 binding 에 도착해
+    `OverflowError` 를 냈다. CLI 의 `except` 사슬에 그 예외가 없어 그대로 나갔다.
+    `...806` 은 정상이었다 — wave 14 가 만든 것이고 round 16 `FR-3`·`R16-1` 이 닫은 계약이
+    되돌아온 것이다.
+
+    `D-057` 이 `SQL LIMIT` 을 없애 **binding 자체가 사라졌다.** 실측으로 확인했다 —
+    수정 전 `...807` 은 exit 1 / `OverflowError`, 수정 후 exit 0 이다. 이 test 는 그
+    binding 이 되돌아오는 것을 막는다.
+    """
+    workspace = _workspace(tmp_path)
+    _store_unused, command_id = _stranded_command(workspace)
+
+    result = RUNNER.invoke(
+        app, ["governance", "stranded", "--workspace", str(workspace), "--limit", limit]
+    )
+
+    assert result.exception is None or isinstance(result.exception, SystemExit), (
+        f"raw traceback 이 나갔다: {result.exception!r}"
+    )
+    assert result.exit_code == 0, result.stdout
+    assert command_id in result.stdout
+    assert "잘렸다" not in result.stdout, "후보가 하나인데 잘렸다고 말한다"

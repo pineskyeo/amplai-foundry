@@ -1,20 +1,13 @@
 {
-  "blockers": [
-    "F21-1 (P1) — stranded() 잘림 판정이 손상 row 앞에서 거짓 음성. cli.py:765, ingress.py:703-711. 계약 변경이라 Decision 먼저",
-    "F21-2 (B-P2) — --limit int64 max 가 limit+1 로 OverflowError, raw traceback. cli.py:753-761",
-    "R21-1 (B-P2) — len(...) > limit 을 >= 로 바꿔도 1409 전부 통과. AC-07 표 #3 거짓 칸",
-    "R21-2 (B-P2) — unreadable[:limit] 을 지워도 1409 전부 통과. AC-07 표 #6 거짓 칸",
-    "C21-3 (B-P2) — D-050 이 approvals.jsonl 에 없다. public_contract gate 미기록. 사용자 결정 필요",
-    "C21-4 (B-P2) — C20-1 재생산. T038.yaml:38 과 CURRENT_ITEM.md 의 T038 절에 정정 각주 없음"
-  ],
+  "blockers": [],
   "completed_slices": [],
   "context_pack_hash": "571a5b4dce5958157072ab0a6bdc63b60d6ca416d23ab49aac1a76014b2c0e83",
   "current_slice": null,
-  "git_checkpoint": "87a0c7696cf80f49e8fff74020f406e433a09197",
-  "last_verification": "round 21 three-lens review 2026-08-27. FAIL 6건 (P0 0 / P1 1 / Blocking-P2 5). target 97 파일, 행별 hash 재계산 여섯 시점 전부 어긋남 0. test 1409 passed (두 방법 일치). test 삭제 0 / skip·xfail 신규 0 을 기준 commit e13e01c 대비로 처음 증명했다.",
-  "next_action": "wave 15 로 round 21 의 blocker 6건을 닫는다. 전문은 specs/003-slack-proposal-card/evidence/3lens-review-round-21.md 이고 lens 별 기록은 같은 디렉토리의 round-21-lens-{contract,failure,regression}.md 다. 진입점은 docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md 의 'Wave 15 착수 지시' 절이다. F21-1 은 stranded() 계약 변경이라 Decision 을 먼저 받고, C21-3 은 승인 ledger 소급 기록 여부가 사용자 결정 사항이다. /work 로 타고 /taskify 를 건너뛰지 않는다. wave 15 뒤에 재freeze → round 22.",
+  "git_checkpoint": "1a5ee1246c5241101c062e167a666feece449486",
+  "last_verification": null,
+  "next_action": "승인 ledger 행 둘을 사람이 .ai-team/policy/approvals.jsonl 에 넣고 commit 한다 — C21-3(D-050 소급)과 D-057. 그 전에 proposal_sha256 의 해싱 대상 범위를 정해야 한다(A19·A20 두 라운드 열린 advisory, 기존 셋을 4가지 후보 범위로 역산했으나 12조합 전부 불일치). 그다음 재freeze → round 22 three-lens review. round 22 의 test 기준선은 1575 다.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "blocked",
-  "work_id": "MGC-012-P5-W14"
+  "status": "executing",
+  "work_id": "MGC-012-P5-W15"
 }
