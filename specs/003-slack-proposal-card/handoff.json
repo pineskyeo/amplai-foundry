@@ -1,13 +1,15 @@
 {
-  "blockers": [],
+  "blockers": [
+    "human_gate: approvals.jsonl 행 셋(D-050 소급 / D-057 / D-058)을 사람이 넣고 commit 해야 한다. 값은 계산·검증 완료, draft 는 specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl"
+  ],
   "completed_slices": [],
   "context_pack_hash": "571a5b4dce5958157072ab0a6bdc63b60d6ca416d23ab49aac1a76014b2c0e83",
   "current_slice": null,
-  "git_checkpoint": "1a5ee1246c5241101c062e167a666feece449486",
+  "git_checkpoint": "47821dae8c4a064f8c2dd5dbfd84b7194c7ab380",
   "last_verification": null,
-  "next_action": "승인 ledger 행 둘을 사람이 .ai-team/policy/approvals.jsonl 에 넣고 commit 한다 — C21-3(D-050 소급)과 D-057. 그 전에 proposal_sha256 의 해싱 대상 범위를 정해야 한다(A19·A20 두 라운드 열린 advisory, 기존 셋을 4가지 후보 범위로 역산했으나 12조합 전부 불일치). 그다음 재freeze → round 22 three-lens review. round 22 의 test 기준선은 1575 다.",
+  "next_action": "cat specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl >> .ai-team/policy/approvals.jsonl 후 그 파일만 commit 한다. 그다음 재freeze → round 22 three-lens review. round 22 의 test 기준선은 1575 다. branch 는 wave-15-round-21-blockers 이고 push·PR 은 안 했다.",
   "open_slices": [],
   "schema_version": "1.0",
-  "status": "executing",
+  "status": "blocked",
   "work_id": "MGC-012-P5-W15"
 }
