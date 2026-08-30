@@ -52,6 +52,9 @@ hook             .claude/settings.json + .codex/hooks.json (additive merge)
 cortex의 2.3.2 배포는 이 작업 범위에서 실행하지 않았다. 두 저장소의 마지막 확인 기록은
 2.3.1이며, 배포 전 각 저장소 자체 gate를 다시 통과해야 한다.
 
+> 그 배포는 2026-08-30 `ALR-009` 가 2.4.0 으로 했다. 이 절의 "미배포" 는 그 시점의
+> 기록이다. 현재 상태는 이 문서 맨 위 "현재 갱신" 절이 갖는다.
+
 장기 Platform(`src/amplai_foundry`)과 Loop Kit은 같은 저장소에 있어도 별도 제품이다. Platform
 domain/application은 Kit·`.ai-team`·Claude/Codex runtime을 import하지 않는다. 상세 점검과 후속
 구조는 `docs/reviews/2026-08-29-platform-kit-audit.md`를 따른다.
