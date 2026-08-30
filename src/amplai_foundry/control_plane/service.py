@@ -12,10 +12,10 @@ from typing import Any
 from amplai_foundry.control_plane.auth import ApiTokenService
 from amplai_foundry.control_plane.errors import ConflictError, NotFoundError, ValidationError
 from amplai_foundry.control_plane.events import append_event
-from amplai_foundry.control_plane.models import CanonicalReference, DurableJob
+from amplai_foundry.control_plane.models import CanonicalReference, DurableJob, Principal
 from amplai_foundry.control_plane.store import ControlPlaneStore, canonical_json, utc_now
 
-IdempotentOperation = Callable[[sqlite3.Connection, str], tuple[int, dict[str, Any]]]
+IdempotentOperation = Callable[[sqlite3.Connection, Principal, str], tuple[int, dict[str, Any]]]
 
 
 class ControlPlaneService:
@@ -26,6 +26,36 @@ class ControlPlaneService:
     @staticmethod
     def _digest(value: object) -> str:
         return "sha256:" + hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _canonical_ref(
+        *,
+        kind: str,
+        tenant_id: str,
+        project_id: str,
+        origin_store: str,
+        origin_ref: str,
+    ) -> str:
+        """Derive the identifier from the origin tuple, never from the payload.
+
+        `cp_objects` already declares UNIQUE(tenant_id, project_id, kind,
+        origin_store, origin_ref), so deriving the primary key from exactly that
+        tuple makes a collision impossible by construction.  Deriving it from the
+        content digest did not: two origins may legitimately publish identical
+        bytes, and the duplicate check runs on the origin, so the insert reached a
+        primary-key conflict (`D-056`).  `tenant_id` is part of the input, which is
+        what keeps two tenants sharing a `project_id` string apart.
+        """
+        identity = canonical_json(
+            {
+                "t": tenant_id,
+                "p": project_id,
+                "k": kind,
+                "s": origin_store,
+                "r": origin_ref,
+            }
+        )
+        return f"{kind}:{project_id}:{hashlib.sha256(identity.encode('utf-8')).hexdigest()[:24]}"
 
     def _idempotent(
         self,
@@ -54,7 +84,7 @@ class ControlPlaneService:
             )
             if previous is not None:
                 return previous
-            status_code, response = operation(connection, str(correlation_id))
+            status_code, response = operation(connection, principal, str(correlation_id))
             self.store.idempotency_store(
                 connection,
                 tenant_id=principal.tenant_id,
@@ -82,7 +112,7 @@ class ControlPlaneService:
         route = f"POST:/v1/projects/{project_id}/{kind}"
 
         def operation(
-            connection: sqlite3.Connection, correlation_id: str
+            connection: sqlite3.Connection, principal: Principal, correlation_id: str
         ) -> tuple[int, dict[str, Any]]:
             origin = envelope.get("origin")
             payload = envelope.get("payload")
@@ -95,19 +125,14 @@ class ControlPlaneService:
             if not origin_store or not origin_ref:
                 raise ValidationError("PROMOTION_ORIGIN_REQUIRED")
             content_digest = self._digest(payload)
+            tenant_id = principal.tenant_id
             existing = connection.execute(
                 """
                 SELECT canonical_ref, content_digest FROM cp_objects
-                WHERE tenant_id=(SELECT tenant_id FROM cp_api_tokens WHERE token_digest=?)
-                  AND project_id=? AND kind=? AND origin_store=? AND origin_ref=?
+                WHERE tenant_id=? AND project_id=? AND kind=?
+                  AND origin_store=? AND origin_ref=?
                 """,
-                (
-                    hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),
-                    project_id,
-                    kind,
-                    origin_store,
-                    origin_ref,
-                ),
+                (tenant_id, project_id, kind, origin_store, origin_ref),
             ).fetchone()
             if existing is not None:
                 if existing["content_digest"] != content_digest:
@@ -118,14 +143,13 @@ class ControlPlaneService:
                     "content_digest": content_digest,
                     "duplicate_origin": True,
                 }
-            tenant_row = connection.execute(
-                "SELECT tenant_id FROM cp_api_tokens WHERE token_digest=?",
-                (hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),),
-            ).fetchone()
-            if tenant_row is None:
-                raise ValidationError("AUTH_CONTEXT_LOST")
-            tenant_id = str(tenant_row["tenant_id"])
-            canonical_ref = f"{kind}:{project_id}:{content_digest.split(':', 1)[1][:24]}"
+            canonical_ref = self._canonical_ref(
+                kind=kind,
+                tenant_id=tenant_id,
+                project_id=project_id,
+                origin_store=origin_store,
+                origin_ref=origin_ref,
+            )
             created_at = utc_now()
             connection.execute(
                 """
@@ -189,18 +213,12 @@ class ControlPlaneService:
         route = f"POST:/v1/projects/{project_id}/context-requests"
 
         def operation(
-            connection: sqlite3.Connection, correlation_id: str
+            connection: sqlite3.Connection, principal: Principal, correlation_id: str
         ) -> tuple[int, dict[str, Any]]:
             query = request.get("query")
             if not isinstance(query, str) or not query.strip():
                 raise ValidationError("CONTEXT_QUERY_REQUIRED")
-            tenant_row = connection.execute(
-                "SELECT tenant_id FROM cp_api_tokens WHERE token_digest=?",
-                (hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),),
-            ).fetchone()
-            if tenant_row is None:
-                raise ValidationError("AUTH_CONTEXT_LOST")
-            tenant_id = str(tenant_row["tenant_id"])
+            tenant_id = principal.tenant_id
             job_id = f"job-{uuid.uuid4().hex}"
             now = utc_now()
             payload = {

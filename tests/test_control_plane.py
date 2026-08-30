@@ -17,7 +17,12 @@ from amplai_foundry.control_plane import (
     ProjectionService,
 )
 from amplai_foundry.control_plane.connectors import ConnectorRegistry, FileDropConnector
-from amplai_foundry.control_plane.errors import AuthenticationError, ConflictError, LeaseError
+from amplai_foundry.control_plane.errors import (
+    AuthenticationError,
+    ConflictError,
+    LeaseError,
+    NotFoundError,
+)
 
 
 @pytest.fixture
@@ -256,3 +261,75 @@ def test_wsgi_boundary_exposes_authenticated_contract(platform) -> None:
     )
     assert status == "200 OK"
     assert projection["published"]["evidence"] == 1
+
+
+def identical_payload_envelope(ref: str) -> dict[str, object]:
+    """Same content from a different origin.
+
+    `canonical_ref` must not be a function of the payload alone — two origins can
+    legitimately carry byte-identical content.
+    """
+    item = envelope("decision", ref)
+    item["payload"] = {"kind": "decision", "statement": "byte-identical content"}
+    return item
+
+
+def test_same_payload_from_two_origins_gets_distinct_canonical_refs(platform) -> None:
+    _store, _auth, token, service = platform
+    _status, first = service.publish_reference(
+        kind="decision",
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="origin-1",
+        envelope=identical_payload_envelope("CR-9-D1"),
+    )
+    _status, second = service.publish_reference(
+        kind="decision",
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="origin-2",
+        envelope=identical_payload_envelope("CR-9-D2"),
+    )
+    assert first["canonical_ref"] != second["canonical_ref"]
+    assert first["content_digest"] == second["content_digest"]
+    assert first["duplicate_origin"] is False
+    assert second["duplicate_origin"] is False
+    for response, expected in ((first, "CR-9-D1"), (second, "CR-9-D2")):
+        reference = service.get_reference(
+            kind="decision",
+            canonical_ref=str(response["canonical_ref"]),
+            project_id="project-a",
+            raw_token=token.raw_token,
+        )
+        assert reference.origin_ref == expected
+
+
+def test_two_tenants_sharing_a_project_id_do_not_collide(platform) -> None:
+    _store, auth, token_a, service = platform
+    token_b = auth.issue(
+        tenant_id="tenant-b",
+        project_id="project-a",
+        permissions={"decision:publish", "reference:read"},
+    )
+    _status, owned_by_a = service.publish_reference(
+        kind="decision",
+        project_id="project-a",
+        raw_token=token_a.raw_token,
+        idempotency_key="shared-1",
+        envelope=identical_payload_envelope("CR-9-SHARED"),
+    )
+    _status, owned_by_b = service.publish_reference(
+        kind="decision",
+        project_id="project-a",
+        raw_token=token_b.raw_token,
+        idempotency_key="shared-1",
+        envelope=identical_payload_envelope("CR-9-SHARED"),
+    )
+    assert owned_by_a["canonical_ref"] != owned_by_b["canonical_ref"]
+    with pytest.raises(NotFoundError):
+        service.get_reference(
+            kind="decision",
+            canonical_ref=str(owned_by_a["canonical_ref"]),
+            project_id="project-a",
+            raw_token=token_b.raw_token,
+        )
