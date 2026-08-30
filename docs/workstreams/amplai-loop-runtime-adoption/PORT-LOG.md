@@ -62,6 +62,11 @@ cortex 의 check 30개를 버리고 이 저장소 것 12개로 갈아 끼웠다.
 | forbidden 에서 `.specify/workflows` 제거 | `workflow.yml` 이 아직 three-lens gate 의 문서상 근거다 |
 | semantic runtime check 블록 제거 | 이식 대상이 아니다 |
 
+> 이 표는 이식 시점(2026-08)의 기록이다. 두 줄이 그 뒤에 뒤집혔다. **skill 정본 방향**은
+> `D-055` 로 `.agents/skills/` 가 됐고 `.claude/skills/` 는 exact symlink mirror 가 됐다 —
+> cortex 와 같은 방향이다. **`feynman`** 은 2026-08-30 `ALR-008` 에서 제거했다. 쓰지
+> 않기로 했다. `expected_skills` 와 `allowed_public` 양쪽에서 뺐다.
+
 ### 4. `.ai-team/skills` 정리
 
 `.ai-team/skills/taskify` 가 cortex 의 runtime layer 와 경로가 겹쳤다. `.agents/skills/`

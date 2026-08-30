@@ -16,8 +16,8 @@ adapter 지침이다.
 나머지 개발 capability(`speckit-*`, `taskify`, `code-review`, `dev-loop`,
 `systematic-debugging`)는 controller 가 내부에서 쓴다. 직접 부르지 않는다.
 
-loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/feynman`, `/eli12`,
-`/grilling`. 개발 절차를 지휘하지 않는다.
+loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/eli12`, `/grilling`.
+개발 절차를 지휘하지 않는다.
 
 ## Skill Layout
 

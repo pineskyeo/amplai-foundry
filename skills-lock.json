@@ -7,12 +7,6 @@
       "skillPath": "skills/eli12/SKILL.md",
       "computedHash": "a7528f2d404ab3749ea52289d511cbeb28197dfcee78228293d092a9a469ad88"
     },
-    "feynman": {
-      "source": "neurofoo/agent-skills",
-      "sourceType": "github",
-      "skillPath": "feynman/SKILL.md",
-      "computedHash": "ac3da8f0c6097aa1c9bee832c1c6cc2df2c199a76ae8396162a1f35002a3c9ac"
-    },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",

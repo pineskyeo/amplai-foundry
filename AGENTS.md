@@ -106,7 +106,7 @@ python3 .ai-team/verifiers/run.py --profile v2
 ```
 
 보조 skill은 loop 밖에 있고 사용자가 직접 부른다. Claude Code에서는 `/grill-me`,
-`/feynman`, `/eli12`, `/grilling`, Codex에서는 같은 이름에 `$`를 붙인다. 개발 절차를
+`/eli12`, `/grilling`, Codex에서는 같은 이름에 `$`를 붙인다. 개발 절차를
 지휘하지 않는다.
 
 ## Runtime Ownership
@@ -133,8 +133,8 @@ project miner — 는 가져오지 않았다 (`D-046`). 이 저장소에는 그 
 **공통 정본은 `.agents/skills/`다.** Codex가 이 경로를 직접 읽고,
 `.claude/skills/<name>`은 모두 정확히 `../../.agents/skills/<name>`을 가리키는 symlink다.
 내부 capability는 `.agents/skills/<name>/agents/openai.yaml`의
-`allow_implicit_invocation: false`로 Codex의 암묵적
-호출을 막는다. `loopctl doctor`가 skill 집합·visibility·symlink 방향을 검사한다.
+`allow_implicit_invocation: false`로 Codex의 암묵적 호출을 막는다. `loopctl doctor`가 skill
+집합·visibility·symlink 방향을 검사한다.
 
 ## Review Before Gate
 

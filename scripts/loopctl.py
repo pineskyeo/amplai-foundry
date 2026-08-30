@@ -427,7 +427,8 @@ def doctor(root):
         ".opencode/plugins",
     ]
     # amplai-foundry 는 cortex 보다 skill 이 많다. 이식하지 않은 것들은 그대로 둔다 —
-    # `eli12`/`feynman`/`grilling` 은 설명·학습·심문용이고 loop 와 겹치지 않는다.
+    # `eli12`/`grilling` 은 설명·심문용이고 loop 와 겹치지 않는다. `feynman` 은
+    # 2026-08-30 에 제거했다 (ALR-008) — 쓰지 않기로 했다.
     # `speckit-checklist`/`speckit-constitution`/`speckit-taskstoissues` 도 유지한다.
     expected_skills = {
         "work",
@@ -443,7 +444,6 @@ def doctor(root):
         "code-review",
         "systematic-debugging",
         "eli12",
-        "feynman",
         "grill-me",
         "grilling",
         "speckit-checklist",
@@ -521,7 +521,7 @@ def doctor(root):
             errors.append("허용되지 않은/legacy shared skill: {}".format(", ".join(extra)))
 
     # 개발 loop의 공개 표면은 work/design 둘이고 나머지 public skill은 loop 밖 보조 기능이다.
-    allowed_public = {"work", "design", "eli12", "feynman", "grill-me", "grilling"}
+    allowed_public = {"work", "design", "eli12", "grill-me", "grilling"}
     stray = sorted(set(public) - allowed_public)
     if stray:
         errors.append(
@@ -719,7 +719,7 @@ def doctor(root):
         if not os.path.isfile(path):
             continue
         text = open(path, encoding="utf-8").read()
-        # `/grill-me`·`/feynman` 은 amplai-foundry 가 유지하는 loop 밖 보조 skill 이라
+        # `/grill-me` 는 amplai-foundry 가 유지하는 loop 밖 보조 skill 이라
         # legacy 가 아니다 (D-046). `.ai-team/skills/` 만 legacy 로 본다.
         for old in (
             ".ai-team/gates/",
