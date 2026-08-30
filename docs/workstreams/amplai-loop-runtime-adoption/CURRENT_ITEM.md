@@ -28,7 +28,9 @@ gate         verifier --profile v2 PASS (block 11/11), pytest 1560, docs FRESH
 **gate 가 깨진 원인은 kit 이 설치하는 `scripts/amplai_hosts.py` 가 `pyproject.toml` 의 ruff
 예외 목록에 없던 것이다.** 배포 대상 두 곳은 `ruff`·`mypy` 를 쓰지 않아 그쪽에서는 잠복이다.
 
-fleet 배포는 `ALR-009` 로 뗐다 — `specs/010-kit-2-4-fleet-distribution/`.
+**fleet 배포도 끝났다 (`ALR-009`).** synapse PR #83, cortex PR #195 둘 다 머지됐고 셋이
+전부 2.4.0 이다. 각 저장소의 `origin/main` worktree 에 `--project-home` 없이 설치했으므로
+Project Store 와 사용자의 로컬 작업 사본을 건드리지 않았다.
 
 ## 이전 갱신 — Kit 2.3.2와 Codex 실행 호환 (2026-08-29)
 
@@ -287,8 +289,9 @@ Actions 가 복구되면 `main` 에서 한 번 돌려 보는 것이 남는다.
 ```text
 1. CI 복구 확인      Actions 가 살아나면 main 을 한 번 돌린다. PR #2 의 41 commit 과
                      ALR-008 둘 다 CI 로 확인된 적이 없다
-1b. fleet 배포       ALR-009 — kit 2.4.0 을 synapse·cortex 에.  설계는
-                     specs/010-kit-2-4-fleet-distribution/ 에 있다.  ALR-008 머지가 선행
+1b. cortex high-risk-ack   .ai-team/runtime/schemas/{decision,evidence}.schema.json 을
+                     equipment 계약으로 잡는다. 배포마다 [contract-ok] 가 필요하다.
+                     path 조건을 좁힐지는 cortex 가 정한다
 2. policy.json 대칭  제거가 표기를 원복하지 못한다. 내용은 정확히 같다.
                      append_to_json_array 의 역함수가 필요하다
 3. supervisor 켜기   HANDOFF §3 의 활성 세션 라우팅 확인이 선행이다.
