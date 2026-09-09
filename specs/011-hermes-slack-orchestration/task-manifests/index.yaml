@@ -1,0 +1,113 @@
+schema_version: "1.0"
+
+feature:
+  id: HSO
+  title: Hermes Slack Work Orchestration
+  source_status: approved
+
+source:
+  files:
+    - path: specs/011-hermes-slack-orchestration/spec.md
+      revision: D-059-through-D-064-approved-2026-09-02
+    - path: specs/011-hermes-slack-orchestration/plan.md
+      revision: S00-through-S07
+    - path: specs/011-hermes-slack-orchestration/work-contract.json
+      revision: executing
+  generated_from:
+    - approved_spec
+    - approved_plan
+    - approved_decisions
+  generated_at: "2026-09-02T05:24:00Z"
+
+tasks:
+  - id: HSO-T001
+    title: Close the existing Slack Proposal Card baseline
+    status: done
+    depends_on: []
+    requirements: [AC-014, AC-015]
+  - id: HSO-T002
+    title: Accept one durable idempotent orchestration request
+    status: done
+    depends_on: [HSO-T001]
+    requirements: [AC-001, AC-002, AC-005]
+  - id: HSO-T003
+    title: Expose a least-privilege Hermes integration bundle
+    status: done
+    depends_on: [HSO-T002]
+    requirements: [AC-003, AC-013]
+  - id: HSO-T004
+    title: Activate Work only through an authoritative Slack action
+    status: done
+    depends_on: [HSO-T002]
+    requirements: [AC-004, AC-005, AC-011, AC-012]
+  - id: HSO-T005
+    title: Dispatch one selected runner in one managed worktree
+    status: done
+    depends_on: [HSO-T002]
+    requirements: [AC-006, AC-007, AC-010, AC-014]
+  - id: HSO-T006
+    title: Verify native Claude Code and Codex fresh and resume runs
+    status: blocked
+    depends_on: [HSO-T003, HSO-T004, HSO-T005]
+    requirements: [AC-008, AC-009]
+  - id: HSO-T007
+    title: Verify the real Slack and Hermes production path
+    status: blocked
+    depends_on: [HSO-T003, HSO-T004, HSO-T005]
+    requirements: [AC-011, AC-012, AC-014]
+  - id: HSO-T008
+    title: Close repository verification and three-lens review
+    status: blocked
+    depends_on: [HSO-T006, HSO-T007]
+    requirements: [AC-015]
+
+execution:
+  waves:
+    - wave: 1
+      tasks: [HSO-T001]
+    - wave: 2
+      tasks: [HSO-T002]
+    - wave: 3
+      tasks: [HSO-T003, HSO-T004, HSO-T005]
+    - wave: 4
+      tasks: [HSO-T006, HSO-T007]
+    - wave: 5
+      tasks: [HSO-T008]
+  critical_path: [HSO-T001, HSO-T002, HSO-T005, HSO-T006, HSO-T008]
+
+coverage:
+  requirements:
+    - {id: AC-001, status: covered, tasks: [HSO-T002]}
+    - {id: AC-002, status: covered, tasks: [HSO-T002]}
+    - {id: AC-003, status: covered, tasks: [HSO-T003]}
+    - {id: AC-004, status: covered, tasks: [HSO-T004]}
+    - {id: AC-005, status: covered, tasks: [HSO-T002, HSO-T004]}
+    - {id: AC-006, status: covered, tasks: [HSO-T005]}
+    - {id: AC-007, status: covered, tasks: [HSO-T005]}
+    - {id: AC-008, status: covered, tasks: [HSO-T006]}
+    - {id: AC-009, status: covered, tasks: [HSO-T006]}
+    - {id: AC-010, status: covered, tasks: [HSO-T005]}
+    - {id: AC-011, status: covered, tasks: [HSO-T004, HSO-T007]}
+    - {id: AC-012, status: covered, tasks: [HSO-T004, HSO-T007]}
+    - {id: AC-013, status: covered, tasks: [HSO-T003]}
+    - {id: AC-014, status: covered, tasks: [HSO-T001, HSO-T005, HSO-T007]}
+    - {id: AC-015, status: covered, tasks: [HSO-T001, HSO-T008]}
+  deferred: []
+  excluded:
+    - automatic merge, push, deployment, or release
+    - Telegram adapter implementation
+    - multi-host distributed merge scheduling
+  uncovered: []
+
+open_questions: []
+
+update_history:
+  - date: "2026-09-02"
+    summary: Initial taskification after human approval of D-059 through D-064.
+    source_revision: 940aa0d+approved-design-worktree
+  - date: "2026-09-02"
+    summary: Round 22 closed the baseline correction and two technical lenses; HSO-T001 is blocked only on the governed human-created ledger commit.
+    source_revision: 940aa0d+round-22-review
+  - date: "2026-09-08"
+    summary: Round 24 closes HSO-T001 through HSO-T005 deterministic scope; HSO-T006 and HSO-T007 remain external operational gates, so final quality closure remains blocked.
+    source_revision: 3fdff58+round-24-freeze

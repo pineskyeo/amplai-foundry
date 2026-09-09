@@ -57,6 +57,11 @@ claude <configured args> --output-format json [--resume <session-id>] -p <durabl
 Prompt의 controller 진입점은 `/work`다. 결과 JSON에서 session id를 회수해 host-local checkpoint에
 저장한다.
 
+새 Work는 `controller=design|work`와 `runner_profile=claude-code|codex`를 고정할 수 있다.
+`design`은 `/design` 또는 `$design` entry point를 사용한다. `base_ref`가 있으면 Supervisor는
+사용자 checkout 대신 Project Store 아래 detached managed worktree에서 실행하며, retry/resume는
+같은 attempt workspace와 같은 runner profile을 재사용한다.
+
 ## Codex worker
 
 runner가 `codex`이면 다음 의미로 실행한다.

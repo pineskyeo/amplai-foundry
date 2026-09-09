@@ -9,9 +9,11 @@ import pytest
 
 from amplai_foundry.control_plane import (
     ApiTokenService,
+    ContextWorker,
     ControlPlaneService,
     ControlPlaneStore,
     ControlPlaneWSGIApp,
+    GovernedKnowledgeIntakeHandler,
     JobQueue,
     OutboxDispatcher,
     OutboxQueue,
@@ -25,6 +27,11 @@ from amplai_foundry.control_plane.errors import (
     NotFoundError,
 )
 from amplai_foundry.control_plane.http_api import MAX_BODY_BYTES
+from amplai_foundry.control_plane.orchestration import (
+    OrchestrationBridge,
+    OrchestrationBridgeConnector,
+    ProjectStoreResolutionHold,
+)
 
 
 @pytest.fixture
@@ -499,3 +506,405 @@ def test_every_failure_still_produces_a_wsgi_response(platform, error, expected_
     assert status is not None and status.startswith(expected_status), status
     assert "error" in body
     assert str(error) not in json.dumps(body), "the boundary must not echo internal detail"
+
+
+def orchestration_request(*, target_app_hint: str | None = "amplai-foundry") -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "controller": "work",
+        "goal": "Add a narrow verified integration",
+        "project_hint": "project-a",
+        "target_app_hint": target_app_hint,
+        "runner_hint": "codex",
+        "artifact_refs": ["ART-001"],
+        "reply_route": {
+            "provider": "slack",
+            "workspace_id": "T001",
+            "channel_id": "C001",
+            "thread_id": "1710000000.000001",
+        },
+    }
+
+
+def test_orchestration_request_is_durable_idempotent_and_emits_outbox(platform) -> None:
+    store, auth, _token, service = platform
+    service_token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    request = orchestration_request()
+    first = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=service_token.raw_token,
+        idempotency_key="slack:T001:C001:abc",
+        request=request,
+    )
+    second = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=service_token.raw_token,
+        idempotency_key="slack:T001:C001:abc",
+        request=request,
+    )
+    assert first == second
+    assert first[0] == 202
+    assert first[1]["status"] == "REQUESTED"
+    with store.connect() as connection:
+        row = connection.execute(
+            "SELECT event_type, aggregate_ref FROM cp_outbox WHERE aggregate_ref=?",
+            (first[1]["request_id"],),
+        ).fetchone()
+    assert row is not None
+    assert row["event_type"] == "orchestration.requested"
+
+
+def test_orchestration_request_holds_unknown_target_without_runnable_work(platform) -> None:
+    _store, auth, _token, service = platform
+    service_token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=service_token.raw_token,
+        idempotency_key="slack:T001:C001:hold",
+        request=orchestration_request(target_app_hint=None),
+    )
+    assert status == 202
+    assert response["status"] == "RESOLUTION_HOLD"
+    assert response["hold_code"] == "TARGET_APP_REQUIRED"
+
+
+def test_orchestration_wsgi_and_read_contract(platform) -> None:
+    _store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    app = ControlPlaneWSGIApp(service)
+    status, body = call_wsgi(
+        app,
+        method="POST",
+        path="/v1/projects/project-a/orchestration-requests",
+        token=token.raw_token,
+        body=orchestration_request(),
+        idem="slack:T001:C001:http",
+    )
+    assert status == "202 Accepted"
+    status, fetched = call_wsgi(
+        app,
+        method="GET",
+        path=f"/v1/projects/project-a/orchestration-requests/{body['request_id']}",
+        token=token.raw_token,
+    )
+    assert status == "200 OK"
+    assert fetched["request_id"] == body["request_id"]
+    assert fetched["goal"] == "Add a narrow verified integration"
+
+
+def test_status_controller_is_persisted_in_fresh_control_plane_schema(platform) -> None:
+    _store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit"},
+    )
+    request = orchestration_request()
+    request["controller"] = "status"
+    status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:status",
+        request=request,
+    )
+    assert status == 202
+    assert response["status"] == "RESOLUTION_HOLD"
+    assert response["hold_code"] == "STATUS_QUERY_REQUIRES_WORK_REF"
+
+
+def test_knowledge_intake_creates_a_dedicated_governed_job(platform) -> None:
+    _store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "context:read"},
+    )
+    status, response = service.request_knowledge_intake(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:intake",
+        request={
+            "source_text": "Keep this source verbatim for governed curation.",
+            "reply_route": {"provider": "slack", "workspace_id": "T001", "channel_id": "C001"},
+        },
+    )
+    assert status == 202
+    job = service.get_job(
+        job_id=response["job_id"], project_id="project-a", raw_token=token.raw_token
+    )
+    assert job.kind == "knowledge.intake"
+    assert job.payload["workflow"] == "source-preserve_then_governed_curation"
+
+
+def test_knowledge_intake_worker_stops_at_source_and_curation_context(
+    platform, tmp_path: Path
+) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "context:read"},
+    )
+    status, _response = service.request_knowledge_intake(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:intake-worker",
+        request={
+            "source_text": "Preserve these exact words before curation.",
+            "reply_route": {"provider": "slack", "workspace_id": "T001", "channel_id": "C001"},
+        },
+    )
+    assert status == 202
+    vault = tmp_path / "vault"
+    (vault / "projects" / "amplai").mkdir(parents=True)
+    handler = GovernedKnowledgeIntakeHandler(
+        vault=vault,
+        knowledge_project="amplai",
+        workspace=tmp_path,
+        repository_root=tmp_path,
+    )
+    completed = ContextWorker(JobQueue(store), handler).run_once(kind="knowledge.intake")
+    assert completed is not None and completed.status == "done"
+    assert completed.result is not None
+    assert completed.result["canonical_mutation"] == "not_attempted"
+    assert Path(str(completed.result["source_path"])).is_file()
+    assert Path(str(completed.result["curation_context"])).is_file()
+    proposal_path = Path(str(completed.result["proposal_path"]))
+    assert proposal_path.is_file()
+    assert completed.result["proposal_status"] == "draft"
+    assert "IGNORE" in proposal_path.read_text(encoding="utf-8")
+
+
+def test_kind_routed_knowledge_worker_leaves_other_jobs_pending(platform, tmp_path: Path) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"context:request", "orchestration.request.submit", "context:read"},
+    )
+    service.request_context(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="context-first",
+        request={"query": "do not claim me"},
+    )
+    service.request_knowledge_intake(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="knowledge-second",
+        request={
+            "source_text": "Only this job is eligible.",
+            "reply_route": {"provider": "slack", "workspace_id": "T001", "channel_id": "C001"},
+        },
+    )
+    vault = tmp_path / "vault"
+    (vault / "projects" / "amplai").mkdir(parents=True)
+    worker = ContextWorker(
+        JobQueue(store),
+        GovernedKnowledgeIntakeHandler(
+            vault=vault,
+            knowledge_project="amplai",
+            workspace=tmp_path,
+            repository_root=tmp_path,
+        ),
+    )
+    assert worker.run_once(kind="knowledge.intake") is not None
+    with store.connect() as connection:
+        row = connection.execute("SELECT status FROM cp_jobs WHERE kind='context.build'").fetchone()
+    assert row is not None and row["status"] == "pending"
+
+
+class FakeProjectStoreGateway:
+    def __init__(self) -> None:
+        self.work_by_request: dict[str, str] = {}
+
+    def ensure_draft_work(self, request) -> str:
+        return self.work_by_request.setdefault(request.request_id, "CR-1-W001")
+
+
+class HoldingProjectStoreGateway:
+    def ensure_draft_work(self, request) -> str:
+        raise ProjectStoreResolutionHold("TARGET_APP_NOT_REGISTERED")
+
+
+class MismatchedProjectStoreGateway:
+    def ensure_draft_work(self, request) -> str:
+        raise ProjectStoreResolutionHold("PROJECT_STORE_PROJECT_MISMATCH")
+
+
+def test_bridge_retry_creates_one_draft_work_for_one_request(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:bridge",
+        request=orchestration_request(),
+    )
+    gateway = FakeProjectStoreGateway()
+    bridge = OrchestrationBridge(store, gateway)
+    first = bridge.bridge_request(
+        tenant_id="tenant-a", project_id="project-a", request_id=response["request_id"]
+    )
+    second = bridge.bridge_request(
+        tenant_id="tenant-a", project_id="project-a", request_id=response["request_id"]
+    )
+    assert first.work_ref == second.work_ref == "CR-1-W001"
+    assert gateway.work_by_request == {response["request_id"]: "CR-1-W001"}
+
+
+def test_bridge_maps_a_project_store_mismatch_to_a_durable_hold(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:project-mismatch",
+        request=orchestration_request(),
+    )
+
+    held = OrchestrationBridge(store, MismatchedProjectStoreGateway()).bridge_request(
+        tenant_id="tenant-a", project_id="project-a", request_id=response["request_id"]
+    )
+    assert held.status == "RESOLUTION_HOLD"
+    assert held.hold_code == "PROJECT_STORE_PROJECT_MISMATCH"
+
+
+def test_outbox_worker_composes_request_to_draft_work(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:outbox-bridge",
+        request=orchestration_request(),
+    )
+    connectors = ConnectorRegistry()
+    connectors.register(
+        OrchestrationBridgeConnector.destination,
+        OrchestrationBridgeConnector(OrchestrationBridge(store, FakeProjectStoreGateway())),
+    )
+    delivered = OutboxDispatcher(OutboxQueue(store), connectors).run_once(
+        destination=OrchestrationBridgeConnector.destination
+    )
+    assert delivered is not None and delivered.status == "delivered"
+    request = service.get_orchestration_request(
+        request_id=response["request_id"], project_id="project-a", raw_token=token.raw_token
+    )
+    assert request.status == "BRIDGED" and request.work_ref == "CR-1-W001"
+
+
+def test_bridge_queues_an_activation_card_after_creating_draft_work(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:activation-card",
+        request=orchestration_request(),
+    )
+
+    class Scheduler:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, str]] = []
+
+        def schedule(self, *, request, work_ref: str) -> str:
+            self.calls.append((request.request_id, work_ref))
+            return "activation-card:fixture"
+
+    scheduler = Scheduler()
+    connectors = ConnectorRegistry()
+    connectors.register(
+        OrchestrationBridgeConnector.destination,
+        OrchestrationBridgeConnector(
+            OrchestrationBridge(store, FakeProjectStoreGateway()), card_scheduler=scheduler
+        ),
+    )
+    assert (
+        OutboxDispatcher(OutboxQueue(store), connectors).run_once(
+            destination=OrchestrationBridgeConnector.destination
+        )
+        is not None
+    )
+    assert scheduler.calls == [(response["request_id"], "CR-1-W001")]
+
+
+def test_orchestration_work_endpoint_reads_authoritative_work_not_request_row(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={
+            "orchestration.request.submit",
+            "orchestration.request.read",
+            "orchestration.work.read",
+        },
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:work-read",
+        request=orchestration_request(),
+    )
+    OrchestrationBridge(store, FakeProjectStoreGateway()).bridge_request(
+        tenant_id="tenant-a", project_id="project-a", request_id=response["request_id"]
+    )
+
+    class Reader:
+        def get_work(self, work_id: str):
+            assert work_id == "CR-1-W001"
+            return {"work_id": work_id, "status": "RUNNING", "attempt": 2}
+
+    read_service = ControlPlaneService(store, auth, work_reader=Reader())
+    assert read_service.get_orchestration_work(
+        work_id="CR-1-W001", project_id="project-a", raw_token=token.raw_token
+    ) == {"work_id": "CR-1-W001", "status": "RUNNING", "attempt": 2}
+
+
+def test_bridge_holds_unregistered_target_without_creating_work(platform) -> None:
+    store, auth, _token, service = platform
+    token = auth.issue(
+        tenant_id="tenant-a",
+        project_id="project-a",
+        permissions={"orchestration.request.submit", "orchestration.request.read"},
+    )
+    _status, response = service.submit_orchestration_request(
+        project_id="project-a",
+        raw_token=token.raw_token,
+        idempotency_key="slack:T001:C001:unregistered",
+        request=orchestration_request(),
+    )
+    held = OrchestrationBridge(store, HoldingProjectStoreGateway()).bridge_request(
+        tenant_id="tenant-a", project_id="project-a", request_id=response["request_id"]
+    )
+    assert held.status == "RESOLUTION_HOLD"
+    assert held.hold_code == "TARGET_APP_NOT_REGISTERED"
+    assert held.work_ref is None

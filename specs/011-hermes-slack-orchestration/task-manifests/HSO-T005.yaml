@@ -1,0 +1,76 @@
+schema_version: "1.0"
+id: HSO-T005
+title: Dispatch one selected runner in one managed worktree
+type: feature
+status: done
+goal:
+  outcome: Each Work selects design or work plus one Claude Code or Codex profile and executes in a clean managed worktree pinned to its immutable base commit.
+  user_value: Autonomous implementation does not alter the user's checkout and can resume deterministically.
+source:
+  feature: HSO
+  files:
+    - {path: specs/011-hermes-slack-orchestration/spec.md, section: Managed-Workspace}
+    - {path: specs/011-hermes-slack-orchestration/plan.md, section: Runner-Profiles}
+  requirements: [AC-006, AC-007, AC-010, AC-014]
+  decisions: [D-055, D-061]
+scope:
+  include: [Work schema migration, local runner profiles, controller-specific prompt, managed worktree lifecycle, retry and continuation]
+  exclude: [Automatic merge or push, multi-host lease]
+  allowed_paths:
+    - scripts/amplai_runtime.py
+    - scripts/amplai_hosts.py
+    - scripts/amplai_supervisor.py
+    - .ai-team/runtime/schemas/**
+    - tools/amplai-loop-kit/**
+    - tests/ai/**
+    - docs/**
+  forbidden_paths: [vault/**, src/amplai_foundry/governance/**]
+dependencies:
+  tasks: [HSO-T002]
+  external: []
+implementation:
+  guidance: [Keep Python 3.6 compatibility in Loop Kit scripts and preserve singular runner fallback.]
+  invariants:
+    - One Work has one active runner and one attempt workspace.
+    - Resume reuses the same runner and workspace.
+    - Dangerous permission bypass with unattended auto_start is rejected.
+  non_goals: [Remote worker scheduler, automatic workspace deletion]
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: old and new app bindings
+      when: they are loaded
+      then: old singular runner remains readable and new Work resolves its named runner profile
+    - id: AC-02
+      given: design and work controllers for both hosts
+      when: commands are built
+      then: each uses the correct public entry point and redacts the prompt
+    - id: AC-03
+      given: a Work with an immutable base commit
+      when: the Supervisor claims and resumes it
+      then: it uses one managed worktree and never the configured user checkout
+  commands:
+    - {id: adapter-tests, kind: test, run: ".venv/bin/python -m pytest tests/ai/test_amplai_host_adapters.py", required: true}
+    - {id: supervisor-tests, kind: test, run: ".venv/bin/python -m pytest tests/ai/test_amplai_async_runtime.py", required: true}
+  manual_checks: []
+  evidence:
+    - {type: command_output, source: adapter-tests, required: true}
+    - {type: command_output, source: supervisor-tests, required: true}
+risk:
+  level: high
+  concerns: [workspace isolation, backward compatibility, permission bypass]
+  approvals: [architecture_change, public_contract]
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 3
+  stop_conditions: [base_ref_not_immutable, worktree_ownership_ambiguous, same_failure_class_reaches_replan_threshold]
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-09-08T08:00:00Z"
+  evidence_paths:
+    - specs/011-hermes-slack-orchestration/evidence/review-target-round-24.txt
+    - specs/011-hermes-slack-orchestration/evidence-trace.jsonl
+handoff:
+  expected_changes: [scripts/amplai_runtime.py, scripts/amplai_hosts.py, scripts/amplai_supervisor.py, tests/ai/**]
+  notes: []

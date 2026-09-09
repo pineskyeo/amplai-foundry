@@ -55,7 +55,12 @@ class JobQueue:
             )
 
     def claim_next(
-        self, *, worker_id: str, lease_seconds: int = 60, project_id: str | None = None
+        self,
+        *,
+        worker_id: str,
+        lease_seconds: int = 60,
+        project_id: str | None = None,
+        kind: str | None = None,
     ) -> DurableJob | None:
         if lease_seconds < 1:
             raise ValueError("lease_seconds must be positive")
@@ -66,6 +71,10 @@ class JobQueue:
             if project_id is not None:
                 project_clause = " AND project_id=?"
                 params.append(project_id)
+            kind_clause = ""
+            if kind is not None:
+                kind_clause = " AND kind=?"
+                params.append(kind)
             row = connection.execute(
                 """
                 SELECT * FROM cp_jobs
@@ -73,6 +82,7 @@ class JobQueue:
                   AND (not_before IS NULL OR not_before<=?)
                 """
                 + project_clause
+                + kind_clause
                 + " ORDER BY created_at, job_id LIMIT 1",
                 tuple(params),
             ).fetchone()
@@ -215,8 +225,10 @@ class ContextWorker:
         self.handler = handler
         self.worker_id = worker_id
 
-    def run_once(self, *, project_id: str | None = None) -> DurableJob | None:
-        job = self.queue.claim_next(worker_id=self.worker_id, project_id=project_id)
+    def run_once(
+        self, *, project_id: str | None = None, kind: str | None = None
+    ) -> DurableJob | None:
+        job = self.queue.claim_next(worker_id=self.worker_id, project_id=project_id, kind=kind)
         if job is None:
             return None
         assert job.lease_token is not None

@@ -2395,3 +2395,123 @@
 - Affected item: `MGC-012-P5` wave 15. `.ai-team/policy/approvals.jsonl`.
 - Source: round 19 `A19`·round 20 `A20` 의 두 라운드 연속 Advisory 와, wave 15 가 `C21-3` 을
   닫으려다 실측한 역산 실패(4 범위 × Decision 3건 = 12조합 전부 불일치)다.
+
+## D-059 — Keep Hermes At The Untrusted Work-Manager Boundary
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes는 교체 가능한 Client Partner/Work Manager다. Hermes의 AMPLAI plugin은
+  `orchestration.request.submit`, `orchestration.request.read`, `orchestration.work.read`만
+  가진다. DRAFT 요청 제출과 상태 조회는 할 수 있지만 Work activation, human decision, shell,
+  Git, runner spawn, publish/deploy와 canonical knowledge write는 할 수 없다. Claude Code와
+  Codex 실행은 Project Store lease를 소유한 Local Supervisor만 시작한다.
+- Reason: `ARC-0003`, `ARC-0007`, `CON-0010`의 후보 경계와 `MGC-014`의 least-privilege 조건을
+  executable architecture로 확정해야 한다. Hermes가 runner를 직접 실행하면 Project Store의
+  authority, retry, evidence와 audit를 우회한다.
+- Rejected: Hermes에 shell과 Claude/Codex launch tool을 주고 결과만 AMPLAI에 보고한다. 실행
+  이전의 activation, 중복 방지와 crash recovery를 사후 로그로 바꿔 버린다.
+- Scope: Hermes service credential, plugin tool surface, request API와 Supervisor dispatch 경계다.
+- Consequence: Hermes가 없어도 기존 CLI와 Supervisor Work는 계속 동작한다. Hermes plugin을
+  끄는 것이 integration rollback이다.
+- Source: `specs/011-hermes-slack-orchestration/spec.md`, `research.md`, `MGC-014`.
+
+## D-060 — Split Conversation And Human Authority Across Two Slack Apps
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes Slack App은 Socket Mode 대화와 요청 접수를, AMPLAI Slack App은 signed HTTPS
+  interaction, Activation Card, Proposal Card와 authoritative status projection을 맡는다. 두 App은
+  token, signing secret와 event subscription을 공유하지 않는다. Hermes가 전달한 Slack user ID는
+  routing/audit hint일 뿐 authority가 아니다.
+- Reason: Hermes gateway는 Slack context를 알고 있지만 plugin tool handler에 immutable authenticated
+  provenance를 전달하는 안정된 계약이 현재 없다. AMPLAI의 기존 raw-body signature verification,
+  Actor binding과 one-time ActionToken 경계를 보존해야 한다.
+- Rejected: 한 Slack App credential과 event stream을 Hermes와 AMPLAI가 공유한다. ack owner,
+  credential owner와 human-authority source가 모호해져 confused-deputy 경계를 만든다.
+- Scope: Slack topology와 human activation ingress다.
+- Consequence: 사용자는 같은 workspace/channel에서 bot 둘을 보지만, conversational message와
+  승인 가능한 AMPLAI Card를 표시 이름과 purpose로 구분한다.
+- Source: `specs/011-hermes-slack-orchestration/research.md`; Hermes issue `#69882`.
+
+## D-061 — Select One Controller And Runner Per Work, Then Execute In A Managed Worktree
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Project Store Work에 additive `controller=design|work`,
+  `runner_profile=claude-code|codex`, immutable `base_ref`, `request_ref`를 둔다. Local app binding은
+  복수 runner profile과 default를 갖는다. Supervisor는 Work마다 runner 하나만 선택하고 고정
+  `base_ref`의 host-local managed worktree에서 해당 public entry point를 실행한다. retry/resume는
+  같은 attempt workspace를 재사용하고 runner 변경은 새 attempt와 명시적 Decision을 요구한다.
+- Reason: `D-055`는 host-neutral Work protocol과 두 native adapter를 승인했지만 현재 binding과
+  Supervisor는 app당 runner 하나, work controller 하나, configured checkout 직접 실행에 머문다.
+  Slack autonomous execution에는 Work-level 선택과 사용자 checkout 격리가 필요하다.
+- Rejected: 한 Work를 Claude Code와 Codex가 동시에 수정한다. branch ownership, continuation과
+  failure attribution이 불명확하다.
+- Rejected: 사용자 main checkout에서 autonomous worker를 실행한다. 사용자 변경과 worker retry가
+  같은 filesystem state를 공유한다.
+- Scope: Project Store Work schema, local binding, host adapter와 Supervisor workspace lifecycle다.
+- Consequence: 기존 Work와 singular runner binding은 read-compatible default로 유지한다. 자동
+  commit, merge, push, release와 deploy는 이 Decision 밖이다.
+- Source: `D-055`; `scripts/amplai_hosts.py`, `scripts/amplai_runtime.py`,
+  `scripts/amplai_supervisor.py`; `specs/011-hermes-slack-orchestration/plan.md`.
+
+## D-062 — Activate Slack Plus Hermes Per Project, Provider And Feature
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes integration activation은 `project + provider=slack + feature` evidence로 연다.
+  global enable을 만들지 않고 `auto_start=false`를 기본으로 둔다. Slack+Hermes provider path는
+  Telegram `MGC-013` 완료와 독립적으로 gate할 수 있다. 전체 Messenger workstream closure에는
+  Telegram이 계속 남는다.
+- Reason: `MGC-015`의 provider-scoped activation 원칙을 지키면서 서로 다른 provider의 준비
+  상태가 안전한 Slack 경로를 불필요하게 막지 않게 해야 한다.
+- Rejected: 모든 messenger adapter가 끝난 뒤 하나의 global switch를 켠다. provider별 evidence와
+  rollback을 잃는다.
+- Scope: activation policy와 rollout 순서다. Telegram 구현 범위는 바꾸지 않는다.
+- Consequence: sandbox Slack E2E 뒤에도 production activation은 별도 `production_operation`
+  human gate를 요구한다.
+- Source: `MGC-015`, `MGC-016`, `specs/011-hermes-slack-orchestration/spec.md`.
+
+## D-063 — Project Authoritative Work Status Through The AMPLAI Slack App
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: `DRAFT`, `READY`, `RUNNING`, `HUMAN_REQUIRED`, `FAILED`, `DONE`과 evidence summary는
+  Project Store event를 읽는 AMPLAI Slack projection이 authoritative하게 보낸다. Hermes는 같은
+  API를 조회해 대화형으로 설명할 수 있지만 Hermes의 자연어 응답은 상태 전이나 완료 evidence가
+  아니다.
+- Reason: agent text와 durable state를 분리해야 notification failure, retry와 LLM 요약 오류가
+  Work 결과를 바꾸지 않는다. 기존 Slack projection의 idempotent outbox/readback을 재사용할 수
+  있다.
+- Rejected: Hermes가 worker stdout을 요약해 최종 상태를 선언한다. Project Store와 메시지가
+  갈라졌을 때 어느 쪽이 진실인지 결정할 수 없다.
+- Scope: progress/result notification과 status query 의미다.
+- Consequence: notification delivery가 실패해도 terminal Work state는 되돌리지 않고 outbox가
+  재시도한다.
+- Source: `D-056`; `src/amplai_foundry/governance/slack_projection.py`;
+  `specs/011-hermes-slack-orchestration/spec.md`.
+
+## D-064 — Never Promote Hermes Conversation Memory Automatically
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes memory는 말투, 알림 선호와 현재 conversation context만 가진다. architecture,
+  policy, Decision과 완료 evidence는 Project Store 또는 governed Vault가 소유한다. 사용자가
+  명시적으로 기록을 요청할 때만 knowledge intake request를 만들고, 기존 curation contract에
+  따라 Source와 Proposal에서 멈춘다. canonical Vault 자동 apply는 금지한다.
+- Reason: `QUE-0011`의 promotion boundary를 Knowledge Safety와 Agent Curation Contract에 맞춰
+  닫아야 한다. 대화 memory를 공식 지식으로 취급하면 provenance, 중복 검색, conflict review와
+  human approval을 우회한다.
+- Rejected: Hermes summary나 장기 memory를 주기적으로 Vault에 동기화한다. 요약 손실과 잘못된
+  자동 승격을 피할 수 없다.
+- Scope: Hermes memory와 AMPLAI knowledge intake의 경계다.
+- Consequence: knowledge capture는 한 단계 더 필요하지만 기존 Proposal validation, diff와 conflict
+  정책을 그대로 보존한다.
+- Source: `AGENTS.md#Agent-Curation-Contract`, `QUE-0011`,
+  `specs/011-hermes-slack-orchestration/spec.md`.

@@ -1,0 +1,64 @@
+schema_version: "1.0"
+id: HSO-T003
+title: Expose a least-privilege Hermes integration bundle
+type: feature
+status: done
+goal:
+  outcome: Hermes exposes only five fixed-schema AMPLAI tools and cannot reach shell, file, delegation, raw agent launch, activation, or canonical knowledge write.
+  user_value: Slack conversation can submit and track work without becoming an execution authority.
+source:
+  feature: HSO
+  files:
+    - {path: specs/011-hermes-slack-orchestration/spec.md, section: Hermes-Service-Authority}
+    - {path: specs/011-hermes-slack-orchestration/plan.md, section: Hermes-Plugin}
+  requirements: [AC-003, AC-013]
+  decisions: [D-059, D-060, D-064]
+scope:
+  include: [Standalone Hermes plugin, restricted Slack profile, config verifier, token rotation and setup documentation]
+  exclude: [Hermes core fork, shell subprocess, Slack approval handling]
+  allowed_paths: [integrations/hermes-amplai/**, tests/test_hermes_integration.py, docs/**]
+  forbidden_paths: [vault/**, src/amplai_foundry/governance/**]
+dependencies:
+  tasks: [HSO-T002]
+  external: []
+implementation:
+  guidance: [Use fixed endpoint methods and JSON schema; keep plugin disabled by default.]
+  invariants:
+    - Slack user ID from Hermes is never human authority.
+    - Knowledge intake stops at Source and Proposal.
+  non_goals: [Automatic memory synchronization, raw MCP passthrough]
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: the shipped Hermes Slack profile
+      when: its enabled tool inventory is verified
+      then: exactly the approved AMPLAI tools and safe conversation tools are present and every forbidden tool is absent
+    - id: AC-02
+      given: a Hermes service token
+      when: it attempts activation or canonical write
+      then: no such plugin tool or permission exists
+  commands:
+    - {id: hermes-tests, kind: test, run: ".venv/bin/python -m pytest tests/test_hermes_integration.py", required: true}
+    - {id: profile-check, kind: integration, run: ".venv/bin/python integrations/hermes-amplai/verify_profile.py integrations/hermes-amplai/slack-profile.example.yaml", required: true}
+  manual_checks: []
+  evidence:
+    - {type: command_output, source: hermes-tests, required: true}
+    - {type: command_output, source: profile-check, required: true}
+risk:
+  level: high
+  concerns: [third-party plugin contract, least privilege, credential separation]
+  approvals: [architecture_change]
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 3
+  stop_conditions: [hermes_plugin_api_incompatible, forbidden_tool_required, same_failure_class_reaches_replan_threshold]
+completion:
+  all_acceptance_passed: true
+  required_evidence_present: true
+  completed_at: "2026-09-08T08:00:00Z"
+  evidence_paths:
+    - specs/011-hermes-slack-orchestration/evidence/review-target-round-24.txt
+    - specs/011-hermes-slack-orchestration/evidence-trace.jsonl
+handoff:
+  expected_changes: [integrations/hermes-amplai/**, tests/test_hermes_integration.py]
+  notes: []

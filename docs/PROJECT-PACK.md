@@ -37,3 +37,6 @@ amplai-foundry project pack amplai --output dist/amplai.zip
 Workspace 수준의 비교에서는 `target_namespace`로 cross-project 대상을 명시할 수
 있지만, 독립 archive의 유효성을 보장하기 위해 한 Pack만 검증·패키징할 때는 bundle에
 포함되지 않은 외부 Memory reference를 거부한다.
+
+Project Pack은 runner profile, managed worktree, Slack activation ledger 또는 Slack status outbox를 canonical
+Memory로 포함하지 않는다. 그것들은 Project Store/host-local runtime state이며 Pack의 source of truth가 아니다.

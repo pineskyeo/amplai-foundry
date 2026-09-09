@@ -1,0 +1,15 @@
+{
+  "blockers": [
+    "HSO-T006/T007 require governed production-operation evidence: native Claude/Codex fresh-resume fixture execution plus separate Hermes and AMPLAI Slack App credentials, allowlisted test channel, and activation Actor binding. No Slack credentials or operational correlations are available in this workspace."
+  ],
+  "completed_slices": [],
+  "context_pack_hash": "175c092227246ee115df599bf28f2f6c8e768765fe1d65b9f2fab38894845db4",
+  "current_slice": null,
+  "git_checkpoint": "3fdff58337bb614da1b841490cd01592b190caf8",
+  "last_verification": null,
+  "next_action": "An authorized operator provisions the two Slack Apps, a non-production allowlisted channel, and Actor binding; then run the S06 native-host and S07 Slack/Hermes checklists without enabling auto_start.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "blocked",
+  "work_id": "HERMES-SLACK-ORCHESTRATION"
+}

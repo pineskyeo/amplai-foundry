@@ -27,6 +27,7 @@ CLAIMS = os.path.join(".ai-team", "knowledge", "claims.jsonl")
 DECISIONS = os.path.join(".ai-team", "knowledge", "decisions.index.json")
 
 REGISTRY = os.path.join(".ai-team", "verifiers", "registry.json")
+UTC = getattr(datetime, "UTC", None) or datetime.timezone.utc  # noqa: UP017 -- Python 3.10 support
 
 # 파일 경로가 아닌 evidence locator. superseded claim 의 근거는 이미 삭제된
 # 파일인 게 정상이므로 이런 marker 를 stale 로 세지 않는다.
@@ -86,12 +87,7 @@ def python_requirement(root):
 
 
 def utc_now():
-    return (
-        datetime.datetime.now(datetime.UTC)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+    return datetime.datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def load_json(path):

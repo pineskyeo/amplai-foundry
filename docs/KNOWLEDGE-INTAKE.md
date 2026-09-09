@@ -51,3 +51,19 @@ CLI identity는 현재 OS user ID에서 파생한다. Governance Store 경로는
 `.amplai/runtime/governance.db`로 고정하며 요청 옵션으로 바꿀 수 없다.
 
 여러 artifact는 한 요청에서 같은 Project resolution을 공유하지만 Source, Candidate, 비교, Proposal과 IntakeRun은 artifact별로 분리된다.
+
+## Hermes Explicit Intake
+
+Hermes의 `knowledge.intake` 요청은 대화 메모리를 동기화하지 않는다. Control Plane job은 원문을
+UTF-8 Source로 보존하고 `.amplai/jobs/CURATE-<source-id>.md` curation context와 reviewable draft
+Proposal을 만든다. Hermes 원문에서 지식 operation을 추론하지 않으므로 그 Proposal은 evidence를
+가리키는 `IGNORE` disposition으로 시작한다. 결과에는 Source ID, context·Proposal 경로가 남고,
+canonical mutation은 항상 `not_attempted`다.
+
+```bash
+amplai-foundry control-plane knowledge-intake-once \
+  --db .amplai/control-plane.db --vault vault --knowledge-project amplai
+```
+
+다음 단계는 사람이 Proposal을 검토해 실제 CREATE/UPDATE/LINK 등의 candidate로 바꾸는 일이다.
+이 worker는 Proposal apply나 canonical Vault 변경을 실행하지 않는다.

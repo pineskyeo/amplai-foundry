@@ -52,6 +52,7 @@ SLACK_API_BASE: Final = "https://slack.com/api"
 _TRANSPORT_INTERRUPTION_MESSAGE: Final = "Slack message delivery interrupted."
 
 _POST_MESSAGE: Final = "chat.postMessage"
+_UPDATE_MESSAGE: Final = "chat.update"
 _POST_EPHEMERAL: Final = "chat.postEphemeral"
 _CONVERSATIONS_HISTORY: Final = "conversations.history"
 # 자가검사가 남긴 probe 를 치우는 데만 쓴다 (H-3.2). 필요한 scope 는 `chat:write` 하나이고
@@ -170,7 +171,9 @@ class SlackCredentials:
 
 def load_slack_credentials(
     environ: Mapping[str, str] | None = None,
-) -> SlackCredentials | None:
+    *,
+    _signing_secret_only: bool = False,
+) -> SlackCredentials | SecretStr | None:
     """Read the credentials at the one place that touches the environment (R-014).
 
     **이것이 유일한 읽기 지점이다.** core 는 계속 주입만 받는다. repo 전체에 Slack 설정을
@@ -191,17 +194,35 @@ def load_slack_credentials(
     부른다 (wave 5 contract review A-9).
     """
     source = os.environ if environ is None else environ
-    names = (SLACK_BOT_TOKEN_ENV, SLACK_SIGNING_SECRET_ENV)
+    names = (
+        (SLACK_SIGNING_SECRET_ENV,)
+        if _signing_secret_only
+        else (
+            SLACK_BOT_TOKEN_ENV,
+            SLACK_SIGNING_SECRET_ENV,
+        )
+    )
     missing = _missing_names(source, names)
-    if len(missing) == len(names):
+    if missing and len(missing) == len(names):
         return None
     if missing:
         # 값을 message 에 넣지 않는다. 이름만 적는다.
         raise ValueError(f"Slack credential 구성이 불완전합니다. 빠진 변수: {missing}")
+    if _signing_secret_only:
+        return _read_secret(source, SLACK_SIGNING_SECRET_ENV)
     return SlackCredentials(
         bot_token=_read_secret(source, SLACK_BOT_TOKEN_ENV),
         signing_secret=_read_secret(source, SLACK_SIGNING_SECRET_ENV),
     )
+
+
+def load_slack_signing_secret(environ: Mapping[str, str] | None = None) -> SecretStr:
+    """Read the AMPLAI signing secret at the one permitted environment boundary."""
+    secret = load_slack_credentials(environ, _signing_secret_only=True)
+    if secret is None:
+        raise ValueError(f"Slack signing secret is missing: {SLACK_SIGNING_SECRET_ENV}")
+    assert isinstance(secret, SecretStr)
+    return secret
 
 
 # credential 이 **누구에게** 말하는지를 정하는 둘이다. secret 이 아니지만 같은 규칙을 받는다
@@ -440,6 +461,34 @@ class HttpSlackTransport:
         finally:
             # 사용자에게 보낸 문구가 이 frame 의 local 로 남지 않게 한다.
             text = ""
+
+    def update_message(self, *, channel: str, ts: str, text: str) -> None:
+        """Update one message created by this bot without changing its identity."""
+        try:
+            self._call(
+                _UPDATE_MESSAGE,
+                lambda: json.dumps({"channel": channel, "ts": ts, "text": text}).encode("utf-8"),
+                _JSON_CONTENT_TYPE,
+            )
+        finally:
+            text = ""
+
+    def update_card(self, *, channel: str, ts: str, payload: Mapping[str, object]) -> None:
+        """Replace a bot-owned message with a Block Kit card without changing its receipt."""
+        try:
+            text = payload.get("text")
+            blocks = payload.get("blocks")
+            if not isinstance(text, str) or not text.strip() or not isinstance(blocks, list):
+                raise ValueError("Slack card update payload is invalid.")
+            self._call(
+                _UPDATE_MESSAGE,
+                lambda: json.dumps(
+                    {"channel": channel, "ts": ts, "text": text, "blocks": blocks}
+                ).encode("utf-8"),
+                _JSON_CONTENT_TYPE,
+            )
+        finally:
+            payload = {}
 
     def delete_message(self, *, channel: str, ts: str) -> None:
         """Delete one message this bot posted (H-3.2).

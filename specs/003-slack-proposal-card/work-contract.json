@@ -96,7 +96,7 @@
       "statement": "전 suite 가 통과하고 test 가 줄지 않는다. v2 profile 이 PASS 다.",
       "evidence": [
         ".venv/bin/python .ai-team/verifiers/run.py --profile v2 PASS",
-        "test 수를 두 방법으로 세고 둘 다 기록. round 22 기준선은 1515 다"
+        "test 수를 두 방법으로 세고 둘 다 기록. 착수 전 기준선은 1565, round 22 target은 1575다"
       ]
     }
   ],

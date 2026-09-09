@@ -204,7 +204,18 @@ Work Context + Project Store + host-local agent session/thread checkpoint
 따라서 handoff 파일이 도착했는지를 polling하지 않는다. Supervisor는 `target_app`, `status=READY`,
 `depends_on`, app capacity만 본다.
 
-## 8. 미래 Hermes/Global AMPLAI와의 호환성
+## 8. Slack Work activation and status projection
+
+Hermes는 Work 요청을 만들 수 있지만 `DRAFT` Work를 activate할 수 없다. AMPLAI Slack App은 signed
+button click, actor binding, one-time hash-only token, expected Work revision/digest, 그리고
+`project + provider + feature` rollout scope를 확인한 human `activation.manage` authority만 받는다.
+기본 scope는 disabled이고 `auto_start=false`다.
+
+Project Store Work는 계속 SSOT다. `scripts/amplai_work_status_projection.py`는 append-only Work event를
+local durable outbox에 넣고 Slack status message를 idempotent upsert한다. Slack delivery failure는 pending
+delivery로 남을 뿐 Work state를 되돌리지 않는다.
+
+## 9. 미래 Hermes/Global AMPLAI와의 호환성
 
 현재 App Runtime은 host-neutral repository protocol과 Claude/Codex adapter를 통해 Context·Evidence·Decision·Implementation·Verify를 담당한다.
 미래 Global AMPLAI는 Goal·CR·Contract coordination·Work Graph·priority·cross-app verification을

@@ -17,7 +17,7 @@ from typing import Any
 
 from amplai_foundry.control_plane.errors import ConflictError
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def utc_now() -> str:
@@ -156,12 +156,71 @@ class ControlPlaneStore:
                     updated_at TEXT NOT NULL,
                     PRIMARY KEY(tenant_id, project_id, destination)
                 );
+                CREATE TABLE IF NOT EXISTS cp_orchestration_requests(
+                    request_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    project_id TEXT NOT NULL,
+                    request_digest TEXT NOT NULL,
+                    controller TEXT NOT NULL CHECK(controller IN ('status','design','work')),
+                    goal TEXT NOT NULL,
+                    project_hint TEXT,
+                    target_app_hint TEXT,
+                    runner_hint TEXT,
+                    artifact_refs_json TEXT NOT NULL,
+                    reply_route_json TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(
+                        status IN ('REQUESTED','RESOLUTION_HOLD','BRIDGED','FAILED')
+                    ),
+                    hold_code TEXT,
+                    work_ref TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS cp_orchestration_requests_scope
+                    ON cp_orchestration_requests(tenant_id, project_id, created_at);
                 """
             )
+            self._migrate_orchestration_request_controller(connection)
             connection.execute(
                 "INSERT OR REPLACE INTO cp_meta(key, value) VALUES('schema_version', ?)",
                 (str(SCHEMA_VERSION),),
             )
+
+    @staticmethod
+    def _migrate_orchestration_request_controller(connection: sqlite3.Connection) -> None:
+        """Rebuild the isolated request table when an old CHECK lacks status."""
+        row = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='cp_orchestration_requests'"
+        ).fetchone()
+        if row is None or "'status'" in str(row[0]):
+            return
+        connection.executescript(
+            """
+            ALTER TABLE cp_orchestration_requests RENAME TO cp_orchestration_requests_v1;
+            CREATE TABLE cp_orchestration_requests(
+                request_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, project_id TEXT NOT NULL,
+                request_digest TEXT NOT NULL,
+                controller TEXT NOT NULL CHECK(controller IN ('status','design','work')),
+                goal TEXT NOT NULL, project_hint TEXT, target_app_hint TEXT, runner_hint TEXT,
+                artifact_refs_json TEXT NOT NULL, reply_route_json TEXT NOT NULL,
+                correlation_id TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(
+                    status IN ('REQUESTED','RESOLUTION_HOLD','BRIDGED','FAILED')
+                ),
+                hold_code TEXT, work_ref TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+            );
+            INSERT INTO cp_orchestration_requests
+            SELECT request_id, tenant_id, project_id, request_digest, controller, goal,
+                   project_hint, target_app_hint, runner_hint, artifact_refs_json,
+                   reply_route_json, correlation_id, status, hold_code, work_ref,
+                   created_at, updated_at
+            FROM cp_orchestration_requests_v1;
+            DROP TABLE cp_orchestration_requests_v1;
+            CREATE INDEX IF NOT EXISTS cp_orchestration_requests_scope
+                ON cp_orchestration_requests(tenant_id, project_id, created_at);
+            """
+        )
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

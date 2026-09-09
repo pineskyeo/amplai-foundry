@@ -1,5 +1,9 @@
 # AMPLAI Platform / Loop Kit 2.3.2 Architecture Audit
 
+> 2026-09-08 maintenance note — 이 문서는 2.3.2 시점의 historical audit다. audit가
+> 언급한 `scripts/loopv2.py`의 UTC clock은 Python 3.11 이전 interpreter에서도 동작하는
+> fallback으로 보완됐다. 이 메모는 당시 결론을 변경하지 않는다.
+
 - Date: 2026-08-29
 - Repository baseline: `amplai-foundry` `main` at `ced83af`
 - Reviewed products:

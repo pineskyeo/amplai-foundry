@@ -2,7 +2,9 @@
 
 Each test names the 2.1.0 behaviour it prevents from coming back.
 """
+
 import io
+import importlib.util
 import json
 import os
 import shutil
@@ -25,11 +27,33 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 from amplai_runtime import (  # noqa: E402
-    AtomicDirectoryLock, ConflictError, LockError, ProjectStore,
-    ValidationError, read_json, reseal_object, scan_unsealed, utc_after,
-    utc_now, write_json_atomic,
+    AtomicDirectoryLock,
+    ConflictError,
+    LockError,
+    ProjectStore,
+    ValidationError,
+    read_json,
+    reseal_object,
+    scan_unsealed,
+    utc_after,
+    utc_now,
+    write_json_atomic,
 )
 from amplai_supervisor import Supervisor  # noqa: E402
+
+
+def _load_sealed_payload_runtime():
+    path = os.path.join(
+        REPO_ROOT, "tools", "amplai-loop-kit", "payload", "scripts", "amplai_runtime.py"
+    )
+    spec = importlib.util.spec_from_file_location("amplai_loop_kit_payload_runtime", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+PAYLOAD_RUNTIME = _load_sealed_payload_runtime()
 
 
 class LockTest(unittest.TestCase):
@@ -92,7 +116,10 @@ class StoreTestBase(unittest.TestCase):
 
     def make_change(self, change_id=None):
         change = self.store.create_change(
-            "t", "g", "cortex", affected_apps=["cortex", "synapse"],
+            "t",
+            "g",
+            "cortex",
+            affected_apps=["cortex", "synapse"],
             change_id=change_id,
         )
         self.store.activate_change(change["change_id"])
@@ -100,8 +127,12 @@ class StoreTestBase(unittest.TestCase):
 
     def make_work(self, cr_id, app="cortex", depends=None, max_attempts=None):
         return self.store.create_work(
-            cr_id, app, "goal", depends_on=depends or [],
-            acceptance=["verifier passes"], max_attempts=max_attempts,
+            cr_id,
+            app,
+            "goal",
+            depends_on=depends or [],
+            acceptance=["verifier passes"],
+            max_attempts=max_attempts,
         )
 
 
@@ -115,11 +146,13 @@ class ChildIdTest(StoreTestBase):
 
         question = self.store.create_question(work["work_id"], "결정이 필요한가?")
         self.assertEqual(
-            self.store.get_question(question["question_id"])["change_id"], cr_id,
+            self.store.get_question(question["question_id"])["change_id"],
+            cr_id,
         )
         evidence = self.store.add_evidence(cr_id, "code", "s", "file", "a.c")
         self.assertEqual(
-            self.store.get_evidence(evidence["evidence_id"])["change_id"], cr_id,
+            self.store.get_evidence(evidence["evidence_id"])["change_id"],
+            cr_id,
         )
         self.store.activate_work(work["work_id"])
         self.assertEqual(self.store.get_work(work["work_id"])["status"], "READY")
@@ -131,7 +164,8 @@ class ChildIdTest(StoreTestBase):
         long_work = self.make_work(long_id)
         self.assertEqual(self.store.get_work(short_work["work_id"])["change_id"], "CR-A")
         self.assertEqual(
-            self.store.get_work(long_work["work_id"])["change_id"], "CR-A-Wing",
+            self.store.get_work(long_work["work_id"])["change_id"],
+            "CR-A-Wing",
         )
 
     def test_change_id_shaped_like_a_child_id_is_rejected(self):
@@ -160,8 +194,9 @@ class EscapeHatchTest(StoreTestBase):
             self.store.cancel_work(upstream["work_id"], "abandon")
 
         result = self.store.cancel_work(upstream["work_id"], "abandon", cascade=True)
-        self.assertEqual(sorted(result["cancelled"]),
-                         sorted([upstream["work_id"], downstream["work_id"]]))
+        self.assertEqual(
+            sorted(result["cancelled"]), sorted([upstream["work_id"], downstream["work_id"]])
+        )
         self.assertEqual(self.store.get_work(upstream["work_id"])["status"], "CANCELLED")
         self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "CANCELLED")
 
@@ -176,7 +211,8 @@ class EscapeHatchTest(StoreTestBase):
 
         self.store.retarget_work(downstream["work_id"], [alive["work_id"]])
         self.assertEqual(
-            self.store.get_work(downstream["work_id"])["depends_on"], [alive["work_id"]],
+            self.store.get_work(downstream["work_id"])["depends_on"],
+            [alive["work_id"]],
         )
         self.store.cancel_work(dead["work_id"], "superseded")
         self.assertEqual(self.store.get_work(dead["work_id"])["status"], "CANCELLED")
@@ -217,10 +253,18 @@ class EscapeHatchTest(StoreTestBase):
         _claimed, token = self.store.claim_work(work["work_id"], "w")
         self.store.start_work(work["work_id"], token)
         evidence = self.store.add_evidence(
-            cr_id, "test", "ran", "test", "pytest://x", work_id=work["work_id"],
+            cr_id,
+            "test",
+            "ran",
+            "test",
+            "pytest://x",
+            work_id=work["work_id"],
         )
         self.store.complete_work(
-            work["work_id"], token, "done", [evidence["evidence_id"]],
+            work["work_id"],
+            token,
+            "done",
+            [evidence["evidence_id"]],
         )
         with self.assertRaises(ConflictError):
             self.store.cancel_work(work["work_id"], "too late")
@@ -295,7 +339,8 @@ class ForeignHostTest(StoreTestBase):
         self.store.activate_work(work["work_id"])
         self.store.claim_work(work["work_id"], "local-worker")
         self.assertEqual(
-            self.store.get_work(work["work_id"])["claimed_host"], socket.gethostname(),
+            self.store.get_work(work["work_id"])["claimed_host"],
+            socket.gethostname(),
         )
         os.unlink(self.store._lease_path(work["work_id"]))
         self.store.reconcile()
@@ -330,8 +375,11 @@ class EventChainTest(StoreTestBase):
         last = batch()
         # 2.1.0 grew roughly linearly per batch; allow generous slack for a
         # noisy machine but catch a return to quadratic behaviour.
-        self.assertLess(last, max(first * 3.0, 0.5),
-                        "append cost grew with history: %.3fs -> %.3fs" % (first, last))
+        self.assertLess(
+            last,
+            max(first * 3.0, 0.5),
+            "append cost grew with history: %.3fs -> %.3fs" % (first, last),
+        )
 
 
 class ResealTest(StoreTestBase):
@@ -383,25 +431,71 @@ class PolicyReportTest(StoreTestBase):
     def test_enforcement_report_separates_enforced_from_prompt_only(self):
         report = self.store.policy_enforcement_report()
         by_text = dict((item["prohibition"], item["machine_enforced"]) for item in report)
-        self.assertTrue(by_text["launch work in DRAFT, BLOCKED, HUMAN_REQUIRED, FAILED, DONE, or CANCELLED"])
+        self.assertTrue(
+            by_text["launch work in DRAFT, BLOCKED, HUMAN_REQUIRED, FAILED, DONE, or CANCELLED"]
+        )
         self.assertFalse(by_text["invent cross-app goals or affected apps"])
         self.assertFalse(by_text["treat rendered handoff text as the source of truth"])
 
-    def test_verify_warns_about_unattended_permission_bypass(self):
-        self.store.register_app(
-            "cortex", repo_path=self.repo, auto_start=True,
-            runner_args=["--dangerously-skip-permissions"],
-        )
-        messages = [f["message"] for f in self.store.verify()["findings"]]
-        self.assertTrue(any("bypasses permission" in m for m in messages), messages)
+    def test_registration_rejects_unattended_permission_bypass(self):
+        with self.assertRaisesRegex(ValidationError, "unattended permission bypass"):
+            self.store.register_app(
+                "cortex",
+                repo_path=self.repo,
+                auto_start=True,
+                runner_args=["--dangerously-skip-permissions"],
+            )
 
-    def test_verify_warns_about_codex_danger_full_access(self):
-        self.store.register_app(
-            "cortex", repo_path=self.repo, auto_start=True, runner_type="codex",
-            runner_args=["--sandbox", "danger-full-access"],
+    def test_registration_rejects_codex_danger_full_access(self):
+        with self.assertRaisesRegex(ValidationError, "unattended permission bypass"):
+            self.store.register_app(
+                "cortex",
+                repo_path=self.repo,
+                auto_start=True,
+                runner_type="codex",
+                runner_args=["--sandbox", "danger-full-access"],
+            )
+
+    def test_payload_registration_rejects_profile_permission_bypass(self):
+        store = PAYLOAD_RUNTIME.ProjectStore.initialize(
+            os.path.join(self.temp, "payload-project"), "payload-project", git_init=False
         )
-        messages = [f["message"] for f in self.store.verify()["findings"]]
-        self.assertTrue(any("danger-full-access" in m for m in messages), messages)
+        with self.assertRaisesRegex(
+            PAYLOAD_RUNTIME.ValidationError, "runner profile has unattended permission bypass"
+        ):
+            store.register_app(
+                "cortex",
+                repo_path=self.repo,
+                auto_start=True,
+                runner_profiles={
+                    "codex": {
+                        "command": "codex",
+                        "args": ["--dangerously-bypass-approvals-and-sandbox"],
+                    }
+                },
+                default_runner_profile="codex",
+            )
+
+    def test_payload_verify_warns_for_resealed_profile_permission_bypass(self):
+        store = PAYLOAD_RUNTIME.ProjectStore.initialize(
+            os.path.join(self.temp, "payload-verify-project"), "payload-verify-project", git_init=False
+        )
+        store.register_app(
+            "cortex",
+            repo_path=self.repo,
+            auto_start=True,
+            runner_profiles={"codex": {"command": "codex", "args": []}},
+            default_runner_profile="codex",
+        )
+        local_path = store.local_app_path("cortex")
+        local = store._read_sealed(local_path, "local_app")
+        local["runner_profiles"]["codex"]["args"] = [
+            "--dangerously-bypass-approvals-and-sandbox"
+        ]
+        PAYLOAD_RUNTIME.write_json_atomic(local_path, PAYLOAD_RUNTIME.seal(local), mode=0o600)
+
+        findings = store.verify(include_local=True)["findings"]
+        assert any(item["severity"] == "WARNING" for item in findings)
 
 
 class SupervisorPollingTest(StoreTestBase):
@@ -409,8 +503,12 @@ class SupervisorPollingTest(StoreTestBase):
 
     def test_worker_run_does_not_spin_on_reconcile(self):
         self.store.register_app(
-            "cortex", repo_path=self.repo, runner_type="command",
-            command="/bin/sh", runner_args=["-c", "sleep 2"], auto_start=True,
+            "cortex",
+            repo_path=self.repo,
+            runner_type="command",
+            command="/bin/sh",
+            runner_args=["-c", "sleep 2"],
+            auto_start=True,
         )
         cr_id = self.make_change()
         work = self.make_work(cr_id, max_attempts=1)
@@ -434,8 +532,12 @@ class SupervisorPollingTest(StoreTestBase):
 
     def test_dry_run_reports_work_held_by_backoff(self):
         self.store.register_app(
-            "cortex", repo_path=self.repo, runner_type="command",
-            command="/bin/sh", runner_args=["-c", "true"], auto_start=True,
+            "cortex",
+            repo_path=self.repo,
+            runner_type="command",
+            command="/bin/sh",
+            runner_args=["-c", "true"],
+            auto_start=True,
         )
         cr_id = self.make_change()
         work = self.make_work(cr_id, max_attempts=3)
@@ -449,6 +551,30 @@ class SupervisorPollingTest(StoreTestBase):
         deferred = supervisor.deferred()
         self.assertEqual([item["work_id"] for item in deferred], [work["work_id"]])
 
+    def test_resealed_unsafe_profile_is_not_claimed_by_supervisor(self):
+        self.store.register_app(
+            "cortex",
+            repo_path=self.repo,
+            auto_start=True,
+            runner_profiles={"codex": {"command": "codex", "args": []}},
+            default_runner_profile="codex",
+        )
+        local_path = self.store.local_app_path("cortex")
+        local = self.store._read_sealed(local_path, "local_app")
+        local["runner_profiles"]["codex"]["args"] = [
+            "--dangerously-bypass-approvals-and-sandbox"
+        ]
+        self.store._write_sealed(local_path, local)
+        cr_id = self.make_change()
+        work = self.make_work(cr_id)
+        self.store.activate_work(work["work_id"])
+
+        supervisor = Supervisor(self.store)
+        self.assertEqual(supervisor.launchable(), [])
+        with self.assertRaisesRegex(ValidationError, "unattended permission bypass"):
+            supervisor._claim(self.store.get_work(work["work_id"]))
+        self.assertEqual(self.store.get_work(work["work_id"])["status"], "READY")
+
 
 class HookQuietTest(StoreTestBase):
     """The hook must stay silent in a repository that never joined a store.
@@ -461,27 +587,37 @@ class HookQuietTest(StoreTestBase):
 
     def _run(self, event, repo, env=None):
         import subprocess
+
         environment = dict(os.environ)
         environment.pop("AMPLAI_PROJECT_HOME", None)
         environment["CLAUDE_PROJECT_DIR"] = repo
         environment.update(env or {})
         proc = subprocess.Popen(
             [sys.executable, self.HOOK, event],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, env=environment,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            env=environment,
         )
         out, err = proc.communicate("{}")
         return proc.returncode, out, err
 
     def _write_identity(self, repo):
         from amplai_runtime import seal, write_json_atomic
-        write_json_atomic(os.path.join(repo, ".ai-team", "app.json"), seal({
-            "schema_version": "1.0",
-            "kind": "app_identity",
-            "runtime_protocol": "amplai.async-cross-app.v1",
-            "project_id": "test-project",
-            "app_id": "cortex",
-        }))
+
+        write_json_atomic(
+            os.path.join(repo, ".ai-team", "app.json"),
+            seal(
+                {
+                    "schema_version": "1.0",
+                    "kind": "app_identity",
+                    "runtime_protocol": "amplai.async-cross-app.v1",
+                    "project_id": "test-project",
+                    "app_id": "cortex",
+                }
+            ),
+        )
 
     def test_silent_without_app_identity(self):
         for event in ("session-start", "session-end"):
@@ -504,7 +640,9 @@ class HookQuietTest(StoreTestBase):
         self.store.activate_work(work["work_id"])
 
         code, out, err = self._run(
-            "session-start", self.repo, {"AMPLAI_PROJECT_HOME": self.home},
+            "session-start",
+            self.repo,
+            {"AMPLAI_PROJECT_HOME": self.home},
         )
         self.assertEqual(code, 0, err)
         self.assertEqual(err.strip(), "")
@@ -515,12 +653,15 @@ class HookQuietTest(StoreTestBase):
     def test_reports_a_store_it_cannot_read(self):
         self._write_identity(self.repo)
         from amplai_runtime import read_json, write_json_atomic
+
         broken = read_json(self.store.project_path)
         broken["project_id"] = "tampered"
         write_json_atomic(self.store.project_path, broken)
 
         code, _out, err = self._run(
-            "session-start", self.repo, {"AMPLAI_PROJECT_HOME": self.home},
+            "session-start",
+            self.repo,
+            {"AMPLAI_PROJECT_HOME": self.home},
         )
         self.assertEqual(code, 0)
         self.assertIn("AMPLAI hook skipped", err)
@@ -542,7 +683,9 @@ class SupervisorSingleInstanceTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.mkdtemp(prefix="amplai-supervisor-lock-")
         self.store = ProjectStore.initialize(
-            os.path.join(self.temp, "store"), "lock-lab", git_init=False,
+            os.path.join(self.temp, "store"),
+            "lock-lab",
+            git_init=False,
         )
 
     def tearDown(self):
@@ -629,12 +772,14 @@ class SupervisorSingleInstanceTest(unittest.TestCase):
     def test_heartbeat_refuses_after_the_lock_was_reclaimed(self):
         first = AtomicDirectoryLock(
             os.path.join(self.temp, "locks", "supervisor.lock"),
-            wait_seconds=0, stale_seconds=0.0,
+            wait_seconds=0,
+            stale_seconds=0.0,
         )
         first.acquire()
         second = AtomicDirectoryLock(
             os.path.join(self.temp, "locks", "supervisor.lock"),
-            wait_seconds=1, stale_seconds=0.0,
+            wait_seconds=1,
+            stale_seconds=0.0,
         )
         second.acquire()
         try:
@@ -771,7 +916,7 @@ class SupervisorLockRaceTest(unittest.TestCase):
                 lock.acquire()
             except LockError:
                 return
-            except Exception as exc:          # noqa: BLE001 - the point of the test
+            except Exception as exc:  # noqa: BLE001 - the point of the test
                 errors.append(exc)
                 return
             held.append(lock)
@@ -800,7 +945,9 @@ class SupervisorStopsWhenItLosesTheLockTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.mkdtemp(prefix="amplai-lost-lock-")
         self.store = ProjectStore.initialize(
-            os.path.join(self.temp, "store"), "lost-lock", git_init=False,
+            os.path.join(self.temp, "store"),
+            "lost-lock",
+            git_init=False,
         )
 
     def tearDown(self):
@@ -843,8 +990,7 @@ class HookTestIsolationTest(unittest.TestCase):
 
     def setUp(self):
         self.saved = {
-            name: value for name, value in os.environ.items()
-            if name.startswith("AMPLAI_")
+            name: value for name, value in os.environ.items() if name.startswith("AMPLAI_")
         }
 
     def tearDown(self):
@@ -859,14 +1005,17 @@ class HookTestIsolationTest(unittest.TestCase):
         decoy_root = tempfile.mkdtemp(prefix="amplai-decoy-store-")
         self.addCleanup(shutil.rmtree, decoy_root, True)
         decoy = ProjectStore.initialize(
-            os.path.join(decoy_root, "store"), "decoy-project", git_init=False,
+            os.path.join(decoy_root, "store"),
+            "decoy-project",
+            git_init=False,
         )
         os.environ["AMPLAI_PROJECT_HOME"] = decoy.home
         os.environ["AMPLAI_APP_ID"] = "decoy-app"
 
         name = "test_session_hooks_inject_and_checkpoint_without_owning_work_state"
         result = unittest.TextTestRunner(
-            stream=io.StringIO(), verbosity=0,
+            stream=io.StringIO(),
+            verbosity=0,
         ).run(unittest.TestSuite([AmplaiHookTest(name)]))
 
         self.assertEqual([], result.errors, result.errors)
@@ -883,5 +1032,6 @@ class HookTestIsolationTest(unittest.TestCase):
         os.environ["AMPLAI_PROJECT_HOME"] = os.path.join(decoy_root, "elsewhere")
 
         self.assertEqual(
-            os.path.join(decoy_root, "elsewhere"), discover_project_home(repo),
+            os.path.join(decoy_root, "elsewhere"),
+            discover_project_home(repo),
         )

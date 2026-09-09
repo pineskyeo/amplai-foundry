@@ -32,3 +32,7 @@ AMPLAI Foundry는 제품 버전, 저장 계약 버전, 개별 객체 revision을
 6. rollback은 이전 Git revision과 이전 schema reader로 가능해야 한다.
 
 Phase 0 golden snapshot은 `tests/fixtures/golden-memory-contract.yaml`이며 parser 결과와 원본 bytes가 동시에 바뀌는 것을 탐지한다.
+
+Project Store Work의 additive `controller`, `runner_profile`, `base_ref`, `request_ref` 필드는 기존 reader와
+호환된다. Work activation token/receipt 및 Slack status outbox는 host-local durable state이고 Memory schema
+version을 올리지 않는다.

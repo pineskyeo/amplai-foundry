@@ -14,6 +14,7 @@ from typing import Annotated, Never
 from zoneinfo import ZoneInfo
 
 import typer
+from pydantic import SecretStr
 
 from amplai_foundry.curation.context_builder import ContextBuilderError, CurateContextBuilder
 from amplai_foundry.domain.models import MemoryObject
@@ -888,6 +889,10 @@ def control_plane_serve_command(
     host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8765,
     db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+    project_store: Annotated[
+        Path | None,
+        typer.Option("--project-store", help="Authoritative AMPLAI Project Store for Work reads"),
+    ] = None,
 ) -> None:
     """Run the dependency-free WSGI API for local/on-prem deployments."""
     from wsgiref.simple_server import make_server
@@ -901,9 +906,277 @@ def control_plane_serve_command(
 
     store = ControlPlaneStore(db)
     store.initialize()
-    service = ControlPlaneService(store, ApiTokenService(store))
+    work_reader = None
+    if project_store is not None:
+        # CLI composition is the host edge.  The control-plane domain receives
+        # only its read protocol and never imports Loop Kit runtime itself.
+        scripts_dir = Path(__file__).resolve().parents[2] / "scripts"
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from amplai_orchestration_bridge import (  # type: ignore[import-not-found]
+            ProjectStoreWorkReader,
+        )
+        from amplai_runtime import ProjectStore  # type: ignore[import-not-found]
+
+        work_reader = ProjectStoreWorkReader(ProjectStore(str(project_store)))
+    service = ControlPlaneService(store, ApiTokenService(store), work_reader=work_reader)
     typer.echo(f"AMPLAI Control Plane listening on http://{host}:{port}")
     with make_server(host, port, ControlPlaneWSGIApp(service)) as server:
+        server.serve_forever()
+
+
+@control_plane_app.command("orchestration-bridge-once")
+def control_plane_orchestration_bridge_once_command(
+    project_store: Annotated[
+        Path, typer.Option("--project-store", help="Authoritative AMPLAI Project Store")
+    ],
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+    source_app: Annotated[str, typer.Option("--source-app")] = "amplai-foundry",
+    contract_ref: Annotated[str, typer.Option("--contract-ref")] = "hermes-slack-orchestration@1",
+    activation_card_outbox: Annotated[Path | None, typer.Option("--activation-card-outbox")] = None,
+    activation_governance_db: Annotated[
+        Path | None, typer.Option("--activation-governance-db")
+    ] = None,
+    activation_project_id: Annotated[str | None, typer.Option("--activation-project-id")] = None,
+    activation_project_namespace: Annotated[
+        str | None, typer.Option("--activation-project-namespace")
+    ] = None,
+    activation_workspace_id: Annotated[
+        str | None, typer.Option("--activation-workspace-id")
+    ] = None,
+    activation_app_id: Annotated[str | None, typer.Option("--activation-app-id")] = None,
+    activation_recipient_external_actor_id: Annotated[
+        str | None, typer.Option("--activation-recipient-external-actor-id")
+    ] = None,
+    activation_feature: Annotated[
+        str, typer.Option("--activation-feature")
+    ] = "hermes-slack-orchestration",
+) -> None:
+    """Consume one lease-owned request bridge event into its DRAFT Work graph."""
+    from amplai_foundry.control_plane import (
+        ControlPlaneStore,
+        OrchestrationBridge,
+        OrchestrationBridgeConnector,
+        OutboxDispatcher,
+        OutboxQueue,
+    )
+    from amplai_foundry.control_plane.connectors import ConnectorRegistry
+
+    scripts_dir = Path(__file__).resolve().parents[2] / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from amplai_orchestration_bridge import (
+        ProjectStoreActivationCardScheduler,
+        ProjectStoreOrchestrationGateway,
+    )
+    from amplai_runtime import ProjectStore
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    gateway = ProjectStoreOrchestrationGateway(
+        ProjectStore(str(project_store)), source_app=source_app, contract_ref=contract_ref
+    )
+    scheduler = None
+    activation_values = (
+        activation_card_outbox,
+        activation_governance_db,
+        activation_project_id,
+        activation_project_namespace,
+        activation_workspace_id,
+        activation_app_id,
+        activation_recipient_external_actor_id,
+    )
+    if any(value is not None for value in activation_values):
+        if any(value is None for value in activation_values):
+            raise typer.BadParameter("Activation Card 설정은 모두 함께 지정해야 합니다.")
+        from amplai_foundry.domain.identity import ProjectRef
+        from amplai_foundry.governance import WorkActivationCardOutbox
+
+        assert activation_governance_db is not None
+        assert activation_card_outbox is not None
+        assert activation_project_id is not None
+        assert activation_project_namespace is not None
+        assert activation_workspace_id is not None
+        assert activation_app_id is not None
+        assert activation_recipient_external_actor_id is not None
+        governance_store = GovernanceStore(activation_governance_db)
+        governance_store.initialize()
+        scheduler = ProjectStoreActivationCardScheduler(
+            ProjectStore(str(project_store)),
+            card_outbox=WorkActivationCardOutbox(activation_card_outbox),
+            authority_service=AuthorityService(governance_store),
+            project_ref=ProjectRef(
+                namespace=activation_project_namespace, project_id=activation_project_id
+            ),
+            provider_installation_ref=f"{activation_workspace_id}:{activation_app_id}",
+            recipient_external_actor_id=activation_recipient_external_actor_id,
+            feature=activation_feature,
+        )
+    connectors = ConnectorRegistry()
+    connectors.register(
+        OrchestrationBridgeConnector.destination,
+        OrchestrationBridgeConnector(OrchestrationBridge(store, gateway), card_scheduler=scheduler),
+    )
+    item = OutboxDispatcher(OutboxQueue(store), connectors).run_once(
+        destination=OrchestrationBridgeConnector.destination
+    )
+    typer.echo(
+        "idle" if item is None else json.dumps({"outbox_id": item.outbox_id, "status": item.status})
+    )
+
+
+@control_plane_app.command("deliver-work-activation-card-once")
+def control_plane_deliver_work_activation_card_once_command(
+    project_store: Annotated[Path, typer.Option("--project-store")],
+    activation_card_outbox: Annotated[Path, typer.Option("--activation-card-outbox")],
+    activation_ledger: Annotated[Path, typer.Option("--activation-ledger")],
+    slack_app_id: Annotated[str, typer.Option("--slack-app-id")],
+    project_id: Annotated[str, typer.Option("--project-id")],
+) -> None:
+    """Deliver one queued Activation Card through the configured AMPLAI Slack App."""
+    from amplai_foundry.governance import (
+        DurableWorkActivationLedger,
+        WorkActivationCardOutbox,
+    )
+    from amplai_foundry.governance.slack_http import HttpSlackTransport, load_slack_credentials
+
+    credentials = load_slack_credentials()
+    if credentials is None:
+        _fatal("Slack credentials are required to deliver an Activation Card.", code=1)
+    assert not isinstance(credentials, SecretStr)
+    scripts_dir = Path(__file__).resolve().parents[2] / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from amplai_orchestration_bridge import ProjectStoreWorkActivationGateway
+    from amplai_runtime import ProjectStore
+
+    delivered = WorkActivationCardOutbox(activation_card_outbox).deliver_next(
+        gateway=ProjectStoreWorkActivationGateway(
+            ProjectStore(str(project_store)), project_id=project_id
+        ),
+        ledger=DurableWorkActivationLedger(activation_ledger),
+        transport=HttpSlackTransport(
+            bot_token=credentials.bot_token,
+            timeout_seconds=10,
+            max_history_pages=1,
+            lease_seconds=60,
+        ),
+        app_id=slack_app_id,
+    )
+    typer.echo("idle" if delivered is None else json.dumps({"work_id": delivered.snapshot.work_id}))
+
+
+@control_plane_app.command("knowledge-intake-once")
+def control_plane_knowledge_intake_once_command(
+    knowledge_project: Annotated[str, typer.Option("--knowledge-project")] = "amplai",
+    vault: Annotated[Path, typer.Option("--vault")] = Path("vault"),
+    workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
+    db: Annotated[Path, typer.Option("--db")] = Path(".amplai/control-plane.db"),
+) -> None:
+    """Consume one explicit knowledge-intake job through Source and curation prepare."""
+    from amplai_foundry.control_plane import (
+        ContextWorker,
+        ControlPlaneStore,
+        GovernedKnowledgeIntakeHandler,
+        JobQueue,
+    )
+
+    store = ControlPlaneStore(db)
+    store.initialize()
+    handler = GovernedKnowledgeIntakeHandler(
+        vault=vault,
+        knowledge_project=knowledge_project,
+        workspace=workspace,
+        repository_root=workspace,
+    )
+    job = ContextWorker(JobQueue(store), handler, worker_id="knowledge-intake-worker").run_once(
+        kind="knowledge.intake"
+    )
+    typer.echo("idle" if job is None else json.dumps({"job_id": job.job_id, "status": job.status}))
+
+
+@control_plane_app.command("serve-slack-work-activation")
+def control_plane_serve_slack_work_activation_command(
+    project_store: Annotated[Path, typer.Option("--project-store")],
+    governance_db: Annotated[Path, typer.Option("--governance-db")],
+    activation_ledger: Annotated[Path, typer.Option("--activation-ledger")],
+    project_id: Annotated[str, typer.Option("--project-id")],
+    project_namespace: Annotated[str, typer.Option("--project-namespace")],
+    workspace_id: Annotated[str, typer.Option("--workspace-id")],
+    app_id: Annotated[str, typer.Option("--app-id")],
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8766,
+    feature: Annotated[str, typer.Option("--feature")] = "hermes-slack-orchestration",
+) -> None:
+    """Run the separately configured signed AMPLAI Slack Work-action endpoint."""
+    from wsgiref.simple_server import make_server
+
+    from amplai_foundry.domain.identity import ProjectRef
+    from amplai_foundry.governance import (
+        AuthorityServiceSlackResolver,
+        DurableWorkActivationLedger,
+        SlackBlockActionAuthenticator,
+        SlackInstallationPolicy,
+        SlackWorkActivationAuthenticator,
+        SlackWorkActivationIngress,
+        SlackWorkActivationWSGIApp,
+        WorkActivationScope,
+        WorkActivationService,
+    )
+    from amplai_foundry.governance.decisions import DecisionAction
+    from amplai_foundry.governance.slack_http import load_slack_signing_secret
+
+    try:
+        signing_secret = load_slack_signing_secret()
+    except ValueError as error:
+        _fatal(str(error), code=1)
+    scripts_dir = Path(__file__).resolve().parents[2] / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from amplai_orchestration_bridge import ProjectStoreWorkActivationGateway
+    from amplai_runtime import ProjectStore
+
+    project_ref = ProjectRef(namespace=project_namespace, project_id=project_id)
+    governance_store = GovernanceStore(governance_db)
+    governance_store.initialize()
+    ledger = DurableWorkActivationLedger(activation_ledger)
+    scope = WorkActivationScope(project_ref, ChannelProvider.SLACK, feature)
+    installation_ref = f"{workspace_id}:{app_id}"
+    authenticator = SlackWorkActivationAuthenticator(
+        SlackBlockActionAuthenticator(
+            SlackInstallationPolicy(
+                provider_installation_ref=installation_ref,
+                signing_secret=signing_secret,
+                api_app_id=app_id,
+                workspace_ids=frozenset({workspace_id}),
+                action_ids={
+                    "amplai_work_approve": DecisionAction.APPROVE,
+                    "amplai_work_reject": DecisionAction.REJECT,
+                    "amplai_work_request_changes": DecisionAction.REQUEST_CHANGES,
+                },
+            )
+        )
+    )
+    ingress = SlackWorkActivationIngress(
+        authenticator,
+        ledger,
+        WorkActivationService(
+            ProjectStoreWorkActivationGateway(
+                ProjectStore(str(project_store)), project_id=project_id
+            ),
+            ledger,
+            enabled_providers=frozenset({ChannelProvider.SLACK}),
+            enabled_scopes=(scope,),
+            ledger=ledger,
+        ),
+        AuthorityServiceSlackResolver(AuthorityService(governance_store)),
+    )
+    typer.echo(f"AMPLAI Slack Work activation listening on http://{host}:{port}")
+    with make_server(
+        host,
+        port,
+        SlackWorkActivationWSGIApp(ingress, provider_installation_ref=installation_ref),
+    ) as server:
         server.serve_forever()
 
 

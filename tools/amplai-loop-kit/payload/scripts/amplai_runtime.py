@@ -14,6 +14,7 @@ releases.  Reasoning remains inside each app's /design and /work loop.
 
 Python 3.6+; standard library only.
 """
+
 from __future__ import print_function
 
 import copy
@@ -36,8 +37,16 @@ RUNTIME_PROTOCOL = "amplai.async-cross-app.v1"
 HASH_FIELD = "content_hash"
 
 WORK_STATUSES = (
-    "DRAFT", "WAITING", "READY", "CLAIMED", "RUNNING", "BLOCKED",
-    "HUMAN_REQUIRED", "FAILED", "DONE", "CANCELLED",
+    "DRAFT",
+    "WAITING",
+    "READY",
+    "CLAIMED",
+    "RUNNING",
+    "BLOCKED",
+    "HUMAN_REQUIRED",
+    "FAILED",
+    "DONE",
+    "CANCELLED",
 )
 ACTIVE_WORK_STATUSES = ("CLAIMED", "RUNNING")
 TERMINAL_WORK_STATUSES = ("DONE", "CANCELLED")
@@ -48,14 +57,36 @@ EVIDENCE_MODES = ("DIRECT", "LOCAL", "PARALLEL")
 FEDERATION_STATUSES = ("LOCAL", "CANDIDATE", "SUBMITTED", "ACCEPTED", "REJECTED")
 
 EVIDENCE_TYPES = (
-    "code", "test", "runtime", "documentation", "git", "web",
-    "benchmark", "contract", "review", "human_approval", "artifact", "other",
+    "code",
+    "test",
+    "runtime",
+    "documentation",
+    "git",
+    "web",
+    "benchmark",
+    "contract",
+    "review",
+    "human_approval",
+    "artifact",
+    "other",
 )
 DECISION_CLASSES = (
-    "engineering", "architecture", "compatibility", "persistence",
-    "performance_architecture", "cross_app_contract", "public_contract",
-    "domain", "product", "production", "safety", "security", "privacy",
-    "legal", "destructive", "unknown",
+    "engineering",
+    "architecture",
+    "compatibility",
+    "persistence",
+    "performance_architecture",
+    "cross_app_contract",
+    "public_contract",
+    "domain",
+    "product",
+    "production",
+    "safety",
+    "security",
+    "privacy",
+    "legal",
+    "destructive",
+    "unknown",
 )
 REVERSIBILITY = ("high", "medium", "low")
 BLAST_RADIUS = ("low", "medium", "high")
@@ -63,12 +94,9 @@ BLAST_RADIUS = ("low", "medium", "high")
 # policy.forbidden_automatic_actions is worker-side prompt guidance and is NOT
 # machine-enforced; `project verify` reports which is which.
 ENFORCED_PROHIBITIONS = {
-    "lower AUTO/CHALLENGE/HUMAN authority below policy minimum":
-        "create_question/record_decision authority floor",
-    "resolve domain/product/production/safety/security/privacy/legal decisions without human evidence":
-        "record_decision human_approval evidence check",
-    "launch work in DRAFT, BLOCKED, HUMAN_REQUIRED, FAILED, DONE, or CANCELLED":
-        "claim_work READY-only guard",
+    "lower AUTO/CHALLENGE/HUMAN authority below policy minimum": "create_question/record_decision authority floor",
+    "resolve domain/product/production/safety/security/privacy/legal decisions without human evidence": "record_decision human_approval evidence check",
+    "launch work in DRAFT, BLOCKED, HUMAN_REQUIRED, FAILED, DONE, or CANCELLED": "claim_work READY-only guard",
 }
 UNATTENDED_BYPASS_FLAGS = (
     "--dangerously-skip-permissions",
@@ -77,15 +105,24 @@ UNATTENDED_BYPASS_FLAGS = (
     "--yolo",
 )
 RESEALABLE_KINDS = (
-    "project", "policy", "app", "contract", "change", "work",
-    "question", "decision", "evidence",
+    "project",
+    "policy",
+    "app",
+    "contract",
+    "change",
+    "work",
+    "question",
+    "decision",
+    "evidence",
 )
 CHILD_ID_MARKERS = ("W", "Q", "D", "E")
 # A change_id that already looks like a derived child id (CR-0001-W001)
 # would make its own children unresolvable.
 CHILD_SUFFIX_RE = re.compile(r"-[WQDE][0-9]+$")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
-CONTRACT_REF_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]{0,95})@([A-Za-z0-9][A-Za-z0-9._-]{0,63})$")
+CONTRACT_REF_RE = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9._-]{0,95})@([A-Za-z0-9][A-Za-z0-9._-]{0,63})$"
+)
 
 
 DEFAULT_POLICY = {
@@ -93,12 +130,22 @@ DEFAULT_POLICY = {
     "runtime_protocol": RUNTIME_PROTOCOL,
     "decision": {
         "human_classes": [
-            "domain", "product", "production", "safety", "security",
-            "privacy", "legal", "destructive", "public_contract",
+            "domain",
+            "product",
+            "production",
+            "safety",
+            "security",
+            "privacy",
+            "legal",
+            "destructive",
+            "public_contract",
         ],
         "challenge_classes": [
-            "architecture", "compatibility", "persistence",
-            "performance_architecture", "cross_app_contract",
+            "architecture",
+            "compatibility",
+            "persistence",
+            "performance_architecture",
+            "cross_app_contract",
         ],
         "auto_requires_evidence": True,
         "challenge_requires_independent_review": True,
@@ -180,9 +227,9 @@ def utc_after(seconds):
 
 
 def canonical_json(value):
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
 
 def hash_object(value, omit_fields=None):
@@ -207,8 +254,7 @@ def verify_seal(value, label="object"):
     expected = hash_object(value)
     if actual != expected:
         raise ValidationError(
-            "%s content_hash mismatch: expected %s, got %s" %
-            (label, expected, actual)
+            "%s content_hash mismatch: expected %s, got %s" % (label, expected, actual)
         )
     return True
 
@@ -293,9 +339,7 @@ def read_jsonl(path):
 
 def validate_id(value, field="id"):
     if not isinstance(value, str) or not ID_RE.match(value):
-        raise ValidationError(
-            "%s must match %s (got %r)" % (field, ID_RE.pattern, value)
-        )
+        raise ValidationError("%s must match %s (got %r)" % (field, ID_RE.pattern, value))
     return value
 
 
@@ -335,12 +379,14 @@ def safe_relative(path):
 def write_managed_gitignore(path):
     start = "# >>> AMPLAI ASYNC LOCAL STATE >>>"
     end = "# <<< AMPLAI ASYNC LOCAL STATE <<<"
-    block = "\n".join([
-        start,
-        ".amplai/local/",
-        ".amplai/locks/",
-        end,
-    ])
+    block = "\n".join(
+        [
+            start,
+            ".amplai/local/",
+            ".amplai/locks/",
+            end,
+        ]
+    )
     existing = ""
     if os.path.exists(path):
         with io.open(path, "r", encoding="utf-8") as handle:
@@ -458,21 +504,22 @@ class AtomicDirectoryLock(object):
                     # A contender removing the directory underneath us is a
                     # lost race, not a broken Store.  Callers distinguish
                     # LockError from a real failure.
-                    raise LockError(
-                        "failed while contending for %s: %s" % (self.lock_dir, exc)
-                    )
+                    raise LockError("failed while contending for %s: %s" % (self.lock_dir, exc))
                 if time.time() >= deadline:
                     raise LockError("timed out acquiring project lock: %s" % self.lock_dir)
                 time.sleep(0.05)
                 continue
             self.created_at = utc_now()
-            write_json_atomic(self.owner_path, {
-                "token": self.token,
-                "pid": os.getpid(),
-                "host": socket.gethostname(),
-                "created_at": self.created_at,
-                "heartbeat_at": self.created_at,
-            })
+            write_json_atomic(
+                self.owner_path,
+                {
+                    "token": self.token,
+                    "pid": os.getpid(),
+                    "host": socket.gethostname(),
+                    "created_at": self.created_at,
+                    "heartbeat_at": self.created_at,
+                },
+            )
             self.acquired = True
             return self
 
@@ -501,13 +548,16 @@ class AtomicDirectoryLock(object):
             return False
         if self._owner_token() != self.token:
             return False
-        write_json_atomic(self.owner_path, {
-            "token": self.token,
-            "pid": os.getpid(),
-            "host": socket.gethostname(),
-            "created_at": self.created_at,
-            "heartbeat_at": utc_now(),
-        })
+        write_json_atomic(
+            self.owner_path,
+            {
+                "token": self.token,
+                "pid": os.getpid(),
+                "host": socket.gethostname(),
+                "created_at": self.created_at,
+                "heartbeat_at": utc_now(),
+            },
+        )
         return True
 
     def release(self):
@@ -532,7 +582,6 @@ class AtomicDirectoryLock(object):
         return False
 
 
-
 class ProjectStore(object):
     """Read and mutate one durable AMPLAI project store."""
 
@@ -545,7 +594,9 @@ class ProjectStore(object):
         self.project = self._read_sealed(self.project_path, "project")
         self.policy = self._read_sealed(self.policy_path, "policy")
         if self.project.get("runtime_protocol") != RUNTIME_PROTOCOL:
-            raise ValidationError("unsupported runtime protocol: %r" % self.project.get("runtime_protocol"))
+            raise ValidationError(
+                "unsupported runtime protocol: %r" % self.project.get("runtime_protocol")
+            )
         self._ensure_layout()
 
     @classmethod
@@ -556,26 +607,33 @@ class ProjectStore(object):
             store = cls(home)
             if store.project.get("project_id") != project_id:
                 raise ConflictError(
-                    "existing project_id is %s, not %s" %
-                    (store.project.get("project_id"), project_id)
+                    "existing project_id is %s, not %s"
+                    % (store.project.get("project_id"), project_id)
                 )
             return store
         ensure_dir(home)
         for rel in (
-            "apps", "contracts", "changes", ".amplai/local/apps",
-            ".amplai/local/leases", ".amplai/local/sessions",
-            ".amplai/local/runs", ".amplai/locks",
+            "apps",
+            "contracts",
+            "changes",
+            ".amplai/local/apps",
+            ".amplai/local/leases",
+            ".amplai/local/sessions",
+            ".amplai/local/runs",
+            ".amplai/locks",
         ):
             ensure_dir(os.path.join(home, rel))
-        project = seal({
-            "schema_version": SCHEMA_VERSION,
-            "kind": "project",
-            "runtime_protocol": RUNTIME_PROTOCOL,
-            "project_id": project_id,
-            "name": name or project_id,
-            "created_at": utc_now(),
-            "updated_at": utc_now(),
-        })
+        project = seal(
+            {
+                "schema_version": SCHEMA_VERSION,
+                "kind": "project",
+                "runtime_protocol": RUNTIME_PROTOCOL,
+                "project_id": project_id,
+                "name": name or project_id,
+                "created_at": utc_now(),
+                "updated_at": utc_now(),
+            }
+        )
         effective_policy = copy.deepcopy(policy or DEFAULT_POLICY)
         effective_policy["kind"] = "policy"
         effective_policy["schema_version"] = SCHEMA_VERSION
@@ -592,24 +650,34 @@ class ProjectStore(object):
         if git_init and not os.path.isdir(os.path.join(home, ".git")):
             try:
                 subprocess.check_call(
-                    ["git", "init"], cwd=home,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    ["git", "init"],
+                    cwd=home,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
             except (OSError, subprocess.CalledProcessError):
                 raise ValidationError("git init failed for project store: %s" % home)
         store = cls(home)
         with store.lock():
             store._append_event_unlocked(
-                "project.initialized", "project", project_id, "system",
+                "project.initialized",
+                "project",
+                project_id,
+                "system",
                 {"project_id": project_id},
             )
         return store
 
     def _ensure_layout(self):
         for rel in (
-            "apps", "contracts", "changes", ".amplai/local/apps",
-            ".amplai/local/leases", ".amplai/local/sessions",
-            ".amplai/local/runs", ".amplai/locks",
+            "apps",
+            "contracts",
+            "changes",
+            ".amplai/local/apps",
+            ".amplai/local/leases",
+            ".amplai/local/sessions",
+            ".amplai/local/runs",
+            ".amplai/locks",
         ):
             ensure_dir(os.path.join(self.home, rel))
 
@@ -669,18 +737,13 @@ class ProjectStore(object):
             while True:
                 start = max(0, size - window)
                 handle.seek(start)
-                lines = [
-                    line for line in handle.read(size - start).split(b"\n")
-                    if line.strip()
-                ]
+                lines = [line for line in handle.read(size - start).split(b"\n") if line.strip()]
                 # With start > 0 a second line proves the last one is complete.
                 if lines and (start == 0 or len(lines) > 1):
                     try:
                         return json.loads(lines[-1].decode("utf-8"))
                     except ValueError as exc:
-                        raise ValidationError(
-                            "invalid trailing JSONL %s: %s" % (path, exc)
-                        )
+                        raise ValidationError("invalid trailing JSONL %s: %s" % (path, exc))
                 if start == 0:
                     return None
                 window *= 2
@@ -724,10 +787,21 @@ class ProjectStore(object):
         validate_id(app_id, "app_id")
         return os.path.join(self.home, ".amplai", "local", "apps", app_id + ".json")
 
-    def register_app(self, app_id, repo_path=None, display_name=None,
-                     max_concurrency=None, runner_type="claude-code",
-                     command=None, runner_args=None, auto_start=False,
-                     timeout_seconds=None, actor="human"):
+    def register_app(
+        self,
+        app_id,
+        repo_path=None,
+        display_name=None,
+        max_concurrency=None,
+        runner_type="claude-code",
+        command=None,
+        runner_args=None,
+        auto_start=False,
+        timeout_seconds=None,
+        runner_profiles=None,
+        default_runner_profile=None,
+        actor="human",
+    ):
         validate_id(app_id, "app_id")
         work_policy = self.policy.get("work") or {}
         supervisor_policy = self.policy.get("supervisor") or {}
@@ -746,6 +820,46 @@ class ProjectStore(object):
             }.get(runner_type)
         if not isinstance(command, str) or not command.strip():
             raise ValidationError("runner command must be a non-empty string")
+        legacy_args = list(runner_args or [])
+        if not all(isinstance(item, str) for item in legacy_args):
+            raise ValidationError("runner args must be strings")
+        unsafe_legacy = self._unattended_bypass_flags(legacy_args)
+        if unsafe_legacy:
+            raise ValidationError(
+                "runner has unattended permission bypass: %s" % ", ".join(unsafe_legacy)
+            )
+        profiles = runner_profiles or {}
+        if not isinstance(profiles, dict):
+            raise ValidationError("runner_profiles must be an object")
+        validated_profiles = {}
+        for profile_id, profile in profiles.items():
+            if profile_id not in ("claude-code", "codex") or not isinstance(profile, dict):
+                raise ValidationError("invalid runner profile: %s" % profile_id)
+            profile_command = profile.get("command")
+            if not isinstance(profile_command, str) or not profile_command.strip():
+                raise ValidationError("runner profile command is required: %s" % profile_id)
+            profile_args = profile.get("args") or []
+            if not isinstance(profile_args, list) or not all(
+                isinstance(item, str) for item in profile_args
+            ):
+                raise ValidationError("runner profile args must be strings: %s" % profile_id)
+            unsafe = self._unattended_bypass_flags(profile_args)
+            if unsafe:
+                raise ValidationError(
+                    "runner profile has unattended permission bypass: %s" % ", ".join(unsafe)
+                )
+            validated_profiles[profile_id] = {
+                "type": profile_id,
+                "command": profile_command,
+                "args": list(profile_args),
+                "timeout_seconds": int(
+                    profile.get("timeout_seconds")
+                    or timeout_seconds
+                    or supervisor_policy.get("worker_timeout_seconds", 7200)
+                ),
+            }
+        if default_runner_profile is not None and default_runner_profile not in validated_profiles:
+            raise ValidationError("default_runner_profile is not configured")
         validated_repo_path = None
         if repo_path:
             validated_repo_path = os.path.abspath(os.path.expanduser(repo_path))
@@ -779,16 +893,21 @@ class ProjectStore(object):
                     "runner": {
                         "type": runner_type,
                         "command": command,
-                        "args": list(runner_args or []),
+                        "args": legacy_args,
                         "timeout_seconds": int(
                             timeout_seconds or supervisor_policy.get("worker_timeout_seconds", 7200)
                         ),
                     },
+                    "runner_profiles": validated_profiles,
+                    "default_runner_profile": default_runner_profile,
                     "updated_at": now,
                 }
                 write_json_atomic(self.local_app_path(app_id), seal(local), mode=0o600)
             self._append_event_unlocked(
-                "app.registered", "app", app_id, actor,
+                "app.registered",
+                "app",
+                app_id,
+                actor,
                 {"max_concurrency": max_concurrency, "local_binding": bool(validated_repo_path)},
             )
         return logical
@@ -819,9 +938,19 @@ class ProjectStore(object):
         contract_id, version = match.groups()
         return os.path.join(self.home, "contracts", contract_id, version + ".json")
 
-    def register_contract(self, contract_id, version, kind, producer_apps,
-                          consumer_apps, source_ref, compatibility="BACKWARD",
-                          status="ACTIVE", verification=None, actor="human"):
+    def register_contract(
+        self,
+        contract_id,
+        version,
+        kind,
+        producer_apps,
+        consumer_apps,
+        source_ref,
+        compatibility="BACKWARD",
+        status="ACTIVE",
+        verification=None,
+        actor="human",
+    ):
         validate_id(contract_id, "contract_id")
         validate_id(version, "version")
         producer_apps = unique_strings(producer_apps, "producer_apps", False)
@@ -836,7 +965,9 @@ class ProjectStore(object):
         now = utc_now()
         with self.lock():
             path = self.contract_path(ref)
-            existing = self._read_sealed(path, "contract %s" % ref) if os.path.exists(path) else None
+            existing = (
+                self._read_sealed(path, "contract %s" % ref) if os.path.exists(path) else None
+            )
             value = {
                 "schema_version": SCHEMA_VERSION,
                 "kind": "contract",
@@ -855,7 +986,10 @@ class ProjectStore(object):
             }
             value = self._write_sealed(path, value)
             self._append_event_unlocked(
-                "contract.registered", "contract", ref, actor,
+                "contract.registered",
+                "contract",
+                ref,
+                actor,
                 {"status": status, "compatibility": compatibility},
             )
         return value
@@ -906,8 +1040,16 @@ class ProjectStore(object):
                 highest = max(highest, int(match.group(1)))
         return "%s-%s%03d" % (cr_id, tag, highest + 1)
 
-    def create_change(self, title, goal, source_app, affected_apps=None,
-                      contract_refs=None, change_id=None, actor="human"):
+    def create_change(
+        self,
+        title,
+        goal,
+        source_app,
+        affected_apps=None,
+        contract_refs=None,
+        change_id=None,
+        actor="human",
+    ):
         self.get_app(source_app)
         affected = unique_strings(affected_apps or [source_app], "affected_apps", False)
         if source_app not in affected:
@@ -950,7 +1092,10 @@ class ProjectStore(object):
             }
             change = self._write_sealed(path, change)
             self._append_event_unlocked(
-                "change.created", "change", cr_id, actor,
+                "change.created",
+                "change",
+                cr_id,
+                actor,
                 {"source_app": source_app, "affected_apps": affected},
             )
         return change
@@ -996,15 +1141,21 @@ class ProjectStore(object):
 
     def get_question(self, question_id):
         cr_id = self._parse_cr_from_child(question_id, "Q")
-        return self._read_sealed(self.question_path(cr_id, question_id), "question %s" % question_id)
+        return self._read_sealed(
+            self.question_path(cr_id, question_id), "question %s" % question_id
+        )
 
     def get_decision(self, decision_id):
         cr_id = self._parse_cr_from_child(decision_id, "D")
-        return self._read_sealed(self.decision_path(cr_id, decision_id), "decision %s" % decision_id)
+        return self._read_sealed(
+            self.decision_path(cr_id, decision_id), "decision %s" % decision_id
+        )
 
     def get_evidence(self, evidence_id):
         cr_id = self._parse_cr_from_child(evidence_id, "E")
-        return self._read_sealed(self.evidence_path(cr_id, evidence_id), "evidence %s" % evidence_id)
+        return self._read_sealed(
+            self.evidence_path(cr_id, evidence_id), "evidence %s" % evidence_id
+        )
 
     def _list_objects(self, cr_id, category):
         root = os.path.join(self.change_dir(cr_id), category)
@@ -1036,7 +1187,13 @@ class ProjectStore(object):
                 if statuses and work.get("status") not in statuses:
                     continue
                 result.append(work)
-        result.sort(key=lambda item: (-int(item.get("priority", 0)), item.get("created_at", ""), item.get("work_id", "")))
+        result.sort(
+            key=lambda item: (
+                -int(item.get("priority", 0)),
+                item.get("created_at", ""),
+                item.get("work_id", ""),
+            )
+        )
         return result
 
     def _assert_refs(self, refs, getter, field):
@@ -1104,11 +1261,26 @@ class ProjectStore(object):
             visit(node)
         return True
 
-    def create_work(self, cr_id, target_app, goal, source_app=None,
-                    depends_on=None, acceptance=None, contract_refs=None,
-                    decision_refs=None, input_evidence_refs=None,
-                    priority=50, max_attempts=None, work_type="implementation",
-                    actor="agent"):
+    def create_work(
+        self,
+        cr_id,
+        target_app,
+        goal,
+        source_app=None,
+        depends_on=None,
+        acceptance=None,
+        contract_refs=None,
+        decision_refs=None,
+        input_evidence_refs=None,
+        priority=50,
+        max_attempts=None,
+        work_type="implementation",
+        controller=None,
+        runner_profile=None,
+        base_ref=None,
+        request_ref=None,
+        actor="agent",
+    ):
         change = self.get_change(cr_id)
         self.get_app(target_app)
         source_app = source_app or change.get("source_app")
@@ -1122,10 +1294,28 @@ class ProjectStore(object):
         priority = int(priority)
         if priority < 0 or priority > 100:
             raise ValidationError("priority must be 0..100")
-        max_attempts = int(max_attempts or (self.policy.get("work") or {}).get("default_max_attempts", 3))
+        max_attempts = int(
+            max_attempts or (self.policy.get("work") or {}).get("default_max_attempts", 3)
+        )
         if max_attempts < 1 or max_attempts > 20:
             raise ValidationError("max_attempts must be 1..20")
+        if controller not in (None, "design", "work"):
+            raise ValidationError("controller must be design or work")
+        if runner_profile is not None and runner_profile not in ("claude-code", "codex"):
+            raise ValidationError("unsupported runner_profile: %s" % runner_profile)
+        if base_ref is not None and not re.match(r"^[0-9a-f]{40,64}$", base_ref):
+            raise ValidationError("base_ref must be an immutable commit hash")
+        if request_ref is not None:
+            validate_nonempty(request_ref, "request_ref")
+            if not (controller and runner_profile and base_ref):
+                raise ValidationError(
+                    "request_ref requires controller, runner_profile, and base_ref"
+                )
         with self.lock():
+            if request_ref:
+                for existing in self.list_work():
+                    if existing.get("request_ref") == request_ref:
+                        return existing
             work_id = self._next_child_id_unlocked(cr_id, "work", "W")
             dependencies = self._assert_dependency_scope(cr_id, work_id, depends_on or [])
             self._assert_acyclic_unlocked(cr_id, (work_id, dependencies))
@@ -1136,6 +1326,11 @@ class ProjectStore(object):
                 "work_id": work_id,
                 "change_id": cr_id,
                 "work_type": validate_nonempty(work_type, "work_type"),
+                "controller": controller,
+                "runner_profile": runner_profile,
+                "base_ref": base_ref,
+                "request_ref": request_ref,
+                "revision": 1,
                 "source_app": source_app,
                 "target_app": target_app,
                 "goal": validate_nonempty(goal, "goal"),
@@ -1170,22 +1365,30 @@ class ProjectStore(object):
             change["updated_at"] = now
             self._write_sealed(self.change_path(cr_id), change)
             self._append_event_unlocked(
-                "work.created", "work", work_id, actor,
+                "work.created",
+                "work",
+                work_id,
+                actor,
                 {"target_app": target_app, "status": "DRAFT", "depends_on": dependencies},
             )
         return work
 
     def _write_work_unlocked(self, work, event_type, actor, data=None):
+        work["revision"] = int(work.get("revision", 0)) + 1
         work["updated_at"] = utc_now()
-        value = self._write_sealed(
-            self.work_path(work["change_id"], work["work_id"]), work
-        )
+        value = self._write_sealed(self.work_path(work["change_id"], work["work_id"]), work)
         self._append_event_unlocked(event_type, "work", work["work_id"], actor, data)
         return value
 
-    def activate_work(self, work_id, actor="human"):
+    def activate_work(self, work_id, actor="human", expected_revision=None, expected_digest=None):
         with self.lock():
             work = self.get_work(work_id)
+            if expected_revision is not None and int(work.get("revision", 1)) != int(
+                expected_revision
+            ):
+                raise ConflictError("work activation revision mismatch: %s" % work_id)
+            if expected_digest is not None and work.get("content_hash") != expected_digest:
+                raise ConflictError("work activation digest mismatch: %s" % work_id)
             if work.get("status") == "READY" or work.get("status") == "WAITING":
                 return work
             if work.get("status") not in ("DRAFT", "BLOCKED", "HUMAN_REQUIRED", "FAILED"):
@@ -1194,14 +1397,20 @@ class ProjectStore(object):
                 unresolved = []
                 for ref in work.get("question_refs") or []:
                     question = self.get_question(ref)
-                    if question.get("required_authority") == "HUMAN" and question.get("status") != "RESOLVED":
+                    if (
+                        question.get("required_authority") == "HUMAN"
+                        and question.get("status") != "RESOLVED"
+                    ):
                         unresolved.append(ref)
                 if unresolved:
                     raise ConflictError(
-                        "cannot reactivate HUMAN_REQUIRED work before HUMAN questions are resolved: %s" %
-                        ", ".join(unresolved)
+                        "cannot reactivate HUMAN_REQUIRED work before HUMAN questions are resolved: %s"
+                        % ", ".join(unresolved)
                     )
-            if work.get("attempts", 0) >= work.get("max_attempts", 3) and work.get("status") == "FAILED":
+            if (
+                work.get("attempts", 0) >= work.get("max_attempts", 3)
+                and work.get("status") == "FAILED"
+            ):
                 raise ConflictError("work exhausted max_attempts: %s" % work_id)
             work["status"] = "READY" if self._all_dependencies_done(work) else "WAITING"
             work["blocked_reason"] = None
@@ -1245,7 +1454,9 @@ class ProjectStore(object):
 
     def claim_work(self, work_id, worker_id, lease_seconds=None, actor="supervisor"):
         validate_nonempty(worker_id, "worker_id")
-        lease_seconds = int(lease_seconds or (self.policy.get("supervisor") or {}).get("lease_seconds", 300))
+        lease_seconds = int(
+            lease_seconds or (self.policy.get("supervisor") or {}).get("lease_seconds", 300)
+        )
         if lease_seconds < 10:
             raise ValidationError("lease_seconds must be >= 10")
         with self.lock():
@@ -1260,8 +1471,8 @@ class ProjectStore(object):
                 raise ConflictError("work exhausted max_attempts: %s" % work_id)
             if not self.retry_ready(work):
                 raise ConflictError(
-                    "work is in retry backoff until %s: %s" %
-                    (work.get("retry_not_before"), work_id)
+                    "work is in retry backoff until %s: %s"
+                    % (work.get("retry_not_before"), work_id)
                 )
             token = uuid.uuid4().hex
             lease_id = uuid.uuid4().hex
@@ -1287,7 +1498,9 @@ class ProjectStore(object):
             work["lease_id"] = lease_id
             work["retry_not_before"] = None
             work = self._write_work_unlocked(
-                work, "work.claimed", actor,
+                work,
+                "work.claimed",
+                actor,
                 {"worker_id": worker_id, "lease_id": lease_id, "attempt": work["attempts"]},
             )
             self._reconcile_change_unlocked(work["change_id"])
@@ -1336,8 +1549,16 @@ class ProjectStore(object):
                 raise ValidationError("decision is not ACTIVE: %s" % ref)
         return refs
 
-    def complete_work(self, work_id, token, summary, evidence_refs,
-                      decision_refs=None, outputs=None, actor="worker"):
+    def complete_work(
+        self,
+        work_id,
+        token,
+        summary,
+        evidence_refs,
+        decision_refs=None,
+        outputs=None,
+        actor="worker",
+    ):
         with self.lock():
             self._validate_lease(work_id, token)
             work = self.get_work(work_id)
@@ -1373,7 +1594,9 @@ class ProjectStore(object):
             work["claimed_host"] = None
             work["lease_id"] = None
             work = self._write_work_unlocked(
-                work, "work.completed", actor,
+                work,
+                "work.completed",
+                actor,
                 {"evidence_refs": evidence_refs, "decision_refs": decision_refs},
             )
             self._clear_lease(work_id)
@@ -1387,7 +1610,8 @@ class ProjectStore(object):
             if work.get("status") != "RUNNING":
                 raise ConflictError("cannot wait work from %s" % work.get("status"))
             dependencies = self._assert_dependency_scope(
-                work["change_id"], work_id,
+                work["change_id"],
+                work_id,
                 list(work.get("depends_on") or []) + list(depends_on or []),
             )
             self._assert_acyclic_unlocked(work["change_id"], (work_id, dependencies))
@@ -1398,7 +1622,9 @@ class ProjectStore(object):
             work["claimed_host"] = None
             work["lease_id"] = None
             work = self._write_work_unlocked(
-                work, "work.waiting", actor,
+                work,
+                "work.waiting",
+                actor,
                 {"status": work["status"], "depends_on": dependencies, "reason": reason},
             )
             self._clear_lease(work_id)
@@ -1407,7 +1633,11 @@ class ProjectStore(object):
 
     def block_work(self, work_id, token, reason, actor="worker"):
         return self._stop_active_work(
-            work_id, token, "BLOCKED", "work.blocked", actor,
+            work_id,
+            token,
+            "BLOCKED",
+            "work.blocked",
+            actor,
             blocked_reason=validate_nonempty(reason, "reason"),
         )
 
@@ -1422,7 +1652,11 @@ class ProjectStore(object):
             if question.get("required_authority") != "HUMAN":
                 raise ValidationError("HUMAN_REQUIRED question must require HUMAN: %s" % ref)
         return self._stop_active_work(
-            work_id, token, "HUMAN_REQUIRED", "work.human_required", actor,
+            work_id,
+            token,
+            "HUMAN_REQUIRED",
+            "work.human_required",
+            actor,
             blocked_reason=validate_nonempty(reason, "reason"),
             human_gate=validate_nonempty(gate, "gate"),
             question_refs=question_refs,
@@ -1435,7 +1669,9 @@ class ProjectStore(object):
             if work.get("status") not in ACTIVE_WORK_STATUSES:
                 raise ConflictError("cannot fail work from %s" % work.get("status"))
             error = validate_nonempty(error, "error")
-            can_retry = bool(retryable) and int(work.get("attempts", 0)) < int(work.get("max_attempts", 3))
+            can_retry = bool(retryable) and int(work.get("attempts", 0)) < int(
+                work.get("max_attempts", 3)
+            )
             if can_retry:
                 work["status"] = "READY" if self._all_dependencies_done(work) else "WAITING"
                 work["retry_not_before"] = utc_after(
@@ -1449,15 +1685,26 @@ class ProjectStore(object):
             work["claimed_host"] = None
             work["lease_id"] = None
             work = self._write_work_unlocked(
-                work, "work.failed", actor,
+                work,
+                "work.failed",
+                actor,
                 {"error": error, "retryable": can_retry, "status": work["status"]},
             )
             self._clear_lease(work_id)
             self._reconcile_change_unlocked(work["change_id"])
         return work
 
-    def _stop_active_work(self, work_id, token, new_status, event_type, actor,
-                          blocked_reason=None, human_gate=None, question_refs=None):
+    def _stop_active_work(
+        self,
+        work_id,
+        token,
+        new_status,
+        event_type,
+        actor,
+        blocked_reason=None,
+        human_gate=None,
+        question_refs=None,
+    ):
         with self.lock():
             self._validate_lease(work_id, token)
             work = self.get_work(work_id)
@@ -1473,8 +1720,14 @@ class ProjectStore(object):
             work["claimed_host"] = None
             work["lease_id"] = None
             work = self._write_work_unlocked(
-                work, event_type, actor,
-                {"reason": blocked_reason, "gate": human_gate, "question_refs": question_refs or []},
+                work,
+                event_type,
+                actor,
+                {
+                    "reason": blocked_reason,
+                    "gate": human_gate,
+                    "question_refs": question_refs or [],
+                },
             )
             self._clear_lease(work_id)
             self._reconcile_change_unlocked(work["change_id"])
@@ -1507,13 +1760,11 @@ class ProjectStore(object):
         if dependents:
             if not cascade:
                 raise ConflictError(
-                    "work %s still blocks %s; retarget them or cancel with cascade" %
-                    (work_id, ", ".join(dependents))
+                    "work %s still blocks %s; retarget them or cancel with cascade"
+                    % (work_id, ", ".join(dependents))
                 )
             for dependent in dependents:
-                cancelled.extend(
-                    self._cancel_work_unlocked(dependent, reason, True, actor, seen)
-                )
+                cancelled.extend(self._cancel_work_unlocked(dependent, reason, True, actor, seen))
         work = self.get_work(work_id)
         previous = work.get("status")
         work["status"] = "CANCELLED"
@@ -1524,7 +1775,10 @@ class ProjectStore(object):
         work["lease_id"] = None
         work["retry_not_before"] = None
         self._write_work_unlocked(
-            work, "work.cancelled", actor, {"from": previous, "reason": reason},
+            work,
+            "work.cancelled",
+            actor,
+            {"from": previous, "reason": reason},
         )
         self._clear_lease(work_id)
         cancelled.append(work_id)
@@ -1561,7 +1815,10 @@ class ProjectStore(object):
             change["updated_at"] = utc_now()
             change = self._write_sealed(self.change_path(cr_id), change)
             self._append_event_unlocked(
-                "change.cancelled", "change", cr_id, actor,
+                "change.cancelled",
+                "change",
+                cr_id,
+                actor,
                 {"reason": reason, "cancelled_work": cancelled},
             )
         return change
@@ -1576,7 +1833,9 @@ class ProjectStore(object):
             if status in TERMINAL_WORK_STATUSES:
                 raise ConflictError("cannot retarget work in %s" % status)
             dependencies = self._assert_dependency_scope(
-                work["change_id"], work_id, depends_on or [],
+                work["change_id"],
+                work_id,
+                depends_on or [],
             )
             self._assert_acyclic_unlocked(work["change_id"], (work_id, dependencies))
             previous = list(work.get("depends_on") or [])
@@ -1584,7 +1843,9 @@ class ProjectStore(object):
             if status in ("WAITING", "READY"):
                 work["status"] = "READY" if self._all_dependencies_done(work) else "WAITING"
             work = self._write_work_unlocked(
-                work, "work.retargeted", actor,
+                work,
+                "work.retargeted",
+                actor,
                 {"from": previous, "to": dependencies, "status": work["status"]},
             )
             self._reconcile_change_unlocked(work["change_id"])
@@ -1608,7 +1869,9 @@ class ProjectStore(object):
                     raise ValidationError("max_attempts must be 1..20")
                 work["max_attempts"] = max_attempts
             work = self._write_work_unlocked(
-                work, "work.attempts_reset", actor,
+                work,
+                "work.attempts_reset",
+                actor,
                 {"from": previous, "max_attempts": work["max_attempts"]},
             )
         return work
@@ -1622,7 +1885,9 @@ class ProjectStore(object):
             work["status"] = "WAITING"
         if work.get("status") != original:
             return self._write_work_unlocked(
-                work, "work.reconciled", "supervisor",
+                work,
+                "work.reconciled",
+                "supervisor",
                 {"from": original, "to": work["status"]},
             )
         return work
@@ -1655,7 +1920,10 @@ class ProjectStore(object):
             change["updated_at"] = utc_now()
             change = self._write_sealed(self.change_path(cr_id), change)
             self._append_event_unlocked(
-                "change.reconciled", "change", cr_id, "supervisor",
+                "change.reconciled",
+                "change",
+                cr_id,
+                "supervisor",
                 {"from": old, "to": derived},
             )
         return change
@@ -1663,7 +1931,9 @@ class ProjectStore(object):
     def _recover_expired_unlocked(self):
         recovered = []
         now = utc_naive_now()
-        auto_retry = bool((self.policy.get("supervisor") or {}).get("auto_retry_worker_failures", True))
+        auto_retry = bool(
+            (self.policy.get("supervisor") or {}).get("auto_retry_worker_failures", True)
+        )
         this_host = socket.gethostname()
         for work in self.list_work(statuses=ACTIVE_WORK_STATUSES):
             lease = self._read_lease(work["work_id"], required=False)
@@ -1681,7 +1951,9 @@ class ProjectStore(object):
             if not expired:
                 continue
             old = work["status"]
-            can_retry = auto_retry and int(work.get("attempts", 0)) < int(work.get("max_attempts", 3))
+            can_retry = auto_retry and int(work.get("attempts", 0)) < int(
+                work.get("max_attempts", 3)
+            )
             if can_retry:
                 work["status"] = "READY" if self._all_dependencies_done(work) else "WAITING"
                 work["retry_not_before"] = utc_after(
@@ -1695,7 +1967,9 @@ class ProjectStore(object):
             work["claimed_host"] = None
             work["lease_id"] = None
             work = self._write_work_unlocked(
-                work, "work.lease_expired", "supervisor",
+                work,
+                "work.lease_expired",
+                "supervisor",
                 {"from": old, "to": work["status"], "retryable": can_retry},
             )
             self._clear_lease(work["work_id"])
@@ -1738,9 +2012,19 @@ class ProjectStore(object):
             "rejection_reason": None,
         }
 
-    def add_evidence(self, cr_id, evidence_type, summary, source_kind,
-                     source_locator, work_id=None, app_id=None, facts=None,
-                     metadata=None, actor="agent"):
+    def add_evidence(
+        self,
+        cr_id,
+        evidence_type,
+        summary,
+        source_kind,
+        source_locator,
+        work_id=None,
+        app_id=None,
+        facts=None,
+        metadata=None,
+        actor="agent",
+    ):
         change = self.get_change(cr_id)
         if evidence_type not in EVIDENCE_TYPES:
             raise ValidationError("invalid evidence_type: %s" % evidence_type)
@@ -1784,11 +2068,16 @@ class ProjectStore(object):
                 if evidence_id not in work["evidence_refs"]:
                     work["evidence_refs"].append(evidence_id)
                     self._write_work_unlocked(
-                        work, "work.evidence_linked", actor,
+                        work,
+                        "work.evidence_linked",
+                        actor,
                         {"evidence_id": evidence_id},
                     )
             self._append_event_unlocked(
-                "evidence.added", "evidence", evidence_id, actor,
+                "evidence.added",
+                "evidence",
+                evidence_id,
+                actor,
                 {"evidence_type": evidence_type, "work_id": work_id},
             )
         return evidence
@@ -1803,11 +2092,20 @@ class ProjectStore(object):
             return "CHALLENGE"
         return "AUTO"
 
-    def create_question(self, work_id, question, decision_class="engineering",
-                        reversibility="high", blast_radius="low",
-                        requested_authority=None, evidence_mode=None,
-                        evidence_refs=None, evidence_lanes=None,
-                        alternatives=None, actor="agent"):
+    def create_question(
+        self,
+        work_id,
+        question,
+        decision_class="engineering",
+        reversibility="high",
+        blast_radius="low",
+        requested_authority=None,
+        evidence_mode=None,
+        evidence_refs=None,
+        evidence_lanes=None,
+        alternatives=None,
+        actor="agent",
+    ):
         work = self.get_work(work_id)
         cr_id = work["change_id"]
         if decision_class not in DECISION_CLASSES:
@@ -1821,9 +2119,7 @@ class ProjectStore(object):
         if authority not in DECISION_AUTHORITIES:
             raise ValidationError("invalid authority: %s" % authority)
         if AUTHORITY_RANK[authority] < AUTHORITY_RANK[minimum]:
-            raise ValidationError(
-                "authority %s is below policy minimum %s" % (authority, minimum)
-            )
+            raise ValidationError("authority %s is below policy minimum %s" % (authority, minimum))
         evidence_refs = self._validate_evidence_refs(evidence_refs or [], cr_id)
         lanes = list(evidence_lanes or [])
         max_lanes = int((self.policy.get("evidence") or {}).get("max_parallel_lanes", 3))
@@ -1878,7 +2174,9 @@ class ProjectStore(object):
             if question_id not in work["question_refs"]:
                 work["question_refs"].append(question_id)
                 self._write_work_unlocked(
-                    work, "work.question_linked", actor,
+                    work,
+                    "work.question_linked",
+                    actor,
                     {"question_id": question_id},
                 )
             change = self.get_change(cr_id)
@@ -1887,7 +2185,10 @@ class ProjectStore(object):
                 change["updated_at"] = now
                 self._write_sealed(self.change_path(cr_id), change)
             self._append_event_unlocked(
-                "question.created", "question", question_id, actor,
+                "question.created",
+                "question",
+                question_id,
+                actor,
                 {"authority": authority, "evidence_mode": evidence_mode},
             )
         return value
@@ -1898,7 +2199,9 @@ class ProjectStore(object):
             if question.get("status") != "OPEN":
                 raise ConflictError("only OPEN question can be deferred")
             if question.get("required_authority") == "HUMAN":
-                raise ConflictError("HUMAN question cannot be deferred; resolve or cancel it explicitly")
+                raise ConflictError(
+                    "HUMAN question cannot be deferred; resolve or cancel it explicitly"
+                )
             question["status"] = "DEFERRED"
             question["review_trigger"] = validate_nonempty(review_trigger, "review_trigger")
             question["updated_at"] = utc_now()
@@ -1906,7 +2209,10 @@ class ProjectStore(object):
                 self.question_path(question["change_id"], question_id), question
             )
             self._append_event_unlocked(
-                "question.deferred", "question", question_id, actor,
+                "question.deferred",
+                "question",
+                question_id,
+                actor,
                 {"review_trigger": review_trigger},
             )
         return question
@@ -1937,23 +2243,51 @@ class ProjectStore(object):
                     return True
         raise ValidationError("HUMAN decision requires human_approval evidence with approved_by")
 
-    def record_decision(self, question_id, statement, rationale, evidence_refs,
-                        authority=None, alternatives=None, review_evidence_refs=None,
-                        approval_evidence_refs=None, review_trigger=None,
-                        supersedes=None, actor="agent"):
+    def record_decision(
+        self,
+        question_id,
+        statement,
+        rationale,
+        evidence_refs,
+        authority=None,
+        alternatives=None,
+        review_evidence_refs=None,
+        approval_evidence_refs=None,
+        review_trigger=None,
+        supersedes=None,
+        actor="agent",
+    ):
         # Every check below runs under the project lock: validating first and
         # locking afterwards would let two runs resolve the same OPEN question.
         with self.lock():
             return self._record_decision_unlocked(
-                question_id, statement, rationale, evidence_refs, authority,
-                alternatives, review_evidence_refs, approval_evidence_refs,
-                review_trigger, supersedes, actor,
+                question_id,
+                statement,
+                rationale,
+                evidence_refs,
+                authority,
+                alternatives,
+                review_evidence_refs,
+                approval_evidence_refs,
+                review_trigger,
+                supersedes,
+                actor,
             )
 
-    def _record_decision_unlocked(self, question_id, statement, rationale,
-                                  evidence_refs, authority, alternatives,
-                                  review_evidence_refs, approval_evidence_refs,
-                                  review_trigger, supersedes, actor):
+    def _record_decision_unlocked(
+        self,
+        question_id,
+        statement,
+        rationale,
+        evidence_refs,
+        authority,
+        alternatives,
+        review_evidence_refs,
+        approval_evidence_refs,
+        review_trigger,
+        supersedes,
+        actor,
+    ):
         question = self.get_question(question_id)
         if question.get("status") != "OPEN":
             raise ConflictError("question is not OPEN: %s" % question_id)
@@ -1964,14 +2298,20 @@ class ProjectStore(object):
             raise ValidationError("invalid authority: %s" % authority)
         required = question.get("required_authority")
         if AUTHORITY_RANK[authority] < AUTHORITY_RANK[required]:
-            raise ValidationError("decision authority %s is below required %s" % (authority, required))
+            raise ValidationError(
+                "decision authority %s is below required %s" % (authority, required)
+            )
         evidence_refs = self._validate_evidence_refs(evidence_refs, cr_id, required=True)
         review_refs = self._validate_evidence_refs(review_evidence_refs or [], cr_id)
         approval_refs = self._validate_evidence_refs(approval_evidence_refs or [], cr_id)
         if AUTHORITY_RANK[authority] >= AUTHORITY_RANK["CHALLENGE"] and authority != "HUMAN":
-            if (self.policy.get("decision") or {}).get("challenge_requires_independent_review", True):
+            if (self.policy.get("decision") or {}).get(
+                "challenge_requires_independent_review", True
+            ):
                 self._review_evidence_valid(review_refs)
-        if authority == "HUMAN" and (self.policy.get("decision") or {}).get("human_requires_approval_evidence", True):
+        if authority == "HUMAN" and (self.policy.get("decision") or {}).get(
+            "human_requires_approval_evidence", True
+        ):
             self._human_approval_valid(approval_refs)
         if supersedes:
             old = self.get_decision(supersedes)
@@ -2024,7 +2364,9 @@ class ProjectStore(object):
         if decision_id not in work["decision_refs"]:
             work["decision_refs"].append(decision_id)
             self._write_work_unlocked(
-                work, "work.decision_linked", actor,
+                work,
+                "work.decision_linked",
+                actor,
                 {"decision_id": decision_id},
             )
         change = self.get_change(cr_id)
@@ -2033,7 +2375,10 @@ class ProjectStore(object):
             change["updated_at"] = now
             self._write_sealed(self.change_path(cr_id), change)
         self._append_event_unlocked(
-            "decision.recorded", "decision", decision_id, actor,
+            "decision.recorded",
+            "decision",
+            decision_id,
+            actor,
             {"authority": authority, "question_id": question_id, "supersedes": supersedes},
         )
         return value
@@ -2047,7 +2392,11 @@ class ProjectStore(object):
 
     def _write_federated_object_unlocked(self, kind, value, actor, event_type, data):
         object_id = value["decision_id"] if kind == "decision" else value["evidence_id"]
-        path = self.decision_path(value["change_id"], object_id) if kind == "decision" else self.evidence_path(value["change_id"], object_id)
+        path = (
+            self.decision_path(value["change_id"], object_id)
+            if kind == "decision"
+            else self.evidence_path(value["change_id"], object_id)
+        )
         value = self._write_sealed(path, value)
         self._append_event_unlocked(event_type, kind, object_id, actor, data)
         return value
@@ -2064,15 +2413,19 @@ class ProjectStore(object):
             federation = copy.deepcopy(value.get("federation") or self._local_federation(object_id))
             status = federation.get("promotion_status") or "LOCAL"
             if status not in ("LOCAL", "REJECTED"):
-                raise ConflictError("promotion candidate requires LOCAL or REJECTED, got %s" % status)
-            federation.update({
-                "promotion_status": "CANDIDATE",
-                "submission_id": None,
-                "canonical_ref": None,
-                "submitted_at": None,
-                "resolved_at": None,
-                "rejection_reason": None,
-            })
+                raise ConflictError(
+                    "promotion candidate requires LOCAL or REJECTED, got %s" % status
+                )
+            federation.update(
+                {
+                    "promotion_status": "CANDIDATE",
+                    "submission_id": None,
+                    "canonical_ref": None,
+                    "submitted_at": None,
+                    "resolved_at": None,
+                    "rejection_reason": None,
+                }
+            )
             value["federation"] = federation
             if kind == "decision":
                 value["updated_at"] = utc_now()
@@ -2093,7 +2446,8 @@ class ProjectStore(object):
             "kind": kind,
             "origin": copy.deepcopy(federation["origin"]),
             "origin_content_hash": value.get(HASH_FIELD),
-            "idempotency_key": "kit:%s:%s" % (kind, hashlib.sha256(canonical.encode("utf-8")).hexdigest()),
+            "idempotency_key": "kit:%s:%s"
+            % (kind, hashlib.sha256(canonical.encode("utf-8")).hexdigest()),
             "payload": body,
         }
 
@@ -2104,23 +2458,30 @@ class ProjectStore(object):
             status = federation.get("promotion_status") or "LOCAL"
             if status != "CANDIDATE":
                 raise ConflictError("promotion submit requires CANDIDATE, got %s" % status)
-            federation.update({
-                "promotion_status": "SUBMITTED",
-                "submission_id": validate_nonempty(submission_id, "submission_id"),
-                "submitted_at": utc_now(),
-                "resolved_at": None,
-                "canonical_ref": None,
-                "rejection_reason": None,
-            })
+            federation.update(
+                {
+                    "promotion_status": "SUBMITTED",
+                    "submission_id": validate_nonempty(submission_id, "submission_id"),
+                    "submitted_at": utc_now(),
+                    "resolved_at": None,
+                    "canonical_ref": None,
+                    "rejection_reason": None,
+                }
+            )
             value["federation"] = federation
             if kind == "decision":
                 value["updated_at"] = utc_now()
             return self._write_federated_object_unlocked(
-                kind, value, actor, "%s.promotion_submitted" % kind,
+                kind,
+                value,
+                actor,
+                "%s.promotion_submitted" % kind,
                 {"submission_id": submission_id},
             )
 
-    def resolve_promotion(self, kind, object_id, accepted, canonical_ref=None, reason=None, actor="platform"):
+    def resolve_promotion(
+        self, kind, object_id, accepted, canonical_ref=None, reason=None, actor="platform"
+    ):
         with self.lock():
             value, _path = self._federated_object(kind, object_id)
             federation = copy.deepcopy(value.get("federation") or self._local_federation(object_id))
@@ -2129,24 +2490,31 @@ class ProjectStore(object):
                 raise ConflictError("promotion resolution requires SUBMITTED, got %s" % status)
             if accepted:
                 canonical_ref = validate_nonempty(canonical_ref, "canonical_ref")
-                federation.update({
-                    "promotion_status": "ACCEPTED",
-                    "canonical_ref": canonical_ref,
-                    "resolved_at": utc_now(),
-                    "rejection_reason": None,
-                })
+                federation.update(
+                    {
+                        "promotion_status": "ACCEPTED",
+                        "canonical_ref": canonical_ref,
+                        "resolved_at": utc_now(),
+                        "rejection_reason": None,
+                    }
+                )
             else:
-                federation.update({
-                    "promotion_status": "REJECTED",
-                    "canonical_ref": None,
-                    "resolved_at": utc_now(),
-                    "rejection_reason": validate_nonempty(reason, "reason"),
-                })
+                federation.update(
+                    {
+                        "promotion_status": "REJECTED",
+                        "canonical_ref": None,
+                        "resolved_at": utc_now(),
+                        "rejection_reason": validate_nonempty(reason, "reason"),
+                    }
+                )
             value["federation"] = federation
             if kind == "decision":
                 value["updated_at"] = utc_now()
             return self._write_federated_object_unlocked(
-                kind, value, actor, "%s.promotion_resolved" % kind,
+                kind,
+                value,
+                actor,
+                "%s.promotion_resolved" % kind,
                 {
                     "status": federation["promotion_status"],
                     "canonical_ref": federation.get("canonical_ref"),
@@ -2177,12 +2545,14 @@ class ProjectStore(object):
         dependencies = []
         for dependency_id in work.get("depends_on") or []:
             dependency = self.get_work(dependency_id)
-            dependencies.append({
-                "work_id": dependency_id,
-                "target_app": dependency.get("target_app"),
-                "status": dependency.get("status"),
-                "result": dependency.get("result"),
-            })
+            dependencies.append(
+                {
+                    "work_id": dependency_id,
+                    "target_app": dependency.get("target_app"),
+                    "status": dependency.get("status"),
+                    "result": dependency.get("result"),
+                }
+            )
         context = {
             "schema_version": SCHEMA_VERSION,
             "kind": "work_context",
@@ -2236,8 +2606,8 @@ class ProjectStore(object):
         lines.extend(["", "## Dependencies", ""])
         for dependency in context["dependencies"]:
             lines.append(
-                "- `%s` — `%s` — %s" %
-                (dependency["work_id"], dependency["status"], dependency.get("target_app"))
+                "- `%s` — `%s` — %s"
+                % (dependency["work_id"], dependency["status"], dependency.get("target_app"))
             )
             result = dependency.get("result") or {}
             if result.get("summary"):
@@ -2247,8 +2617,8 @@ class ProjectStore(object):
         lines.extend(["", "## Active Decisions", ""])
         for decision in context["decisions"]:
             lines.append(
-                "- `%s` [%s] %s" %
-                (decision["decision_id"], decision["authority"], decision["statement"])
+                "- `%s` [%s] %s"
+                % (decision["decision_id"], decision["authority"], decision["statement"])
             )
         if not context["decisions"]:
             lines.append("- none")
@@ -2256,27 +2626,35 @@ class ProjectStore(object):
         open_questions = [q for q in context["questions"] if q.get("status") == "OPEN"]
         for question in open_questions:
             lines.append(
-                "- `%s` [%s/%s] %s" %
-                (question["question_id"], question["required_authority"],
-                 question["evidence_plan"]["mode"], question["question"])
+                "- `%s` [%s/%s] %s"
+                % (
+                    question["question_id"],
+                    question["required_authority"],
+                    question["evidence_plan"]["mode"],
+                    question["question"],
+                )
             )
         if not open_questions:
             lines.append("- none")
         lines.extend(["", "## Contract References", ""])
         for contract in context["contracts"]:
             lines.append(
-                "- `%s` — %s — %s" %
-                (contract["contract_ref"], contract["status"], contract["source_ref"])
+                "- `%s` — %s — %s"
+                % (contract["contract_ref"], contract["status"], contract["source_ref"])
             )
         if not context["contracts"]:
             lines.append("- none")
-        lines.extend([
-            "", "## Resume", "",
-            "Use `/work` (Claude Code) or `$work` (Codex) in the target app. Read the durable Work Context first, then update the same Work object before ending the run.",
-            "",
-            "Context hash: `%s`" % context[HASH_FIELD],
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Resume",
+                "",
+                "Use `/work` (Claude Code) or `$work` (Codex) in the target app. Read the durable Work Context first, then update the same Work object before ending the run.",
+                "",
+                "Context hash: `%s`" % context[HASH_FIELD],
+                "",
+            ]
+        )
         return "\n".join(lines)
 
     def session_path(self, app_id):
@@ -2285,7 +2663,12 @@ class ProjectStore(object):
     def get_session(self, app_id):
         path = self.session_path(app_id)
         if not os.path.exists(path):
-            return {"schema_version": SCHEMA_VERSION, "kind": "session_state", "app_id": app_id, "work_sessions": {}}
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "kind": "session_state",
+                "app_id": app_id,
+                "work_sessions": {},
+            }
         return self._read_sealed(path, "session state %s" % app_id)
 
     def update_session(self, app_id, work_id=None, session_id=None, event=None, data=None):
@@ -2328,7 +2711,10 @@ class ProjectStore(object):
             previous = self.policy.get(HASH_FIELD)
             self.policy = self._write_sealed(self.policy_path, effective)
             self._append_event_unlocked(
-                "policy.updated", "policy", self.project["project_id"], actor,
+                "policy.updated",
+                "policy",
+                self.project["project_id"],
+                actor,
                 {"from": previous, "to": self.policy.get(HASH_FIELD)},
             )
         return self.policy
@@ -2337,11 +2723,13 @@ class ProjectStore(object):
         report = []
         for item in self.policy.get("forbidden_automatic_actions") or []:
             mechanism = ENFORCED_PROHIBITIONS.get(item)
-            report.append({
-                "prohibition": item,
-                "machine_enforced": bool(mechanism),
-                "mechanism": mechanism or "worker prompt guidance only",
-            })
+            report.append(
+                {
+                    "prohibition": item,
+                    "machine_enforced": bool(mechanism),
+                    "mechanism": mechanism or "worker prompt guidance only",
+                }
+            )
         return report
 
     def status_summary(self):
@@ -2370,6 +2758,18 @@ class ProjectStore(object):
             },
         }
 
+    @staticmethod
+    def _unattended_bypass_flags(args):
+        values = [str(item) for item in args]
+        bypass = [flag for flag in UNATTENDED_BYPASS_FLAGS if flag in values]
+        for index, value in enumerate(values):
+            if value in ("--sandbox", "-s") and index + 1 < len(values):
+                if values[index + 1] == "danger-full-access":
+                    bypass.append("%s danger-full-access" % value)
+            elif value in ("--sandbox=danger-full-access", "-s=danger-full-access"):
+                bypass.append(value)
+        return sorted(set(bypass))
+
     def verify(self, include_local=False):
         findings = []
 
@@ -2395,52 +2795,61 @@ class ProjectStore(object):
                 local = None
             if not local or not local.get("auto_start"):
                 continue
-            args = [str(item) for item in (local.get("runner") or {}).get("args") or []]
-            bypass = [flag for flag in UNATTENDED_BYPASS_FLAGS if flag in args]
-            for index, value in enumerate(args):
-                if value in ("--sandbox", "-s") and index + 1 < len(args):
-                    if args[index + 1] == "danger-full-access":
-                        bypass.append("%s danger-full-access" % value)
-                elif value in (
-                    "--sandbox=danger-full-access",
-                    "-s=danger-full-access",
-                ):
-                    bypass.append(value)
-            bypass = sorted(set(bypass))
-            if bypass:
-                findings.append({
-                    "severity": "WARNING", "object": "app:%s" % app["app_id"],
-                    "message": "auto_start is on and the worker bypasses permission "
-                               "checks (%s); an unattended agent can edit, commit and "
-                               "push in this repository" % ", ".join(bypass),
-                })
+            runner_specs = [local.get("runner") or {}]
+            runner_specs.extend((local.get("runner_profiles") or {}).values())
+            for runner in runner_specs:
+                bypass = self._unattended_bypass_flags(runner.get("args") or [])
+                if not bypass:
+                    continue
+                findings.append(
+                    {
+                        "severity": "WARNING",
+                        "object": "app:%s" % app["app_id"],
+                        "message": "auto_start is on and the worker bypasses permission "
+                        "checks (%s); an unattended agent can edit, commit and "
+                        "push in this repository" % ", ".join(bypass),
+                    }
+                )
         for work in self.list_work(statuses=ACTIVE_WORK_STATUSES):
             host = work.get("claimed_host")
             if host and host != this_host:
-                findings.append({
-                    "severity": "WARNING", "object": work["work_id"],
-                    "message": "claimed on another host (%s); its lease is not visible "
-                               "here and this host will not recover it" % host,
-                })
+                findings.append(
+                    {
+                        "severity": "WARNING",
+                        "object": work["work_id"],
+                        "message": "claimed on another host (%s); its lease is not visible "
+                        "here and this host will not recover it" % host,
+                    }
+                )
         for change in self.list_changes():
             cr_id = change["change_id"]
             check("change:%s" % cr_id, lambda cr_id=cr_id: self.get_change(cr_id))
             check("cycle:%s" % cr_id, lambda cr_id=cr_id: self._assert_acyclic_unlocked(cr_id))
             for work in self._list_objects(cr_id, "work"):
                 work_id = work["work_id"]
-                check("context:%s" % work_id, lambda work_id=work_id: self.build_work_context(work_id))
+                check(
+                    "context:%s" % work_id, lambda work_id=work_id: self.build_work_context(work_id)
+                )
             for question in self._list_objects(cr_id, "questions"):
-                if question.get("status") == "RESOLVED" and not question.get("resolution_decision_ref"):
-                    findings.append({
-                        "severity": "ERROR", "object": question["question_id"],
-                        "message": "RESOLVED question lacks resolution_decision_ref",
-                    })
+                if question.get("status") == "RESOLVED" and not question.get(
+                    "resolution_decision_ref"
+                ):
+                    findings.append(
+                        {
+                            "severity": "ERROR",
+                            "object": question["question_id"],
+                            "message": "RESOLVED question lacks resolution_decision_ref",
+                        }
+                    )
             for decision in self._list_objects(cr_id, "decisions"):
                 if decision.get("status") == "SUPERSEDED" and not decision.get("superseded_by"):
-                    findings.append({
-                        "severity": "ERROR", "object": decision["decision_id"],
-                        "message": "SUPERSEDED decision lacks superseded_by",
-                    })
+                    findings.append(
+                        {
+                            "severity": "ERROR",
+                            "object": decision["decision_id"],
+                            "message": "SUPERSEDED decision lacks superseded_by",
+                        }
+                    )
         return {
             "ok": not any(item["severity"] == "ERROR" for item in findings),
             "findings": findings,
@@ -2479,28 +2888,33 @@ def reseal_object(home, relative_path, actor="human"):
         raise ValidationError("object must be a JSON object: %s" % rel)
     kind = store_object_kind(rel, value)
     if kind is None:
-        raise ValidationError(
-            "refusing to reseal unknown kind %r: %s" % (value.get("kind"), rel)
-        )
+        raise ValidationError("refusing to reseal unknown kind %r: %s" % (value.get("kind"), rel))
     before = value.get(HASH_FIELD)
     sealed = seal(value)
     if before == sealed[HASH_FIELD]:
-        return {"path": rel, "kind": kind, "changed": False,
-                "content_hash": before}
+        return {"path": rel, "kind": kind, "changed": False, "content_hash": before}
     write_json_atomic(path, sealed)
     try:
         store = ProjectStore(home)
         with store.lock():
             store._append_event_unlocked(
-                "object.resealed", kind, rel, actor,
+                "object.resealed",
+                kind,
+                rel,
+                actor,
                 {"from": before, "to": sealed[HASH_FIELD]},
             )
     except AmplaiError:
         # The store may still be unreadable while a multi-object repair is in
         # progress; the reseal itself already succeeded.
         pass
-    return {"path": rel, "kind": kind, "changed": True,
-            "content_hash": sealed[HASH_FIELD], "previous_content_hash": before}
+    return {
+        "path": rel,
+        "kind": kind,
+        "changed": True,
+        "content_hash": sealed[HASH_FIELD],
+        "previous_content_hash": before,
+    }
 
 
 def scan_unsealed(home):
@@ -2552,9 +2966,7 @@ def discover_project_home(repo_root=None, explicit=None):
             expanded = os.path.abspath(os.path.expanduser(os.path.expandvars(local_hint)))
             if os.path.exists(os.path.join(expanded, "project.json")):
                 return expanded
-    raise NotFoundError(
-        "AMPLAI_PROJECT_HOME is not set and no usable project_home_hint exists"
-    )
+    raise NotFoundError("AMPLAI_PROJECT_HOME is not set and no usable project_home_hint exists")
 
 
 def load_app_identity(repo_root=None):

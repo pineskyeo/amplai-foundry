@@ -73,3 +73,6 @@ Future
 
 The Local Supervisor is intentionally not the V3 distributed execution fabric. It does not plan goals,
 coordinate merges, publish Git state, deploy, or perform production actions.
+
+For Slack/Hermes deployments, Hermes only submits or observes Work. A separately configured AMPLAI Slack App verifies
+the human Activation Card; the Project Store remains authoritative and a local outbox can project safe Work status to Slack.
