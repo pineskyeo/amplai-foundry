@@ -9,6 +9,10 @@ Host abstraction and Platform federation boundary.
 - Added non-destructive Decision/Evidence promotion metadata and fail-closed lifecycle: `LOCAL → CANDIDATE → SUBMITTED → ACCEPTED/REJECTED`.
 - Added deterministic promotion envelopes with origin provenance and idempotency keys for Platform 0.4.
 - Added host-adapter and federation regression suites and included them in the distributable payload.
+- Added additive Work controller, runner profile, fixed base ref, and request reference fields. The Supervisor now
+  dispatches a Work in a managed detached worktree and emits host-specific `/work` or `$work` prompts.
+- Slack/Hermes activation remains disabled by default and is deliberately outside Hermes credentials: a separate
+  signed human activation boundary and durable Work status outbox preserve Project Store authority.
 
 ## 2.3.2
 

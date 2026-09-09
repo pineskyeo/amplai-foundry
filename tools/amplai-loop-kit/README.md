@@ -24,6 +24,7 @@ AMPLAI Loop V2 앱을 위한 **Decision & Async Cross-App Runtime** 배포 패�
 - Claude/Codex session continuation 및 additive lifecycle hooks
 - Decision/Evidence federation lifecycle: `LOCAL → CANDIDATE → SUBMITTED → ACCEPTED/REJECTED`
 - handoff를 SSOT가 아닌 target-app Context view로 생성
+- additive Work controller/runner profile and managed detached worktree dispatch
 - 신규 설치와 기존 Kit 업데이트를 위한 non-destructive installer
 
 ## 요구사항
@@ -175,3 +176,6 @@ python3 /path/to/app/scripts/amplai_supervisor.py --once --include-manual
 - `.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md`
 - `.ai-team/runtime/LOCAL_SUPERVISOR.md`
 - `.ai-team/runtime/INSTALLATION.md`
+
+Slack/Hermes activation is not enabled by installing the Kit. It requires the AMPLAI Slack App’s separately configured
+human authority, provider scope evidence, and a host-local status projection transport.

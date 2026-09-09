@@ -429,6 +429,27 @@ tasks:
       - MGC-012-P5-T044
     requirements:
       - FR-024
+  - id: MGC-012-P5-T047
+    title: Make the stranded window count what it returns, not what SQL fetched
+    status: done
+    depends_on:
+      - MGC-012-P5-T044
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T048
+    title: Fill the two AC-07 cells that were written without ever running a mutation
+    status: done
+    depends_on:
+      - MGC-012-P5-T047
+    requirements:
+      - FR-024
+  - id: MGC-012-P5-T046
+    title: Annotate every sibling site a Decision invalidated, counted two ways
+    status: done
+    depends_on:
+      - MGC-012-P5-T047
+    requirements:
+      - FR-024
 
 execution:
   waves:
@@ -694,6 +715,37 @@ execution:
         T045 annotates the sentence D-049 called wrong - wave 13 had annotated five other
         places and skipped that one - and corrects a Source line that credited round 19 with
         six walls when it measured five.
+      note_counts_verified_twice: true
+    - wave: 22
+      tasks:
+        - MGC-012-P5-T047
+        - MGC-012-P5-T048
+        - MGC-012-P5-T046
+      note: >-
+        Convergence wave from the round 21 three-lens review. Six blockers, three of round
+        20's six only partially closed.
+        F21-1 (P1) is the third axis of the same limit problem. Rounds 19 and 20 measured
+        the wall by state and by readability; this one is about the return path itself.
+        stranded() read limit+1 rows with a SQL LIMIT and then silently dropped the ones
+        _view could not build - a skip D-047 added because round 15 F-2 had one corrupt row
+        erase the whole list. So the number returned was not the number fetched, and D-050's
+        truncation test ("limit+1 came back, so there is more") read false whenever a corrupt
+        row sat inside the window. Measured: 200 candidates, 1 corrupt, --limit 100 printed
+        100 rows and no cut marker, hiding 99. D-057 moves stranded()'s limit to a python
+        output cap - the same move D-049 made for unreadable() - so the two reads finally
+        mean the same thing and the count is the count. The signature does not change, which
+        is why option A was chosen over carrying a fetch count in the return value.
+        Removing the SQL LIMIT costs no extra scan: the table carries no index at all, so
+        ORDER BY already forces a full sort. EXPLAIN QUERY PLAN is identical with and without
+        the LIMIT.
+        F21-2 closed structurally as a side effect - limit+1 no longer reaches a sqlite3
+        binding, so --limit at int64 max stopped raising OverflowError past the CLI's except
+        chain. Measured before and after.
+        T048 fills the two AC-07 cells wave 14 wrote without running a mutation. Both were
+        false. The signal was there and nobody looked: eight cells, four mutations.
+        T046 annotates the sibling sites - C21-4 is C20-1 reproduced, wave 14 having fixed
+        one of the three places that assert what D-049 called wrong - plus the places D-057
+        itself just made false.
       note_counts_verified_twice: true
   critical_path:
     - MGC-012-P5-T001

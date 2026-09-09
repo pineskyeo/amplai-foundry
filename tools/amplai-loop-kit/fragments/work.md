@@ -50,4 +50,8 @@ work cancel --cascade | work retarget --depends-on | work reset-attempts
 Work의 HUMAN_REQUIRED와 무관하게 계속 진행될 수 있다.
 
 중앙 Store나 app identity가 없는 단일 repo 작업은 기존 Loop V2 경로로 정상 동작한다.
+
+Slack/Hermes 연동 Work는 `DRAFT`에서 자동 실행하지 않는다. 별도 AMPLAI Slack App의 signed human
+Activation Card와 project/provider/feature scope가 모두 맞을 때만 `WAITING|READY`가 된다. Hermes는
+activation authority가 없으며 runner profile은 `claude-code` 또는 `codex`처럼 host-local binding에서만 고른다.
 <!-- AMPLAI-ASYNC-END -->

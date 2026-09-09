@@ -61,6 +61,7 @@ class HostAdapter(object):
     hook_name = "generic"
     default_command = None
     public_work_entry = "work"
+    public_design_entry = "design"
 
     def __init__(self, runner=None):
         self.runner = dict(runner or {})
@@ -107,6 +108,7 @@ class ClaudeCodeHostAdapter(HostAdapter):
     hook_name = "claude"
     default_command = "claude"
     public_work_entry = "/work"
+    public_design_entry = "/design"
 
     def build_command(self, prompt, session_id=None, mapping=None):
         del mapping
@@ -147,6 +149,7 @@ class CodexHostAdapter(HostAdapter):
     hook_name = "codex"
     default_command = "codex"
     public_work_entry = "$work"
+    public_design_entry = "$design"
 
     def build_command(self, prompt, session_id=None, mapping=None):
         del mapping

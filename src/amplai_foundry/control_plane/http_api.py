@@ -104,6 +104,33 @@ class ControlPlaneWSGIApp:
                 idempotency_key=str(environ.get("HTTP_IDEMPOTENCY_KEY") or ""),
                 request=self._body(environ),
             )
+        if method == "POST" and segments[3:] == ["orchestration-requests"]:
+            return self.service.submit_orchestration_request(
+                project_id=project_id,
+                raw_token=raw_token,
+                idempotency_key=str(environ.get("HTTP_IDEMPOTENCY_KEY") or ""),
+                request=self._body(environ),
+            )
+        if method == "GET" and len(segments) == 5 and segments[3] == "orchestration-requests":
+            request = self.service.get_orchestration_request(
+                request_id=segments[4], project_id=project_id, raw_token=raw_token
+            )
+            return 200, asdict(request)
+        if method == "GET" and len(segments) == 5 and segments[3] == "work":
+            return 200, self.service.get_orchestration_work(
+                work_id=segments[4], project_id=project_id, raw_token=raw_token
+            )
+        if method == "GET" and segments[3:] == ["pending-actions"]:
+            return 200, self.service.list_pending_orchestration_actions(
+                project_id=project_id, raw_token=raw_token
+            )
+        if method == "POST" and segments[3:] == ["knowledge-intake-requests"]:
+            return self.service.request_knowledge_intake(
+                project_id=project_id,
+                raw_token=raw_token,
+                idempotency_key=str(environ.get("HTTP_IDEMPOTENCY_KEY") or ""),
+                request=self._body(environ),
+            )
         if method == "GET" and len(segments) == 6 and segments[3] == "references":
             reference = self.service.get_reference(
                 kind=segments[4],

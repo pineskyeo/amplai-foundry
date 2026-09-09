@@ -2,6 +2,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -71,6 +72,23 @@ class AmplaiRuntimeTest(unittest.TestCase):
         write_json_atomic(path, value)
         with self.assertRaises(ValidationError):
             self.store.get_work(work["work_id"])
+
+    def test_request_ref_creates_one_pinned_work(self):
+        base_ref = "a" * 40
+        first = self.store.create_work(
+            self.change["change_id"], "cortex", "Bridge request",
+            acceptance=["one draft work"], controller="work",
+            runner_profile="codex", base_ref=base_ref, request_ref="REQ-001",
+        )
+        second = self.store.create_work(
+            self.change["change_id"], "cortex", "Bridge retry",
+            acceptance=["one draft work"], controller="work",
+            runner_profile="codex", base_ref=base_ref, request_ref="REQ-001",
+        )
+        self.assertEqual(first["work_id"], second["work_id"])
+        self.assertEqual(first["controller"], "work")
+        self.assertEqual(first["runner_profile"], "codex")
+        self.assertEqual(first["base_ref"], base_ref)
 
     def test_auto_decision_requires_evidence(self):
         work = self.make_work()
@@ -297,6 +315,55 @@ class AmplaiRuntimeTest(unittest.TestCase):
             handle.write('{"type":"turn.started"}\n')
             handle.write('{"type":"turn.completed","usage":{}}\n')
         self.assertEqual(session_id_from_output(path), "thread-jsonl")
+
+    def test_profiled_work_uses_controller_entry_and_managed_worktree(self):
+        subprocess.check_call(["git", "init"], cwd=self.cortex_repo, stdout=subprocess.DEVNULL)
+        subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=self.cortex_repo)
+        subprocess.check_call(["git", "config", "user.name", "Test"], cwd=self.cortex_repo)
+        with open(os.path.join(self.cortex_repo, "README.md"), "w") as handle:
+            handle.write("fixture\n")
+        subprocess.check_call(["git", "add", "README.md"], cwd=self.cortex_repo)
+        subprocess.check_call(["git", "commit", "-m", "fixture"], cwd=self.cortex_repo, stdout=subprocess.DEVNULL)
+        base_ref = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=self.cortex_repo
+        ).decode("utf-8").strip()
+        work = self.store.create_work(
+            self.change["change_id"], "cortex", "Design a fixture",
+            acceptance=["isolated workspace"], controller="design", runner_profile="codex",
+            base_ref=base_ref, request_ref="REQ-PROFILED",
+        )
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="claude-code",
+            runner_profiles={"codex": {"command": "codex", "args": ["--sandbox", "workspace-write"]}},
+            default_runner_profile="codex",
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        runner.workspace_path = runner._prepare_workspace()
+        self.assertNotEqual(runner.workspace_path, self.cortex_repo)
+        self.assertIn("$design", runner._command()[-1])
+        self.assertEqual(
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=runner.workspace_path)
+            .decode("utf-8").strip(),
+            base_ref,
+        )
+        with open(os.path.join(runner.workspace_path, "README.md"), "a") as handle:
+            handle.write("uncommitted\n")
+        with self.assertRaisesRegex(ValidationError, "managed workspace is dirty"):
+            runner._prepare_workspace()
+
+    def test_new_binding_default_profile_is_used_for_legacy_work(self):
+        work = self.make_work("cortex")
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="claude-code",
+            runner_profiles={"codex": {"command": "codex", "args": ["--sandbox", "workspace-write"]}},
+            default_runner_profile="codex",
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        self.assertEqual(runner.runner["type"], "codex")
 
 
 class AmplaiSupervisorGoldenTest(unittest.TestCase):

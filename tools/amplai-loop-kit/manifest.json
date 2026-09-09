@@ -38,7 +38,7 @@
       "fragment": "work.md",
       "path": ".agents/skills/work/SKILL.md",
       "required": true,
-      "sha256": "sha256:d1aa79e03039a9660fe7d5fec7411d7432ea27d5686ae2b7e92db5a4e3f72b28"
+      "sha256": "sha256:3db86ee6fa186b8f710eb0aaa2f222f324af35df6856c312845c00eecd8e337c"
     },
     {
       "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
@@ -55,7 +55,7 @@
       "fragment": "handoff-wrapper.md",
       "path": ".agents/skills/handoff/SKILL.md",
       "required": false,
-      "sha256": "sha256:cf08ca94a7304124e75aefdd667fcaabef83643ade41caf3252c0579e17e71f2"
+      "sha256": "sha256:eb6c61302560ba8489aa9ea12b8150f7a1e02904eb9cd25c9e71e3fbfbb5e653"
     },
     {
       "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
@@ -64,7 +64,7 @@
       "fragment": "handoff-source.md",
       "path": ".ai-team/skills/handoff/SKILL.md",
       "required": false,
-      "sha256": "sha256:cf08ca94a7304124e75aefdd667fcaabef83643ade41caf3252c0579e17e71f2"
+      "sha256": "sha256:eb6c61302560ba8489aa9ea12b8150f7a1e02904eb9cd25c9e71e3fbfbb5e653"
     },
     {
       "begin": "<!-- AMPLAI-ASYNC-BEGIN -->",
@@ -98,17 +98,17 @@
     {
       "mode": "644",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "sha256": "sha256:7bb32f03945786970d3332ffbe9353563dee4047c09add40180789d607101d55"
+      "sha256": "sha256:f30a30589ee03ad339b9e3a665f44af3e165ce8ad87255dd7b96659beac96cc4"
     },
     {
       "mode": "644",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "sha256": "sha256:d92d7712be27c107c736212842a438ea7443abed74088a8b36d3d24ca1896322"
+      "sha256": "sha256:02e03c628759b8993893b1aa5d506fa94361228a71a22832eb15261b2320006a"
     },
     {
       "mode": "644",
       "path": ".ai-team/runtime/LOCAL_SUPERVISOR.md",
-      "sha256": "sha256:49f5e7e0b833d5272eaecbacfb00647281d7fa9772afd7f9ef77fba3e154d195"
+      "sha256": "sha256:41808a84a106b32082ecca8235895aca9a83e7523f016aa4dad681bb22924b9a"
     },
     {
       "mode": "644",
@@ -158,12 +158,12 @@
     {
       "mode": "644",
       "path": ".ai-team/runtime/schemas/work.schema.json",
-      "sha256": "sha256:6d9cab43c2028be87716bb6567ed42b4cbab3e24535a7be2aea58ebe798ac893"
+      "sha256": "sha256:b708d4e1b9c36affe3fb9f6ba9c980721a11ac2811620aa66514f63f2469e5f5"
     },
     {
       "mode": "755",
       "path": "scripts/amplai.py",
-      "sha256": "sha256:c47b86b41c9bacb3d855844f939a69f3fa48dba7206a677ad4d1e56057662ca7"
+      "sha256": "sha256:3378002071bf78134adb06a77fbc4081692faaeb9605c4802aee4e200bdf4fea"
     },
     {
       "mode": "755",
@@ -173,17 +173,17 @@
     {
       "mode": "755",
       "path": "scripts/amplai_hosts.py",
-      "sha256": "sha256:edc8870fec0353d6b0ffd6e78999b66bfff5d1841e8dba5d1486abfbfb264b22"
+      "sha256": "sha256:cebdfff825af78d1c7d255d3241eb6ab2004749c3ef707ab5f575c850db4a039"
     },
     {
       "mode": "755",
       "path": "scripts/amplai_runtime.py",
-      "sha256": "sha256:c67087c478a3975ab359ce61b063815b393ae67999efb9e8b77cd823e28b866e"
+      "sha256": "sha256:dfc039ae20be361b1a5a06e919c5df3c980d80f2519ecf627f10caeaf9a2accf"
     },
     {
       "mode": "755",
       "path": "scripts/amplai_supervisor.py",
-      "sha256": "sha256:fdbd265eab6cf3641f8278b1b02cdea52005b68806aec95edbc978084339d744"
+      "sha256": "sha256:570721f9aee6e93b50b4308a0e6bfce1fbc0794b75ea291a229f0dbc37684243"
     },
     {
       "mode": "644",

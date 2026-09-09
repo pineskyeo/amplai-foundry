@@ -54,6 +54,10 @@ thread id가 있으면 `resume`으로 이어간다. Installer는 Codex sandbox�
 자동 완화하지 않는다. 파일 변경이 필요한 Work에는 검토된 `--sandbox workspace-write` 같은
 명시적 최소 권한을 runner args로 준다.
 
+여러 host profile을 한 app binding에 둘 때는 `--runner-profiles-json`과
+`--default-runner-profile`을 사용한다. 기존 singular `--runner` 설정도 계속 읽는다. Slack이나
+Hermes는 app runner를 activate할 수 없고, DRAFT Work의 activation은 별도 human-authority path다.
+
 `--dangerously-bypass-approvals-and-sandbox`, `--yolo`, `danger-full-access`는 unattended worker에서
 강한 우회다. `auto_start=true`와 조합하면 `project verify`가 WARNING으로 보고한다.
 

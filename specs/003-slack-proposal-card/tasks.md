@@ -58,6 +58,9 @@
 - MGC-012-P5-T043 (done) Fix the three tables wave 12 got wrong
 - MGC-012-P5-T044 (done) Say when the list is cut, and count what that new structure requires
 - MGC-012-P5-T045 (done) Annotate the sentence a Decision called wrong, and fix a Source that overcounted
+- MGC-012-P5-T047 (done) Make the stranded window count what it returns, not what SQL fetched
+- MGC-012-P5-T048 (done) Fill the two AC-07 cells that were written without ever running a mutation
+- MGC-012-P5-T046 (done) Annotate every sibling site a Decision invalidated, counted two ways
 
 ## Open questions
 

@@ -72,3 +72,29 @@ class OutboxItem:
     last_error: str | None
     created_at: str
     updated_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class OrchestrationRequest:
+    """Durable, untrusted intent submitted by a client partner such as Hermes.
+
+    This is deliberately not a Work.  The Project Store bridge is the only
+    component allowed to turn a REQUESTED row into a DRAFT Work graph.
+    """
+
+    request_id: str
+    tenant_id: str
+    project_id: str
+    controller: str
+    goal: str
+    project_hint: str | None
+    target_app_hint: str | None
+    runner_hint: str | None
+    artifact_refs: tuple[str, ...]
+    reply_route: dict[str, Any]
+    correlation_id: str
+    status: str
+    hold_code: str | None
+    work_ref: str | None
+    created_at: str
+    updated_at: str

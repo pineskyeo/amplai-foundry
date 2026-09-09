@@ -2959,7 +2959,7 @@ def test_a_corrupt_row_stays_visible_behind_a_wall_of_completed_ones(tmp_path: P
     _fill_completed(store, 150)
 
     assert ingress.unreadable(limit=100) == (poison,), (
-        "종결 상태가 창을 채우면 손상 row 가 보이지 않는다 — limit 은 후보 상한이어야 한다"
+        "종결 상태가 창을 채우면 손상 row 가 보이지 않는다 — limit 은 출력 상한이어야 한다"
     )
     assert ingress.unreadable(limit=200) == (poison,), "창을 넓혀도 같은 결과여야 한다"
 
@@ -3263,3 +3263,139 @@ def test_the_exhaustion_sweep_leaves_the_prior_error_code_alone(
         "소진 sweep 은 `last_error_code` 를 안 건드린다 — 앞선 값이 그대로 남는다"
     )
     assert poison in ingress.unreadable(), "회수 경로는 살아 있어야 한다"
+
+
+# ---------------------------------------------------------------------------
+# MGC-012-P5-W15 — stranded() 의 limit 도 출력 상한이다 (round 21, D-057)
+# ---------------------------------------------------------------------------
+
+
+def test_corrupt_rows_do_not_consume_the_stranded_window(tmp_path: Path) -> None:
+    """round 21 `F21-1` (P1). `D-057` 이 정한 계약.
+
+    예전에는 `SQL LIMIT` 이라 **가져온 개수와 반환 개수가 달랐다.** 창 앞의 손상 row 가
+    창을 소비해 반환이 `limit` 개 아래로 떨어졌고, 그 수로 잘림을 판정하던 호출자가
+    거짓 음성을 냈다. `D-049` 가 `unreadable()` 에 대해 이미 한 이동이다.
+
+    **손상 개수와 무관하게 반환 개수가 같아야 한다** — 그것이 "출력 상한" 의 뜻이다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _readable_wall(store, "dead_letter", 20)
+
+    clean = ingress.stranded(limit=5)
+    assert len(clean) == 5, "기준선을 못 만들었다"
+
+    with store.connect() as connection:
+        earliest = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT command_id FROM governance_ingress_commands "
+                "WHERE state = 'dead_letter' ORDER BY received_at, command_id LIMIT 3"
+            ).fetchall()
+        ]
+    for command_id in earliest:
+        _corrupt(store, command_id)
+
+    assert len(ingress.stranded(limit=5)) == 5, (
+        "손상 row 3개가 출력 창을 소비했다 — limit 이 출력 상한이 아니다"
+    )
+    assert ingress.unreadable(limit=100) == tuple(earliest), (
+        "건너뛴 것은 unreadable() 이 낸다 (D-047)"
+    )
+
+
+def test_a_retry_waiting_command_out_of_budget_is_stranded(tmp_path: Path) -> None:
+    """round 21 review — regression lens 가 SURVIVED 를 찾았다.
+
+    `_stranded_rows` 의 WHERE 에서 `OR (state = 'retry_wait' AND attempts >= ?)` 를
+    **통째로 지워도 전 suite 1573 이 전부 통과했다.** 등가 mutant 가 아니다 — 그 절이
+    없으면 이 row 가 목록에서 사라진다.
+
+    도달 가능한 state 다. sweep 의 둘째 UPDATE 는 `retry_at <= now` 일 때만 친다
+    (`ingress.py:404`). **retry 창을 기다리는 소진 command** 가 정확히 이 자리에 산다 —
+    `dead_letter` 로 넘어가기 전이고, 어떤 worker 도 다시 claim 하지 않는다.
+
+    `..._with_retry_budget_left_is_not_stranded` 의 **양성 짝**이 없던 것이 공백의
+    형태다. 음성만 있으면 절을 지워도 아무도 안 죽는다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    exhausted, _healthy = _two_commands(store, ingress)
+    _pin_state(store, exhausted, "retry_wait", attempts=ingress.config.max_attempts)
+    with store.connect() as connection:
+        # **retry 창이 아직 안 열렸다.** sweep 이 `retry_at <= now` 에서만 치므로 이 row 는
+        # `dead_letter` 로 안 넘어간다.
+        changed = connection.execute(
+            "UPDATE governance_ingress_commands SET retry_at = ? WHERE command_id = ?",
+            (IngressService._timestamp(NOW + timedelta(hours=1)), exhausted),
+        )
+        assert changed.rowcount == 1
+        connection.commit()
+
+    listed = [command.command_id for command in ingress.stranded()]
+
+    assert exhausted in listed, "소진된 채 retry 창을 기다리는 command 가 회수 목록에서 빠졌다"
+
+
+# `command_id` 는 `CMD-` + 대문자 16 hex 다 (`migrations.py` 의 CHECK). 삽입 순서와 id
+# 순서를 어긋나게 두려고 양 끝값을 쓴다.
+_TIE_LOW = "CMD-" + "A" * 16
+_TIE_HIGH = "CMD-" + "F" * 16
+_TIE_LATE = "CMD-" + "0" * 16
+_TIE_LATER_AT = "2021-01-01T00:00:00.000000Z"
+
+
+def test_stranded_breaks_ties_by_command_id(tmp_path: Path) -> None:
+    """round 21 review — regression lens 가 SURVIVED 둘을 찾았다.
+
+    `ORDER BY received_at, command_id` 를 `ORDER BY received_at` 으로 바꿔도,
+    `ORDER BY command_id` 로 바꿔도 **전 suite 1573 이 전부 통과했다.**
+
+    `D-057` 이 `SQL LIMIT` 을 없애면서 **이 절이 출력 창에 무엇이 드는지를 정하는 유일한
+    규칙**이 됐다. 전에는 `SQL LIMIT` 이 그 일을 나눠 가졌다. 그런데 그 계약을 지키는
+    test 가 `unreadable()` 쪽에만 있었다 (`..._lists_corrupt_rows_in_arrival_order`).
+    **형제 위치를 세다 만 것이다.**
+
+    `_readable_wall` 이 벽 전체에 같은 `received_at` 을 넣으므로 예외적 입력이 아니다.
+    """
+    store = _store(tmp_path)
+    _seed(store)
+    ingress = IngressService(store, _authenticator(), clock=lambda: NOW)
+    BoundedIngressAck(ingress, monotonic=_monotonic(0.0, 0.05)).submit(_envelope())
+    _readable_wall(store, "dead_letter", 3)
+    with store.connect() as connection:
+        # **두 축을 동시에 어긋나게 둔다.** 앞의 둘은 `received_at` 이 같고 삽입 순서가
+        # id 순서와 반대다 — 그것이 tie-break 를 친다. 셋째는 **더 늦게 받았는데 id 가
+        # 가장 작다** — 그것이 "정렬의 첫 항이 `received_at` 인가" 를 친다. 하나만 두면
+        # `ORDER BY command_id` 로 바꾼 mutant 가 살아남는다.
+        rowids = [
+            row[0]
+            for row in connection.execute(
+                "SELECT rowid FROM governance_ingress_commands "
+                "WHERE state = 'dead_letter' ORDER BY rowid"
+            ).fetchall()
+        ]
+        assert len(rowids) == 3
+        for rowid, command_id in zip(rowids, (_TIE_HIGH, _TIE_LOW, _TIE_LATE), strict=True):
+            connection.execute(
+                "UPDATE governance_ingress_commands SET command_id = ? WHERE rowid = ?",
+                (command_id, rowid),
+            )
+        connection.execute(
+            "UPDATE governance_ingress_commands SET received_at = ? WHERE command_id = ?",
+            (_TIE_LATER_AT, _TIE_LATE),
+        )
+        connection.commit()
+
+    assert [command.command_id for command in ingress.stranded()] == [
+        _TIE_LOW,
+        _TIE_HIGH,
+        _TIE_LATE,
+    ], "받은 시각이 먼저이고, 같을 때 command_id 가 순서를 정한다"
+    assert [command.command_id for command in ingress.stranded(limit=1)] == [_TIE_LOW], (
+        "출력 상한을 채울 때 정렬이 무엇이 드는지를 정한다"
+    )

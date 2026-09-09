@@ -113,6 +113,95 @@
         "specs/009-kit-2-4-platform-0-4",
         "specs/010-kit-2-4-fleet-distribution"
       ]
+    },
+    {
+      "id": "D-057",
+      "status": "active",
+      "title": "Make stranded limit an output cap so filtered reads report truncation",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/governance/ingress.py",
+        "tests",
+        "specs/003-slack-proposal-card"
+      ]
+    },
+    {
+      "id": "D-058",
+      "status": "active",
+      "title": "Define exactly what proposal_sha256 hashes",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        ".ai-team/policy/approvals.jsonl",
+        "docs/workstreams/messenger-governance-closure-v3"
+      ]
+    },
+    {
+      "id": "D-059",
+      "status": "active",
+      "title": "Keep Hermes at the untrusted work-manager boundary",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/control_plane",
+        "Hermes AMPLAI plugin",
+        "scripts/amplai_supervisor.py",
+        "specs/011-hermes-slack-orchestration"
+      ]
+    },
+    {
+      "id": "D-060",
+      "status": "active",
+      "title": "Split conversation and human authority across two Slack Apps",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "Hermes Slack App",
+        "src/amplai_foundry/governance",
+        "specs/011-hermes-slack-orchestration"
+      ]
+    },
+    {
+      "id": "D-061",
+      "status": "active",
+      "title": "Select one controller and runner per Work and use a managed worktree",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "scripts/amplai_hosts.py",
+        "scripts/amplai_runtime.py",
+        "scripts/amplai_supervisor.py",
+        "Project Store Work schema"
+      ]
+    },
+    {
+      "id": "D-062",
+      "status": "active",
+      "title": "Activate Slack plus Hermes per project provider and feature",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "activation policy",
+        "MGC-015",
+        "MGC-016"
+      ]
+    },
+    {
+      "id": "D-063",
+      "status": "active",
+      "title": "Project authoritative Work status through the AMPLAI Slack App",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/governance/slack_projection.py",
+        "Project Store events",
+        "specs/011-hermes-slack-orchestration"
+      ]
+    },
+    {
+      "id": "D-064",
+      "status": "active",
+      "title": "Never promote Hermes conversation memory automatically",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "scope": [
+        "Hermes memory",
+        "Vault curation",
+        "specs/011-hermes-slack-orchestration"
+      ]
     }
   ]
 }

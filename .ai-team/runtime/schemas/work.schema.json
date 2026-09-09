@@ -21,6 +21,12 @@
         "null"
       ]
     },
+    "base_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "change_id": {
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
       "type": "string"
@@ -39,6 +45,13 @@
     },
     "content_hash": {
       "type": "string"
+    },
+    "controller": {
+      "enum": [
+        "design",
+        "work",
+        null
+      ]
     },
     "contract_refs": {
       "items": {
@@ -126,6 +139,18 @@
       ]
     },
     "retry_not_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "request_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "runner_profile": {
       "type": [
         "string",
         "null"

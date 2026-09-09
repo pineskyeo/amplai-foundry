@@ -1,0 +1,55 @@
+schema_version: "1.0"
+id: HSO-T008
+title: Close repository verification and three-lens review
+type: verification
+status: blocked
+goal:
+  outcome: All deterministic and operational evidence is current, documentation is fresh, and sequential contract, failure/recovery, and regression reviews have zero blocking findings.
+  user_value: Completion is decided by executable evidence rather than an agent summary.
+source:
+  feature: HSO
+  files: [{path: specs/011-hermes-slack-orchestration/spec.md, section: AC-015}]
+  requirements: [AC-015]
+  decisions: [D-059, D-060, D-061, D-062, D-063, D-064]
+scope:
+  include: [Full verifier, docs freshness, converge, three-lens review, incremental gardening, handoff]
+  exclude: [Push, merge, release, deploy]
+  allowed_paths: [specs/011-hermes-slack-orchestration/**, docs/**, changed implementation and test paths]
+  forbidden_paths: [vault/**]
+dependencies:
+  tasks: [HSO-T006, HSO-T007]
+  external: []
+implementation:
+  guidance: [Run reviewers sequentially and rerun freshness plus verifier after any semantic repair.]
+  invariants: [No P0, P1, or Blocking-P2 remains, no executed command is reported as PASS unless it ran]
+  non_goals: [Repository-wide gardening]
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: every prior task has required evidence
+      when: full gates and three lenses run
+      then: all gates pass and evidence trace reconstructs the Work
+  commands:
+    - {id: verifier-v2, kind: eval, run: ".venv/bin/python .ai-team/verifiers/run.py --profile v2", required: true}
+    - {id: docs, kind: lint, run: ".venv/bin/python scripts/loopctl.py docs validate --repo", required: true}
+  manual_checks: []
+  evidence:
+    - {type: command_output, source: verifier-v2, required: true}
+    - {type: review_report, source: three-lens, required: true}
+risk:
+  level: high
+  concerns: [false completion, stale documentation, review independence]
+  approvals: [quality_gate]
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 3
+  stop_conditions: [blocking_review_finding, missing_operational_evidence, same_failure_class_reaches_replan_threshold]
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+handoff:
+  expected_changes: [specs/011-hermes-slack-orchestration/**, docs/**]
+  notes:
+    - Deterministic verification and Round 24 review are current; final completion remains blocked by T006 and T007 operational evidence.

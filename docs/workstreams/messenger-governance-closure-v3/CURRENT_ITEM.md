@@ -44,7 +44,7 @@ message projection과 retry는 background path에서 수행한다.
 - Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:
   `PASS` for `MGC-012-T008`, `MGC-012-T009`, `MGC-012-T011` under `APR-017` / `D-032`
 - Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):
-  T001~T045 `done`, T020 `superseded`. **round 21 이 FAIL 6건을 냈다. wave 15 대기**
+  T001~T048 `done`, T020 `superseded`. **wave 15 가 round 21 의 6건을 닫았다. round 22 대기**
 - Frozen source/test evidence: round 17 aggregate
   `8c7d2220b51fd53f191ea2293976549dc33cec1b7edf9ffc4eeea59b62a23939` (52 파일).
   round 16 target 44개 중 14개가 바뀌었고 wave 10 산출물 8개가 늘었다.
@@ -59,7 +59,13 @@ message projection과 retry는 background path에서 수행한다.
   = 1515
   ```
 
-  **`round 22 는 1515 를 기준으로 센다.`** `tests/ai/` 는 kit 설치물이라 이 저장소가
+  > **정정 (wave 15, 2026-08-30).** **`1515` 는 더 이상 기준선이 아니다.** `ALR-008`·
+  > `ALR-009` 가 그 뒤에 kit 2.4.0 과 Platform 0.4.0 을 들이며 test 를 더했다. wave 15
+  > 착수 시점의 실측 기준선은 **1565** 이고 wave 15 뒤가 **1575** 이다 (`+10`, 이번에
+  > 더한 test 수와 같다). **`round 22 는 1575 를 기준으로 센다.`** 두 방법으로 셌다 —
+  > `--collect-only` 파일별 합계 1575, 실행 1575.
+
+  `tests/ai/` 는 kit 설치물이라 이 저장소가
   직접 쓰지 않는다 — 정본은 `tools/amplai-loop-kit/payload/tests/ai/` 이고 거기서 고친 뒤
   `seal.py` 와 재배포로 반영한다
 - (이전) Tests: full `1409 passed, 4 deselected` (wave 8 착수 시 1301 → +108, wave 11 이 +6,
@@ -96,8 +102,15 @@ message projection과 retry는 background path에서 수행한다.
 - **2026-08-27 round 21 완료. FAIL — 6건 (P0 0 / P1 1 / Blocking-P2 5).** round 20 의
   6건 중 셋이 닫히고 **셋이 부분**이다. round 20 은 부분이 0 이었다. 기록은
   `specs/003-slack-proposal-card/evidence/3lens-review-round-21.md`
-- Selected next item: **wave 15 — round 21 의 blocker 6건**
-- Sequence: `wave 15 → 재freeze → round 22 review → (blocker 0이면) gate → T010 → T013 → T012`
+- **2026-08-30 wave 15 완료.** `T047`(구현·test)·`T048`(거짓 칸 둘)·`T046`(정정 전수) 셋.
+  `D-057` 이 `stranded()` 의 `limit` 을 출력 상한으로 옮겼다. `F21-2` 는 그 부수 효과로
+  구조적으로 닫혔다. `D-058` 이 두 라운드 열려 있던 `proposal_sha256` 규격도 닫았다.
+  **승인 ledger 행 셋이 남았다 — `D-050`(소급)·`D-057`·`D-058`. 값까지 계산해
+  `evidence/approvals-wave-15.draft.jsonl` 에 뒀고, 넣고 commit 하는 것만 사람 몫이다.**
+  contract 의 `human_gates.public_contract` 가 그때까지 미충족이라 **이 Work 는 DONE 이
+  아니다**
+- Selected next item: **재freeze → round 22 three-lens review**
+- Sequence: `재freeze → round 22 review → (blocker 0이면) gate → T010 → T013 → T012`
 
 ## Wave 11 결과 (2026-08-26)
 
@@ -182,6 +195,14 @@ round 18 의 셋(`N18-1`·`N18-2`·`F18-R1`)이 wave 11 이 넣은 **두 구조*
 **후보 상한**으로 돌아온다. 실측: `completed` 150개 뒤의 손상 row 가 고침 전 `limit=100` 에
 안 나왔고 고침 후 나온다.
 
+> **정정 (wave 15, round 21 `C21-4`).** 위 문단의 "`limit` 이 **후보 상한**으로 돌아온다" 는
+> **틀렸다.** `D-048` 의 `Amended` 각주와 `D-049` 의 `Amends` 절이 한 글자까지 같은 이 주장을
+> 지목한다 — 종결 상태만 빼서는 못 없앴고, `SQL LIMIT` 을 쓰는 한 창 안의 읽을 수 있는 row 가
+> 손상 row 를 민다 (round 19 `F19-1`). `D-049` 가 `LIMIT` 을 python 출력 상한으로 옮겼다.
+> **wave 14 는 `T038.md:87` 한 자리에만 각주를 달고 이 자리와 `T038.yaml:38` 을 빠뜨렸다.**
+> round 20 이 `C20-1` 에 붙인 이름 그대로 "선택적 누락" 이고 `C21-4` 가 그것을 다시 잡았다.
+> 실측 자체(150개 벽)는 그대로 유효하다.
+
 ### `T039` — "전수" 라 쓰고 범위를 안 밝힌 것
 
 wave 11 이 `src/`·`tests/` 만 훑고 "전수" 라 적었다. 이번에는 **repository 전역**을
@@ -259,6 +280,10 @@ round 20 의 blocker 6건을 닫았다. 전문은
 |---|---|
 | `SQL LIMIT` (`D-048` 까지) | 창 안의 **읽을 수 있는** row (round 19 `F19-1`) |
 | python 출력 상한 (`D-049`) | **읽을 수 없는** 종결 row (round 20 `F20-1`) |
+
+**round 21 이 셋째 축을 찾았다** (`F21-1`, P1) — **반환 경로에 filter 가 있는가.**
+`stranded()` 가 `SQL LIMIT` 이던 동안 가져온 개수와 반환 개수가 달라 **잘림 판정 자체가
+거짓 음성**을 냈다. `D-057` 이 `stranded()` 의 `limit` 도 출력 상한으로 옮겨 그 축을 닫았다.
 
 **둘 다 `limit` 의 본질이다.** `D-049` 는 벽의 state 를 여섯으로 전수했지만 **가독성 축을
 세지 않았고**, 그 축을 `_dead_letter_unreadable` 이 스스로 만든다.
@@ -355,7 +380,7 @@ blocker 6건을 닫는다. `/work` 로 타고 `/taskify` 를 건너뛰지 않는
 
 ```text
 test 기준선   1409 → 1515  (래퍼 24 + kit tests/ai 82)
-              round 22 는 1515 를 기준으로 센다
+              round 22 는 1575 를 기준으로 센다 (wave 15 가 정정했다)
 새 경로       tools/amplai-loop-kit/, scripts/amplai*.py, scripts/kit_distribute.py,
               tests/ai/, .ai-team/{app.json,install/,runtime/schemas/,...}
               전부 Package 5 범위 밖이다
@@ -395,6 +420,119 @@ lens별 : specs/003-slack-proposal-card/evidence/round-21-lens-{contract,failure
 
 `A21-4`(`A20-R1`, `in` 대신 `==`), `A21-5`(`A20-C3`, assert message 문구),
 `A21-6`(`A20-C2`, `D-048` 의 `Rejected` pointer). 셋 다 wave 14 의 `allowed_paths` 안이었다.
+
+## Wave 15 결과 (2026-08-30)
+
+round 21 의 blocker 6건 중 **다섯을 닫았다.** 남은 하나(`C21-3`)는 사람이 ledger 에 넣고
+commit 해야 닫힌다. 전문은
+[`3lens-review-round-21.md`](../../../specs/003-slack-proposal-card/evidence/3lens-review-round-21.md).
+
+### `T047` — `F21-1`(P1)과 `F21-2` 를 한 자리에서 닫았다
+
+뿌리는 `stranded()` 의 **반환 개수와 SQL fetch 개수가 다른 것**이다. `_stranded_rows` 가
+`LIMIT ?` 로 읽은 뒤 `_view` 가 터진 row 를 버린다 — 그 skip 은 `D-047` 이 넣었고 이유는
+round 15 `F-2` 다. `D-050` 은 "`limit + 1` 개가 오면 잘린 것" 을 전제로 삼으며 **앞의 둘을
+안 셌다.**
+
+RED 를 먼저 재현했다 — 후보 200 / 손상 1 / `--limit 100` 에서 출력 100줄에 잘림 표시가
+없었고 **후보 99개가 숨었다.** 손상 0개면 표시가 켜졌다.
+
+`D-057` 이 `D-049` 의 이동을 `stranded()` 에도 적용했다. `SQL LIMIT` 을 버리고 **읽을 수
+있는 row 를 `limit` 개 모으면 멈춘다.** `cli.py` 의 실행 코드는 한 줄도 안 고쳤다 — 판정식의
+전제가 참이 되므로 고칠 것이 없다 (주석은 `T046` 이 정정했다). signature 와 반환 타입도 그대로다.
+
+**비용이 안 는다는 것을 실측으로 받쳤다.** 그 표에 index 가 하나도 없어 `ORDER BY` 가 이미
+전수 정렬을 강제한다. `EXPLAIN QUERY PLAN` 이 `LIMIT` 유무와 무관하게 같다.
+
+`F21-2` 는 **부수 효과로 구조적으로 닫혔다** — `limit + 1` 이 sqlite3 binding 에 도착하지
+않는다. 수정 전 `--limit 9223372036854775807` 은 exit 1 / `OverflowError`, 수정 후 exit 0
+이다. **선언 단계 상한은 넣지 않았다** — 지금까지 받던 값을 거절하는 새 계약이 되고 그것을
+정당화할 근거가 없다.
+
+### `T048` — 안 돌린 칸 둘이 둘 다 거짓이었다
+
+`R21-1`·`R21-2` 다. `T044` 는 여덟 칸에 mutation 넷을 돌렸고 **안 돌린 두 칸이 둘 다
+거짓**이었다. 이번에는 **칸 8 / mutation 8** 이고 전부 전 suite 로 판정했다. 8건 전부
+KILLED 이고 죽은 test 이름과 건수를 적었다.
+
+첫 판정이 "KILLED 8건, 실패 test 이름 0건" 으로 나왔을 때 그대로 믿지 않고 원인을 봤다 —
+ANSI color 때문에 매칭이 빗나간 것이었다. **판정만 보고 근거를 안 보면 이번 표도 wave 14 와
+같은 종류가 된다.**
+
+### `T046` — 형제 위치를 두 방법으로 세고 전부 달았다
+
+`C21-4` 는 `C20-1` 의 재생산이다. 그리고 **`D-057` 이 새로 거짓으로 만든 자리**가 다섯 더
+있었다 — `unreadable()` 의 docstring 이 적던 "그 차이는 없앨 수 없다" 계열이다.
+
+착수 시점(`origin/main`)에서 두 방법으로 셌다 — `후보 상한` 13 자리, `SQL LIMIT` 17 자리.
+합집합 15행을 분류해 **9자리를 정정하고 6자리는 안 건드렸다.** 안 건드린 것은 시점이 붙은
+과거 기록(`(D-048 까지)`)과 처음부터 옳은 문장이다.
+
+### review 셋 — 순차로 돌렸고 blocking 여섯을 냈다
+
+`contract` **CHANGES_REQUIRED**(blocking 4 / should-fix 3) → `failure` **PASS**(advisory 4)
+→ `regression` **CHANGES_REQUIRED**(blocking 2). 전부 반영했다.
+
+contract lens 가 잡은 것 중 무거운 둘은 **이번 wave 자신이 `C21-4` 를 재생산한 것**이다 —
+같은 문장의 형제 위치 둘(`T044.yaml:14`, `test_cli.py:497`)을 세다 말았다. 첫 판 정정표가
+"행 15개가 합집합을 전부 덮는다" 고 적었는데 **합집합 30 라인 중 12가 어느 행에도 안
+걸렸고 그 안에 실제 정정 대상이 둘 있었다.** 묶어서 세는 표는 전수표가 아니다. 30행
+전수표로 바꿨다.
+
+그리고 `T048` 의 "칸 8 / mutation 8" 이 **대조가 아니라 숫자 둘**이라는 것도 잡혔다.
+실제로 매핑하면 `T044` 표의 `#7`·`#8` 은 설계상 mutation 이 없고, 이번 `M27`~`M29` 는 그
+표의 칸이 아니다. **8 = 8 은 우연이었다.** 칸별 매핑표로 바꿨다.
+
+regression lens 는 표의 8건을 죽은 test 이름과 건수까지 독립 재현해 **거짓 칸이 없음을
+확인**했다. 그다음 **표 밖에서 11건을 새로 만들어 셋을 뚫었다.**
+
+```text
+N3  WHERE 의 retry_wait disjunct 제거      SURVIVED → 전 suite 1573 전부 통과
+N5  ORDER BY received_at 만                SURVIVED
+N6  ORDER BY command_id 만                 SURVIVED
+```
+
+셋 다 `D-057` 이전부터 있던 test 공백이다. 다만 `N5`·`N6` 은 **이번 변경이 무게를 키웠다** —
+`SQL LIMIT` 이 사라지면서 `ORDER BY` 가 출력 창에 무엇이 드는지를 정하는 **유일한 규칙**이
+됐다. `N3` 의 공백은 형태가 뚜렷하다: 음성 test 만 있고 **양성 짝이 없었다.**
+
+test 둘을 더해 셋 다 KILLED 로 만들었다. **첫 정렬 test 는 `N6` 을 못 죽였다** — 같은
+`received_at` 둘만 두면 `command_id` 축만 친다. 두 축이 동시에 어긋나는 입력이 필요했다.
+
+### 남은 `C21-3` — 규격을 정했고 행은 준비됐다. 넣고 commit 하는 것만 사람 몫이다
+
+`D-050` 이 `approvals.jsonl` 에 없다. 사용자가 **소급 기록**을 선택했다.
+
+그런데 쓰려는 순간 막혔다 — **`proposal_sha256` 의 해싱 대상 범위가 어디에도 없다.**
+round 19 `A19`·round 20 `A20` 이 두 라운드 연속 Advisory 로 남긴 것이고 아무도 안 닫았다.
+기존 `D-047`·`D-048`·`D-049` 셋을 네 가지 후보 범위로 역산했고 **12조합 전부 불일치**였다.
+**규격은 역산으로 복원되지 않는다.**
+
+`D-058` 이 그것을 정했다 — **`DECISIONS.md` 의 해당 `##` 절 전체, 끝 공백 정리 후 개행
+하나, UTF-8.** 재계산 명령을 Decision 본문에 넣고 그것으로 값을 뽑았다. **기존 세 행은
+재계산하지 않는다** — 사람이 commit 한 승인 기록을 덮어쓰지 않는다.
+
+넣을 행 셋은 준비돼 있다.
+
+```text
+specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl
+
+public_contract      D-050   소급 기록 (C21-3)
+public_contract      D-057   stranded() 의 limit 을 출력 상한으로
+architecture_change  D-058   proposal_sha256 의 해싱 범위
+```
+
+```bash
+cat specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl \
+    >> .ai-team/policy/approvals.jsonl
+git add .ai-team/policy/approvals.jsonl
+git commit -m "chore(policy): wave 15 의 승인 세 건을 ledger 에 넣는다"
+```
+
+**agent 가 이 행을 commit 하지 않는다.** 파일 첫 줄이 "실제 승인은 사람이 항목을 추가하고
+commit 한다. working tree 사본은 인정되지 않는다" 로 적는다. 그래서 wave 15 의 commit 은
+`approvals.jsonl` 을 건드리지 않았고, 이 셋이 들어가기 전까지 contract 의
+`human_gates.public_contract` 는 미충족이다 — **이 Work 는 아직 DONE 이 아니다.**
 
 ## Package 5 뒤 — 로드맵 위치
 

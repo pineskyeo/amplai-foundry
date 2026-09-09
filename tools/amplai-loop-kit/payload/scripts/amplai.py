@@ -132,6 +132,8 @@ def cmd_app(args):
             runner_args=args.runner_arg,
             auto_start=args.auto_start,
             timeout_seconds=args.timeout,
+            runner_profiles=json_value(args.runner_profiles_json, "runner_profiles"),
+            default_runner_profile=args.default_runner_profile,
             actor=args.actor,
         )
         identity = None
@@ -214,6 +216,10 @@ def cmd_work(args):
             priority=args.priority,
             max_attempts=args.max_attempts,
             work_type=args.work_type,
+            controller=args.controller,
+            runner_profile=args.runner_profile,
+            base_ref=args.base_ref,
+            request_ref=args.request_ref,
             actor=args.actor,
         )
     if action == "activate":
@@ -429,6 +435,11 @@ def build_parser():
         help="worker executable; defaults to claude or codex for native runners",
     )
     areg.add_argument("--runner-arg", action="append", default=[])
+    areg.add_argument(
+        "--runner-profiles-json",
+        help="JSON object keyed by claude-code/codex; preserves the singular runner fallback",
+    )
+    areg.add_argument("--default-runner-profile", choices=["claude-code", "codex"])
     areg.add_argument("--auto-start", action="store_true")
     areg.add_argument("--timeout", type=int)
     areg.add_argument("--no-identity", action="store_true")
@@ -489,6 +500,10 @@ def build_parser():
     wcreate.add_argument("--priority", type=int, default=50)
     wcreate.add_argument("--max-attempts", type=int)
     wcreate.add_argument("--work-type", default="implementation")
+    wcreate.add_argument("--controller", choices=["design", "work"])
+    wcreate.add_argument("--runner-profile", choices=["claude-code", "codex"])
+    wcreate.add_argument("--base-ref", help="immutable Git commit for an isolated Work")
+    wcreate.add_argument("--request-ref", help="durable orchestration request identity")
     add_actor(wcreate)
     wactivate = work_sub.add_parser("activate")
     wactivate.add_argument("--id", required=True)

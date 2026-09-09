@@ -1,0 +1,57 @@
+schema_version: "1.0"
+id: HSO-T006
+title: Verify native Claude Code and Codex fresh and resume runs
+type: verification
+status: blocked
+goal:
+  outcome: Real Claude Code and Codex accounts each complete a fresh and resumed Work with durable terminal evidence across the app fleet.
+  user_value: The selected implementation host is proven in the same Work protocol used from Slack.
+source:
+  feature: HSO
+  files: [{path: specs/011-hermes-slack-orchestration/spec.md, section: AC-008-and-AC-009}]
+  requirements: [AC-008, AC-009]
+  decisions: [D-055, D-061]
+scope:
+  include: [Native-account fresh and resume fixtures, terminal evidence, secret scan]
+  exclude: [Production Slack App installation, remote merge]
+  allowed_paths: [specs/011-hermes-slack-orchestration/evidence/**, tests/ai/**, docs/**]
+  forbidden_paths: [vault/**]
+dependencies:
+  tasks: [HSO-T003, HSO-T004, HSO-T005]
+  external: [Authenticated Claude Code account, authenticated Codex account, native host production-operation approval]
+implementation:
+  guidance: [Use a no-op documentation fixture and preserve Work/session IDs without storing prompts or tokens.]
+  invariants: [Each Work has one host, secret values never enter evidence]
+  non_goals: [Performance comparison between hosts]
+acceptance:
+  behaviors:
+    - id: AC-01
+      given: authenticated Claude Code and Codex CLIs
+      when: fresh and resume fixtures run
+      then: both hosts reach durable terminal state with continuation evidence
+  commands: []
+  manual_checks:
+    - id: native-host-e2e
+      observer: authorized operator
+      action: run the native-host fixture against foundry, synapse, and cortex
+      expected: fresh and resume evidence exists for both hosts without secrets
+      reason_not_automated: real account sessions cannot be created by an offline deterministic test
+      required: true
+  evidence:
+    - {type: operational_log, source: native-host-e2e, required: true}
+risk:
+  level: high
+  concerns: [external account, production operation, secret handling]
+  approvals: [production_operation]
+loop:
+  max_attempts: 3
+  replan_after_same_failure: 3
+  stop_conditions: [required_external_dependency_missing, secret_detected, same_failure_class_reaches_replan_threshold]
+completion:
+  all_acceptance_passed: false
+  required_evidence_present: false
+  completed_at: null
+  evidence_paths: []
+handoff:
+  expected_changes: [specs/011-hermes-slack-orchestration/evidence/**]
+  notes: [Blocked until native authenticated accounts are available.]

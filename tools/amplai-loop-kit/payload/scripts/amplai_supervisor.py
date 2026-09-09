@@ -48,12 +48,91 @@ class WorkerRunner(object):
         self.app_id = work["target_app"]
         self.local = store.get_local_app(self.app_id)
         self.repo_path = self.local["repo_path"]
-        self.runner = self.local["runner"]
+        self.runner = self._runner_for_work()
         self.host = get_host_adapter(self.runner)
         self.policy = store.policy.get("supervisor") or {}
+        self.workspace_path = self.repo_path
+
+    def _runner_for_work(self):
+        profile = self.work.get("runner_profile") or self.local.get("default_runner_profile")
+        profiles = self.local.get("runner_profiles") or {}
+        if profile and profile in profiles:
+            runner = profiles[profile]
+        else:
+            runner = self.local["runner"]
+        if profile and profile not in profiles and runner.get("type") != profile:
+            raise ValidationError("runner profile is not configured: %s" % profile)
+        bypass = self.store._unattended_bypass_flags(runner.get("args") or [])
+        if bypass:
+            raise ValidationError("runner has unattended permission bypass: %s" % ", ".join(bypass))
+        return runner
+
+    def _prepare_workspace(self):
+        base_ref = self.work.get("base_ref")
+        if not base_ref:
+            # Pre-orchestration Work is retained for CLI compatibility.  A
+            # request-correlated orchestration Work is never allowed through
+            # this path: its creation contract requires an immutable ref.
+            if self.work.get("request_ref"):
+                raise ValidationError("managed workspace requires immutable base_ref")
+            return self.repo_path
+        path = os.path.join(
+            self.store.home, ".amplai", "local", "workspaces", self.work["work_id"],
+            "workspace",
+        )
+        root = os.path.dirname(path)
+        marker_path = os.path.join(root, ".amplai-workspace.json")
+        expected_marker = {
+            "work_id": self.work["work_id"],
+            "base_ref": base_ref,
+            "repo_path": os.path.realpath(self.repo_path),
+        }
+        if os.path.islink(root) or os.path.islink(path):
+            raise ValidationError("managed workspace path must not be a symlink")
+        if os.path.isdir(path):
+            try:
+                with io.open(marker_path, encoding="utf-8") as handle:
+                    marker = json.load(handle)
+            except (IOError, OSError, ValueError):
+                raise ValidationError("managed workspace ownership marker is missing")
+            if marker != expected_marker:
+                raise ValidationError("managed workspace ownership mismatch")
+            try:
+                dirty = subprocess.check_output(
+                    ["git", "-C", path, "status", "--porcelain"], stderr=subprocess.STDOUT
+                ).decode("utf-8").strip()
+            except (OSError, subprocess.CalledProcessError) as exc:
+                raise ValidationError("managed workspace inspection failed: %s" % exc)
+            if dirty:
+                raise ValidationError("managed workspace is dirty")
+            command = ["git", "-C", path, "rev-parse", "HEAD"]
+        else:
+            ensure_dir(root)
+            command = ["git", "-C", self.repo_path, "worktree", "add", "--detach", path, base_ref]
+        try:
+            subprocess.check_output(command, stderr=subprocess.STDOUT)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise ValidationError("managed workspace preparation failed: %s" % exc)
+        if os.path.isdir(path):
+            actual = subprocess.check_output(
+                ["git", "-C", path, "rev-parse", "HEAD"], stderr=subprocess.STDOUT
+            ).decode("utf-8").strip()
+            if actual != base_ref:
+                raise ValidationError("managed workspace base_ref mismatch")
+        if not os.path.exists(marker_path):
+            with io.open(marker_path, "w", encoding="utf-8") as handle:
+                json.dump(expected_marker, handle, ensure_ascii=False, sort_keys=True)
+                handle.write("\n")
+            os.chmod(marker_path, 0o600)
+        os.chmod(path, 0o700)
+        return path
 
     def _prompt(self):
-        entry_point = self.host.public_work_entry
+        entry_point = (
+            self.host.public_design_entry
+            if self.work.get("controller") == "design"
+            else self.host.public_work_entry
+        )
         return "\n".join([
             "AMPLAI durable Work assignment",
             "",
@@ -79,7 +158,7 @@ class WorkerRunner(object):
             "change_id": self.work["change_id"],
             "app_id": self.app_id,
             "project_home": self.store.home,
-            "repo_path": self.repo_path,
+            "repo_path": self.workspace_path,
         }
         try:
             return self.host.build_command(self._prompt(), session_id, mapping)
@@ -101,6 +180,13 @@ class WorkerRunner(object):
 
     def run(self):
         work_id = self.work["work_id"]
+        try:
+            self.workspace_path = self._prepare_workspace()
+        except ValidationError as exc:
+            self.store.fail_work(
+                work_id, self.token, str(exc), retryable=False, actor=self.worker_id,
+            )
+            return {"work_id": work_id, "returncode": None, "error": str(exc)}
         self.store.start_work(work_id, self.token, actor=self.worker_id)
         run_dir = self._run_dir()
         stdout_path = os.path.join(run_dir, "stdout.log")
@@ -111,7 +197,7 @@ class WorkerRunner(object):
         with io.open(command_path, "w", encoding="utf-8") as handle:
             json.dump({
                 "command": logged_command,
-                "cwd": self.repo_path,
+                "cwd": self.workspace_path,
                 "work_id": work_id,
                 "started_at": utc_now(),
             }, handle, ensure_ascii=False, indent=2)
@@ -137,7 +223,7 @@ class WorkerRunner(object):
             try:
                 process = subprocess.Popen(
                     command,
-                    cwd=self.repo_path,
+                    cwd=self.workspace_path,
                     env=env,
                     stdout=stdout_handle,
                     stderr=stderr_handle,
@@ -235,10 +321,15 @@ class Supervisor(object):
             capacity = int(app.get("max_concurrency", 1)) - active_by_app.get(app_id, 0)
             if capacity <= 0:
                 continue
-            ready = [
-                work for work in self.store.list_work(target_app=app_id, statuses=["READY"])
-                if self.store.retry_ready(work)
-            ]
+            ready = []
+            for work in self.store.list_work(target_app=app_id, statuses=["READY"]):
+                if not self.store.retry_ready(work):
+                    continue
+                try:
+                    WorkerRunner(self.store, work, None, "launch-check")
+                except ValidationError:
+                    continue
+                ready.append(work)
             result.extend(ready[:capacity])
         result.sort(key=lambda item: (-int(item.get("priority", 0)), item.get("created_at", "")))
         return result
@@ -265,6 +356,9 @@ class Supervisor(object):
 
     def _claim(self, work):
         worker_id = "%s:%s" % (self.worker_prefix, work["target_app"])
+        # Revalidate at the mutation boundary: a resealed local binding can
+        # change after launchable() scanned it, but must never be claimed.
+        WorkerRunner(self.store, work, None, worker_id)
         claimed, token = self.store.claim_work(
             work["work_id"], worker_id, actor="local-supervisor",
         )

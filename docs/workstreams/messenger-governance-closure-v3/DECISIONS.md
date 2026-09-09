@@ -1680,6 +1680,13 @@
   Not Checked 에 남겼다. 여섯 종은 **이 Decision 이 승인된 뒤** wave 13 이 만든 증거다 —
   승인 근거로 소급 기재된 것이다. 같은 Decision 의 `Reason` 절은 처음부터 정확히 넷을 댄다.
   **승인 판단 자체는 바뀌지 않는다** — 다섯이든 여섯이든 결론이 같다.
+- Amended (2026-08-30, round 21 `F21-1`, `D-057`): `Consequence` 절의 "`limit` 의 의미가
+  `stranded()` 와 다르다는 사실은 남는다 — 저쪽은 후보 상한, 이쪽은 출력 상한이다" 는
+  **더는 참이 아니다.** `D-057` 이 같은 이동을 `stranded()` 에도 적용해 **두 조회의
+  `limit` 이 둘 다 출력 상한**이 됐다. 이 Decision 이 `unreadable()` 에 대해 한 판단은
+  그대로 유효하고, 바뀐 것은 "그 차이가 남는다" 는 예측뿐이다. 그 차이를 남긴 대가가
+  round 21 `F21-1`(P1)이다 — 반환 개수와 SQL fetch 개수가 달라 호출자가 잘림을 판정할
+  수 없었다.
 
 ## D-050 — Say When The List Is Cut, Because No `limit` Rule Can Be Complete
 
@@ -1733,6 +1740,15 @@
 - Affected item: `MGC-012-P5` wave 14. `src/amplai_foundry/cli.py`.
 - Source: 사용자 선택 2026-08-26. 근거는 round 20 `F20-1`·`F20-2` 의 임계값 실측과
   `A19-F2`·`A20-F2` 의 두 라운드 연속 지적.
+- Amended (2026-08-30, round 21 `F21-1`, `D-057`): `Decision` 절의 "`limit + 1` 을 요청해
+  `limit + 1` 개가 오면 잘린 것" 은 **`unreadable()` 에서만 참이었다.** `stranded()` 에서는
+  거짓이었다 — `_view` 가 터진 row 를 건너뛰므로(`D-047`, round 15 `F-2`) **SQL 이 가져온
+  개수와 반환 개수가 다르다.** 창 안에 손상 row 가 하나만 있어도 반환이 `limit` 개 이하로
+  떨어져 판정이 꺼졌다. 실측 — 후보 200 / 손상 1 / `--limit 100` 에서 출력 100줄에 잘림
+  표시가 없었고 후보 99개가 숨었다. **이 Decision 이 없애려던 침묵 그 자체다.** 원인은
+  세 결정이 겹치는 자리에서 앞의 둘(`D-047` 의 skip, round 15 `F-2`)을 안 센 것이고,
+  `D-057` 이 `stranded()` 의 `limit` 을 출력 상한으로 옮겨 그 전제를 참으로 만들었다.
+  **CLI 의 판정식과 출력 형식은 바뀌지 않았다** — 전제만 참이 됐다.
 
 ## D-051 — Install AMPLAI Loop Kit 2.1.0 As A Removable Layer, Not A Replacement
 
@@ -2253,3 +2269,249 @@
 - Scope: Platform 0.4.0 도입과 그 결함 수정, kit 2.4.0 적용 시 lint 경계 복구다.
   token 만료 정책, `"*"` permission 모델, connector HMAC 검증 helper, 실제 host E2E,
   cortex·synapse 로의 2.4.0 배포는 포함하지 않는다.
+
+## D-057 — Make `stranded()`'s `limit` An Output Cap Too, Because A Filtered Read Cannot Report Its Own Cut
+
+- Status: APPROVED (**안 A**)
+- Decision: `stranded()` 의 `limit` 을 `SQL LIMIT` 에서 **python 출력 상한**으로 옮긴다.
+  `_stranded_rows` 가 `LIMIT` 없이 후보를 정렬 순서로 훑고 **읽을 수 있는 row 를 `limit`
+  개 모으면 멈춘다.** 건너뛴 손상 row 는 창을 소비하지 않는다. `unreadable()` 이 `D-049`
+  로 이미 쓰는 규칙과 같아지고, **signature 와 반환 타입은 바뀌지 않는다.**
+- Reason: **반환 개수와 SQL fetch 개수가 달랐다.** `_stranded_rows` 는 `LIMIT ?` 로
+  `limit` 개를 읽은 뒤 `_view` 가 터진 row 를 조용히 버린다 — 그 skip 은 `D-047` 이 넣었고,
+  그것이 존재하는 이유는 round 15 `F-2`(손상 row 하나가 목록 전체를 없앴다)다. `D-050` 은
+  "`limit + 1` 개가 오면 잘린 것" 을 전제로 삼았는데 **앞의 둘을 안 셌다.**
+
+  실측(수정 전 / 수정 후) — 후보 200 / `--limit 100`:
+
+  | 손상 row | 수정 전 | 수정 후 |
+  |---|---|---|
+  | 0개 | 출력 100줄 + 잘림 표시 | 출력 100줄 + 잘림 표시 |
+  | 1개 | 출력 100줄 + `UNREADABLE` 1, **잘림 표시 없음** | 출력 100줄 + `UNREADABLE` 1 + 잘림 표시 |
+
+  round 19·20 이 `limit` 의 벽을 두 축(state·가독성)으로 실측했다. **이 축은 세 번째다 —
+  반환 경로에 filter 가 있는가.**
+
+  **SQL scan 비용은 늘지 않는다.** `governance_ingress_commands` 에는 index 가 하나도 없어
+  `ORDER BY received_at, command_id` 가 이미 전수 정렬을 강제한다. `EXPLAIN QUERY PLAN` 이
+  `LIMIT` 유무와 무관하게 `SCAN governance_ingress_commands` + `USE TEMP B-TREE FOR ORDER
+  BY` 로 같다. 늘어나는 것은 `_view` 호출뿐이고 그것도 `limit` 개를 채우면 멈춘다.
+  **같은 CLI 명령이 이미 `unreadable()` 로 더 넓은 스캔을 한 번 한다** (`D-049` 가 그 대가를
+  명시적으로 받아들였다). 이 변경이 더하는 비용은 그보다 작다.
+
+  부수 효과로 `F21-2` 가 구조적으로 닫혔다 — `limit + 1` 이 sqlite3 binding 에 도착하지
+  않으므로 `--limit 9223372036854775807` 의 `OverflowError` 가 사라진다. 실측으로 확인했다
+  (수정 전 exit 1 / `OverflowError`, 수정 후 exit 0).
+- Rejected: **`stranded()` 의 반환 타입에 fetch 개수를 싣기.** `(rows, fetched)` 나
+  `StrandedPage` 로 바꾸면 `SQL LIMIT` 을 유지한 채 정확한 판정을 얻는다. 그러나
+  **`stranded()` 의 signature 와 반환 타입**을 깨고 `D-050` 이 같은 이유로 이미 거절한
+  안이다. test 호출 15곳 이상이 함께 바뀐다.
+
+  **여기서 지킨 불변을 정확히 적는다 — signature 와 반환 타입이다.** `D-047`·`D-048`·
+  `D-049` 는 그것을 "signature 와 계약" 으로 넓게 적었는데, 이 Decision 은 그 넓은 뜻의
+  계약(`limit` 의 의미)을 **스스로 바꾼다.** 넓은 문구를 그대로 인용하면 자기가 깨는
+  불변으로 다른 안을 거절하는 것이 된다. 바꾸는 것은 `limit` 의 의미 하나이고, 호출
+  형태와 반환 형태는 그대로 둔다.
+- Rejected: **fetch 개수를 함께 내는 새 조회를 additive 로 더하기.** 불변을 안 깨고
+  호출자도 안 바뀐다. 그러나 **같은 것을 내는 조회가 둘**이 되고 "어느 쪽을 써야 하는가" 가
+  다음 라운드의 지적거리가 된다. 뜻이 다른 `limit` 둘을 남기는 것이 애초의 원인이었다.
+- Rejected: **`governance_ingress_commands` 에 index 를 더해 `ORDER BY` 를 싸게 만들기.**
+  이 Decision 이 푸는 문제와 무관하고 측정 근거가 없다. 성능 Work 로 따로 다룬다.
+- Scope: `src/amplai_foundry/governance/ingress.py` 의 `_stranded_rows` 와 `stranded()`
+  docstring. `cli.py` 는 판정식이 그대로다 — 전제가 참이 되므로 고칠 것이 없다.
+- Consequence: **`stranded()` 의 `limit` 계약이 바뀐다** — "SQL 이 읽을 row 수" 에서
+  "반환할 row 수" 로. 손상 row 가 있는 store 에서 **같은 `limit` 이 이전보다 많은 row 를
+  낸다.** 그것이 의도다. 비용은 `_view` 호출이 손상 개수만큼 느는 것뿐이다.
+
+  `unreadable()` 의 docstring 이 적던 "`stranded()` 의 `limit` 과 뜻이 다르고 그 차이는
+  없앨 수 없다" 가 거짓이 된다. 그 자리와 형제 위치들에 정정을 단다.
+- Owner: Workstream governor.
+- Date: 2026-08-30
+- Affected item: `MGC-012-P5` wave 15. `src/amplai_foundry/governance/ingress.py`.
+- Source: 사용자 선택 2026-08-30. 근거는 round 21 `F21-1`(P1)의 실측과 wave 15 가 재현한
+  RED(후보 200 / 손상 1 / `--limit 100`), 그리고 `EXPLAIN QUERY PLAN` 대조다.
+
+## D-058 — Say What `proposal_sha256` Hashes, Because An Unspecified Digest Verifies Nothing
+
+- Status: APPROVED
+- Decision: `.ai-team/policy/approvals.jsonl` 의 `proposal_sha256` 은 **승인 대상 Decision 의
+  `DECISIONS.md` 절 전체**를 해싱한다. 범위는 이렇게 못박는다.
+
+  ```text
+  시작   `## D-0NN — …` 제목 줄 (포함)
+  끝     다음 `## D-` 제목 줄 직전 (제외)
+  정규화 끝의 공백을 지우고 개행 하나를 붙인다
+  인코딩 UTF-8
+  ```
+
+  ```bash
+  # 재계산 방법 — 이 명령이 ledger 의 값을 그대로 낸다
+  .venv/bin/python - <<'EOF'
+  import hashlib, pathlib
+  p = pathlib.Path("docs/workstreams/messenger-governance-closure-v3/DECISIONS.md")
+  lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
+  starts = [(i, l.split()[1]) for i, l in enumerate(lines) if l.startswith("## D-0")]
+  for idx, (i, dec) in enumerate(starts):
+      end = starts[idx + 1][0] if idx + 1 < len(starts) else len(lines)
+      body = "".join(lines[i:end]).rstrip() + "\n"
+      print(dec, hashlib.sha256(body.encode("utf-8")).hexdigest())
+  EOF
+  ```
+
+  **이 규격은 `D-058` 이후에 추가되는 행에만 적용한다.** 이미 있는
+  `D-047`·`D-048`·`D-049` 세 행의 값은 **재계산하지 않고 그대로 둔다.**
+- Reason: **규격이 없는 digest 는 아무것도 검증하지 않는다.** round 19 `A19`, round 20 `A20`
+  이 두 라운드 연속 "해싱 대상 범위가 명시돼 있지 않다" 를 Advisory 로 남겼고 아무도 닫지
+  않았다. wave 15 가 `C21-3` 을 닫으려고 새 행을 쓰려는 순간 그 공백이 **막는 것**이 됐다 —
+  무엇을 해싱해야 하는지 모르면 값을 꾸며 넣거나 비워 두는 수밖에 없다.
+
+  기존 셋을 네 가지 후보 범위(절 전체 as-is / rstrip / rstrip+개행 / 제목 제외 본문)로
+  역산했고 **12조합 전부 불일치**였다. 규격을 역산으로 복원할 수 없다는 것이 실측 결과다.
+  `D-049` 는 round 20 `C20-2` 가 `Source` 를 정정했으므로 승인 시점 텍스트가 이미 바뀌었고,
+  나머지 둘도 같은 종류의 이유일 수 있다 **(추정)** — 확인할 방법이 없다.
+
+  절을 고르는 이유는 그것이 **승인 대상 그 자체**이기 때문이다. `Decision`·`Reason`·
+  `Rejected`·`Scope`·`Consequence` 가 한 절에 있고 사람이 승인할 때 읽는 단위가 그것이다.
+  파일 전체를 해싱하면 무관한 Decision 이 하나 늘 때마다 모든 행이 깨진다.
+- Rejected: **기존 세 행을 새 규격으로 재계산해 통일하기.** ledger 가 한 규격으로 통일되지만
+  **사람이 commit 한 승인 기록을 덮어쓴다.** 그 셋은 승인 시점의 문서를 가리키고 그 시점
+  문서는 이미 여러 번 정정됐다. 덮어쓰면 "그때 무엇을 승인했나" 를 영영 못 묻는다.
+  파일 첫 줄이 "working tree 사본은 인정되지 않는다" 로 지키려는 것이 정확히 그 성질이다.
+- Rejected: **`proposal_sha256` 을 빈 문자열로 두기.** 규격을 안 정하고 넘기는 것이라
+  advisory 가 세 라운드째 열린 채로 남고, 승인 대상 문서가 나중에 바뀌어도 감지할 수단이
+  없다.
+- Rejected: **별도 파일에 규격을 적기.** `.ai-team/policy/` 에 새 문서를 만드는 것인데,
+  이 workstream 의 결정은 `DECISIONS.md` 가 갖는다는 규약(`AGENTS.md` — canonical 지식은
+  `vault/`, Decision 기록은 `docs/workstreams/*/DECISIONS.md`)과 어긋난다.
+- Scope: `proposal_sha256` 의 계산 범위 정의뿐이다. `approvals.jsonl` 의 다른 필드,
+  승인 절차, gate 종류는 안 바꾼다. 기존 세 행의 값도 안 바꾼다.
+- Consequence: `D-058` 이후의 승인 행은 재계산으로 검증할 수 있다. 승인 대상 절이 나중에
+  정정되면 hash 가 어긋나고, **그것이 신호다** — 승인 시점 이후에 문서가 바뀌었다는 뜻이다.
+  `Amended`·`Correction` 각주를 다는 이 workstream 의 관행이 그 어긋남을 정기적으로 만든다.
+  **어긋남을 없애려고 값을 다시 계산하지 않는다** — 각주를 달 때 무엇이 바뀌었는지는
+  각주 자신이 적는다.
+- Owner: Workstream governor.
+- Date: 2026-08-31
+- Affected item: `MGC-012-P5` wave 15. `.ai-team/policy/approvals.jsonl`.
+- Source: round 19 `A19`·round 20 `A20` 의 두 라운드 연속 Advisory 와, wave 15 가 `C21-3` 을
+  닫으려다 실측한 역산 실패(4 범위 × Decision 3건 = 12조합 전부 불일치)다.
+
+## D-059 — Keep Hermes At The Untrusted Work-Manager Boundary
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes는 교체 가능한 Client Partner/Work Manager다. Hermes의 AMPLAI plugin은
+  `orchestration.request.submit`, `orchestration.request.read`, `orchestration.work.read`만
+  가진다. DRAFT 요청 제출과 상태 조회는 할 수 있지만 Work activation, human decision, shell,
+  Git, runner spawn, publish/deploy와 canonical knowledge write는 할 수 없다. Claude Code와
+  Codex 실행은 Project Store lease를 소유한 Local Supervisor만 시작한다.
+- Reason: `ARC-0003`, `ARC-0007`, `CON-0010`의 후보 경계와 `MGC-014`의 least-privilege 조건을
+  executable architecture로 확정해야 한다. Hermes가 runner를 직접 실행하면 Project Store의
+  authority, retry, evidence와 audit를 우회한다.
+- Rejected: Hermes에 shell과 Claude/Codex launch tool을 주고 결과만 AMPLAI에 보고한다. 실행
+  이전의 activation, 중복 방지와 crash recovery를 사후 로그로 바꿔 버린다.
+- Scope: Hermes service credential, plugin tool surface, request API와 Supervisor dispatch 경계다.
+- Consequence: Hermes가 없어도 기존 CLI와 Supervisor Work는 계속 동작한다. Hermes plugin을
+  끄는 것이 integration rollback이다.
+- Source: `specs/011-hermes-slack-orchestration/spec.md`, `research.md`, `MGC-014`.
+
+## D-060 — Split Conversation And Human Authority Across Two Slack Apps
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes Slack App은 Socket Mode 대화와 요청 접수를, AMPLAI Slack App은 signed HTTPS
+  interaction, Activation Card, Proposal Card와 authoritative status projection을 맡는다. 두 App은
+  token, signing secret와 event subscription을 공유하지 않는다. Hermes가 전달한 Slack user ID는
+  routing/audit hint일 뿐 authority가 아니다.
+- Reason: Hermes gateway는 Slack context를 알고 있지만 plugin tool handler에 immutable authenticated
+  provenance를 전달하는 안정된 계약이 현재 없다. AMPLAI의 기존 raw-body signature verification,
+  Actor binding과 one-time ActionToken 경계를 보존해야 한다.
+- Rejected: 한 Slack App credential과 event stream을 Hermes와 AMPLAI가 공유한다. ack owner,
+  credential owner와 human-authority source가 모호해져 confused-deputy 경계를 만든다.
+- Scope: Slack topology와 human activation ingress다.
+- Consequence: 사용자는 같은 workspace/channel에서 bot 둘을 보지만, conversational message와
+  승인 가능한 AMPLAI Card를 표시 이름과 purpose로 구분한다.
+- Source: `specs/011-hermes-slack-orchestration/research.md`; Hermes issue `#69882`.
+
+## D-061 — Select One Controller And Runner Per Work, Then Execute In A Managed Worktree
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Project Store Work에 additive `controller=design|work`,
+  `runner_profile=claude-code|codex`, immutable `base_ref`, `request_ref`를 둔다. Local app binding은
+  복수 runner profile과 default를 갖는다. Supervisor는 Work마다 runner 하나만 선택하고 고정
+  `base_ref`의 host-local managed worktree에서 해당 public entry point를 실행한다. retry/resume는
+  같은 attempt workspace를 재사용하고 runner 변경은 새 attempt와 명시적 Decision을 요구한다.
+- Reason: `D-055`는 host-neutral Work protocol과 두 native adapter를 승인했지만 현재 binding과
+  Supervisor는 app당 runner 하나, work controller 하나, configured checkout 직접 실행에 머문다.
+  Slack autonomous execution에는 Work-level 선택과 사용자 checkout 격리가 필요하다.
+- Rejected: 한 Work를 Claude Code와 Codex가 동시에 수정한다. branch ownership, continuation과
+  failure attribution이 불명확하다.
+- Rejected: 사용자 main checkout에서 autonomous worker를 실행한다. 사용자 변경과 worker retry가
+  같은 filesystem state를 공유한다.
+- Scope: Project Store Work schema, local binding, host adapter와 Supervisor workspace lifecycle다.
+- Consequence: 기존 Work와 singular runner binding은 read-compatible default로 유지한다. 자동
+  commit, merge, push, release와 deploy는 이 Decision 밖이다.
+- Source: `D-055`; `scripts/amplai_hosts.py`, `scripts/amplai_runtime.py`,
+  `scripts/amplai_supervisor.py`; `specs/011-hermes-slack-orchestration/plan.md`.
+
+## D-062 — Activate Slack Plus Hermes Per Project, Provider And Feature
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes integration activation은 `project + provider=slack + feature` evidence로 연다.
+  global enable을 만들지 않고 `auto_start=false`를 기본으로 둔다. Slack+Hermes provider path는
+  Telegram `MGC-013` 완료와 독립적으로 gate할 수 있다. 전체 Messenger workstream closure에는
+  Telegram이 계속 남는다.
+- Reason: `MGC-015`의 provider-scoped activation 원칙을 지키면서 서로 다른 provider의 준비
+  상태가 안전한 Slack 경로를 불필요하게 막지 않게 해야 한다.
+- Rejected: 모든 messenger adapter가 끝난 뒤 하나의 global switch를 켠다. provider별 evidence와
+  rollback을 잃는다.
+- Scope: activation policy와 rollout 순서다. Telegram 구현 범위는 바꾸지 않는다.
+- Consequence: sandbox Slack E2E 뒤에도 production activation은 별도 `production_operation`
+  human gate를 요구한다.
+- Source: `MGC-015`, `MGC-016`, `specs/011-hermes-slack-orchestration/spec.md`.
+
+## D-063 — Project Authoritative Work Status Through The AMPLAI Slack App
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: `DRAFT`, `READY`, `RUNNING`, `HUMAN_REQUIRED`, `FAILED`, `DONE`과 evidence summary는
+  Project Store event를 읽는 AMPLAI Slack projection이 authoritative하게 보낸다. Hermes는 같은
+  API를 조회해 대화형으로 설명할 수 있지만 Hermes의 자연어 응답은 상태 전이나 완료 evidence가
+  아니다.
+- Reason: agent text와 durable state를 분리해야 notification failure, retry와 LLM 요약 오류가
+  Work 결과를 바꾸지 않는다. 기존 Slack projection의 idempotent outbox/readback을 재사용할 수
+  있다.
+- Rejected: Hermes가 worker stdout을 요약해 최종 상태를 선언한다. Project Store와 메시지가
+  갈라졌을 때 어느 쪽이 진실인지 결정할 수 없다.
+- Scope: progress/result notification과 status query 의미다.
+- Consequence: notification delivery가 실패해도 terminal Work state는 되돌리지 않고 outbox가
+  재시도한다.
+- Source: `D-056`; `src/amplai_foundry/governance/slack_projection.py`;
+  `specs/011-hermes-slack-orchestration/spec.md`.
+
+## D-064 — Never Promote Hermes Conversation Memory Automatically
+
+- Status: APPROVED
+- Date: 2026-09-02
+- Work: `HERMES-SLACK-ORCHESTRATION`
+- Decision: Hermes memory는 말투, 알림 선호와 현재 conversation context만 가진다. architecture,
+  policy, Decision과 완료 evidence는 Project Store 또는 governed Vault가 소유한다. 사용자가
+  명시적으로 기록을 요청할 때만 knowledge intake request를 만들고, 기존 curation contract에
+  따라 Source와 Proposal에서 멈춘다. canonical Vault 자동 apply는 금지한다.
+- Reason: `QUE-0011`의 promotion boundary를 Knowledge Safety와 Agent Curation Contract에 맞춰
+  닫아야 한다. 대화 memory를 공식 지식으로 취급하면 provenance, 중복 검색, conflict review와
+  human approval을 우회한다.
+- Rejected: Hermes summary나 장기 memory를 주기적으로 Vault에 동기화한다. 요약 손실과 잘못된
+  자동 승격을 피할 수 없다.
+- Scope: Hermes memory와 AMPLAI knowledge intake의 경계다.
+- Consequence: knowledge capture는 한 단계 더 필요하지만 기존 Proposal validation, diff와 conflict
+  정책을 그대로 보존한다.
+- Source: `AGENTS.md#Agent-Curation-Contract`, `QUE-0011`,
+  `specs/011-hermes-slack-orchestration/spec.md`.

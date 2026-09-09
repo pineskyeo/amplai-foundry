@@ -616,6 +616,11 @@ class IngressService:
         **읽을 수 없는 row 는 건너뛴다.** 예전에는 그런 row 하나가 `ValueError` 로 목록
         전체를 없앴다 (round 15 `F-2`) — operator 회수 도구가 존재하는 이유가 무너진다.
         건너뛴 것은 `unreadable()` 가 낸다. 조용히 빠뜨리지 않는다.
+
+        **`limit` 은 출력 상한이다** (`D-057`, round 21 `F21-1`). 건너뛴 row 는 창을
+        소비하지 않으므로 **반환 개수가 곧 발견 개수다** — 호출자가 그 수로 잘림을
+        판정할 수 있다. `unreadable()` 의 `limit` 과 뜻이 같다. 그 이동의 근거와 비용은
+        `_stranded_rows` 의 docstring 이 담는다.
         """
 
         return self._stranded_rows(limit=limit)
@@ -644,7 +649,13 @@ class IngressService:
         `governance_ingress_commands` 를 지우는 코드가 없어 `completed` 는 무한히 쌓인다.
 
         **`limit` 은 출력 상한이지 후보 상한이 아니다** (`D-049`, round 19 `F19-1`).
-        `stranded()` 의 `limit` 과 **뜻이 다르고, 그 차이는 없앨 수 없다.**
+
+        **정정 (`D-057`, round 21 `F21-1`).** 이 문단은 처음에 "`stranded()` 의 `limit` 과
+        뜻이 다르고, 그 차이는 없앨 수 없다" 로 끝났다. **그 차이는 없앨 수 있었고
+        없앴다.** `D-049` 가 여기서 한 이동을 `D-057` 이 `stranded()` 에도 적용했다 —
+        `stranded()` 의 `limit` 도 이제 출력 상한이고 **두 조회의 뜻이 같다.** 남길 이유가
+        없어진 차이였다: 그 차이 때문에 반환 개수로 잘림을 판정할 수 없었고 그것이
+        `F21-1`(P1)이 됐다.
 
         `D-048` 은 종결 상태만 빼면 두 조회가 같은 규칙이 된다고 봤다. 틀렸다 — 두 후보
         집합이 실제로 다르고, `SQL LIMIT` 을 쓰는 한 **어떤 state 집합을 골라도** 그 안의
@@ -687,28 +698,49 @@ class IngressService:
         return tuple(unreadable)
 
     def _stranded_rows(self, *, limit: int) -> tuple[IngressCommandView, ...]:
+        """`limit` 은 **출력 상한**이다 — 읽을 수 있는 row 를 그만큼 모으면 멈춘다.
+
+        예전에는 `SQL LIMIT` 이었다. 그러면 **SQL 이 가져온 개수와 반환 개수가 다르다** —
+        `_view` 가 터진 row 를 건너뛰기 때문이다 (`D-047`, round 15 `F-2`). 호출자가
+        반환 개수로 잘림을 판정하면 창 안에 손상 row 가 하나만 있어도 거짓 음성이 난다
+        (round 21 `F21-1`, P1). 실측 — 후보 200 / 손상 1 / `--limit 100` 에서 출력이
+        100줄로 떨어져 잘림 표시가 꺼졌고 후보 99개가 숨었다.
+
+        `D-049` 가 `unreadable()` 에 대해 같은 이유로 이미 한 이동이다. `D-057` 이 그것을
+        `stranded()` 에도 적용해 **두 조회의 `limit` 뜻을 하나로 맞춘다.** signature 와
+        반환 타입은 그대로다 — `D-047`·`D-048`·`D-049` 가 공통으로 건 불변이다.
+
+        **SQL scan 비용은 늘지 않는다.** `governance_ingress_commands` 에 index 가 없어
+        `ORDER BY` 가 이미 전수 정렬을 강제한다. `EXPLAIN QUERY PLAN` 이 `LIMIT` 유무와
+        무관하게 `SCAN` + `USE TEMP B-TREE FOR ORDER BY` 로 같다. 늘어나는 것은 `_view`
+        호출뿐이고 그것도 `limit` 개를 채우면 멈춘다.
+        """
+
         if limit < 1:
             raise ValueError("limit은 1 이상이어야 합니다.")
         now = self._timestamp(self._aware(self._clock()))
+        readable: list[IngressCommandView] = []
         with self.store.connect() as connection:
-            rows = connection.execute(
+            cursor = connection.execute(
                 f"SELECT {_COMMAND_COLUMNS} "
                 "FROM governance_ingress_commands "
                 "WHERE state IN ('dead_letter', 'recovery_hold') "
                 "   OR (state = 'retry_wait' AND attempts >= ?) "
                 "   OR (state = 'leased' AND attempts >= ? AND lease_expires_at <= ?) "
-                "ORDER BY received_at, command_id LIMIT ?",
-                (self.config.max_attempts, self.config.max_attempts, now, limit),
-            ).fetchall()
-        readable: list[IngressCommandView] = []
-        for row in rows:
-            typed = cast("tuple[object, ...]", row)
-            try:
-                readable.append(self._view(typed))
-            except _UNREADABLE_ROW:
-                # 건너뛴 것은 `unreadable()` 이 낸다. 그쪽은 전체를 보므로 여기서 세어
-                # 넘길 필요가 없다 (`D-047`).
-                continue
+                "ORDER BY received_at, command_id",
+                (self.config.max_attempts, self.config.max_attempts, now),
+            )
+            for row in cursor:
+                typed = cast("tuple[object, ...]", row)
+                try:
+                    readable.append(self._view(typed))
+                except _UNREADABLE_ROW:
+                    # 건너뛴 것은 `unreadable()` 이 낸다. 그쪽은 전체를 보므로 여기서 세어
+                    # 넘길 필요가 없다 (`D-047`).
+                    continue
+                # **손상 row 는 창을 소비하지 않는다.** 세는 것은 반환할 row 뿐이다.
+                if len(readable) >= limit:
+                    break
         return tuple(readable)
 
     def _finalize(

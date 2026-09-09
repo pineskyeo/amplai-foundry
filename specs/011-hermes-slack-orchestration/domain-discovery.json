@@ -1,0 +1,2090 @@
+{
+  "blocking_questions": [],
+  "contradictions": [],
+  "evidence_candidates": [
+    {
+      "locators": [
+        "line:231:adapters/           sqlite, filesystem, git, slack"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/reviews/2026-08-29-platform-kit-audit.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:29:전문      specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+        "line:96:`/work specs/003-slack-proposal-card` 로 wave 15 를 시작한다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-08-28.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:72:RUF036       src/.../slack_projection.py:813 타입 union 순서.  PR #2 를 여섯 번 막던 원인"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:24:cat specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl \\",
+        "line:148:2. 재freeze           Package 5 의 target 은 specs/003-slack-proposal-card/ 와 그것이",
+        "line:177:wave 15 근거    specs/003-slack-proposal-card/evidence/MGC-012-P5-T04{6,7,8}.md",
+        "line:179:review 원문     specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+        "line:181:승인 draft      specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:321:`tests/test_slack_http.py` 는 죽지 않는다. **2026-08-19 재확인에서 전 suite 가 통과했다.**",
+        "line:333:$ python3 -m pytest tests/test_slack_http.py     # system 3.9",
+        "line:336:$ .venv/bin/python -m pytest tests/test_slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:126:이식 세션은 `tests/test_slack_http.py` 실패를 \"sandbox network 정책이 바뀐 것 **(추정)**\" 으로",
+        "line:130:$ python3 -m pytest tests/test_slack_http.py     # system 3.9"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:52:Package 3 는 **production code 를 `slack_projection.py` 하나만 추가했고**, 기존 파일은"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:18:- `src/amplai_foundry/governance/slack_projection.py` (신규)",
+        "line:19:- `tests/test_slack_projection.py` (신규)",
+        "line:21:`forbidden_paths`(`events.py`, `projections.py`, `slack.py`, `pyproject.toml`)는 건드리지",
+        "line:108:| `python -m pytest tests/test_slack_projection.py` | 72 passed |",
+        "line:112:| `python -m mypy tests/test_slack_projection.py` | 통과 |",
+        "line:136:- `persisted_code_suffix` 이름과 허용 문자 집합이 `contracts/slack-transport.md` 에 없다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:- `build_slack_marker` 를 `try` 밖으로 뺐다. 안에 있으면 우리 결함이 `transport_...` 로 기록돼 transport 구현자 탓이 된다 (failure #5)",
+        "line:22:- `_raise_for_failure` 가 terminal 판정을 `raise_for_slack_failure` 에 위임한다. 두 벌이던 분류 규칙이 하나가 됐고 T001 test 가 도는 쪽이 죽은 copy 가 아니게 됐다 (regression A2)"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:47:- M21·M22 (`read_slack_marker` 의 개별 str guard) 가 mutation 에서 살아남는다. 잘못된 type 의"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:24:dependency 검사를 위해 `slack_projection.py` 를 **runtime 에 disk 에서 읽어** `ast.parse`",
+        "line:45:없었다. HEAD 전수 grep 결과 그 문자열은 `events.py:2852`, `contracts/slack-transport.md`,",
+        "line:101:(`contracts/slack-transport.md` C-2, D-023 마지막 문단) 는 처음부터 두 조건을 정확히 쓰고",
+        "line:162:| `python -m pytest tests/test_slack_projection.py` | 188 passed |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:52:`slack_projection.py` 를 mutate 해 기존 test 가 여전히 죽는 것을 8종으로 확인했다.",
+        "line:67:- **`classify_slack_failure` 의 \"규칙 순서가 우선순위\" 서술은 동작으로 관측되지 않는다.**"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:36:`classify_slack_failure` 의 설계 전제를 정면으로 깼다. 그 함수 주석이 \"code 없는 HTTP",
+        "line:43:`_slack_error_code` 가 그 조건을 요구하도록 고쳤다.",
+        "line:101:- **`not_a_slack_envelope` 표지가 고정되지 않았다.** 진단 문자열이 아니라 append-only",
+        "line:110:- **`classify_slack_failure` 의 \"규칙 순서가 우선순위\" 서술은 동작으로 관측되지 않는다.**",
+        "line:123:$ cd <worktree> && .venv/bin/python -c \"import ...slack_http as m; print(m.__file__)\"",
+        "line:124:/Users/pinesky/workspace/amplai-foundry/src/amplai_foundry/governance/slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:`src/amplai_foundry/governance/slack_http.py`와 `tests/test_slack_http.py`에 한정됐다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:- Active feature pointer: `.specify/feature.json` → `specs/003-slack-proposal-card`",
+        "line:33:기록: `specs/003-slack-proposal-card/evidence/3lens-review-round-13.md`",
+        "line:37:| `F-1` | **P1** | `slack_http.py:445`, `:471` | **bot token 이 traceback 에 샌다.** `read_history`·`delete_message` 가 `SlackTransportError` 를 sanitize 하지 않는다. real",
+        "line:42:| `F-2` | Blocking-P2 | `slack_http.py:544` | `_clear_exception_frames` 무방비 |",
+        "line:93:- `specs/003-slack-proposal-card/evidence/`"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:46:- Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):",
+        "line:82:- **2026-08-25 round 17 완료.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-17.md`",
+        "line:88:중 **7이 닫혔다.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-18.md`",
+        "line:94:`specs/003-slack-proposal-card/evidence/3lens-review-round-19.md`",
+        "line:99:`specs/003-slack-proposal-card/evidence/3lens-review-round-20.md`",
+        "line:104:`specs/003-slack-proposal-card/evidence/3lens-review-round-21.md`"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:107:- Source: https://docs.slack.dev/interactivity/handling-user-interaction/",
+        "line:119:- Source: MGC-012 Package 2 구현 중 발견, `tests/test_slack_ack_boundary.py`",
+        "line:200:`specs/002-mgc-012-package-4-slack-reference-e2e/`를 쓴다. 아래 원문은 기록으로",
+        "line:205:2. **디렉터리는 `specs/001-mgc-012-slack-reference-adapter/`다.** `001`은",
+        "line:342:class 이름을 `transport_{name}`으로 넣는다. 둘 다 없으면 `no_slack_code`다. terminal",
+        "line:353:사용자가 첫째를 골랐다. 반영 위치는 `contracts/slack-transport.md` C-2·C-3.1과"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:31:- Subagent Review: MGC-012 Package 5 (`specs/003-slack-proposal-card`) — **미완**. round 2–8은",
+        "line:45:Wave 6R 뒤 `.specify/feature.json`이 `specs/003-slack-proposal-card`로 옮겨갔다. Package 5는",
+        "line:53:`governance/decisions.py`, `events.py`, `review_cards.py`, `slack_cards.py` 네 파일이",
+        "line:59:`slack_cards.py`의 import block(I001)을, `ruff format`이 `review_cards.py`의 호출 하나를",
+        "line:68:round 10은 **FAIL**이다. `specs/003-slack-proposal-card/evidence/3lens-review.md`가 기록이다.",
+        "line:76:mutation 36종 중 12 killed / 24 survived. kill rate 33%다. `slack_cards.py`는 14종 중 4종만,"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+        "line:106:`destination_ref` 는 `provider:slack:{channel_digest}` 형식을 그대로 받는다. destination 이",
+        "line:133:| `channel` 이 공백뿐이거나 보이지 않는 문자를 포함 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |",
+        "line:154:| transport 성공 | `\"slack:{channel}:{ts}\"` 반환 |",
+        "line:200:| 이 event 의 marker (`event_id` 일치 + `destination_ref` 일치 + `payload_digest` 일치) | `\"slack:{channel}:{ts}\"` |",
+        "line:265:`slack:{channel}:{ts}` 로 만든다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+        "line:71:receipt 는 `slack:{channel}:{ts}` 다 (research R-005). **`ts` 만 이 구조에서 온다.**"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/data-model.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Branch**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03 | **Spec**: [spec.md](./spec.md)",
+        "line:5:**Input**: Feature specification from `specs/001-mgc-012-slack-reference-adapter/spec.md`",
+        "line:117:specs/001-mgc-012-slack-reference-adapter/",
+        "line:124:│   └── slack-transport.md   # transport Protocol 과 destination 계약",
+        "line:127:#     specs/001-mgc-012-slack-reference-adapter/task-manifests",
+        "line:143:├── slack.py             # 수정 없음 — Package 1·2 의 ingress 인증"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+        "line:8:계약 자체는 [contracts/slack-transport.md](./contracts/slack-transport.md) 에, 구조는",
+        "line:62:python -m pytest tests/test_slack_projection.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+        "line:15:| S1 | `https://docs.slack.dev/reference/methods/chat.postMessage` | 2026-08-03 | `api.slack.com/methods/...` 는 302로 여기 redirect 된다 |",
+        "line:16:| S2 | `https://docs.slack.dev/reference/methods/conversations.history` | 2026-08-03 | 동일 redirect |",
+        "line:17:| S3 | `https://docs.slack.dev/messaging/message-metadata` | 2026-08-03 | |",
+        "line:18:| S4 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-03, 2026-08-05 재조회 | `Retry-After` 상한은 문서화되지 않는다 (R-007) |",
+        "line:65:> 바꾸지 않는다. 근거는 `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/research.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature Branch**: `001-mgc-012-slack-reference-adapter`",
+        "line:82:1. **Given** 같은 `provider:slack:{channel_digest}` destination 에 sequence 1·2 event 가 있고,",
+        "line:201:전용 type 이 아니라 `build_slack_marker()` 가 만드는 dict 다. 되읽은 결과만"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/spec.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:21:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+        "line:23:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+        "line:25:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+        "line:52:- src/amplai_foundry/governance/slack_projection.py",
+        "line:53:- tests/test_slack_projection.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:11:검증하고, 통과한 event 만 marker 를 실어 transport 로 보내며, slack:{channel}:{ts}",
+        "line:20:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:22:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+        "line:24:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+        "line:66:- src/amplai_foundry/governance/slack_projection.py",
+        "line:67:- tests/test_slack_projection.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:22:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+        "line:24:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+        "line:63:- src/amplai_foundry/governance/slack_projection.py",
+        "line:64:- tests/test_slack_projection.py",
+        "line:67:- specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+        "line:21:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+        "line:23:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+        "line:44:- tests/test_slack_projection.py",
+        "line:45:- src/amplai_foundry/governance/slack_projection.py",
+        "line:49:- src/amplai_foundry/governance/slack.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+        "line:21:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+        "line:23:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:61:- tests/test_slack_projection.py",
+        "line:62:- src/amplai_foundry/governance/slack_projection.py",
+        "line:66:- src/amplai_foundry/governance/slack.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+        "line:12:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+        "line:14:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+        "line:16:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:18:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+        "line:241:tests/test_slack_projection.py 가 test_governance_events 를 top-level 로"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:8:> 재생성 (repo root 에서): `python3 .specify/scripts/taskify_to_tasks_md.py specs/001-mgc-012-slack-reference-adapter/task-manifests`",
+        "line:12:**Design source**: `specs/001-mgc-012-slack-reference-adapter/spec.md`, `specs/001-mgc-012-slack-reference-adapter/plan.md`, `specs/001-mgc-012-slack-reference-"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:11:- [x] CHK001 Are requirements documented for every outcome class: ready, cleanup-only degraded, readback hard failure, unresolved lifecycle, ambiguous post, and",
+        "line:12:- [x] CHK002 Are cleanup-attempt obligations defined for both successful and failed readback without weakening the different startup decisions? [Completeness, S",
+        "line:14:- [x] CHK004 Is the ownership and permitted mechanism for resolving a permanently blocked probe explicitly defined or explicitly deferred with a follow-up requi",
+        "line:19:- [x] CHK006 Are `READY`, `DEGRADED_CLEANUP`, typed hard failure, and `HARD_BLOCKED_NO_POST` defined with mutually exclusive entry conditions and deterministic ",
+        "line:31:- [x] CHK015 Does the channel/app upper bound distinguish the number of locally unresolved lifecycle records from the number of remote Slack messages when a pos",
+        "line:37:- [x] CHK018 Can the one-diagnostic requirement be measured at a named observation boundary without counting internal typed results as operator output? [Measura"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:그리고 구현체 의무 둘은 `specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md`",
+        "line:149:(`slack_projection.py:708`) 이 값 하나로 probe 가 `reconcile` 에 안 보인다. 나머지는 진짜와",
+        "line:158:**호출자가 손으로 조립하지 않는다.** `build_probe_marker(event)` 가 `build_slack_marker` 의",
+        "line:311:때문이다 (`slack_projection.py:495`). **`auth.test` 가 주는 `bot_id` 는 다른 값이라 대체할 수",
+        "line:319:- 읽는 지점이 하나. `load_slack_settings` 는 `environ` 을 **요구한다** — 기본값을 주면",
+        "line:323:**이름**을 전부 적는다. 그 판정을 `load_slack_credentials` 에 위임하지 않는다 — 위임하면"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:- 두 값 다 `SecretStr` 이고 `repr=False` 다. `slack.py` 의 `signing_secret` 이 이미 그",
+        "line:24:`destination_sequence`·`payload_digest` 넷뿐이고 (001 `build_slack_marker`) 이 목록은",
+        "line:35:| `chat.postMessage` | `https://slack.com/api/chat.postMessage` | research P1 |",
+        "line:36:| `conversations.history` | `https://slack.com/api/conversations.history` | research P2 |",
+        "line:63:이름은 `contracts/slack-http-transport.md` 가 확정한다. 여기서는 **성질**만 적는다.",
+        "line:243:| receipt 형식 `slack:{channel}:{ts}` | 불변 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Branch**: `002-mgc-012-package-4-slack-reference-e2e` | **Date**: 2026-08-12 | **Spec**: [spec.md](./spec.md)",
+        "line:5:**Input**: Feature specification from `specs/002-mgc-012-package-4-slack-reference-e2e/spec.md`",
+        "line:73:- `contracts/slack-transport.md` C-1 (001) 을 바꾸지 않는다. 실제 구현이 그 계약을 만족한다",
+        "line:96:**Scale/Scope**: 기존 `slack_http.py` rework, narrow startup/lifecycle module, additive",
+        "line:97:governance migration, unit tests, future composition-root wiring. `slack_projection.py`와",
+        "line:98:`slack.py`는 수정하지 않는다"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:12:`slack.com/get-started` 에서 새 workspace 를 만든다. 무료다.",
+        "line:19:`api.slack.com/apps` → **Create New App** → **From scratch** → A-1 의 workspace 선택.",
+        "line:87:python -m pytest tests/test_slack_http.py -m slack_e2e",
+        "line:127:python -m pytest -m slack_e2e",
+        "line:137:| 1 | 실제 채널로 Card 를 보낸다 | 채널에 뜨고 receipt 가 `slack:{channel}:{ts}` | SC-009 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:| P1 | `https://docs.slack.dev/reference/methods/chat.postMessage` | 2026-08-07 |",
+        "line:11:| P2 | `https://docs.slack.dev/reference/methods/conversations.history` | 2026-08-07 |",
+        "line:12:| P3 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-07 |",
+        "line:13:| P4 | `https://docs.slack.dev/changelog/2025/05/29/rate-limit-changes-for-non-marketplace-apps/` | 2026-08-07 |",
+        "line:14:| P5 | `https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/` | 2026-08-07 |",
+        "line:15:| P6 | `https://docs.slack.dev/apis/web-api/` | 2026-08-07 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**Feature Branch**: `002-mgc-012-package-4-slack-reference-e2e`",
+        "line:35:`specs/001-mgc-012-slack-reference-adapter/spec.md` 와 같은 파생 문서다. 원본은 둘이다.",
+        "line:128:`slack:{channel}:{ts}` 형식으로 돌아온다.",
+        "line:273:(`contracts/slack-transport.md` C-1) 는 **바꾸지 않는다.** 근거: A15, D-018 항목 2.",
+        "line:391:`001/contracts/slack-transport.md` C-1 이 권위다. **여기서 다시 쓰지 않는다** (D-027)."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:21:- path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+        "line:23:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:25:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:27:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:53:- src/amplai_foundry/governance/slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:21:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:23:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:25:- path: specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md",
+        "line:44:- src/amplai_foundry/governance/slack_http.py",
+        "line:45:- tests/test_slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:21:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:23:- path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+        "line:25:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+        "line:64:- src/amplai_foundry/governance/slack_http.py",
+        "line:65:- tests/test_slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:18:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:20:- path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+        "line:22:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:24:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:47:- tests/test_slack_http.py",
+        "line:48:- src/amplai_foundry/governance/slack_http.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:21:- path: specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md",
+        "line:23:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:25:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:47:- tests/test_slack_http.py",
+        "line:49:- src/amplai_foundry/governance/slack_projection.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:39:- tests/test_slack_http.py",
+        "line:41:- src/amplai_foundry/governance/slack_projection.py",
+        "line:42:- src/amplai_foundry/governance/slack.py",
+        "line:82:run: python -m pytest tests/test_slack_http.py",
+        "line:140:# mutation 3종이 전부 죽는다 — _slack_error_code 가 None 을 돌려주기, 응답을 무조건"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:39:- specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+        "line:40:- specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+        "line:43:- src/amplai_foundry/governance/slack_projection.py",
+        "line:44:- src/amplai_foundry/governance/slack.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:22:- path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+        "line:24:- path: specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md",
+        "line:26:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:28:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:76:- src/amplai_foundry/governance/slack_startup.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:10:- path: specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+        "line:12:- path: specs/002-mgc-012-package-4-slack-reference-e2e/plan.md",
+        "line:14:- path: specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+        "line:16:- path: specs/002-mgc-012-package-4-slack-reference-e2e/contracts/slack-http-transport.md",
+        "line:18:- path: specs/002-mgc-012-package-4-slack-reference-e2e/data-model.md",
+        "line:20:- path: specs/002-mgc-012-package-4-slack-reference-e2e/quickstart.md"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:8:> 재생성 (repo root 에서): `python3 .specify/scripts/taskify_to_tasks_md.py specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests`",
+        "line:12:**Design source**: `specs/002-mgc-012-package-4-slack-reference-e2e/spec.md`, `specs/002-mgc-012-package-4-slack-reference-e2e/plan.md`, `specs/002-mgc-012-pack"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:22:\"specs/003-slack-proposal-card/task-manifests/\",",
+        "line:23:\"specs/003-slack-proposal-card/evidence/\","
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/context-pack.json",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:133:\"tests/test_slack_ack_boundary.py\""
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/doc-impact.json",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:202:\"line:33:기록: `specs/003-slack-proposal-card/evidence/3lens-review-round-13.md`\",",
+        "line:274:\"path\": \"specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md\",",
+        "line:284:\"path\": \"specs/001-mgc-012-slack-reference-adapter/research.md\",",
+        "line:295:\"path\": \"specs/001-mgc-012-slack-reference-adapter/spec.md\",",
+        "line:305:\"path\": \"specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml\",",
+        "line:315:\"path\": \"specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml\","
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/domain-discovery.json",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:38:{\"data\": {\"draft\": \"specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl\", \"gate\": \"public_contract\", \"note\": \"agent 는 approvals.jsonl 을 안 건드린다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence-trace.jsonl",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| Feature | `MGC-012-P5` — Slack Proposal Cards (`specs/003-slack-proposal-card`) |",
+        "line:39:| `slack_cards.py` 14종 중 4 killed | 14종 중 11 killed |",
+        "line:45:`slack_http.py` 는 5종 전부 killed 로 이 저장소에서 가장 촘촘한 영역이다.",
+        "line:53:| `R-1` | **P1** | `slack_http.py:596-603` | round 10 `C-1` 의 **두 번째 사본이 고쳐지지 않았다.** bare `BaseException` 이 dispatcher 밖으로 그대로 샌다 | failure |",
+        "line:54:| `R-2` | **P1** | `slack_projection.py:899`, `events.py:3231-3238` | 일시적 store 실패가 재시도 예산을 쓰지 않고 destination 전체를 되돌릴 수 없이 멈춘다. T004 가 반대편으로 치우쳤다 | failure |",
+        "line:56:| `R-4` | Blocking-P2 | `tests/test_slack_ack_boundary.py:1723-1738` | producer 계약을 고정한다는 test 가 동어반복이라 producer 부재를 못 잡는다 | contract |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-11.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:49:OUTBOX after attempt1: [..., ('OBX-...','pending','provider:slack:...')]",
+        "line:65:### F-2 — Blocking-P2 — `slack_http.py:471`, `:481`, `slack_projection.py:891`",
+        "line:135:5. **`T009` test 주석의 서술이 틀렸다** (`tests/test_slack_projection.py`). 평범한 `RuntimeError`"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:28:| 11 | `R-1` | `slack_projection` 사본 | `slack_http` 사본 |",
+        "line:39:### F-1 (regression) — P1 — `slack_http.py:445`, `:471`",
+        "line:115:grep -rn \"COMMITTED_UNRECONCILED|committed_decision\" specs/003-slack-proposal-card/ --exclude-dir=evidence",
+        "line:137:### F-2 (regression) — Blocking-P2 — `slack_http.py:544`",
+        "line:165:### PBC-1 — `tests/test_slack_http.py` token 누출 test"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-13.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:34:| 11 `R-1` | `slack_projection` 사본 | `slack_http` 사본 |",
+        "line:46:### P0-1 (regression) — `slack_http.py:604` — `body = None` 을 깨뜨릴 수 있는 test 가 없다",
+        "line:112:### P1-2 (regression) — `tests/test_slack_http.py` — `...traceback[post_message]` 가 구조상 통과한다",
+        "line:230:- **`_call` 이 유일한 출구다.** `_send` 호출은 `slack_http.py:521` 하나뿐이고 `_call` 안이다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-14.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:14:규율을 명시했다 — `events.py`(3494줄), `test_slack_http.py`(3553), `test_slack_ack_boundary.py`",
+        "line:33:| `F-5` | failure | B-P2 | `slack_http.py:388` docstring | T021 근거가 `SlackTransportError` 경로에서 거짓이다. `_call` 이 `from None` 으로 새 예외를 만들고 `_sanitized_transport_er",
+        "line:57:**P0-1 폐쇄 실측.** `slack_http.py:590` `body = None` 을 지우면",
+        "line:86:`decisions` 가 `slack_*` 를 하나도 import 하지 않아 cycle 없음, import 시점 side effect 없음.",
+        "line:113:| `A-2` | `slack_http.py:503` | docstring 이 T022 가 지운 사설 이름 `_clear_exception_frames` 를 가리킨다 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-15.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:110:| `FR-4` | `ingress.py:201,206` | `accept()` frame 의 `raw_credential`(plaintext)·`credential_hash` 가 이후 실패 경로 traceback 에 살아남는다. sink 로 가는 경로는 못 찾아 P0 로 안 올렸다. ",
+        "line:134:- wave 8 의 `events.py`·`slack_projection.py`·`decisions.py`·`slack_cards.py`·`review_cards.py`"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-16.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:100:| `A18-R2` | `test_slack_ack_boundary.py:2287` | `..._filesystem_failure_in_claim_next_...` 의 docstring 이 \"세 지점 중 첫째(`ingress_worker.py:186`)\" 라 하는데, sweep 이 밖으",
+        "line:101:| `A18-R3` | `test_slack_ack_boundary.py:2783` | `..._does_not_roll_back_another_rows_recovery` 만 `monkeypatch` 대신 class attribute 직접 대입을 쓴다. 형제 test 와 다르다 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-18.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:77:는 `ingress.py` 와 `test_slack_ack_boundary.py` 둘뿐이고 `T038.yaml` 의 `allowed_paths` 와",
+        "line:102:| `A19-R1` | `test_slack_ack_boundary.py:2902` | `_fill_completed` 가 `INSERT` 를 직접 쓰고 state 를 문자열로 박아 schema 변경에 조용히 어긋날 수 있다. 지금은 정상 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-19.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:92:| `A20-C3` | `test_slack_ack_boundary.py:2962` | wave 12 test 의 assert message 가 \"`limit` 은 **후보 상한**이어야 한다\" 다. `D-049` 뒤에는 틀린 문구다. test 는 옳게 통과한다 |",
+        "line:99:| `A20-R1` | `test_slack_ack_boundary.py` | 새 벽 test 가 `poison in unreadable(...)` 로 단언한다. 벽이 전부 읽히는 row 라 기대값은 `== (poison,)` 다. **형제보다 약하다** — wave 12 test 는 "
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-20.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:122:| `A21-4` | `test_slack_ack_boundary.py:3114`·`:3146` | **`A20-R1` 두 라운드째 미해결.** `poison in unreadable(...)` 이 형제들(`:2499`·`:2518`·`:2780`·`:2841`·`:2961`)의 `==",
+        "line:123:| `A21-5` | `test_slack_ack_boundary.py:2962` | **`A20-C3` 두 라운드째 미해결.** assert message 가 \"`limit` 은 **후보 상한**이어야 한다\" 다. `D-049` 뒤에는 틀린 문구다. 같은 파일 `:3116` 은 옳게 "
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| Feature | `MGC-012-P5` — Slack Proposal Cards (`specs/003-slack-proposal-card`) |",
+        "line:29:drift 된 네 파일 중 `slack_cards.py` 가 최악이다 — 14종 중 4종만 killed. `events.py` 는 6종 중",
+        "line:30:0종 killed 다. 반대로 `slack_projection.py` 는 3/3, `review_cards.py` 의 revocation·유일성 경로는",
+        "line:53:`governance/slack_cards.py` 네 파일이 **test 변경 없이** 수정됐다",
+        "line:67:- `ruff check --fix` — `slack_cards.py` import block 정렬 (I001). `import traceback` 이 정렬 밖에",
+        "line:90:live Slack E2E (`-m slack_e2e`) 는 이번 review 에서 실행하지 않았다. 실제 workspace 에 보이는"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| `.venv/bin/python -m pytest tests/test_slack_cards.py tests/test_slack_projection.py tests/test_slack_http.py tests/test_governance_events.py -m \"not slack_e2",
+        "line:8:| `.venv/bin/python -m ruff check src/amplai_foundry/governance/slack_cards.py src/amplai_foundry/governance/slack_projection.py tests/test_slack_cards.py tests"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T001.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| `.venv/bin/python -m pytest tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py tests/test_governance_migrations.py tests/test_",
+        "line:44:$ .venv/bin/python -m ruff check src/amplai_foundry/governance tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py tests/test_gov"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T002.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| `.venv/bin/python -m pytest tests/test_slack_ack_boundary.py tests/test_review_cards.py tests/test_slack_projection.py tests/test_slack_http.py -m \"not slack_",
+        "line:8:| `source /Users/pinesky/.config/amplai/slack-test.env; .venv/bin/python -m pytest tests/test_slack_http.py -m slack_e2e -k \"result_card or review_card\" -rs` | ",
+        "line:40:set -a; source /Users/pinesky/.config/amplai/slack-test.env; set +a; .venv/bin/python -m pytest tests/test_slack_http.py -m slack_e2e -k \"result_card or review_"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| `.venv/bin/python -m pytest tests/test_slack_projection.py tests/test_review_cards.py` | 0 | 244 passed |",
+        "line:17:`_abandon_review_closed` 가 이미 쓰던 기준(`slack_projection.py:983`-`:986`)과 같다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T004.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:| `.venv/bin/python -m pytest tests/test_slack_cards.py tests/test_review_cards.py tests/test_decisions.py tests/test_governance_events.py` | 0 | 126 passed |",
+        "line:23:| `_clear_exception_frames` no-op | `slack_cards.py:322` | **KILLED** |",
+        "line:24:| `action_set.view.state != \"issued\"` 무력화 | `slack_cards.py:204` | **KILLED** |",
+        "line:25:| binding 검사에서 reviewer actor 성분 제거 | `slack_cards.py:219` | **KILLED** |",
+        "line:26:| binding 검사에서 bound channel 성분 제거 | `slack_cards.py:220` | **KILLED** |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T005.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:23:| `action_set_count_mismatch` 약화 | `slack_cards.py:206` | **KILLED** |",
+        "line:24:| `action_set_action_mismatch` 약화 | `slack_cards.py:209` | **KILLED** |",
+        "line:25:| binding 검사에서 `expires_at` 성분 제거 | `slack_cards.py:221` | **KILLED** |",
+        "line:27:| `_review_body` 최종 절단 제거 | `slack_cards.py:197` | **SURVIVED** — 아래 참조 |",
+        "line:39:`_text_object` (`slack_cards.py:281`)가 같은 `_BODY_LIMIT` 으로 다시 자른다. 따라서",
+        "line:65:- AC-01: 미지원 status 는 `unsupported_result_status` 로 이미 test 가 있다 (`test_slack_cards.py`)."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T006.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:23:| `slack_http.py` | `_SAFE_INTERACTION_MESSAGES` 에서 도달 불가 message 제거 |",
+        "line:82:$ .venv/bin/python -m pytest tests/test_slack_ack_boundary.py tests/test_slack_cards.py tests/test_review_cards.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T007.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:`_interruption_kind` 와 `_raise_sanitized_interruption` 이 `slack_projection` 과 `slack_http`",
+        "line:10:| | 이전 `slack_projection` | 이전 `slack_http` | 지금 (공유) |",
+        "line:16:- `slack_projection.classify_interruption` / `raise_sanitized_interruption` 이 유일한 정의다.",
+        "line:17:- `slack_http` 는 자기 사본 둘을 지우고 그것을 import 한다. `slack_http` 가 이미",
+        "line:18:`slack_projection` 을 import 하고 역방향 간선이 없어 순환이 생기지 않는다.",
+        "line:21:- `slack_projection` 의 staticmethod 둘은 공유 helper 로 위임만 한다. 호출 지점 여섯을 건드리지"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T009.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:28:- `slack_projection` 의 준비 경로가 일시적 store 실패를 `OutboxRetryableError`",
+        "line:102:$ .venv/bin/python -m pytest tests/test_governance_events.py tests/test_slack_projection.py tests/test_ingress.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T010.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:94:$ .venv/bin/python -m pytest tests/test_ingress.py tests/test_slack_ack_boundary.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T011.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:78:$ .venv/bin/python -m pytest tests/test_slack_ack_boundary.py"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T012.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:82:`_clear_exception_frames` **호출** 지점은 이제 `slack_http.py` 안에 둘이다",
+        "line:86:`_clear_exception_frames` **정의** 사본은 저장소에 넷이다 — `slack_http.py`,",
+        "line:87:`decisions.py:775`, `slack_projection.py:1127`, `slack_cards.py:327`. `D-038` 항목 4 가",
+        "line:96:각 실험은 `src` 를 한 곳만 바꾸고 `tests/test_slack_http.py` 전체를 돌린 뒤 되돌린다.",
+        "line:144:| `except urllib.error.HTTPError` | `..._when_slack_answers_with_an_http_error` |",
+        "line:147:| try 본문 (`_decode`) | `..._when_slack_answers_ok_false` |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T015.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:27:`tests/test_slack_ack_boundary.py::test_an_unreadable_decision_ledger_settles_the_command_instead_of_escaping`",
+        "line:91:각 실험은 `src` 를 한 곳만 바꾸고 `tests/test_slack_ack_boundary.py` + `tests/test_ingress.py`",
+        "line:149:`tests/test_slack_ack_boundary.py:1903` 의 주석이 `MGC-012-P5-T015` 를 가리키고 있었다."
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T016.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:92:grep -rn \"COMMITTED_UNRECONCILED|committed_decision\" specs/003-slack-proposal-card/ --exclude-dir=evidence"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T017.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:77:| `tests/test_slack_http.py:3166` | `MGC-012-P5-T016` | slack transport sanitize 는 T015 | T015 가 round 참조로 정정 |",
+        "line:78:| `tests/test_slack_ack_boundary.py:1903` | `MGC-012-P5-T015` | ingress worker 는 T016 | T016 이 round 참조로 정정 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T019.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:60:`RuntimeError`(`slack_projection.py:388-394`). 그래서 `except Exception` 이 잡을 수 있는",
+        "line:67:`slack_http.py:388` docstring 이 \"`finally` 는 예외를 다시 올리지 않아 원래 예외가 그대로",
+        "line:95:(`slack_projection.py:388-394`)이 같은 class 로 다시 올리므로 차이가 없다. **그래도 문장이",
+        "line:147:`tests/test_slack_http.py` 에 넷을 더했다. **canary 부재가 아니라 frame local 을 이름으로",
+        "line:177:| `except urllib.error.HTTPError` (HTTP 500) | `test_no_entry_point_leaks_the_bot_token_when_slack_answers_with_an_http_error` | 4 |",
+        "line:178:| Slack `ok: false` | `test_no_entry_point_leaks_the_bot_token_when_slack_answers_ok_false` | 4 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:11:| `slack_http.py` | 641 | (없음) | `(error: BaseException) -> None` | `c9417f3437320230` |",
+        "line:13:| `slack_projection.py` | 1127 | `staticmethod` | 같음 | `c9417f3437320230` |",
+        "line:14:| `slack_cards.py` | 327 | (없음) | 같음 | `c9417f3437320230` |",
+        "line:22:| `slack_projection.py` | 8 | ~~6~~ |",
+        "line:24:| `slack_http.py` | 2 | 2 |",
+        "line:26:| `slack_cards.py` | 1 | 1 |"
+      ],
+      "matches": [
+        "slack"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md",
+      "score": 1.0
+    }
+  ],
+  "generated_from": {
+    "commit": "940aa0de11a74a17fe542dffb75ae837c63bb766",
+    "contract": "specs/011-hermes-slack-orchestration/work-contract.json",
+    "working_diff": ""
+  },
+  "invariants": [],
+  "known_facts": [
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:231:adapters/           sqlite, filesystem, git, slack",
+          "source": "docs/reviews/2026-08-29-platform-kit-audit.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/reviews/2026-08-29-platform-kit-audit.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:29:전문      specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+          "source": "docs/workstreams/HANDOFF_2026-08-28.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:96:`/work specs/003-slack-proposal-card` 로 wave 15 를 시작한다.",
+          "source": "docs/workstreams/HANDOFF_2026-08-28.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/HANDOFF_2026-08-28.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:72:RUF036       src/.../slack_projection.py:813 타입 union 순서.  PR #2 를 여섯 번 막던 원인",
+          "source": "docs/workstreams/HANDOFF_2026-08-29.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/HANDOFF_2026-08-29.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:24:cat specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl \\",
+          "source": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:148:2. 재freeze           Package 5 의 target 은 specs/003-slack-proposal-card/ 와 그것이",
+          "source": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:177:wave 15 근거    specs/003-slack-proposal-card/evidence/MGC-012-P5-T04{6,7,8}.md",
+          "source": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:179:review 원문     specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+          "source": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:181:승인 draft      specs/003-slack-proposal-card/evidence/approvals-wave-15.draft.jsonl",
+          "source": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/HANDOFF_2026-09-02.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:321:`tests/test_slack_http.py` 는 죽지 않는다. **2026-08-19 재확인에서 전 suite 가 통과했다.**",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:333:$ python3 -m pytest tests/test_slack_http.py     # system 3.9",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:336:$ .venv/bin/python -m pytest tests/test_slack_http.py",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:126:이식 세션은 `tests/test_slack_http.py` 실패를 \"sandbox network 정책이 바뀐 것 **(추정)**\" 으로",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:130:$ python3 -m pytest tests/test_slack_http.py     # system 3.9",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:52:Package 3 는 **production code 를 `slack_projection.py` 하나만 추가했고**, 기존 파일은",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:18:- `src/amplai_foundry/governance/slack_projection.py` (신규)",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:19:- `tests/test_slack_projection.py` (신규)",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:21:`forbidden_paths`(`events.py`, `projections.py`, `slack.py`, `pyproject.toml`)는 건드리지",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:108:| `python -m pytest tests/test_slack_projection.py` | 72 passed |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:112:| `python -m mypy tests/test_slack_projection.py` | 통과 |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:136:- `persisted_code_suffix` 이름과 허용 문자 집합이 `contracts/slack-transport.md` 에 없다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:20:- `build_slack_marker` 를 `try` 밖으로 뺐다. 안에 있으면 우리 결함이 `transport_...` 로 기록돼 transport 구현자 탓이 된다 (failure #5)",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:22:- `_raise_for_failure` 가 terminal 판정을 `raise_for_slack_failure` 에 위임한다. 두 벌이던 분류 규칙이 하나가 됐고 T001 test 가 도는 쪽이 죽은 copy 가 아니게 됐다 (regression A2)",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:47:- M21·M22 (`read_slack_marker` 의 개별 str guard) 가 mutation 에서 살아남는다. 잘못된 type 의",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:24:dependency 검사를 위해 `slack_projection.py` 를 **runtime 에 disk 에서 읽어** `ast.parse`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:45:없었다. HEAD 전수 grep 결과 그 문자열은 `events.py:2852`, `contracts/slack-transport.md`,",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:101:(`contracts/slack-transport.md` C-2, D-023 마지막 문단) 는 처음부터 두 조건을 정확히 쓰고",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:162:| `python -m pytest tests/test_slack_projection.py` | 188 passed |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:52:`slack_projection.py` 를 mutate 해 기존 test 가 여전히 죽는 것을 8종으로 확인했다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:67:- **`classify_slack_failure` 의 \"규칙 순서가 우선순위\" 서술은 동작으로 관측되지 않는다.**",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:36:`classify_slack_failure` 의 설계 전제를 정면으로 깼다. 그 함수 주석이 \"code 없는 HTTP",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:43:`_slack_error_code` 가 그 조건을 요구하도록 고쳤다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:101:- **`not_a_slack_envelope` 표지가 고정되지 않았다.** 진단 문자열이 아니라 append-only",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:110:- **`classify_slack_failure` 의 \"규칙 순서가 우선순위\" 서술은 동작으로 관측되지 않는다.**",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:123:$ cd <worktree> && .venv/bin/python -c \"import ...slack_http as m; print(m.__file__)\"",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:124:/Users/pinesky/workspace/amplai-foundry/src/amplai_foundry/governance/slack_http.py",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:19:`src/amplai_foundry/governance/slack_http.py`와 `tests/test_slack_http.py`에 한정됐다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:7:- Active feature pointer: `.specify/feature.json` → `specs/003-slack-proposal-card`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:33:기록: `specs/003-slack-proposal-card/evidence/3lens-review-round-13.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:37:| `F-1` | **P1** | `slack_http.py:445`, `:471` | **bot token 이 traceback 에 샌다.** `read_history`·`delete_message` 가 `SlackTransportError` 를 sanitize 하지 않는다. real",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:42:| `F-2` | Blocking-P2 | `slack_http.py:544` | `_clear_exception_frames` 무방비 |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:93:- `specs/003-slack-proposal-card/evidence/`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:46:- Package 5 — Slack Proposal Cards (`specs/003-slack-proposal-card`, feature `MGC-012-P5`):",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:82:- **2026-08-25 round 17 완료.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-17.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:88:중 **7이 닫혔다.** 기록은 `specs/003-slack-proposal-card/evidence/3lens-review-round-18.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:94:`specs/003-slack-proposal-card/evidence/3lens-review-round-19.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:99:`specs/003-slack-proposal-card/evidence/3lens-review-round-20.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:104:`specs/003-slack-proposal-card/evidence/3lens-review-round-21.md`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:107:- Source: https://docs.slack.dev/interactivity/handling-user-interaction/",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:119:- Source: MGC-012 Package 2 구현 중 발견, `tests/test_slack_ack_boundary.py`",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:200:`specs/002-mgc-012-package-4-slack-reference-e2e/`를 쓴다. 아래 원문은 기록으로",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:205:2. **디렉터리는 `specs/001-mgc-012-slack-reference-adapter/`다.** `001`은",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:342:class 이름을 `transport_{name}`으로 넣는다. 둘 다 없으면 `no_slack_code`다. terminal",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:353:사용자가 첫째를 골랐다. 반영 위치는 `contracts/slack-transport.md` C-2·C-3.1과",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:31:- Subagent Review: MGC-012 Package 5 (`specs/003-slack-proposal-card`) — **미완**. round 2–8은",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:45:Wave 6R 뒤 `.specify/feature.json`이 `specs/003-slack-proposal-card`로 옮겨갔다. Package 5는",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:53:`governance/decisions.py`, `events.py`, `review_cards.py`, `slack_cards.py` 네 파일이",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:59:`slack_cards.py`의 import block(I001)을, `ruff format`이 `review_cards.py`의 호출 하나를",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:68:round 10은 **FAIL**이다. `specs/003-slack-proposal-card/evidence/3lens-review.md`가 기록이다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:76:mutation 36종 중 12 killed / 24 survived. kill rate 33%다. `slack_cards.py`는 14종 중 4종만,",
+          "source": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:106:`destination_ref` 는 `provider:slack:{channel_digest}` 형식을 그대로 받는다. destination 이",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:133:| `channel` 이 공백뿐이거나 보이지 않는 문자를 포함 | receipt 가 `slack::{ts}` 가 되고 전송 대상이 없다 |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:154:| transport 성공 | `\"slack:{channel}:{ts}\"` 반환 |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:200:| 이 event 의 marker (`event_id` 일치 + `destination_ref` 일치 + `payload_digest` 일치) | `\"slack:{channel}:{ts}\"` |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:265:`slack:{channel}:{ts}` 로 만든다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+          "source": "specs/001-mgc-012-slack-reference-adapter/data-model.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:71:receipt 는 `slack:{channel}:{ts}` 다 (research R-005). **`ts` 만 이 구조에서 온다.**",
+          "source": "specs/001-mgc-012-slack-reference-adapter/data-model.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Branch**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03 | **Spec**: [spec.md](./spec.md)",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:**Input**: Feature specification from `specs/001-mgc-012-slack-reference-adapter/spec.md`",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:117:specs/001-mgc-012-slack-reference-adapter/",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:124:│   └── slack-transport.md   # transport Protocol 과 destination 계약",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:127:#     specs/001-mgc-012-slack-reference-adapter/task-manifests",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:143:├── slack.py             # 수정 없음 — Package 1·2 의 ingress 인증",
+          "source": "specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/plan.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+          "source": "specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:8:계약 자체는 [contracts/slack-transport.md](./contracts/slack-transport.md) 에, 구조는",
+          "source": "specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:62:python -m pytest tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/quickstart.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Feature**: `001-mgc-012-slack-reference-adapter` | **Date**: 2026-08-03",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:15:| S1 | `https://docs.slack.dev/reference/methods/chat.postMessage` | 2026-08-03 | `api.slack.com/methods/...` 는 302로 여기 redirect 된다 |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:16:| S2 | `https://docs.slack.dev/reference/methods/conversations.history` | 2026-08-03 | 동일 redirect |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:17:| S3 | `https://docs.slack.dev/messaging/message-metadata` | 2026-08-03 | |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:| S4 | `https://docs.slack.dev/apis/web-api/rate-limits` | 2026-08-03, 2026-08-05 재조회 | `Retry-After` 상한은 문서화되지 않는다 (R-007) |",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:65:> 바꾸지 않는다. 근거는 `specs/002-mgc-012-package-4-slack-reference-e2e/research.md`",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/research.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:**Feature Branch**: `001-mgc-012-slack-reference-adapter`",
+          "source": "specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:82:1. **Given** 같은 `provider:slack:{channel_digest}` destination 에 sequence 1·2 event 가 있고,",
+          "source": "specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:201:전용 type 이 아니라 `build_slack_marker()` 가 만드는 dict 다. 되읽은 결과만",
+          "source": "specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/spec.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:19:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:21:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:23:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:25:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:52:- src/amplai_foundry/governance/slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:53:- tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:11:검증하고, 통과한 event 만 marker 를 실어 transport 로 보내며, slack:{channel}:{ts}",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:20:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:22:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:24:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:66:- src/amplai_foundry/governance/slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:67:- tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:20:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:22:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:24:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:63:- src/amplai_foundry/governance/slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:64:- tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:67:- specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:19:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:21:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:23:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:44:- tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:45:- src/amplai_foundry/governance/slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:49:- src/amplai_foundry/governance/slack.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:19:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:21:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:23:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:61:- tests/test_slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:62:- src/amplai_foundry/governance/slack_projection.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:66:- src/amplai_foundry/governance/slack.py",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:10:- path: specs/001-mgc-012-slack-reference-adapter/spec.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:12:- path: specs/001-mgc-012-slack-reference-adapter/plan.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:14:- path: specs/001-mgc-012-slack-reference-adapter/research.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:16:- path: specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:- path: specs/001-mgc-012-slack-reference-adapter/data-model.md",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:241:tests/test_slack_projection.py 가 test_governance_events 를 top-level 로",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+      "status": "candidate"
+    }
+  ],
+  "schema_version": "1.0",
+  "terms": [
+    "slack",
+    "사용자가",
+    "hermes",
+    "설계",
+    "구현",
+    "작업을",
+    "요청하면",
+    "amplai",
+    "human",
+    "activation",
+    "durable",
+    "project",
+    "store",
+    "isolated",
+    "workspace",
+    "selected",
+    "claude",
+    "code",
+    "또는",
+    "codex",
+    "runner",
+    "통해",
+    "완료하고",
+    "같은",
+    "흐름에",
+    "검증된",
+    "상태를",
+    "투영한다",
+    "work",
+    "orchestration",
+    "specs",
+    "003",
+    "slack-proposal-card",
+    "package",
+    "closure",
+    "dependency",
+    "src",
+    "amplai_foundry",
+    "control_plane",
+    "request",
+    "api",
+    "and",
+    "outbox",
+    "governance",
+    "action",
+    "status",
+    "projection",
+    "scripts",
+    "amplai_runtime.py",
+    "amplai_supervisor.py",
+    "amplai_hosts.py",
+    "profiles",
+    "managed",
+    "tools",
+    "amplai-loop-kit",
+    "approved",
+    "runtime",
+    "contract",
+    "distribution",
+    "standalone",
+    "plugin",
+    "restricted",
+    "profile",
+    "asset",
+    "tests",
+    "ai",
+    "recovery",
+    "host",
+    "fleet",
+    "verification",
+    "docs",
+    "workstreams",
+    "messenger-governance-closure-v3",
+    "mgc-014",
+    "016",
+    "decision",
+    "impact",
+    "011",
+    "hermes-slack-orchestration",
+    "authorized",
+    "creates",
+    "one",
+    "correlated",
+    "draft",
+    "graph.",
+    "unauthorized",
+    "or",
+    "ambiguous",
+    "requests",
+    "cannot",
+    "create",
+    "ready",
+    "running",
+    "work.",
+    "exposes",
+    "no",
+    "terminal",
+    "file",
+    "edit",
+    "delegation",
+    "execution",
+    "raw",
+    "agent",
+    "launch",
+    "tool.",
+    "only",
+    "valid",
+    "can",
+    "move",
+    "to",
+    "waiting",
+    "ready.",
+    "duplicate",
+    "bridge",
+    "delivery",
+    "click",
+    "do",
+    "not",
+    "results.",
+    "controller",
+    "produce",
+    "the",
+    "correct",
+    "public",
+    "entry",
+    "point",
+    "while",
+    "retaining",
+    "host-neutral",
+    "contract.",
+    "every",
+    "autonomous",
+    "worker",
+    "runs",
+    "in",
+    "worktree",
+    "pinned",
+    "an",
+    "immutable",
+    "base",
+    "ref.",
+    "real",
+    "fresh",
+    "resume",
+    "both",
+    "reach",
+    "state",
+    "with",
+    "evidence.",
+    "crash",
+    "supervisor",
+    "restart",
+    "lease",
+    "expiry",
+    "retry",
+    "attempt",
+    "exhaustion",
+    "follow",
+    "bounded",
+    "authoritative",
+    "human_required",
+    "failed",
+    "done",
+    "states",
+    "without",
+    "secrets.",
+    "plus",
+    "is",
+    "provider",
+    "scoped",
+    "defaults",
+    "off",
+    "does",
+    "wait",
+    "for",
+    "telegram",
+    "completion.",
+    "conversation",
+    "memory",
+    "never",
+    "auto-write",
+    "canonical",
+    "vault",
+    "knowledge.",
+    "disabling",
+    "preserves",
+    "existing",
+    "cli",
+    "proposal",
+    "card",
+    "direct",
+    "workflows.",
+    "all",
+    "repository",
+    "gates",
+    "e2e",
+    "native",
+    "three",
+    "independent",
+    "review",
+    "lenses",
+    "complete",
+    "zero",
+    "blockers."
+  ],
+  "unknowns": [
+    "candidate evidence를 검토해 ownership/source-of-truth를 확정해야 함",
+    "acceptance와 verifier가 실제 current behavior를 판정하는지 확인해야 함"
+  ],
+  "work_id": "HERMES-SLACK-ORCHESTRATION"
+}
