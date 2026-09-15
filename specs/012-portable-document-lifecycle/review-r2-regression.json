@@ -1,0 +1,291 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 2,
+  "lens": "regression",
+  "reviewer": "/root/w003_regression_r2",
+  "recorded_at": "2026-09-11 13:35:04 UTC",
+  "scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014",
+  "verdict": "PASS",
+  "findings": [],
+  "overall_gate": "CHANGES_REQUIRED",
+  "disposition": "Own regression lens found no additional blocking defect. This is not an overall R2 PASS; known contract/recovery findings and the main diagnostic remain unresolved.",
+  "scope_integrity": {
+    "digest_method": "SHA256 of UTF-8 JSON.stringify(scope after removing scope_sha256), property order preserved",
+    "digest_matches": true,
+    "before": {
+      "live_and_preserved_each_checked": 303,
+      "source_files": 146,
+      "governing_files": 157,
+      "faults": []
+    },
+    "after": [
+      {
+        "target": "/Users/pinesky/workspace/amplai-foundry",
+        "files": 146,
+        "governing": 157,
+        "checked": 303,
+        "faults": []
+      },
+      {
+        "target": "/tmp/w003-review-r2-preserved.J8qQtV",
+        "files": 146,
+        "governing": 157,
+        "checked": 303,
+        "faults": []
+      },
+      {
+        "target": "/tmp/w003-r2-regression.MnD7sV/repo",
+        "files": 146,
+        "governing": 157,
+        "checked": 303,
+        "faults": []
+      }
+    ],
+    "checks": "Every listed SHA256, byte length, and stat mode numeric value compared to parseInt(manifest.mode, 8); no drift.",
+    "excluded_projections": [
+      {
+        "path": ".specify/eval/history.jsonl",
+        "sha256": "0de46ff5f8e10266afe4a35ab46440bbeea4c0984945dd63d72060da0d552399",
+        "bytes": 3068,
+        "mode": "644"
+      },
+      {
+        "path": ".specify/eval/last.json",
+        "sha256": "4cb37f90519560a5dcf481639a930a93ab84156e44c0b7bf00657ed83b2f6663",
+        "bytes": 229,
+        "mode": "600"
+      },
+      {
+        "path": ".specify/eval/verifier-last.json",
+        "sha256": "a0f3aae404c6c5b21612be923d9650063bc31dc58996d41aec9f0d7e1840e857",
+        "bytes": 3240,
+        "mode": "600"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/doc-impact.json",
+        "sha256": "75c3a9b3d55a765c3a5927a1fc294bc8f8e3376c10667529e0fe81d434fb6442",
+        "bytes": 403358,
+        "mode": "600"
+      }
+    ],
+    "excluded_projections_unchanged": true,
+    "archive": {
+      "path": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r2-source-snapshot.tar.gz",
+      "sha256": "4a82c6b7e328c2ce05a80621e058e5b386c5e592ac15ecd0aba7986963a7e815",
+      "unchanged": true
+    },
+    "isolation": {
+      "path": "/tmp/w003-r2-regression.MnD7sV/repo",
+      "initial_303_files_match": true,
+      "imports_verified": [
+        "amplai_docs",
+        "loopv2",
+        "ai.test_document_governance",
+        "ai.test_document_lifecycle",
+        "ai.test_portable_baseline"
+      ],
+      "mutations_restored": true,
+      "installed_mutant_restored": {
+        "path": "/tmp/w003-r2-regression.MnD7sV/mutant-empty/repository/scripts/loopv2.py",
+        "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+        "mode": "755"
+      }
+    },
+    "shared_mutations": "None. Test data, disposable installs, synthetic Store operations and isolated Git initialization stayed under the named /tmp test roots; no actual app/Store/trust/Vault or shared Git mutation."
+  },
+  "reviewed_evidence": [
+    "AGENTS.md; .agents/skills/code-review/SKILL.md; .ai-team/README.md; all three .ai-team/rules and permission policy",
+    "W003 work-contract.json, spec.md, plan.md including R1 repair refinement, S01/S02/S03/S08/S09/S10/S11 manifest acceptance/handoff fields",
+    "Knowledge Readiness checks/evidence limits; Domain Discovery verified facts and unresolved environment limits; Context Pack full mandatory/decision sets and hashes; execution authorization",
+    "D-046/D-053/D-055/D-056 governing decision sections, active and superseded claims, constitution, runtime/source roles",
+    "Environment fingerprint; current S08 retained evaluator log/JSON; source hashes; 45-event trace; native transport limits; S08 convergence pending terminal result/handoff",
+    "R1-to-R2 loopv2 repair diff; bounded governing selection/complete-set validation source; baseline and lifecycle regression fixtures; R2 contract/recovery report digests",
+    "No terminal W003 handoff exists in the frozen scope; manifest handoff notes and S08 convergence explicitly retain it as post-gate work."
+  ],
+  "own_checks": [
+    {
+      "id": "regression-governance",
+      "command": "/Users/pinesky/workspace/amplai-foundry/.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-regression.MnD7sV/pytest-governance tests/ai/test_document_governance.py",
+      "cwd": "isolated copy",
+      "exit_code": 0,
+      "passed": 22
+    },
+    {
+      "id": "regression-baseline",
+      "command": "/Users/pinesky/workspace/amplai-foundry/.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-regression.MnD7sV/pytest-baseline tests/ai/test_portable_baseline.py -k 'finite_generic_payload or generic_payload_excludes or missing_generic_capability or generic_mirrors or profile_omitted_repeat or preexisting_identity_binding or real_installed_baseline or preexisting_matching_marker or installed_hosts_select or optional_legacy_yaml'",
+      "cwd": "isolated copy",
+      "exit_code": 0,
+      "passed": 19,
+      "coverage": "Actual sealed baseline/controller/Eval, missing capability and wrong mirror rejection, profile-omitted reinstall/uninstall preservation, borrowed identities and JSON/rules, host-context/evidence parity, JSON and optional legacy YAML."
+    },
+    {
+      "id": "legacy-reference-compatibility",
+      "command": "/Users/pinesky/workspace/amplai-foundry/.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-regression.MnD7sV/pytest-legacy tests/ai/test_document_lifecycle.py -k 'new_frontmatter_and_legacy or no_exact_release or old_release_runbook or same_security_history_reference or unmanaged_reference_requires'",
+      "cwd": "isolated copy",
+      "exit_code": 0,
+      "passed": 8
+    },
+    {
+      "id": "retained-foundry-profile",
+      "command": ".venv/bin/python -B -m pytest -q -o addopts='' -p no:cacheprovider --basetemp=/tmp/w003-r2-regression.MnD7sV/pytest-foundry tests/ai/test_portable_baseline.py -k 'foundry_retains_its_full_skill_and_verifier_profile'",
+      "cwd": "live checkout (read-only test)",
+      "exit_code": 0,
+      "passed": 1
+    },
+    {
+      "id": "live-context",
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "required_knowledge": 20,
+      "active_decisions": 11,
+      "errors": []
+    },
+    {
+      "id": "live-docs-and-views",
+      "command": "python3 -B scripts/loopctl.py docs validate specs/012-portable-document-lifecycle",
+      "exit_code": 0,
+      "verdict": "RESOLVED",
+      "snapshot_sha256": "191c1bed91ec8541e8ae7965c33538f1e1d0e2bb9ac8c74f0421f1369e7b72f4",
+      "offline_views": {
+        "checked": 2,
+        "status": "MATCH"
+      }
+    },
+    {
+      "id": "trace",
+      "command": "python3 -B scripts/loopctl.py trace verify specs/012-portable-document-lifecycle/evidence-trace.jsonl",
+      "exit_code": 0,
+      "events": 45,
+      "valid": true
+    },
+    {
+      "id": "seal",
+      "command": "python3 -B tools/amplai-loop-kit/seal.py --verify",
+      "exit_code": 0,
+      "ok": true
+    },
+    {
+      "id": "independent-installed-receipt-parity",
+      "command": "node /tmp/w003-r2-regression.MnD7sV/check_parity.cjs",
+      "exit_code": 0,
+      "baseline_receipt_files": 69,
+      "extension_receipt_files": 23,
+      "exact_mirrors": 12,
+      "shared": [
+        {
+          "path": "scripts/amplai_docs.py",
+          "sha256": "30beeaf7847325d3cbd0b8275aa7410402190a642b26c583a3e2f8d603af9b8f",
+          "match": true
+        },
+        {
+          "path": "scripts/loopctl.py",
+          "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+          "match": true
+        },
+        {
+          "path": "scripts/loopv2.py",
+          "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+          "match": true
+        },
+        {
+          "path": "scripts/eval.sh",
+          "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+          "match": true
+        },
+        {
+          "path": ".ai-team/verifiers/run.py",
+          "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+          "match": true
+        },
+        {
+          "path": ".specify/scripts/taskify_to_tasks_md.py",
+          "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+          "match": true
+        },
+        {
+          "path": ".agents/skills/taskify/scripts/validate_task_manifest.py",
+          "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+          "match": true
+        }
+      ],
+      "package_version": "2.5.0",
+      "package_sha256": "sha256:b56a263f6564acb5a818b8298bdd9f6ea7d2fd0017e34490e5b0847f9f2c10bf",
+      "faults": []
+    }
+  ],
+  "mutation_controls": [
+    {
+      "id": "complete-set-validator",
+      "mutation": "Removed only the two expected knowledge/decision set equality guards in isolated scripts/loopv2.py; all other validation remained.",
+      "command": "pytest tests/ai/test_document_governance.py -k 'self_consistent_missing_or_forged_authority or guide_backed_decision_cannot_be_removed' --tb=short",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "failed": 5,
+      "signature": "Actual context validate returned 0/MATCH for the self-consistent missing/forged records; the regression tests rejected it at lines 141/169.",
+      "restored_exit": 0,
+      "restored_passed": 5,
+      "restored_source_sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243"
+    },
+    {
+      "id": "empty-authority-positive-assertion",
+      "mutation": "In an already materialized disposable baseline only, changed context_records return to empty knowledge/decisions for both build and validate.",
+      "command": "pytest /tmp/w003-r2-regression.MnD7sV/probe_positive_guard.py --tb=short",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "failed": 1,
+      "signature": "Real doctor/contract/readiness/context/Eval/v2 commands succeeded, but the existing positive canary rejected the empty set at tests/ai/test_portable_baseline.py:252.",
+      "source_restored_to_exact_payload": true
+    }
+  ],
+  "test_accounting": {
+    "distinct_focused_tests_passed": 50,
+    "restoration_recheck_passes": 5,
+    "expected_mutation_failures": 6,
+    "unexpected_failures": 0,
+    "full_suite_rerun": false
+  },
+  "retained_not_rerun": {
+    "evidence": "specs/012-portable-document-lifecycle/s08-local-verification-r2.json and s08-canonical-eval-r2.log (frozen and hash checked)",
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S08",
+    "exit_code": 0,
+    "tests_passed": 1945,
+    "live_slack_deselected": 4,
+    "v2_checks": 11,
+    "outer_fast_checks": 5,
+    "seal_rows": 119,
+    "package_selftests": 12,
+    "distinction": "These are retained main-run results, not this reviewer's full-suite execution."
+  },
+  "known_other_findings": [
+    {
+      "id": "R2-C1",
+      "severity": "P1",
+      "summary": "Whitespace/multiline Markdown and raw HTML references bypass common pre-output reference security.",
+      "report": "/tmp/w003-r2-contract.UA0V8z/review-contract-r2.json",
+      "report_sha256": "7ea9f59f76f8de250fed5580417077c696a895ec7aff63ba1585b0c1e937daed"
+    },
+    {
+      "id": "R2-F1",
+      "severity": "Blocking-P2",
+      "summary": "Atomic JSON publication loses or overwrites file permission state.",
+      "report": "/tmp/w003-r2-recovery.zmHcth/review-recovery-r2.json",
+      "report_sha256": "ae2ec036607e842c34dec788029a9395ea380e7cb76e2d7e3c59d317b60a1059"
+    },
+    {
+      "id": "R2-M1",
+      "severity": "P1",
+      "summary": "Main diagnostic reports decoded literal hash/trailing semicolon path identity loss and resulting reference disclosure.",
+      "report": "/tmp/synapse-split-resume.t7Jusk/w003-r2-main-diagnostics.json",
+      "independent_reproduction_in_this_lens": false
+    }
+  ],
+  "limits": [
+    "Bounded regression review; known contract/recovery probes were not duplicated.",
+    "Python 3.11.15/macOS checks and installed stdlib canaries are not Python 3.6/RHEL7 or production proof.",
+    "Retained native Claude/Codex transport is minimal response transport only, not full Work/resume execution; no new native host invocation.",
+    "No live Slack, actual fleet install, signing, target deployment or trust/Store rebinding was performed.",
+    "This lens PASS cannot override known blockers or authorize overall Work completion."
+  ]
+}

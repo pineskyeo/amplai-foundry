@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-11 15:11:04 UTC",
+  "status": "MATCH",
+  "commands": [
+    {
+      "command": "context build specs/012-portable-document-lifecycle --force",
+      "exit_code": 0
+    },
+    {
+      "command": "context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "valid": true,
+      "errors": []
+    }
+  ],
+  "source_ids": [
+    "loop-runtime-readme",
+    "loop-runtime-policy",
+    "loop-runtime-workflow",
+    "root-agent-contract",
+    "verifier-registry",
+    "root-claude-contract",
+    "constitution",
+    "knowledge-rules",
+    "lifecycle",
+    "memory-domain-model",
+    "project-pack",
+    "vision",
+    "proposals",
+    "relationships",
+    "versioning",
+    "roadmap",
+    "claim-loop-public-surface",
+    "claim-semantic-runtime-not-ported",
+    "claim-verifier-profile-single-source",
+    "claim-work-artifact-isolation"
+  ],
+  "content_hash": "0da35d1256b628f01a1ae6c6289ab936a772080f7f7261aaf218d3c0ccfe1064",
+  "required_knowledge": 20,
+  "active_decisions": [
+    "D-046",
+    "D-051",
+    "D-052",
+    "D-053",
+    "D-054",
+    "D-055",
+    "D-056",
+    "D-057",
+    "D-058",
+    "D-061",
+    "amplai-constitution"
+  ],
+  "document_selection_sha256": "7189555852dc035695db40c4daa3c8b28b9b13a565242a61ff185d7d9061165a",
+  "source_hashes": {
+    "scripts/amplai_docs.py": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+    "scripts/loopv2.py": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+    "scripts/loopctl.py": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+    ".ai-team/policy/documentation.json": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "185ba535b22b8a73d9cba5eff643ef516fef7c2ad2449ba09c6807d0ce6788c5",
+    "specs/012-portable-document-lifecycle/tasks.md": "b4dd267d8d4c5ea99b15eb9b16eb32fafac856801530874caea17ffa963f2ffd",
+    "specs/012-portable-document-lifecycle/context-pack.json": "caed438c8ea33561f308ca5613a84cf241bf8b59cee2de189142240af17bf15c"
+  },
+  "repair_context_restored": "All 25 guides reviewed against exact R3 candidate; nine ordinary guides restored beyond the 11 repair-stage governing/claim sources. Active controls and Decisions unchanged.",
+  "integration_correction": "s08-r3-release-selector-correction.json",
+  "limits": [
+    "Actual current repository Context; not full verifier, independent review, native lifecycle or deployment proof"
+  ]
+}

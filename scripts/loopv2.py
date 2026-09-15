@@ -13,9 +13,10 @@ import json
 import os
 import platform
 import re
-import shutil
 import subprocess
 import sys
+
+import amplai_docs
 
 READINESS_POLICY = os.path.join(".ai-team", "policy", "knowledge-readiness.json")
 PERMISSION_POLICY = os.path.join(".ai-team", "policy", "permissions.json")
@@ -32,6 +33,45 @@ UTC = getattr(datetime, "UTC", None) or datetime.timezone.utc  # noqa: UP017 -- 
 # 파일 경로가 아닌 evidence locator. superseded claim 의 근거는 이미 삭제된
 # 파일인 게 정상이므로 이런 marker 를 stale 로 세지 않는다.
 EVIDENCE_MARKERS = ("git-history",)
+
+REPOSITORY_PROFILE = os.path.join(".ai-team", "runtime", "repository-profile.json")
+GENERIC_SKILLS = frozenset(
+    (
+        "work",
+        "design",
+        "dev-loop",
+        "speckit-specify",
+        "speckit-clarify",
+        "speckit-plan",
+        "taskify",
+        "speckit-analyze",
+        "speckit-implement",
+        "speckit-converge",
+        "code-review",
+        "systematic-debugging",
+    )
+)
+
+
+def repository_profile(root):
+    """Read the repository adapter; mandatory generic capabilities cannot be removed."""
+    value = load_json(os.path.join(root, REPOSITORY_PROFILE))
+    if not isinstance(value, dict) or value.get("schema_version") != "1.0":
+        raise ValueError("invalid repository profile schema")
+    if value.get("id") not in ("generic", "foundry"):
+        raise ValueError("unknown repository profile")
+    for key in ("additional_skills", "public_helpers", "forbidden_paths", "fixture_refs"):
+        items = value.get(key)
+        if not isinstance(items, list) or any(not isinstance(x, str) or not x for x in items):
+            raise ValueError("invalid repository profile field: " + key)
+        if len(items) != len(set(items)):
+            raise ValueError("duplicate repository profile field: " + key)
+    extras = set(value["additional_skills"])
+    if extras & GENERIC_SKILLS or any(not re.match(r"^[a-z0-9][a-z0-9-]*$", x) for x in extras):
+        raise ValueError("invalid additional skill")
+    if not set(value["public_helpers"]) <= extras:
+        raise ValueError("public helpers must be declared additional skills")
+    return value
 
 
 def verifier_interpreters(root):
@@ -154,7 +194,9 @@ def object_sha(value):
 
 def git(root, args):
     try:
-        out = subprocess.check_output(["git", *list(args)], cwd=root, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(
+            [*amplai_docs.GIT_READ_PREFIX, *list(args)], cwd=root, stderr=subprocess.STDOUT
+        )
         return out.decode("utf-8", "replace").strip()
     except Exception:
         return ""
@@ -169,7 +211,9 @@ PROVENANCE_MARKERS = (PROVENANCE_WORKTREE, PROVENANCE_UNVERIFIABLE)
 
 def git_ok(root, args):
     try:
-        subprocess.check_output(["git", *list(args)], cwd=root, stderr=subprocess.STDOUT)
+        subprocess.check_output(
+            [*amplai_docs.GIT_READ_PREFIX, *list(args)], cwd=root, stderr=subprocess.STDOUT
+        )
         return True
     except Exception:
         return False
@@ -522,6 +566,10 @@ def discovery_scan(root, feature_raw, write=True):
 
 def selected_sources(root, contract, max_sources=None):
     knowledge = load_json(os.path.join(root, KNOWLEDGE_MAP))
+    accepted, selection = amplai_docs.knowledge_filter(root, contract)
+    mandatory = {
+        item["path"] for item in selection["governing_inputs"] if item["role"] == "instruction"
+    }
     query = " ".join(
         [
             contract.get("goal") or "",
@@ -534,7 +582,7 @@ def selected_sources(root, contract, max_sources=None):
     limit = max_sources or (knowledge.get("selection") or {}).get("max_sources") or 24
     values = []
     for item in knowledge.get("sources") or []:
-        if item.get("status") in exclude:
+        if item.get("status") in exclude or not accepted(item):
             continue
         score = float(item.get("priority") or 0) / 1000.0
         hits = []
@@ -545,7 +593,7 @@ def selected_sources(root, contract, max_sources=None):
             if token in text:
                 hits.append(token)
                 score += 1.0
-        if (item.get("priority") or 0) >= 90 or hits:
+        if item.get("path") in mandatory or (item.get("priority") or 0) >= 90 or hits:
             selected = copy.deepcopy(item)
             selected["score"] = round(score, 4)
             selected["reason"] = (
@@ -553,16 +601,27 @@ def selected_sources(root, contract, max_sources=None):
             )
             values.append(selected)
     values.sort(
-        key=lambda item: (-item["score"], -(item.get("priority") or 0), item.get("id") or "")
+        key=lambda item: (
+            item.get("path") not in mandatory,
+            -item["score"],
+            -(item.get("priority") or 0),
+            item.get("id") or "",
+        )
     )
-    return values[:limit]
+    selected = values[:limit]
+    if not mandatory <= {item["path"] for item in selected}:
+        raise amplai_docs.DocumentError("GOVERNING_INPUT_UNAVAILABLE")
+    return selected
 
 
 def active_claims(root, contract):
     scope = (contract.get("scope") or {}).get("include") or []
+    accepted, _ = amplai_docs.knowledge_filter(root, contract)
     values = []
     for item in read_jsonl(os.path.join(root, CLAIMS)):
-        if item.get("status") in ("deprecated", "superseded", "rejected"):
+        if not accepted(
+            item, [x for x in item.get("evidence") or [] if isinstance(x, dict)], kind="claim"
+        ):
             continue
         claim_scope = item.get("scope") or []
         if (
@@ -577,10 +636,11 @@ def active_claims(root, contract):
 
 def active_decisions(root, contract):
     value = load_json(os.path.join(root, DECISIONS))
+    accepted, _ = amplai_docs.knowledge_filter(root, contract)
     scope = (contract.get("scope") or {}).get("include") or []
     result = []
     for item in value.get("entries") or []:
-        if item.get("status") != "active":
+        if not amplai_docs.scope_applies(contract, item) or not accepted(item, kind="decision"):
             continue
         item_scope = item.get("scope") or []
         if (
@@ -610,6 +670,53 @@ def derive_test_scope(root, code_scope):
     return result
 
 
+def context_records(root, contract):
+    """Canonical complete records, shared by generation and validation."""
+    sources = selected_sources(root, contract)
+    claims = active_claims(root, contract)
+    decisions = active_decisions(root, contract)
+    required = []
+    for item in sources:
+        path = item.get("path")
+        required.append(
+            {
+                "id": item.get("id"),
+                "status": item.get("status"),
+                "path": path,
+                "reason": item.get("reason"),
+                "source_sha256": file_sha(safe_path(root, path)),
+                "evidence": [],
+            }
+        )
+    for item in claims:
+        path = item.get("evidence", [{}])[0].get("path", CLAIMS)
+        required.append(
+            {
+                "id": item.get("id"),
+                "status": item.get("status"),
+                "path": path,
+                "reason": "active claim",
+                "source_sha256": file_sha(safe_path(root, path)),
+                "evidence": [
+                    {**entry, "source_sha256": file_sha(safe_path(root, entry["path"]))}
+                    for entry in item.get("evidence") or []
+                ],
+            }
+        )
+    active = [
+        {
+            "id": item.get("id"),
+            "status": item.get("status"),
+            "path": item.get("path"),
+            "reason": item.get("title"),
+            "source_sha256": file_sha(safe_path(root, item["path"])),
+            "evidence": [],
+        }
+        for item in decisions
+    ]
+    return required, active
+
+
 def context_build(root, feature_raw, force=False):
     feature = resolve_feature(root, feature_raw)
     target = context_path(feature)
@@ -629,36 +736,12 @@ def context_build(root, feature_raw, force=False):
         if work_type not in ("tiny_change",):
             raise RuntimeError("knowledge-readiness.json이 없음")
         verdict = "BYPASS"
-    sources = selected_sources(root, contract)
-    claims = active_claims(root, contract)
-    decisions = active_decisions(root, contract)
+    selection = amplai_docs.context_selection(root, contract)
+    required_knowledge, decisions = context_records(root, contract)
+    if amplai_docs.context_selection(root, contract) != selection:
+        raise amplai_docs.DocumentError("SOURCE_DRIFT")
     code_scope = list((contract.get("scope") or {}).get("include") or [])
     tests = derive_test_scope(root, code_scope)
-    required_knowledge = []
-    for item in sources:
-        path = item.get("path")
-        required_knowledge.append(
-            {
-                "id": item.get("id"),
-                "status": item.get("status"),
-                "path": path,
-                "reason": item.get("reason"),
-                "source_sha256": file_sha(os.path.join(root, path)) if path else "",
-                "evidence": [],
-            }
-        )
-    for item in claims:
-        path = item.get("evidence", [{}])[0].get("path", CLAIMS)
-        required_knowledge.append(
-            {
-                "id": item.get("id"),
-                "status": item.get("status"),
-                "path": path,
-                "reason": "active claim",
-                "source_sha256": file_sha(os.path.join(root, path)) if path else "",
-                "evidence": item.get("evidence") or [],
-            }
-        )
     # semantic runtime 은 이식하지 않았다 (D-046). schema 가 요구하는 필드라 빈 채로 둔다.
     ontology_refs = []
     tree = worktree_state(root)
@@ -670,8 +753,10 @@ def context_build(root, feature_raw, force=False):
         "contract_sha256": file_sha(contract_file),
         "knowledge_map_sha256": file_sha(os.path.join(root, KNOWLEDGE_MAP)),
         "claims_sha256": file_sha(os.path.join(root, CLAIMS)),
+        "decisions_sha256": file_sha(os.path.join(root, DECISIONS)),
         "readiness_sha256": file_sha(readiness_file),
         "discovery_sha256": file_sha(discovery_path(feature)),
+        "document_selection_sha256": amplai_docs.object_digest(selection),
     }
     value = {
         "schema_version": "1.0",
@@ -679,16 +764,7 @@ def context_build(root, feature_raw, force=False):
         "goal": contract.get("goal"),
         "knowledge_verdict": verdict,
         "required_knowledge": required_knowledge,
-        "active_decisions": [
-            {
-                "id": item.get("id"),
-                "status": item.get("status"),
-                "path": item.get("path"),
-                "reason": item.get("title"),
-                "evidence": [],
-            }
-            for item in decisions
-        ],
+        "active_decisions": decisions,
         "ontology_refs": ontology_refs,
         "code_scope": code_scope,
         "test_scope": tests,
@@ -731,6 +807,29 @@ def context_validate(root, raw):
     # provenance: 기록된 commit이 실제 Git object인지 확인한다.
     # 없는 commit을 근거로 남기면 재현이 불가능하다.
     generated = value.get("generated_from") or {}
+    contract_file = os.path.join(os.path.dirname(path), "work-contract.json")
+    if not os.path.isfile(contract_file):
+        raise amplai_docs.DocumentError("MISSING_CONTRACT")
+    current_contract = load_json(contract_file)
+    for key, source in (
+        ("contract_sha256", contract_file),
+        ("knowledge_map_sha256", os.path.join(root, KNOWLEDGE_MAP)),
+        ("claims_sha256", os.path.join(root, CLAIMS)),
+        ("decisions_sha256", os.path.join(root, DECISIONS)),
+        ("readiness_sha256", os.path.join(os.path.dirname(path), "knowledge-readiness.json")),
+        ("discovery_sha256", os.path.join(os.path.dirname(path), "domain-discovery.json")),
+    ):
+        if key not in generated or generated[key] != file_sha(source):
+            errors.append("context control input changed; rebuild Context Pack")
+    accepted, selection = amplai_docs.knowledge_filter(root, current_contract)
+    selected_digest = generated.get("document_selection_sha256")
+    if selected_digest != amplai_docs.object_digest(selection):
+        errors.append("document selection changed; rebuild Context Pack")
+    expected_knowledge, expected_decisions = context_records(root, current_contract)
+    if value.get("required_knowledge") != expected_knowledge:
+        errors.append("current knowledge set incomplete or changed; rebuild Context Pack")
+    if value.get("active_decisions") != expected_decisions:
+        errors.append("active decision set incomplete or changed; rebuild Context Pack")
     commit = generated.get("commit")
     if commit and not git_commit_exists(root, commit):
         errors.append(f"provenance commit이 이 repository에 없음: {commit}")
@@ -741,6 +840,13 @@ def context_validate(root, raw):
     missing = []
     superseded = []
     for item in value.get("required_knowledge") or []:
+        if item not in expected_knowledge:
+            continue  # Never echo a forged or newly unauthorized Context reference.
+        evidence_paths = [x for x in item.get("evidence") or [] if isinstance(x, dict)]
+        if not accepted(item, evidence_paths or None, kind="claim" if evidence_paths else "source"):
+            superseded.append("INELIGIBLE_CURRENT_KNOWLEDGE")
+            errors.append("current knowledge no longer eligible; rebuild Context Pack")
+            continue
         status = item.get("status")
         if status in ("deprecated", "superseded", "rejected"):
             superseded.append(item.get("id"))
@@ -752,6 +858,21 @@ def context_validate(root, raw):
             stale.append(item.get("path"))
         elif state["state"] == "MISSING":
             missing.append(item.get("path"))
+        for entry in item.get("evidence") or []:
+            state = source_state(root, entry.get("path"), entry.get("source_sha256") or "")
+            if not entry.get("source_sha256") or state["state"] != "MATCH":
+                errors.append("claim evidence changed or unbound; rebuild Context Pack")
+
+    for item in value.get("active_decisions") or []:
+        if item not in expected_decisions:
+            continue
+        if not accepted(item, kind="decision"):
+            errors.append("current decision no longer eligible; rebuild Context Pack")
+        elif (
+            not item.get("source_sha256")
+            or source_state(root, item.get("path"), item["source_sha256"])["state"] != "MATCH"
+        ):
+            errors.append("decision source changed; rebuild Context Pack")
 
     for path_ in missing:
         errors.append(f"source가 없음: {path_}")
@@ -830,12 +951,10 @@ def environment_capture(root, feature_raw):
                 "pyproject 의 requires-python 아래 버전에서의 동작",
             ],
         },
-        "fixture_refs": ["testdata/"],
-        "safe_environment": {
-            key: os.environ.get(key)
-            for key in ("PYTHONPATH", "VIRTUAL_ENV", "AMPLAI_VAULT")
-            if os.environ.get(key)
-        },
+        "fixture_refs": repository_profile(root)["fixture_refs"],
+        # Local paths and environment values are not portable evidence. Interpreter
+        # commands/versions above describe the actual verifier without exporting them.
+        "safe_environment": {},
     }
     value["content_hash"] = object_sha(value)
     write_json(environment_path(feature), value)
@@ -1011,24 +1130,79 @@ def matches_any(path, patterns):
     return any(path_matches(path, pattern) for pattern in patterns or [])
 
 
+expand_repo_target = amplai_docs.expand_repo_target
+
+
+declared_directory_paths = amplai_docs.declared_directory_paths
+
+
+dependency_path_record = amplai_docs.dependency_path_record
+
+
+extract_typed_references = amplai_docs.extract_typed_references
+
+
+reference_local_roots = amplai_docs.reference_local_roots
+
+
+classify_document_reference = amplai_docs.classify_document_reference
+
+
+def documentation_base_commit(root, feature, contract):
+    """Keep a Work's original baseline when its changes are committed or main advances."""
+    target = doc_impact_path(feature)
+    if os.path.isfile(target):
+        previous = load_json(target)
+        if previous.get("content_hash") == object_sha(previous) and previous.get(
+            "work_id"
+        ) == contract.get("id"):
+            base = (previous.get("dependency_snapshot") or {}).get("base_commit")
+            if base:
+                strict_git(root, ["cat-file", "-e", base + "^{commit}"])
+                return base
+    context_file = context_path(feature)
+    if os.path.isfile(context_file):
+        context = load_json(context_file)
+        base = (context.get("generated_from") or {}).get("commit")
+        if base and base not in PROVENANCE_MARKERS:
+            strict_git(root, ["cat-file", "-e", base + "^{commit}"])
+            return base
+    return work_base_commit(root)
+
+
+def meaningful_document_content(content, path):
+    if path.endswith(".md"):
+        text = content.decode("utf-8")
+        metadata = re.compile(
+            r"^\s*(?:>\s*)?(?:\*\*)?(?:last[_ -]?(?:reviewed|updated|modified)|"
+            r"reviewed(?:[_ -]?(?:at|by|date))?|review[_ -]?date|updated(?:[_ -]?at)?)"
+            r"(?:\*\*)?\s*:\s*.*$",
+            re.IGNORECASE,
+        )
+        frontmatter_date = re.compile(r"^\s*(?:date|created(?:[_ -]?at)?)\s*:", re.IGNORECASE)
+        lines = []
+        frontmatter = False
+        for index, line in enumerate(text.splitlines()):
+            if line.strip() == "---":
+                frontmatter = index == 0
+            if metadata.match(line) or (frontmatter and frontmatter_date.match(line)):
+                continue
+            lines.append(line)
+        text = "\n".join(lines)
+        content = text.encode("utf-8")
+    return re.sub(rb"\s+", b"", content)
+
+
 def collect_changed_sources(root, base=None):
-    """이번 Work 가 실제로 건드린 repository-relative 경로를 모은다."""
-    paths = set()
-    sources = [["diff", "--name-only", "HEAD"]]
-    if base:
-        sources.append(["diff", "--name-only", base, "HEAD"])
-    for args in sources:
-        for line in git(root, args).splitlines():
-            if line.strip():
-                paths.add(norm_rel(line))
-    for line in git(root, ["status", "--porcelain=v1", "--untracked-files=all"]).splitlines():
-        if len(line) < 4:
-            continue
-        value = line[3:]
-        if " -> " in value:
-            value = value.split(" -> ", 1)[1]
-        paths.add(norm_rel(value))
-    return sorted(path for path in paths if path)
+    return amplai_docs.changed_paths(root, base)
+
+
+def strict_git(root, args, empty_codes=()):
+    return amplai_docs.strict_git(root, args, empty_codes=empty_codes) or b""
+
+
+def git_paths(root, args):
+    return amplai_docs.git_paths(root, args)
 
 
 def split_semantic_changes(paths, policy):
@@ -1042,10 +1216,14 @@ def split_semantic_changes(paths, policy):
     include = policy.get("semantic_change_paths") or []
     exclude = policy.get("non_semantic_change_paths") or []
     for path in paths:
-        if matches_any(path, include) and not matches_any(path, exclude):
+        # A document/metadata edit is semantic. New unmatched tooling is also
+        # semantic by default; an old blanket docs/** exclusion cannot hide it.
+        if path.endswith((".md", amplai_docs.SIDECAR)) or matches_any(path, include):
             semantic.append(path)
-        else:
+        elif matches_any(path, exclude):
             other.append(path)
+        else:
+            semantic.append(path)
     return semantic, other
 
 
@@ -1057,7 +1235,7 @@ def split_semantic_changes(paths, policy):
 PATH_IN_CODE = re.compile(r"`([^`\n]+)`")
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 TREE_ROOT = re.compile(r"^([A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*/)$")
-TREE_ITEM = re.compile(r"^[\s│]*[├└]──\s+([^\s#]+)")
+TREE_ITEM = re.compile(r"^([\s│|]*)[├└]──[ \t]+(.+?)\s*$")
 GLOB_CHARS = "*?[]"
 
 
@@ -1069,193 +1247,28 @@ def garden_report_path(feature):
     return os.path.join(feature, "garden-report.json")
 
 
-def clean_declared_path(text):
-    """문서에 적힌 경로 표기에서 locator/장식만 걷어낸다.
-
-    leading '.' 을 지우면 '.ai-team/' 이 'ai-team/' 이 되어 없는 경로처럼 보인다.
-    그래서 왼쪽은 건드리지 않는다.
-    """
-    value = (text or "").strip()
-    value = value.rstrip(",;")
-    # 'path/to/file.c:128-129' 같은 line locator 를 떼어낸다.
-    match = re.match(r"^(.+?):[0-9]+(?:-[0-9]+)?$", value)
-    if match:
-        value = match.group(1)
-    return value.strip()
+clean_declared_path = amplai_docs.clean_declared_path
 
 
-def looks_like_repo_path(text):
-    """문서 안의 조각이 repository 경로 선언처럼 보이는지 본다.
-
-    파일명만 적은 언급이나 'scope.include/exclude' 같은 JSON 필드 경로를
-    경로 선언으로 오해하면 broken reference 신호가 잡음에 묻힌다.
-    """
-    text = (text or "").strip()
-    if not text or " " in text:
-        return False
-    if any(ch in text for ch in GLOB_CHARS):
-        return False
-    if text.startswith("-") or text.startswith("+"):
-        return False
-    if "(" in text or ")" in text or "=" in text or "::" in text or "@" in text:
-        return False
-    # repository 경로 선언은 최소한 하나의 '/' 를 가진다.
-    if "/" not in text:
-        return False
-    head = text.split("/", 1)[0]
-    # '.ai-team' 처럼 dot 으로 시작하는 top-level 은 정상이다.
-    # 반대로 'scope.include/exclude' 는 필드 경로지 파일 경로가 아니다.
-    return not ("." in head and not head.startswith("."))
+looks_like_repo_path = amplai_docs.looks_like_repo_path
 
 
-def extract_declared_paths(text):
-    """문서 본문이 canonical 한 것처럼 선언하는 repository 경로를 뽑는다.
-
-    세 형태만 본다 — inline code, markdown link, directory tree block.
-    산문에서 경로를 추측하지 않는다.
-    """
-    results = []
-    tree_root = None
-    for line_no, line in enumerate(text.splitlines(), start=1):
-        item = TREE_ITEM.match(line)
-        if item:
-            name = item.group(1)
-            results.append(((tree_root + name) if tree_root else name, line_no))
-            continue
-        stripped = line.strip()
-        if not stripped:
-            tree_root = None
-        elif TREE_ROOT.match(stripped):
-            tree_root = stripped
-            continue
-        for match in PATH_IN_CODE.finditer(line):
-            results.append((clean_declared_path(match.group(1)), line_no))
-        for match in MD_LINK.finditer(line):
-            results.append((clean_declared_path(match.group(1)), line_no))
-    return results
+extract_declared_paths = amplai_docs.extract_declared_paths
 
 
-def reference_candidates(root, doc_dir, value):
-    """참조가 가리킬 수 있는 repository-relative 경로 후보를 만든다.
-
-    '../pinesky-lib' 처럼 repository 밖을 가리키는 참조는 후보가 비어 있다.
-    이 검사에서 '없는 경로'라고 단정할 근거가 없으므로 대상에서 뺀다.
-    """
-    raw = []
-    if not value.startswith(".."):
-        raw.append(value)
-    if doc_dir:
-        raw.append(os.path.normpath(os.path.join(doc_dir, value)))
-    else:
-        raw.append(os.path.normpath(value))
-    inside = []
-    for candidate in raw:
-        candidate = norm_rel(candidate)
-        if not candidate or candidate.startswith(".."):
-            continue
-        if candidate not in inside:
-            inside.append(candidate)
-    return inside
+reference_candidates = amplai_docs.reference_candidates
 
 
-def reference_exists(root, doc_dir, value):
-    for candidate in reference_candidates(root, doc_dir, value):
-        if os.path.exists(os.path.join(root, candidate)):
-            return True
-    return False
+reference_exists = amplai_docs.reference_exists
 
 
-def scan_broken_references(root, policy, documents=None):
-    """문서가 존재하지 않는 repository 경로를 가리키는지 본다.
-
-    문서가 실제와 어긋났음을 기계적으로 판정할 수 있는 가장 확실한 신호다.
-    """
-    scan = policy.get("reference_scan") or {}
-    targets = documents if documents is not None else (scan.get("documents") or [])
-    ignore = scan.get("ignore_patterns") or []
-    known_absent = scan.get("known_absent") or []
-    # historical decision log 는 과거 시점의 사실을 적은 기록이다. 그때 존재하던
-    # 경로가 지금 없는 것은 정상이며, 고치면 오히려 이력을 덮어쓰게 된다.
-    historical = {
-        norm_rel(item.get("path") or "") for item in policy.get("historical_documents") or []
-    }
-    findings = []
-    for doc in targets:
-        doc = norm_rel(doc)
-        if doc in historical:
-            continue
-        full = os.path.join(root, doc)
-        if not os.path.isfile(full):
-            continue
-        with open(full, encoding="utf-8") as handle:
-            text = handle.read()
-        doc_dir = os.path.dirname(doc)
-        seen = set()
-        for value, line_no in extract_declared_paths(text):
-            if not looks_like_repo_path(value):
-                continue
-            if matches_any(value, ignore) or matches_any(value, known_absent):
-                continue
-            candidates = reference_candidates(root, doc_dir, value)
-            if not candidates:
-                # repository 밖 참조 — 이 검사의 판정 대상이 아니다.
-                continue
-            if any(matches_any(candidate, known_absent) for candidate in candidates):
-                continue
-            if reference_exists(root, doc_dir, value):
-                continue
-            key = (doc, value)
-            if key in seen:
-                continue
-            seen.add(key)
-            findings.append(
-                {
-                    "document": doc,
-                    "reference": value,
-                    "line": line_no,
-                    "reason": "선언된 경로가 repository 에 없다",
-                }
-            )
-    return findings
+scan_broken_references = amplai_docs.scan_broken_references
 
 
-def docs_referencing(root, paths, limit=40):
-    """canonical 문서가 changed path 를 직접 언급하는지 git grep 으로 찾는다."""
-    hits = {}
-    for path in paths[:limit]:
-        if len(path) < 6:
-            continue
-        try:
-            out = subprocess.check_output(
-                ["git", "grep", "-l", "-I", "-F", path, "--", "*.md"],
-                cwd=root,
-                stderr=subprocess.STDOUT,
-            ).decode("utf-8", "replace")
-        except subprocess.CalledProcessError:
-            continue
-        for line in out.splitlines():
-            doc = norm_rel(line)
-            if not doc.endswith(".md") or doc == path:
-                continue
-            hits.setdefault(doc, [])
-            if path not in hits[doc]:
-                hits[doc].append(path)
-    return hits
+docs_referencing = amplai_docs.docs_referencing
 
 
-def document_category(policy, path):
-    path = norm_rel(path)
-    best = None
-    for item in policy.get("canonical_roots") or []:
-        prefix = norm_rel(item.get("path") or "")
-        if not prefix:
-            continue
-        if path == prefix or path.startswith(prefix.rstrip("/") + "/"):
-            if best is None or len(prefix) > len(best[0]):
-                best = (prefix, item.get("category") or "other", item.get("kind") or "canonical")
-    if best:
-        return best[1], best[2]
-    return "other", "canonical"
+document_category = amplai_docs.document_category
 
 
 def discover_impacted_documents(root, policy, semantic_paths, contract=None):
@@ -1268,10 +1281,9 @@ def discover_impacted_documents(root, policy, semantic_paths, contract=None):
 
     def add(doc, axis, reason, evidence=None):
         doc = norm_rel(doc or "")
-        if not doc or not os.path.exists(os.path.join(root, doc)):
-            return
-        if doc in semantic_paths:
-            return
+        amplai_docs.relative_path(doc)
+        if not os.path.isfile(amplai_docs.safe_path(root, doc)):
+            raise amplai_docs.DocumentError("MISSING_SOURCE")
         item = found.setdefault(doc, {"axes": [], "reasons": [], "evidence": []})
         if axis not in item["axes"]:
             item["axes"].append(axis)
@@ -1285,22 +1297,27 @@ def discover_impacted_documents(root, policy, semantic_paths, contract=None):
         if not any(matches_any(path, rule.get("when_changed") or []) for path in semantic_paths):
             continue
         for target in rule.get("impacted") or []:
-            if any(ch in target for ch in GLOB_CHARS):
-                continue
-            add(
-                target,
-                "impact_rules",
-                rule.get("reason") or rule.get("id"),
-                [".ai-team/policy/documentation.json#{}".format(rule.get("id"))],
-            )
+            for path in expand_repo_target(root, target):
+                add(
+                    path,
+                    "impact_rules",
+                    rule.get("reason") or rule.get("id"),
+                    [".ai-team/policy/documentation.json#{}".format(rule.get("id"))],
+                )
 
     # ontology binding 축은 semantic runtime 과 함께 이식하지 않았다 (D-046).
     # 나머지 네 축(impact_rules, knowledge_map, decision_index, doc_reference)이 후보를 좁힌다.
 
-    try:
-        knowledge = load_json(os.path.join(root, KNOWLEDGE_MAP))
-    except Exception:
-        knowledge = {}
+    with amplai_docs.SourceTree(root) as tree:
+        knowledge = amplai_docs.strict_json(tree.read(KNOWLEDGE_MAP))
+        decisions = amplai_docs.strict_json(tree.read(DECISIONS))
+    if (
+        not isinstance(knowledge, dict)
+        or not isinstance(knowledge.get("sources"), list)
+        or not isinstance(decisions, dict)
+        or not isinstance(decisions.get("entries"), list)
+    ):
+        raise amplai_docs.DocumentError("INVALID_KNOWLEDGE_INDEX")
     exclude = set((knowledge.get("selection") or {}).get("exclude_status") or [])
     stopwords = {value.lower() for value in policy.get("keyword_stopwords") or []}
     # keyword 를 substring 으로 맞추면 'cortex' 같은 전역 단어가 모든 문서를 끌어온다.
@@ -1326,10 +1343,6 @@ def discover_impacted_documents(root, policy, semantic_paths, contract=None):
                 [".ai-team/knowledge/map.json#{}".format(item.get("id"))],
             )
 
-    try:
-        decisions = load_json(os.path.join(root, DECISIONS))
-    except Exception:
-        decisions = {}
     for entry in decisions.get("entries") or []:
         if entry.get("status") != "active":
             continue
@@ -1349,7 +1362,11 @@ def discover_impacted_documents(root, policy, semantic_paths, contract=None):
             [".ai-team/knowledge/decisions.index.json#{}".format(entry.get("id"))],
         )
 
-    for doc, refs in docs_referencing(root, semantic_paths).items():
+    # Work reports are already excluded from the resulting current-guide set.
+    # Apply that same policy before parsing literal diagnostic HTML in them.
+    for doc, refs in docs_referencing(
+        root, semantic_paths, include_document=lambda path: not work_scoped_artifact(policy, path)
+    ).items():
         add(
             doc,
             "doc_reference",
@@ -1390,123 +1407,36 @@ def work_base_commit(root):
 
 
 def docs_impact(root, feature_raw, changed=None, write=True, acknowledged=None):
-    feature = resolve_feature(root, feature_raw)
-    contract = load_json(contract_path(feature))
-    policy_file = os.path.join(root, DOCUMENTATION_POLICY)
-    policy = load_json(policy_file)
-    feature_rel = rel(root, feature)
+    return amplai_docs.impact(
+        root, resolve_feature(root, feature_raw), globals(), changed, write, acknowledged
+    )
 
-    sources = list(changed) if changed else collect_changed_sources(root, work_base_commit(root))
-    sources = [path for path in sources if not path.startswith(feature_rel.rstrip("/") + "/")]
-    semantic, non_semantic = split_semantic_changes(sources, policy)
 
-    # 사람이 '영향 없음'으로 판단한 문서는 기록으로 남기고 이어받는다.
-    # 최상위 필드로 보존한다 — impacted_documents 는 매번 다시 계산되므로
-    # 거기에만 두면 STALE 로 덮어쓸 때 판단 기록이 사라진다.
-    acknowledged_paths = {norm_rel(path) for path in acknowledged or [] if path}
-    target = doc_impact_path(feature)
-    if os.path.isfile(target):
-        try:
-            previous = load_json(target)
-            acknowledged_paths |= {
-                norm_rel(path) for path in previous.get("acknowledged") or [] if path
-            }
-            for item in previous.get("impacted_documents") or []:
-                if item.get("action") == "acknowledge":
-                    acknowledged_paths.add(norm_rel(item.get("path") or ""))
-        except Exception:
-            pass
+def docs_review_batch(root, feature_raw, request):
+    return amplai_docs.review_batch(root, resolve_feature(root, feature_raw), request, globals())
 
-    # 이번 Work 가 실제로 손댄 문서는 이미 처리된 것으로 본다.
-    touched = set(sources)
-    documents = []
-    if semantic:
-        discovered = discover_impacted_documents(root, policy, semantic, contract)
-        for path in sorted(discovered):
-            if work_scoped_artifact(policy, path):
-                continue
-            item = discovered[path]
-            category, kind = document_category(policy, path)
-            if kind == "historical":
-                # 과거 기록은 덮어쓰지 않는다. 새 결정이 생기면 supersede 로 잇는다.
-                documents.append(
-                    {
-                        "path": path,
-                        "category": category,
-                        "reason": "; ".join(item["reasons"][:3]) or "impacted by change",
-                        "action": "supersede",
-                        "state": "ACTIVE",
-                        "handled": True,
-                        "discovered_by": item["axes"],
-                        "evidence": item["evidence"][:6],
-                    }
-                )
-                continue
-            acknowledged_here = path in acknowledged_paths
-            handled = path in touched or acknowledged_here
-            documents.append(
+
+def docs_review(
+    root, feature_raw, document, outcome, reason, reviewer, evidence, expected_snapshot, method=None
+):
+    return docs_review_batch(
+        root,
+        feature_raw,
+        {
+            "snapshot": expected_snapshot,
+            "reference_reviews": [],
+            "reviews": [
                 {
-                    "path": path,
-                    "category": category,
-                    "reason": "; ".join(item["reasons"][:3]) or "impacted by change",
-                    "action": "acknowledge"
-                    if (acknowledged_here and path not in touched)
-                    else "update",
-                    "state": "ACTIVE" if handled else "STALE",
-                    "handled": handled,
-                    "discovered_by": item["axes"],
-                    "evidence": item["evidence"][:6],
+                    "document": document,
+                    "outcome": outcome,
+                    "reason": reason,
+                    "reviewer": reviewer,
+                    "method": method,
+                    "evidence": evidence,
                 }
-            )
-
-    broken = scan_broken_references(root, policy)
-    unresolved = [item["path"] for item in documents if not item["handled"]]
-
-    if not semantic:
-        status = "NOT_APPLICABLE"
-        reason = "의미 변경 경로가 없다"
-    elif broken:
-        status = "STALE"
-        reason = "broken reference %d 건이 남아 있다" % len(broken)
-    elif unresolved:
-        status = "STALE"
-        reason = "impacted document %d 건이 아직 처리되지 않았다: %s" % (
-            len(unresolved),
-            ", ".join(unresolved[:3]),
-        )
-    elif documents:
-        status = "RESOLVED"
-        reason = "impacted document %d 건을 이번 Work 에서 모두 갱신했다" % len(documents)
-    else:
-        status = "ACTIVE"
-        reason = "의미 변경이 있으나 impacted document 후보가 없다"
-
-    tree = worktree_state(root)
-    value = {
-        "schema_version": "1.0",
-        "work_id": contract.get("id"),
-        "status": status,
-        "reason": reason,
-        "semantic_change": bool(semantic),
-        "changed_sources": semantic,
-        "non_semantic_sources": non_semantic,
-        "impacted_documents": documents,
-        "acknowledged": sorted(acknowledged_paths),
-        "broken_references": broken,
-        "evidence": [axis.get("id") for axis in policy.get("discovery_axes") or []],
-        "generated_from": {
-            "commit": tree["commit"],
-            "worktree_state": tree["state"],
-            "worktree_dirty": tree["dirty"],
-            "generated_at": utc_now(),
-            "contract_sha256": file_sha(contract_path(feature)),
-            "policy_sha256": file_sha(policy_file),
+            ],
         },
-    }
-    value["content_hash"] = object_sha(value)
-    if write:
-        write_json(doc_impact_path(feature), value)
-    return value
+    )
 
 
 def validate_decision_history(root, policy):
@@ -1537,78 +1467,53 @@ def validate_decision_history(root, policy):
 
 def docs_validate(root, feature_raw=None, repo=False):
     policy = load_json(os.path.join(root, DOCUMENTATION_POLICY))
-    errors = []
-    broken = scan_broken_references(root, policy)
-    history = validate_decision_history(root, policy)
-
     if repo:
-        for item in broken:
-            errors.append(
-                "broken reference: {}:{} -> {}".format(
-                    item["document"], item["line"], item["reference"]
-                )
-            )
-        errors.extend(history["errors"])
+        broken = scan_broken_references(root, policy)
+        history = validate_decision_history(root, policy)
+        errors = ["unresolved repository reference" for _ in broken] + history["errors"]
         return {
             "valid": not errors,
             "verdict": "FRESH" if not errors else "STALE",
             "mode": "repository",
-            "documents_scanned": len((policy.get("reference_scan") or {}).get("documents") or []),
             "broken_references": broken,
             "decision_history": history,
             "errors": errors,
         }
+    try:
+        current = docs_impact(root, feature_raw, write=False)
+        path = doc_impact_path(resolve_feature(root, feature_raw))
+        previous = load_json(path)
+        errors = []
+        if previous.get("content_hash") != object_sha(previous):
+            errors.append("INVALID_IMPACT_REPORT")
+        if previous.get("dependency_snapshot_hash") != current["dependency_snapshot_hash"]:
+            errors.append("SOURCE_DRIFT")
 
-    feature = resolve_feature(root, feature_raw)
-    path = doc_impact_path(feature)
-    if not os.path.isfile(path):
+        def comparable(value):
+            return {
+                key: item
+                for key, item in value.items()
+                if key not in ("content_hash", "acknowledged")
+            }
+
+        if comparable(previous) != comparable(current):
+            errors.append("DERIVED_REPORT_DRIFT")
+        if not current["scan_complete"] or current["status"] == "STALE":
+            errors.append("DOCUMENT_REVIEW_REQUIRED")
+        return {
+            "valid": not errors,
+            "verdict": current["status"] if not errors else "STALE",
+            "mode": "work",
+            "errors": errors,
+            "dependency_snapshot_hash": current["dependency_snapshot_hash"],
+        }
+    except (OSError, ValueError, RuntimeError):
         return {
             "valid": False,
-            "verdict": "MISSING",
+            "verdict": "INCOMPLETE",
             "mode": "work",
-            "errors": ["doc-impact.json 이 없다. docs impact 를 먼저 실행한다"],
-            "path": rel(root, path),
+            "errors": ["CURRENT_INPUT_OR_EVIDENCE_UNAVAILABLE"],
         }
-    value = load_json(path)
-    required = [
-        "schema_version",
-        "work_id",
-        "status",
-        "changed_sources",
-        "impacted_documents",
-        "evidence",
-        "generated_from",
-        "content_hash",
-    ]
-    errors.extend(f"필수 필드 없음: {key}" for key in required if key not in value)
-    if value.get("status") not in ("NOT_APPLICABLE", "ACTIVE", "STALE", "RESOLVED"):
-        errors.append("freshness status 가 허용값이 아님: {}".format(value.get("status")))
-    expected = object_sha(value)
-    if value.get("content_hash") != expected:
-        errors.append("content_hash 불일치")
-    for item in value.get("impacted_documents") or []:
-        if item.get("action") in (None, "pending"):
-            errors.append(
-                "impacted document 의 action 이 정해지지 않음: {}".format(item.get("path"))
-            )
-        if not item.get("discovered_by"):
-            errors.append("impacted document 에 discovery 근거가 없음: {}".format(item.get("path")))
-        target = norm_rel(item.get("path") or "")
-        if target and not os.path.exists(os.path.join(root, target)):
-            errors.append(f"impacted document 가 없음: {target}")
-    if value.get("status") == "STALE":
-        errors.append("doc freshness 가 STALE 이다. update/supersede 후 다시 impact 를 만든다")
-    errors.extend(history["errors"])
-    return {
-        "valid": not errors,
-        "verdict": value.get("status"),
-        "mode": "work",
-        "path": rel(root, path),
-        "expected_hash": expected,
-        "broken_references": value.get("broken_references") or [],
-        "decision_history": history,
-        "errors": errors,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -1616,7 +1521,7 @@ def docs_validate(root, feature_raw=None, repo=False):
 # ---------------------------------------------------------------------------
 
 
-SAFE_TYPES = ("generated_garbage", "temporary_backup", "prunable_worktree")
+SAFE_TYPES = ()  # A filename or untracked status proves neither ownership nor regeneration.
 
 
 def git_lines(root, args):
@@ -1624,14 +1529,16 @@ def git_lines(root, args):
 
 
 def repo_file_sets(root):
-    """tracked / untracked / ignored 를 나눠서 돌려준다.
-
-    SAFE_AUTO 자동 삭제는 git 이 추적하지 않는 파일에만 허용한다. 되돌릴 수
-    없는 삭제를 만들지 않기 위해서다.
-    """
-    tracked = set(git_lines(root, ["ls-files"]))
-    untracked = set(git_lines(root, ["ls-files", "--others", "--exclude-standard"]))
-    ignored = set(git_lines(root, ["ls-files", "--others", "--ignored", "--exclude-standard"]))
+    """Complete NUL-delimited inventories; unavailable Git is never an empty scan."""
+    tracked = set(amplai_docs.git_paths(root, ["ls-files", "-z"]))
+    untracked = set(
+        amplai_docs.git_paths(root, ["ls-files", "--others", "--exclude-standard", "-z"])
+    )
+    ignored = set(
+        amplai_docs.git_paths(
+            root, ["ls-files", "--others", "--ignored", "--exclude-standard", "-z"]
+        )
+    )
     return tracked, untracked, ignored
 
 
@@ -1652,6 +1559,10 @@ def safety_for(policy, path, candidate_type, tracked):
     dead 처럼 보여도 자동으로 지우지 않는다.
     """
     classification = classify_target(policy, path)
+    if candidate_type in ("temporary_backup", "prunable_worktree") or (
+        tracked and path.lower().endswith(".md")
+    ):
+        return "HUMAN_GATED", classification
     if matches_any(path, policy.get("human_gated_paths")):
         return "HUMAN_GATED", classification
     if any(classification.values()):
@@ -1664,7 +1575,7 @@ def safety_for(policy, path, candidate_type, tracked):
 def make_candidate(policy, index, candidate_type, path, reason, evidence, tracked, symbol=None):
     safety, classification = safety_for(policy, path, candidate_type, tracked)
     risk = {"SAFE_AUTO": "low", "EVIDENCE_REQUIRED": "medium", "HUMAN_GATED": "high"}[safety]
-    action = {"SAFE_AUTO": "delete", "EVIDENCE_REQUIRED": "review", "HUMAN_GATED": "propose"}[
+    action = {"SAFE_AUTO": "review", "EVIDENCE_REQUIRED": "review", "HUMAN_GATED": "propose"}[
         safety
     ]
     item = {
@@ -1690,10 +1601,12 @@ def make_candidate(policy, index, candidate_type, path, reason, evidence, tracke
 
 def in_scope(path, scope):
     if not scope:
-        return True
+        return False
     for entry in scope:
         entry = norm_rel(entry)
-        if not entry or entry == ".":
+        if entry == ".":
+            return True
+        if fnmatch.fnmatchcase(path, entry):
             return True
         if path == entry or path.startswith(entry.rstrip("/") + "/"):
             return True
@@ -1703,14 +1616,15 @@ def in_scope(path, scope):
 def garden_scope(root, contract, mode):
     if mode == "full":
         return ["."]
-    scope = [norm_rel(p) for p in (contract.get("scope") or {}).get("include") or []]
-    scope.extend(collect_changed_sources(root))
-    neighborhood = set()
+    scope = (contract.get("scope") or {}).get("include") or []
+    if not isinstance(scope, list) or any(not isinstance(p, str) for p in scope):
+        raise ValueError("INVALID_GARDEN_SCOPE")
     for path in scope:
-        parent = os.path.dirname(path)
-        if parent:
-            neighborhood.add(parent)
-    return sorted({p for p in scope if p} | neighborhood)
+        amplai_docs.relative_path(path.rstrip("/"))
+        if path in ("*", "**", "**/*"):
+            raise ValueError("EXPLICIT_GARDENING_WORK_REQUIRED")
+    # Other developers' dirty files and parent directories cannot broaden this Work.
+    return sorted(set(scope))
 
 
 def reference_terms(path):
@@ -1752,7 +1666,7 @@ def unreferenced_paths(root, paths, limit, exclude=None):
             try:
                 subprocess.check_output(
                     [
-                        "git",
+                        *amplai_docs.GIT_READ_PREFIX,
                         "grep",
                         "-l",
                         "-I",
@@ -1768,11 +1682,12 @@ def unreferenced_paths(root, paths, limit, exclude=None):
                 )
                 referenced = True
                 break
-            except subprocess.CalledProcessError:
-                continue
-            except Exception:
-                referenced = True
-                break
+            except subprocess.CalledProcessError as exc:
+                if exc.returncode == 1:
+                    continue
+                raise ValueError("REFERENCE_SCAN_UNAVAILABLE") from None
+            except (OSError, subprocess.TimeoutExpired):
+                raise ValueError("REFERENCE_SCAN_UNAVAILABLE") from None
         if not referenced:
             results.append(path)
     return results, truncated
@@ -1798,7 +1713,9 @@ def prunable_worktrees(root):
 
 def collect_garden_candidates(root, policy, scope, mode):
     tracked, untracked, ignored = repo_file_sets(root)
-    safe_patterns = policy.get("safe_auto_patterns") or []
+    safe_patterns = (
+        policy.get("generated_candidate_patterns") or policy.get("safe_auto_patterns") or []
+    ) + (policy.get("user_backup_patterns") or [])
     limits = policy.get("scan_limits") or {}
     limit = (
         limits.get("full_reference_scan" if mode == "full" else "incremental_reference_scan") or 120
@@ -1831,7 +1748,7 @@ def collect_garden_candidates(root, policy, scope, mode):
         index += 1
 
     # 2. prunable worktree
-    for item in prunable_worktrees(root):
+    for item in prunable_worktrees(root) if mode == "full" else []:
         path = norm_rel(str(item.get("worktree") or ""))
         candidates.append(
             make_candidate(
@@ -1867,8 +1784,8 @@ def collect_garden_candidates(root, policy, scope, mode):
                 )
             )
             index += 1
-    except Exception as exc:
-        notes.append(f"documentation reference scan 생략: {exc}")
+    except Exception:
+        notes.append("INCOMPLETE:DOCUMENT_REFERENCE_SCAN_UNAVAILABLE")
 
     # 4. orphan test fixture / obsolete script — 참조 0 은 근거의 시작일 뿐이다.
     #    runner 가 glob/디렉토리로 수집하는 entry 는 이름 참조가 없는 것이 정상이라
@@ -1898,7 +1815,7 @@ def collect_garden_candidates(root, policy, scope, mode):
     )
     if truncated:
         notes.append(
-            "reference scan 상한 %d 개에 도달해 %d 개 파일을 검사하지 않았다"
+            "INCOMPLETE:reference scan 상한 %d 개에 도달해 %d 개 파일을 검사하지 않았다"
             % (limit, max(0, len(scannable) - limit))
         )
     for path in orphans:
@@ -1940,6 +1857,8 @@ def garden_integrity(candidates, applied_paths):
     ]
     for candidate_id in gated_applied:
         violations.append(f"SAFE_AUTO 가 아닌 candidate 가 삭제됨: {candidate_id}")
+    if applied_paths or any(item.get("status") == "applied" for item in candidates):
+        violations.append("UNVERIFIED_GARDEN_MUTATION")
     return {
         "all_classified": all_classified,
         "all_have_evidence": all_have_evidence,
@@ -1973,7 +1892,10 @@ def build_garden_report(root, policy, mode, scope, candidates, applied_paths, no
         "integrity": integrity,
         "applied_paths": list(applied_paths),
         "notes": notes,
-        "pass": not integrity["violations"],
+        "report_only": True,
+        "scan_complete": not any(note.startswith("INCOMPLETE:") for note in notes),
+        "pass": not integrity["violations"]
+        and not any(note.startswith("INCOMPLETE:") for note in notes),
         "generated_from": {
             "commit": tree["commit"],
             "worktree_state": tree["state"],
@@ -2001,52 +1923,32 @@ def garden_incremental(root, feature_raw, write=True):
     return value
 
 
-def garden_full(root, report_only=True, output=None):
+def garden_full(root, report_only=True, output=None, feature_raw=None):
+    if not feature_raw:
+        raise ValueError("EXPLICIT_GARDENING_WORK_REQUIRED")
+    feature = resolve_feature(root, feature_raw)
+    contract = load_json(contract_path(feature))
+    if contract.get("work_type") != "repository_gardening" or contract.get("risk") != "high":
+        raise ValueError("EXPLICIT_GARDENING_WORK_REQUIRED")
+    if not report_only:
+        raise ValueError("APPROVAL_REQUIRED")
     policy = load_json(os.path.join(root, GARDENING_POLICY))
     scope = ["."]
     candidates, notes = collect_garden_candidates(root, policy, scope, "full")
     applied = []
-    if not report_only:
-        applied = apply_safe_candidates(root, candidates)
-    value = build_garden_report(root, policy, "full", scope, candidates, applied, notes, None)
+    value = build_garden_report(
+        root, policy, "full", scope, candidates, applied, notes, contract.get("id")
+    )
     if output:
         write_json(safe_path(root, output), value)
     return value
 
 
 def apply_safe_candidates(root, candidates):
-    """SAFE_AUTO candidate 만 삭제한다.
-
-    EVIDENCE_REQUIRED 와 HUMAN_GATED 는 어떤 경우에도 여기서 지우지 않는다.
-    """
-    applied = []
+    """Compatibility entry: classification is a report, never deletion authority."""
     for item in candidates:
-        if item.get("safety") != "SAFE_AUTO":
-            item["status"] = "gated" if item.get("safety") == "HUMAN_GATED" else "kept"
-            continue
-        path = norm_rel((item.get("target") or {}).get("path") or "")
-        if not path:
-            continue
-        try:
-            full = safe_path(root, path)
-        except RuntimeError:
-            item["status"] = "kept"
-            continue
-        if item.get("type") == "prunable_worktree":
-            git(root, ["worktree", "prune"])
-            item["status"] = "applied"
-            applied.append(path)
-            continue
-        if os.path.isdir(full):
-            shutil.rmtree(full, ignore_errors=True)
-        elif os.path.exists(full):
-            os.remove(full)
-        else:
-            item["status"] = "kept"
-            continue
-        item["status"] = "applied"
-        applied.append(path)
-    return applied
+        item["status"] = "gated" if item.get("safety") == "HUMAN_GATED" else "kept"
+    return []
 
 
 def garden_apply(root, feature_raw, write=True):

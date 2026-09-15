@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "independent_review": false,
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 3,
+  "recorded_at": "2026-09-11 23:08:45 UTC",
+  "engine_sha256": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+  "directory": "/tmp/w003-r3-main-diagnostic.3E9ZCA",
+  "reference_red": {
+    "test": "test_boundary_v2.py",
+    "sha256": "25f4a3c7a05b18bfad0540164441efe7cf8d3c832d79e10650233be4ab964687",
+    "failed": 18,
+    "passed": 3,
+    "exit_code": 1,
+    "meaning": "Expected rejection assertions fail; external and inert controls pass. Early intake rejection is accepted."
+  },
+  "file_uri_red": {
+    "test": "test_file_uri.py",
+    "sha256": "7856081daeafc76820d8725077b16461ec28a9e0842a226e4da5b98ccf8f185d",
+    "failed": 2,
+    "exit_code": 1,
+    "output_probe": {
+      "scope": "READ_ONLY_SYNTHETIC_DIAGNOSTIC_NOT_PASS",
+      "results": [
+        {
+          "localhost": false,
+          "same_file": true,
+          "count": 1,
+          "restricted_identifier_exposed": true
+        },
+        {
+          "localhost": true,
+          "same_file": true,
+          "count": 1,
+          "restricted_identifier_exposed": true
+        }
+      ]
+    },
+    "meaning": "samefile proves exact restricted fixture identity; actual current selector returns count1 and discloses identifier in both variants."
+  },
+  "resource_red": {
+    "test": "test_resource_bound_v2.py",
+    "sha256": "d21221e66c9dade27b84d73ad2841b5e32c80fb1cf87c17a1b53e2e518301e88",
+    "failed": 4,
+    "exit_code": 1,
+    "source_and_payload": true,
+    "measurements": [
+      {
+        "input_bytes": 29000,
+        "kind": "lexer",
+        "peak_bytes": [
+          15021781,
+          15020877
+        ]
+      },
+      {
+        "input_bytes": 11000,
+        "kind": "typed_inline_code",
+        "peak_bytes": [
+          6044742,
+          6039558
+        ]
+      }
+    ],
+    "assertion": "At1000tokens peak<=2MiB+40*input_bytes or explicit SCOPE_INCOMPLETE; no actual large-input OOM executed."
+  },
+  "classification": "PLAN/TASK",
+  "next_action": "Define finite supported reference grammar and account for allocation before materializing output. Repair original requirements; no acceptance waiver.",
+  "scope": "Synthetic local fixtures only; no shared source mutation during R3 freeze, no real private source, network or host action."
+}

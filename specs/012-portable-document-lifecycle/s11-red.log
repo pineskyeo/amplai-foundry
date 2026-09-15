@@ -1,0 +1,17 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+____ test_accumulated_review_budget_rejects_before_replacing_readable_store ____
+tests/ai/test_document_review.py:41: in test_accumulated_review_budget_rejects_before_replacing_readable_store
+    assert hashlib.sha256(target.read_bytes()).hexdigest() == before_hash
+E   AssertionError: assert 'e0a3cb048fae...176be0c9cc8b1' == '1d9eba4b126e...c8befd2de62c6'
+E     
+E     - 1d9eba4b126e9a5d36150bf0cee8cd404dc189d0d55663c7c4bc8befd2de62c6
+E     + e0a3cb048faef2f487e93482465cb259d82ef2e2c1d0053cbe0176be0c9cc8b1
+_________ test_impact_projection_respects_its_configured_reader_budget _________
+tests/ai/test_document_review.py:69: in test_impact_projection_respects_its_configured_reader_budget
+    with pytest.raises(runtime.amplai_docs.DocumentError, match="SCOPE_INCOMPLETE"):
+E   Failed: DID NOT RAISE <class 'amplai_docs.DocumentError'>
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_review.py::test_accumulated_review_budget_rejects_before_replacing_readable_store
+FAILED tests/ai/test_document_review.py::test_impact_projection_respects_its_configured_reader_budget
+2 failed in 7.21s

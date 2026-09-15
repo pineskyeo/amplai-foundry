@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 05:37:20 UTC",
+  "capability": "speckit-converge assessment recorded by the existing Work controller",
+  "outcome": "IMPLEMENTATION_CONVERGED_COMPLETION_GATES_PENDING",
+  "checked": {
+    "feature_requirements": 15,
+    "success_criteria": 5,
+    "original_requirements": 23,
+    "original_cases": 46,
+    "contract_acceptances": 8,
+    "constitution_principles": 5,
+    "task_manifests": 18,
+    "repair_tasks": 10,
+    "affected_slice_revalidations": 13
+  },
+  "evidence": [
+    "s16-local-verification.json",
+    "s17-local-verification.json",
+    "s18-local-verification.json",
+    "s08-r5-review-fixture-repair.json",
+    "revalidation-r5-line.json",
+    "s08-r5-context-domain-diagnosis.json",
+    "s08-r5-guide-check-format-equivalence.json",
+    "s08-local-verification-r5.json",
+    "s08-document-review-evidence-r12.json",
+    "s08-context-r5-final.json",
+    "s08-view-evidence-r5.json",
+    "s08-native-r5.json"
+  ],
+  "findings": [],
+  "tasks_appended": 0,
+  "unchanged_task_intent": true,
+  "source_assessment": {
+    "FR_001_004": "Opt-in generic baseline and transactional installer remain source/payload/installed-canary verified; S18 protects borrowed mode identity across update/reinstall/uninstall without weakening owned-file behavior.",
+    "FR_005": "Native Store authority, dependency/lease/terminal presentation remain covered by S07 and full regression. Current native host observation is transport-only.",
+    "FR_006_010": "Exact metadata/review/source snapshots enforce lifecycle, finite reference syntax and bounded typed visibility before output. S16 bounds declaration work; S17 protects code/tree/directory/glob/optional/alias references. Current Kit membership is exactly three owning guides; all mandatory instructions remain release-independent. Twenty-five source reviews still required.",
+    "FR_011_013": "Complete source preservation, exact retirement approvals and recoverable isolated fixtures remain intact. No actual deletion or canonical knowledge mutation. Post-review report-only gardening remains T008.",
+    "FR_014_015": "Two immutable R5 bundles derive from current attributed source/review/release pins; offline, no-script, XSS/private, keyboard, desktop/mobile and print browser checks passed."
+  },
+  "remaining_existing_task": {
+    "id": "PORTABLE-DOC-T008",
+    "gates": [
+      "Three fresh sequential independent R5 lenses on one frozen target",
+      "Final derived documentation validation with stable evidence membership",
+      "Post-review report-only incremental gardening and final security",
+      "Native Work result and same-app checkpoint after all local gates"
+    ]
+  },
+  "post_eval_documentation_delta": {
+    "paths": [
+      "plan.md",
+      "acceptance-map.json",
+      "s08-view-evidence-r5.json",
+      "s08-convergence-r5.json",
+      "handoff-r5-pre-review.md"
+    ],
+    "meaning": "Report-only status/evidence reconciliation and additive immutable view/evidence artifacts after exact S08 post-run source152/governing32 pin checks. No source, executable command, acceptance intent, payload, checksum or verifier threshold changes.",
+    "plan_correction": "Header reflects observed full S08 and browser PASS; pending independent/post-review gates remain explicit."
+  },
+  "limits": [
+    "No additional missing buildable local W003 requirement observed; this is not independent approval or whole-goal completion.",
+    "SC-002 permits explicit unavailable evidence but never counts it PASS. Original46cases stay zero finalPASS until local completion gates.",
+    "No RHEL7, Python3.6 execution, full native Work/resume, signing, fleet activation, actual retirement or production deployment proof. W004 local RPM/nginx implementation remains separate."
+  ]
+}

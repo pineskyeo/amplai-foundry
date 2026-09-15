@@ -67,6 +67,19 @@ Hermes는 app runner를 activate할 수 없고, DRAFT Work의 activation은 별�
 
 ## Kit installer 원칙
 
+Kit 2.5.0의 generic baseline은 신규 개발 저장소에서 명시적으로 opt-in한다.
+`--bootstrap-baseline --repo-profile generic --dry-run`으로 먼저 변경 계획을 확인한다.
+기존 파일·규칙·host trust와 Project Store 연결은 자동으로 교체하지 않는다.
+Package 전체 checksum을 검증하며 같은 버전명도 무결성 검사를 생략하지 않는다.
+
+첫 문서 작업에서는 실제 app identity에 맞는 repository_id와 guide의 단일 metadata owner를
+확정한다. 기존 guide의 보안·audience·version을 읽고 명시적 Markdown-file roots와
+adjacent .amplai.json 또는 JSON frontmatter를 등록한다. ACTIVE라는 예전 label이나
+baseline 설치 성공은 문서 검토 승인이 아니다. 기능 작업의 같은 work 흐름에서 현재
+source/dependency evidence를 검토하고 configured offline view를 검증한다.
+`document_source_routes`는 개발용 원본을 담당 guide에 연결하거나 과거 baseline을
+그대로 보존한다. 필수 guide, 미분류 원본, 변경된 이력은 이 경로로 우회하지 않는다.
+
 - 모든 파일을 preflight한 뒤 쓰기 시작한다.
 - Kit-owned 파일은 이전 설치 hash가 유지된 경우만 자동 업데이트한다.
 - 로컬 수정은 기본적으로 conflict이며 덮어쓰지 않는다.

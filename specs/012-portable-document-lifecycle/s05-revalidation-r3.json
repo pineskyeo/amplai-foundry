@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "task": "PORTABLE-DOC-T005",
+  "slice": "S05",
+  "status": "LOCAL_PASS",
+  "observed_at": "2026-09-11 15:00:08 UTC",
+  "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S05",
+  "exit_code": 0,
+  "canonical_verdict": "PASS",
+  "pytest_progress_passes": 110,
+  "fast_checks_passed": 5,
+  "log": "s05-revalidation-r3.log",
+  "task_input": "s05-revalidation-r3-input-tasks.md",
+  "tasks_sha256": "d0426cd3f349eda62721473208d9ac35ea74beb2b90975c80d00d0dc807c491f",
+  "source_snapshot": "revalidation-source-r3.json",
+  "source_scope_sha256": "03c95aaf66064e425e7badeac7f0e0b2eeb78d1ad05c35f94051abd74634f627",
+  "source_files_verified": 147,
+  "source_drift": [],
+  "history": "Original task and R1/R2 evidence remain retained. This is current local revalidation, not independent R3 completion.",
+  "limits": [
+    "Full S08/current guide and Context/three-lens R3 remain separate",
+    "No full-native Work/Python3.6/RHEL7/production PASS"
+  ]
+}

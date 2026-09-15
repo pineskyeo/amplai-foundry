@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "reviewed_at": "2026-09-12 02:57:59 UTC",
+  "capability": "speckit-analyze under existing work controller",
+  "verdict": "PASS",
+  "verdict_scope": "R4 repair plan/tasks consistency and S16 implementation readiness, not completion",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "fbeb9da0f28f8a5a6b888c9504eddac5b50b3317dbebc289e3b9199b30f6f102",
+    "tasks.md": "9050da7ee4857a4ae002d0e4d1b02b15b64c5ae0d8696dc735cb612b5672dde7",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080",
+    "knowledge-readiness.json": "75db4bb72cd34c392cff1cf823f07c4160933fa1c17a4125a629ce6438bc81ea",
+    "context-pack.json": "ea1037b3607505b6802f7f90da8fe07989a05199b9d31e0c9c2f021b8a4bec4e",
+    "task-manifests/PORTABLE-DOC-T001.yaml": "a59d007dd8b2e0b2c188d128b417ecd677cd3c9fb5d305a3230fa469ef2f2d50",
+    "task-manifests/PORTABLE-DOC-T002.yaml": "c4e7dff9a19f710770660163f852bc71932ce5f369b775ef0acae67d848c9b52",
+    "task-manifests/PORTABLE-DOC-T003.yaml": "f3ab98f96e8f967c95c6d2dedbc4e1c3500b29ca5762c42d305e36b319a732dc",
+    "task-manifests/PORTABLE-DOC-T004.yaml": "1973945d45f1d64a302336120b2fdca3bcd6017df11c4c0ec95aa1457ec00102",
+    "task-manifests/PORTABLE-DOC-T005.yaml": "67b51a522abba1675c3cc54e24922bea8f621fdd9bcba7783abada2b3b779932",
+    "task-manifests/PORTABLE-DOC-T006.yaml": "e2f1e5377a99a72e79705c186b3178475cefb336064997b79d080144539b47ae",
+    "task-manifests/PORTABLE-DOC-T007.yaml": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+    "task-manifests/PORTABLE-DOC-T008.yaml": "351206731bcbae7c7d995b40984b80f313028d6b3901a60016832651eb8170ab",
+    "task-manifests/PORTABLE-DOC-T009.yaml": "0346de52090cfd0a0f3807b08952727305df25f29011d9b17ff0be7d9ccfe985",
+    "task-manifests/PORTABLE-DOC-T010.yaml": "1b54b5e12a06f365584da222e6f306ebd464a7ef0fa0329ae383c5014d5c2224",
+    "task-manifests/PORTABLE-DOC-T011.yaml": "a4938afbf0feb62fe00079f623b035e5f5a79a111c51ebfe68609c37d7d8752b",
+    "task-manifests/PORTABLE-DOC-T012.yaml": "e78c4b2d432cd05a205d23264795c72a29eef64ad01608145b98f127b33a0467",
+    "task-manifests/PORTABLE-DOC-T013.yaml": "de1858dc22b73280c257f76bc36202b0352716de8e8522c98017a4a194751cea",
+    "task-manifests/PORTABLE-DOC-T014.yaml": "3b1fccbd04e87890a75b2ceac207527cb7d65b00144c16ae4d7c5727ed9dcca3",
+    "task-manifests/PORTABLE-DOC-T015.yaml": "dcdc55515ab5fbd5ce6fccd26f04f1b1f46856bb0cae361f2787026f35504168",
+    "task-manifests/PORTABLE-DOC-T016.yaml": "0b7d8173ba0357e60d01fd9cb10f05fc7cde9525492f3897b1f4ff3984f216ca",
+    "task-manifests/PORTABLE-DOC-T017.yaml": "d1f04b6111d0e177eb13e3797a870d9c8e5c1deb8e01210a00cca9023eb7f5aa",
+    "task-manifests/PORTABLE-DOC-T018.yaml": "d430ac024e8d47de9e850915e526c468286c2fd9d641bf5ed32e6eb8b9907e4c",
+    "task-manifests/index.yaml": "7607ec4dd7a5671228df8dbadb5d308bace24e974c5172c7fd0a38fc96a5264b"
+  },
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "feature_requirements": 15,
+    "work_acceptances": 8,
+    "tasks": 18,
+    "new_repair_tasks": 3,
+    "needs_revalidation": 13,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0
+  },
+  "executed": [
+    {
+      "id": "taskify",
+      "command": [
+        "python3",
+        "-B",
+        ".agents/skills/taskify/scripts/validate_task_manifest.py",
+        "specs/012-portable-document-lifecycle/task-manifests"
+      ],
+      "exit_code": 0,
+      "summary": "PASS: validated 18 task manifest(s)",
+      "stderr": ""
+    },
+    {
+      "id": "prerequisites",
+      "command": [
+        "bash",
+        ".specify/scripts/bash/check-prerequisites.sh",
+        "--json",
+        "--require-tasks",
+        "--include-tasks"
+      ],
+      "exit_code": 0,
+      "summary": {},
+      "stderr": ""
+    },
+    {
+      "id": "traceability",
+      "command": [
+        "node",
+        "specs/012-portable-document-lifecycle/verify-traceability.mjs",
+        "/Users/pinesky/workspace/synapse-app-split"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "verdict": "PASS_TRACEABILITY_ONLY",
+        "requirements": 23,
+        "cases": 46,
+        "passed_cases": 0,
+        "source_hashes": {
+          "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+          "plan.md": "fbeb9da0f28f8a5a6b888c9504eddac5b50b3317dbebc289e3b9199b30f6f102",
+          "tasks.md": "9050da7ee4857a4ae002d0e4d1b02b15b64c5ae0d8696dc735cb612b5672dde7",
+          "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+          "acceptance-map.json": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080"
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "contract",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "contract",
+        "validate",
+        "specs/012-portable-document-lifecycle/work-contract.json"
+      ],
+      "exit_code": 0,
+      "summary": "CONTRACT: PASS",
+      "stderr": ""
+    },
+    {
+      "id": "readiness",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "readiness",
+        "evaluate",
+        "specs/012-portable-document-lifecycle/knowledge-readiness.json"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "verdict": "READY",
+        "errors": []
+      },
+      "stderr": ""
+    },
+    {
+      "id": "context",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "context",
+        "validate",
+        "specs/012-portable-document-lifecycle/context-pack.json"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "exit_code": 0,
+        "verdict": "MATCH",
+        "content_hash": "6370f4f7102735bf6b8dfb4fe08e61ed2a4ff2e0d6071cdd7898b7cb62e8904f",
+        "source_count": 20,
+        "errors": []
+      }
+    }
+  ],
+  "semantic_checks": {
+    "scope": "Three reproduced R4 defects repair existing requirements under E021; original IDs/procedures/authority/target limits unchanged.",
+    "dag": "S16 -> S17; S18 independent but executed next under main ownership. S14 revalidation waits on S17/S18. Original predecessor graph remains acyclic and all repairs precede S08.",
+    "ownership": "Canonical document engine, portable payload/installer, scoped tests and documentation metadata only. No Vault/Platform/other-app/runtime trust writes.",
+    "history": "R4 540-file archive and7exact raw copies retained. Original13task completions moved to completion_history, not lost or reset to ready.",
+    "verifier": "New typed-visibility test module is an explicit S17 harness deliverable. All commands use existing pytest/seal/selftest tools. Existing predecessor commands and fullS08 remain required.",
+    "classification": "Exact typed reference identity and classifier/borrowed-mode controls have independent and main failing-before evidence. Missing source classification remains fail-closed until explicitly resolved; no blanket allow shortcut.",
+    "constitution": "No governed mutation or publication; executable evidence and three fresh independent lenses remain non-negotiable.",
+    "context": "Knowledge Readiness control refresh invalidated old Context as designed; explicit regeneration preserved R4 Context separately and new20-source Context validates MATCH."
+  },
+  "findings": [],
+  "known_implementation_blockers": [
+    "W003-R4-02 -> S16",
+    "W003-R4-01 -> S17",
+    "W003-R4-03 -> S18"
+  ],
+  "next_task": "PORTABLE-DOC-T016",
+  "current_context_hash": "6370f4f7102735bf6b8dfb4fe08e61ed2a4ff2e0d6071cdd7898b7cb62e8904f",
+  "previous_analysis": "analysis-before-r5-repair.json",
+  "extension_hooks_present": false,
+  "open_questions": [],
+  "limits": [
+    "Readiness is not fixed code, full integration, independent review or deployment PASS.",
+    "No unavailable Python3.6/RHEL7/fullnativeWork/fleet/realretirement/deploymentBOM evidence is waived."
+  ]
+}

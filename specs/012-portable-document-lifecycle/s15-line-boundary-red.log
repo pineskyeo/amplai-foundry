@@ -1,0 +1,340 @@
+Initial progress: ...FFFFFFFF...FFFFFFFF...FFFFFFFF...FFFFFFFFFFFFFFFFFF
+FFFFFF             [100%]
+=================================== FAILURES ===================================
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x0b] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x0c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1d] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1e] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x85] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\u2028] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\u2029] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x0b] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x0c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1d] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1e] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x85] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\u2028] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\u2029] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x0b] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x0c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1d] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1e] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x85] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\u2028] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\u2029] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x0b] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x0c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1c] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1d] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1e] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x85] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\u2028] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\u2029] _
+tests/ai/test_document_reference_resources.py:108: in test_reference_locations_share_physical_lines
+    assert [row["reference"] for row in links] == ["target.md"]
+E   AssertionError: assert [] == ['target.md']
+E     
+E     Right contains one more item: 'target.md'
+E     Use -v to get more diff
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0b] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0c] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1c] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1d] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1e] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x85] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2028] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2029] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0b] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0c] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1c] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1d] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1e] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x85] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2028] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2029] _
+tests/ai/test_document_reference_resources.py:127: in test_nonphysical_separator_cannot_hide_dependency_drift
+    assert before["snapshot"] != after["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-True-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[scripts/amplai_docs.py-False-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-True-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_reference_locations_share_physical_lines[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2029]

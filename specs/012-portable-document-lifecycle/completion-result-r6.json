@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "native_status": "DONE",
+  "native_completed_at": "2026-09-12T09:21:21Z",
+  "native_work_hash": "sha256:c4319dd556d468e307b0a50cfca26f4c339cc5e49075cac5093afdd58fd68f4a",
+  "review_evidence": {
+    "id": "CR-SYNAPSE-APP-SPLIT-E063",
+    "content_hash": "sha256:0095ffb244a662ed10a6f9f2aa88c3a4bf9bdc4fee204abdf21bbe57949883df"
+  },
+  "completion_evidence": {
+    "id": "CR-SYNAPSE-APP-SPLIT-E064",
+    "content_hash": "sha256:5d45dedf96801593b7301ef1551aaaed3c2982940f853395a50f5acb3bf185c9"
+  },
+  "tasks": 20,
+  "local_pass_cases": 43,
+  "unverified_cases": [
+    "AC-039-P",
+    "AC-050-P",
+    "AC-054-P"
+  ],
+  "whole_goal_complete": false,
+  "operationally_ready": false,
+  "next_work": "CR-SYNAPSE-APP-SPLIT-W004",
+  "authority": "Historical terminal snapshot; current Project Store remains authoritative. No reactivation or lease needed to read this completed Work."
+}

@@ -243,7 +243,7 @@ run_shell_step() {
   return 0
 }
 
-echo "==== amplai-foundry eval ===="
+echo "==== AMPLAI eval ===="
 echo "repo    : $REPO"
 [ -n "$FEATURE_DIR" ] && echo "feature : ${FEATURE_DIR#$REPO/}"
 [ -n "$TASKS_FILE" ] && echo "tasks   : ${TASKS_FILE#$REPO/}"

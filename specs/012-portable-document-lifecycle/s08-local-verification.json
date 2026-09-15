@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "recorded_at": "2026-09-11T10:34:30.590Z",
+  "status": "LOCAL_CANONICAL_PASS_PENDING_DOCUMENT_VIEWS_AND_INDEPENDENT_REVIEW",
+  "verification": {
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S08",
+    "exit_code": 0,
+    "tests_passed": 1880,
+    "tests_deselected": 4,
+    "seconds": 419.72,
+    "verifier_checks": [
+      "ruff-check",
+      "ruff-format",
+      "mypy",
+      "loop-runtime-doctor",
+      "manifest-validator",
+      "pytest",
+      "loop-shell-syntax",
+      "schema",
+      "vault-lint",
+      "project-pack",
+      "kit-seal"
+    ],
+    "package_selftests": 12,
+    "log": {
+      "path": "s08-canonical-eval.log",
+      "sha256": "487b45a4504c033dc28f82a634b2851150ec1bd115aacaf2f86dc4db4fdc970c"
+    },
+    "source_hashes": {
+      "scripts/amplai_docs.py": {
+        "sha256": "d99b4214efd69866abe28c6aea15c1b11914823e2967df8a80338621b5c5ede3",
+        "bytes": 168860
+      },
+      "scripts/loopctl.py": {
+        "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+        "bytes": 53104
+      },
+      "scripts/loopv2.py": {
+        "sha256": "24e8fef4c81bf300f930296ed4c99384849cf14429fabf991ac9866ccad86694",
+        "bytes": 74454
+      },
+      "scripts/amplai.py": {
+        "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+        "bytes": 29229
+      },
+      "scripts/amplai_runtime.py": {
+        "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+        "bytes": 121061
+      },
+      "tools/amplai-loop-kit/install.py": {
+        "sha256": "cb385fc7859cd84b751024fa9bf13164c28364139c85d81fdac8d7cb635206b1",
+        "bytes": 77981
+      },
+      "tools/amplai-loop-kit/CHECKSUMS.sha256": {
+        "sha256": "f8dcb3ecd279b095e508ddfbd5aade8776b9de46f076222bd54f06f72f3a2e63",
+        "bytes": 13284
+      },
+      "tests/ai/test_document_integration.py": {
+        "sha256": "c38db8b52a16fbb7f887cfcce082e65392532bc5b1363061b4fee6275482a01a",
+        "bytes": 17504
+      },
+      "tests/ai/test_document_html.py": {
+        "sha256": "7a61ad127c9c7c094707610cc8cc61002e2628562ab91ae2de96b96da0ad68d2",
+        "bytes": 26077
+      },
+      "specs/012-portable-document-lifecycle/tasks.md": {
+        "sha256": "f4b09b749738ee2893ad84a5e200828a69fa66e46585e0d74496b2b4e91e6d73",
+        "bytes": 3390
+      },
+      "specs/012-portable-document-lifecycle/context-pack.json": {
+        "sha256": "15cd83dbc364879fadbaab920c71217239cc4f7f5b30a78ea41ca3bb16a50498",
+        "bytes": 8792
+      }
+    }
+  },
+  "environment": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.15",
+    "portable_system_python": "3.9.6",
+    "scope": "Local source, canonical payload and isolated installed fixtures; four live Slack tests intentionally deselected."
+  },
+  "observations": {
+    "current_integration_tests": 24,
+    "normal_view_workflow": "Source and actual sealed installed code-change -> impact -> attributed review -> release rebinding -> sync-views -> validate; exercised by the full suite.",
+    "native_transport": "s08-native-final.json",
+    "guide_reference_pins": "s08-guide-components.json",
+    "preservation": "Exact original-family, restrictive-umask recovery, source reread drift and report-only protections included.",
+    "metadata_only_during_run": "Root and Knowledge guide prose clarified review-store ownership; semantic re-review uses s08-document-review-evidence-r2.json. No product runtime or test code changed during the canonical run."
+  },
+  "repair_history": {
+    "structural_store": "Canonical publication SOURCE_DRIFT reproduced in required directories; configured output roles separated from directory inputs; explicit named files and ignored unknown siblings remain bound.",
+    "red": "Two required-directory reproductions failed at the publication guard. Two initial tree fixtures lacked child entries and failed their negative assertion; corrected fixtures now assert structural classification.",
+    "focused_closure": "Five focused cases passed before the final 1880-test canonical pass.",
+    "retained_logs": [
+      "w003-s08-store-cycle-red.log",
+      "w003-s08-store-cycle-green.log",
+      "w003-s08-store-cycle-closure.log"
+    ],
+    "previous_passes": "1875-test result and earlier passes remain historical evidence, not substituted for this run."
+  },
+  "limits": [
+    "Independent reviews, actual guide views and report-only final gardening are separate completion gates.",
+    "No Python 3.6 execution, RHEL7, real RPM installation, production API/private fixture or deployment proof.",
+    "Native CLI constant-answer transport is not a native Work lifecycle or host-resume test.",
+    "No live deployment, fleet install, Git publication, canonical Vault mutation or real retirement."
+  ]
+}

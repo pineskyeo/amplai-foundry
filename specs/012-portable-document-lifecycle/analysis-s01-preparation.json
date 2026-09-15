@@ -1,0 +1,235 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "reviewed_at": "2026-09-11T03:40:30Z",
+  "capability": "speckit-analyze under work controller",
+  "verdict": "PASS",
+  "source_hashes": {
+    "spec.md": "bfa25985715076ba20cc08aeffdeb712fd55719ea49f3dc851f36cd29465bc01",
+    "plan.md": "f25ab3eafe7ad2f9e43541df7f1dbe0cb0583c3ea5c83af5bef1cb301cba691a",
+    "tasks.md": "aeb66e9d6dc6797382cf0b1bca7da51b6f6f2c4d089cdf22259ee2f1ae03326d",
+    "work-contract.json": "71fe10c0afe9c5023d4df154016d1690a0cd90a0ae37351de2e3c8f8994270e5",
+    "acceptance-map.json": "67eba3097e96a9e36032f6ebec05ac7fd89c9f7013a561bcb9c9a930160a589e"
+  },
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "feature_requirements": 15,
+    "work_acceptances": 8,
+    "tasks": 8,
+    "unmapped_tasks": 0,
+    "critical": 0,
+    "high": 0
+  },
+  "coverage": [
+    {
+      "task": "PORTABLE-DOC-T001",
+      "requirements": [
+        "REQ-034",
+        "REQ-035",
+        "REQ-037",
+        "REQ-040",
+        "KIT-001"
+      ],
+      "cases": [
+        "AC-034-P",
+        "AC-034-N",
+        "AC-035-P",
+        "AC-035-N",
+        "AC-037-P",
+        "AC-037-N",
+        "AC-040-P",
+        "AC-040-N"
+      ],
+      "depends_on": []
+    },
+    {
+      "task": "PORTABLE-DOC-T002",
+      "requirements": [
+        "REQ-036",
+        "REQ-038",
+        "REQ-039",
+        "KIT-001",
+        "KIT-002"
+      ],
+      "cases": [
+        "AC-036-P",
+        "AC-036-N",
+        "AC-038-P",
+        "AC-038-N",
+        "AC-039-P",
+        "AC-039-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T003",
+      "requirements": [
+        "REQ-043",
+        "REQ-047",
+        "REQ-052",
+        "DOC-002"
+      ],
+      "cases": [
+        "AC-043-P",
+        "AC-043-N",
+        "AC-047-P",
+        "AC-047-N",
+        "AC-052-P",
+        "AC-052-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T004",
+      "requirements": [
+        "REQ-026",
+        "REQ-044",
+        "REQ-045",
+        "REQ-082",
+        "DOC-001",
+        "DOC-002"
+      ],
+      "cases": [
+        "AC-026-P",
+        "AC-026-N",
+        "AC-044-P",
+        "AC-044-N",
+        "AC-045-P",
+        "AC-045-N",
+        "AC-082-P",
+        "AC-082-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T003"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T005",
+      "requirements": [
+        "REQ-042",
+        "REQ-053",
+        "REQ-054",
+        "REQ-055",
+        "DOC-003"
+      ],
+      "cases": [
+        "AC-042-P",
+        "AC-042-N",
+        "AC-053-P",
+        "AC-053-N",
+        "AC-054-P",
+        "AC-054-N",
+        "AC-055-P",
+        "AC-055-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T003",
+        "PORTABLE-DOC-T004"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T006",
+      "requirements": [
+        "REQ-048",
+        "REQ-050",
+        "REQ-051",
+        "REQ-075",
+        "DOC-004"
+      ],
+      "cases": [
+        "AC-048-P",
+        "AC-048-N",
+        "AC-050-P",
+        "AC-050-N",
+        "AC-051-P",
+        "AC-051-N",
+        "AC-075-P",
+        "AC-075-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T004"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T007",
+      "requirements": [
+        "REQ-041",
+        "WORK-001"
+      ],
+      "cases": [
+        "AC-041-P",
+        "AC-041-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T008",
+      "requirements": [
+        "REQ-026",
+        "REQ-034",
+        "REQ-035",
+        "REQ-036",
+        "REQ-037",
+        "REQ-038",
+        "REQ-039",
+        "REQ-040",
+        "REQ-041",
+        "REQ-042",
+        "REQ-043",
+        "REQ-044",
+        "REQ-045",
+        "REQ-047",
+        "REQ-048",
+        "REQ-050",
+        "REQ-051",
+        "REQ-052",
+        "REQ-053",
+        "REQ-054",
+        "REQ-055",
+        "REQ-075",
+        "REQ-082",
+        "KIT-001",
+        "KIT-002",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "WORK-001",
+        "REG-001"
+      ],
+      "cases": [
+        "PORTABLE-DOC-T008-AC1"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T002",
+        "PORTABLE-DOC-T003",
+        "PORTABLE-DOC-T004",
+        "PORTABLE-DOC-T005",
+        "PORTABLE-DOC-T006",
+        "PORTABLE-DOC-T007"
+      ]
+    }
+  ],
+  "resolved": [
+    {
+      "id": "ANALYZE-001",
+      "severity": "HIGH",
+      "boundary": ".specify/scripts/taskify_to_tasks_md.py -> scripts/eval.sh",
+      "observation": "Precondition renderer emitted Phase sections while evaluator reads Slice/Eval",
+      "resolution": "Approved S01 harness seam reused existing generic renderer; JSON-first generator/validator run under -I -S; 15 focused tests PASS; list-slices exposes S01"
+    }
+  ],
+  "notes": [
+    "Generated tasks.md remains a projection, not the acceptance owner.",
+    "New document harness commands are explicit later-slice deliverables, not claimed existing PASS.",
+    "S01 runtime assembly and S02 isolated installation jointly cover fresh-repo acceptance; neither is marked complete.",
+    "No constitution exception. Native activation occurred under E021. No live install, new controller, private Vault copy, publication or production test."
+  ]
+}

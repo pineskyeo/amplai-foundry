@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "capability": "speckit-analyze under existing work controller",
+  "reviewed_at": "2026-09-12 06:32:49 UTC",
+  "verdict": "PASS",
+  "verdict_scope": "Plan/task/readiness consistency for bounded S20/S19 repairs, not implementation or completion. The existing Context MATCH is explicitly known to omit3guides until S19; main read the owning guides and retained the actual RED. No defect is waived.",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "4a8fa0474540aa0876b2343099c849ecb584250be2e0f817c0974e94104e9357",
+    "research.md": "b86f8843daf28883f7f658732a37772f0e04a9c4befe124be562b17f563407a5",
+    "tasks.md": "c207da005bb7f7d8e582f487ba4026cabd47195985dbedd882bce26d72618fe3",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "66e6d563e5d44e4796bc4c18d09262ec796f50d90526a96e5f30d8a663216c95",
+    "knowledge-readiness.json": "6ee2c50497ccca6e45981710cfb420a20c5c3334cec2c56d5d402b4ced8e98f2",
+    "domain-discovery.json": "7768a45992cf5cfa5db0d22320b6c0f3f073c69daaaa19de3df12f3415593fb5",
+    "context-pack.json": "e1ad16565f99dac7d10a546e6881c7292412bdca04322b93cc519b833692cafb",
+    "environment.json": "2187b368de510655101d0065a119ec0ca5e9d4465e3aa7c15feffa554c5beb9e",
+    "review-r5.json": "7977ac1348685f1e2edb7f041c8138dfe01c47d048b929522506d047c98af313",
+    "task-manifests/index.yaml": "beb887f8420335651ce6d887afb1eb5d3999693e6cebcd1a43c1adf0b036f657",
+    "task-manifests/PORTABLE-DOC-T001.yaml": "eadfe8f7f92f4659362c0567da0b4d05322142f55d198c79a03d38591808ec55",
+    "task-manifests/PORTABLE-DOC-T002.yaml": "d0a3cf6c539df600a7dfff3adf3abefd50c962ce8855cf4e6963ee3b23c297b7",
+    "task-manifests/PORTABLE-DOC-T003.yaml": "c1ea056d32fb93e6ae6eeb22c637863fd41ab237f0d8f4b5e937e880bffa0ddc",
+    "task-manifests/PORTABLE-DOC-T004.yaml": "7d9825787977a7e62b9f720a2ed99d347481d2fb9346c328a7d4bcb12802f497",
+    "task-manifests/PORTABLE-DOC-T005.yaml": "bb393454dc9e58375707c2b67db5cc6986008f125ba4ea69bc17c410dd6c0fff",
+    "task-manifests/PORTABLE-DOC-T006.yaml": "64b5a7b76a8e8cb1f6d6f8cc4f7515355ec6ed293a4b60231d2f556152ed7282",
+    "task-manifests/PORTABLE-DOC-T007.yaml": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+    "task-manifests/PORTABLE-DOC-T008.yaml": "07501abda661fb04457986fd8cd23a3304e80efe049b9d01a3d3e51cbc531b5b",
+    "task-manifests/PORTABLE-DOC-T009.yaml": "6a2bfc15700feaa96ce416aa2ef0910be6aa338833f6b1e1ebb7b3fdc74b157c",
+    "task-manifests/PORTABLE-DOC-T010.yaml": "ad1b7e0f5bdc52720960bed48972700aa0a3a60e23fa6061e6737ed5a67591b7",
+    "task-manifests/PORTABLE-DOC-T011.yaml": "752dbe0acf705f3ff835d98dd822276bcc3361e0892bce43c19f220534427bad",
+    "task-manifests/PORTABLE-DOC-T012.yaml": "c252164172fbd30c7610ba95464d882f5ff5182a005c1043c6a41e923a5249c0",
+    "task-manifests/PORTABLE-DOC-T013.yaml": "0bc591e8125c25927341169fa9ceddb5f4d7268851db34cdc094d3ca195eb257",
+    "task-manifests/PORTABLE-DOC-T014.yaml": "09b2129734e869ac64e5b2d3e4b64ed89ef05c2407e32446399d29e7c1040529",
+    "task-manifests/PORTABLE-DOC-T015.yaml": "6b4251626aa35a40acca48db511be1bfecb9798f0f9f029480c0127163f219e6",
+    "task-manifests/PORTABLE-DOC-T016.yaml": "fadf6b5d5a832aed80ae4c83cfbdf1dae1057b4aeddea8c69f4756f528acbabd",
+    "task-manifests/PORTABLE-DOC-T017.yaml": "b79bf3b92582e667d24ffbf6e20eda4595ba106b89ea3dba2d77832e58771cf0",
+    "task-manifests/PORTABLE-DOC-T018.yaml": "78eb6999f0055448c39a4c8595decd48620fa6743b7c3e088670966edc78ced4",
+    "task-manifests/PORTABLE-DOC-T019.yaml": "39810788f53dea02fbd5e57a02077eb98475765c3129fa4d03ee452540761845",
+    "task-manifests/PORTABLE-DOC-T020.yaml": "2b327f3b828ba8d3e64c7e364ecb2b76fbaee9ac116f938cd24ec4898d93459c"
+  },
+  "current_context_hash": "b93534a2e17f674c2f5b4f43b09935f5da8468b02be075eb5b34cd5459d8a86c",
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "tasks": 20,
+    "revalidation_queue": 14,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0,
+    "uncovered_requirements": 0
+  },
+  "executed": [
+    {
+      "command": "python3 -B .specify/scripts/taskify_to_tasks_md.py specs/012-portable-document-lifecycle/task-manifests --out specs/012-portable-document-lifecycle/tasks.md",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "bash .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B .agents/skills/taskify/scripts/validate_task_manifest.py specs/012-portable-document-lifecycle/task-manifests",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py contract validate specs/012-portable-document-lifecycle/work-contract.json",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py readiness evaluate specs/012-portable-document-lifecycle/knowledge-readiness.json",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py context build specs/012-portable-document-lifecycle --force",
+      "exit_code": 0,
+      "complete": true
+    }
+  ],
+  "additional_executed": [
+    {
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "summary": "MATCH; existing missing-guide behavior remains a RED repair target"
+    },
+    {
+      "command": "node specs/012-portable-document-lifecycle/verify-traceability.mjs /Users/pinesky/workspace/synapse-app-split",
+      "exit_code": 0,
+      "summary": "23original requirements/46cases preserved,0finalPASS"
+    },
+    {
+      "command": "read-only Node manifest/index/command/scope/DAG audit",
+      "exit_code": 0,
+      "summary": "20manifests; required commands agree, no unknown original coverage or out-of-contract allowed path"
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py doctor",
+      "exit_code": 0,
+      "summary": "Repository controller/profile/knowledge/skill parity PASS"
+    },
+    {
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --list-slices",
+      "exit_code": 0,
+      "summary": "S20 first, then S19 and14revalidations/S08;3already-done slices excluded by existing renderer"
+    }
+  ],
+  "refinements": [
+    "S20 uses strict disclosure-only resolution, bounded metadata and safe absence controls; source/payload/installed/view parity and exact seal stay required.",
+    "S19 registers exactly3guides and tests actual generated/stored Context hashes plus normal validation and old product guard.",
+    "Named new pytest files are explicit task deliverables, not yet existing/verified harnesses. Canonical S20/S19 execution remains required after implementation.",
+    "Original requirement IDs, original case data, contract/schema/authority, older completion evidence and source snapshots remain unchanged. No requirement-class decision or external dependency is hidden.",
+    "Fresh source guide review, current actual Context, immutable R6 HTML/browser and three fresh sequential reviewers follow full current-source integration."
+  ],
+  "prior_analysis": "analysis-before-r6-repair.json",
+  "remaining": [
+    "Implement and canonically verify S20 then S19",
+    "Fourteen affected canonical regressions/fullS08",
+    "25current source reviews/actual Context/immutable R6 HTML/browser",
+    "Three sequential R6reviews; report-only garden/security/native completion",
+    "W004 packaging/actual target proof remains separate"
+  ],
+  "questions": [],
+  "business_scope_changes": false
+}

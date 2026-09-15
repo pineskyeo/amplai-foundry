@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": "R2",
+  "lens": "failure/recovery",
+  "scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014",
+  "verdict": "CHANGES_REQUIRED",
+  "scope_before": {
+    "source_files": 146,
+    "governing_artifacts": 157,
+    "sha_bytes_modes_checked": 303,
+    "mismatches": [],
+    "digest_match": true
+  },
+  "scope_after": {
+    "source_files": 146,
+    "governing_artifacts": 157,
+    "sha_bytes_modes_checked": 303,
+    "mismatches": [],
+    "digest_match": true
+  },
+  "excluded_projections": [
+    ".specify/eval/history.jsonl",
+    ".specify/eval/last.json",
+    ".specify/eval/verifier-last.json",
+    "specs/012-portable-document-lifecycle/doc-impact.json"
+  ],
+  "archive": {
+    "path": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r2-source-snapshot.tar.gz",
+    "verified_sha256": "4a82c6b7e328c2ce05a80621e058e5b386c5e592ac15ecd0aba7986963a7e815"
+  },
+  "reviewed_evidence": {
+    "governance": [
+      "AGENTS.md",
+      ".agents/skills/code-review/SKILL.md",
+      ".ai-team/README.md",
+      ".ai-team/policy/permissions.json",
+      ".ai-team/rules/test-discipline.md",
+      ".ai-team/rules/contract-registry.md"
+    ],
+    "feature": "specs/012-portable-document-lifecycle: work-contract, spec, plan, portable-operations, T002/T006/T008/T011 task contracts and handoff notes, readiness/discovery/context, environment, evidence trace and S11/R2 verification",
+    "readiness": "READY; no blocking questions or contradictions. Context retains 20 required inputs and 11 active Decisions; current trace has 45 records. Selected active Decision ownership and runtime constraints were read, without promoting candidate evidence.",
+    "actual_source": [
+      "scripts/amplai_docs.py: SourceTree, atomic_json, review_batch, impact publication, retirement/recovery",
+      "tools/amplai-loop-kit/install.py: transaction journal, rollback, recovery and final inventory",
+      "focused review/preservation/baseline behavioral tests"
+    ],
+    "diff": "Read-only diff of frozen R1 and R2 amplai_docs.py; S11 changes exact serialization/reader budgets while permission-handling defect remains. No repository Git mutation. No full pre-Work base archive was available."
+  },
+  "own_checks": [
+    {
+      "kind": "executed_existing_tests",
+      "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-recovery.zmHcth/pytest-review tests/ai/test_document_review.py -k 'budget or concurrent_writers or invalid_batch or publication_failure or exact_retry or process_interruption or current_review_cannot_survive'",
+      "exit_code": 0,
+      "passed": 18
+    },
+    {
+      "kind": "executed_existing_tests",
+      "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-recovery.zmHcth/pytest-preserve tests/ai/test_document_preservation.py -k 'user_backups or failure_restores or reference_drift_after_backup or killed_process or recovery_refuses or failed_verifier or recovery_index_hash or exact_section_split or approval_binding'",
+      "exit_code": 0,
+      "passed": 20
+    },
+    {
+      "kind": "executed_existing_tests",
+      "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=/tmp/w003-r2-recovery.zmHcth/pytest-install tests/ai/test_portable_baseline.py -k 'mid_transaction_failure or concurrent_installers or preflight_drift or local_edit_conflict or profile_omitted_repeat'",
+      "exit_code": 0,
+      "passed": 7
+    },
+    {
+      "kind": "independent_negative_probe",
+      "path": "/tmp/w003-r2-recovery.zmHcth/probe_atomic_modes.py",
+      "sha256": "a8729517b2dbea20bbe8596509efd59a839f03c1001def7bc44e977da550dd66",
+      "execution_exit_code": 0,
+      "behavior": "Two reproduced permission failures; content-drift and replace-fault controls pass. All writes under this temporary report directory; engine imported from frozen source with exact SHA checked.",
+      "harness_note": "First invocation exited 1 before fixture mutation because /tmp resolves to /private/tmp. Canonicalized the expected import path; corrected probe then executed. This was a probe assertion, not a product failure."
+    },
+    {
+      "kind": "independent_public_api_probe",
+      "path": "/tmp/w003-r2-recovery.zmHcth/probe_public_review_modes.py",
+      "sha256": "b91376048089abbda8509b877ca39791d113379b154246cf6bdb33465c540239",
+      "execution_exit_code": 0,
+      "behavior": "Both docs_review_batch cases return RESOLVED despite permission violations. Fixture source was copied from the frozen R2 source; imported amplai_docs.__file__ and SHA were asserted before mutation. Git operations were confined to the disposable fixture."
+    }
+  ],
+  "findings": [
+    {
+      "id": "R2-F1",
+      "severity": "Blocking-P2",
+      "path": "scripts/amplai_docs.py",
+      "line": 2064,
+      "related_locations": [
+        "scripts/amplai_docs.py:2074",
+        "scripts/amplai_docs.py:2081",
+        "scripts/amplai_docs.py:2626",
+        "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:2064"
+      ],
+      "title": "Atomic review publication does not preserve or revalidate file permissions",
+      "reproduction": [
+        "Create a valid reviewed fixture, chmod document-reviews.json to 0640, set process umask to 0077, and submit another valid review. docs_review_batch returns RESOLVED but canonical store mode becomes 0600.",
+        "Start with canonical store mode 0644 under umask 0022. At the final before_publish recheck boundary, independently chmod the target to 0600 without changing bytes. docs_review_batch returns RESOLVED and replaces it with mode 0644, undoing the permission tightening."
+      ],
+      "cause": "The pending file receives the old mode through os.open, where umask removes bits; fchmod never restores the captured mode. Publication checks only expected content bytes, so a concurrent metadata/permission change is ignored and stale permission bits are restored.",
+      "impact": "Successful publication can remove access from authorized group readers or undo a concurrent restriction on review metadata. Current budget and publication tests pass under the ambient umask, so they do not prove the stated mode-preservation guarantee.",
+      "violated_contract": [
+        "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T011.yaml:78 requires mode preservation",
+        "specs/012-portable-document-lifecycle/plan.md:133 requires target-state recheck before mutation",
+        "specs/012-portable-document-lifecycle/contracts/portable-operations.md:41 requires concurrent drift to preserve previous evidence"
+      ],
+      "minimal_fix": "Capture and revalidate target identity and permission metadata in addition to expected bytes, reject concurrent drift, and fchmod the pending descriptor to the validated preserved mode before fsync/publication. Keep new-file private defaults and existing byte-budget checks. Add public review-batch tests under a restrictive umask and a deterministic concurrent chmod; update the canonical payload and reseal."
+    }
+  ],
+  "known_other_lens_blockers": [
+    {
+      "id": "R2-C1",
+      "severity": "P1",
+      "report": "/tmp/w003-r2-contract.UA0V8z/review-contract-r2.json",
+      "verified_report_sha256": "7ea9f59f76f8de250fed5580417077c696a895ec7aff63ba1585b0c1e937daed",
+      "disposition": "Acknowledged existing contract blocker; not re-counted as a recovery finding or reprobed."
+    }
+  ],
+  "retained_not_rerun": {
+    "evidence": "specs/012-portable-document-lifecycle/s08-local-verification-r2.json and s08-canonical-eval-r2.log",
+    "full_suite_passed": 1945,
+    "live_slack_deselected": 4,
+    "v2_checks": 11,
+    "fast_checks": 5,
+    "seal_rows": 119,
+    "package_selftests": 12
+  },
+  "limits": [
+    "Own executed existing tests: 45 PASS, plus independent permission-failure probes and two passing atomicity controls. This is not a fresh full-suite run.",
+    "Native evidence is transport/minimal-context only; no actual full native Work/resume, Python 3.6, RHEL7, live Slack, fleet activation or production proof.",
+    "No source/governing/guide repair or real repository Git/Store/trust/Vault change was made. Report and probes are outside the repository. Final handoff/terminal status are still pending the overall review gate."
+  ],
+  "overall_gate": "CHANGES_REQUIRED; R2-C1 and the independent R2-F1 both remain open. Finish the third sequential lens before source repairs."
+}

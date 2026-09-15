@@ -90,6 +90,15 @@ python3 scripts/loopctl.py docs impact <feature-dir>
 python3 scripts/loopctl.py docs validate --repo
 ```
 
+문서만의 계약 변경도 영향 검사 대상이다. 내용·소유 metadata·정확한 release와 dependency
+pin을 기록하며 날짜만으로 freshness를 만들지 않는다. 현행 Context는 검토된 active 문서만
+선택하고 모든 claim evidence를 다시 확인한다. unavailable 필수 의존성은 UNKNOWN이며
+검증된 근거로 대체하지 않는다. 과거 문서는 명시적인 history 조회에서만 선택한다.
+
+변경하지 않아도 유효한 문서는 `docs review` 또는 `review-batch`로 검토자·이유·방법·실제
+evidence와 현재 snapshot을 남긴다. `docs validate <feature-dir>`도 통과해야 해당 설계의
+문서 검토가 완료된다. 정본 검토 기록과 파생 impact 파일을 혼용하지 않는다.
+
 과거 결정을 뒤집었으면 옛 항목을 지우지 않는다. 관련
 `docs/workstreams/*/DECISIONS.md`에 새 Decision을 append하고 이전 항목을 `superseded`로
 연결한다.

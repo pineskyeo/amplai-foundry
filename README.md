@@ -9,7 +9,7 @@ AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 �
 1. **AMPLAI Platform / Foundry (`src/amplai_foundry/`, 현재 `0.4.0`)** — 장기 제품이다.
    지식 intake, provenance, project identity, governance, decision, audit/outbox와 향후
    knowledge-aware agent control plane을 소유한다.
-2. **AMPLAI Loop Kit (`tools/amplai-loop-kit/`, 현재 `2.4.0`)** — 위 플랫폼과 각 앱을
+2. **AMPLAI Loop Kit (`tools/amplai-loop-kit/`, 로컬 통합 후보 `2.5.0`)** — 위 플랫폼과 각 앱을
    개발하기 위한 제거 가능한 development runtime이다. Contract, Work, evidence, local
    supervisor, installer와 Claude Code/Codex host adapter를 소유한다.
 
@@ -17,6 +17,10 @@ AMPLAI Foundry는 자연어 의도와 원문 증거를 프로젝트별 검토 �
 Kit, `.ai-team/`, Claude Code, Codex에 import 또는 runtime 의존하지 않는다.** Host 차이는
 runner/hook/skill adapter에서 끝내고 Project Store protocol과 product domain으로 새지 않게 한다.
 두 구성요소는 version, changelog, compatibility matrix와 release gate를 독립적으로 관리한다.
+
+Kit 2.5.0 후보는 runnable baseline, 문서 원본·검토·버전별 HTML과 안전한 인계를 포함한다.
+[Portable Development Guide](docs/PORTABLE-DEVELOPMENT.md)가 사용 절차를 설명한다.
+후보 구현과 로컬 검증은 실제 fleet 갱신·배포·RHEL7 운영 검증을 대신하지 않는다.
 
 Agent entry point는 Claude Code에서 `/work`, `/design`, Codex에서 `$work`, `$design`이다.
 공통 skill 정본은 `.agents/skills/`이고 `.claude/skills/`는 symlink mirror다.

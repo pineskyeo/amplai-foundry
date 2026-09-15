@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-11 15:01:38 UTC",
+  "status": "LOCAL_REVALIDATION_PASS",
+  "repair_evidence": [
+    "s12-evidence.json",
+    "s13-evidence.json"
+  ],
+  "source_snapshot": "revalidation-source-r3.json",
+  "source_scope_sha256": "03c95aaf66064e425e7badeac7f0e0b2eeb78d1ad05c35f94051abd74634f627",
+  "source_files": 147,
+  "source_drift": [],
+  "slices": [
+    {
+      "slice": "S09",
+      "evidence": "s09-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 154
+    },
+    {
+      "slice": "S10",
+      "evidence": "s10-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 124
+    },
+    {
+      "slice": "S11",
+      "evidence": "s11-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 102
+    },
+    {
+      "slice": "S01",
+      "evidence": "s01-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 55
+    },
+    {
+      "slice": "S02",
+      "evidence": "s02-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 128
+    },
+    {
+      "slice": "S03",
+      "evidence": "s03-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 77
+    },
+    {
+      "slice": "S04",
+      "evidence": "s04-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 140
+    },
+    {
+      "slice": "S05",
+      "evidence": "s05-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 110
+    },
+    {
+      "slice": "S06",
+      "evidence": "s06-revalidation-r3.json",
+      "exit_code": 0,
+      "pytest_progress_passes": 39
+    }
+  ],
+  "counts_note": "Each slice count is its actual pytest progress; repeated tests across slices are not a unique combined test total. S02 also passed12package selftests.",
+  "remaining": [
+    "S08 current documentation/release/Context/full integration",
+    "Three fresh sequential R3 independent lenses",
+    "Post-review report-only gardening/security/native result"
+  ],
+  "limits": [
+    "No full-native Work, Python3.6 interpreter, RHEL7 or production completion",
+    "W004 deployment packaging remains separate",
+    "R1/R2 original reviewed archives and evidence retained"
+  ]
+}

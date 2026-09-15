@@ -1,0 +1,228 @@
+First GREEN attempt: the 44 location checks passed; 16 dependency cases reached impact discovery and failed GIT_READ_FAILED because the disposable fixture had no Git repository. Initialized only that disposable fixture; no product bypass.
+FFFFFFFFFFFFF             [100%]
+=================================== FAILURES ===================================
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0b] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0c] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1c] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1d] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1e] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x85] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2028] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2029] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0b] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0c] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1c] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1d] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1e] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x85] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2028] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+_ test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2029] _
+tests/ai/test_document_reference_resources.py:142: in test_nonphysical_separator_cannot_hide_dependency_drift
+    found = bounded_engine.docs_referencing(root, ["docs/target.md"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:3736: in docs_referencing
+    documents = git_paths(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:760: in git_paths
+    value = strict_git(root, args)
+            ^^^^^^^^^^^^^^^^^^^^^^
+tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py:755: in strict_git
+    raise DocumentError("GIT_READ_FAILED")
+E   resource_engine.DocumentError: GIT_READ_FAILED
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[scripts/amplai_docs.py-\u2029]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0b]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x0c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1c]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1d]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x1e]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\x85]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2028]
+FAILED tests/ai/test_document_reference_resources.py::test_nonphysical_separator_cannot_hide_dependency_drift[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-\u2029]

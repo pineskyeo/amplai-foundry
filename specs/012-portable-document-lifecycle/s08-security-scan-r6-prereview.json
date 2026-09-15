@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12T08:19:34.232Z",
+  "method": "Exact current/retained Work credential comparisons in memory and narrow high-confidence credential signatures; values never emitted.",
+  "scanned_files": 775,
+  "findings": [],
+  "status": "NO_DETECTED_CREDENTIALS",
+  "limits": [
+    "INTERNAL selected current source/governing/HTML scope; no arbitrary-prose DLP or external publication approval.",
+    "Final post-review scan and customer report trace separation remain."
+  ]
+}

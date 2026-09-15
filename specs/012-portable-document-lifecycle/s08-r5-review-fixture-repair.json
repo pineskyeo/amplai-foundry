@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "repair_owner": "S08",
+  "classification": "TASK",
+  "status": "FOCUSED_LOCAL_PASS",
+  "red": {
+    "exit_code": 1,
+    "failed": 8,
+    "log": "s08-r5-review-fixture-red.log"
+  },
+  "green": {
+    "exit_code": 0,
+    "command": ".venv/bin/python -B -m pytest -q tests/ai/test_document_review.py tests/ai/test_document_typed_visibility.py tests/ai/test_document_integration.py --tb=line",
+    "log": "s08-r5-review-fixture-green.log"
+  },
+  "source": {
+    "path": "tests/ai/test_document_review.py",
+    "sha256": "9060cb4332380d4cfd5c5c87a07cfaaf14859866e9cad66c0705058736f3e986"
+  },
+  "repair": "Explicit synthetic INTERNAL src/api.py and inputs classification, plus unknown/RESTRICTED actual selection controls; original regression assertions unchanged. No engine/payload change.",
+  "next_action": "All 13 canonical revalidations, full integration, current guides/HTML and R5 review."
+}

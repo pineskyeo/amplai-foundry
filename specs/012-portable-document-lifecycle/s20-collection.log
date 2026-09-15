@@ -1,0 +1,4 @@
+tests/ai/test_document_optional_aliases.py: 88
+tests/ai/test_document_reference_resources.py: 105
+tests/ai/test_document_typed_visibility.py: 102
+

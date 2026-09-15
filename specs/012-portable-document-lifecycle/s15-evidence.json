@@ -1,0 +1,957 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S15",
+  "task": "PORTABLE-DOC-T015",
+  "status": "LOCAL_PASS",
+  "observed_at": "2026-09-11 23:35:14 UTC",
+  "closed_local_findings": [
+    "W003-R3-02",
+    "W003-R3-03"
+  ],
+  "verification": {
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S15",
+    "exit_code": 0,
+    "canonical_verdict": "PASS",
+    "tests_passed": 379,
+    "fast_checks_passed": 5,
+    "seal_entries": 119,
+    "log": "s15-canonical-eval.log",
+    "task_input": "s15-eval-input-tasks.md"
+  },
+  "source_pins": [
+    {
+      "path": ".agents/skills/design/SKILL.md",
+      "sha256": "7372b993ee73fa19120bbd1526e2d900790cc822fcace06ac5675f11c3594568",
+      "bytes": 6525,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/work/SKILL.md",
+      "sha256": "8facf754f1088f2afdb6d1b96e6b3bde5c367c3d4288866ba65bff04bb93ad1c",
+      "bytes": 19770,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md",
+      "sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "bytes": 13989,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md.amplai.json",
+      "sha256": "b07e1c1b0647fa3949a5593bc3544ba8d4209a5359eb1d42b2d7265493c40285",
+      "bytes": 1174,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/contracts/README.md.amplai.json",
+      "sha256": "4b6f72c029f40caa9ebf3c361bd5e79280ca0b5472763e9be84243b8de3f49be",
+      "bytes": 1179,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/evidence/README.md.amplai.json",
+      "sha256": "a499f40641cbf747ad7af8656adb0b1b00fc34d18b45ac68d29fad037cb8bab5",
+      "bytes": 1183,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md",
+      "sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95",
+      "bytes": 2696,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md.amplai.json",
+      "sha256": "f86271f00700727a63c97f81bcdc362a12db960362259955b7f96327a05a54fe",
+      "bytes": 1188,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/claims.jsonl",
+      "sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+      "bytes": 4257,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/documentation.json",
+      "sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+      "bytes": 14178,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/gardening.json",
+      "sha256": "c6cd1614ce2cac2ee92b37c6df0335ac67939603f5884e92b69f16980156739b",
+      "bytes": 8848,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md.amplai.json",
+      "sha256": "e575ecc2385bcbae6d9d4181e6054c93c4575dbf137be6914d979247a3c55cf9",
+      "bytes": 1250,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md",
+      "sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a",
+      "bytes": 5268,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md.amplai.json",
+      "sha256": "831d49d9242fb0ae941384ab0678c7f15a37dc71f95ed06a9081df167855c9f9",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "bytes": 8172,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md.amplai.json",
+      "sha256": "30a3b8b7e443ba9a01822b9222f59ac3eb29493a5592680fd9227cf26537b8c8",
+      "bytes": 1194,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/escalation.md.amplai.json",
+      "sha256": "14e39a137b25a84a9f9644dc375a3e779273b335a1533a81bf7a66c6b3181310",
+      "bytes": 1189,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/repository-profile.json",
+      "sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5",
+      "bytes": 723,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/README.md.amplai.json",
+      "sha256": "cb66d94a91fa0615122659de0af44f5e630cefd5ec1465f062c3ec07a1ee2594",
+      "bytes": 1190,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "755"
+    },
+    {
+      "path": ".specify/feature.json",
+      "sha256": "2c1a1e1c59ae58e196dc3034cc922016216e76cb04fba3339b09569c4e00d4aa",
+      "bytes": 67,
+      "mode": "644"
+    },
+    {
+      "path": ".specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "bytes": 7769,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md.amplai.json",
+      "sha256": "bc23e86fa87809568f6c395a713c235c722f31ed5e3184a0dd2592aa344168e5",
+      "bytes": 1124,
+      "mode": "644"
+    },
+    {
+      "path": "CLAUDE.md.amplai.json",
+      "sha256": "b4184174a7706723b657b11a3e3e52898c75bc3694138a9a37408aef27c75f51",
+      "bytes": 1146,
+      "mode": "644"
+    },
+    {
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "bytes": 8470,
+      "mode": "644"
+    },
+    {
+      "path": "README.md.amplai.json",
+      "sha256": "549ec7cbd3d9ca0ff335a47ba9a80d7f22b919fa388e8103710fe4a07d74725d",
+      "bytes": 1122,
+      "mode": "644"
+    },
+    {
+      "path": "docs/KNOWLEDGE-RULES.md.amplai.json",
+      "sha256": "967a44aca92d590f3b0d066ead0e627da29023e664c4e55599b021cfaed99d6f",
+      "bytes": 1165,
+      "mode": "644"
+    },
+    {
+      "path": "docs/LIFECYCLE.md.amplai.json",
+      "sha256": "604deaa9928242942ef101ff8c72f3121418c43431a5e8bf17b9a66bcabeaa9a",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/MEMORY-DOMAIN-MODEL.md.amplai.json",
+      "sha256": "a451ab026a36b774fe4a63f79dc7b27687c95f27442e846ac100a88b36e7c3e3",
+      "bytes": 1181,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "sha256": "03859327a1c7bc759300e2568df7e6f11344c0969120e44e2370ae351f440f43",
+      "bytes": 8633,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md.amplai.json",
+      "sha256": "6432ee7106c32e53a1a10e4f10c21f5b45edd193ce37f307a8bd24642204972b",
+      "bytes": 1201,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md",
+      "sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f",
+      "bytes": 2119,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md.amplai.json",
+      "sha256": "1a24daa46de4a01fc4a907482811700dd4fb522ecf0e6bacb3bf11682edd7f3d",
+      "bytes": 1162,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROPOSALS.md.amplai.json",
+      "sha256": "53ab97ba47171b4dcfd8e59c21e06659811eb1e0d7eb06ec3450e814ea5b67b9",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/RELATIONSHIPS.md.amplai.json",
+      "sha256": "b613068b34851da2badbf95f55563e722fc31983dfdf47ef18cd15902d57e574",
+      "bytes": 1590,
+      "mode": "644"
+    },
+    {
+      "path": "docs/ROADMAP.md.amplai.json",
+      "sha256": "6b6bf3da292dce9e29cd4ffe609c5180683b7ced718c3e83f8a9458865385f35",
+      "bytes": 1140,
+      "mode": "644"
+    },
+    {
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md.amplai.json",
+      "sha256": "7765fa1edcc7ecad69fae7baf57ed5273c2da1cc30acef5af602a6f28de6bfa5",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VERSIONING.md.amplai.json",
+      "sha256": "f2fa0c2fea733bac16ab230f2d48ff683a4701f91f074e47fc39497966f6f00d",
+      "bytes": 1166,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VISION.md.amplai.json",
+      "sha256": "af15e5d078c3b3f0b3650a67fe6d30d6fd20142976cc551cd43283d65cb3cdc8",
+      "bytes": 1129,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/amplai_docs.py",
+      "sha256": "8712fa8a9b57508ee27bdf34ef9c66d63c7f13e8801d3d087a7229c350250467",
+      "bytes": 194268,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+      "bytes": 121061,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopv2.py",
+      "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+      "bytes": 75668,
+      "mode": "755"
+    },
+    {
+      "path": "tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_governance.py",
+      "sha256": "ea1bd8a6842ba4b0d87c31f456d1806b253dc831fb0a823cdb3fef4d24ba0582",
+      "bytes": 10457,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_html.py",
+      "sha256": "f77f8b104548c41d6daaffe158dc21dc0a6efd25e2ef5a12cac14c8dfbd36138",
+      "bytes": 30296,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_integration.py",
+      "sha256": "c38db8b52a16fbb7f887cfcce082e65392532bc5b1363061b4fee6275482a01a",
+      "bytes": 17504,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_lifecycle.py",
+      "sha256": "c65c30b9b71d3d7ac338c90cf8e311e0fd2de70f7d5db72550565df241f42ebd",
+      "bytes": 30649,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_preservation.py",
+      "sha256": "bca77985592fa5244cd322bae0836130e8acb7507d82ee7f06dadcbc0471ce7c",
+      "bytes": 26073,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_references.py",
+      "sha256": "d332ed37716674bd0e9e3a0471a31a84635800b4886a50ebaa3da789a85aa979",
+      "bytes": 15339,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_review.py",
+      "sha256": "e559bf12c19eb242d522dd5d9fe25c13c318fa841d0c1fce013351b18e4bf5c6",
+      "bytes": 43249,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_portable_baseline.py",
+      "sha256": "bd93030f4d703c4bf76a1a5796ceb33dace09d72570632795ecc1e1e88bc9c95",
+      "bytes": 36241,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "sha256": "c05f53fcd0ee3def7737e0991a06f0f5dd75f56d1c48000a2668a6a48882bd53",
+      "bytes": 7887,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md.amplai.json",
+      "sha256": "de3cbd2c128d275c67e43f26c314222c9280385067ef2e04e4e3e856e8254347",
+      "bytes": 1192,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
+      "sha256": "997beb86b3cfb9e42ff2d595f79ef3bc20a8f113746418873e15d2533f32251b",
+      "bytes": 13284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "sha256": "fabcedecd840965ecca21a8bf455ddd61b9acebe464875b825c9556ea5dd5f47",
+      "bytes": 11496,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md.amplai.json",
+      "sha256": "f4bb575f337f2c591900d136103bd8e7c841d0f6ae670112941c9ecd2536e9d9",
+      "bytes": 1205,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/fragments/bootstrap.md",
+      "sha256": "baf153ec7a0d2055ebeaf739e6056d195f7a73887482837e9f9cd34676871f73",
+      "bytes": 881,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/manifest.json",
+      "sha256": "f2f58aa60804a68f037db306d0954ec25000407eb0c0a2fa3fb6ef6e3544b5a2",
+      "bytes": 15260,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/SKILL.md",
+      "sha256": "a6d1504616486079936dbbe491e7bdcd259327ff8bc886fd55d27dcb20826094",
+      "bytes": 2148,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/agents/openai.yaml",
+      "sha256": "62c1421aa7c1f80302b4d6148aa89e69ee60922d3d1eee35259b5b628a862fef",
+      "bytes": 158,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/design/SKILL.md",
+      "sha256": "8bf290bc1e52b32d6a1b684cbcc89e58bcfc6aeab2c71ca2fbe4c1cfb43a1b9d",
+      "bytes": 5370,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/agents/openai.yaml",
+      "sha256": "3992992e7f55d31aea53b46077167c1125e6e708f057e143851c3c0f29c81d71",
+      "bytes": 155,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/SKILL.md",
+      "sha256": "ea5a8b19f6111714b6ec3b73cc8205f193c04bef0fc0dff6bc5bfa5ac1a96814",
+      "bytes": 12608,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/agents/openai.yaml",
+      "sha256": "0ba5c4c50a1dea8085175f20f521cc5064a44fcb02c7074e20946e81f64dba84",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/SKILL.md",
+      "sha256": "a77b0ef00631bd5cdc8eabbfb3359c09cca3f25c7e31fbb0fa878351621faf3a",
+      "bytes": 19594,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/agents/openai.yaml",
+      "sha256": "7420eb19ee12df06dd95534e3a8390cd7690714f2eb566f9914c630bfa1990e9",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/SKILL.md",
+      "sha256": "764614d5a15cb3700d0e5f9bd4df4484317546f6810fcc53bfac54876fd2ac60",
+      "bytes": 13648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/agents/openai.yaml",
+      "sha256": "4efdc6c8e8df1a951a17283989c5842f12b9f23b94559b16014b18865dd25fcc",
+      "bytes": 163,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/SKILL.md",
+      "sha256": "200d7b08bb9ff7ab302f92a61b004f1dc9a4722677acfa76a0fa3b507d7296e7",
+      "bytes": 13746,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/agents/openai.yaml",
+      "sha256": "5170148826c067790216b1c5a861c28a5d55a39646faae315537bd2039bcba3b",
+      "bytes": 164,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/SKILL.md",
+      "sha256": "8f79a8c972628da92a4b402bbd8d6fffb6e4e3b56cde3c0faef32b7019fe55de",
+      "bytes": 8240,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/agents/openai.yaml",
+      "sha256": "5710a4dcbe7c5c20b63459a4f19b7356ebd5e6411793ef97e40dfb7ce5d8bb57",
+      "bytes": 159,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/SKILL.md",
+      "sha256": "fd8a7d52cbe12fd2877231d7cae0ec130afed491d783f6ec48d248fd045818af",
+      "bytes": 18647,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/agents/openai.yaml",
+      "sha256": "b5800d2b12262a1fc772e45494d24ccafbabf72b62c9d1d48259d1336342939a",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/SKILL.md",
+      "sha256": "5d8ad29120c9941dd7e30c22526a4e61d5ae9a6271348498ab36b6504963eee2",
+      "bytes": 1805,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/agents/openai.yaml",
+      "sha256": "ae7341b55366f997b74a03702565cc7e0ed672235ed627432b79308402122a0e",
+      "bytes": 167,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/SKILL.md",
+      "sha256": "e3230940a8b1031524bd498d0cf9fe19d62a00641bc45f716acc0a06a398314e",
+      "bytes": 8446,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/agents/openai.yaml",
+      "sha256": "33414c79141329f6c923617582678d4f648599dd138d4b88a4b3b1a7239cc9a7",
+      "bytes": 708,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-index.yaml",
+      "sha256": "56b08a4b70f6e431323ad339d1cb643c2d6f8e7efa74d0a29fc4dff419db262f",
+      "bytes": 1133,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-manifest.yaml",
+      "sha256": "4fff463594bea84ac19d2abf06995367e2a8b3ac54c4d74eb480477020d25418",
+      "bytes": 2137,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/references/manifest-contract.md",
+      "sha256": "7f8c52536d544420579a358cb5cab36a23f036f85fd86c0ee2d0a2a50ee606e0",
+      "bytes": 5303,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/requirements.txt",
+      "sha256": "b4603b9468ade4d639d2c6f73b89d50e1fa5d227c73ab15be0382cca478513e6",
+      "bytes": 15,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/work/SKILL.md",
+      "sha256": "b97e41056463bc7aa1d7a0657b4c37ef2cfb11fd6a148db8a73e57e5e3deaa2e",
+      "bytes": 16575,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/README.md",
+      "sha256": "16ebb7169c3c064fb0a082ffe7bd36b36ccfb3d321e9eb580da176846b9c03bb",
+      "bytes": 2132,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/README.md",
+      "sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9",
+      "bytes": 1296,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.schema.json",
+      "sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+      "bytes": 3895,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.template.json",
+      "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5",
+      "bytes": 1202,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/README.md",
+      "sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93",
+      "bytes": 416,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/provenance.schema.json",
+      "sha256": "cddc95df7eba67659dbfd6d33888c85abdead4d1ef354dbed09ffa87d6525668",
+      "bytes": 962,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/README.md",
+      "sha256": "ec46a9e5480bd8e3a01dfa736ba35c790de008bf6f61e6240b67376058f4ba1d",
+      "bytes": 819,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/claims.jsonl",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/decisions.index.json",
+      "sha256": "2e127b8ca192b0f5a087109156d9ff604aa4cdd7a1b48b0af031d71b33eef429",
+      "bytes": 47,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/doc-impact.schema.json",
+      "sha256": "9a78e329cbdc451bce7c9d1f3c45822ec10ee78976e93a59a9f49b7f0c8f8960",
+      "bytes": 2666,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/domain-discovery.schema.json",
+      "sha256": "58227506d0d64021af7c7a8bb8f54a121dabdf6bb28dba14751c2510b4431075",
+      "bytes": 1291,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/handoff.schema.json",
+      "sha256": "3ac0403b77563588b2a8085f02d0b830081b24e6eb5fdfe02f21ddb186766cf8",
+      "bytes": 942,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.schema.json",
+      "sha256": "e9587008b0e648f3196d28ddf543391107811ba2b839c734ab426a6891f26694",
+      "bytes": 2266,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.template.json",
+      "sha256": "32ed5c797525c98bfed3e3577cf30c35161475369a357a8eafc305786ccc27aa",
+      "bytes": 869,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/map.json",
+      "sha256": "394d0a82fa5edf51ba138fbfe654165e782c9bb3c8513b50172596491533fc4e",
+      "bytes": 957,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/documentation.json",
+      "sha256": "8e112727eec7143c5fd42d88319bf491f164b1257e6aa4b41730d82d2d27852c",
+      "bytes": 5960,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/gardening.json",
+      "sha256": "a291894eb1efdbf43e3b52ba6037b8d6e21ce30619fe1eb0d798ca73b79b6ab2",
+      "bytes": 6010,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/knowledge-readiness.json",
+      "sha256": "dd780d1f7d194d7a60c2847e3ffa4785d0087927928ba4ebf71b1d5fe0231ba9",
+      "bytes": 910,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/permissions.json",
+      "sha256": "9f41f4091cb1390808e68c89d7354be0ec10d5fb540e2ecae85e0015459da310",
+      "bytes": 1284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/quadrant.json",
+      "sha256": "b00fa0fdcce2415d5869d30e7ac3bf278b4afc6d90408aa236dd2379faab31c4",
+      "bytes": 908,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/tdd.json",
+      "sha256": "5cdb2b32d065312125a93887680edd1d14c8c25ffce9a91031a8d2964d732592",
+      "bytes": 648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/WORKFLOW.md",
+      "sha256": "77949082f56975dfb316c9a4b6f00db675971cdfe617cad16947e5c868a0860d",
+      "bytes": 2390,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/escalation.md",
+      "sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6",
+      "bytes": 1433,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/policy.json",
+      "sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "bytes": 5561,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/repository-profile.json",
+      "sha256": "6b58f760da68bee2cbc7517f05c6f6b13ef51634f1a79c61870d05831fb6afbe",
+      "bytes": 147,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/README.md",
+      "sha256": "b8c9e239e17056c0c33fdee904ffd126ae875b143b7e6911d38a2bcda3f1a874",
+      "bytes": 677,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/portable.py",
+      "sha256": "563132575b4d1cf33fe1cdd5a53b66f2114033bc08df3f42122de6c8ef87ff0c",
+      "bytes": 3191,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/registry.json",
+      "sha256": "0edb0ce10e4d930d08b564e4ca0e1695d00a7f7663cdb0d6829707bf2e4c1c16",
+      "bytes": 1723,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/memory/constitution.md",
+      "sha256": "608fe9c3234f41e1ede918204843e167b24f1c4c64797e7ad1ed4d24611463f8",
+      "bytes": 762,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/check-prerequisites.sh",
+      "sha256": "3a9c76f4c31465f50250b06a7d30d879d137896e2281e9b86e570ced484ea1cb",
+      "bytes": 6707,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/common.sh",
+      "sha256": "6ff86bf39f6b4684b0f80927dc7a1dadec26b4671988a3fe4d6c2523cbd3aa22",
+      "bytes": 29810,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/setup-plan.sh",
+      "sha256": "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+      "bytes": 2493,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/plan-template.md",
+      "sha256": "474539ac1e69ecb4b0312da5043a72a77a42f722602bd9d65b1073d1156eb4d3",
+      "bytes": 3806,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/spec-template.md",
+      "sha256": "3945437fc35cd30a5b2bf7beea680337c3516826d3efa5a6b92c4a7eca1ba28e",
+      "bytes": 4556,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "sha256": "8712fa8a9b57508ee27bdf34ef9c66d63c7f13e8801d3d087a7229c350250467",
+      "bytes": 194268,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopv2.py",
+      "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+      "bytes": 75668,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/install.py",
+      "sha256": "cb385fc7859cd84b751024fa9bf13164c28364139c85d81fdac8d7cb635206b1",
+      "bytes": 77981,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/manifest.json",
+      "sha256": "38398b3786c854ff82dc12893ebb00a85930a76b392cbacb62ef7f2cc088c62d",
+      "bytes": 7634,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/INSTALLATION.md",
+      "sha256": "5e380f810ea924a17c7d5492742d7afcc7d56a0d271507974e63d1b72d976b60",
+      "bytes": 6503,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai_runtime.py",
+      "sha256": "f558c9a929e6272f2291ebc94940df77b18018171c358f2ce6926f137972ed6f",
+      "bytes": 121077,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/reference/TEST_REPORT.md",
+      "sha256": "b1b15e4fc6250a35ee3f3eaa2d251a366b29fa8d55cca8a7f5b344134b254143",
+      "bytes": 3587,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/seal.py",
+      "sha256": "6fa4e100314aa675d1284554f1d2a680d7d428823f3f8e42316eeca74d9765be",
+      "bytes": 8447,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/selftest.py",
+      "sha256": "2f8ee1231e2616c98a475b47c207731ea6a583a8975469a95cdee55b85ff1f1d",
+      "bytes": 10520,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/tests/document-browser.mjs",
+      "sha256": "2840991bc8d6ee5075820266b7bd263dcfbed83ab018eec9cca6cf441036b9b6",
+      "bytes": 10763,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_reference_resources.py",
+      "sha256": "c3292924b58e510e9d6904d861c22299a1bfbfc205e091125ed02d90ff87848a",
+      "bytes": 4664,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_html_references.py",
+      "sha256": "fc7dc4c1e5c36425e70618184fe5629d4bd39a43040b917ce20e21eacef167a5",
+      "bytes": 9727,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/tasks.md",
+      "sha256": "c38f986a56363b111fc403d1cee975ffc659056faeba54b22f8b0da16c319945",
+      "bytes": 18561,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack.json",
+      "sha256": "64bd696a1fa697588606db572ea7ddc017f8640a5a8f6320ab2c25e6dc1a0ab7",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis.json",
+      "sha256": "59d5bb4be86d3ce516fc8339a7e48ec884ec73a1f7d7c99323a598405d2d9cff",
+      "bytes": 3291,
+      "mode": "644"
+    }
+  ],
+  "post_eval_source_unchanged": true,
+  "red": "s15-red.json",
+  "original_diagnostics": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -m pytest -o addopts='' -q -p no:cacheprovider --tb=short --basetemp=/tmp/w003-r3-main-diagnostic.3E9ZCA/pytest-green-s15 /tmp/w003-r3-main-diagnostic.3E9ZCA/test_boundary_v2.py /tmp/w003-r3-main-diagnostic.3E9ZCA/test_file_uri.py /tmp/w003-r3-main-diagnostic.3E9ZCA/test_resource_bound_v2.py",
+    "exit_code": 0,
+    "passed": 27,
+    "duration_seconds": 0.88
+  },
+  "context": "s15-context.json",
+  "changes": [
+    "Finite single-URL/inert HTML attribute subsets and namespace tag recognition share exact URI/security/dependency handling.",
+    "Compound/embedded languages, unknown value-bearing attributes, base modifiers and unsupported/local-file URI schemes reject non-disclosingly; supported HTTP(S) requires authority.",
+    "All seven consumers/current/history, real CLI/HTML, exact dependency drift and installed CLI covered. S14 resource guards remain in this canonical run.",
+    "XSS source acceptance changed explicitly: active forms reject at intake; original raw attack bytes remain covered by renderer-only escaping/offline tests alongside actual supported-source build/browser checks."
+  ],
+  "remaining": [
+    "Eleven current prior-slice revalidations",
+    "Current25guide review/full20sourceContext, full S08, R4 three sequential independent lenses",
+    "RHEL7/Python3.6/full native Work/W004/production remain unverified"
+  ],
+  "counts_note": "379canonical,147focused and27original-diagnostic counts overlap; not a unique combined total."
+}

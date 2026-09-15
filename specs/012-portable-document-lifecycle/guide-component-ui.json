@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "component": "ui",
+  "revision": "51deabe0b4dad6881837f8cfbe414da22ba6a2e23bb86f32b206802b254c01bd",
+  "manifest_sha256": "dcc4e9079edf673d86096c0dc7b9f05bb2a99a952834d4dfc5c24417a4d8aa67",
+  "activation": "NOT_ACTIVATED",
+  "verified_by": "s08-guide-components.json",
+  "purpose": "INTERNAL local candidate guide reference; not deployment activation"
+}

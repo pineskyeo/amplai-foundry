@@ -1,0 +1,55 @@
+{
+  "captured_at": "2026-09-11T02:43:23Z",
+  "content_hash": "4ccb6ededf478d1b7421f3034c75852e1d065599e1e276848bd66bc9ba4544a1",
+  "fixture_refs": [
+    "testdata/"
+  ],
+  "git": {
+    "branch": "main",
+    "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+    "dirty": true
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python": "3.9.6",
+    "system": "Darwin"
+  },
+  "safe_environment": {},
+  "schema_version": "1.0",
+  "target_assumptions": {
+    "not_verified": [
+      "다른 OS·architecture 에서의 동작",
+      "pyproject 의 requires-python 아래 버전에서의 동작"
+    ],
+    "python_requirement": ">=3.11",
+    "verified_on": "macOS-26.2-arm64-arm-64bit",
+    "verifier_interpreter": [
+      ".venv/bin/python",
+      "python3"
+    ]
+  },
+  "tools": [
+    {
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": ".venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": "python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": "git --version",
+      "exit_code": 0,
+      "output": "git version 2.50.1 (Apple Git-155)"
+    }
+  ],
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003"
+}

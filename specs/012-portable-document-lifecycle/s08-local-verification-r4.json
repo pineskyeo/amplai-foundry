@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "status": "LOCAL_CANONICAL_PASS_PENDING_R4_REVIEW",
+  "recorded_at": "2026-09-12 01:55:30 UTC",
+  "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S08",
+  "exit_code": 0,
+  "tests": {
+    "passed": 2229,
+    "deselected": 4,
+    "seconds": 406,
+    "deselected_scope": "Four live Slack integration tests excluded by the existing v2 profile; no live Slack proof."
+  },
+  "verifier": {
+    "profile": "v2",
+    "checks": 11,
+    "status": "PASS"
+  },
+  "outer_verifier": {
+    "profile": "fast",
+    "checks": 5,
+    "status": "PASS"
+  },
+  "package": {
+    "version": "2.5.0",
+    "checksum_rows": 119,
+    "selftests": 12,
+    "status": "PASS"
+  },
+  "log": "s08-canonical-eval-r4.log",
+  "tasks": "s08-r4-retry-eval-input-tasks.md",
+  "source_snapshot": "s08-r4-retry-eval-source.json",
+  "source_files_verified": 149,
+  "governing_files_verified": 12,
+  "source_drift": [],
+  "governing_drift": [],
+  "source_hashes": {
+    ".ai-team/policy/documentation.json": "8697bc63a51de967497029c401c40301c6d27e716ecf95bcd116ebf101683e1f",
+    "scripts/amplai_docs.py": "b6db24a3cea54277c7371c0d3a31c6dd936007860b333b97e2a01a6a999b97f6",
+    "scripts/loopctl.py": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+    "scripts/loopv2.py": "c489dabf540c3a9b75ac4d311b76b1a0a9e25d76bc01daec0226834ce018ab1f",
+    "tests/ai/test_document_reference_resources.py": "0bf0d3aa06c334e0d23ab37713cd64eea527d6c25fb01825014214c168d8357d",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "139d179d1d79ed11d478cd450069eb857a8cae4d35001b0bf172693336fda38d",
+    "specs/012-portable-document-lifecycle/tasks.md": "b5651376f33d9c74bf88b314f2381e4bd7bf8090a16b863aec341767b871c933",
+    "specs/012-portable-document-lifecycle/context-pack.json": "627e56b031a9cd581b9da252364362024e54c128f93da5adf63d14ff8c258031"
+  },
+  "context": "s08-context-r4-final.json",
+  "context_validation": {
+    "status": "MATCH",
+    "source_count": 20,
+    "decision_count": 11,
+    "expected_hash": "d2402f8bb8e63ffea19bdaad17e2235619cfc65aeb87c981bce8b001441086d0"
+  },
+  "native_transport": "s08-native-r4-line.json",
+  "semantic_document_review": "s08-document-review-evidence-r10.json",
+  "predecessor_revalidation": {
+    "path": "revalidation-r4-line.json",
+    "passed_slices": 13,
+    "limit": "Counts overlap. These source snapshots predate the single test-only fixture isolation/compiler-policy refinement; all product/package bytes and prior assertions are unchanged. Current full suite includes those assertions and the new isolation control."
+  },
+  "repaired_first_attempt": {
+    "exit_code": 1,
+    "signature": "6d6c7105049e",
+    "passed": 2215,
+    "failed": 13,
+    "deselected": 4,
+    "log": "s08-canonical-eval-r4-first.log",
+    "diagnosis": "s08-bytecode-final-diagnosis.json",
+    "repair": "Only test_document_reference_resources.py changed: exact-source execution without cache or inherited future flags. No product, payload, checksum, exclusion or verifier weakening."
+  },
+  "limits": [
+    "Current local candidate only; fresh R4 HTML/browser evidence, sequential independent contract/recovery/regression review and post-review report-only gardening remain.",
+    "No actual RHEL7, Python3.6, full native Work/resume, signing, fleet activation or production deployment proof.",
+    "Historical failures and previous review rounds are preserved; current PASS does not rewrite them.",
+    "Guide component pins identify reference sources/catalog only, not a deployable backend binary or runtime compatibility approval."
+  ]
+}

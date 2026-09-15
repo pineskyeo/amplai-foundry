@@ -281,7 +281,7 @@ def main(argv=None):
     elif "COMMIT_MSG" in os.environ:
         commit_message = os.environ.get("COMMIT_MSG", "")
 
-    print("==== cortex verifier ====")
+    print("==== AMPLAI verifier ====")
     print("repo    : %s" % root)
     if args.profile:
         print("profile : %s" % args.profile)

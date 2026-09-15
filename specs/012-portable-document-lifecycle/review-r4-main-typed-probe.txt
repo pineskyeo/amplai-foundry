@@ -1,0 +1,51 @@
+"""Independent main RED control; writes only pytest temporary fixtures."""
+import importlib.util
+from pathlib import Path
+import pytest
+from ai import test_document_html as views
+from ai import test_document_lifecycle as docs
+
+FROZEN = Path("/tmp/w003-r4-contract.aBwYIx/repo")
+assert docs.ROOT.resolve() == FROZEN.resolve()
+
+@pytest.mark.parametrize("relative", [
+    "scripts/amplai_docs.py",
+    "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+])
+@pytest.mark.parametrize("body", [
+    "# Guide\nRequires `PRIVATE_CANARY.md`.\n",
+    "# Guide\ndocs/\n└── PRIVATE_CANARY.md\n",
+])
+@pytest.mark.parametrize("target_security", ["RESTRICTED", "PUBLIC"])
+def test_typed_dependency_visibility(tmp_path, relative, body, target_security):
+    source = FROZEN / relative
+    spec = importlib.util.spec_from_file_location("main_typed_visibility", source)
+    engine = importlib.util.module_from_spec(spec)
+    exec(compile(source.read_bytes(), str(source), "exec", dont_inherit=True), engine.__dict__)
+    assert Path(engine.__file__).resolve() == source.resolve()
+    root, release = views.fixture(
+        engine, tmp_path, security="PUBLIC", body=body,
+        linked={"path":"docs/PRIVATE_CANARY.md", "doc_id":"canary:private",
+                "topic_id":"canary:private", "security":target_security},
+    )
+    record = engine.read_document(root, "docs/guide.md")
+    assert record["freshness"] == "verified"
+    assert "docs/PRIVATE_CANARY.md" in [x["path"] for x in record["declared_dependencies"]]
+    for consumer in engine.CURRENT_CONSUMERS:
+        for history in (False, True):
+            if target_security == "RESTRICTED":
+                with pytest.raises(engine.DocumentError) as caught:
+                    engine.select_documents(root, "release-2", security="PUBLIC",
+                                            history=history, consumer=consumer)
+                assert caught.value.code == "CROSS_BOUNDARY_REFERENCE"
+                assert "PRIVATE_CANARY" not in str(caught.value)
+            else:
+                result = engine.select_documents(root, "release-2", security="PUBLIC",
+                                                 history=history, consumer=consumer)
+                # The helper reviews only the guide. The linked PUBLIC source
+                # is unreviewed, so it is eligible only for explicit history.
+                expected = {"docs/guide.md"}
+                if history:
+                    expected.add("docs/PRIVATE_CANARY.md")
+                assert result["count"] == len(expected)
+                assert {x["path"] for x in result["documents"]} == expected

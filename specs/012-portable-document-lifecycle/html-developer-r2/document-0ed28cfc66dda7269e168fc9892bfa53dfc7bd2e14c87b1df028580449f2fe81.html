@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>AMPLAI Loop Kit 2.5.0</title><style>:root{color-scheme:light;--ink:#203047;--muted:#526176;--paper:#fff;--edge:#d9e2ec}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:#f5f7fa;
+color:var(--ink);font:17px/1.7 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}
+a{color:#075b86;text-underline-offset:.2em}a:focus-visible,summary:focus-visible{
+outline:3px solid #8f3b00;outline-offset:4px}.skip{position:absolute;top:-100px;
+left:1rem;background:white;padding:.6rem 1rem;z-index:3}.skip:focus{top:1rem}
+header{background:#142b43;color:#fff;padding:2rem max(1rem,calc((100vw - 76rem)/2))}
+header a{color:#c0edff}.eyebrow{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+h1{font-size:clamp(1.7rem,5vw,2.8rem);line-height:1.2;margin:.6rem 0}
+h2{font-size:1.55rem;margin-top:2.2rem}h3{font-size:1.2rem;margin-top:1.8rem}
+.layout{max-width:78rem;margin:auto;padding:2rem;display:grid;
+grid-template-columns:minmax(12rem,17rem) minmax(0,1fr);gap:2rem}
+nav{align-self:start}nav ul{padding-left:1.2rem}nav li{margin:.4rem 0}
+main{background:var(--paper);padding:clamp(1rem,3vw,2.5rem);border:1px solid var(--edge);
+border-radius:.7rem;min-width:0}p{margin:.8rem 0}code{font-family:ui-monospace,monospace;
+font-size:.9em;background:#edf2f7;padding:.15rem .3rem;border-radius:.2rem}
+pre{background:#edf2f7;padding:1rem;overflow:auto;border-left:3px solid #18707f}
+pre code{padding:0;white-space:pre-wrap;word-break:break-word}
+blockquote,.notice{border-left:4px solid #8f6500;background:#fff6dc;padding:.75rem 1rem;
+margin:1rem 0}.meta,footer{color:var(--muted);font-size:.85rem}
+.table-scroll{max-width:100%;overflow:auto}table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:.5rem;border-bottom:1px solid var(--edge);vertical-align:top}
+th{font-weight:650}footer{max-width:78rem;margin:auto;padding:1rem 2rem 3rem}
+.release-table{table-layout:fixed;min-width:32rem}
+.release-table th:first-child{width:22%}.release-table th:nth-child(2){width:20%}
+@media(max-width:700px){.layout{display:block;padding:1rem}nav{margin-bottom:1rem}
+main{padding:1rem}header{padding:1.5rem 1rem}footer{padding:1rem}}
+@media print{body{background:white;font-size:11pt;color:#000}.layout{display:block;padding:0}
+header{background:white;color:#000;padding:0;border-bottom:2px solid #000}nav,.skip{display:none}
+main{border:0;padding:0}pre,blockquote,table{break-inside:avoid}a{color:#000}
+h1,h2,h3{break-after:avoid}footer{padding:1rem 0}.table-scroll{overflow:visible}}</style></head><body><a class="skip" href="#content">Skip to content / 본문으로</a><header><div class="eyebrow">Verified documentation · developer</div><h1>AMPLAI Loop Kit 2.5.0</h1><p>kit-2.5.0-candidate-r2 · INTERNAL</p></header><div class="layout"><nav aria-label="Document navigation"><p><a href="index.html">All documents / 문서 목록</a></p><ul><li><a href="#section-amplai-loop-kit-250">AMPLAI Loop Kit 2.5.0</a></li><li><a href="#section-제품-경계">제품 경계</a></li><li><a href="#section-포함-기능">포함 기능</a></li><li><a href="#section-요구사항">요구사항</a></li><li><a href="#section-optional-generic-baseline">Optional Generic Baseline</a></li><li><a href="#section-package-integrity-and-recovery">Package Integrity And Recovery</a></li><li><a href="#section-앱마다-있을-수도-없을-수도-있는-것">앱마다 있을 수도, 없을 수도 있는 것</a></li><li><a href="#section-1-패키지-검증">1. 패키지 검증</a></li><li><a href="#section-2-앱에-설치-또는-업데이트">2. 앱에 설치 또는 업데이트</a></li><li><a href="#section-3-다른-앱-업데이트">3. 다른 앱 업데이트</a></li><li><a href="#section-skill-정본과-host-표기">Skill 정본과 host 표기</a></li><li><a href="#section-충돌-정책">충돌 정책</a></li><li><a href="#section-제거">제거</a></li><li><a href="#section-손상-복구">손상 복구</a></li><li><a href="#section-중앙-project-store">중앙 Project Store</a></li></ul></nav><main id="content" tabindex="-1"><h2 id="section-amplai-loop-kit-250">AMPLAI Loop Kit 2.5.0</h2>
+<p>Local integration candidate. Not yet published, fleet-activated or verified on RHEL7.</p>
+<p>AMPLAI Loop V2 앱을 위한 **Decision &amp; Async Cross-App Runtime** 배포 패키지다.
+정본은 <code>amplai-foundry</code>가 소유하고 등록된 앱들에 배포한다 (<code>PROVENANCE.md</code>).
+각 앱에 같은 Kit을 설치하면 Claude Code와 Codex에서 같은 Work protocol을 사용할 수 있고,
+이후 Hermes/Global AMPLAI가 동일한 Project Store를 통해 App Runtime들을 오케스트레이션할 수 있다.</p>
+<h3 id="section-제품-경계">제품 경계</h3>
+<ul>
+<li>**AMPLAI Platform / Foundry**: 장기 제품. 지식·거버넌스·제안·증거·프로젝트 운영을 제공한다.</li>
+<li>**AMPLAI Loop Kit**: 그 제품과 다른 앱을 개발하기 위한 repository-local runtime이다.</li>
+<li>의존 방향은 <code>Kit → Platform을 개발·검증</code>만 허용한다. Platform domain code가 Kit, <code>.ai-team</code>,</li>
+</ul>
+<p>  Claude Code, Codex에 의존하면 안 된다.</p>
+<ul>
+<li>Platform과 Kit은 version 및 release train을 별도로 운용한다.</li>
+</ul>
+<h3 id="section-포함-기능">포함 기능</h3>
+<ul>
+<li>동일한 공개 의미: Claude Code <code>/design</code>, <code>/work</code>; Codex <code>$design</code>, <code>$work</code></li>
+<li>Question → Evidence(DIRECT/LOCAL/PARALLEL) → Decision(AUTO/CHALLENGE/HUMAN)</li>
+<li>중앙 Git Project Store: CR, Work, Contract, Decision, Evidence, event hash chain</li>
+<li>WAITING/READY dependency, atomic claim, lease, heartbeat, crash recovery</li>
+<li>deterministic Local Supervisor와 앱 사이 비동기 재개</li>
+<li>HostAdapter로 분리된 Claude Code non-interactive worker와 native Codex <code>exec --json</code> worker</li>
+<li>Claude/Codex session continuation 및 additive lifecycle hooks</li>
+<li>Decision/Evidence federation lifecycle: <code>LOCAL → CANDIDATE → SUBMITTED → ACCEPTED/REJECTED</code></li>
+<li>handoff를 SSOT가 아닌 target-app Context view로 생성</li>
+<li>additive Work controller/runner profile and managed detached worktree dispatch</li>
+<li>신규 설치와 기존 Kit 업데이트를 위한 non-destructive installer</li>
+</ul>
+<h3 id="section-요구사항">요구사항</h3>
+<ul>
+<li>Python 3.6 이상</li>
+<li>Git</li>
+<li>Bash, Linux/macOS의 descriptor-relative filesystem API</li>
+<li>기본 모드는 기존 AMPLAI Loop V2 앱을 확장한다. 새 저장소는 아래 baseline 옵션을 명시한다.</li>
+<li>선택한 worker의 CLI: <code>claude</code> 또는 <code>codex</code></li>
+</ul>
+<h3 id="section-optional-generic-baseline">Optional Generic Baseline</h3>
+<p>Baseline은 <code>work/design</code>과 실제 계약·문맥·검증 명령을 실행하는 공용 기본 파일 묶음이다.
+개발 저장소용 기능이며 Synapse 서버에 새 daemon을 설치하지 않는다.</p>
+<pre><code>python3 install.py --target /path/to/new-app \
+  --app-id &lt;app-id&gt; --project-id ai-platform \
+  --bootstrap-baseline --repo-profile generic --dry-run</code></pre>
+<p>검토 후 <code>--dry-run</code>을 빼고 설치한다. <code>baseline/manifest.json</code>이 파일·12개 skill·정확한
+상대 symlink 목록을 선언한다. 기본 파일과 async 확장은 메모리에서 합친 뒤 경로별 한 번 쓴다.</p>
+<p>Baseline을 설치한 저장소는 이후 옵션을 생략해도 기존 profile과 소유 기록을 유지한다.
+다른 내용의 기존 기본 파일이나 private profile을 generic 파일로 덮어쓰지 않는다.
+기존 앱은 baseline 없이 확장만 설치하거나, 충돌 파일을 소유자 검토로 먼저 정리한다.</p>
+<p>기존 <code>AGENTS.md</code>·<code>CLAUDE.md</code>의 marker 밖 규칙을 보존한다. 같은 내용의 기존 파일·symlink·hook은
+빌려 쓰며 제거 대상으로 소유권을 가져오지 않는다. 기존 app identity와 Store 연결도 보존한다.
+Host hook trust·sandbox·model·자동 실행 권한을 추가로 승인하지 않는다.</p>
+<p>Baseline Context는 AGENTS.md·workflow·verifier registry를 필수 governing input으로 읽는다.
+Governing input은 Work를 통제하는 명시적 규칙이며, release guide의 review 상태와 다르다.
+앱의 active Decision은 승인된 exact ledger path와 index로만 연결한다. 과거 ledger 전체나
+private profile을 공용 package에 넣지 않는다. 항목이 빠진 Context는 hash를 다시 만들어도
+검증을 통과하지 못한다.</p>
+<p>문서 검색·공유는 출력 전에 정규화한 참조 경로의 security를 검사한다. 알 수 없거나 더 높은
+보안 등급의 참조는 제목·snippet에도 노출하지 않는다. 검토 기록은 8 MiB, impact 결과는
+설정된 reader 한도를 넘기 전에 거부하며 기존 정상 파일과 history를 보존한다.</p>
+<h3 id="section-package-integrity-and-recovery">Package Integrity And Recovery</h3>
+<p>설치기는 <code>CHECKSUMS.sha256</code>의 전체 목록과 내용을 검사한 뒤 그 메모리 snapshot만 사용한다.
+누락·추가·중복·symlink·내용 변경은 쓰기 전에 거부한다. 같은 버전명도 hash 검사를 생략하지 않는다.
+Checksum은 전달 무결성 검사이며 배포자 서명이나 외부 배포 승인이 아니다.</p>
+<p>동일 target의 설치는 직렬화한다. 로컬 편집이나 부모 경로 교체를 발견하면 중단한다.
+일반 실패는 해당 transaction을 복구한다. 복구 중 달라진 사용자 파일은 덮어쓰지 않는다.</p>
+<p>강제 종료 기록이 있으면 다음 설치·제거는 중단한다. 다음 명령으로 복구 범위를 확인한다.</p>
+<pre><code>python3 install.py --target /path/to/app --recover --dry-run
+python3 install.py --target /path/to/app --recover</code></pre>
+<p>복구는 이전 내용 hash와 백업이 일치하는 target 파일만 되돌린다. 쓰다 남은 임시 파일은
+백업 영역에 보존한다. 중앙 Project Store는 되돌리지 않으며, 해당 연결을 명시했던 설치가
+중단됐다면 별도 Store 상태를 확인한다. 실패 기록과 백업을 임의로 지우지 않는다.</p>
+<p>이 baseline 변경은 W003의 로컬 구현이다. 현재 macOS의 격리 설치 검증과 실제 native host,
+Python 3.6 interpreter, RHEL7·운영 배포 증거는 구분한다. 최종 기능 묶음과 배포 승인은 별도다.</p>
+<h4 id="section-앱마다-있을-수도-없을-수도-있는-것">앱마다 있을 수도, 없을 수도 있는 것</h4>
+<p><code>manifest.json</code>의 marker 대상 중 일부는 <code>required: false</code>다. 어떤 앱에는 있고 어떤 앱에는
+없기 때문이고, 없어도 설치가 진행된다.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Document table"><table><thead><tr><th scope="col">marker 대상</th><th scope="col">없을 때</th></tr></thead><tbody>
+<tr><td><code>.agents/skills/handoff/SKILL.md</code></td><td>건너뛴다. 해당 skill이 있는 앱에서만 병합한다</td></tr>
+<tr><td><code>.ai-team/skills/handoff/SKILL.md</code></td><td>같다</td></tr>
+<tr><td><code>.ai-team/AUTONOMY_POLICY.md</code></td><td>헤더와 함께 새로 만든다</td></tr>
+</tbody></table></div>
+<h3 id="section-1-패키지-검증">1. 패키지 검증</h3>
+<pre><code>python3 selftest.py
+python3 seal.py --verify</code></pre>
+<h3 id="section-2-앱에-설치-또는-업데이트">2. 앱에 설치 또는 업데이트</h3>
+<p>Project Store를 연결하지 않고 repository runtime만 설치한다.</p>
+<pre><code>python3 install.py \
+  --target /path/to/app \
+  --app-id &lt;app-id&gt; \
+  --project-id ai-platform</code></pre>
+<p>동일 명령을 다시 실행하면 idempotent update가 된다. 설치 기록은
+<code>.ai-team/install/amplai-loop-kit.json</code>에 남는다.</p>
+<p>중앙 저장소까지 초기화하고 Claude Code 앱으로 등록한다.</p>
+<pre><code>python3 install.py \
+  --target /path/to/app \
+  --app-id &lt;app-id&gt; \
+  --project-id ai-platform \
+  --project-home &quot;$HOME/workspace/amplai-project&quot; \
+  --runner claude-code \
+  --runner-arg=--permission-mode \
+  --runner-arg=acceptEdits</code></pre>
+<p>Codex 앱으로 등록한다. Installer는 sandbox나 approval을 자동 완화하지 않는다.</p>
+<pre><code>python3 install.py \
+  --target /path/to/app \
+  --app-id &lt;app-id&gt; \
+  --project-id ai-platform \
+  --project-home &quot;$HOME/workspace/amplai-project&quot; \
+  --runner codex \
+  --runner-arg=--sandbox \
+  --runner-arg=workspace-write</code></pre>
+<p><code>--runner-command</code>를 생략하면 native runner는 각각 <code>claude</code>, <code>codex</code>를 사용한다.
+Project-local Codex hook은 처음 또는 정의 변경 후 Codex <code>/hooks</code>에서 검토·신뢰해야 실행된다.
+Installer는 hook trust를 우회하지 않는다.
+기본은 <code>auto_start=false</code>다. 실제 CLI로 foreground smoke test를 통과한 앱에서만
+<code>--auto-start</code>를 사용한다.</p>
+<h3 id="section-3-다른-앱-업데이트">3. 다른 앱 업데이트</h3>
+<pre><code>python3 install.py --target /path/to/cortex \
+  --app-id cortex --project-id ai-platform \
+  --project-home &quot;$HOME/workspace/amplai-project&quot; --runner codex \
+  --runner-arg=--sandbox --runner-arg=workspace-write
+
+python3 install.py --target /path/to/recipe-studio \
+  --app-id recipe-studio --project-id ai-platform \
+  --project-home &quot;$HOME/workspace/amplai-project&quot; --runner claude-code</code></pre>
+<h3 id="section-skill-정본과-host-표기">Skill 정본과 host 표기</h3>
+<ul>
+<li><code>.agents/skills/</code>가 Claude/Codex 공통 workflow의 유일한 정본이다.</li>
+<li><code>.claude/skills/*</code>는 해당 shared skill을 가리키는 exact symlink mirror다.</li>
+<li>내부 capability는 Codex metadata에서 <code>allow_implicit_invocation: false</code>로 닫아</li>
+</ul>
+<p>  <code>$work</code>/<code>$design</code> controller 우회를 막는다.</p>
+<ul>
+<li>문서와 Contract에는 <code>work</code>/<code>design</code>이라는 의미를 저장하고, slash/dollar 표기는 host adapter가 맡는다.</li>
+</ul>
+<h3 id="section-충돌-정책">충돌 정책</h3>
+<ul>
+<li>Kit이 소유하는 파일을 사용자가 수정했다면 기본 설치는 중단한다.</li>
+<li>확장 모드는 skill/policy/workflow의 marker만 소유한다. 새 baseline 파일은 기록된 전체 파일을 소유한다.</li>
+<li><code>.claude/settings.json</code>과 <code>.codex/hooks.json</code>의 기존 필드·permissions·hooks는 보존한다.</li>
+<li>uninstall은 install record에 적힌 AMPLAI hook만 제거한다.</li>
+<li><code>--force</code>는 기존 관리 파일의 충돌을 백업 후 교체한다. 비소유 baseline 파일과 symlink 충돌은 수동 검토한다.</li>
+<li>모든 preflight가 끝난 뒤 쓰며, 쓰기 실패 시 target repository 변경을 rollback한다.</li>
+</ul>
+<p>먼저 확인만 하려면:</p>
+<pre><code>python3 install.py ... --dry-run</code></pre>
+<h3 id="section-제거">제거</h3>
+<pre><code>python3 install.py --target /path/to/app --uninstall --dry-run
+python3 install.py --target /path/to/app --uninstall</code></pre>
+<p>Kit이 설치한 파일, marker section, hook, JSON rule만 되돌린다. 중앙 Project Store는 건드리지
+않는다.</p>
+<h3 id="section-손상-복구">손상 복구</h3>
+<p>수동 편집이나 중단된 쓰기로 <code>content_hash</code>가 어긋나면 Runtime은 읽기를 멈춘다. 다시 기록한다.</p>
+<pre><code>python3 scripts/amplai.py project reseal --all</code></pre>
+<p>막힌 Work를 푸는 명령:</p>
+<pre><code>python3 scripts/amplai.py work cancel --id CR-0001-W002 --reason &quot;설계 변경&quot; --cascade
+python3 scripts/amplai.py work retarget --id CR-0001-W003 --depends-on CR-0001-W001
+python3 scripts/amplai.py work reset-attempts --id CR-0001-W002</code></pre>
+<h3 id="section-중앙-project-store">중앙 Project Store</h3>
+<p><code>/tmp</code>를 사용하지 않는다.</p>
+<pre><code>export AMPLAI_PROJECT_HOME=&quot;$HOME/workspace/amplai-project&quot;
+python3 /path/to/app/scripts/amplai.py project status
+python3 /path/to/app/scripts/amplai_supervisor.py --dry-run
+python3 /path/to/app/scripts/amplai_supervisor.py --once --include-manual</code></pre>
+<p>상세 규약은 설치 후 다음 문서를 본다.</p>
+<ul>
+<li><code>.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md</code></li>
+<li><code>.ai-team/runtime/LOCAL_SUPERVISOR.md</code></li>
+<li><code>.ai-team/runtime/INSTALLATION.md</code></li>
+</ul>
+<p>Slack/Hermes activation is not enabled by installing the Kit. It requires the AMPLAI Slack App’s separately configured
+human authority, provider scope evidence, and a host-local status projection transport.</p></main></div><footer><p>Owner: amplai-foundry-maintainers · Source SHA256: <code>00b6597e38ab83a4adc8ee7d96defe86b5836c87abd326d1824ee04597440225</code></p><p>Offline document · Source-derived, not a hand-maintained copy.</p></footer></body></html>

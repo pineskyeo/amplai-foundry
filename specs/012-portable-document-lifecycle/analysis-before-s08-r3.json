@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "reviewed_at": "2026-09-11 14:29:47 UTC",
+  "capability": "speckit-analyze under existing work controller",
+  "verdict": "PASS",
+  "verdict_scope": "Repair planning consistency only; implementation gate CHANGES_REQUIRED",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "7fa661d587a2b236ed07479b5204fcc4328bab1b222dab7b0df4a16b388636ae",
+    "tasks.md": "17b8b15a186048f862dbf9ac7fb6272f520abd3dee007b137bd3832164111750",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "442400f220d3b85eacb3375c41e26750232532e05f439308533e886cdb552b27"
+  },
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "feature_requirements": 15,
+    "work_acceptances": 8,
+    "tasks": 13,
+    "repair_tasks": 5,
+    "needs_revalidation": 9,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0
+  },
+  "executed": [
+    {
+      "command": "python3 -B .agents/skills/taskify/scripts/validate_task_manifest.py specs/012-portable-document-lifecycle/task-manifests",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 -B .specify/scripts/taskify_to_tasks_md.py specs/012-portable-document-lifecycle/task-manifests",
+      "exit_code": 0
+    },
+    {
+      "command": "bash .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+      "exit_code": 0
+    },
+    {
+      "command": "node specs/012-portable-document-lifecycle/verify-traceability.mjs /Users/pinesky/workspace/synapse-app-split",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "verdict": "MATCH"
+    }
+  ],
+  "semantic_checks": {
+    "scope": "Existing DOC-001/002/003/004 and REG-001 under E021; original 23 requirements/46 cases unchanged; no new user architecture decision",
+    "dag": "S12 -> S13 -> S09 -> S10 -> S11 and affected S01-S06 revalidation; all precede S08; no cycles",
+    "ownership": "Main canonical engine + baseline payload and owned tests only; no other real repo/host actions",
+    "history": "Both exact frozen archives, all review evidence, prior completion history and original trace prefix retained",
+    "verification": "S12 canonical265tests/5fast checks/119-row seal passed on an unchanged candidate. Current eight public-operation RED cases show6failures/2controls; five additional low-level cases show3failures/2controls. S13 must pass all of them before local completion."
+  },
+  "findings": [],
+  "known_implementation_blockers": [
+    "W003-R2-01 and02 locally repaired by S12; independent R3 confirmation remains",
+    "W003-R2-03 S13 implementation under verification"
+  ],
+  "next_task": "PORTABLE-DOC-T013",
+  "context_precondition": "S13 current Context was rebuilt normally and validates MATCH: seven mandatory controls/four active claims plus11Decisions. Nine stale release-guide sources are intentionally excluded during repair; full25guide review and complete current Context remain required in S08.",
+  "limits": [
+    "Planning verdict is not behavior PASS",
+    "1945 R2 tests remain historical; newly found cases require RED/GREEN",
+    "No RHEL7/Python3.6/full native Work/production proof"
+  ],
+  "open_questions": []
+}

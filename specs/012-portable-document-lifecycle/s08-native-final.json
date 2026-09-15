@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "results": [
+    {
+      "host": "claude-code",
+      "exit_code": 0,
+      "timed_out": false,
+      "answer_exact": true,
+      "transport_pass": true,
+      "continuation_id_observed": true,
+      "stdout_sha256": "6dc7ab57b4d2bfcd49a63f507c3bd74bce09c0e730589c0d8ec173123dee335f",
+      "stdout_bytes": 1399,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0,
+      "work_entry": "/work",
+      "design_entry": "/design"
+    },
+    {
+      "host": "codex",
+      "exit_code": 0,
+      "timed_out": false,
+      "answer_exact": true,
+      "transport_pass": true,
+      "continuation_id_observed": true,
+      "stdout_sha256": "1de8b8519621bde3231731d0fd39d35f3b9207a0dce17de92b301de904d4ed3a",
+      "stdout_bytes": 374,
+      "stderr_sha256": "1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+      "stderr_bytes": 39,
+      "work_entry": "$work",
+      "design_entry": "$design"
+    }
+  ],
+  "repository_content_drift": [],
+  "scope": "Actual installed adapters and native CLI response transport only",
+  "limits": [
+    "No production/native lifecycle/host resume or unattended activation claim",
+    "No model chosen, no persisted permission/trust or central Store modification requested"
+  ],
+  "recorded_at": "2026-09-11T10:33:07.652Z",
+  "kit_checksums_sha256": "f8dcb3ecd279b095e508ddfbd5aade8776b9de46f076222bd54f06f72f3a2e63",
+  "probe_sha256": "8b08cb1c26e9cf6fe0bbb19058155978144d44542f721e40b5e033d1d7df59cc"
+}

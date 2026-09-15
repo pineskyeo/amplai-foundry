@@ -1,0 +1,449 @@
+.FFFFFFFFFFFFFFF.FFFFFFFFFFFFFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 82%]
+FFFFFFFFFFF....                                                          [100%]
+=================================== FAILURES ===================================
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<video poster="{target}"></video>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<object data="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<svg:image xlink:href="{target}"/>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<svg:a href="{target}">guide</svg:a>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<form action="{target}"></form>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<button formaction="{target}">send</button>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<blockquote cite="{target}">quote</blockquote>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<img longdesc="{target}" alt="image">] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<body background="{target}">guide</body>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<html manifest="{target}">guide</html>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<object codebase="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<object classid="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<img usemap="{target}">] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<div itemid="{target}">guide</div>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[False-<svg:image XLINK:HREF="{target}"/>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<video poster="{target}"></video>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<object data="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<svg:image xlink:href="{target}"/>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<svg:a href="{target}">guide</svg:a>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<form action="{target}"></form>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<button formaction="{target}">send</button>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<blockquote cite="{target}">quote</blockquote>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<img longdesc="{target}" alt="image">] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<body background="{target}">guide</body>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<html manifest="{target}">guide</html>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<object codebase="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<object classid="{target}"></object>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<img usemap="{target}">] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<div itemid="{target}">guide</div>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_direct_destinations_block_every_consumer_before_ranking[True-<svg:image XLINK:HREF="{target}"/>] _
+tests/ai/test_document_html_references.py:74: in test_direct_destinations_block_every_consumer_before_ranking
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_supported_same_security_target_is_exact_and_review_bound[<video poster="{target}"></video>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<object data="{target}"></object>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<svg:image xlink:href="{target}"/>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<svg:a href="{target}">guide</svg:a>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<form action="{target}"></form>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<button formaction="{target}">send</button>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<blockquote cite="{target}">quote</blockquote>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<img longdesc="{target}" alt="image">] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<body background="{target}">guide</body>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<html manifest="{target}">guide</html>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<object codebase="{target}"></object>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<object classid="{target}"></object>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<img usemap="{target}">] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<div itemid="{target}">guide</div>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_supported_same_security_target_is_exact_and_review_bound[<svg:image XLINK:HREF="{target}"/>] _
+tests/ai/test_document_html_references.py:105: in test_supported_same_security_target_is_exact_and_review_bound
+    assert after["snapshot"] != before["snapshot"]
+E   AssertionError: assert {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...} != {'candidate_revision': 'NO_COMMIT', 'candidate_sha256': '20ec60346b97d0793942c43091b79fdafbd3081258622d6e1b90c0e26c3a5...2f11161202b945', 'dependency_snapshot_sha256': '24d058a8c0ee606e392f0bd73eb550a8dc658744e132974c840a1b76261ca1e6', ...}
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<img srcset="PRIVATE_CANARY.md 1x">] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<link imagesrcset="https://example.invalid/a 1x, PRIVATE_CANARY.md 2x">] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<a href="https://example.invalid/" ping="https://example.invalid/a PRIVATE_CANARY.md">guide</a>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<object archive="https://example.invalid/a PRIVATE_CANARY.md"></object>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<div style="background-image:url(PRIVATE_CANARY.md)">guide</div>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<style>div{background:url(PRIVATE_CANARY.md)}</style>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<svg:style>div{background:url(PRIVATE_CANARY.md)}</svg:style>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<rect fill="url(PRIVATE_CANARY.md#paint)"/>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<rect filter="url(PRIVATE_CANARY.md#filter)"/>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<rect stroke="u\\72l(PRIVATE_CANARY.md#paint)"/>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<iframe srcdoc="&lt;a href=&quot;PRIVATE_CANARY.md&quot;&gt;guide&lt;/a&gt;"></iframe>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<meta http-equiv="refresh" content="0;url=PRIVATE_CANARY.md">] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<script>fetch("PRIVATE_CANARY.md")</script>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<img onerror="fetch('PRIVATE_CANARY.md')">] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<animate attributeName="href" values="PRIVATE_CANARY.md"/>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<param name="movie" value="PRIVATE_CANARY.md">] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<base href="PRIVATE_CANARY.md">] _
+tests/ai/test_document_html_references.py:121: in test_unsupported_reference_language_fails_before_current_or_history_output
+    engine.select_documents(root, "release-2", security="PUBLIC", history=history)
+scripts/amplai_docs.py:1813: in select_documents
+    records = _catalog(tree, config, rules)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1668: in _catalog
+    record = _document(tree, path, config, rules, review_records, revision, candidate_hash)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1584: in _document
+    declared = declared_reference_snapshot(tree, path, body, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:2462: in declared_reference_snapshot
+    raise DocumentError("MISSING_SOURCE")
+E   document_lifecycle_canary.DocumentError: MISSING_SOURCE
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'UNSUPPORTED_PARSER'
+E    Input: 'MISSING_SOURCE'
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<svg xml:base="PRIVATE_CANARY.md"/>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<div unknown-reference="PRIVATE_CANARY.md">guide</div>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[<?xml-stylesheet href="PRIVATE_CANARY.md"?>] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[[guide](file:PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[[guide](file:///docs/PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[[guide](javascript:PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_unsupported_reference_language_fails_before_current_or_history_output[[guide](data:text/html,PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:121: in test_unsupported_reference_language_fails_before_current_or_history_output
+    engine.select_documents(root, "release-2", security="PUBLIC", history=history)
+scripts/amplai_docs.py:1813: in select_documents
+    records = _catalog(tree, config, rules)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1668: in _catalog
+    record = _document(tree, path, config, rules, review_records, revision, candidate_hash)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1584: in _document
+    declared = declared_reference_snapshot(tree, path, body, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:2410: in declared_reference_snapshot
+    raise DocumentError("EXTERNAL_REFERENCE_UNAVAILABLE")
+E   document_lifecycle_canary.DocumentError: EXTERNAL_REFERENCE_UNAVAILABLE
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'UNSUPPORTED_PARSER'
+E    Input: 'EXTERNAL_REFERENCE_UNAVAILABLE'
+_ test_unsupported_reference_language_fails_before_current_or_history_output[[guide](https:PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:120: in test_unsupported_reference_language_fails_before_current_or_history_output
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_file_uri_naming_actual_restricted_target_never_becomes_external_link[False] _
+tests/ai/test_document_html_references.py:146: in test_file_uri_naming_actual_restricted_target_never_becomes_external_link
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_file_uri_naming_actual_restricted_target_never_becomes_external_link[True] _
+tests/ai/test_document_html_references.py:146: in test_file_uri_naming_actual_restricted_target_never_becomes_external_link
+    with pytest.raises(engine.DocumentError, match="UNSUPPORTED_PARSER") as caught:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_real_cli_current_history_and_internal_html_guard[<video poster="{target}"></video>] _
+tests/ai/test_document_html_references.py:161: in test_real_cli_current_history_and_internal_html_guard
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_real_cli_current_history_and_internal_html_guard[<object data="{target}"></object>] _
+tests/ai/test_document_html_references.py:161: in test_real_cli_current_history_and_internal_html_guard
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_real_cli_current_history_and_internal_html_guard[<svg:image xlink:href="{target}"/>] _
+tests/ai/test_document_html_references.py:161: in test_real_cli_current_history_and_internal_html_guard
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_real_cli_current_history_and_internal_html_guard[<svg:a href="{target}">guide</svg:a>] _
+tests/ai/test_document_html_references.py:161: in test_real_cli_current_history_and_internal_html_guard
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_installed_cli_cannot_skip_unsupported_references[<img srcset="PRIVATE_CANARY.md 1x">] _
+tests/ai/test_document_html_references.py:218: in test_installed_cli_cannot_skip_unsupported_references
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_installed_cli_cannot_skip_unsupported_references[<div style="background-image:url(PRIVATE_CANARY.md)">guide</div>] _
+tests/ai/test_document_html_references.py:218: in test_installed_cli_cannot_skip_unsupported_references
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_installed_cli_cannot_skip_unsupported_references[<iframe srcdoc="&lt;a href=&quot;PRIVATE_CANARY.md&quot;&gt;guide&lt;/a&gt;"></iframe>] _
+tests/ai/test_document_html_references.py:218: in test_installed_cli_cannot_skip_unsupported_references
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_installed_cli_cannot_skip_unsupported_references[[guide](file:///docs/PRIVATE_CANARY.md)] _
+tests/ai/test_document_html_references.py:218: in test_installed_cli_cannot_skip_unsupported_references
+    assert result.returncode != 0
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<video poster="{target}"></video>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<object data="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<svg:image xlink:href="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<svg:a href="{target}">guide</svg:a>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<form action="{target}"></form>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<button formaction="{target}">send</button>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<blockquote cite="{target}">quote</blockquote>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<img longdesc="{target}" alt="image">]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<body background="{target}">guide</body>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<html manifest="{target}">guide</html>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<object codebase="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<object classid="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<img usemap="{target}">]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<div itemid="{target}">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[False-<svg:image XLINK:HREF="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<video poster="{target}"></video>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<object data="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<svg:image xlink:href="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<svg:a href="{target}">guide</svg:a>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<form action="{target}"></form>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<button formaction="{target}">send</button>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<blockquote cite="{target}">quote</blockquote>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<img longdesc="{target}" alt="image">]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<body background="{target}">guide</body>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<html manifest="{target}">guide</html>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<object codebase="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<object classid="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<img usemap="{target}">]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<div itemid="{target}">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_direct_destinations_block_every_consumer_before_ranking[True-<svg:image XLINK:HREF="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<video poster="{target}"></video>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<object data="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<svg:image xlink:href="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<svg:a href="{target}">guide</svg:a>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<form action="{target}"></form>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<button formaction="{target}">send</button>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<blockquote cite="{target}">quote</blockquote>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<img longdesc="{target}" alt="image">]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<body background="{target}">guide</body>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<html manifest="{target}">guide</html>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<object codebase="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<object classid="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<img usemap="{target}">]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<div itemid="{target}">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_supported_same_security_target_is_exact_and_review_bound[<svg:image XLINK:HREF="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<img srcset="PRIVATE_CANARY.md 1x">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<link imagesrcset="https://example.invalid/a 1x, PRIVATE_CANARY.md 2x">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<a href="https://example.invalid/" ping="https://example.invalid/a PRIVATE_CANARY.md">guide</a>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<object archive="https://example.invalid/a PRIVATE_CANARY.md"></object>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<div style="background-image:url(PRIVATE_CANARY.md)">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<style>div{background:url(PRIVATE_CANARY.md)}</style>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<svg:style>div{background:url(PRIVATE_CANARY.md)}</svg:style>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<rect fill="url(PRIVATE_CANARY.md#paint)"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<rect filter="url(PRIVATE_CANARY.md#filter)"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<rect stroke="u\\72l(PRIVATE_CANARY.md#paint)"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<iframe srcdoc="&lt;a href=&quot;PRIVATE_CANARY.md&quot;&gt;guide&lt;/a&gt;"></iframe>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<meta http-equiv="refresh" content="0;url=PRIVATE_CANARY.md">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<script>fetch("PRIVATE_CANARY.md")</script>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<img onerror="fetch('PRIVATE_CANARY.md')">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<animate attributeName="href" values="PRIVATE_CANARY.md"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<param name="movie" value="PRIVATE_CANARY.md">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<base href="PRIVATE_CANARY.md">]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<svg xml:base="PRIVATE_CANARY.md"/>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<div unknown-reference="PRIVATE_CANARY.md">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[<?xml-stylesheet href="PRIVATE_CANARY.md"?>]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[[guide](file:PRIVATE_CANARY.md)]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[[guide](file:///docs/PRIVATE_CANARY.md)]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[[guide](javascript:PRIVATE_CANARY.md)]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[[guide](data:text/html,PRIVATE_CANARY.md)]
+FAILED tests/ai/test_document_html_references.py::test_unsupported_reference_language_fails_before_current_or_history_output[[guide](https:PRIVATE_CANARY.md)]
+FAILED tests/ai/test_document_html_references.py::test_file_uri_naming_actual_restricted_target_never_becomes_external_link[False]
+FAILED tests/ai/test_document_html_references.py::test_file_uri_naming_actual_restricted_target_never_becomes_external_link[True]
+FAILED tests/ai/test_document_html_references.py::test_real_cli_current_history_and_internal_html_guard[<video poster="{target}"></video>]
+FAILED tests/ai/test_document_html_references.py::test_real_cli_current_history_and_internal_html_guard[<object data="{target}"></object>]
+FAILED tests/ai/test_document_html_references.py::test_real_cli_current_history_and_internal_html_guard[<svg:image xlink:href="{target}"/>]
+FAILED tests/ai/test_document_html_references.py::test_real_cli_current_history_and_internal_html_guard[<svg:a href="{target}">guide</svg:a>]
+FAILED tests/ai/test_document_html_references.py::test_installed_cli_cannot_skip_unsupported_references[<img srcset="PRIVATE_CANARY.md 1x">]
+FAILED tests/ai/test_document_html_references.py::test_installed_cli_cannot_skip_unsupported_references[<div style="background-image:url(PRIVATE_CANARY.md)">guide</div>]
+FAILED tests/ai/test_document_html_references.py::test_installed_cli_cannot_skip_unsupported_references[<iframe srcdoc="&lt;a href=&quot;PRIVATE_CANARY.md&quot;&gt;guide&lt;/a&gt;"></iframe>]
+FAILED tests/ai/test_document_html_references.py::test_installed_cli_cannot_skip_unsupported_references[[guide](file:///docs/PRIVATE_CANARY.md)]
+80 failed, 7 passed in 9.26s

@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "component": "backend",
+  "revision": "catalog-21ae3865ab6fcf59f242e553ec38c33ff8fb5f31fa9605626291116bc5175b2b",
+  "catalog_sha256": "21ae3865ab6fcf59f242e553ec38c33ff8fb5f31fa9605626291116bc5175b2b",
+  "w002_scope_sha256": "6ceee816cb838751749ddafdb8e396f6af047bc811e6a7edbd3d80d59d2fb312",
+  "core_library_sha256": "5715bab759c781be061e7bdbd5ba6bf8973b38fafe13f59c9848ed3eb49b1152",
+  "verified_by": "s08-guide-components.json",
+  "purpose": "INTERNAL local candidate guide reference; not deployment activation"
+}

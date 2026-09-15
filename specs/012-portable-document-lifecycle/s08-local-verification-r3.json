@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "status": "LOCAL_CANONICAL_PASS_PENDING_R3_REVIEW",
+  "recorded_at": "2026-09-11 15:19:00 UTC",
+  "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S08",
+  "exit_code": 0,
+  "tests": {
+    "passed": 2049,
+    "deselected": 4,
+    "seconds": 389.26,
+    "deselected_scope": "Live Slack integration; no current live Slack proof"
+  },
+  "verifier": {
+    "profile": "v2",
+    "checks": 11,
+    "status": "PASS"
+  },
+  "outer_verifier": {
+    "profile": "fast",
+    "checks": 5,
+    "status": "PASS"
+  },
+  "package": {
+    "version": "2.5.0",
+    "checksum_rows": 119,
+    "selftests": 12,
+    "status": "PASS"
+  },
+  "log": "s08-canonical-eval-r3.log",
+  "tasks": "s08-r3-eval-input-tasks.md",
+  "source_snapshot": "s08-r3-eval-source.json",
+  "source_scope_sha256": "404977a0d8cfe7d82ee3f94ed174f3d96d0fcd53c59f4e6dbad6710123b86d25",
+  "source_files_verified": 147,
+  "source_drift": [],
+  "source_hashes": {
+    "scripts/amplai_docs.py": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+    "scripts/loopv2.py": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+    "scripts/loopctl.py": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+    ".ai-team/policy/documentation.json": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "185ba535b22b8a73d9cba5eff643ef516fef7c2ad2449ba09c6807d0ce6788c5",
+    "specs/012-portable-document-lifecycle/tasks.md": "b4dd267d8d4c5ea99b15eb9b16eb32fafac856801530874caea17ffa963f2ffd",
+    "specs/012-portable-document-lifecycle/context-pack.json": "caed438c8ea33561f308ca5613a84cf241bf8b59cee2de189142240af17bf15c"
+  },
+  "context": "s08-context-r3.json",
+  "native_transport": "s08-native-r3.json",
+  "semantic_document_review": "s08-document-review-evidence-r6.json",
+  "limits": [
+    "Current repaired local candidate only; fresh sequential contract/recovery/regression review and post-review report-only gardening remain",
+    "No actual RHEL7, Python3.6, full native Work/resume, signing, fleet activation or production deployment proof",
+    "R1/R2 historical CHANGES_REQUIRED evidence retained, not rewritten"
+  ]
+}

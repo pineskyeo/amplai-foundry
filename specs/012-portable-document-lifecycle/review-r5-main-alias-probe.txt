@@ -1,0 +1,84 @@
+"""Independent synthetic alias/absence boundary probe; no shared repository writes."""
+import importlib.util
+import json
+import pathlib
+import sys
+import tempfile
+
+ROOT = pathlib.Path("/Users/pinesky/workspace/amplai-foundry")
+sys.path.insert(0, str(ROOT / "tests"))
+from ai import test_document_lifecycle as fixture
+from ai import test_document_typed_visibility as visibility
+
+assert fixture.ROOT == ROOT
+BASE = pathlib.Path(__file__).resolve().parent
+CASES = {
+    "escaping_leaf": True,
+    "escaping_parent": True,
+    "dangling_leaf": True,
+    "dangling_parent": True,
+    "cyclic_leaf": True,
+    "cyclic_parent": True,
+    "inside_restricted": True,
+    "inside_public": False,
+    "ordinary_absence": False,
+    "inside_alias_absent_child": False,
+}
+rows = []
+for source_path in ("scripts/amplai_docs.py", "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py"):
+    path = ROOT / source_path
+    spec = importlib.util.spec_from_file_location("main_alias_boundary", path)
+    engine = importlib.util.module_from_spec(spec)
+    exec(compile(path.read_bytes(), str(path), "exec", dont_inherit=True), engine.__dict__)
+    assert pathlib.Path(engine.__file__).resolve() == path.resolve()
+    for case, should_deny in CASES.items():
+        with tempfile.TemporaryDirectory(prefix="fixture-", dir=str(BASE)) as temporary:
+            parent = pathlib.Path(temporary)
+            root = fixture.repository(parent)
+            outside = parent / "outside"
+            outside.mkdir()
+            (outside / "PRIVATE_CANARY.bin").write_bytes(b"NONSECRET SYNTHETIC FIXTURE ONLY\n")
+            assets = root / "assets"
+            if case == "escaping_parent":
+                assets.symlink_to(outside, target_is_directory=True)
+            elif case == "dangling_parent":
+                assets.symlink_to("missing-directory", target_is_directory=True)
+            elif case == "cyclic_parent":
+                assets.symlink_to("assets", target_is_directory=True)
+            elif case == "inside_alias_absent_child":
+                (root / "public-targets").mkdir()
+                assets.symlink_to("public-targets", target_is_directory=True)
+            else:
+                assets.mkdir()
+                alias = assets / "PRIVATE_CANARY.bin"
+                if case == "escaping_leaf":
+                    alias.symlink_to(outside / "PRIVATE_CANARY.bin")
+                elif case == "dangling_leaf":
+                    alias.symlink_to("missing-target.bin")
+                elif case == "cyclic_leaf":
+                    alias.symlink_to("PRIVATE_CANARY.bin")
+                elif case in ("inside_public", "inside_restricted"):
+                    (assets / "target.bin").write_bytes(b"IN-REPO SYNTHETIC FIXTURE\n")
+                    alias.symlink_to("target.bin")
+            level = "PUBLIC" if case in ("inside_public", "inside_alias_absent_child") else "RESTRICTED"
+            visibility.policy_routes(root, [visibility.route("assets", level), visibility.route("public-targets", "PUBLIC")], hint="known_absent")
+            fixture.document(root, security="PUBLIC", body="# Guide\nOptional example `assets/PRIVATE_CANARY.bin`.\n")
+            fixture.reviewed(engine, root)
+            outcome = {"engine": source_path, "case": case, "expected": "DENY" if should_deny else "ALLOW", "checks": 0, "allowed": 0, "denied": 0, "marker_outputs": 0, "unsafe_errors": []}
+            for consumer in engine.CURRENT_CONSUMERS:
+                for history in (False, True):
+                    outcome["checks"] += 1
+                    try:
+                        result = engine.select_documents(root, "release-2", security="PUBLIC", consumer=consumer, history=history)
+                    except engine.DocumentError as error:
+                        outcome["denied"] += 1
+                        if "PRIVATE_CANARY" in str(error):
+                            outcome["unsafe_errors"].append(error.code)
+                    else:
+                        outcome["allowed"] += 1
+                        outcome["marker_outputs"] += int("PRIVATE_CANARY" in json.dumps(result))
+            outcome["pass"] = not outcome["unsafe_errors"] and (outcome["denied"] == outcome["checks"] if should_deny else outcome["allowed"] == outcome["checks"])
+            rows.append(outcome)
+failed = [row for row in rows if not row["pass"]]
+print(json.dumps({"verdict": "PASS" if not failed else "FAIL_ALIAS_ABSENCE_BOUNDARY", "rows": rows, "failing_cases": len(failed)}, indent=2))
+sys.exit(0 if not failed else 1)

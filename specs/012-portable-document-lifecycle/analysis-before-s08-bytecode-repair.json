@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "reviewed_at": "2026-09-12 01:19:51 UTC",
+  "capability": "speckit-analyze under existing work controller",
+  "verdict": "PASS",
+  "verdict_scope": "Full S08 readiness after all thirteen current-source canonical passes",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "d876e303c29fbf2cf763844e4112db7a82c9a1d7c49a96a23051fcf1c89c8608",
+    "tasks.md": "f61b2de67b5f453864309b24ad79c268dab672e70dfafaf21fc705458494ef6b",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "1b9f3c47e04381562e60e43351b4882d282afb6a1903fbcb7f93c4efc7b840f5"
+  },
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "feature_requirements": 15,
+    "work_acceptances": 8,
+    "tasks": 15,
+    "repair_tasks": 7,
+    "needs_revalidation": 0,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0
+  },
+  "executed": [
+    {
+      "command": "taskify validator",
+      "exit_code": 0
+    },
+    {
+      "command": "prerequisites",
+      "exit_code": 0
+    },
+    {
+      "command": "verify-traceability.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "content_hash": "988092933e21f20e76c8076f7ff9871b4ee1e5b007e893431cff84322dd1d50f"
+    }
+  ],
+  "semantic_checks": {
+    "scope": "Existing DOC-001/002/003/004 and REG-001 under E021; original 23 requirements/46 cases unchanged; no new user architecture decision",
+    "dag": "Existing DAG unchanged; S14 -> S15 -> S12 -> S13 -> S09 -> S10 -> S11 then S01-S06, all before S08.",
+    "ownership": "Main canonical engine + baseline payload and owned tests only; no other real repo/host actions",
+    "history": "All three frozen archives, raw R3 reports, prior task completion_history and original trace prefix preserved.",
+    "verification": "All thirteen current-source slices pass with149source files unchanged before/after. Full20source/11Decision Context MATCH and25guide reviews RESOLVED. Native transport2PASS."
+  },
+  "findings": [],
+  "known_implementation_blockers": [
+    "No remaining local slice failure observed; full S08, offline HTML validation and all three independent R4 reviews remain open."
+  ],
+  "next_task": "PORTABLE-DOC-T008",
+  "context_precondition": "Fresh repair Context MATCH (11sources/11Decisions) for revalidation; rebuild full20source Context after attributed current-guide reviews and before S08.",
+  "limits": [
+    "Readiness is not behavior PASS.",
+    "Full S08, offline HTML, three fresh reviews and post-review gardening/security remain mandatory.",
+    "No Python3.6/RHEL7/full native Work/production proof."
+  ],
+  "open_questions": [],
+  "integration_diagnosis": "s15-line-boundary-diagnosis.json",
+  "current_repair_evidence": "revalidation-r4-line.json"
+}

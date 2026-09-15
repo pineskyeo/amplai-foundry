@@ -1,0 +1,193 @@
+==== AMPLAI eval ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+feature : specs/012-portable-document-lifecycle
+tasks   : specs/012-portable-document-lifecycle/tasks.md
+slice   : S19
+profile : fast
+attempts: 3
+
+--- verifier:fast
+==== AMPLAI verifier ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+profile : fast
+checks  : ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator
+platform: darwin
+
+--- ruff-check [block]
+    All checks passed!
+    PASS (exit 0, 0.088s)
+--- ruff-format [block]
+    171 files already formatted
+    PASS (exit 0, 0.024s)
+--- mypy [block]
+    Success: no issues found in 121 source files
+    PASS (exit 0, 0.190s)
+--- loop-runtime-doctor [block]
+    LOOP DOCTOR: PASS
+    - public entry points: Claude /work,/design | Codex $work,$design
+    - internal capabilities: 16
+    - legacy runtime directories: absent
+    - policy/contract/verifier JSON: valid
+    - verifier profile 집합: commit, fast, full, runtime, standard, v2 (registry 정본, policy/schema/fallback 일치)
+    - Knowledge/Context/Evidence plane: valid
+    - repository profile: foundry; domain checks: verifier registry
+    - Harness quadrant coverage: complete
+    - contract template: valid
+    - skill SSOT: .agents/skills; Claude mirror: exact symlink set
+    - Codex internal skill policy: implicit invocation disabled
+    - Codex hooks: installed and consistent with Kit state
+    PASS (exit 0, 0.051s)
+--- manifest-validator [warn]
+    PASS: validated 48 task manifest(s)
+    PASS (exit 0, 0.218s)
+
+VERIFIER: PASS
+    PASS
+--- slice:S19:.venv/bin/python -B -m pytest -q tests/ai/test_document_context_delivery.py tests/ai/test_document_governance.py tests/ai/test_document_lifecycle.py
+    ........................................................................ [ 54%]
+    ...........................................................              [100%]
+    PASS
+--- slice:S19:.venv/bin/python -B specs/012-portable-document-lifecycle/verify-kit-guide-selection.py
+    {
+      "verdict": "PASS_KIT_GUIDE_SELECTION",
+      "release_id": "kit-2.5.0-candidate-r6",
+      "guides": [
+        "docs/PORTABLE-DEVELOPMENT.md",
+        "tools/amplai-loop-kit/CHANGELOG.md",
+        "tools/amplai-loop-kit/README.md"
+      ],
+      "required_instructions": [
+        ".ai-team/README.md",
+        ".ai-team/runtime/WORKFLOW.md",
+        ".ai-team/runtime/policy.json",
+        ".ai-team/verifiers/registry.json",
+        ".specify/memory/constitution.md",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
+      "context_delivery": {
+        "guides": [
+          "docs/PORTABLE-DEVELOPMENT.md",
+          "tools/amplai-loop-kit/CHANGELOG.md",
+          "tools/amplai-loop-kit/README.md"
+        ],
+        "required_instructions": [
+          ".ai-team/README.md",
+          ".ai-team/runtime/WORKFLOW.md",
+          ".ai-team/runtime/policy.json",
+          ".ai-team/verifiers/registry.json",
+          ".specify/memory/constitution.md",
+          "AGENTS.md",
+          "CLAUDE.md"
+        ],
+        "unique_paths": [
+          ".ai-team/README.md",
+          ".ai-team/runtime/WORKFLOW.md",
+          ".ai-team/runtime/policy.json",
+          ".ai-team/verifiers/registry.json",
+          ".specify/memory/constitution.md",
+          "AGENTS.md",
+          "CLAUDE.md",
+          "docs/PORTABLE-DEVELOPMENT.md",
+          "tools/amplai-loop-kit/CHANGELOG.md",
+          "tools/amplai-loop-kit/README.md"
+        ],
+        "generated_records": 14,
+        "stored_records": 14,
+        "source_hashes": "EXACT_CURRENT_BYTES",
+        "context_validation": "MATCH",
+        "context_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10"
+      },
+      "retained_product_reference_guard": "BLOCKED_CROSS_BOUNDARY_REFERENCE",
+      "scope": "Actual current Kit selection and generated/stored Context delivery; not HTML or deployment approval."
+    }
+    PASS
+--- slice:S19:python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json
+    {
+      "errors": [],
+      "expected_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10",
+      "path": "specs/012-portable-document-lifecycle/context-pack.json",
+      "provenance": {
+        "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "commit_state": "PRESENT",
+        "worktree_state": "WORKTREE"
+      },
+      "sources": [
+        {
+          "id": "loop-runtime-readme",
+          "path": ".ai-team/README.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "loop-runtime-policy",
+          "path": ".ai-team/runtime/policy.json",
+          "state": "MATCH"
+        },
+        {
+          "id": "loop-runtime-workflow",
+          "path": ".ai-team/runtime/WORKFLOW.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "root-agent-contract",
+          "path": "AGENTS.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "verifier-registry",
+          "path": ".ai-team/verifiers/registry.json",
+          "state": "MATCH"
+        },
+        {
+          "id": "root-claude-contract",
+          "path": "CLAUDE.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "constitution",
+          "path": ".specify/memory/constitution.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "kit-owning-readme",
+          "path": "tools/amplai-loop-kit/README.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "kit-owning-changelog",
+          "path": "tools/amplai-loop-kit/CHANGELOG.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "kit-portable-development",
+          "path": "docs/PORTABLE-DEVELOPMENT.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "claim-loop-public-surface",
+          "path": ".ai-team/runtime/policy.json",
+          "state": "MATCH"
+        },
+        {
+          "id": "claim-semantic-runtime-not-ported",
+          "path": "AGENTS.md",
+          "state": "MATCH"
+        },
+        {
+          "id": "claim-verifier-profile-single-source",
+          "path": ".ai-team/verifiers/registry.json",
+          "state": "MATCH"
+        },
+        {
+          "id": "claim-work-artifact-isolation",
+          "path": ".ai-team/README.md",
+          "state": "MATCH"
+        }
+      ],
+      "valid": true,
+      "verdict": "MATCH"
+    }
+    PASS
+
+EVAL: PASS
+ATTEMPT: 0/3 (reset)

@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "capability": "speckit-analyze under existing work controller",
+  "reviewed_at": "2026-09-12 03:40:32 UTC",
+  "verdict": "PASS",
+  "verdict_scope": "S17 current plan/task consistency, phase ownership and evaluation readiness; not Work completion or independent R5 review.",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "76876deae2a52b3bdead4c6c9550a48db0632af014cae5aec6d8de779bae66da",
+    "tasks.md": "f89f20b258461ab3968ff591129ea8fe884a990f35f952b8928316b7b9333664",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080",
+    "knowledge-readiness.json": "75db4bb72cd34c392cff1cf823f07c4160933fa1c17a4125a629ce6438bc81ea",
+    "context-pack.json": "190572952016f80961b7bf634fbb72d7f7a987515bf4d7fd410cedcaea4418ba",
+    "task-manifests/PORTABLE-DOC-T001.yaml": "a59d007dd8b2e0b2c188d128b417ecd677cd3c9fb5d305a3230fa469ef2f2d50",
+    "task-manifests/PORTABLE-DOC-T002.yaml": "c4e7dff9a19f710770660163f852bc71932ce5f369b775ef0acae67d848c9b52",
+    "task-manifests/PORTABLE-DOC-T003.yaml": "f3ab98f96e8f967c95c6d2dedbc4e1c3500b29ca5762c42d305e36b319a732dc",
+    "task-manifests/PORTABLE-DOC-T004.yaml": "1973945d45f1d64a302336120b2fdca3bcd6017df11c4c0ec95aa1457ec00102",
+    "task-manifests/PORTABLE-DOC-T005.yaml": "67b51a522abba1675c3cc54e24922bea8f621fdd9bcba7783abada2b3b779932",
+    "task-manifests/PORTABLE-DOC-T006.yaml": "e2f1e5377a99a72e79705c186b3178475cefb336064997b79d080144539b47ae",
+    "task-manifests/PORTABLE-DOC-T007.yaml": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+    "task-manifests/PORTABLE-DOC-T008.yaml": "62acb1880465789bffac490760c1f8479ec5c206bb6caaf1ed3fa7c5bb4f00ef",
+    "task-manifests/PORTABLE-DOC-T009.yaml": "0346de52090cfd0a0f3807b08952727305df25f29011d9b17ff0be7d9ccfe985",
+    "task-manifests/PORTABLE-DOC-T010.yaml": "1b54b5e12a06f365584da222e6f306ebd464a7ef0fa0329ae383c5014d5c2224",
+    "task-manifests/PORTABLE-DOC-T011.yaml": "a4938afbf0feb62fe00079f623b035e5f5a79a111c51ebfe68609c37d7d8752b",
+    "task-manifests/PORTABLE-DOC-T012.yaml": "e78c4b2d432cd05a205d23264795c72a29eef64ad01608145b98f127b33a0467",
+    "task-manifests/PORTABLE-DOC-T013.yaml": "de1858dc22b73280c257f76bc36202b0352716de8e8522c98017a4a194751cea",
+    "task-manifests/PORTABLE-DOC-T014.yaml": "3b1fccbd04e87890a75b2ceac207527cb7d65b00144c16ae4d7c5727ed9dcca3",
+    "task-manifests/PORTABLE-DOC-T015.yaml": "dcdc55515ab5fbd5ce6fccd26f04f1b1f46856bb0cae361f2787026f35504168",
+    "task-manifests/PORTABLE-DOC-T016.yaml": "fadf6b5d5a832aed80ae4c83cfbdf1dae1057b4aeddea8c69f4756f528acbabd",
+    "task-manifests/PORTABLE-DOC-T017.yaml": "180d1202981b7e214cff252b4104f4841654f91c28fc5340a1a36a94c7c03e52",
+    "task-manifests/PORTABLE-DOC-T018.yaml": "d430ac024e8d47de9e850915e526c468286c2fd9d641bf5ed32e6eb8b9907e4c",
+    "task-manifests/index.yaml": "129e73487e3152533e5e64de81dad65730637eced13e49929ce36dc48e6b9b01",
+    "verify-guide-reference-visibility.py": "983ce2ae4f0b65a708803b4ee1f2bac954bf776b32e0e69d30482f79bd7ed0ef"
+  },
+  "current_context_hash": "316b6fdcdea6b596e18e7294b821033ba7a559728a411a78b7ba23279ed5886c",
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "tasks": 18,
+    "needs_revalidation": 13,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0
+  },
+  "executed": [
+    {
+      "id": "contract",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "contract",
+        "validate",
+        "specs/012-portable-document-lifecycle/work-contract.json"
+      ],
+      "exit_code": 0,
+      "summary": "CONTRACT: PASS",
+      "stderr": ""
+    },
+    {
+      "id": "readiness",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "readiness",
+        "evaluate",
+        "specs/012-portable-document-lifecycle/knowledge-readiness.json"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "verdict": "READY",
+        "errors": []
+      },
+      "stderr": ""
+    },
+    {
+      "id": "prerequisites",
+      "command": [
+        "bash",
+        ".specify/scripts/bash/check-prerequisites.sh",
+        "--json",
+        "--require-tasks",
+        "--include-tasks"
+      ],
+      "exit_code": 0,
+      "summary": {},
+      "stderr": ""
+    }
+  ],
+  "additional_executed": [
+    {
+      "id": "taskify",
+      "exit_code": 0,
+      "summary": "18 manifests validated after the explicit T017/T008 phase refinement."
+    },
+    {
+      "id": "context",
+      "exit_code": 0,
+      "summary": "MATCH; source and knowledge preconditions valid."
+    },
+    {
+      "id": "traceability",
+      "exit_code": 0,
+      "summary": "Original 23 requirements/46 cases unchanged, 46 historical executions retained, 0 final PASS."
+    },
+    {
+      "id": "real-guide-precondition",
+      "exit_code": 0,
+      "summary": "All three authored guides pass reference visibility; current release/review/HTML remain T008 acceptance."
+    }
+  ],
+  "refinements": [
+    {
+      "source": "s17-acceptance-phase-refinement.json",
+      "result": "Preserve the original final refreshed-guide acceptance in T008; require an executable real-guide visibility check in T017."
+    },
+    {
+      "source": "plan.md#review-r4-repair-refinement",
+      "result": "Exact bare command/system notation is distinct from source references. Required, structural, unknown, decorated and child paths remain denied or fully classified."
+    }
+  ],
+  "prior_analysis": "analysis-before-s17-guide-refinement.json",
+  "remaining": [
+    "S17 final canonical evaluation including real guides",
+    "S18 borrowed mode repair",
+    "13 prior slice revalidations and full S08",
+    "Current source review/Context/release/HTML/browser and all three fresh R5 lenses"
+  ],
+  "questions": [],
+  "business_scope_changes": []
+}

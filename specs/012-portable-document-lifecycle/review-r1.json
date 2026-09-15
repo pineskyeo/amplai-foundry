@@ -1,0 +1,216 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 1,
+  "status": "CHANGES_REQUIRED",
+  "recorded_at": "2026-09-11T11:28:56Z",
+  "scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59",
+  "source_snapshot": {
+    "scope": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59",
+    "preserved_copy": "/tmp/w003-review-r1-preserved.VUuwXX",
+    "entries": 240,
+    "status": "MATCH",
+    "temporary_internal_only": true,
+    "archive": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r1-source-snapshot.tar.gz",
+    "archive_sha256": "35b7601735c929a20377438f9179217afda1d9de7ae9a73ef149218755b53b4c",
+    "archive_bytes": 737576,
+    "mode": "600"
+  },
+  "reviews": [
+    {
+      "lens": "contract",
+      "round": 1,
+      "scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59",
+      "reviewer": "/root/w003_contract_r1",
+      "verdict": "CHANGES_REQUIRED",
+      "findings": [
+        {
+          "id": "R-C1",
+          "severity": "P1",
+          "path": "scripts/amplai_docs.py:1731",
+          "title": "Public selection leaks restricted document references",
+          "contracts": [
+            "DOC-002",
+            "FR-015",
+            "private-link boundary"
+          ],
+          "mechanism": "Reviewed PUBLIC guide [PRIVATE_TITLE](PRIVATE_PATH.md) leaks title/path in raw snippet to all seven CURRENT_CONSUMERS; prepare_view_input guards links, common selector does not",
+          "evidence": "Isolated actual lifecycle fixture returned count=1 with synthetic private marker across seven consumers",
+          "remediation": "Enforce reference boundary before ranking/snippet creation including history and CLI query/index"
+        },
+        {
+          "id": "R-C2",
+          "severity": "Blocking-P2",
+          "path": "scripts/loopv2.py:632",
+          "related_path": "scripts/amplai_docs.py:1833",
+          "title": "Applicable active governance decisions silently disappear from valid Context Packs",
+          "contracts": [
+            "KIT-001",
+            "FR-002",
+            "authoritative D-046/D-053/D-055/D-056"
+          ],
+          "mechanism": "All Markdown sources must be selected as reviewed guides; configured roots omit indexed Decision ledger and constitution; current context validates MATCH with active_decisions[]",
+          "evidence": "Actual CURRENT_SELECTED[] against eleven active indexed decisions; pre-S03 context contains eleven; context validate exits0",
+          "remediation": "Preserve explicit active governance authority through classified mapping or block READY; do not promote historical/superseded wholesale"
+        }
+      ],
+      "executed": [
+        "scope digest plus145source/95governing bytes/modes before and after MATCH",
+        "docs validate RESOLVED and2viewsMATCH",
+        "context validate MATCH",
+        "trace verify",
+        "seal verify",
+        "eight targeted pytest suites in isolated copy",
+        "isolated private-link disclosure reproduction",
+        "read-only active decision selection probe"
+      ],
+      "isolated_copy": "/tmp/w003-contract-r1.7A3POz",
+      "limits": [
+        "Full current S08 suite not rerun by reviewer; retained log/source hashes checked",
+        "Native transport only",
+        "No Python3.6/RHEL7/production execution",
+        "No shared checkout/Store/trust/Git writes"
+      ]
+    },
+    {
+      "lens": "failure/recovery",
+      "round": 1,
+      "reviewer": "/root/w003_recovery_r1",
+      "scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59",
+      "verdict": "CHANGES_REQUIRED",
+      "findings": [
+        {
+          "id": "R-R1",
+          "reviewer_id": "R001",
+          "severity": "Blocking-P2",
+          "path": "scripts/amplai_docs.py:2415",
+          "reader": "scripts/amplai_docs.py:1374",
+          "mirror": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+          "title": "Review history accumulation overwrites canonical store beyond its own read budget",
+          "contracts": [
+            "DOC-001",
+            "resource-limit failure preserves usable prior state"
+          ],
+          "mechanism": "Exact serialized accumulated history is unbounded before publication; reader8MiB rejects already committed oversized store",
+          "evidence": {
+            "request_bytes": 2800323,
+            "reader_limit": 8388608,
+            "store_sizes": [
+              2802013,
+              5603908,
+              8405801
+            ],
+            "results": [
+              "RESOLVED",
+              "RESOLVED",
+              "SCOPE_INCOMPLETE after replacement"
+            ],
+            "subsequent_selection": "SCOPE_INCOMPLETE",
+            "reproduction": "/private/tmp/w003-recovery-r1.dZSlng/probe_review_store_budget.py",
+            "cwd": "/private/tmp/w003-recovery-r1.dZSlng/repo",
+            "command": ".venv/bin/python -B /private/tmp/w003-recovery-r1.dZSlng/probe_review_store_budget.py"
+          },
+          "remediation": "Preflight exact serialized replacement against reader budget before atomic publication; preserve prior readable store on failure; same guard for impact projection; regression after rejection"
+        }
+      ],
+      "executed": [
+        "240frozen files bytes/modes exact before+after",
+        "ten relevant pytest modules in isolated copy",
+        "imports explicitly verified isolated",
+        "seal verification",
+        "docs validate RESOLVED and2viewMATCH",
+        "context validate",
+        "trace39eventsvalid",
+        "25reviews pinned e4b55...",
+        "original23req/46cases hashes matched"
+      ],
+      "limits": [
+        "FullS08 retained rather than independently rerun",
+        "Native transports not rerun",
+        "Python3.6/RHEL7/deploy unavailable",
+        "No shared files/Git/apps/Store writes"
+      ]
+    },
+    {
+      "lens": "regression",
+      "round": 1,
+      "reviewer": "/root/w003_regression_r1",
+      "scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59",
+      "verdict": "CHANGES_REQUIRED",
+      "findings": [
+        {
+          "id": "R-G1",
+          "reviewer_id": "R001",
+          "severity": "P1",
+          "deduplicates": "R-C2",
+          "path": "tests/ai/test_portable_baseline.py:252",
+          "title": "Passing complete-controller canary permits mandatory governing inputs to disappear",
+          "contracts": [
+            "KIT-001",
+            "FR-002",
+            "REG-001"
+          ],
+          "mechanism": "Subset assertion accepts registry-only required_knowledge; actual indexed active Decisions are omitted while Context validates MATCH",
+          "remediation": "Require exact mandatory baseline sources, test actual indexed Decisions and missing/forged Context decisions"
+        }
+      ],
+      "executed": [
+        "321 targeted tests PASS in isolated source copy with imports explicitly rebound",
+        "Snapshot-equality mutation makes exact-source-drift test fail",
+        "Current lifecycle/freshness guard mutation makes five exclusion cases fail",
+        "Restored source hash exact, six affected tests PASS",
+        "All 145 source and 95 governing content/length/mode pins MATCH before and after",
+        "Actual sealed installed baseline required_knowledge only verifier registry observed",
+        "docs/context/trace validations PASS, two views MATCH, 39 trace events"
+      ],
+      "isolated_copy": "/tmp/w003-regression-r1.cPmSMi",
+      "restored_engine_sha256": "d99b4214efd69866abe28c6aea15c1b11914823e2967df8a80338621b5c5ede3",
+      "limits": [
+        "Full S08 not independently rerun",
+        "Browser/native evidence inspected, not rerun",
+        "Only two targeted mutation guards",
+        "No Python3.6/RHEL7 or full native Work lifecycle execution"
+      ]
+    }
+  ],
+  "triage": [
+    {
+      "id": "W003-R1-01",
+      "severity": "P1",
+      "findings": [
+        "R-C2",
+        "R-G1"
+      ],
+      "owner_task": "PORTABLE-DOC-T009",
+      "root_cause": "Release-only Markdown selection removed existing governing rules and active indexed Decisions; Context validation tests only present entries",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    },
+    {
+      "id": "W003-R1-02",
+      "severity": "P1",
+      "findings": [
+        "R-C1"
+      ],
+      "owner_task": "PORTABLE-DOC-T010",
+      "root_cause": "Reference security boundary exists in HTML but not common selection before ranking/snippets",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    },
+    {
+      "id": "W003-R1-03",
+      "severity": "Blocking-P2",
+      "findings": [
+        "R-R1"
+      ],
+      "owner_task": "PORTABLE-DOC-T011",
+      "root_cause": "Serialized accumulated publication is not preflighted against its own reader budget",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    }
+  ],
+  "gate": {
+    "blocking_p1": 2,
+    "blocking_p2": 1,
+    "pass": false
+  },
+  "authority": "Existing E021 local development scope; no external action or new policy decision",
+  "evidence_limits": "Prior S08 PASS remains historical evidence for frozen R1 only. No whole-goal, deployment or completion PASS."
+}

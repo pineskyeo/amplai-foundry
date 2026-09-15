@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-11 15:22:04 UTC",
+  "capability": "speckit-converge assessment under existing Work controller",
+  "outcome": "IMPLEMENTATION_CONVERGED_COMPLETION_GATES_PENDING",
+  "checked": {
+    "feature_requirements": 15,
+    "success_criteria": 5,
+    "original_requirements": 23,
+    "original_cases": 46,
+    "constitution_principles": 5,
+    "repair_tasks": 5,
+    "affected_slice_revalidations": 9
+  },
+  "evidence": [
+    "s12-evidence.json",
+    "s13-evidence.json",
+    "revalidation-r3.json",
+    "s07-evidence.json",
+    "s08-local-verification-r3.json",
+    "s08-context-r3.json",
+    "s08-view-evidence-r3.json",
+    "s08-native-r3.json",
+    "s08-r3-release-selector-correction.json"
+  ],
+  "findings": [],
+  "tasks_appended": 0,
+  "unchanged_task_intent": true,
+  "remaining_existing_task": {
+    "id": "PORTABLE-DOC-T008",
+    "gates": [
+      "Three fresh sequential independent R3 lenses; R2 blockers are only locally repaired until independent closure",
+      "Post-review report-only incremental gardening and final security",
+      "Native Work result and handoff after all gates"
+    ]
+  },
+  "limits": [
+    "No new missing buildable local requirement observed in the existing W003 scope; not independent approval or whole-goal completion",
+    "SC-002 permits explicitly unavailable evidence but forbids counting it PASS; no target/old-Python/full-native Work claim",
+    "Transport-only actual native observations in s08-native-r3.json do not certify full autonomous lifecycle"
+  ]
+}

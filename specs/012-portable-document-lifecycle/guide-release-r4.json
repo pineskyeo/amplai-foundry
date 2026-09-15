@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "release_id": "kit-2.5.0-candidate-r4",
+  "status": "verified",
+  "security": "INTERNAL",
+  "audiences": [
+    "developer",
+    "operator"
+  ],
+  "components": {
+    "ui": {
+      "revision": "51deabe0b4dad6881837f8cfbe414da22ba6a2e23bb86f32b206802b254c01bd",
+      "path": "specs/012-portable-document-lifecycle/guide-component-ui.json",
+      "sha256": "21c8a28b0c5c7fec70b5033cffccaeb192a594539c0609522b9bc2706938fae4"
+    },
+    "backend": {
+      "revision": "catalog-21ae3865ab6fcf59f242e553ec38c33ff8fb5f31fa9605626291116bc5175b2b",
+      "path": "specs/012-portable-document-lifecycle/guide-component-backend.json",
+      "sha256": "be46b66a0f5f3774a96e1ae037933fe628e08b28957f885f3a5017a828370b59"
+    },
+    "contracts": {
+      "revision": "e83fc34fe1a683ca4a2d3e71a1e82b6fd72a1e86a1223ea0cf27f7a1ee176113",
+      "path": "specs/012-portable-document-lifecycle/guide-component-contracts.json",
+      "sha256": "5f69e560f99a91d171787a253a680bf005d1c5210496a4e55b516b501540784e"
+    },
+    "ontology": {
+      "revision": "7863f885de43258b399f62d9e0a02f068b703308",
+      "path": "specs/012-portable-document-lifecycle/guide-component-ontology.json",
+      "sha256": "236ad50d97cfd2213ef8a8a436ac691cd2e924f9b4096361da85cb476c6b1244"
+    },
+    "kit": {
+      "revision": "kit-2.5.0-candidate-r4",
+      "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
+      "sha256": "139d179d1d79ed11d478cd450069eb857a8cae4d35001b0bf172693336fda38d"
+    }
+  },
+  "documents": [
+    {
+      "doc_id": "amplai-foundry:docs-portable-development-md",
+      "source_sha256": "d9184da2d20ed1015298f7c8a74332a5e088bced74d33050f494ea09626d290c",
+      "snapshot_sha256": "872d62c37b966b5aac848641e94d4665606c805b918dd35a9b3e16381c634b68",
+      "review_sha256": "5eeffa7479600b04f69662e55b5cc4280ba4c35aa91439adef119f8ad280473c"
+    },
+    {
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "source_sha256": "71ab12a22b1565b9203ead64c973173ca350cb1acc0fb38417bad75312458715",
+      "snapshot_sha256": "04df4ebedc3fa5e38e2f0d6cad6f4f8cf5b5718b6fe324e89d8818a34092214d",
+      "review_sha256": "ec5f34efaa9278e35e380a53c160e4a709b31ac8bc4a69b6f1c89de1fce37f4a"
+    }
+  ],
+  "verification": {
+    "path": "specs/012-portable-document-lifecycle/guide-verification-r4.json",
+    "sha256": "7068a377a14b3aeefe02f41f9bbcba7f3a6ae8dd4a66f48e3162c20655c994c3"
+  }
+}

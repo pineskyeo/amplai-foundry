@@ -1,0 +1,568 @@
+FFFFFF....FFFFFF....FFFFFF....FFFFFF....FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 94%]
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:86: in test_s20_optional_alias_security_all_consumers
+    typed.assert_denied(typed_engine, call)
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-escaping_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-dangling_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-cyclic_parent] _
+tests/ai/test_document_optional_aliases.py:96: in test_s20_safe_alternate_cannot_hide_unsafe_candidate
+    typed.assert_denied(typed_engine, lambda: typed.select(typed_engine, root))
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-escaping_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-dangling_parent] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-cyclic_leaf] _
+tests/ai/test_document_optional_aliases.py:129: in test_s20_view_input_rejects_optional_unsafe_alias
+    with pytest.raises(typed_engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_____ test_s20_installed_cli_rejects_optional_unsafe_alias[escaping_leaf] ______
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+____ test_s20_installed_cli_rejects_optional_unsafe_alias[escaping_parent] _____
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_____ test_s20_installed_cli_rejects_optional_unsafe_alias[dangling_leaf] ______
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+____ test_s20_installed_cli_rejects_optional_unsafe_alias[dangling_parent] _____
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+______ test_s20_installed_cli_rejects_optional_unsafe_alias[cyclic_leaf] _______
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_____ test_s20_installed_cli_rejects_optional_unsafe_alias[cyclic_parent] ______
+tests/ai/test_document_optional_aliases.py:183: in test_s20_installed_cli_rejects_optional_unsafe_alias
+    assert output.returncode != 0, output.stdout
+E   AssertionError: {
+E       "complete": true,
+E       "consumer": "inventory",
+E       "content_hash": "60da8136f825e571e767d0c1c63b5f74f14f0782481564b211df476d04340b70",
+E       "count": 1,
+E       "documents": [
+E         {
+E           "authority": "canonical",
+E           "doc_id": "canary:guide",
+E           "freshness": "verified",
+E           "lifecycle": "active",
+E           "path": "docs/guide.md",
+E           "release_id": "release-2",
+E           "score": 0,
+E           "security": "PUBLIC",
+E           "snapshot_sha256": "4ada3e7a18eab2ccb69cc0e88b4edca6c916e27b0b341a5df744e5059b43e466",
+E           "snippet": "# Guide Optional example `assets/PRIVATE_CANARY.bin`.",
+E           "source_sha256": "f324f7de84089087a6426a13b15390f11cbd4b0cebb8f891c94a6ef68d696648",
+E           "title": "Current runbook",
+E           "topic_id": "canary:runbook"
+E         }
+E       ],
+E       "mode": "current",
+E       "query_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+E       "release_id": "release-2",
+E       "schema_version": "1.0",
+E       "security": "PUBLIC"
+E     }
+E     
+E   assert 0 != 0
+E    +  where 0 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '/private/var/fol...ca495991b7852b855",\n  "release_id": "release-2",\n  "schema_version": "1.0",\n  "security": "PUBLIC"\n}\n', stderr='').returncode
+_ test_s20_candidate_prefix_resolution_spends_shared_budget[scripts/amplai_docs.py] _
+tests/ai/test_document_optional_aliases.py:195: in test_s20_candidate_prefix_resolution_spends_shared_budget
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_candidate_prefix_resolution_spends_shared_budget[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py] _
+tests/ai/test_document_optional_aliases.py:195: in test_s20_candidate_prefix_resolution_spends_shared_budget
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+____ test_s20_resolution_errors_are_not_absence[scripts/amplai_docs.py-13] _____
+tests/ai/test_document_optional_aliases.py:227: in test_s20_resolution_errors_are_not_absence
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_____ test_s20_resolution_errors_are_not_absence[scripts/amplai_docs.py-5] _____
+tests/ai/test_document_optional_aliases.py:227: in test_s20_resolution_errors_are_not_absence
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_resolution_errors_are_not_absence[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-13] _
+tests/ai/test_document_optional_aliases.py:227: in test_s20_resolution_errors_are_not_absence
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+_ test_s20_resolution_errors_are_not_absence[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-5] _
+tests/ai/test_document_optional_aliases.py:227: in test_s20_resolution_errors_are_not_absence
+    typed.assert_denied(
+tests/ai/test_document_typed_visibility.py:56: in assert_denied
+    with pytest.raises(engine.DocumentError) as caught:
+E   Failed: DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-known_absent-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[scripts/amplai_docs.py-ignore_patterns-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-known_absent-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_optional_alias_security_all_consumers[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-ignore_patterns-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[scripts/amplai_docs.py-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_safe_alternate_cannot_hide_unsafe_candidate[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-PUBLIC-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[scripts/amplai_docs.py-INTERNAL-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-PUBLIC-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_view_input_rejects_optional_unsafe_alias[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-INTERNAL-cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[escaping_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[escaping_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[dangling_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[dangling_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[cyclic_leaf]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_installed_cli_rejects_optional_unsafe_alias[cyclic_parent]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_candidate_prefix_resolution_spends_shared_budget[scripts/amplai_docs.py]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_candidate_prefix_resolution_spends_shared_budget[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_resolution_errors_are_not_absence[scripts/amplai_docs.py-13]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_resolution_errors_are_not_absence[scripts/amplai_docs.py-5]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_resolution_errors_are_not_absence[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-13]
+FAILED tests/ai/test_document_optional_aliases.py::test_s20_resolution_errors_are_not_absence[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-5]

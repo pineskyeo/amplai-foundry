@@ -5,24 +5,13 @@ Usage:
     python3 validate_task_manifest.py <manifest.yaml|directory> [...]
 """
 
-from __future__ import annotations
-
 import argparse
+import json
 from collections import defaultdict
 from pathlib import Path
 import re
 import sys
-from typing import Any, Iterable
-
-try:
-    import yaml
-except ImportError:
-    print(
-        "ERROR: PyYAML is required. Install it through the project's normal "
-        "dependency process using scripts/requirements.txt.",
-        file=sys.stderr,
-    )
-    raise SystemExit(2)
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 ALLOWED_STATUS = {
     "draft",
@@ -39,19 +28,26 @@ ID_RE = re.compile(r"^[A-Z][A-Z0-9_-]*-T[0-9]{3,}$")
 
 
 def load_yaml(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as handle:
-        return yaml.safe_load(handle)
+    text = path.read_text(encoding="utf-8")
+    try:
+        return json.loads(text)
+    except ValueError:
+        try:
+            import yaml
+        except ImportError:
+            raise ValueError("Legacy YAML requires optional PyYAML; portable tasks use JSON.")
+        return yaml.safe_load(text)
 
 
 def nonempty_string(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def as_list(value: Any) -> list[Any]:
+def as_list(value: Any) -> List[Any]:
     return value if isinstance(value, list) else []
 
 
-def get_nested(data: dict[str, Any], *keys: str) -> Any:
+def get_nested(data: Dict[str, Any], *keys: str) -> Any:
     current: Any = data
     for key in keys:
         if not isinstance(current, dict) or key not in current:
@@ -60,8 +56,8 @@ def get_nested(data: dict[str, Any], *keys: str) -> Any:
     return current
 
 
-def discover_files(inputs: Iterable[str]) -> list[Path]:
-    found: set[Path] = set()
+def discover_files(inputs: Iterable[str]) -> List[Path]:
+    found: Set[Path] = set()
     for raw in inputs:
         path = Path(raw)
         if path.is_dir():
@@ -79,8 +75,8 @@ def discover_files(inputs: Iterable[str]) -> list[Path]:
     return sorted(found)
 
 
-def validate_manifest(path: Path, data: Any) -> list[str]:
-    errors: list[str] = []
+def validate_manifest(path: Path, data: Any) -> List[str]:
+    errors: List[str] = []
     prefix = str(path)
 
     if not isinstance(data, dict):
@@ -151,7 +147,7 @@ def validate_manifest(path: Path, data: Any) -> list[str]:
     behaviors = as_list(get_nested(data, "acceptance", "behaviors"))
     if not behaviors:
         errors.append(f"{prefix}: acceptance.behaviors must not be empty")
-    behavior_ids: set[str] = set()
+    behavior_ids: Set[str] = set()
     for idx, behavior in enumerate(behaviors, start=1):
         where = f"{prefix}: acceptance.behaviors[{idx}]"
         if not isinstance(behavior, dict):
@@ -172,7 +168,7 @@ def validate_manifest(path: Path, data: Any) -> list[str]:
         errors.append(
             f"{prefix}: acceptance requires at least one command or manual check"
         )
-    command_ids: set[str] = set()
+    command_ids: Set[str] = set()
     required_gate_count = 0
     for idx, command in enumerate(commands, start=1):
         where = f"{prefix}: acceptance.commands[{idx}]"
@@ -259,12 +255,12 @@ def validate_manifest(path: Path, data: Any) -> list[str]:
     return errors
 
 
-def find_cycle(graph: dict[str, list[str]]) -> list[str] | None:
-    visiting: set[str] = set()
-    visited: set[str] = set()
-    stack: list[str] = []
+def find_cycle(graph: Dict[str, List[str]]) -> Optional[List[str]]:
+    visiting: Set[str] = set()
+    visited: Set[str] = set()
+    stack: List[str] = []
 
-    def visit(node: str) -> list[str] | None:
+    def visit(node: str) -> Optional[List[str]]:
         if node in visiting:
             start = stack.index(node)
             return stack[start:] + [node]
@@ -298,8 +294,8 @@ def main() -> int:
         print("ERROR: no task manifest YAML files found", file=sys.stderr)
         return 2
 
-    errors: list[str] = []
-    manifests: dict[str, tuple[Path, dict[str, Any]]] = {}
+    errors: List[str] = []
+    manifests: Dict[str, Tuple[Path, Dict[str, Any]]] = {}
 
     for path in paths:
         try:
@@ -318,7 +314,7 @@ def main() -> int:
             else:
                 manifests[task_id] = (path, data)
 
-    graph: dict[str, list[str]] = {}
+    graph: Dict[str, List[str]] = {}
     for task_id, (path, data) in manifests.items():
         deps = as_list(get_nested(data, "dependencies", "tasks"))
         graph[task_id] = [dep for dep in deps if isinstance(dep, str)]

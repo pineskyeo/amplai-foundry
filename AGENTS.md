@@ -100,7 +100,7 @@ python3 scripts/loopctl.py readiness evaluate specs/<feature>/knowledge-readines
 python3 scripts/loopctl.py context validate specs/<feature>/context-pack.json
 python3 scripts/loopctl.py permission check <action>
 python3 scripts/loopctl.py docs validate --repo
-python3 scripts/loopctl.py garden full --report-only
+python3 scripts/loopctl.py garden full specs/<gardening-work> --report-only
 scripts/eval.sh --feature specs/<feature> --slice S01
 python3 .ai-team/verifiers/run.py --profile v2
 ```

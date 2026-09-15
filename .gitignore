@@ -22,3 +22,6 @@ build/
 .ai-team/local/
 .ai-team/backups/amplai-loop-kit/
 # AMPLAI-LOCAL-END
+
+# eval run state (scripts/eval.sh EVIDENCE_DIR)
+.specify/eval/

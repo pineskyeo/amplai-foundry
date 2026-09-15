@@ -1,0 +1,28 @@
+W003 R5 contract review found one **Blocking-P2**. No P0, P1 or Advisory findings.
+
+Scope integrity passed before and after review: HEAD remained `6e005a5e3035ef05510c403a7cd691d524b733bd`; all 152 source and 512 governing files matched their hashes, sizes and modes. Scope digest `8cf0f966f0828e83ebe38089d372c0b5b598bcb18127630a1943b338de4c76f2`, envelope SHA and archive SHA matched. The S08 source pins remain exact; its only governing differences are the two declared plan/acceptance reporting changes. No shared files or Git state were changed.
+
+1. **Blocking-P2 — Contract: selected Kit guides never enter the actual Work Context.**  
+   Locations: `scripts/loopv2.py:584`, `scripts/loopv2.py:740`, `scripts/loopv2.py:766`; coverage gap at `specs/012-portable-document-lifecycle/verify-kit-guide-selection.py:23`. This violates `PORTABLE-DOC-T008.yaml:190`–the requirement that the real Work Context select all three reviewed Kit guides.
+
+   `selected_sources()` considers only `.ai-team/knowledge/map.json` entries. That map contains none of the three Kit guides. Although `context_selection()` correctly returns them, `context_build()` retains only the selection digest and independently generated `context_records()`. Consequently, all three guide paths are absent from `required_knowledge`.
+
+   Reproduced using the frozen source in `/tmp/w003-contract-r5.e2Dggq`, with imports verified against that copy and the original `core.precomposeunicode=true` setting restored:
+   - `context_selection()` returned `docs/PORTABLE-DEVELOPMENT.md`, Kit `README.md` and Kit `CHANGELOG.md`.
+   - `context_records()` omitted all three. Its knowledge records cover only seven unique governing paths.
+   - The current Kit-selection verifier nevertheless returned PASS, and actual `loopctl context validate` returned MATCH for the retained Context Pack.
+
+   Impact: Work/resume receives a validated Context Pack without the promised current Kit guidance. The new verifier tests the upstream selector, leaving the delivery gap undetected.
+
+   Smallest remedy: register the three guides in the existing knowledge-source mapping, preserving their metadata/security/release checks. Extend the verifier to assert their presence in actual generated Context records, alongside all seven mandatory instructions and the retained product-reference rejection. Refresh dependent evidence afterward.
+
+Commands and evidence:
+- Isolated `pytest` for `test_document_typed_visibility.py` and `test_document_reference_resources.py`: exit 0, 207 tests passed.
+- Isolated `pytest tests/ai/test_portable_baseline.py -k s18`: exit 0, 16 passed, 55 deselected.
+- Isolated Kit-selection verifier and Context validation: exit 0, exposing the coverage gap above.
+- Isolated trace verification: exit 0, 136 valid events.
+- Read the complete canonical S08 log: recorded 2,374 passed, four existing live-Slack exclusions, eleven V2 checks, seal and selftest PASS. Independently verified its current source bindings.
+
+Bounded classification, typed-reference guards and borrowed-mode preservation matched their inspected contracts and focused tests. Original 23 requirements/46 cases remain preserved with zero final PASS. Full S08, browser and native-host checks were not independently rerun; no mutation testing was performed. Python 3.6, RHEL7 and full native Work/resume evidence remain explicitly unavailable and are not treated as local passes.
+
+VERDICT: CHANGES_REQUIRED

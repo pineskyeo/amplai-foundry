@@ -1,0 +1,251 @@
+{
+  "schema_version": "1.0",
+  "id": "PORTABLE-DOC-T009",
+  "title": "Keep governing inputs complete without release-guide promotion",
+  "type": "bugfix",
+  "status": "done",
+  "goal": {
+    "outcome": "Keep governing inputs complete without release-guide promotion",
+    "user_value": "Independent app developers share a reproducible workflow, current documents and recoverable changes."
+  },
+  "source": {
+    "feature": "012-portable-document-lifecycle",
+    "files": [
+      {
+        "path": "specs/012-portable-document-lifecycle/spec.md",
+        "section": "Existing approved requirements; no new requirement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Review R1 Repair Refinement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/review-r1.json",
+        "section": "W003-R1-01"
+      }
+    ],
+    "requirements": [
+      "REQ-034",
+      "REQ-035",
+      "REQ-037",
+      "REQ-040",
+      "REQ-047",
+      "KIT-001",
+      "DOC-002",
+      "REG-001"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-055",
+      "D-056",
+      "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "CR-SYNAPSE-APP-SPLIT-E021"
+    ]
+  },
+  "scope": {
+    "include": [
+      "Keep governing inputs complete without release-guide promotion"
+    ],
+    "exclude": [
+      "Platform/Vault/governed knowledge mutations",
+      "Live installs, trust changes, Store rebinding, publication or actual tracked deletion"
+    ],
+    "allowed_paths": [
+      "scripts/amplai_docs.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/documentation.json",
+      ".ai-team/knowledge/map.json",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_governance.py",
+      "tests/ai/test_portable_baseline.py",
+      "tests/ai/test_document_lifecycle.py",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "src/amplai_foundry/",
+      "schemas/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other real repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "PORTABLE-DOC-T013"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "Add exact security-classified governing-input roles to existing documentation policy; preserve guide release/lifecycle filters.",
+      "Bind active Decision and typed claim references to actual index identity and source bytes; do not rewrite canonical Decision bodies.",
+      "Compare complete expected Context records and preserve mandatory instruction inputs under selection limits."
+    ],
+    "invariants": [
+      "Existing work/design controller, native Project Store and transaction installer remain authoritative",
+      "Preserve unrelated user content, historical provenance and current host trust",
+      "No synthetic result is native host, Python3.6 or RHEL7 evidence"
+    ],
+    "non_goals": [
+      "New Platform storage/API/auth/ontology service",
+      "Automatic fleet activation or destructive cleanup"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "PORTABLE-DOC-T009-AC1",
+        "given": "An actual sealed generic baseline or an indexed historical Decision ledger, no guide release and explicitly classified governing inputs",
+        "when": "Real Context build and validation run, including relevance limits, missing inputs, inactive/private/index changes and forged or omitted Context records",
+        "then": "All mandatory instructions and applicable active indexed Decisions are source/policy/index-bound; no historical ledger wholesale, inactive entry, private identifier or self-consistent incomplete Context passes"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -B -m pytest -q tests/ai/test_document_governance.py tests/ai/test_portable_baseline.py tests/ai/test_document_lifecycle.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "test",
+        "run": "python3 -B tools/amplai-loop-kit/seal.py --verify",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Installer/document/privacy/lifecycle compatibility within the assigned slice"
+    ],
+    "approvals": [
+      "User local implementation authority in execution-authorization.json and native E021; any external/production/cleanup action remains separate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-12 07:41:05 UTC",
+    "evidence_paths": [
+      "specs/012-portable-document-lifecycle/revalidate-r6-s09.json",
+      "specs/012-portable-document-lifecycle/revalidate-r6-s09.log"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "scripts/amplai_docs.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/documentation.json",
+      ".ai-team/knowledge/map.json",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_governance.py",
+      "tests/ai/test_portable_baseline.py",
+      "tests/ai/test_document_lifecycle.py",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "notes": [
+      "R1 exact source and prior evidence remain immutable history; required new RED/GREEN and independent R2 closure. New test harness is an explicit task deliverable where absent."
+    ]
+  },
+  "context": {
+    "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+    "slice_id": "S09",
+    "context_pack": "specs/012-portable-document-lifecycle/context-pack.json",
+    "environment": "specs/012-portable-document-lifecycle/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "6e005a5e3035ef05510c403a7cd691d524b733bd"
+  },
+  "completion_history": [
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11 11:43:12 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s09-evidence.json"
+      ],
+      "preserved_for": "R2 frozen source",
+      "review_scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014"
+    },
+    {
+      "recorded_at": "2026-09-11 23:10:19 UTC",
+      "reason": "R3 engine/payload repair requires current-target revalidation; original evidence retained.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-11 14:44:41 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/s09-evidence.json",
+          "specs/012-portable-document-lifecycle/s09-revalidation-r3.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 00:52:57 UTC",
+      "reason": "Revalidate after demonstrated physical-line/Unicode split mismatch in shared typed references; earlier evidence preserved, not current source proof.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 00:26:24 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-s09.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 02:53:17 UTC",
+      "reason": "R4 confirmed classifier/typed-reference/borrowed-mode defects require current-source revalidation; original completion remains historical.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 01:09:40 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-line-s09.json"
+        ]
+      }
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-12 04:35:44 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s09.json",
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s09.log"
+      ]
+    }
+  ],
+  "revalidation": {
+    "reason": "R2 full-document reference/URI and atomic metadata repairs require current-target acceptance; prior completion retained",
+    "review": "review-r2.json",
+    "previous_status": "done",
+    "status": "LOCAL_PASS",
+    "evidence": "s09-revalidation-r3.json"
+  }
+}

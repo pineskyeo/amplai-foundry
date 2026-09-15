@@ -16,7 +16,7 @@ Commands:
   trace append|verify
   handoff write
   quadrant audit
-  docs impact|validate [--repo]
+  docs impact|validate|review|review-batch | inventory|query|index --release RELEASE
   garden scan|incremental|full|apply
   status [FEATURE_DIR]
 """
@@ -366,7 +366,14 @@ def hook_commands(settings, event):
 
 
 def doctor(root):
+    try:
+        repository = loopv2.repository_profile(root)
+    except (OSError, ValueError) as exc:
+        print("LOOP DOCTOR: FAIL")
+        print("- repository profile: %s" % exc)
+        return 1
     required = [
+        loopv2.REPOSITORY_PROFILE,
         ".ai-team/README.md",
         ".ai-team/runtime/WORKFLOW.md",
         ".ai-team/runtime/policy.json",
@@ -389,65 +396,40 @@ def doctor(root):
         ".ai-team/knowledge/doc-impact.schema.json",
         ".ai-team/knowledge/garden-report.schema.json",
         ".ai-team/evidence/provenance.schema.json",
-        # semantic runtime(ontology/SHACL/MCP/project miner)은 amplai-foundry 로
-        # 이식하지 않았다 (D-046). 이 저장소는 Knowledge Vault 와 Proposal 모델이
-        # 그 자리를 대신한다. required 에서 뺀다.
+        # Domain-specific runtime checks belong to the repository verifier adapter.
         "scripts/loopv2.py",
+        "scripts/amplai_docs.py",
         ".agents/skills/work/SKILL.md",
         ".agents/skills/design/SKILL.md",
         ".agents/skills/dev-loop/SKILL.md",
         "scripts/eval.sh",
         "scripts/loopctl.py",
     ]
-    forbidden = [
-        ".ai-team/agents",
-        ".ai-team/analytics",
-        ".ai-team/config",
-        ".ai-team/docs",
-        ".ai-team/evals",
-        ".ai-team/examples",
-        ".ai-team/feedback",
-        ".ai-team/gates",
-        ".ai-team/hooks",
-        ".ai-team/improvements",
-        ".ai-team/monitor",
-        ".ai-team/project",
-        ".ai-team/registry",
-        ".ai-team/skills",
-        ".ai-team/templates",
-        ".ai-team/workflows",
-        ".ai-team/wrappers",
-        ".claude/agents",
-        ".codex/agents",
-        # `.specify/workflows` 는 amplai-foundry 에서 아직 살아 있다 — `workflow.yml` 의
-        # `review-implementation` step 이 three-lens gate 의 근거이고 AGENTS.md 와
-        # CLAUDE.md 가 그것을 인용한다. `/work` 가 그 관문을 흡수하면 그때 지운다.
-        ".opencode/plugins",
-    ]
-    # amplai-foundry 는 cortex 보다 skill 이 많다. 이식하지 않은 것들은 그대로 둔다 —
-    # `eli12`/`grilling` 은 설명·심문용이고 loop 와 겹치지 않는다. `feynman` 은
-    # 2026-08-30 에 제거했다 (ALR-008) — 쓰지 않기로 했다.
-    # `speckit-checklist`/`speckit-constitution`/`speckit-taskstoissues` 도 유지한다.
-    expected_skills = {
-        "work",
-        "design",
-        "dev-loop",
-        "speckit-specify",
-        "speckit-clarify",
-        "speckit-plan",
-        "speckit-analyze",
-        "taskify",
-        "speckit-implement",
-        "speckit-converge",
-        "code-review",
-        "systematic-debugging",
-        "eli12",
-        "grill-me",
-        "grilling",
-        "speckit-checklist",
-        "speckit-constitution",
-        "speckit-taskstoissues",
-    }
+    forbidden = repository["forbidden_paths"]
+    expected_skills = loopv2.GENERIC_SKILLS | set(repository["additional_skills"])
+    if repository["id"] == "generic":
+        required.extend(
+            [
+                ".ai-team/knowledge/README.md",
+                ".ai-team/knowledge/decisions.index.json",
+                ".ai-team/knowledge/knowledge-readiness.schema.json",
+                ".ai-team/knowledge/knowledge-readiness.template.json",
+                ".ai-team/knowledge/domain-discovery.schema.json",
+                ".ai-team/knowledge/handoff.schema.json",
+                ".ai-team/evidence/README.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".agents/skills/taskify/assets/task-manifest.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/scripts/validate_task_manifest.py",
+                ".specify/scripts/bash/common.sh",
+                ".specify/scripts/bash/check-prerequisites.sh",
+                ".specify/scripts/bash/setup-plan.sh",
+                ".specify/scripts/taskify_to_tasks_md.py",
+                ".specify/templates/spec-template.md",
+                ".specify/templates/plan-template.md",
+                ".specify/memory/constitution.md",
+            ]
+        )
     errors = []
 
     for rel in required:
@@ -519,7 +501,7 @@ def doctor(root):
             errors.append("허용되지 않은/legacy shared skill: {}".format(", ".join(extra)))
 
     # 개발 loop의 공개 표면은 work/design 둘이고 나머지 public skill은 loop 밖 보조 기능이다.
-    allowed_public = {"work", "design", "eli12", "grill-me", "grilling"}
+    allowed_public = {"work", "design"} | set(repository["public_helpers"])
     stray = sorted(set(public) - allowed_public)
     if stray:
         errors.append(
@@ -728,9 +710,7 @@ def doctor(root):
     except Exception as exc:
         errors.append(f"quadrant audit 실패: {exc}")
 
-    # semantic runtime(ontology/SHACL/CQ/MCP)은 이식하지 않았다 (D-046).
-    # amplai-foundry 는 Knowledge Vault lint 와 Proposal 모델이 그 자리를 대신하고,
-    # 그것은 verifier registry 의 `vault-lint`/`schema` check 가 검사한다.
+    # The repository adapter declares domain-specific checks in the same registry.
 
     if errors:
         print("LOOP DOCTOR: FAIL")
@@ -747,7 +727,7 @@ def doctor(root):
         % ", ".join(sorted((registry or {}).get("profiles") or {}))
     )
     print("- Knowledge/Context/Evidence plane: valid")
-    print("- Semantic Runtime: 이식 제외 (D-046). Vault lint 가 대신한다")
+    print("- repository profile: %s; domain checks: verifier registry" % repository["id"])
     print("- Harness quadrant coverage: complete")
     print("- contract template: valid")
     print("- skill SSOT: .agents/skills; Claude mirror: exact symlink set")
@@ -953,6 +933,45 @@ def build_parser():
     docs_validate = docs_sub.add_parser("validate")
     docs_validate.add_argument("feature", nargs="?")
     docs_validate.add_argument("--repo", action="store_true")
+    docs_review = docs_sub.add_parser("review")
+    docs_review.add_argument("feature", nargs="?")
+    docs_review.add_argument("--document", required=True)
+    docs_review.add_argument(
+        "--outcome", choices=("update", "updated", "reviewed_unchanged"), required=True
+    )
+    docs_review.add_argument("--reason", required=True)
+    docs_review.add_argument("--reviewer", required=True)
+    docs_review.add_argument("--method", required=True)
+    docs_review.add_argument("--evidence", action="append", required=True)
+    docs_review.add_argument("--snapshot", required=True)
+    docs_batch = docs_sub.add_parser("review-batch")
+    docs_batch.add_argument("feature", nargs="?")
+    docs_batch.add_argument("--input", required=True)
+    docs_sync = docs_sub.add_parser("sync-views")
+    docs_sync.add_argument("feature", nargs="?")
+    for name in ("build", "validate-view"):
+        view = docs_sub.add_parser(name)
+        view.add_argument("--release-manifest", required=True)
+        view.add_argument("--output", required=True)
+        view.add_argument("--audience", choices=loopv2.amplai_docs.VIEW_AUDIENCES, required=True)
+        view.add_argument("--security", choices=("INTERNAL", "RESTRICTED"), default="INTERNAL")
+        view.add_argument("--history", action="store_true")
+    approved_view = docs_sub.add_parser("build-approved")
+    approved_view.add_argument("--input", required=True)
+    approved_view.add_argument("--output", required=True)
+    approved_view.add_argument("--approved-sha256", required=True)
+    release = docs_sub.add_parser("resolve-release")
+    release.add_argument("--index", required=True)
+    release.add_argument("--release", required=True)
+    for name in ("preserve", "plan-retirement"):
+        proposal = docs_sub.add_parser(name)
+        proposal.add_argument("--input", required=True)
+    for name in ("inventory", "query", "index"):
+        reader = docs_sub.add_parser(name)
+        reader.add_argument("--release", required=True)
+        reader.add_argument("--security", choices=loopv2.amplai_docs.SECURITY, default="INTERNAL")
+        reader.add_argument("--history", action="store_true")
+        reader.add_argument("--query", default="")
 
     garden = sub.add_parser("garden")
     garden_sub = garden.add_subparsers(dest="garden_command")
@@ -961,6 +980,7 @@ def build_parser():
     garden_incremental.add_argument("feature", nargs="?")
     garden_incremental.add_argument("--dry-run", action="store_true")
     garden_full = garden_sub.add_parser("full")
+    garden_full.add_argument("feature", nargs="?")
     garden_full.add_argument("--report-only", action="store_true", default=True)
     garden_full.add_argument("--apply-safe", action="store_true")
     garden_full.add_argument("--output")
@@ -981,9 +1001,15 @@ def build_parser():
 
 
 def main(argv=None):
-    root = root_dir()
-    os.chdir(root)
     args = build_parser().parse_args(argv or sys.argv[1:])
+    # An approved external builder consumes only its explicit finite input. Do
+    # not discover a parent Git checkout or read repository policy for this mode.
+    root = (
+        os.getcwd()
+        if args.command == "docs" and args.docs_command == "build-approved"
+        else root_dir()
+    )
+    os.chdir(root)
 
     try:
         if args.command == "doctor":
@@ -1068,6 +1094,13 @@ def main(argv=None):
             print_json(result)
             return 0 if result["pass"] else 1
 
+        if args.command == "docs" and args.docs_command in ("inventory", "query", "index"):
+            print_json(
+                loopv2.amplai_docs.select_documents(
+                    root, args.release, args.security, args.history, args.query, args.docs_command
+                )
+            )
+            return 0
         if args.command == "docs" and args.docs_command == "impact":
             result = loopv2.docs_impact(
                 root, args.feature, write=not args.dry_run, acknowledged=args.acknowledge
@@ -1076,8 +1109,89 @@ def main(argv=None):
             return 0 if result["status"] != "STALE" else 3
         if args.command == "docs" and args.docs_command == "validate":
             result = loopv2.docs_validate(root, args.feature, repo=args.repo)
+            try:
+                result["offline_views"] = loopv2.amplai_docs.configured_views(root)
+            except (OSError, ValueError):
+                result["offline_views"] = {
+                    "valid": False,
+                    "code": "VIEW_INPUT_OR_EVIDENCE_UNAVAILABLE",
+                }
+            result["valid"] = result["valid"] and result["offline_views"]["valid"]
+            if not result["valid"]:
+                result["verdict"] = "STALE"
             print_json(result)
             return 0 if result["valid"] else 1
+        if args.command == "docs" and args.docs_command == "sync-views":
+            result = loopv2.amplai_docs.configured_views(root, build=True)
+            if args.feature and result["valid"]:
+                impact = loopv2.docs_impact(root, args.feature)
+                result["impact"] = {
+                    "status": impact["status"],
+                    "dependency_snapshot_hash": impact["dependency_snapshot_hash"],
+                }
+                result["valid"] = impact["status"] != "STALE"
+            print_json(result)
+            return 0 if result["valid"] else 1
+        if args.command == "docs" and args.docs_command in ("build", "validate-view"):
+            method = (
+                loopv2.amplai_docs.build_view
+                if args.docs_command == "build"
+                else loopv2.amplai_docs.validate_view
+            )
+            result = method(
+                root, args.release_manifest, args.output, args.audience, args.security, args.history
+            )
+            print_json(result)
+            return 0 if result.get("complete", result.get("valid")) else 1
+        if args.command == "docs" and args.docs_command == "build-approved":
+            print_json(
+                loopv2.amplai_docs.build_approved_view(
+                    args.input, args.output, args.approved_sha256
+                )
+            )
+            return 0
+        if args.command == "docs" and args.docs_command == "resolve-release":
+            print_json(
+                {
+                    "release_manifest": loopv2.amplai_docs.resolve_release(
+                        root, args.index, args.release
+                    )
+                }
+            )
+            return 0
+        if args.command == "docs" and args.docs_command in ("preserve", "plan-retirement"):
+            input_path = os.path.abspath(os.path.join(root, args.input))
+            with loopv2.amplai_docs.SourceTree(os.path.dirname(input_path)) as tree:
+                request = loopv2.amplai_docs.strict_json(tree.read(os.path.basename(input_path)))
+            if args.docs_command == "preserve":
+                if not isinstance(request, dict) or set(request) - {"sources", "mappings"}:
+                    raise ValueError("INVALID_PRESERVATION")
+                result = loopv2.amplai_docs.preservation_ledger(
+                    root, request.get("sources"), request.get("mappings", [])
+                )
+            else:
+                result = loopv2.amplai_docs.retirement_plan(root, request)
+            print_json(result)
+            return 0 if result.get("complete", result.get("status") == "APPROVAL_REQUIRED") else 3
+        if args.command == "docs" and args.docs_command in ("review", "review-batch"):
+            if args.docs_command == "review":
+                result = loopv2.docs_review(
+                    root,
+                    args.feature,
+                    args.document,
+                    args.outcome,
+                    args.reason,
+                    args.reviewer,
+                    args.evidence,
+                    args.snapshot,
+                    args.method,
+                )
+            else:
+                with loopv2.amplai_docs.SourceTree(root) as tree:
+                    request = loopv2.amplai_docs.strict_json(tree.read(args.input, limit=8388608))
+                result = loopv2.docs_review_batch(root, args.feature, request)
+            print_json(result)
+            return 0 if result["status"] != "STALE" else 3
 
         if args.command == "garden" and args.garden_command == "scan":
             result = loopv2.garden_scan(root)
@@ -1088,8 +1202,10 @@ def main(argv=None):
             print_json(result)
             return 0 if result["pass"] else 1
         if args.command == "garden" and args.garden_command == "full":
-            # 기본은 report-only 다. 삭제는 --apply-safe 를 명시할 때만 한다.
-            result = loopv2.garden_full(root, report_only=not args.apply_safe, output=args.output)
+            # Full audit requires its own Work; the old apply flag fails closed.
+            result = loopv2.garden_full(
+                root, report_only=not args.apply_safe, output=args.output, feature_raw=args.feature
+            )
             print_json(result)
             return 0 if result["pass"] else 1
         if args.command == "garden" and args.garden_command == "apply":
@@ -1119,7 +1235,17 @@ def main(argv=None):
             return feature_status(root, args.feature)
     except (RuntimeError, ValueError, OSError, json.JSONDecodeError) as exc:
         print("LOOPCTL: ERROR")
-        print(f"- {exc}")
+        if args.command == "docs":
+            print(
+                "- "
+                + (
+                    exc.code
+                    if isinstance(exc, loopv2.amplai_docs.DocumentError)
+                    else "DOCUMENT_INPUT_OR_EVIDENCE_UNAVAILABLE"
+                )
+            )
+        else:
+            print(f"- {exc}")
         return 2
 
     build_parser().print_help()

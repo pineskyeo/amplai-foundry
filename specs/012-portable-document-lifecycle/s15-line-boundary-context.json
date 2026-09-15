@@ -1,0 +1,312 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-046",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Move workflow ordering from the human procedure to the /work controller",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-052",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "The Project Store owns the supervisor's code and its right to run",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-055",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-056",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Adopt the Platform 0.4.0 control plane with its reachable defects closed first",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-057",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make stranded limit an output cap so filtered reads report truncation",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-058",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Define exactly what proposal_sha256 hashes",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-061",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Select one controller and runner per Work and use a managed worktree",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "tools/amplai-loop-kit/",
+    "scripts/loopctl.py",
+    "scripts/loopv2.py",
+    "scripts/amplai.py",
+    "scripts/amplai_runtime.py",
+    "scripts/amplai_docs.py",
+    "scripts/eval.sh",
+    "tests/ai/",
+    ".ai-team/runtime/",
+    ".ai-team/policy/documentation.json",
+    ".ai-team/policy/gardening.json",
+    ".ai-team/verifiers/",
+    ".agents/skills/work/",
+    ".agents/skills/design/",
+    ".agents/skills/dev-loop/",
+    "README.md",
+    "docs/",
+    "specs/012-portable-document-lifecycle/",
+    ".specify/feature.json",
+    ".ai-team/README.md",
+    ".ai-team/contracts/",
+    ".ai-team/knowledge/README.md",
+    ".ai-team/knowledge/map.json",
+    ".ai-team/knowledge/claims.jsonl",
+    ".ai-team/knowledge/doc-impact.schema.json",
+    ".ai-team/knowledge/context-pack.schema.json",
+    ".ai-team/knowledge/garden-report.schema.json",
+    ".agents/skills/taskify/",
+    ".specify/scripts/",
+    ".specify/templates/",
+    "pyproject.toml",
+    ".ai-team/README.md.amplai.json",
+    "AGENTS.md",
+    "AGENTS.md.amplai.json",
+    "CLAUDE.md",
+    "CLAUDE.md.amplai.json",
+    "README.md.amplai.json",
+    ".ai-team/knowledge/document-reviews.json",
+    ".ai-team/knowledge/README.md.amplai.json",
+    ".ai-team/evidence/README.md.amplai.json"
+  ],
+  "content_hash": "988092933e21f20e76c8076f7ff9871b4ee1e5b007e893431cff84322dd1d50f",
+  "generated_from": {
+    "claims_sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+    "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+    "contract_sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "decisions_sha256": "8a22d5c739d5a47a7c0dcebfccf0d4fecfaa34da9269b77fa2d432eacc91c50d",
+    "discovery_sha256": "411d805c8134bc6da50927ab42f4ab1ace8c1fff029cc1b11b6679ddd44a562f",
+    "document_selection_sha256": "aa8d7d0e6b26067df8ff3073498f0a249e8916709ec4c5fde372a0669e6de61f",
+    "generated_at": "2026-09-12T00:55:29Z",
+    "knowledge_map_sha256": "9a7cb461c9ea4a239be2060a29a4caf956049c98609ab1d8d892d1d4c87cc9f4",
+    "readiness_sha256": "9cb8f23c00e76a16c977a6aeeadd4a7e97210643051ba4fff28908c137fcea2b",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "Preserve work/design and repository-local rules while delivering a runnable portable baseline, dependency-bound versioned documentation and safe offline HTML through the canonical Foundry Kit.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:ai,ai-team,runtime,policy,readme.md,knowledge,evidence",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:work,ai,ai-team,runtime,policy",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:work,and,ai,ai-team,runtime",
+      "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:work,safe,agents,knowledge,agents.md",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "keyword:ai,ai-team,verifiers",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:and,claude.md",
+      "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword:specify",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "public_commands",
+          "path": ".ai-team/runtime/policy.json",
+          "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+          "type": "policy"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-loop-public-surface",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "active claim",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "What Was Not Ported",
+          "path": "AGENTS.md",
+          "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+          "type": "doc"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-semantic-runtime-not-ported",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "profiles",
+          "path": ".ai-team/verifiers/registry.json",
+          "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+          "type": "artifact"
+        },
+        {
+          "locator": "doctor - verifier profile 집합 불일치",
+          "path": "scripts/loopctl.py",
+          "source_sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+          "type": "code"
+        }
+      ],
+      "id": "claim-verifier-profile-single-source",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "active claim",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "source_sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_amplai_federation.py",
+    "tests/ai/test_amplai_host_adapters.py",
+    "tests/ai/test_amplai_kit_installer.py",
+    "tests/ai/test_amplai_kit_regressions.py",
+    "tests/fixtures/codex-workflow/01-new-concept.md",
+    "tests/fixtures/codex-workflow/02-concept-update.md",
+    "tests/fixtures/codex-workflow/03-decision-conflict.md",
+    "tests/fixtures/codex-workflow/04-duplicate.md",
+    "tests/fixtures/codex-workflow/05-open-question.md",
+    "tests/fixtures/codex-workflow/06-mixed-long-response.md",
+    "tests/fixtures/codex-workflow/README.md",
+    "tests/test_work_activation.py",
+    "tests/test_work_status_projection.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003"
+}

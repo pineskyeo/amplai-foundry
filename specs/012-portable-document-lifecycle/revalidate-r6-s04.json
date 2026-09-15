@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "slice": "S04",
+  "status": "PASS_CANONICAL_REVALIDATION",
+  "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S04 --profile fast",
+  "started_at": "2026-09-12 07:46:15 UTC",
+  "completed_at": "2026-09-12 07:49:06 UTC",
+  "exit_code": 0,
+  "log": "revalidate-r6-s04.log",
+  "log_complete": true,
+  "input_pins": "r6-revalidation-inputs.json",
+  "input_tasks": "r6-revalidation-input-tasks.md",
+  "source_unchanged": true,
+  "governing_unchanged": true,
+  "post_check": {
+    "checked_at": "2026-09-12T07:54:11.291Z",
+    "source": {
+      "count": 155,
+      "failures": []
+    },
+    "governing": {
+      "count": 38,
+      "failures": []
+    }
+  },
+  "limits": "Current local slice revalidation, not final fullS08/HTML/review/Work or deployment completion."
+}

@@ -1,0 +1,180 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 08:18:52 UTC",
+  "source_and_view_sync": {
+    "command": "python3 -B scripts/loopctl.py docs sync-views specs/012-portable-document-lifecycle",
+    "exit_code": 0,
+    "checked": 2,
+    "impact": {
+      "dependency_snapshot_hash": "b44fc0bb30a512d1bed7d3e36db2c33d846af96541908809b99d8588ae29d926",
+      "status": "RESOLVED"
+    },
+    "status": "MATCH",
+    "valid": true,
+    "views": [
+      {
+        "code": "MATCH",
+        "input_sha256": "b8928e296e5bb6fbce9cf78dc4bc02a60a503f230f17fefccd907509321f80d1",
+        "valid": true
+      },
+      {
+        "code": "MATCH",
+        "input_sha256": "ef613754ab9379d148142405a375831aa672c90cf1eeedad5196c10c467a7d43",
+        "valid": true
+      }
+    ]
+  },
+  "browser": {
+    "developer": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/browser.json",
+          "sha256": "8c46d22d5d5800f7de2d3193dc6624c03ba49ea33538eab6e99ac6ff424b18d4",
+          "bytes": 486
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/desktop.png",
+          "sha256": "c73ad6a5e0d3b7707e2326611455ff333a117a767aac0b70c86120a1825a0e8c",
+          "bytes": 176960
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/guide-desktop.png",
+          "sha256": "5db07e760f7540405902a9fbae7544de2d9851714e18e226be70b2fee99889c8",
+          "bytes": 1513126
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/guide-mobile.png",
+          "sha256": "c6ec74c507ce30fe37f8dadaa0a379427eea51e1db39b0c358d578bea78d78ef",
+          "bytes": 1521323
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/mobile.png",
+          "sha256": "495bf819b672e97a3a7ced6b388ed91df206e532a3570853c36bff5da62c04ff",
+          "bytes": 138060
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/developer/print.pdf",
+          "sha256": "65f3644e741bbc1c88e93434350e92003978f42ccef2e34fe8a9744f48bfddc9",
+          "bytes": 464800
+        }
+      ]
+    },
+    "operator": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/browser.json",
+          "sha256": "8c46d22d5d5800f7de2d3193dc6624c03ba49ea33538eab6e99ac6ff424b18d4",
+          "bytes": 486
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/desktop.png",
+          "sha256": "c7ccdffbe90bd57711c3ec32558b34d550b7559afc90d4f3de3fe7e9e1b66e17",
+          "bytes": 176625
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/guide-desktop.png",
+          "sha256": "ff2bd7dc9d57f06f0ddcd86e3ef545864a3a94408b0f05ba9e5dd0b98b09a704",
+          "bytes": 1512864
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/guide-mobile.png",
+          "sha256": "6c8799648774b683c5f074bd38ceb01a0145366801de32052245377727e1dab8",
+          "bytes": 1521031
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/mobile.png",
+          "sha256": "c21a9352cc37acd57954e6eb4ec4cc30a42930a7ea1f22ab034f2178808ac524",
+          "bytes": 137767
+        },
+        {
+          "path": "/tmp/w003-browser-r6.Pr7MvH/operator/print.pdf",
+          "sha256": "3c0aac66d5ddd4ddd278076996e9b4d28044336d8546cc131f83b9f7917f574d",
+          "bytes": 464614
+        }
+      ]
+    }
+  },
+  "outputs": [
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "89160da6793a3fd9d9809503896771adea29608057b76829c81b2e55861538f3",
+      "bytes": 21864
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "551f7fb6c6538c1135752868a3c98ba76b77725f5ac1f112133a2f52d05deadf",
+      "bytes": 17275
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r6/index.html",
+      "sha256": "a9dfc451b232637fe4777173dd424aaa2ffb37a2dc08730d85a9b20dd6955ec1",
+      "bytes": 5097
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r6/manifest.json",
+      "sha256": "1ad25b3d72986d629ef8f35336ae58cd645c3e00d065fd963f88642acf743381",
+      "bytes": 1863
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "9da5cd031c9870a017801f1ce7d709115def517af08d447cdd4f272881e5cb7f",
+      "bytes": 21863
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "6068b0716d3d59c647ca41e887af49181d0c23016c2ec3e5ff07ef1061600615",
+      "bytes": 17274
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r6/index.html",
+      "sha256": "cebe28b11413e9bd79dc0d5acd8dac20d8e4dcb5a9a30c812a44194c9c438599",
+      "bytes": 5096
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r6/manifest.json",
+      "sha256": "971115f0121469aeea41d79259dd04b4f0d6a23985831719d5373b89036747e9",
+      "bytes": 1862
+    }
+  ],
+  "visual_inspection": {
+    "method": "Actual retained desktop/mobile screenshots inspected locally after browser PASS.",
+    "observed": "Developer/operator navigation and source version labels render. No body overflow; long release hash table uses its bounded horizontal scroll area on narrow screens. Guide source text is retained; no handwritten HTML changes."
+  },
+  "limits": [
+    "INTERNAL local offline Kit guide only; not a whole-goal customer completion report or deployment BOM.",
+    "No actual server or RHEL7 validation. Publication/latest activation, W004 packaging and whole-goal acceptance remain separate."
+  ]
+}

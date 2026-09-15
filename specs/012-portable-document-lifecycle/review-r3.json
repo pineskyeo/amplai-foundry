@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 3,
+  "status": "CHANGES_REQUIRED",
+  "recorded_at": "2026-09-11 23:08:45 UTC",
+  "scope_sha256": "883bc9e39e7a83739121f3a40c327af99bd3d85399483c100a83db32c6bb9a5c",
+  "scope_file_sha256": "56f56a1c242dae26bd1ab67515be37ca5c87d0bd28e0dd2acae1d358b8e484bb",
+  "source_snapshot": {
+    "path": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r3-source-snapshot.tar.gz",
+    "sha256": "3577e29210b89058a34b5d1754677695b259f02635641688c91b4390495937e8",
+    "bytes": 1015271,
+    "mode": "600",
+    "source_files": 147,
+    "governing_artifacts": 231,
+    "verified_files": 378,
+    "all_sha_bytes_modes_match": true
+  },
+  "reviews": [
+    {
+      "lens": "contract",
+      "verdict": "CHANGES_REQUIRED",
+      "retained_report": "review-r3-contract.md",
+      "sha256": "9d23a6b56b3f3a252583b6cba9c22d5e91e7cd1f64e7ce15096f02501d374692"
+    },
+    {
+      "lens": "recovery",
+      "verdict": "CHANGES_REQUIRED",
+      "retained_report": "review-r3-recovery.md",
+      "sha256": "1767f084c798265ba443fb3d7fff7760e4932f45bffaa88a70bd77d2a7d45d3c"
+    },
+    {
+      "lens": "regression",
+      "verdict": "PASS",
+      "retained_report": "review-r3-regression.md",
+      "sha256": "1d17f6e01cf9dee83484727a219280f9c48cfeca85909c1413f7a3a8f0151011"
+    }
+  ],
+  "triage": [
+    {
+      "id": "W003-R3-01",
+      "severity": "P1",
+      "findings": [
+        "R3-REC-001",
+        "main typed-reference prefix reproduction"
+      ],
+      "owner_task": "PORTABLE-DOC-T014",
+      "root_cause": "Reference output stores a copy of the entire line prefix per token outside the work budget; inline-code typed extraction independently repeats this quadratic copying.",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    },
+    {
+      "id": "W003-R3-02",
+      "severity": "P1",
+      "findings": [
+        "R3-C1",
+        "main adjacent HTML matrix"
+      ],
+      "owner_task": "PORTABLE-DOC-T015",
+      "root_cause": "HTML scanner records only href/src and misses namespace tags; other direct, multi-destination and embedded-language references never reach pre-output classification.",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    },
+    {
+      "id": "W003-R3-03",
+      "severity": "P1",
+      "findings": [
+        "R3-M1"
+      ],
+      "owner_task": "PORTABLE-DOC-T015",
+      "root_cause": "All schemes are treated as non-local, including file URIs naming exact existing restricted local files. Both no-authority and localhost selectors emitted one PUBLIC document containing the restricted identifier.",
+      "disposition": "ACCEPTED_LOCAL_REPAIR"
+    }
+  ],
+  "advisories": [
+    {
+      "id": "W003-R3-A1",
+      "findings": [
+        "R3-C2",
+        "regression A1"
+      ],
+      "disposition": "REFRESH_AFTER_REVIEWS",
+      "reason": "docs validate exits 1 only for four retained excluded-evidence membership additions. Semantic snapshot and both HTML remain MATCH. Do not suppress comparison."
+    }
+  ],
+  "gate": {
+    "all_three_sequential_reviews_completed": true,
+    "p0": 0,
+    "p1": 3,
+    "blocking_p2": 0,
+    "advisory": 1,
+    "pass": false,
+    "next": "PLAN/TASK replan, S14/S15 RED/GREEN, eleven affected prior slices, current full S08 and all three fresh R4 lenses"
+  },
+  "authority": "Existing E021 local implementation only. Original internal-network isolation and all Git/host/Platform/Vault exclusions unchanged.",
+  "evidence_limits": [
+    "2049-test canonical R3 PASS remains historical, not proof of new negative cases.",
+    "Main diagnostics are not independent approval.",
+    "No Python3.6, RHEL7, full native Work, W004 or production proof.",
+    "All378files and archive rechecked without drift before the first post-review mutation."
+  ],
+  "resume": {
+    "previous_attempts": 1,
+    "current_attempts": 2,
+    "reason": "User continuation after local lease expiry; normal claim reconciled expiry, observed retry backoff, claimed and started. No direct Store editing or token disclosure."
+  }
+}

@@ -1,0 +1,681 @@
+==== AMPLAI eval ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+feature : specs/012-portable-document-lifecycle
+tasks   : specs/012-portable-document-lifecycle/tasks.md
+slice   : S08
+profile : fast
+attempts: 3
+
+--- verifier:fast
+==== AMPLAI verifier ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+profile : fast
+checks  : ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator
+platform: darwin
+
+--- ruff-check [block]
+    All checks passed!
+    PASS (exit 0, 0.024s)
+--- ruff-format [block]
+    169 files already formatted
+    PASS (exit 0, 0.023s)
+--- mypy [block]
+    Success: no issues found in 121 source files
+    PASS (exit 0, 0.099s)
+--- loop-runtime-doctor [block]
+    LOOP DOCTOR: PASS
+    - public entry points: Claude /work,/design | Codex $work,$design
+    - internal capabilities: 16
+    - legacy runtime directories: absent
+    - policy/contract/verifier JSON: valid
+    - verifier profile 집합: commit, fast, full, runtime, standard, v2 (registry 정본, policy/schema/fallback 일치)
+    - Knowledge/Context/Evidence plane: valid
+    - repository profile: foundry; domain checks: verifier registry
+    - Harness quadrant coverage: complete
+    - contract template: valid
+    - skill SSOT: .agents/skills; Claude mirror: exact symlink set
+    - Codex internal skill policy: implicit invocation disabled
+    - Codex hooks: installed and consistent with Kit state
+    PASS (exit 0, 0.041s)
+--- manifest-validator [warn]
+    PASS: validated 48 task manifest(s)
+    PASS (exit 0, 0.201s)
+
+VERIFIER: PASS
+    PASS
+--- slice:S08:.venv/bin/python .ai-team/verifiers/run.py --profile v2
+    ==== AMPLAI verifier ====
+    repo    : /Users/pinesky/workspace/amplai-foundry
+    profile : v2
+    checks  : ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator, pytest, loop-shell-syntax, schema, vault-lint, project-pack, kit-seal
+    platform: darwin
+    
+    --- ruff-check [block]
+        All checks passed!
+        PASS (exit 0, 0.022s)
+    --- ruff-format [block]
+        169 files already formatted
+        PASS (exit 0, 0.022s)
+    --- mypy [block]
+        Success: no issues found in 121 source files
+        PASS (exit 0, 0.064s)
+    --- loop-runtime-doctor [block]
+        LOOP DOCTOR: PASS
+        - public entry points: Claude /work,/design | Codex $work,$design
+        - internal capabilities: 16
+        - legacy runtime directories: absent
+        - policy/contract/verifier JSON: valid
+        - verifier profile 집합: commit, fast, full, runtime, standard, v2 (registry 정본, policy/schema/fallback 일치)
+        - Knowledge/Context/Evidence plane: valid
+        - repository profile: foundry; domain checks: verifier registry
+        - Harness quadrant coverage: complete
+        - contract template: valid
+        - skill SSOT: .agents/skills; Claude mirror: exact symlink set
+        - Codex internal skill policy: implicit invocation disabled
+        - Codex hooks: installed and consistent with Kit state
+        PASS (exit 0, 0.039s)
+    --- manifest-validator [warn]
+        PASS: validated 48 task manifest(s)
+        PASS (exit 0, 0.198s)
+    --- pytest [block]
+        ........................................................................ [  3%]
+        ........................................................................ [  6%]
+        ........................................................................ [  9%]
+        ........................................................................ [ 12%]
+        ........................................................................ [ 16%]
+        ........................................................................ [ 19%]
+        ........................................................................ [ 22%]
+        ........................................................................ [ 25%]
+        ........................................................................ [ 29%]
+        .....................FFFFFFFFFFFF....................................... [ 32%]
+        ........................................................................ [ 35%]
+        ........................................................................ [ 38%]
+        ........................................................................ [ 42%]
+        ........................................................................ [ 45%]
+        ........................................................................ [ 48%]
+        ........................................................................ [ 51%]
+        ......................................................................F. [ 54%]
+        ........................................................................ [ 58%]
+        ........................................................................ [ 61%]
+        ........................................................................ [ 64%]
+        ........................................................................ [ 67%]
+        ........................................................................ [ 71%]
+        ........................................................................ [ 74%]
+        ........................................................................ [ 77%]
+        ........................................................................ [ 80%]
+        ........................................................................ [ 84%]
+        ........................................................................ [ 87%]
+        ........................................................................ [ 90%]
+        ........................................................................ [ 93%]
+        ........................................................................ [ 96%]
+        ....................................................................     [100%]
+        =================================== FAILURES ===================================
+        __________ test_finite_generic_payload_runs_real_controller_and_eval ___________
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_finite_generic_payload_ru0')
+        
+            def test_finite_generic_payload_runs_real_controller_and_eval(tmp_path):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:213: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_finite_generic_payload_ru0')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[scripts/loopv2.py] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit0')
+        removed = 'scripts/loopv2.py'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit0')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/contracts/work-contract.schema.json] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit1')
+        removed = '.ai-team/contracts/work-contract.schema.json'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit1')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/knowledge/decisions.index.json] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit2')
+        removed = '.ai-team/knowledge/decisions.index.json'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit2')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/policy/permissions.json] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit3')
+        removed = '.ai-team/policy/permissions.json'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit3')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/speckit-plan/SKILL.md] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit4')
+        removed = '.agents/skills/speckit-plan/SKILL.md'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit4')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/agents/openai.yaml] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit5')
+        removed = '.agents/skills/taskify/agents/openai.yaml'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit5')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/references/manifest-contract.md] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit6')
+        removed = '.agents/skills/taskify/references/manifest-contract.md'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit6')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/assets/task-index.yaml] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit7')
+        removed = '.agents/skills/taskify/assets/task-index.yaml'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit7')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.specify/scripts/bash/common.sh] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit8')
+        removed = '.specify/scripts/bash/common.sh'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit8')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        _ test_missing_generic_capability_fails_instead_of_marker_only_success[.specify/templates/plan-template.md] _
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit9')
+        removed = '.specify/templates/plan-template.md'
+        
+            @pytest.mark.parametrize("removed", [
+                "scripts/loopv2.py", ".ai-team/contracts/work-contract.schema.json",
+                ".ai-team/knowledge/decisions.index.json", ".ai-team/policy/permissions.json",
+                ".agents/skills/speckit-plan/SKILL.md", ".agents/skills/taskify/agents/openai.yaml",
+                ".agents/skills/taskify/references/manifest-contract.md",
+                ".agents/skills/taskify/assets/task-index.yaml",
+                ".specify/scripts/bash/common.sh", ".specify/templates/plan-template.md",
+            ])
+            def test_missing_generic_capability_fails_instead_of_marker_only_success(tmp_path, removed):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:269: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_missing_generic_capabilit9')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        ________ test_generic_mirrors_and_mandatory_skills_cannot_be_downgraded ________
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_generic_mirrors_and_manda0')
+        
+            def test_generic_mirrors_and_mandatory_skills_cannot_be_downgraded(tmp_path):
+        >       repo = assemble_baseline(tmp_path)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        tests/ai/test_portable_baseline.py:276: 
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+        
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_generic_mirrors_and_manda0')
+        
+            def assemble_baseline(tmp_path):
+                """Materialize the finite payload, not an installer/host activation claim."""
+                repo = tmp_path / "repository"
+                repo.mkdir()
+                manifest = json.loads((BASELINE / "manifest.json").read_text())
+                actual = {
+                    path.relative_to(BASELINE / "payload").as_posix()
+                    for path in (BASELINE / "payload").rglob("*") if path.is_file()
+                }
+        >       assert actual == {item["path"] for item in manifest["files"]}
+        E       AssertionError: assert {'.agents/ski...KILL.md', ...} == {'.agents/ski...KILL.md', ...}
+        E         
+        E         Extra items in the left set:
+        E         'scripts/__pycache__/amplai_docs.cpython-311.pyc'
+        E         Use -v to get more diff
+        
+        tests/ai/test_portable_baseline.py:181: AssertionError
+        __________ TestRealPackage.test_seal_verify_reports_a_broken_package ___________
+        
+        self = <test_kit_distribute.TestRealPackage object at 0x10a8ecbd0>
+        tmp_path = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2832/test_seal_verify_reports_a_bro0')
+        
+            def test_seal_verify_reports_a_broken_package(self, tmp_path):
+                """The seal check must fail on a mismatch, not just on a clean tree.
+            
+                Nothing read CHECKSUMS.sha256 until this check existed, and the seal
+                sat broken across two commits.  A green-only test would not have
+                noticed either.
+                """
+                seal = kd.KIT_ROOT / "seal.py"
+                clean = subprocess.run(
+                    [sys.executable, str(seal), "--verify"],
+                    capture_output=True,
+                    text=True,
+                )
+        >       assert clean.returncode == 0, clean.stdout
+        E       AssertionError: {
+        E           "baseline_stale": [
+        E             "invalid baseline inventory"
+        E           ],
+        E           "checksum_mismatched": [],
+        E           "checksum_missing_file": [],
+        E           "hint": "run `python3 seal.py` after changing payload or fragments",
+        E           "manifest_stale": [],
+        E           "not_in_checksums": [],
+        E           "ok": false
+        E         }
+        E         
+        E       assert 1 == 0
+        E        +  where 1 = CompletedProcess(args=['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '/Users/pinesky/workspace/amplai-fo...er changing payload or fragments",\n  "manifest_stale": [],\n  "not_in_checksums": [],\n  "ok": false\n}\n', stderr='').returncode
+        
+        tests/test_kit_distribute.py:483: AssertionError
+        =========================== short test summary info ============================
+        FAILED tests/ai/test_portable_baseline.py::test_finite_generic_payload_runs_real_controller_and_eval
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[scripts/loopv2.py]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/contracts/work-contract.schema.json]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/knowledge/decisions.index.json]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.ai-team/policy/permissions.json]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/speckit-plan/SKILL.md]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/agents/openai.yaml]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/references/manifest-contract.md]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.agents/skills/taskify/assets/task-index.yaml]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.specify/scripts/bash/common.sh]
+        FAILED tests/ai/test_portable_baseline.py::test_missing_generic_capability_fails_instead_of_marker_only_success[.specify/templates/plan-template.md]
+        FAILED tests/ai/test_portable_baseline.py::test_generic_mirrors_and_mandatory_skills_cannot_be_downgraded
+        FAILED tests/test_kit_distribute.py::TestRealPackage::test_seal_verify_reports_a_broken_package
+        13 failed, 2215 passed, 4 deselected in 407.40s (0:06:47)
+        FAIL (exit 1, 407.599s)
+    --- loop-shell-syntax [warn]
+        PASS (exit 0, 0.005s)
+    --- schema [block]
+        OK schemas are current
+        PASS (exit 0, 0.181s)
+    --- vault-lint [block]
+        0 errors, 0 warnings, 56 notes scanned
+        PASS (exit 0, 0.223s)
+    --- project-pack [block]
+        OK amplai
+        PASS (exit 0, 0.642s)
+    --- kit-seal [block]
+        {
+          "baseline_stale": [
+            "invalid baseline inventory"
+          ],
+          "checksum_mismatched": [],
+          "checksum_missing_file": [],
+          "hint": "run `python3 seal.py` after changing payload or fragments",
+          "manifest_stale": [],
+          "not_in_checksums": [],
+          "ok": false
+        }
+        FAIL (exit 1, 0.073s)
+    
+    VERIFIER: FAIL
+    FAIL (exit 1)
+--- slice:S08:python3 -B tools/amplai-loop-kit/seal.py --verify
+    {
+      "baseline_stale": [
+        "invalid baseline inventory"
+      ],
+      "checksum_mismatched": [],
+      "checksum_missing_file": [],
+      "hint": "run `python3 seal.py` after changing payload or fragments",
+      "manifest_stale": [],
+      "not_in_checksums": [],
+      "ok": false
+    }
+    FAIL (exit 1)
+--- slice:S08:python3 -B tools/amplai-loop-kit/selftest.py
+    {
+      "ok": true,
+      "version": "2.5.0",
+      "checks": [
+        "manifest hashes",
+        "fresh install",
+        "idempotent reinstall",
+        "settings/hook preservation",
+        "local modification conflict",
+        "force backup and replacement",
+        "Project Store init and app registration",
+        "policy enforcement reporting",
+        "install without AUTONOMY_POLICY.md",
+        "uninstall restores the app",
+        "opt-in actual generic baseline doctor and exact mirrors",
+        "profile-omitted baseline reinstall and uninstall"
+      ]
+    }
+    PASS
+
+EVAL: FAIL
+
+- slice:S08:.venv/bin/python .ai-team/verifiers/run.py --profile v2
+- slice:S08:python3 -B tools/amplai-loop-kit/seal.py --verify
+
+SIGNATURE: 6d6c7105049e
+ATTEMPT: 1/3

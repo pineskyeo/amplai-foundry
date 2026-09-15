@@ -1,0 +1,67 @@
+FFFFFFFF..................................                               [100%]
+=================================== FAILURES ===================================
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/work] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/design] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/hooks] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/tmp] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/work] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/design] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/hooks] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+_ test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/tmp] _
+tests/ai/test_document_typed_visibility.py:358: in test_reserved_public_notation_is_not_an_implicit_file_dependency
+    assert value["kind"] == "code_token"
+E   AssertionError: assert 'repository_path' == 'code_token'
+E     
+E     - code_token
+E     + repository_path
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/work]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/design]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/hooks]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[scripts/amplai_docs.py-/tmp]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/work]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/design]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/hooks]
+FAILED tests/ai/test_document_typed_visibility.py::test_reserved_public_notation_is_not_an_implicit_file_dependency[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-/tmp]

@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-11T10:38:24.030Z",
+  "source_validation": {
+    "dependency_snapshot_hash": "e4b55b19d0dfcc6089a5fb0d4a27156d3c120dbbc2328b24d58faf3997d2febd",
+    "errors": [],
+    "mode": "work",
+    "offline_views": {
+      "checked": 2,
+      "status": "MATCH",
+      "valid": true,
+      "views": [
+        {
+          "code": "MATCH",
+          "input_sha256": "2752e5afb92776a01304a72ddfd6967cec0b9a9e3956dc2579595d98bb06f8cd",
+          "valid": true
+        },
+        {
+          "code": "MATCH",
+          "input_sha256": "c5b13ea19b1d224c98dbc4ba29db67e52af9a5cd4488f32f00c461ab3fbc7b3e",
+          "valid": true
+        }
+      ]
+    },
+    "valid": true,
+    "verdict": "RESOLVED"
+  },
+  "browser": {
+    "developer": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "s08-browser-developer/desktop.png",
+          "sha256": "2def6d66232dc0545b85a3c3e5bd49255724683c242dda512c9440dc95738a19",
+          "bytes": 175762
+        },
+        {
+          "path": "s08-browser-developer/mobile.png",
+          "sha256": "7ec4d803bba9035780cf23b0b58182975dd732f293c6e583fc5c8a10df53dcc9",
+          "bytes": 137474
+        },
+        {
+          "path": "s08-browser-developer/guide-desktop.png",
+          "sha256": "a5cd8a4ddae7524aa3c7f85770bee2e4d42940aca1b48f5234bd1a2837055668",
+          "bytes": 1077385
+        },
+        {
+          "path": "s08-browser-developer/guide-mobile.png",
+          "sha256": "b23691b7d95ab6de8dafa5e06e47944b2d8ab69f8d568a70d4870b92026deefa",
+          "bytes": 1074490
+        },
+        {
+          "path": "s08-browser-developer/print.pdf",
+          "sha256": "592c3e081236093a1efc6a713ecf4e13250ccc449032ee548c276398d7ba6abd",
+          "bytes": 425709
+        }
+      ]
+    },
+    "operator": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "s08-browser-operator/desktop.png",
+          "sha256": "27684426142437a254f9ca4a5e4c866dacdc62c10418735bdd309a9c79fe93da",
+          "bytes": 175436
+        },
+        {
+          "path": "s08-browser-operator/mobile.png",
+          "sha256": "694078887d4e7383c0657a74f30986e2a17c7b02f2e20dda0d7df6e29fd918d2",
+          "bytes": 137176
+        },
+        {
+          "path": "s08-browser-operator/guide-desktop.png",
+          "sha256": "d61dd4ce43b0911403aebcfe533f80c73a13214421dca492810e4000882320a6",
+          "bytes": 1077054
+        },
+        {
+          "path": "s08-browser-operator/guide-mobile.png",
+          "sha256": "bb1963d03a0abba9ce3113dc89005a927c071207cd4663480d61c3e42ffdcb07",
+          "bytes": 1074174
+        },
+        {
+          "path": "s08-browser-operator/print.pdf",
+          "sha256": "067927744190f729b295b69b1600e0f09afc530bd305cd2e5bd7522cd9a3df29",
+          "bytes": 425523
+        }
+      ]
+    }
+  },
+  "outputs": [
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "fe32140dcd56141da608ac755eaa42c8da62e543fae11ef55ee4557fff754501",
+      "bytes": 16615
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "ec1ae8ab02a5232053266f52d687466dce46e79066629b4e7c418c1a3f9fc3e5",
+      "bytes": 10364
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/index.html",
+      "sha256": "f724faf56a606a40d23db2b14e9e7e1a91c9e6288252b3cc62f2316aef3647ff",
+      "bytes": 5091
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/manifest.json",
+      "sha256": "585f1bab851ea9e24ffef99f39c02694ce2c75f46df34791347d0db915593aaa",
+      "bytes": 1860
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "db52bde476f29ce9738a22d02bd74c285208808658f0adea10f5d61aab8c13ba",
+      "bytes": 16614
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "c2e1da2d8a108ec2f0c6d99ef01f7d03f73da4d5d1ce00c1aafa08ab77ed4eff",
+      "bytes": 10363
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/index.html",
+      "sha256": "d6953ac80ec86b871a3b8c03188afc7a3c4e95e1d94f69b4fb78511bc361e37a",
+      "bytes": 5090
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/manifest.json",
+      "sha256": "77f587f07785ec56df5964792a384ce18b2fcee255656df818f1aa4404b0543c",
+      "bytes": 1859
+    }
+  ],
+  "visual_review": {
+    "method": "Main agent inspected desktop and narrow-guide screenshots, operator mobile index and QuickLook-rendered print first page.",
+    "result": "Readable text, navigation and code blocks; narrow version table remains keyboard-focusable horizontally scrollable content, not page overflow.",
+    "limit": "Print media and PDF generation tested for both views; visual PDF inspection sampled the first page, not every printed page."
+  }
+}

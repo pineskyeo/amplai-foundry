@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S02",
+  "status": "LOCAL_SLICE_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11T04:57:17Z",
+  "authority": "execution-authorization.json / CR-SYNAPSE-APP-SPLIT-E021",
+  "contribution_boundary": "S02 implements and verifies the opt-in installation consumer of S01. Original Astra acceptance stays pending full S08 integration and three independent reviews; no real app/fleet installation is performed.",
+  "implementation": {
+    "package_snapshot": "Every package member checked against the complete checksum inventory before mutation; immutable bytes are reused through install and Store-supervisor payload planning. Integrity, not publisher signature.",
+    "baseline": "Explicit generic opt-in baseline; exact 12 relative Claude mirrors; one composed action per path; extension-only default and profile-omitted baseline updates retained.",
+    "transaction": "Held directory descriptors, no-follow reads, directory lock, typed snapshots, exact target checks, optimistic rollback, owned empty-directory cleanup and recoverable backups.",
+    "ownership": "Existing identity, Store binding, hooks, borrowed matching files/markers/JSON and local changes retained; managed local edits conflict rather than silently disappear.",
+    "interruption": "Durable target journal before product writes. Explicit --recover validates original/desired bytes and original backups; partial staged bytes move to declared backup quarantine before removal.",
+    "source_hashes": {
+      "tools/amplai-loop-kit/install.py": {
+        "sha256": "cb385fc7859cd84b751024fa9bf13164c28364139c85d81fdac8d7cb635206b1",
+        "bytes": 77981
+      },
+      "tools/amplai-loop-kit/manifest.json": {
+        "sha256": "665658431e46f92550e10ada4729d6233d3460023f8172abba4196d8e17b5b15",
+        "bytes": 7634
+      },
+      "tools/amplai-loop-kit/CHECKSUMS.sha256": {
+        "sha256": "88fae36bd1caad97c08a3ce1451b475291204ca81fe933a7d732fc1af0c93998",
+        "bytes": 12906
+      },
+      "tools/amplai-loop-kit/seal.py": {
+        "sha256": "6fa4e100314aa675d1284554f1d2a680d7d428823f3f8e42316eeca74d9765be",
+        "bytes": 8447
+      },
+      "tools/amplai-loop-kit/selftest.py": {
+        "sha256": "2f8ee1231e2616c98a475b47c207731ea6a583a8975469a95cdee55b85ff1f1d",
+        "bytes": 10520
+      },
+      "tests/ai/test_portable_baseline.py": {
+        "sha256": "2094d5cfea8076c63a45fcfabf87887c35e48fcf850441777c81a3c45f634009",
+        "bytes": 36241
+      }
+    }
+  },
+  "tdd": {
+    "initial": {
+      "log": "w003-s02-red.log",
+      "passed": 0,
+      "failed": 8,
+      "exit_code": 1,
+      "cause": "Opt-in baseline was not consumed by the installer"
+    },
+    "repair_history": [
+      {
+        "log": "w003-s02-recovery-red.log",
+        "passed": 5,
+        "failed": 1,
+        "cause": "Existing app identity extension fields were rewritten",
+        "repair": "Preserve existing identity bytes and ownership"
+      },
+      {
+        "log": "w003-s02-boundaries-first.log",
+        "passed": 20,
+        "failed": 1,
+        "cause": "Uninstall removed a locally edited managed marker",
+        "repair": "Compare managed contents before uninstall mutation"
+      },
+      {
+        "log": "w003-s02-hard-stop-red.log",
+        "passed": 1,
+        "failed": 2,
+        "cause": "Process kill had no durable recovery journal",
+        "repair": "Sealed before/desired target journal and explicit recovery"
+      },
+      {
+        "log": "w003-s02-stage-red.log",
+        "accepted_evidence": false,
+        "cause": "Initial staged-write probe incorrectly stopped on directory fsync; the apparent PASS was not valid evidence"
+      },
+      {
+        "log": "w003-s02-stage-red-corrected.log",
+        "passed": 0,
+        "failed": 1,
+        "cause": "Correct regular-file fsync interruption left an untracked staged file",
+        "repair": "Persist exact random staging names and recoverable partial-byte quarantine"
+      }
+    ],
+    "final_slice_tests": 26,
+    "assembled_foundation_tests": 29,
+    "canonical_selected_tests": 128
+  },
+  "verification": {
+    "canonical": {
+      "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S02",
+      "archived_input": "s02-eval-input-tasks.md",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "selected_tests": 128,
+      "selftest_checks": 12
+    },
+    "full": {
+      "profile": "v2",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "checks": [
+        {
+          "id": "ruff-check",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "ruff-format",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "mypy",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-runtime-doctor",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "manifest-validator",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "pytest",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-shell-syntax",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "schema",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "vault-lint",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "project-pack",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "kit-seal",
+          "status": "PASS",
+          "exit_code": 0
+        }
+      ],
+      "pytest_passed": 1680,
+      "pytest_deselected": 4,
+      "environment": {
+        "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "git": "git version 2.50.1 (Apple Git-155)",
+        "machine": "arm64",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "python": "3.11.15",
+        "registry_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+        "system": "Darwin",
+        "target_assumptions": {
+          "not_verified": [
+            "다른 OS·architecture 에서의 동작",
+            "pyproject 의 requires-python 아래 버전에서의 동작"
+          ],
+          "python_requirement": ">=3.11",
+          "verified_on": "macOS-26.2-arm64-arm-64bit",
+          "verifier_interpreter": [
+            ".venv/bin/python",
+            "python3"
+          ]
+        }
+      }
+    },
+    "actual_installed_context": "Deterministic canary creates real isolated Work and Design controller records/evidence. Actual installed CLI and session-start hooks select equivalent context and evidence for Claude Code and Codex.",
+    "native_transport": {
+      "versions": {
+        "claude-code": "2.1.236",
+        "codex": "0.154.0"
+      },
+      "schema_version": 1,
+      "results": [
+        {
+          "host": "claude-code",
+          "exit_code": 0,
+          "timed_out": false,
+          "answer_exact": true,
+          "transport_pass": true,
+          "continuation_id_observed": true,
+          "stdout_sha256": "d8b2f1789036b260a36985672a116ae042cb6199cb2eecee1014dfad89fbd2bf",
+          "stdout_bytes": 1414,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "work_entry": "/work",
+          "design_entry": "/design"
+        },
+        {
+          "host": "codex",
+          "exit_code": 0,
+          "timed_out": false,
+          "answer_exact": true,
+          "transport_pass": true,
+          "continuation_id_observed": true,
+          "stdout_sha256": "70f19f341b58b6415d3843e3b4e4216dea6d937cfd187ede891948971f544685",
+          "stdout_bytes": 374,
+          "stderr_sha256": "1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "stderr_bytes": 39,
+          "work_entry": "$work",
+          "design_entry": "$design"
+        }
+      ],
+      "repository_content_drift": [],
+      "scope": "Actual installed adapters and native CLI response transport only",
+      "limits": [
+        "No production/native lifecycle/host resume or unattended activation claim",
+        "No model chosen, no persisted permission/trust or central Store modification requested"
+      ],
+      "probe": {
+        "sha256": "8b08cb1c26e9cf6fe0bbb19058155978144d44542f721e40b5e033d1d7df59cc",
+        "bytes": 4743
+      },
+      "scope_note": "Foreground synthetic echo through actual installed adapters and available native binaries; no product task delegation, tool execution or native lifecycle/resume claim."
+    }
+  },
+  "logs": {
+    "w003-s02-boundaries-first.log": {
+      "sha256": "88e89faa4df2c989c2fe3516bea123d869bc996eac4b50b189de594f2d4802ce",
+      "bytes": 1427
+    },
+    "w003-s02-boundaries-green.log": {
+      "sha256": "32faef56d0289369b1ac111e68ee0bb7b2ed1bcf92d3f33b75313bd0556c3e6f",
+      "bytes": 80
+    },
+    "w003-s02-compat-first.log": {
+      "sha256": "8113000bce605c9f2c59554d0b4a99b553e85115cda8b9988f58e21f6786b384",
+      "bytes": 160
+    },
+    "w003-s02-compat-second.log": {
+      "sha256": "bcaf32ccf9c0c6ac37fe4c9e8ce86f4ab7c07f1740903baef91d00a0e408a409",
+      "bytes": 160
+    },
+    "w003-s02-context-canary.log": {
+      "sha256": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+      "bytes": 80
+    },
+    "w003-s02-eval-final.log": {
+      "sha256": "81f135b5a97858097f5d11dfbc97655dd88faf6ccf9cd969d37dae6ba55e0a3b",
+      "bytes": 2578
+    },
+    "w003-s02-eval.log": {
+      "sha256": "4a3ce18af2d5e18fa1a964f69e8b2fa42324f2acd61f615a7cea3420e09feb56",
+      "bytes": 2578
+    },
+    "w003-s02-first-green.log": {
+      "sha256": "06955fb47f16312e5d13266c774a2aa4648c46e423cbe6564a92e25b68e39131",
+      "bytes": 80
+    },
+    "w003-s02-full-final.json": {
+      "sha256": "30196c1a100f00eba7bee65a0690fb8850e56e3e822cac82b69f3bb936e39e62",
+      "bytes": 7344
+    },
+    "w003-s02-full-final.log": {
+      "sha256": "530753b8e93329b719c4556ca33c8c5af0e315697b54b23b08b93d9cb9085ad2",
+      "bytes": 4030
+    },
+    "w003-s02-full.json": {
+      "sha256": "8c02a7c49a30fc88b08360762bdba7c8d7e7de223c6b0cf06f244aa751d143f5",
+      "bytes": 7344
+    },
+    "w003-s02-full.log": {
+      "sha256": "7b7d1004e001adfd327d2ecba05cc30c6aa1d7bcb7f08093c492efe600e29ecf",
+      "bytes": 4030
+    },
+    "w003-s02-hard-stop-green.log": {
+      "sha256": "12784721e0280443291002b595b03384e8588476665647b621a862f07297e08f",
+      "bytes": 80
+    },
+    "w003-s02-hard-stop-red.log": {
+      "sha256": "55a2c02a10d8ce64158c66d3b34c0f748cf83bf09cddbbf9a0b63bf900d0b793",
+      "bytes": 5230
+    },
+    "w003-s02-recovery-green.log": {
+      "sha256": "fe9dca0451129aaabdd76ea13e310b61a52091a146a1f9fe5b72b851eb33547f",
+      "bytes": 80
+    },
+    "w003-s02-recovery-red.log": {
+      "sha256": "6ea79dc327ba1a0195d555a93bdccbc8e1f2dc4910631c8b940d7951ac723eb8",
+      "bytes": 2259
+    },
+    "w003-s02-red.log": {
+      "sha256": "068a4c250fd8bee1f29f4490371011b15121dca862956b322b7e3268597586a1",
+      "bytes": 25078
+    },
+    "w003-s02-selftest.log": {
+      "sha256": "8b4c506c3fc442ba99cb6922a0015d7d2e64c0742b32198e204a48682a64e866",
+      "bytes": 512
+    },
+    "w003-s02-stage-green.log": {
+      "sha256": "c6ce8518a2cc113cc5560b3731e234ed6d559e746221ae903ce01599dfe7e797",
+      "bytes": 80
+    },
+    "w003-s02-stage-red-corrected.log": {
+      "sha256": "422d4e8a790e4f05f746f9d2a20024cf799e45326888d37da2f50b0d99826b66",
+      "bytes": 3928
+    },
+    "w003-s02-stage-red.log": {
+      "sha256": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+      "bytes": 80
+    }
+  },
+  "limitations": [
+    "Python 3.11/macOS verification is not Python 3.6, another OS/architecture, RHEL7 or actual target evidence.",
+    "The target-local interruption journal does not roll back separately requested central Project Store operations; canaries used only isolated stores.",
+    "Directory coordination and optimistic target checks do not prevent arbitrary same-user modification after completion or claim universal filesystem compare-and-swap.",
+    "Process-kill recovery is tested; full machine power-loss durability is not claimed.",
+    "No live install, fleet activation, trust change, real Store rebind, Git commit/push or publication.",
+    "S03-S08 document lifecycle, final integration/security/independent reviews and W004 actual deployment preparation remain."
+  ],
+  "original_acceptance_passes": 0
+}

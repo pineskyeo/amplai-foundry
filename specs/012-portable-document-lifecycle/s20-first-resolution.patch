@@ -1,0 +1,65 @@
+--- /tmp/w003-r5-regression.cJS4Cl/repo/scripts/amplai_docs.py	2026-09-12 12:36:27
++++ scripts/amplai_docs.py	2026-09-12 15:40:28
+@@ -1831,7 +1831,12 @@
+             if reference["kind"] != "repository_path" or raw["source_kind"] == "markdown_link":
+                 continue
+             candidates = reference_candidates(
+-                tree.root, os.path.dirname(source_path), reference["reference"], raw["source_kind"]
++                tree.root,
++                os.path.dirname(source_path),
++                reference["reference"],
++                raw["source_kind"],
++                reject_unsafe=True,
++                spend=spend,
+             )
+             if not candidates:
+                 raise DocumentError(error)
+@@ -3696,7 +3701,35 @@
+     return [(item["reference"], item["line"]) for item in extract_typed_references(text)]
+ 
+ 
+-def reference_candidates(root, doc_dir, value, source_kind="inline_code"):
++def check_reference_candidate(root, candidate, spend=None):
++    """Distinguish genuine absence from unsafe logical aliases before fallback."""
++    current = os.path.realpath(root)
++    for part in candidate.split("/"):
++        if spend is not None:
++            spend()
++        # Existing bounded expansion checks actual glob members; only resolve
++        # the concrete prefix here, without inventing a literal glob filename.
++        if any(char in part for char in GLOB_CHARS):
++            break
++        current = os.path.join(current, part)
++        safe_path(root, current)
++        try:
++            info = os.stat(current)
++        except FileNotFoundError:
++            if os.path.lexists(current):
++                raise DocumentError("UNSAFE_PATH") from None
++            return  # An ordinary missing prefix makes the optional path absent.
++        except OSError:
++            # Includes cycles, access failure and a non-directory prefix.
++            # os.path.exists would silently turn these into absence.
++            raise DocumentError("UNSAFE_PATH") from None
++        if not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode)):
++            raise DocumentError("UNSAFE_PATH")
++
++
++def reference_candidates(
++    root, doc_dir, value, source_kind="inline_code", reject_unsafe=False, spend=None
++):
+     """참조가 가리킬 수 있는 repository-relative 경로 후보를 만든다.
+ 
+     Markdown link는 문서 기준으로만 해석한다. 코드 안의 locator는 기존
+@@ -3717,7 +3750,11 @@
+             continue
+         try:
+             safe_path(root, candidate)
++            if reject_unsafe:
++                check_reference_candidate(root, candidate, spend=spend)
+         except (RuntimeError, DocumentError):
++            if reject_unsafe:
++                raise
+             continue
+         if candidate not in inside:
+             inside.append(candidate)

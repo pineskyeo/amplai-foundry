@@ -1,0 +1,108 @@
+{
+  "recorded_at": "2026-09-12 02:56:11 UTC",
+  "status": "EXPECTED_CONTEXT_CONTROL_DRIFT",
+  "checks": [
+    {
+      "id": "taskify",
+      "command": [
+        "python3",
+        "-B",
+        ".agents/skills/taskify/scripts/validate_task_manifest.py",
+        "specs/012-portable-document-lifecycle/task-manifests"
+      ],
+      "exit_code": 0,
+      "summary": "PASS: validated 18 task manifest(s)",
+      "stderr": ""
+    },
+    {
+      "id": "prerequisites",
+      "command": [
+        "bash",
+        ".specify/scripts/bash/check-prerequisites.sh",
+        "--json",
+        "--require-tasks",
+        "--include-tasks"
+      ],
+      "exit_code": 0,
+      "summary": {},
+      "stderr": ""
+    },
+    {
+      "id": "traceability",
+      "command": [
+        "node",
+        "specs/012-portable-document-lifecycle/verify-traceability.mjs",
+        "/Users/pinesky/workspace/synapse-app-split"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "verdict": "PASS_TRACEABILITY_ONLY",
+        "requirements": 23,
+        "cases": 46,
+        "passed_cases": 0,
+        "source_hashes": {
+          "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+          "plan.md": "fbeb9da0f28f8a5a6b888c9504eddac5b50b3317dbebc289e3b9199b30f6f102",
+          "tasks.md": "9050da7ee4857a4ae002d0e4d1b02b15b64c5ae0d8696dc735cb612b5672dde7",
+          "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+          "acceptance-map.json": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080"
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "contract",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "contract",
+        "validate",
+        "specs/012-portable-document-lifecycle/work-contract.json"
+      ],
+      "exit_code": 0,
+      "summary": "CONTRACT: PASS",
+      "stderr": ""
+    },
+    {
+      "id": "readiness",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "readiness",
+        "evaluate",
+        "specs/012-portable-document-lifecycle/knowledge-readiness.json"
+      ],
+      "exit_code": 0,
+      "summary": {
+        "verdict": "READY",
+        "errors": []
+      },
+      "stderr": ""
+    },
+    {
+      "id": "context",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "context",
+        "validate",
+        "specs/012-portable-document-lifecycle/context-pack.json"
+      ],
+      "exit_code": 1,
+      "summary": {
+        "verdict": "INVALID",
+        "valid": false,
+        "sources": 20,
+        "errors": [
+          "context control input changed; rebuild Context Pack"
+        ]
+      },
+      "stderr": ""
+    }
+  ],
+  "reason": "Refreshing Knowledge Readiness for three new confirmed repair tasks changes a bound Context control input. Existing20source files still match; rebuild Context before any product repair. Do not suppress the guard.",
+  "next": "context build then validate; analyzer remains blocked until MATCH"
+}

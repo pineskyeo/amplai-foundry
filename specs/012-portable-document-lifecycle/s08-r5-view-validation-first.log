@@ -1,0 +1,26 @@
+{
+  "dependency_snapshot_hash": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+  "errors": [
+    "DERIVED_REPORT_DRIFT"
+  ],
+  "mode": "work",
+  "offline_views": {
+    "checked": 2,
+    "status": "MATCH",
+    "valid": true,
+    "views": [
+      {
+        "code": "MATCH",
+        "input_sha256": "77afe3ee7b67c66e4a9d81077ae113afb9f8ab003b081e9c7192ec825e351bfb",
+        "valid": true
+      },
+      {
+        "code": "MATCH",
+        "input_sha256": "5b8be7851f4702a669854e856d0bfda0c1436baa52c81aa71cf88909f19913a0",
+        "valid": true
+      }
+    ]
+  },
+  "valid": false,
+  "verdict": "STALE"
+}

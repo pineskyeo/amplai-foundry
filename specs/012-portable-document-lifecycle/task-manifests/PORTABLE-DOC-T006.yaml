@@ -1,0 +1,301 @@
+{
+  "schema_version": "1.0",
+  "id": "PORTABLE-DOC-T006",
+  "title": "Preserved history and report-only recoverable gardening",
+  "type": "feature",
+  "status": "done",
+  "goal": {
+    "outcome": "Preserved history and report-only recoverable gardening",
+    "user_value": "Independent app developers share a reproducible workflow, current documents and recoverable changes."
+  },
+  "source": {
+    "feature": "012-portable-document-lifecycle",
+    "files": [
+      {
+        "path": "specs/012-portable-document-lifecycle/spec.md",
+        "section": "FR-011, FR-012, FR-013"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Slice Strategy S06"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/acceptance-map.json",
+        "section": "AC-048-P, AC-048-N, AC-050-P, AC-050-N, AC-051-P, AC-051-N, AC-075-P, AC-075-N"
+      }
+    ],
+    "requirements": [
+      "REQ-048",
+      "REQ-050",
+      "REQ-051",
+      "REQ-075",
+      "DOC-004"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-055",
+      "D-056",
+      "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "CR-SYNAPSE-APP-SPLIT-E021"
+    ]
+  },
+  "scope": {
+    "include": [
+      "Preserved history and report-only recoverable gardening",
+      "Preserve every unique source section/constraint/incident lesson through retained source or exact destination ledger; do not replace historical facts with a summary.",
+      "Normal garden stays incremental and report-only, including user backups. Full scan requires an explicit gardening Work.",
+      "Internal retirement/recovery tests use disposable fixture Git and exact synthetic approval/HEAD/content/references/retention/backup bindings. No actual tracked deletion or approval creation."
+    ],
+    "exclude": [
+      "Platform/Vault/governed knowledge mutations",
+      "Live installs, trust changes, Store rebinding, publication or actual tracked deletion"
+    ],
+    "allowed_paths": [
+      "scripts/amplai_docs.py",
+      "scripts/loopctl.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/gardening.json",
+      ".ai-team/knowledge/garden-report.schema.json",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/README.md",
+      ".agents/skills/work/",
+      ".agents/skills/dev-loop/",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_preservation.py",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "src/amplai_foundry/",
+      "schemas/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other real repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "PORTABLE-DOC-T004"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "Preserve every unique source section/constraint/incident lesson through retained source or exact destination ledger; do not replace historical facts with a summary.",
+      "Normal garden stays incremental and report-only, including user backups. Full scan requires an explicit gardening Work.",
+      "Internal retirement/recovery tests use disposable fixture Git and exact synthetic approval/HEAD/content/references/retention/backup bindings. No actual tracked deletion or approval creation."
+    ],
+    "invariants": [
+      "Existing work/design controller, native Project Store and transaction installer remain authoritative",
+      "Preserve unrelated user content, historical provenance and current host trust",
+      "No synthetic result is native host, Python3.6 or RHEL7 evidence"
+    ],
+    "non_goals": [
+      "New Platform storage/API/auth/ontology service",
+      "Automatic fleet activation or destructive cleanup"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "AC-048-P",
+        "given": "The original AC-048-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "each unique REQUEST/SPEC/PLAN/memory claim maps to retained original or evidence-bound destination"
+      },
+      {
+        "id": "AC-048-N",
+        "given": "The original AC-048-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "omitted unique invariant or incident lesson fails preservation completeness"
+      },
+      {
+        "id": "AC-050-P",
+        "given": "The original AC-050-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "isolated fixture only: exact approved candidate, complete references, retention and verified backup permit staged recoverable retirement"
+      },
+      {
+        "id": "AC-050-N",
+        "given": "The original AC-050-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "changed approval target/content/HEAD or unknown external reference rejects retirement"
+      },
+      {
+        "id": "AC-051-P",
+        "given": "The original AC-051-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "user .bak files, retention holds, incidents and ADRs remain; generated cache candidates stay scoped"
+      },
+      {
+        "id": "AC-051-N",
+        "given": "The original AC-051-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "age, zero static references or git history alone never authorizes removal"
+      },
+      {
+        "id": "AC-075-P",
+        "given": "The original AC-075-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "normal work uses incremental gardening after docs/review; explicit full-cleanup Work is separate and any applied fixture change is reverified"
+      },
+      {
+        "id": "AC-075-N",
+        "given": "The original AC-075-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S06 capability and its positive or fault-injected path execute",
+        "then": "small UI change cannot trigger automatic whole-repository document deletion or unverified cleanup"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -m pytest -q tests/ai/test_document_preservation.py",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Installer/document/privacy/lifecycle compatibility within the assigned slice"
+    ],
+    "approvals": [
+      "User local implementation authority in execution-authorization.json and native E021; any external/production/cleanup action remains separate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-12 07:52:46 UTC",
+    "evidence_paths": [
+      "specs/012-portable-document-lifecycle/revalidate-r6-s06.json",
+      "specs/012-portable-document-lifecycle/revalidate-r6-s06.log"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "scripts/amplai_docs.py",
+      "scripts/loopctl.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/gardening.json",
+      ".ai-team/knowledge/garden-report.schema.json",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/README.md",
+      ".agents/skills/work/",
+      ".agents/skills/dev-loop/",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_preservation.py"
+    ],
+    "notes": [
+      "New harness tests/ai/test_document_preservation.py is a required task deliverable. It does not exist at task creation; its command becomes executable only with the test implementation.",
+      "Tasks in later slices are draft until their dependencies and execution inputs are validated; no parallel write ownership is implied.",
+      "Local S06 verification only: 39 canonical and 1849 full tests; original-case integration, queued robustness probes and independent review remain S08. Native E030 records immutable evidence; no actual repository retirement."
+    ]
+  },
+  "context": {
+    "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+    "slice_id": "S06",
+    "context_pack": "specs/012-portable-document-lifecycle/context-pack.json",
+    "environment": "specs/012-portable-document-lifecycle/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "6e005a5e3035ef05510c403a7cd691d524b733bd"
+  },
+  "completion_history": [
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11T08:28:08Z",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s06-evidence.json"
+      ],
+      "preserved_for": "R1 frozen source",
+      "review_scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59"
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11 12:21:01 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s06-evidence.json",
+        "specs/012-portable-document-lifecycle/s06-revalidation-r2.json"
+      ],
+      "preserved_for": "R2 frozen source",
+      "review_scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014"
+    },
+    {
+      "recorded_at": "2026-09-11 23:10:19 UTC",
+      "reason": "R3 engine/payload repair requires current-target revalidation; original evidence retained.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-11 15:00:44 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/s06-evidence.json",
+          "specs/012-portable-document-lifecycle/s06-revalidation-r2.json",
+          "specs/012-portable-document-lifecycle/s06-revalidation-r3.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 00:52:57 UTC",
+      "reason": "Revalidate after demonstrated physical-line/Unicode split mismatch in shared typed references; earlier evidence preserved, not current source proof.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 00:37:55 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-s06.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 02:53:17 UTC",
+      "reason": "R4 confirmed classifier/typed-reference/borrowed-mode defects require current-source revalidation; original completion remains historical.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 01:19:06 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-line-s06.json"
+        ]
+      }
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-12 04:45:35 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s06.json",
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s06.log"
+      ]
+    }
+  ],
+  "revalidation": {
+    "reason": "R2 full-document reference/URI and atomic metadata repairs require current-target acceptance; prior completion retained",
+    "review": "review-r2.json",
+    "previous_status": "done",
+    "status": "LOCAL_PASS",
+    "evidence": "s06-revalidation-r3.json"
+  }
+}
