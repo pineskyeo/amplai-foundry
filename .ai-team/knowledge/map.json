@@ -2,7 +2,11 @@
   "project": "amplai-foundry",
   "schema_version": "1.0",
   "selection": {
-    "exclude_status": ["deprecated", "superseded", "rejected"],
+    "exclude_status": [
+      "deprecated",
+      "superseded",
+      "rejected"
+    ],
     "max_sources": 24
   },
   "sources": [
@@ -12,7 +16,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 100,
-      "keywords": ["rule", "gate", "scope", "workflow", "knowledge safety", "completion"]
+      "keywords": [
+        "rule",
+        "gate",
+        "scope",
+        "workflow",
+        "knowledge safety",
+        "completion"
+      ]
     },
     {
       "id": "loop-runtime-policy",
@@ -20,7 +31,15 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 100,
-      "keywords": ["work", "risk", "verifier", "profile", "gate", "permission", "loop"]
+      "keywords": [
+        "work",
+        "risk",
+        "verifier",
+        "profile",
+        "gate",
+        "permission",
+        "loop"
+      ]
     },
     {
       "id": "loop-runtime-workflow",
@@ -28,7 +47,15 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 100,
-      "keywords": ["state", "transition", "slice", "repair", "converge", "review", "handoff"]
+      "keywords": [
+        "state",
+        "transition",
+        "slice",
+        "repair",
+        "converge",
+        "review",
+        "handoff"
+      ]
     },
     {
       "id": "verifier-registry",
@@ -36,7 +63,16 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 100,
-      "keywords": ["verifier", "check", "profile", "pytest", "ruff", "mypy", "vault", "schema"]
+      "keywords": [
+        "verifier",
+        "check",
+        "profile",
+        "pytest",
+        "ruff",
+        "mypy",
+        "vault",
+        "schema"
+      ]
     },
     {
       "id": "loop-runtime-readme",
@@ -44,7 +80,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 95,
-      "keywords": ["runtime", "policy", "contract", "knowledge", "evidence", "plane"]
+      "keywords": [
+        "runtime",
+        "policy",
+        "contract",
+        "knowledge",
+        "evidence",
+        "plane"
+      ]
     },
     {
       "id": "constitution",
@@ -52,7 +95,13 @@
       "memory_type": "decision",
       "status": "active",
       "priority": 95,
-      "keywords": ["principle", "constitution", "vault", "governance", "proposal"]
+      "keywords": [
+        "principle",
+        "constitution",
+        "vault",
+        "governance",
+        "proposal"
+      ]
     },
     {
       "id": "root-claude-contract",
@@ -60,7 +109,13 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 85,
-      "keywords": ["claude", "adapter", "command", "skill", "verification"]
+      "keywords": [
+        "claude",
+        "adapter",
+        "command",
+        "skill",
+        "verification"
+      ]
     },
     {
       "id": "mgc-decisions",
@@ -68,7 +123,15 @@
       "memory_type": "decision",
       "status": "active",
       "priority": 85,
-      "keywords": ["decision", "slack", "ingress", "proposal", "outbox", "authority", "gate"]
+      "keywords": [
+        "decision",
+        "slack",
+        "ingress",
+        "proposal",
+        "outbox",
+        "authority",
+        "gate"
+      ]
     },
     {
       "id": "canonical-vault",
@@ -76,7 +139,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 85,
-      "keywords": ["vault", "canonical", "concept", "principle", "architecture", "note"]
+      "keywords": [
+        "vault",
+        "canonical",
+        "concept",
+        "principle",
+        "architecture",
+        "note"
+      ]
     },
     {
       "id": "loop-adoption-port-log",
@@ -84,7 +154,15 @@
       "memory_type": "work",
       "status": "active",
       "priority": 80,
-      "keywords": ["port", "cortex", "loop", "runtime", "adoption", "verifier", "skill"]
+      "keywords": [
+        "port",
+        "cortex",
+        "loop",
+        "runtime",
+        "adoption",
+        "verifier",
+        "skill"
+      ]
     },
     {
       "id": "loop-adoption-facts",
@@ -92,7 +170,14 @@
       "memory_type": "work",
       "status": "active",
       "priority": 80,
-      "keywords": ["fact", "cortex", "loop", "runtime", "evidence", "investigation"]
+      "keywords": [
+        "fact",
+        "cortex",
+        "loop",
+        "runtime",
+        "evidence",
+        "investigation"
+      ]
     },
     {
       "id": "knowledge-rules",
@@ -100,7 +185,13 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 75,
-      "keywords": ["knowledge", "atomic", "note", "rule", "lint"]
+      "keywords": [
+        "knowledge",
+        "atomic",
+        "note",
+        "rule",
+        "lint"
+      ]
     },
     {
       "id": "memory-domain-model",
@@ -108,7 +199,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 75,
-      "keywords": ["memory", "domain", "model", "repository", "source", "project"]
+      "keywords": [
+        "memory",
+        "domain",
+        "model",
+        "repository",
+        "source",
+        "project"
+      ]
     },
     {
       "id": "lifecycle",
@@ -116,7 +214,13 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 75,
-      "keywords": ["lifecycle", "status", "superseded", "deprecated", "archived"]
+      "keywords": [
+        "lifecycle",
+        "status",
+        "superseded",
+        "deprecated",
+        "archived"
+      ]
     },
     {
       "id": "proposals",
@@ -124,7 +228,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 75,
-      "keywords": ["proposal", "operation", "apply", "diff", "validate", "conflict"]
+      "keywords": [
+        "proposal",
+        "operation",
+        "apply",
+        "diff",
+        "validate",
+        "conflict"
+      ]
     },
     {
       "id": "messenger-proposal-control",
@@ -132,7 +243,15 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 75,
-      "keywords": ["messenger", "slack", "telegram", "card", "decision", "token", "outbox"]
+      "keywords": [
+        "messenger",
+        "slack",
+        "telegram",
+        "card",
+        "decision",
+        "token",
+        "outbox"
+      ]
     },
     {
       "id": "project-pack",
@@ -140,7 +259,14 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 70,
-      "keywords": ["project", "pack", "workspace", "manifest", "actor", "installation"]
+      "keywords": [
+        "project",
+        "pack",
+        "workspace",
+        "manifest",
+        "actor",
+        "installation"
+      ]
     },
     {
       "id": "relationships",
@@ -148,7 +274,12 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 70,
-      "keywords": ["relation", "link", "graph", "reference"]
+      "keywords": [
+        "relation",
+        "link",
+        "graph",
+        "reference"
+      ]
     },
     {
       "id": "versioning",
@@ -156,7 +287,12 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 70,
-      "keywords": ["version", "schema", "migration", "compatibility"]
+      "keywords": [
+        "version",
+        "schema",
+        "migration",
+        "compatibility"
+      ]
     },
     {
       "id": "source-ingestion",
@@ -164,7 +300,13 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 70,
-      "keywords": ["ingest", "source", "chatgpt", "curate", "verbatim"]
+      "keywords": [
+        "ingest",
+        "source",
+        "chatgpt",
+        "curate",
+        "verbatim"
+      ]
     },
     {
       "id": "knowledge-intake",
@@ -172,7 +314,12 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 70,
-      "keywords": ["intake", "curation", "candidate", "classification"]
+      "keywords": [
+        "intake",
+        "curation",
+        "candidate",
+        "classification"
+      ]
     },
     {
       "id": "vision",
@@ -180,7 +327,12 @@
       "memory_type": "stable_knowledge",
       "status": "active",
       "priority": 65,
-      "keywords": ["vision", "goal", "amplai", "direction"]
+      "keywords": [
+        "vision",
+        "goal",
+        "amplai",
+        "direction"
+      ]
     },
     {
       "id": "roadmap",
@@ -188,7 +340,12 @@
       "memory_type": "work",
       "status": "active",
       "priority": 65,
-      "keywords": ["roadmap", "milestone", "plan", "phase"]
+      "keywords": [
+        "roadmap",
+        "milestone",
+        "plan",
+        "phase"
+      ]
     },
     {
       "id": "feature-specs",
@@ -196,7 +353,56 @@
       "memory_type": "work",
       "status": "active",
       "priority": 65,
-      "keywords": ["spec", "feature", "task", "slice", "contract", "acceptance"]
+      "keywords": [
+        "spec",
+        "feature",
+        "task",
+        "slice",
+        "contract",
+        "acceptance"
+      ]
+    },
+    {
+      "id": "kit-portable-development",
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 90,
+      "keywords": [
+        "portable",
+        "kit",
+        "document",
+        "development",
+        "release"
+      ]
+    },
+    {
+      "id": "kit-owning-readme",
+      "path": "tools/amplai-loop-kit/README.md",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 90,
+      "keywords": [
+        "portable",
+        "kit",
+        "document",
+        "development",
+        "release"
+      ]
+    },
+    {
+      "id": "kit-owning-changelog",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 90,
+      "keywords": [
+        "portable",
+        "kit",
+        "document",
+        "development",
+        "release"
+      ]
     }
   ]
 }

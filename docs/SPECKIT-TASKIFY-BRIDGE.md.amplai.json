@@ -1,0 +1,49 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
+    "topic_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md"
+    },
+    "title": "Spec-Kit ↔ Taskify Bridge",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "historical",
+    "lifecycle": "archived",
+    "security": "INTERNAL",
+    "release_ids": [
+      "history-2026-08-03"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/amplai_docs.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/loopctl.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/loopv2.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "tools/amplai-loop-kit/manifest.json",
+        "kind": "contract"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

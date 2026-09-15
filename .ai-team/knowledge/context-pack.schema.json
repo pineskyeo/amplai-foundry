@@ -39,7 +39,8 @@
         "knowledge_map_sha256": {"type": "string"},
         "claims_sha256": {"type": "string"},
         "readiness_sha256": {"type": "string"},
-        "discovery_sha256": {"type": "string"}
+        "discovery_sha256": {"type": "string"},
+        "document_selection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     },
     "content_hash": {"type": "string", "minLength": 64, "maxLength": 64}

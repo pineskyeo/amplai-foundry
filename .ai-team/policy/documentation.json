@@ -1,5 +1,103 @@
 {
   "schema_version": "1.0",
+  "offline_views": {
+    "schema_version": "1.0",
+    "entries": [
+      {
+        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r6.json",
+        "output": "specs/012-portable-document-lifecycle/html-developer-r6",
+        "audience": "developer",
+        "security": "INTERNAL",
+        "history": false
+      },
+      {
+        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r6.json",
+        "output": "specs/012-portable-document-lifecycle/html-operator-r6",
+        "audience": "operator",
+        "security": "INTERNAL",
+        "history": false
+      }
+    ]
+  },
+  "portable_documents": {
+    "schema_version": "1.0",
+    "repository_id": "amplai-foundry",
+    "roots": [
+      ".ai-team/README.md",
+      ".ai-team/contracts/README.md",
+      ".ai-team/evidence/README.md",
+      ".ai-team/knowledge/README.md",
+      ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      ".ai-team/runtime/INSTALLATION.md",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/runtime/escalation.md",
+      ".ai-team/verifiers/README.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "docs/KNOWLEDGE-RULES.md",
+      "docs/LIFECYCLE.md",
+      "docs/MEMORY-DOMAIN-MODEL.md",
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "docs/PROJECT-PACK.md",
+      "docs/PROPOSALS.md",
+      "docs/RELATIONSHIPS.md",
+      "docs/ROADMAP.md",
+      "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "docs/VERSIONING.md",
+      "docs/VISION.md",
+      "tools/amplai-loop-kit/CHANGELOG.md",
+      "tools/amplai-loop-kit/README.md"
+    ],
+    "review_store": ".ai-team/knowledge/document-reviews.json",
+    "default_security": "INTERNAL",
+    "maximum_security": "INTERNAL",
+    "current_release_id": "kit-2.5.0-candidate-r6",
+    "max_files": 10000,
+    "max_file_bytes": 8388608,
+    "governing_inputs": [
+      {
+        "path": "AGENTS.md",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": "CLAUDE.md",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": ".ai-team/README.md",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": ".ai-team/runtime/WORKFLOW.md",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": ".ai-team/runtime/policy.json",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": ".ai-team/verifiers/registry.json",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": ".specify/memory/constitution.md",
+        "role": "instruction",
+        "security": "INTERNAL"
+      },
+      {
+        "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+        "role": "decision_ledger",
+        "security": "INTERNAL"
+      }
+    ]
+  },
   "purpose": "언제 어떤 문서를 검사하고 update/supersede 하는지 정한다. 문서 내용은 여기 두지 않는다.",
   "canonical_roots": [
     {
@@ -274,5 +372,157 @@
     "local typo",
     "generated output refresh"
   ],
-  "rule": "canonical 문서는 docs/ 와 각 소유 위치에 둔다. .ai-team 에는 문서 내용을 복사하지 않는다. 큰 문서를 이유 없이 전체 rewrite 하지 않고 impacted section 만 최소 patch 한다."
+  "rule": "canonical 문서는 docs/ 와 각 소유 위치에 둔다. .ai-team 에는 문서 내용을 복사하지 않는다. 큰 문서를 이유 없이 전체 rewrite 하지 않고 impacted section 만 최소 patch 한다.",
+  "document_source_routes": [
+    {
+      "path": "plans/amplai-master-roadmap.yaml",
+      "kind": "source_asset",
+      "owner": "docs/ROADMAP.md",
+      "security": "INTERNAL",
+      "reason": "Exact existing machine-readable planning source linked by ROADMAP.md. Its declared reference binds original bytes; visibility is internal, without guide promotion, plan rewriting or new approval."
+    },
+    {
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "kind": "source_asset",
+      "owner": "README.md",
+      "security": "INTERNAL",
+      "reason": "Existing README reference to the retained intake compatibility contract. Bind its source bytes without promoting it as a reviewed current guide or authorizing canonical mutation."
+    },
+    {
+      "path": "docs/SEMANTIC-COMPARISON.md",
+      "kind": "source_asset",
+      "owner": "README.md",
+      "security": "INTERNAL",
+      "reason": "Existing README reference to the retained Phase 1 comparison contract. Reference visibility is internal; current-guide approval remains separate."
+    },
+    {
+      "path": "docs/ROADMAP-CHANGES.md",
+      "kind": "source_asset",
+      "owner": "README.md",
+      "security": "INTERNAL",
+      "reason": "Existing README reference to the retained roadmap proposal contract. Preserve the source and its original authority requirements without executing its example commands."
+    },
+    {
+      "path": "tools/amplai-loop-kit",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Installable Markdown and reference examples are package inputs; current Kit guide review binds their complete membership and bytes."
+    },
+    {
+      "path": ".agents/skills",
+      "kind": "source_asset",
+      "owner": ".ai-team/runtime/WORKFLOW.md",
+      "security": "INTERNAL",
+      "reason": "Executable development instructions remain their own source; the current workflow guide documents the controller."
+    },
+    {
+      "path": ".specify/templates",
+      "kind": "source_asset",
+      "owner": ".ai-team/runtime/WORKFLOW.md",
+      "security": "INTERNAL",
+      "reason": "Templates are generation inputs, not independently approved current product guides."
+    },
+    {
+      "path": ".specify/memory/constitution.md",
+      "kind": "source_asset",
+      "owner": ".ai-team/README.md",
+      "security": "INTERNAL",
+      "reason": "Preserve protected project principles as source inputs; do not rewrite or promote them."
+    },
+    {
+      "path": ".ai-team/rules",
+      "kind": "source_asset",
+      "owner": ".ai-team/README.md",
+      "security": "INTERNAL",
+      "reason": "Protected repository rules remain authoritative inputs to the current runtime guide."
+    },
+    {
+      "path": "docs/workstreams",
+      "kind": "historical",
+      "security": "INTERNAL",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion."
+    },
+    {
+      "path": "docs/roadmaps/history",
+      "kind": "historical",
+      "security": "INTERNAL",
+      "reason": "Existing policy identifies these as milestone history. Preserve the exact baseline and provenance."
+    },
+    {
+      "path": "docs/reviews/2026-08-29-platform-kit-audit.md",
+      "kind": "historical",
+      "security": "INTERNAL",
+      "reason": "Retain this dated prior audit as evidence of its original state, not current implementation guidance."
+    },
+    {
+      "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
+      "kind": "source_asset",
+      "owner": "docs/PROPOSALS.md",
+      "security": "INTERNAL",
+      "reason": "Retain the action-contract compatibility source and its original rollout checklist. The current governance and apply boundary is owned by PROPOSALS.md; this Work does not activate channels or reinterpret legacy checklist results."
+    },
+    {
+      "path": "docs/SPECKIT-GRILLME-CHAIN.md",
+      "kind": "historical",
+      "security": "INTERNAL",
+      "reason": "Retain the dated 2026-08-03 defect and resolution record at its exact baseline, not current controller guidance."
+    },
+    {
+      "path": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "kind": "source_asset",
+      "owner": "docs/ROADMAP.md",
+      "security": "INTERNAL",
+      "reason": "The approved product plan remains its own unmodified planning source. ROADMAP.md owns the current implementation-status explanation; future plan diagrams are not claims that target files already exist."
+    },
+    {
+      "path": ".ai-team/AUTONOMY_POLICY.md",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Internal autonomy instruction referenced by the Kit guide and changelog; keep its actual source and owner."
+    },
+    {
+      "path": ".ai-team/install/amplai-loop-kit.json",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Internal local installation receipt referenced for ownership/recovery; classification does not modify the receipt."
+    },
+    {
+      "path": ".ai-team/runtime/LOCAL_SUPERVISOR.md",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Internal supervisor instruction referenced by the Kit guide; not a newly selected release document."
+    },
+    {
+      "path": ".claude/settings.json",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Internal existing host-hook settings referenced by the Kit guide; this route does not change settings or trust."
+    },
+    {
+      "path": ".codex/hooks.json",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/README.md",
+      "security": "INTERNAL",
+      "reason": "Internal existing hook configuration referenced by current Kit guides; no host-setting mutation."
+    },
+    {
+      "path": "scripts/amplai.py",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/CHANGELOG.md",
+      "security": "INTERNAL",
+      "reason": "Internal native command source explicitly referenced by the current changelog; its bytes remain dependency-bound."
+    },
+    {
+      "path": "tests/ai",
+      "kind": "source_asset",
+      "owner": "tools/amplai-loop-kit/CHANGELOG.md",
+      "security": "INTERNAL",
+      "reason": "Finite internal AI/Kit regression source directory referenced by the changelog; exact membership remains bounded and dependency-bound."
+    }
+  ]
 }

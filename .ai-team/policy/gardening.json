@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "purpose": "stale/obsolete/dead/orphan artifact 를 언제 어떻게 분류하고 무엇만 자동 정리할 수 있는지 정한다. 삭제 자체가 목표가 아니다.",
+  "purpose": "정리는 scoped report-only다. 분류, 파일 나이와 Git history는 삭제 권한이 아니다.",
   "domains": [
     "documentation",
     "knowledge",
@@ -20,7 +20,7 @@
       "repository_wide": false
     },
     "full": {
-      "description": "explicit repository gardening Work 또는 audit 에서만 실행한다.",
+      "description": "명시적인 high-risk repository_gardening Work 안에서만 report-only scan한다.",
       "scope": [
         "repository 전체"
       ],
@@ -30,8 +30,8 @@
   },
   "safety_levels": {
     "SAFE_AUTO": {
-      "description": "자동 정리 가능한 명백한 garbage. 정리 후 lightweight verify 한다.",
-      "auto_apply": true
+      "description": "호환 분류만 유지한다. 소유권·재생성·승인·복구 근거 없는 자동 삭제는 실행하지 않는다.",
+      "auto_apply": false
     },
     "EVIDENCE_REQUIRED": {
       "description": "reference/build/test/packaging scan 근거가 모두 모여야 같은 Work 에서 제거할 수 있다.",
@@ -63,23 +63,10 @@
     "legacy_ai_artifact",
     "dead_code"
   ],
-  "safe_auto_patterns": [
-    "**/__pycache__/**",
-    "**/*.pyc",
-    "**/*.pyo",
-    "**/*.bak",
-    "**/*.bak.*",
-    "**/*.orig",
-    "**/*.rej",
-    "**/*~",
-    "**/*.swp",
-    "**/*.swo",
-    "**/.DS_Store",
-    "**/.fuse_hidden*"
-  ],
+  "safe_auto_patterns": [],
   "safe_auto_requires": {
     "untracked_or_ignored": true,
-    "reason": "git 이 추적하는 파일은 SAFE_AUTO 로 지우지 않는다. 되돌릴 수 없는 삭제를 만들지 않기 위해서다."
+    "reason": "Untracked는 소유권·재생성·보존 의무를 증명하지 않는다. normal apply는 report-only다."
   },
   "human_gated_paths": [
     "vault/**",
@@ -273,9 +260,28 @@
       "public API change",
       "architecture change"
     ],
-    "review_not_required_when": [
-      "SAFE_AUTO generated garbage 삭제만 수행"
-    ]
+    "review_not_required_when": []
   },
-  "rule": "candidate 는 삭제 제안이지 삭제가 아니다. proposal only — harness/ontology/production 자산을 자동 수정하지 않는다."
+  "rule": "Normal work is incremental report-only after documentation and review. Full scan requires an explicit high-risk repository_gardening Work. Retirement application has no public CLI and requires separate exact authority and verified recovery.",
+  "generated_candidate_patterns": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/.DS_Store"
+  ],
+  "user_backup_patterns": [
+    "*.bak",
+    "**/*.bak",
+    "*.bak.*",
+    "**/*.bak.*",
+    "*.orig",
+    "**/*.orig",
+    "*.rej",
+    "**/*.rej",
+    "*~",
+    "**/*~",
+    "**/*.swp",
+    "**/*.swo",
+    "**/.fuse_hidden*"
+  ]
 }
