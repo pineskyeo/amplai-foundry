@@ -53,14 +53,19 @@ const directory = await fs.realpath(input);
 await fs.mkdir(evidence, { recursive: true });
 const pages = (await fs.readdir(directory)).filter(name => name.endsWith(".html")).sort();
 assert.ok(pages.includes("index.html") && pages.length > 1);
-let executable;
+const available = [];
 for (const candidate of [process.env.CHROME_PATH,
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium", "/usr/bin/chromium", "/usr/bin/google-chrome"
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  // A packaged browser comes before a confined one. A snap gets its own private
+  // /tmp and user namespace, so it never reaches the profile or the bundle this
+  // process created, and it stays alive without ever serving the endpoint.
+  "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium-browser", "/usr/bin/chromium"
 ].filter(Boolean)) {
-  try { await fs.access(candidate); executable = candidate; break; } catch {}
+  try { await fs.access(candidate); available.push(candidate); } catch {}
 }
-assert.ok(executable, "ENVIRONMENT_UNAVAILABLE: Chrome/Chromium required; not a skipped PASS");
+assert.ok(available.length, "ENVIRONMENT_UNAVAILABLE: Chrome/Chromium required; not a skipped PASS");
 // Ubuntu 24.04 and later confine unprivileged user namespaces with AppArmor, so
 // Chrome's own process sandbox cannot start there. That sandbox is unrelated to
 // the isolation this fixture asserts, which comes from the disposable profile,
@@ -70,29 +75,43 @@ try {
   const setting = await fs.readFile("/proc/sys/kernel/apparmor_restrict_unprivileged_userns", "utf8");
   restrictedUserns = setting.trim() === "1";
 } catch {}
-const profile = await fs.mkdtemp(path.join(os.tmpdir(), "amplai-document-browser-"));
-const child = spawn(executable, ["--headless=new", "--disable-background-networking", "--disable-extensions",
-  "--no-first-run", "--remote-debugging-port=0", "--remote-debugging-address=127.0.0.1",
-  "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", `--user-data-dir=${profile}`,
-  ...(restrictedUserns ? ["--no-sandbox"] : []), "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
-let exited = false;
-let stopped = null;
-let diagnostics = "";
-child.stderr.on("data", chunk => { diagnostics = (diagnostics + chunk).slice(-2000); });
-const exit = new Promise(resolve => child.once("exit", (status, signal) => {
-  exited = true; stopped = signal ?? status; resolve();
-}));
+const attempts = [];
+const start = async executable => {
+  const profile = await fs.mkdtemp(path.join(os.tmpdir(), "amplai-document-browser-"));
+  const attempt = { executable, profile, exited: false, stopped: null, diagnostics: "", port: null };
+  attempt.child = spawn(executable, ["--headless=new", "--disable-background-networking", "--disable-extensions",
+    "--no-first-run", "--remote-debugging-port=0", "--remote-debugging-address=127.0.0.1",
+    "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", `--user-data-dir=${profile}`,
+    ...(restrictedUserns ? ["--no-sandbox"] : []), "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+  attempt.child.stderr.on("data", chunk => { attempt.diagnostics = (attempt.diagnostics + chunk).slice(-2000); });
+  attempt.exit = new Promise(resolve => attempt.child.once("exit", (status, signal) => {
+    attempt.exited = true; attempt.stopped = signal ?? status; resolve();
+  }));
+  attempts.push(attempt);
+  // The endpoint is announced on stderr as well as recorded in the profile.
+  for (let n = 0; n < 300 && !attempt.port && !attempt.exited; n++) {
+    const announced = /DevTools listening on ws:\/\/127\.0\.0\.1:([0-9]+)\//.exec(attempt.diagnostics);
+    if (announced) { attempt.port = announced[1]; break; }
+    try {
+      const [recorded] = (await fs.readFile(path.join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/);
+      if (/^[0-9]+$/.test(recorded)) { attempt.port = recorded; break; }
+    } catch {}
+    await delay(40);
+  }
+  return attempt;
+};
 let client;
 try {
-  let port;
-  for (let n = 0; n < 300 && !port && !exited; n++) {
-    try { [port] = (await fs.readFile(path.join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/); }
-    catch { await delay(40); }
+  let browser;
+  for (const executable of available) {
+    browser = await start(executable);
+    if (browser.port) break;
   }
-  // Report why the browser refused instead of an unattributable failure.
-  assert.ok(port && /^[0-9]+$/.test(port), "Isolated browser did not start: "
-    + `executable=${executable} no_sandbox=${restrictedUserns} exit=${stopped} stderr=${diagnostics.trim()}`);
-  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" })).json();
+  // Report why every candidate refused instead of an unattributable failure.
+  assert.ok(browser && browser.port, "Isolated browser did not start: " + attempts.map(item =>
+    `executable=${item.executable} no_sandbox=${restrictedUserns} exit=${item.stopped}`
+    + ` stderr=${item.diagnostics.trim()}`).join(" | "));
+  const target = await (await fetch(`http://127.0.0.1:${browser.port}/json/new?about:blank`, { method: "PUT" })).json();
   client = await new Client(target.webSocketDebuggerUrl).open();
   const version = await client.send("Browser.getVersion");
   await client.send("Page.enable");
@@ -167,9 +186,11 @@ try {
   process.stdout.write(JSON.stringify(result) + "\n");
 } finally {
   if (client) client.close();
-  if (!exited) { child.kill("SIGTERM"); await Promise.race([exit, delay(3000)]); }
-  if (!exited) { child.kill("SIGKILL"); await exit; }
-  // Only this process's newly-created disposable browser profile is removed.
-  assert.ok(profile.startsWith(path.join(os.tmpdir(), "amplai-document-browser-")));
-  await fs.rm(profile, { recursive: true, force: true });
+  for (const attempt of attempts) {
+    if (!attempt.exited) { attempt.child.kill("SIGTERM"); await Promise.race([attempt.exit, delay(3000)]); }
+    if (!attempt.exited) { attempt.child.kill("SIGKILL"); await attempt.exit; }
+    // Only this process's newly-created disposable browser profiles are removed.
+    assert.ok(attempt.profile.startsWith(path.join(os.tmpdir(), "amplai-document-browser-")));
+    await fs.rm(attempt.profile, { recursive: true, force: true });
+  }
 }
