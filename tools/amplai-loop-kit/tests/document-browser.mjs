@@ -61,20 +61,37 @@ for (const candidate of [process.env.CHROME_PATH,
   try { await fs.access(candidate); executable = candidate; break; } catch {}
 }
 assert.ok(executable, "ENVIRONMENT_UNAVAILABLE: Chrome/Chromium required; not a skipped PASS");
+// Ubuntu 24.04 and later confine unprivileged user namespaces with AppArmor, so
+// Chrome's own process sandbox cannot start there. That sandbox is unrelated to
+// the isolation this fixture asserts, which comes from the disposable profile,
+// the NOTFOUND resolver rule and the offline emulation below.
+let restrictedUserns = false;
+try {
+  const setting = await fs.readFile("/proc/sys/kernel/apparmor_restrict_unprivileged_userns", "utf8");
+  restrictedUserns = setting.trim() === "1";
+} catch {}
 const profile = await fs.mkdtemp(path.join(os.tmpdir(), "amplai-document-browser-"));
 const child = spawn(executable, ["--headless=new", "--disable-background-networking", "--disable-extensions",
   "--no-first-run", "--remote-debugging-port=0", "--remote-debugging-address=127.0.0.1",
-  "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
+  "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", `--user-data-dir=${profile}`,
+  ...(restrictedUserns ? ["--no-sandbox"] : []), "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
 let exited = false;
-const exit = new Promise(resolve => child.once("exit", () => { exited = true; resolve(); }));
+let stopped = null;
+let diagnostics = "";
+child.stderr.on("data", chunk => { diagnostics = (diagnostics + chunk).slice(-2000); });
+const exit = new Promise(resolve => child.once("exit", (status, signal) => {
+  exited = true; stopped = signal ?? status; resolve();
+}));
 let client;
 try {
   let port;
-  for (let n = 0; n < 150 && !port && !exited; n++) {
+  for (let n = 0; n < 300 && !port && !exited; n++) {
     try { [port] = (await fs.readFile(path.join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/); }
     catch { await delay(40); }
   }
-  assert.ok(port && /^[0-9]+$/.test(port), "Isolated browser did not start");
+  // Report why the browser refused instead of an unattributable failure.
+  assert.ok(port && /^[0-9]+$/.test(port), "Isolated browser did not start: "
+    + `executable=${executable} no_sandbox=${restrictedUserns} exit=${stopped} stderr=${diagnostics.trim()}`);
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" })).json();
   client = await new Client(target.webSocketDebuggerUrl).open();
   const version = await client.send("Browser.getVersion");
