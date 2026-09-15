@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "required_checks": [
+    "terminology",
+    "current_behavior",
+    "system_boundary",
+    "invariants",
+    "source_of_truth",
+    "contradictions",
+    "acceptance",
+    "verifier"
+  ],
+  "ready_statuses": ["ready", "not_applicable"],
+  "blocking_statuses": ["unknown", "conflict"],
+  "mandatory_for_work_types": [
+    "domain_heavy",
+    "architecture",
+    "operations",
+    "repository_gardening"
+  ],
+  "mandatory_for_risks": ["high"],
+  "fast_path_work_types": ["tiny_change"],
+  "discovery_sources": [
+    "source_code",
+    "tests",
+    "api_schema",
+    "config",
+    "active_docs",
+    "decisions",
+    "git_history",
+    "runtime_evidence",
+    "ontology"
+  ],
+  "rule": "blocking unknown 또는 conflict가 남으면 implementation을 시작하지 않는다. 저장소와 evidence로 확인할 수 없는 business/architecture decision만 사람에게 묻는다."
+}

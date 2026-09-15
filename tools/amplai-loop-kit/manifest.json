@@ -98,12 +98,12 @@
     {
       "mode": "644",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "sha256": "sha256:f30a30589ee03ad339b9e3a665f44af3e165ce8ad87255dd7b96659beac96cc4"
+      "sha256": "sha256:e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
     },
     {
       "mode": "644",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "sha256": "sha256:02e03c628759b8993893b1aa5d506fa94361228a71a22832eb15261b2320006a"
+      "sha256": "sha256:5e380f810ea924a17c7d5492742d7afcc7d56a0d271507974e63d1b72d976b60"
     },
     {
       "mode": "644",
@@ -163,7 +163,7 @@
     {
       "mode": "755",
       "path": "scripts/amplai.py",
-      "sha256": "sha256:3378002071bf78134adb06a77fbc4081692faaeb9605c4802aee4e200bdf4fea"
+      "sha256": "sha256:3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135"
     },
     {
       "mode": "755",
@@ -178,7 +178,7 @@
     {
       "mode": "755",
       "path": "scripts/amplai_runtime.py",
-      "sha256": "sha256:dfc039ae20be361b1a5a06e919c5df3c980d80f2519ecf627f10caeaf9a2accf"
+      "sha256": "sha256:f558c9a929e6272f2291ebc94940df77b18018171c358f2ce6926f137972ed6f"
     },
     {
       "mode": "755",
@@ -188,7 +188,7 @@
     {
       "mode": "644",
       "path": "tests/ai/test_amplai_async_runtime.py",
-      "sha256": "sha256:571f7664cbf18d54f948d83f99d62cdccbfe6485942521f08ac875f30b65d9df"
+      "sha256": "sha256:ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7"
     },
     {
       "mode": "644",
@@ -218,5 +218,5 @@
   ],
   "runtime_protocol": "amplai.async-cross-app.v1",
   "schema_version": "1.0",
-  "version": "2.4.0"
+  "version": "2.5.0"
 }

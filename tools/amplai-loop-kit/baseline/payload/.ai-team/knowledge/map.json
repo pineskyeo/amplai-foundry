@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "project": "generic",
+  "selection": {
+    "exclude_status": [
+      "deprecated",
+      "superseded",
+      "rejected"
+    ],
+    "max_sources": 1000
+  },
+  "sources": [
+    {
+      "id": "local-rules",
+      "path": "AGENTS.md",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 100,
+      "keywords": [
+        "work",
+        "scope",
+        "rules"
+      ]
+    },
+    {
+      "id": "runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 100,
+      "keywords": [
+        "work",
+        "runtime",
+        "baseline"
+      ]
+    },
+    {
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "memory_type": "stable_knowledge",
+      "status": "active",
+      "priority": 100,
+      "keywords": [
+        "verifier",
+        "baseline"
+      ]
+    }
+  ]
+}

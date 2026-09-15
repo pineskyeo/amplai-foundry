@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "id": "generic",
+  "additional_skills": [],
+  "public_helpers": [],
+  "forbidden_paths": [],
+  "fixture_refs": []
+}

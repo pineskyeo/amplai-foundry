@@ -2553,6 +2553,7 @@ class ProjectStore(object):
                     "result": dependency.get("result"),
                 }
             )
+        terminal = work.get("status") in TERMINAL_WORK_STATUSES
         context = {
             "schema_version": SCHEMA_VERSION,
             "kind": "work_context",
@@ -2568,8 +2569,13 @@ class ProjectStore(object):
             "evidence": evidence,
             "instructions": {
                 "source_of_truth": "Project Store objects, not rendered handoff text",
-                "entry_point": "/work",
-                "completion_rule": "record evidence and transition the Work durably before the worker exits",
+                "entry_point": None if terminal else "/work",
+                "read_only": terminal,
+                "completion_rule": (
+                    "terminal Work is read-only; do not claim or restart this Work"
+                    if terminal else
+                    "record evidence and transition the Work durably before the worker exits"
+                ),
             },
         }
         return seal(context)
@@ -2603,6 +2609,19 @@ class ProjectStore(object):
             lines.append("- %s" % item)
         if not work.get("acceptance"):
             lines.append("- (none)")
+        result = work.get("result") or {}
+        if result:
+            lines.extend(["", "## Recorded Result", ""])
+            lines.append("- Summary: %s" % result.get("summary", ""))
+            lines.append("- Completed at: %s" % result.get("completed_at", ""))
+            for field, label in (
+                ("outputs", "Outputs"), ("evidence_refs", "Evidence references"),
+                ("decision_refs", "Decision references"),
+            ):
+                lines.extend(["", "### %s" % label, ""])
+                lines.extend("- %s" % value for value in result.get(field) or [])
+                if not result.get(field):
+                    lines.append("- none")
         lines.extend(["", "## Dependencies", ""])
         for dependency in context["dependencies"]:
             lines.append(
@@ -2644,17 +2663,21 @@ class ProjectStore(object):
             )
         if not context["contracts"]:
             lines.append("- none")
-        lines.extend(
-            [
-                "",
-                "## Resume",
-                "",
+        if context["instructions"]["read_only"]:
+            lines.extend(["", "## Terminal Work", ""])
+            if work["status"] == "CANCELLED":
+                lines.append("This Work was cancelled; this is not a successful completion.")
+            lines.append("This Work is read-only. Do not claim or restart this Work.")
+            lines.append(
+                "Read the recorded result and references. Select a separately authorized "
+                "READY Work from the Project Store for further implementation."
+            )
+        else:
+            lines.extend([
+                "", "## Resume", "",
                 "Use `/work` (Claude Code) or `$work` (Codex) in the target app. Read the durable Work Context first, then update the same Work object before ending the run.",
-                "",
-                "Context hash: `%s`" % context[HASH_FIELD],
-                "",
-            ]
-        )
+            ])
+        lines.extend(["", "Context hash: `%s`" % context[HASH_FIELD], ""])
         return "\n".join(lines)
 
     def session_path(self, app_id):

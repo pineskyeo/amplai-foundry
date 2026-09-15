@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:amplai:doc-impact:1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "work_id",
+    "status",
+    "changed_sources",
+    "impacted_documents",
+    "evidence",
+    "generated_from",
+    "content_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "work_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["NOT_APPLICABLE", "ACTIVE", "STALE", "RESOLVED"]},
+    "reason": {"type": "string"},
+    "semantic_change": {"type": "boolean"},
+    "changed_sources": {"type": "array", "items": {"type": "string"}},
+    "non_semantic_sources": {"type": "array", "items": {"type": "string"}},
+    "impacted_documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "reason", "action", "state", "discovered_by"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "category": {"type": "string"},
+          "reason": {"type": "string", "minLength": 1},
+          "action": {"enum": ["update", "supersede", "deprecate", "create_candidate", "acknowledge", "none", "pending"]},
+          "state": {"enum": ["ACTIVE", "STALE", "SUPERSEDED", "DEPRECATED", "CANDIDATE"]},
+          "handled": {"type": "boolean"},
+          "discovered_by": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "evidence": {"type": "array", "items": {"type": "string"}},
+          "superseded_by": {"type": "string"}
+        }
+      }
+    },
+    "acknowledged": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "사람이 '영향 없음'으로 판단한 문서. 다음 impact 실행에서도 유지된다."
+    },
+    "broken_references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["document", "reference"],
+        "properties": {
+          "document": {"type": "string"},
+          "reference": {"type": "string"},
+          "line": {"type": "integer"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "generated_from": {
+      "type": "object",
+      "required": ["commit", "policy_sha256"],
+      "properties": {
+        "commit": {"type": "string"},
+        "worktree_state": {"type": "string"},
+        "worktree_dirty": {"type": "boolean"},
+        "generated_at": {"type": "string"},
+        "contract_sha256": {"type": "string"},
+        "policy_sha256": {"type": "string"},
+        "mode": {"type": "string"}
+      }
+    },
+    "content_hash": {"type": "string", "minLength": 64, "maxLength": 64}
+  }
+}

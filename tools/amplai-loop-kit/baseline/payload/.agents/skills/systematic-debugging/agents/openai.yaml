@@ -1,0 +1,5 @@
+interface:
+  display_name: "Systematic Debugging"
+  short_description: "Internal AMPLAI capability invoked by a controller"
+policy:
+  allow_implicit_invocation: false
