@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "file": "semantic-negative/duplicate-acceptance.json",
+      "schema": "goal-contract",
+      "semantic_rule": "SEM-04",
+      "expected_runtime_rejection": "duplicate criterion",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/self-cycle.json",
+      "schema": "workgraph",
+      "semantic_rule": "SEM-06",
+      "expected_runtime_rejection": "cycle",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/duplicate-readiness.json",
+      "schema": "resolution",
+      "semantic_rule": "SEM-03",
+      "expected_runtime_rejection": "missing area despite 8 rows",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/expired-before-issued.json",
+      "schema": "execution-grant",
+      "semantic_rule": "SEM-17",
+      "expected_runtime_rejection": "expiry before not_before",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/contract-ref-stale.json",
+      "schema": "workgraph",
+      "semantic_rule": "SEM-09",
+      "expected_runtime_rejection": "wrong active contract revision",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/nonexistent-criterion.json",
+      "schema": "workgraph",
+      "semantic_rule": "SEM-08",
+      "expected_runtime_rejection": "no acceptance coverage",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/untrusted-signature.json",
+      "schema": "execution-grant",
+      "semantic_rule": "SEM-11",
+      "expected_runtime_rejection": "issuer key not trusted",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "file": "semantic-negative/incomplete-governing-set.json",
+      "schema": "context-bundle",
+      "semantic_rule": "SEM-18",
+      "expected_runtime_rejection": "context not ready",
+      "execution_status": "NOT_RUN"
+    }
+  ],
+  "note": "These files deliberately pass structural validation. A correct future runtime must reject/hold them using the named semantic rule; that runtime test is not executed here."
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/eval-experiment.schema.json",
+  "title": "AMPLAI V3 eval-experiment",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "experiment_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "proposal_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "baseline_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "candidate_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "corpus_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "verifier_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "environment_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "mode": {
+      "enum": [
+        "static",
+        "replay",
+        "sandbox_rerun",
+        "shadow",
+        "canary"
+      ]
+    },
+    "primary_endpoint": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "analysis_plan_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "sampling_plan_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "safety_stop_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "holdout_policy_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "budget": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/budget"
+    },
+    "approval_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "frozen_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    }
+  },
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "scope",
+    "proposal_ref",
+    "baseline_ref",
+    "candidate_ref",
+    "corpus_ref",
+    "verifier_ref",
+    "environment_ref",
+    "mode",
+    "primary_endpoint",
+    "analysis_plan_ref",
+    "sampling_plan_ref",
+    "safety_stop_rules",
+    "holdout_policy_ref",
+    "budget",
+    "approval_ref",
+    "frozen_at"
+  ],
+  "additionalProperties": false
+}

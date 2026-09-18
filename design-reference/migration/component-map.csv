@@ -1,0 +1,39 @@
+﻿source_path_or_prefix,matching_files,action,proposed_target,reason,retirement_condition,delete_authorized
+scripts/amplai_runtime.py,1,promote_semantics,src/amplai_foundry/runtime/execution/,Work/lease/DAG semantics 승격; portable interface thin adapter,동일 상태/권한 부정 테스트 + crash/fence tests,False
+scripts/amplai_orchestration_bridge.py,1,replace_frontend_logic,src/amplai_foundry/runtime/goals/,hint 필수 분기를 resolver로 대체; target 검증 유지,ambiguous hold + no-hint resolution,False
+scripts/amplai_supervisor.py,1,refactor_adapter,src/amplai_foundry/runtime/execution/,deterministic scheduling/worker supervision 책임 보존,duplicate spawn/lease recovery,False
+scripts/amplai_hosts.py,1,split_drivers,src/amplai_foundry/agent_drivers/,Claude/Codex typed adapters와 capability qualification,exact resume/stream parser,False
+scripts/loopv2.py,1,decompose_after_port,src/amplai_foundry/runtime/ + tools/amplai-loop-kit/,contract/context/verify semantics 중앙화; compat facade 보존,existing behavior+new gate tests,False
+scripts/loopctl.py,1,thin_cli,tools/amplai-loop-kit/payload/scripts/,public work/design command surface로 수렴,legacy invocation compatibility + schema major checks,False
+scripts/amplai_docs.py,1,extract_capability_pack,packs/documents/,document lifecycle·render QA pack으로 분리,actual rendered artifact + provenance,False
+scripts/kit_distribute.py,1,retain_harden,src/amplai_foundry/distribution/ + tools/amplai-loop-kit/,signed release/dry-run/non-destructive update 강화,owned path/hash/rollback tests,False
+scripts/amplai_hook.py,1,thin_lifecycle_hook,tools/amplai-loop-kit/payload/scripts/,session hooks는 runtime service 호출·context map,no mandatory hidden state,False
+scripts/amplai_work_status_projection.py,1,retain_projection,src/amplai_foundry/control_plane/,status는 원장 아닌 projection,cursor/gap/scope tests,False
+src/amplai_foundry/governance/,35,keep_protected_extend,same package + authority adapter,Source/Decision/ApplyGrant authority 보존,all current governance regressions,False
+src/amplai_foundry/governance/legacy_gates.py,1,port_before_retire,src/amplai_foundry/governance/,현재 importer 존재; rename 자체 목표 아님,call graph cleared + semantic equivalence,False
+src/amplai_foundry/governance/legacy_migration.py,1,isolate_then_replace,src/amplai_foundry/governance/,migration/verification/rollback behavior 보존,old records+failed migration recovery,False
+src/amplai_foundry/control_plane/,14,extend,same package,Runtime port/API/outbox/scope 규칙 확장,auth/idempotency/events + store tests,False
+src/amplai_foundry/projects/,6,reuse_registry,same package + AppBinding adapters,새 target resolver가 기존 registry 사용,alias/scope/ref freshness,False
+src/amplai_foundry/domain/,8,keep_domain_clean,same package,8 memory kinds/metadata/provenance 보존,kit-absent domain tests,False
+src/amplai_foundry/semantics/,4,reuse_ontology_adapter,same package + knowledge_runtime/,ontology 새 저장소 강제 없이 확장,mapping/conflict tests,False
+src/amplai_foundry/verification/,2,extend_without_overwrite,same package + runtime verification modules,기존 canonical validation 보존; work/evidence 판정 추가,old verification tests + current artifact verdict,False
+.ai-team/runtime/WORKFLOW.md,2,replace_with_gate_map,tools/amplai-loop-kit/payload/.ai-team/runtime/,long mandatory stages→invariants/adaptive strategy,"all mandatory gates reachable, no fast-path bypass",False
+.ai-team/contracts/work-contract.schema.json,1,versioned_adapter,contracts/schemas/goal-contract.schema.json,v2 imported semantics 보존; gardening drift 정리,schema/semantic/migration tests,False
+.agents/skills/work/,1,keep_surface,generated .agents/skills/work/,"public entry 유지, core logic 제거",host invocation conformance,False
+.agents/skills/design/,1,keep_surface,generated .agents/skills/design/,design-only enforcement + embedded questioning,no implementation effects,False
+.agents/skills/grill-me/,2,retire_public_after_merge,packs/spec/,유효 questioning 규칙 merge 후 표면 축소,lost invariant/question review,False
+.agents/skills/grilling/,2,retire_public_after_merge,packs/spec/,grill-me/design 중복 제거,same question ledger regression,False
+.agents/skills/eli12/,18,optional_utility,packs/utility/,core 기본 설치 제외,user opt-in/owned paths preserved,False
+.agents/skills/speckit-,18,internalize_pack,packs/spec/,public 9 skill surface 대신 내부 capability,spec workflow acceptance,False
+.agents/skills/code-review/,2,internal_capability,packs/software/,"review 내부 호출, 독립성 유지",protected verifier review,False
+.agents/skills/systematic-debugging/,2,internal_capability,packs/software/,debug strategy의 진단 capability,failure classification tests,False
+tools/amplai-loop-kit/payload/,24,canonical_distribution_surface,same path reorganized,payload→generated installed surfaces 단일 제작 경로,payload/installed digest integrity,False
+tools/amplai-loop-kit/baseline/,71,retain_until_migration_verified,compatibility archive,baseline rollback 자료 삭제 금지,rollback rehearsal,False
+tools/amplai-loop-kit/manifest.json,1,harden_not_blind_delete,same path with v3 manifest,required/optional/owned markers 의미 보존,handoff optional + conflict tests,False
+plans/amplai-master-roadmap.yaml,1,rebaseline,same canonical roadmap or governed V3 replacement,구현/후보/검증/배포 상태 분리,req/task/test/evidence refs valid,False
+specs/,916,separate_hot_cold,specs/active + specs/canonical + artifacts/evidence/,active 정의와 historic evidence 분리,live references/backlinks retained,False
+vault/,57,preserve_canonical,same canonical store,파일 이동으로 authority·history 소실 금지,canonical IDs/source provenance,False
+.amplai/,77,do_not_ship_as_canonical,runtime state location,동작 상태·token·local session을 Git/canonical context에서 제외,secret scan/state migration,False
+tests/,78,preserve_expand,tests/ + new conformance/eval suite,old tests 유지하며 new faults/safety 추가,no weakening regression/golden,False
+AGENTS.md,2,thin_progressive_map,same generated marker-aware entry,작은 지도와 필수 안전 경계,marker ownership/context completeness,False
+CLAUDE.md,2,thin_host_map,same generated marker-aware entry,host syntax only + core policy refs,host-specific no duplication,False

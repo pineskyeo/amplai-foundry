@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/verdict.schema.json",
+  "title": "AMPLAI V3 verdict",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "verdict_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "contract_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "graph_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "acceptance_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "subject_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "verifier_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "outcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "waived"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "waiver_decision_ref": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "issued_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "attestation_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    }
+  },
+  "required": [
+    "schema_version",
+    "verdict_id",
+    "scope",
+    "contract_ref",
+    "graph_ref",
+    "acceptance_id",
+    "subject_artifact",
+    "evidence_refs",
+    "verifier_ref",
+    "outcome",
+    "reason",
+    "waiver_decision_ref",
+    "issued_at",
+    "attestation_ref"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "waived"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "waiver_decision_ref": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+          }
+        }
+      }
+    }
+  ]
+}

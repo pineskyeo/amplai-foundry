@@ -1,0 +1,208 @@
+{
+  "findings": [
+    {
+      "id": "BASE-01",
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "match_lines": [
+        7
+      ],
+      "anchor": "서로 다른 두 release train",
+      "finding": "Platform/Kit 독립 release train과 domain→Kit 의존 금지. 유지한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-02",
+      "path": "pyproject.toml",
+      "sha256": "cd4359f130e0a76c23ec8bb6e5f2e9cfc7a37f314bbaef76f618286962b75ec3",
+      "match_lines": [
+        10
+      ],
+      "anchor": "requires-python",
+      "finding": "Platform Python >=3.11. CP 기본값과 old client 경계를 분리한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-03",
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "match_lines": [
+        12
+      ],
+      "anchor": "로컬 통합 후보",
+      "finding": "README는 Kit2.5.0을 로컬 후보로 말한다. fleet release 검증으로 해석하면 안 된다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-04",
+      "path": "tools/amplai-loop-kit/VERSION",
+      "sha256": "2ad7b0c3f0ede58c3165b7a8a5479e890a758d39bfe8683eaef50ce6afad7232",
+      "match_lines": [
+        1
+      ],
+      "anchor": "2.4.0",
+      "finding": "VERSION은2.4.0. README candidate와 release truth reconciliation 필요.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-05",
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+      "match_lines": [
+        1240
+      ],
+      "anchor": "def _assert_acyclic_unlocked",
+      "finding": "Work dependency와 cycle validator가 이미 존재. 새 generic graph framework를 필수로 넣지 않는다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-06",
+      "path": "scripts/amplai_orchestration_bridge.py",
+      "sha256": "f9e8409740f369920c4dcb8ded382d0c5c28b975776885a3ab04684c59b636c9",
+      "match_lines": [
+        47
+      ],
+      "anchor": "TARGET_APP_REQUIRED",
+      "finding": "target hint 없음에 HOLD. 사용자 hint 의무는 resolver로 대체하되 resolved target 의무 유지.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-07",
+      "path": "tools/amplai-loop-kit/manifest.json",
+      "sha256": "38398b3786c854ff82dc12893ebb00a85930a76b392cbacb62ef7f2cc088c62d",
+      "match_lines": [
+        56
+      ],
+      "anchor": ".agents/skills/handoff/SKILL.md",
+      "finding": "인접 marker는 required:false,create_if_missing:false. 미설치만으로 manifest 결함 확정 불가.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-08",
+      "path": "src/amplai_foundry/governance/publish_resolution.py",
+      "sha256": "948bb9ad7abdf63190b1cd32c0340b085469d37d40265471e32a141e00941298",
+      "match_lines": [
+        22
+      ],
+      "anchor": "legacy_gates",
+      "finding": "현재 publish path가 legacy guard를 import한다. 무조건 삭제 불가.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-09",
+      "path": "src/amplai_foundry/governance/store.py",
+      "sha256": "d3c5a158fe17b3727e414a0ab1437381aa1793f83def6870c58ef922b0c4b6e5",
+      "match_lines": [
+        32,
+        36,
+        39,
+        207,
+        315
+      ],
+      "anchor": "legacy_migration",
+      "finding": "store가 legacy implementation을 동적으로 연결한다. behavior equivalence 후 대체한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-10",
+      "path": ".ai-team/contracts/README.md",
+      "sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9",
+      "match_lines": [
+        20
+      ],
+      "anchor": "repository_gardening",
+      "finding": "계약 README는 repository_gardening work_type을 포함한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-11",
+      "path": "scripts/loopv2.py",
+      "sha256": "c489dabf540c3a9b75ac4d311b76b1a0a9e25d76bc01daec0226834ce018ab1f",
+      "match_lines": [
+        1931
+      ],
+      "anchor": "contract.get(\"work_type\") != \"repository_gardening\"",
+      "finding": "실제 gardening guard도 repository_gardening를 요구한다. 현재 schema enum과 drift 점검.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-12",
+      "path": "plans/amplai-master-roadmap.yaml",
+      "sha256": "fc9a5675be540f099822d994c26d62b65d801fabe443fd5d19cd08c6e7d3c255",
+      "match_lines": [
+        5
+      ],
+      "anchor": "2026-07-28",
+      "finding": "로드맵의 갱신일과 현재 module presence가 다르다. 실제 검증상태로 rebaseline한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-13",
+      "path": "src/amplai_foundry/control_plane/store.py",
+      "sha256": "a91f45eefb2fe1a29a53e6f0e6a8848ad235b091761c473b3c5bf89252a5801a",
+      "match_lines": [
+        117,
+        136,
+        137
+      ],
+      "anchor": "cp_outbox",
+      "finding": "Control plane outbox/storage 자산을 재사용·연장할 수 있다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-14",
+      "path": "scripts/amplai_hosts.py",
+      "sha256": "cebdfff825af78d1c7d255d3241eb6ab2004749c3ef707ab5f575c850db4a039",
+      "match_lines": [
+        106
+      ],
+      "anchor": "class ClaudeCodeHostAdapter",
+      "finding": "host abstraction 시작점이 존재. typed provider decoder/qualification을 강화한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-15",
+      "path": "scripts/amplai_hosts.py",
+      "sha256": "cebdfff825af78d1c7d255d3241eb6ab2004749c3ef707ab5f575c850db4a039",
+      "match_lines": [
+        147
+      ],
+      "anchor": "class CodexHostAdapter",
+      "finding": "Codex host 경계를 모델 이름과 분리한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    },
+    {
+      "id": "BASE-16",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "match_lines": [
+        12,
+        14,
+        70,
+        85,
+        97,
+        175
+      ],
+      "anchor": "readiness",
+      "finding": "기존 readiness·context·bounded verify·gardening 원칙을 adaptive gate로 재구성한다.",
+      "method": "static inspection",
+      "verified_anchor_present": true
+    }
+  ],
+  "repository_gardening_absent_from_work_contract_schema": true
+}

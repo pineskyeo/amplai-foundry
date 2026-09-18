@@ -1,0 +1,25 @@
+{
+  "schema_version": "3.0.0",
+  "profile_id": "fixture-profile-id",
+  "provider": "fixture-local",
+  "provider_model_id": "REQUIRES-IMPLEMENTATION-TIME-PIN",
+  "model_version_policy": "pinned",
+  "driver_profile_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "reasoning_profile": "fixture-reasoning-profile",
+  "data_classes_allowed": [
+    "internal"
+  ],
+  "required_capabilities": [],
+  "context_limit_tokens": 1,
+  "price_snapshot_ref": null,
+  "qualification_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "enabled": false
+}

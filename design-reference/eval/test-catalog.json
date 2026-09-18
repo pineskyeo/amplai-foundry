@@ -1,0 +1,2527 @@
+{
+  "version": "3.0.0",
+  "execution_status": "ALL_RUNTIME_CASES_SPECIFIED_NOT_EXECUTED",
+  "tests": [
+    {
+      "id": "T-001",
+      "group": "scope",
+      "name": "Cross-project object denial",
+      "given": "Actor A and Object B in different projects",
+      "when": "GET/POST with B ID under A token",
+      "expected": "scoped NOT_FOUND or SCOPE_DENIED; no content/event leakage",
+      "gates": [
+        "G-01"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-002",
+      "group": "scope",
+      "name": "Actor JSON forgery",
+      "given": "worker token with caller actor.kind=human/admin",
+      "when": "submit approval-related command",
+      "expected": "server ActorContext prevails; no grant issued",
+      "gates": [
+        "G-01"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-003",
+      "group": "scope",
+      "name": "Idempotent exact repeat",
+      "given": "same actor scope key and payload already committed",
+      "when": "repeat command after lost ACK",
+      "expected": "original response returned; no second work/effect",
+      "gates": [
+        "G-01"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-004",
+      "group": "scope",
+      "name": "Idempotency payload conflict",
+      "given": "same scoped key with different payload",
+      "when": "repeat altered command",
+      "expected": "IDEMPOTENCY_CONFLICT; original state unchanged",
+      "gates": [
+        "G-01"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-005",
+      "group": "scope",
+      "name": "Missing authentication",
+      "given": "listener has configured authentication",
+      "when": "request worker/effect/status endpoints without token",
+      "expected": "401; no anonymous status/data leakage",
+      "gates": [
+        "G-01"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-006",
+      "group": "goal",
+      "name": "Resolve without target hint",
+      "given": "intent names known app alias and registry evidence",
+      "when": "resolve target_hints empty",
+      "expected": "verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence",
+      "gates": [
+        "G-02",
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-04",
+        "INV-05",
+        "INV-06",
+        "INV-20"
+      ]
+    },
+    {
+      "id": "T-007",
+      "group": "goal",
+      "name": "Ambiguous target hold",
+      "given": "two authorized apps share an alias",
+      "when": "resolve intent",
+      "expected": "hold + one consolidated question; no write dispatch",
+      "gates": [
+        "G-02",
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-04",
+        "INV-05",
+        "INV-06",
+        "INV-20"
+      ]
+    },
+    {
+      "id": "T-008",
+      "group": "goal",
+      "name": "Existing fact avoids question",
+      "given": "build commands and invariants are in canonical repo facts",
+      "when": "resolve rough request",
+      "expected": "read sources, do not ask already-answerable technical questions",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-009",
+      "group": "goal",
+      "name": "Unverifiable goal rejected",
+      "given": "objective says make better, no measurable/human rubric bindings",
+      "when": "freeze contract",
+      "expected": "ACCEPTANCE_UNBOUND or critic blocking findings",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-010",
+      "group": "goal",
+      "name": "Design stays design",
+      "given": "mode design and requested source implementation effect",
+      "when": "admission/dispatch",
+      "expected": "DESIGN_SCOPE_VIOLATION; only design artifact writes allowed",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-011",
+      "group": "goal",
+      "name": "Assumption disclosed",
+      "given": "planner infers scope from non-authoritative text",
+      "when": "create contract",
+      "expected": "origin=inferred with evidence/unknown status; no invented authorization",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-012",
+      "group": "goal",
+      "name": "Critic budget bounded",
+      "given": "same blocking ambiguity remains after configured rounds",
+      "when": "planner/critic repeat",
+      "expected": "HOLD with unresolved issue, no indefinite negotiation",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-013",
+      "group": "goal",
+      "name": "Criteria ID collision",
+      "given": "two acceptance rows share same ID",
+      "when": "semantic validation",
+      "expected": "reject duplicate criterion IDs",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-014",
+      "group": "goal",
+      "name": "Contract revision invalidates grant",
+      "given": "grant bound to contract v1; v2 changes target",
+      "when": "activate v2 then request effect using v1 grant",
+      "expected": "GRANT_STALE; reauthorization required",
+      "gates": [
+        "G-03"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ]
+    },
+    {
+      "id": "T-015",
+      "group": "knowledge",
+      "name": "Eight readiness areas unique",
+      "given": "readiness has eight rows but one duplicate and one missing",
+      "when": "semantic validate",
+      "expected": "READINESS_COMPLETENESS fails despite structural length=8",
+      "gates": [
+        "G-04"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-016",
+      "group": "knowledge",
+      "name": "Conflicting invariant",
+      "given": "active canonical decisions conflict on allowed behavior",
+      "when": "assemble context",
+      "expected": "CONTEXT_NOT_READY; disclose conflict, no arbitrary winner",
+      "gates": [
+        "G-04"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-017",
+      "group": "knowledge",
+      "name": "Mandatory context retained",
+      "given": "token budget pressure drops invariant excerpt",
+      "when": "assemble bundle",
+      "expected": "mandatory core retained or HOLD; no silent omission",
+      "gates": [
+        "G-04"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-018",
+      "group": "knowledge",
+      "name": "Superseded fact handling",
+      "given": "old source superseded by current decision",
+      "when": "default retrieval and historical replay",
+      "expected": "current retrieval uses current ref; historical Run still resolves old pinned ref",
+      "gates": [
+        "G-04"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-019",
+      "group": "knowledge",
+      "name": "No automatic knowledge promotion",
+      "given": "worker discovers repeated useful rule",
+      "when": "publish observation",
+      "expected": "candidate/proposal only; canonical write denied without governance",
+      "gates": [
+        "G-04",
+        "G-14"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-02",
+        "INV-09",
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-020",
+      "group": "knowledge",
+      "name": "External URL drift",
+      "given": "URL changes after excerpt was read",
+      "when": "resume old run",
+      "expected": "pinned snapshot used or stale HOLD; current URL not assumed same digest",
+      "gates": [
+        "G-04"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ]
+    },
+    {
+      "id": "T-021",
+      "group": "graph",
+      "name": "Cycle rejection",
+      "given": "A depends B and B depends A",
+      "when": "compile",
+      "expected": "GRAPH_INVALID; no graph activation",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-022",
+      "group": "graph",
+      "name": "Stable compiler output",
+      "given": "same frozen plan contract registry snapshot",
+      "when": "compile twice in different input iteration order",
+      "expected": "same canonical DAG content digest and stable topological order",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-023",
+      "group": "graph",
+      "name": "Typed artifact mismatch",
+      "given": "producer outputs JSON; consumer requires binary ABI artifact",
+      "when": "compile",
+      "expected": "GRAPH_DATA_TYPES reject with exact edge finding",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-024",
+      "group": "graph",
+      "name": "Input XOR",
+      "given": "consumes supplies both from_node and external_ref",
+      "when": "semantic validate",
+      "expected": "reject; source must be exactly one",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-025",
+      "group": "graph",
+      "name": "Missing global acceptance",
+      "given": "nodes cover unit tests but no cross-app integration criterion",
+      "when": "compile/activate",
+      "expected": "coverage failure; add global verifier or blocking finding",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-026",
+      "group": "graph",
+      "name": "Unsafe any-success join",
+      "given": "write node joins either of two required approvals",
+      "when": "compile",
+      "expected": "unsafe join rejected",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-027",
+      "group": "graph",
+      "name": "Replan stale worker",
+      "given": "new graph v2 activates while v1 worker still running",
+      "when": "old worker sends result/effect",
+      "expected": "old result audit only, no active state/effect update",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-028",
+      "group": "graph",
+      "name": "Conservative output reuse",
+      "given": "upstream artifact digest matches but verifier/env changed",
+      "when": "reuse prior node success",
+      "expected": "reuse rejected or reverify, no stale pass",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-029",
+      "group": "graph",
+      "name": "Concurrent replans",
+      "given": "two graph proposals based on same expected revision",
+      "when": "activate both",
+      "expected": "one CAS succeeds; other REVISION_CONFLICT",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-030",
+      "group": "graph",
+      "name": "Graph node budget limit",
+      "given": "draft exceeds configured max nodes",
+      "when": "compile",
+      "expected": "bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out",
+      "gates": [
+        "G-05"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ]
+    },
+    {
+      "id": "T-031",
+      "group": "runtime",
+      "name": "Tiny still gated",
+      "given": "small typo work with direct strategy",
+      "when": "execute",
+      "expected": "minimal contract, authority, artifact/verifier evidence retained",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-032",
+      "group": "runtime",
+      "name": "Exclusive workspace claim",
+      "given": "two writes target same repo worktree resource",
+      "when": "claim concurrently",
+      "expected": "only one exclusive writer; other remains ready/blocked",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-033",
+      "group": "runtime",
+      "name": "Root budget children",
+      "given": "parent plus native children collectively exceed cap",
+      "when": "admit another child/continuation",
+      "expected": "BUDGET_EXHAUSTED before extra work; full usage accounted",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-034",
+      "group": "runtime",
+      "name": "Unknown usage",
+      "given": "provider omits usage after disconnect",
+      "when": "close reservation",
+      "expected": "unknown upper-bound held/reconciled, not zero cost",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-035",
+      "group": "runtime",
+      "name": "Attempt budget",
+      "given": "verifier repeatedly fails under bounded loop",
+      "when": "exhaust max attempts including initial",
+      "expected": "old Runs terminal, no more auto repair; typed failure/HOLD",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-036",
+      "group": "runtime",
+      "name": "Repeated failure signature",
+      "given": "same signature reaches stop count",
+      "when": "request next repair",
+      "expected": "escalate instead of fruitless retries",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-037",
+      "group": "runtime",
+      "name": "Fairness under large goal",
+      "given": "one root has many ready nodes plus another project ready",
+      "when": "scheduler ticks",
+      "expected": "per-root cap and project fairness prevent starvation within defined scheduler policy",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-038",
+      "group": "runtime",
+      "name": "No long IO in transaction",
+      "given": "provider hangs for a long tool call",
+      "when": "other worker heartbeat/store command",
+      "expected": "DB transaction not held by provider call; heartbeat commit possible",
+      "gates": [
+        "G-08"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ]
+    },
+    {
+      "id": "T-039",
+      "group": "lease",
+      "name": "Expired fence rejected",
+      "given": "worker holds old lease after recovery",
+      "when": "heartbeat/event/effect",
+      "expected": "STALE_LEASE; no renewed authority",
+      "gates": [
+        "G-09"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ]
+    },
+    {
+      "id": "T-040",
+      "group": "lease",
+      "name": "Monotonic fence restart",
+      "given": "CP owner epoch advances after crash",
+      "when": "worker claims same Work again",
+      "expected": "fencing token never reused or decreases",
+      "gates": [
+        "G-09"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ]
+    },
+    {
+      "id": "T-041",
+      "group": "lease",
+      "name": "Malformed time fail closed",
+      "given": "not_before or expiry field malformed",
+      "when": "schedule/resume",
+      "expected": "validation HOLD, not immediate retry-ready",
+      "gates": [
+        "G-09"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ]
+    },
+    {
+      "id": "T-042",
+      "group": "lease",
+      "name": "Pause revision mismatch",
+      "given": "paused Run bound v1; desired contract becomes v2",
+      "when": "resume same Run",
+      "expected": "reject same-run ref mutation; new Run from checkpoint with new contract",
+      "gates": [
+        "G-09"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ]
+    },
+    {
+      "id": "T-043",
+      "group": "lease",
+      "name": "Worker time skew",
+      "given": "worker claims expiry differs from server",
+      "when": "heartbeat",
+      "expected": "server time and current lease decide, worker cannot extend arbitrarily",
+      "gates": [
+        "G-09"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ]
+    },
+    {
+      "id": "T-044",
+      "group": "effects",
+      "name": "Timeout may have applied",
+      "given": "remote receives write, response lost",
+      "when": "retry workflow",
+      "expected": "UNKNOWN receipt; query/reconcile before any resend",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-045",
+      "group": "effects",
+      "name": "Same effect key new args",
+      "given": "effect key already bound to old payload",
+      "when": "dispatch altered args",
+      "expected": "IDEMPOTENCY_CONFLICT",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-046",
+      "group": "effects",
+      "name": "Revoke before dispatch",
+      "given": "grant revoked after preparation before broker call",
+      "when": "dispatch",
+      "expected": "deny new send; record not applied only if positively unsent",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-047",
+      "group": "effects",
+      "name": "Revoke after dispatch",
+      "given": "external accepted before revocation",
+      "when": "observe revoke",
+      "expected": "do not claim rollback; receipt/reconcile reveals outcome",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-048",
+      "group": "effects",
+      "name": "Non-idempotent endpoint",
+      "given": "endpoint lacks idempotency and lookup",
+      "when": "timeout on write",
+      "expected": "human reconciliation HOLD, no blind retry",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-049",
+      "group": "effects",
+      "name": "Compensation is new effect",
+      "given": "original write applied but wrong",
+      "when": "request undo",
+      "expected": "new grant/effect receipt linked to original; original not erased",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-050",
+      "group": "effects",
+      "name": "Partial batch",
+      "given": "some external items applied, others unknown",
+      "when": "aggregate result",
+      "expected": "item receipts + partial/unknown state; not all succeeded",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-051",
+      "group": "effects",
+      "name": "Remote callback spoof",
+      "given": "callback with valid run ID but wrong project/call_id",
+      "when": "ingest callback",
+      "expected": "reject, original pending request unchanged",
+      "gates": [
+        "G-10"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ]
+    },
+    {
+      "id": "T-052",
+      "group": "evidence",
+      "name": "Forged digest",
+      "given": "agent declares artifact hash not matching uploaded bytes",
+      "when": "commit artifact",
+      "expected": "reject/quarantine mismatched digest",
+      "gates": [
+        "G-11"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-053",
+      "group": "evidence",
+      "name": "Exit zero not pass",
+      "given": "worker exits0 without required evidence",
+      "when": "global verify",
+      "expected": "inconclusive/fail; no verified goal",
+      "gates": [
+        "G-11"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-054",
+      "group": "evidence",
+      "name": "Old revision pass",
+      "given": "v1 tests passed but contract/artifact v2 active",
+      "when": "submit verdict for active goal",
+      "expected": "not accepted toward active coverage",
+      "gates": [
+        "G-11"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-055",
+      "group": "evidence",
+      "name": "Legacy evidence trust",
+      "given": "V2 imported log says PASS",
+      "when": "migrate to V3",
+      "expected": "legacy_imported preserved; no automatic server_verified",
+      "gates": [
+        "G-11"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-056",
+      "group": "evidence",
+      "name": "Artifact orphan crash",
+      "given": "CAS rename completed, registry commit crashed",
+      "when": "recovery/GC",
+      "expected": "verified orphan attach or retention GC; no invalid artifact ref exposure",
+      "gates": [
+        "G-11"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-057",
+      "group": "visual",
+      "name": "Rendered doc font missing",
+      "given": "required Korean font unavailable in render environment",
+      "when": "document verify",
+      "expected": "HOLD or explicit approved fallback; missing glyphs not PASS",
+      "gates": [
+        "G-12",
+        "G-13"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-16",
+        "INV-19",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-058",
+      "group": "visual",
+      "name": "SVG clipping and overlap",
+      "given": "source SVG syntactically valid but final embedding clips text",
+      "when": "render final output",
+      "expected": "visual findings with page/region; bounded repair then rerender",
+      "gates": [
+        "G-12"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-059",
+      "group": "visual",
+      "name": "Frontend golden tampering",
+      "given": "builder changes screenshot golden to erase diff",
+      "when": "verify changes",
+      "expected": "protected baseline guard fails",
+      "gates": [
+        "G-12"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-060",
+      "group": "visual",
+      "name": "Pixel pass UX fail",
+      "given": "static screenshot same but keyboard/empty state broken",
+      "when": "frontend acceptance",
+      "expected": "functional/accessibility criterion fails independently",
+      "gates": [
+        "G-12",
+        "G-15",
+        "G-22"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-02",
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-17",
+        "INV-18",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-061",
+      "group": "visual",
+      "name": "Final artifact exact version",
+      "given": "rendered PDF from prior content while source updated",
+      "when": "verify output",
+      "expected": "digest/version mismatch; rerender required",
+      "gates": [
+        "G-12"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-062",
+      "group": "visual",
+      "name": "Test deletion gaming",
+      "given": "implementation removes failing protected regression",
+      "when": "test suite green",
+      "expected": "protected diff guard fails; not accepted",
+      "gates": [
+        "G-12"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-063",
+      "group": "visual",
+      "name": "Independent integration",
+      "given": "Cortex and Synapse node tests pass separately but interface mismatches",
+      "when": "global integration",
+      "expected": "mandatory compatibility fails despite node successes",
+      "gates": [
+        "G-12"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-064",
+      "group": "driver",
+      "name": "Exact session resume",
+      "given": "two CLI sessions exist",
+      "when": "resume Work A",
+      "expected": "exact A session used; no continue latest heuristic",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-065",
+      "group": "driver",
+      "name": "Partial JSONL stream",
+      "given": "provider event JSON split across chunks",
+      "when": "decode input",
+      "expected": "buffer until complete, typed event validation, no heuristic session pollution",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-066",
+      "group": "driver",
+      "name": "Unknown provider event",
+      "given": "SDK upgrade adds unsupported event type",
+      "when": "ingest",
+      "expected": "quarantine/unsupported with version finding, no guessed success",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-067",
+      "group": "driver",
+      "name": "Async result call mismatch",
+      "given": "tool result references different provider_call_id",
+      "when": "forward result",
+      "expected": "reject mapping; correct pending call unchanged",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-068",
+      "group": "driver",
+      "name": "Steering queued disconnect",
+      "given": "provider ack queued but connection dies before application",
+      "when": "reconnect",
+      "expected": "ledger reconciles unresolved steering; no false applied status",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-069",
+      "group": "driver",
+      "name": "Native steering absent",
+      "given": "driver lacks steer capability",
+      "when": "user changes constraints",
+      "expected": "safe checkpoint/restart fallback; no text injection hack",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-070",
+      "group": "driver",
+      "name": "Experimental transport",
+      "given": "Codex app-server profile unqualified",
+      "when": "production dispatch",
+      "expected": "CAPABILITY_UNQUALIFIED; qualified CLI fallback only if policy permits",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-071",
+      "group": "driver",
+      "name": "OpenCode 204",
+      "given": "prompt_async responds204",
+      "when": "status projection",
+      "expected": "accepted/running only, not completed",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-072",
+      "group": "driver",
+      "name": "Server-only event forgery",
+      "given": "worker submits goal.verified or grant.revoked",
+      "when": "event ingress",
+      "expected": "forbidden event; only server authority emits transition",
+      "gates": [
+        "G-23"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-073",
+      "group": "security",
+      "name": "Prompt injection",
+      "given": "repo doc tells agent to disable verifiers/send secrets",
+      "when": "context and tool use",
+      "expected": "data treated untrusted; policy/effect boundary blocks",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-074",
+      "group": "security",
+      "name": "Symlink traversal",
+      "given": "workspace path links outside allowed root",
+      "when": "write tool",
+      "expected": "filesystem boundary denies without touching target",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-075",
+      "group": "security",
+      "name": "Cloud fallback prohibited",
+      "given": "confidential data, local provider unavailable",
+      "when": "model route selection",
+      "expected": "HOLD; no unapproved cloud transmission",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-076",
+      "group": "security",
+      "name": "Credential isolation",
+      "given": "worker prompt/tool asks for production token",
+      "when": "secret access",
+      "expected": "broker handle only or deny; no raw long-lived secret in context/log",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-077",
+      "group": "security",
+      "name": "Native subagent escape",
+      "given": "parent limited scope; child asks wider root",
+      "when": "delegate",
+      "expected": "subset intersection; deny escalation",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-078",
+      "group": "security",
+      "name": "Missing authority",
+      "given": "AuthorityService unreachable before write",
+      "when": "admission/effect",
+      "expected": "HOLD; cached grant not treated perpetual",
+      "gates": [
+        "G-06"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ]
+    },
+    {
+      "id": "T-079",
+      "group": "meta",
+      "name": "Protected evaluator change",
+      "given": "candidate harness diff also weakens verifier",
+      "when": "screen proposal",
+      "expected": "class C separate governed work; no same experiment pass",
+      "gates": [
+        "G-16"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-080",
+      "group": "meta",
+      "name": "Holdout leakage",
+      "given": "MetaProposer requests hidden evaluation answers",
+      "when": "fetch corpus",
+      "expected": "access denied and contamination/security finding",
+      "gates": [
+        "G-16"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-081",
+      "group": "meta",
+      "name": "Immutable experiment",
+      "given": "experiment already frozen",
+      "when": "change primary endpoint or task corpus",
+      "expected": "new experiment revision required, original preserved",
+      "gates": [
+        "G-16"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-082",
+      "group": "meta",
+      "name": "Provider alias drift",
+      "given": "baseline and candidate use changed model alias resolution",
+      "when": "analyze",
+      "expected": "environment_drifted with limits; no harness-only improvement claim",
+      "gates": [
+        "G-16",
+        "G-18"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-11",
+        "INV-12",
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-083",
+      "group": "meta",
+      "name": "Replay vs rerun",
+      "given": "recorded tool outcomes replayed without live model/tool",
+      "when": "report",
+      "expected": "marked replay; not evidence of real-world success improvement",
+      "gates": [
+        "G-16"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-084",
+      "group": "meta decision",
+      "name": "Insufficient evidence",
+      "given": "small/noisy sample under frozen noninferiority rule",
+      "when": "analyze",
+      "expected": "inconclusive; no manufactured performance guarantee",
+      "gates": [
+        "G-17"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-085",
+      "group": "meta decision",
+      "name": "Failed safety test",
+      "given": "candidate improves cost but violates safety gate",
+      "when": "evaluate",
+      "expected": "fail regardless of aggregate score",
+      "gates": [
+        "G-17",
+        "G-22"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-02",
+        "INV-14",
+        "INV-15",
+        "INV-18",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-086",
+      "group": "meta decision",
+      "name": "Multiple candidate selection",
+      "given": "many candidates selected against same evaluation set",
+      "when": "confirmatory evaluation",
+      "expected": "holdout reuse policy enforced; exploratory result not automatic promote",
+      "gates": [
+        "G-17"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-087",
+      "group": "canary promote",
+      "name": "Self-approval denied",
+      "given": "meta proposer submits its own promotion as authorized human",
+      "when": "promote",
+      "expected": "authority rejects forged role",
+      "gates": [
+        "G-19"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-22",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-088",
+      "group": "canary promote",
+      "name": "Canary kill switch",
+      "given": "canary produces unknown effect/security incident",
+      "when": "next scheduler tick",
+      "expected": "abort new admission, cancel/reconcile active runs, baseline fallback",
+      "gates": [
+        "G-19"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-22",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-089",
+      "group": "canary promote",
+      "name": "Active release CAS",
+      "given": "two promotions reference same previous active release",
+      "when": "promote concurrently",
+      "expected": "one wins, other conflict; no mixed pointer state",
+      "gates": [
+        "G-18",
+        "G-19"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-08",
+        "INV-09",
+        "INV-11",
+        "INV-12",
+        "INV-22",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-090",
+      "group": "canary promote",
+      "name": "Rollback keeps revocations",
+      "given": "previous release backup contains old grant state",
+      "when": "rollback code/data",
+      "expected": "latest revocations retained; no resurrected access",
+      "gates": [
+        "G-19"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-22",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-091",
+      "group": "canary promote",
+      "name": "In-flight composition pinned",
+      "given": "new release promoted while old Run active",
+      "when": "read run context/continue",
+      "expected": "old Run uses old composition or explicit checkpoint; no file overwrite mutation",
+      "gates": [
+        "G-19"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-22",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-092",
+      "group": "migration",
+      "name": "Legacy import still active",
+      "given": "legacy_gates imported by current governance",
+      "when": "delete plan",
+      "expected": "blocked until replacement equivalence/tests and refs cleared",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-093",
+      "group": "migration",
+      "name": "Optional marker absence",
+      "given": "manifest handoff required=false create_if_missing=false",
+      "when": "integrity check",
+      "expected": "not blanket corruption failure; report optional omission separately",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-094",
+      "group": "migration",
+      "name": "Owned file changed by user",
+      "given": "current digest differs installer expected_old_digest",
+      "when": "update/delete",
+      "expected": "conflict HOLD and preserve user bytes",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-095",
+      "group": "migration",
+      "name": "Evidence archive live refs",
+      "given": "active ContextBundle references archived evidence path",
+      "when": "archive/move",
+      "expected": "alias/backlink preserved and ref verification; no unapproved purge",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-096",
+      "group": "migration",
+      "name": "Authority import semantics",
+      "given": "old approval did not cover new action",
+      "when": "migrate grant",
+      "expected": "no new authority inferred; reapproval required",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-097",
+      "group": "migration",
+      "name": "Version fact reconciliation",
+      "given": "README candidate version differs VERSION/release receipt",
+      "when": "build release inventory",
+      "expected": "explicit discrepancy and chosen authoritative release proof before shipping",
+      "gates": [
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ]
+    },
+    {
+      "id": "T-098",
+      "group": "migration",
+      "name": "Kit removal independent app",
+      "given": "V3 app has kit installed",
+      "when": "uninstall kit and run app build/test",
+      "expected": "domain builds without kit/host runtime dependency",
+      "gates": [
+        "G-15",
+        "G-20"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-17",
+        "INV-18",
+        "INV-24",
+        "INV-25",
+        "INV-27"
+      ]
+    },
+    {
+      "id": "T-099",
+      "group": "recovery",
+      "name": "Claim commit crash",
+      "given": "lease/run/outbox committed, dispatch not yet sent",
+      "when": "restart",
+      "expected": "same dispatch correlation; no duplicate active lease",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-100",
+      "group": "recovery",
+      "name": "Spawn ACK lost",
+      "given": "worker process started but ACK lost",
+      "when": "resend dispatch",
+      "expected": "worker journal/probe yields existing handle, no duplicate spawn",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-101",
+      "group": "recovery",
+      "name": "Outbox delivery duplicate",
+      "given": "consumer committed inbox but ACK lost",
+      "when": "redelivery",
+      "expected": "inbox dedupe; no second state transition",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-102",
+      "group": "recovery",
+      "name": "Cancel child orphan",
+      "given": "parent exited but child process/tool persists",
+      "when": "cancel goal",
+      "expected": "pending status until child/effect reconciled, not falsely cancelled",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-103",
+      "group": "recovery",
+      "name": "State/event atomicity",
+      "given": "crash between state update and event insertion within transaction",
+      "when": "recover",
+      "expected": "both commit or neither; no state without event",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-104",
+      "group": "recovery",
+      "name": "SQLite network path",
+      "given": "live DB configured on unsupported shared mount",
+      "when": "startup",
+      "expected": "reject unsupported topology; no misleading HA mode",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-105",
+      "group": "recovery",
+      "name": "Restore unknown effects",
+      "given": "backup restored before latest external receipts",
+      "when": "resume writes",
+      "expected": "new epoch, authoritative sync and effect reconciliation before admission",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-106",
+      "group": "recovery",
+      "name": "Disk full during artifact",
+      "given": "blob upload cannot finish",
+      "when": "commit/recovery",
+      "expected": "no registry success pointing to missing data; bounded cleanup",
+      "gates": [
+        "G-21"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "test result tied to implementation commit",
+        "relevant state/event/artifact snapshot with secrets removed"
+      ],
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ]
+    },
+    {
+      "id": "T-107",
+      "group": "release conformance",
+      "name": "Full V3 representative end-to-end",
+      "given": "isolated test app, qualified baseline driver, frozen authority/policy",
+      "when": "rough intent to contract/graph/run/evidence/global verify",
+      "expected": "every required boundary passes with current refs; no fabricated runtime pass",
+      "gates": [
+        "G-02",
+        "G-07",
+        "G-13",
+        "G-24"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-04",
+        "INV-05",
+        "INV-14",
+        "INV-16",
+        "INV-17",
+        "INV-19",
+        "INV-20",
+        "INV-21",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-26",
+        "INV-27",
+        "INV-28"
+      ]
+    },
+    {
+      "id": "T-108",
+      "group": "release conformance",
+      "name": "Gate applicability cannot bypass",
+      "given": "direct/discovery/deliberative/bounded profiles",
+      "when": "reach a mandatory boundary under fast/tiny flag",
+      "expected": "same invariant enforcement; only legitimate N/A rule accepted",
+      "gates": [
+        "G-03",
+        "G-06",
+        "G-24"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06",
+        "INV-08",
+        "INV-09",
+        "INV-14",
+        "INV-17",
+        "INV-20",
+        "INV-21",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-27",
+        "INV-28"
+      ]
+    },
+    {
+      "id": "T-109",
+      "group": "release conformance",
+      "name": "Complete meta rejection and rollback path",
+      "given": "eligible experiment and controlled nonproduction canary",
+      "when": "exercise pass/fail/inconclusive/promote/rollback branches",
+      "expected": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned",
+      "gates": [
+        "G-16",
+        "G-17",
+        "G-18",
+        "G-19",
+        "G-24"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-03",
+        "INV-08",
+        "INV-09",
+        "INV-11",
+        "INV-12",
+        "INV-14",
+        "INV-15",
+        "INV-17",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-27",
+        "INV-28"
+      ]
+    },
+    {
+      "id": "T-110",
+      "group": "release conformance",
+      "name": "Canonical preserve and governed apply",
+      "given": "existing Foundry decision+apply path with new runtime proposal",
+      "when": "try publish with/without valid ApplyGrant",
+      "expected": "valid exact grant follows old guard semantics; missing/stale denied",
+      "gates": [
+        "G-04",
+        "G-14",
+        "G-22"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-02",
+        "INV-09",
+        "INV-15",
+        "INV-16",
+        "INV-18",
+        "INV-22"
+      ]
+    },
+    {
+      "id": "T-111",
+      "group": "release conformance",
+      "name": "Signed pack compatibility and uninstall",
+      "given": "signed pack set with optional markers and app overrides",
+      "when": "install/upgrade/remove including tampered dependency",
+      "expected": "valid pinned install receipt; tamper/ownership conflict rejects; app stays independent",
+      "gates": [
+        "G-07",
+        "G-15",
+        "G-20",
+        "G-24"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-09",
+        "INV-14",
+        "INV-17",
+        "INV-18",
+        "INV-21",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-26",
+        "INV-27",
+        "INV-28"
+      ]
+    },
+    {
+      "id": "T-112",
+      "group": "release conformance",
+      "name": "Offline activation prerequisites",
+      "given": "missing signing identity or budget/authority config",
+      "when": "start read-only then enable writes",
+      "expected": "read-only status allowed where safe; write activation HOLD until prerequisites supplied",
+      "gates": [
+        "G-06",
+        "G-07",
+        "G-24"
+      ],
+      "status": "specified_not_executed",
+      "required_evidence": [
+        "implementation commit and real conformance run report",
+        "state/authority/effect/artifact linkage"
+      ],
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-14",
+        "INV-17",
+        "INV-20",
+        "INV-21",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-26",
+        "INV-27",
+        "INV-28"
+      ]
+    }
+  ]
+}

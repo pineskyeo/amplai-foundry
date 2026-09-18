@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/execution-grant.schema.json",
+  "title": "AMPLAI V3 execution-grant",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "grant_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "issuer": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/actor"
+    },
+    "subject_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "contract_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "graph_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "policy_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/capability"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "artifact_bounds": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/digest"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "max_uses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "effect_key": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "not_before": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "expires_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "decision_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "signature": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/signature"
+    }
+  },
+  "required": [
+    "schema_version",
+    "grant_id",
+    "scope",
+    "issuer",
+    "subject_id",
+    "contract_ref",
+    "graph_ref",
+    "policy_ref",
+    "generation",
+    "capabilities",
+    "artifact_bounds",
+    "max_uses",
+    "effect_key",
+    "not_before",
+    "expires_at",
+    "decision_ref",
+    "signature"
+  ],
+  "additionalProperties": false
+}

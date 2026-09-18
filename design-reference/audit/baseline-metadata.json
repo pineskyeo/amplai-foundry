@@ -1,0 +1,171 @@
+{
+  "archive_name": "amplai-foundry.tar.gz",
+  "archive_sha256": "1a9b8e656b5a133087c20d8164dd7ff6276c34d7e74cff59223f71e9ece954ef",
+  "archive_bytes": 56463181,
+  "tar_members": 21476,
+  "tar_regular_files": 20540,
+  "tar_regular_bytes": 169229309,
+  "tar_link_entries": 21,
+  "filtered_regular_files": 1669,
+  "filtered_regular_bytes": 20121711,
+  "exclusions": [
+    ".git",
+    ".venv",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+    "._*",
+    ".DS_Store"
+  ],
+  "inspection_method": "safe relative normal-file extraction, static code/document inspection and metadata hashing; source tests not executed",
+  "limitations": [
+    "No deployment/fleet/provider/DB availability checked",
+    "Symlink/hardlink entries not materialized into filtered source; a missing regular file is not proof a mirror is absent",
+    "Static file inventory is not proof of feature completion",
+    "No baseline source code was modified"
+  ],
+  "groups": [
+    {
+      "path": ".agents",
+      "files": 60,
+      "bytes": 716145
+    },
+    {
+      "path": ".ai-team",
+      "files": 93,
+      "bytes": 2326455
+    },
+    {
+      "path": ".amplai",
+      "files": 77,
+      "bytes": 258754
+    },
+    {
+      "path": ".claude",
+      "files": 1,
+      "bytes": 518
+    },
+    {
+      "path": ".codex",
+      "files": 1,
+      "bytes": 566
+    },
+    {
+      "path": ".github",
+      "files": 1,
+      "bytes": 795
+    },
+    {
+      "path": ".gitignore",
+      "files": 1,
+      "bytes": 412
+    },
+    {
+      "path": ".specify",
+      "files": 23,
+      "bytes": 130208
+    },
+    {
+      "path": "AGENTS.md",
+      "files": 1,
+      "bytes": 7769
+    },
+    {
+      "path": "AGENTS.md.amplai.json",
+      "files": 1,
+      "bytes": 1124
+    },
+    {
+      "path": "CLAUDE.md",
+      "files": 1,
+      "bytes": 1542
+    },
+    {
+      "path": "CLAUDE.md.amplai.json",
+      "files": 1,
+      "bytes": 1146
+    },
+    {
+      "path": "README.md",
+      "files": 1,
+      "bytes": 8470
+    },
+    {
+      "path": "README.md.amplai.json",
+      "files": 1,
+      "bytes": 1122
+    },
+    {
+      "path": "docs",
+      "files": 67,
+      "bytes": 646077
+    },
+    {
+      "path": "harnesses",
+      "files": 1,
+      "bytes": 1482
+    },
+    {
+      "path": "integrations",
+      "files": 5,
+      "bytes": 8585
+    },
+    {
+      "path": "plans",
+      "files": 1,
+      "bytes": 3301
+    },
+    {
+      "path": "pyproject.toml",
+      "files": 1,
+      "bytes": 4057
+    },
+    {
+      "path": "schemas",
+      "files": 18,
+      "bytes": 97378
+    },
+    {
+      "path": "scripts",
+      "files": 12,
+      "bytes": 565815
+    },
+    {
+      "path": "skills-lock.json",
+      "files": 1,
+      "bytes": 499
+    },
+    {
+      "path": "specs",
+      "files": 916,
+      "bytes": 10442945
+    },
+    {
+      "path": "src",
+      "files": 121,
+      "bytes": 1696840
+    },
+    {
+      "path": "templates",
+      "files": 8,
+      "bytes": 4448
+    },
+    {
+      "path": "tests",
+      "files": 78,
+      "bytes": 1886513
+    },
+    {
+      "path": "tools",
+      "files": 120,
+      "bytes": 1162569
+    },
+    {
+      "path": "vault",
+      "files": 57,
+      "bytes": 146176
+    }
+  ]
+}

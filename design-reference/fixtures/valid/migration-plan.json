@@ -1,0 +1,48 @@
+{
+  "schema_version": "3.0.0",
+  "migration_id": "fixture-migration-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "source_release_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "target_release_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "baseline_inventory_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "operations": [
+    {
+      "operation_id": "fixture-operation-id",
+      "kind": "keep",
+      "path": "fixture-path",
+      "expected_old_digest": "sha256:4b2c1637e74324d8924765b26e64dc8be978801ae53a13a495d8ef6df2a8a708",
+      "replacement_ref": null,
+      "backup_ref": {
+        "id": "fixture-ref",
+        "revision": 1,
+        "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+      },
+      "required_test_ids": [
+        "T-001"
+      ],
+      "approval_required": false
+    }
+  ],
+  "active_run_policy": "drain",
+  "rollback_plan_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "dry_run_required": true
+}

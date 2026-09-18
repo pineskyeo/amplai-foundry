@@ -161,6 +161,10 @@ class SourceIngestionService:
             if existing_id == identifier
         ]
         if colliding_paths:
+            duplicate = self._find_duplicate(resolved_project_root, exact_hash, normalized_hash)
+            if duplicate is not None:
+                duplicate_id, duplicate_path = duplicate
+                return IngestionResult("duplicate", duplicate_id, str(duplicate_path), exact_hash, duplicate_id)
             raise IngestionError(
                 f"Source ID hash prefix 충돌이 발생했습니다: {identifier}; "
                 + ", ".join(str(item) for item in colliding_paths)

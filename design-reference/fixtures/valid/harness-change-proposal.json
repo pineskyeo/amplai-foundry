@@ -1,0 +1,54 @@
+{
+  "schema_version": "3.0.0",
+  "proposal_id": "fixture-proposal-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "baseline_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "candidate_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "surface_class": "A",
+  "hypothesis": "fixture-hypothesis",
+  "observation_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "change_artifact": {
+    "id": "fixture-artifact",
+    "digest": "sha256:dcd22167f3ab965bf7a07fd2dd6a6dda553357bc1810049d35cd223026cb20a5",
+    "media_type": "application/json",
+    "size_bytes": 256
+  },
+  "expected_benefit": "fixture-expected-benefit",
+  "risks": [
+    "fixture-risks"
+  ],
+  "protected_surface_findings": [],
+  "experiment_plan_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "rollback_plan_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "proposer": {
+    "subject_id": "test-worker",
+    "kind": "service",
+    "authn_context_ref": "test-authn"
+  },
+  "status": "draft"
+}

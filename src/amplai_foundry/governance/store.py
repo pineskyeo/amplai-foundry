@@ -235,6 +235,8 @@ class GovernanceStore:
         # `yield` 는 두 `try` 밖이다 — 호출자가 던진 예외까지 삼키면 안 된다.
         try:
             before = self.filesystem_guard.validate(self.path)
+            if self.path.exists() and not (self.path.stat().st_mode & 0o222):
+                raise GovernanceStoreError("Governance Store가 명시적으로 읽기 전용입니다.")
             self.path.parent.mkdir(parents=True, exist_ok=True)
         except _OPEN_FAILURES as error:
             raise GovernanceStoreError(

@@ -1,0 +1,41 @@
+{
+  "schema_version": "3.0.0",
+  "bundle_id": "context-precontract",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "contract_ref": null,
+  "core_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "entries": [
+    {
+      "ref": {
+        "id": "baseline-audit",
+        "revision": 1,
+        "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+      },
+      "kind": "repo_fact",
+      "trust": "observed",
+      "mandatory": true,
+      "freshness": "current",
+      "superseded_by": null,
+      "excerpt": "User requested design only; source archive is read-only.",
+      "source_locator": "audit/BASELINE_AUDIT.md"
+    }
+  ],
+  "invariant_registry_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "governing_set_complete": true,
+  "token_budget": 1,
+  "assembled_at": "2026-09-15T13:30:00Z",
+  "unexpected_elevated_permission": true
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": "3.0.0",
+  "resolution_id": "resolution-v3",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "intent_ref": {
+    "id": "intent-design-v3",
+    "revision": 1,
+    "digest": "sha256:03c36ac1b40d7f184e9ffccb59646b0b21a562b87611b593529f571b29e4e693"
+  },
+  "status": "resolved",
+  "target_refs": [
+    {
+      "id": "app-amplai",
+      "revision": 1,
+      "digest": "sha256:9f90fa5340d02adcfeb484f5dfe31fffa1f5389314804d96ff98a6535a8cff2e"
+    }
+  ],
+  "facts": [],
+  "readiness": [
+    {
+      "area": "terminology",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "current_behavior",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "boundary",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "invariants",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "ssot",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "contradictions",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "acceptance",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    },
+    {
+      "area": "verifier",
+      "status": "ready",
+      "source_refs": [
+        {
+          "id": "baseline-audit",
+          "revision": 1,
+          "digest": "sha256:8d0dede12cf0f6cf86e75dfcf502d4400c4dff292132785e412fd42ff9c4c24c"
+        }
+      ],
+      "reason": "Synthetic example: source-backed readiness recorded."
+    }
+  ],
+  "question_refs": [],
+  "candidate_contract_ref": null,
+  "checked_at": "2026-09-15T13:30:00Z",
+  "unexpected_elevated_permission": true
+}

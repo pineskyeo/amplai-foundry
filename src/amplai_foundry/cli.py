@@ -83,6 +83,9 @@ app.add_typer(intake_app, name="intake")
 app.add_typer(roadmap_app, name="roadmap")
 app.add_typer(governance_app, name="governance")
 app.add_typer(control_plane_app, name="control-plane")
+# V3 shares the original Foundry governance instead of replacing it.
+from amplai_foundry.runtime.cli import ops as v3_ops
+app.add_typer(v3_ops, name="v3")
 
 
 def _fatal(message: str, *, code: int = 2) -> Never:

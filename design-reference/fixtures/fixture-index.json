@@ -1,0 +1,361 @@
+{
+  "valid": [
+    {
+      "file": "valid/intent-envelope.json",
+      "schema": "intent-envelope",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/resolution.json",
+      "schema": "resolution",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/goal-contract.json",
+      "schema": "goal-contract",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/workgraph.json",
+      "schema": "workgraph",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/execution-envelope.json",
+      "schema": "execution-envelope",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/execution-grant.json",
+      "schema": "execution-grant",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/context-bundle.json",
+      "schema": "context-bundle",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/question.json",
+      "schema": "question",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/steering-event.json",
+      "schema": "steering-event",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/driver-capabilities.json",
+      "schema": "driver-capabilities",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/model-profile.json",
+      "schema": "model-profile",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/capability-pack.json",
+      "schema": "capability-pack",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/app-binding.json",
+      "schema": "app-binding",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/verification-plan.json",
+      "schema": "verification-plan",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/verifier-profile.json",
+      "schema": "verifier-profile",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/evidence.json",
+      "schema": "evidence",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/verdict.json",
+      "schema": "verdict",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/effect-request.json",
+      "schema": "effect-request",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/effect-receipt.json",
+      "schema": "effect-receipt",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/checkpoint.json",
+      "schema": "checkpoint",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/run-record.json",
+      "schema": "run-record",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/harness-composition.json",
+      "schema": "harness-composition",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/harness-change-proposal.json",
+      "schema": "harness-change-proposal",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/eval-experiment.json",
+      "schema": "eval-experiment",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/eval-report.json",
+      "schema": "eval-report",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/promotion-plan.json",
+      "schema": "promotion-plan",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/release-set.json",
+      "schema": "release-set",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/migration-plan.json",
+      "schema": "migration-plan",
+      "claims": "structural_only_synthetic"
+    },
+    {
+      "file": "valid/runtime-event.json",
+      "schema": "runtime-event",
+      "claims": "structural_only_synthetic"
+    }
+  ],
+  "invalid": [
+    {
+      "file": "invalid/intent-envelope-unknown-field.json",
+      "schema": "intent-envelope",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/resolution-unknown-field.json",
+      "schema": "resolution",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/goal-contract-unknown-field.json",
+      "schema": "goal-contract",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/workgraph-unknown-field.json",
+      "schema": "workgraph",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/execution-envelope-unknown-field.json",
+      "schema": "execution-envelope",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/execution-grant-unknown-field.json",
+      "schema": "execution-grant",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/context-bundle-unknown-field.json",
+      "schema": "context-bundle",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/question-unknown-field.json",
+      "schema": "question",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/steering-event-unknown-field.json",
+      "schema": "steering-event",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/driver-capabilities-unknown-field.json",
+      "schema": "driver-capabilities",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/model-profile-unknown-field.json",
+      "schema": "model-profile",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/capability-pack-unknown-field.json",
+      "schema": "capability-pack",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/app-binding-unknown-field.json",
+      "schema": "app-binding",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/verification-plan-unknown-field.json",
+      "schema": "verification-plan",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/verifier-profile-unknown-field.json",
+      "schema": "verifier-profile",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/evidence-unknown-field.json",
+      "schema": "evidence",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/verdict-unknown-field.json",
+      "schema": "verdict",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/effect-request-unknown-field.json",
+      "schema": "effect-request",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/effect-receipt-unknown-field.json",
+      "schema": "effect-receipt",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/checkpoint-unknown-field.json",
+      "schema": "checkpoint",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/run-record-unknown-field.json",
+      "schema": "run-record",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/harness-composition-unknown-field.json",
+      "schema": "harness-composition",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/harness-change-proposal-unknown-field.json",
+      "schema": "harness-change-proposal",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/eval-experiment-unknown-field.json",
+      "schema": "eval-experiment",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/eval-report-unknown-field.json",
+      "schema": "eval-report",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/promotion-plan-unknown-field.json",
+      "schema": "promotion-plan",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/release-set-unknown-field.json",
+      "schema": "release-set",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/migration-plan-unknown-field.json",
+      "schema": "migration-plan",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/runtime-event-unknown-field.json",
+      "schema": "runtime-event",
+      "expected": "schema_reject",
+      "reason": "unknown top-level field is forbidden"
+    },
+    {
+      "file": "invalid/goal-contract-empty-acceptance.json",
+      "schema": "goal-contract",
+      "expected": "schema_reject",
+      "reason": "empty-acceptance"
+    },
+    {
+      "file": "invalid/workgraph-empty-graph.json",
+      "schema": "workgraph",
+      "expected": "schema_reject",
+      "reason": "empty-graph"
+    },
+    {
+      "file": "invalid/execution-envelope-zero-fence.json",
+      "schema": "execution-envelope",
+      "expected": "schema_reject",
+      "reason": "zero-fence"
+    },
+    {
+      "file": "invalid/effect-receipt-unknown-state.json",
+      "schema": "effect-receipt",
+      "expected": "schema_reject",
+      "reason": "unknown-state"
+    },
+    {
+      "file": "invalid/intent-envelope-wrong-major.json",
+      "schema": "intent-envelope",
+      "expected": "schema_reject",
+      "reason": "wrong-major"
+    },
+    {
+      "file": "invalid/execution-grant-invalid-time.json",
+      "schema": "execution-grant",
+      "expected": "schema_reject",
+      "reason": "invalid-time"
+    }
+  ]
+}

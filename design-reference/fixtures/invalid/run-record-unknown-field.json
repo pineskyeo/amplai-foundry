@@ -1,0 +1,66 @@
+{
+  "schema_version": "3.0.0",
+  "run_id": "fixture-run-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "root_goal_id": "fixture-root-goal-id",
+  "parent_run_id": null,
+  "work_id": "fixture-work-id",
+  "attempt": 1,
+  "contract_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "graph_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "composition_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "context_bundle_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "driver_profile_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "model_profile_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "environment_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "status": "created",
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null,
+    "cost_microunits": null,
+    "currency": "USD",
+    "status": "unknown",
+    "source_ref": null
+  },
+  "started_at": "2026-09-15T13:30:00Z",
+  "finished_at": null,
+  "last_event_seq": 1,
+  "failure_signatures": [],
+  "steering_refs": [],
+  "effect_refs": [],
+  "evidence_refs": [],
+  "verdict_refs": [],
+  "gate_results": [],
+  "unexpected_elevated_permission": true
+}

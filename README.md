@@ -185,3 +185,12 @@ amplai-foundry verify
 상위 기능은 `MemoryRepository` port에 의존한다. 현재 Markdown adapter 뒤에 SQLite 또는 PostgreSQL repository를 추가할 수 있다. FTS와 vector search는 canonical repository에서 재생성하는 파생 index로 유지한다.
 
 현재 계약의 세부 내용은 [Memory Domain Model](docs/MEMORY-DOMAIN-MODEL.md), [Lifecycle](docs/LIFECYCLE.md), [Relationships](docs/RELATIONSHIPS.md), [Project Pack](docs/PROJECT-PACK.md), [Knowledge Intake](docs/KNOWLEDGE-INTAKE.md), [Semantic Comparison](docs/SEMANTIC-COMPARISON.md), [Messenger Proposal Control](docs/MESSENGER-PROPOSAL-CONTROL.md), [Roadmap Changes](docs/ROADMAP-CHANGES.md), [Versioning](docs/VERSIONING.md)을 참조한다.
+
+
+## V3 DEV-03 development snapshot
+
+Current Python package: `3.0.0.dev3`; wire schemas remain `3.0.0`.
+
+[DEV-03 Observatory & Meta-Harness 운영·검증 설명](docs/v3/DEV03_OBSERVATORY_META.ko.md) · [Primary-source notes](docs/v3/DEV03_RESEARCH_SOURCES.md).
+
+`amplai ops evolution-demo --output <new-empty-directory>` executes local actual V3 paired trials, canary, signed promotion and rollback. It is not a live-provider/production qualification or the final V3 release. Delivery resume state and exact test evidence are in the outer snapshot `_v3_delivery/` and `validation/` directories.

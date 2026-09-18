@@ -1,0 +1,48 @@
+{
+  "version": "3.0.0",
+  "status": "proposed_technical_defaults_not_operational_authorization",
+  "max_graph_nodes": 64,
+  "max_parallel_works_per_goal": 4,
+  "max_native_delegation_depth": 2,
+  "lease_ttl_seconds": 120,
+  "heartbeat_interval_seconds": 30,
+  "dispatch_ack_timeout_seconds": 30,
+  "max_verifier_repair_attempts_including_initial": 3,
+  "same_failure_signature_stop_count": 3,
+  "max_contract_critic_rounds": 2,
+  "scheduler_active_instances": 1,
+  "sqlite_live_storage": "local_only",
+  "default_risk": "medium",
+  "default_strategy": "bounded_loop",
+  "unknown_gate_behavior": "hold",
+  "unknown_cost_behavior": "reserve_upper_bound_or_hold",
+  "external_unknown_effect_retry": false,
+  "protocol_major": 3,
+  "schema_version": "3.0.0",
+  "native_subagents_default_enabled": false,
+  "codex_app_server_default_enabled": false,
+  "cloud_data_default_allowed": [
+    "public"
+  ],
+  "production_effect_default_allowed": false,
+  "incremental_gardening_default": "report_only",
+  "required_activation_settings": [
+    "authority_endpoint_and_identity",
+    "project_actor_bindings",
+    "trusted_signing_keys",
+    "approved_storage_roots",
+    "secret_and_egress_policy",
+    "root_budget_limits",
+    "retention_policy",
+    "qualified_driver_model_matrix",
+    "canary_policy_and_promotion_authority"
+  ],
+  "calibration_required": [
+    "currency_cost_caps",
+    "eval_sample_size",
+    "noninferiority_margins",
+    "canary_fraction_or_count",
+    "SLOs",
+    "retention_duration"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "3.0.0",
+  "intent_id": "intent-design-v3",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "actor": {
+    "subject_id": "test-worker",
+    "kind": "service",
+    "authn_context_ref": "test-authn"
+  },
+  "mode": "design",
+  "text": "AMPLAI V3를 메타하네스까지 설계한다. 이번에는 설계만 만들고 구현은 하지 않는다.",
+  "source_channel": "cli",
+  "external_message_id": null,
+  "target_hints": [],
+  "attachment_refs": [],
+  "received_at": "2026-09-15T13:30:00Z",
+  "data_classification": "internal"
+}

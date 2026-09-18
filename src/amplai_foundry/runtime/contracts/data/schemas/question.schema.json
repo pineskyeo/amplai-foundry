@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/question.schema.json",
+  "title": "AMPLAI V3 question",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "question_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "goal_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "kind": {
+      "enum": [
+        "business_intent",
+        "authority",
+        "ambiguous_target",
+        "conflicting_constraint",
+        "subjective_direction",
+        "destructive_change"
+      ]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "tradeoff": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "tradeoff"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "evidence_checked": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "blocked_capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/capability"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "assigned_actor_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "answered",
+        "superseded",
+        "expired"
+      ]
+    },
+    "answer": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "actor": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/actor"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "applies_to_contract_ref": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+            },
+            "answered_at": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+            }
+          },
+          "required": [
+            "actor",
+            "text",
+            "applies_to_contract_ref",
+            "answered_at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "asked_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    }
+  },
+  "required": [
+    "schema_version",
+    "question_id",
+    "scope",
+    "goal_id",
+    "kind",
+    "question",
+    "options",
+    "evidence_checked",
+    "blocked_capabilities",
+    "assigned_actor_id",
+    "status",
+    "answer",
+    "asked_at"
+  ],
+  "additionalProperties": false
+}

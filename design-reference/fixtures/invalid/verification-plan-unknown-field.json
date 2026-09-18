@@ -1,0 +1,38 @@
+{
+  "schema_version": "3.0.0",
+  "plan_id": "fixture-plan-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "contract_ref": null,
+  "bindings": [
+    {
+      "acceptance_id": "AC-DESIGN",
+      "verifier_ref": {
+        "id": "verifier-design-integrity",
+        "revision": 1,
+        "digest": "sha256:1c44063a663f9a5db2541b7c62a218bc609e0abff8b0ad290bf8af321625e280"
+      },
+      "subject_selector": "design-package",
+      "environment_ref": {
+        "id": "fixture-ref",
+        "revision": 1,
+        "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+      },
+      "required_evidence_types": [
+        "design-integrity-report"
+      ],
+      "decision_rule": "reference/schema/fixture/task-DAG checks pass; no runtime claims",
+      "independent_review": true,
+      "timeout_seconds": 1
+    }
+  ],
+  "protected_regression_refs": [],
+  "policy_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "unexpected_elevated_permission": true
+}

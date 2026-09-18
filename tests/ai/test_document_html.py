@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -592,6 +593,18 @@ def refresh_release(engine, root, release):
     docs.put_json(root / release, value)
 
 
+def synthetic_browser_environment(directory):
+    """Isolated test exception, never a production rendering permission."""
+    environment = os.environ.copy()
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        hasher = hashlib.sha256()
+        for path in sorted(directory.iterdir()):
+            if path.is_file() and not path.is_symlink():
+                hasher.update(path.name.encode()); hasher.update(b"\0"); hasher.update(path.read_bytes())
+        environment["AMPLAI_TEST_BROWSER_FIXTURE_SHA256"] = hasher.hexdigest()
+    return environment
+
+
 def test_isolated_browser_offline_noscript_keyboard_mobile_and_print(engine, tmp_path):
     root, release = fixture(
         engine,
@@ -624,6 +637,7 @@ def test_isolated_browser_offline_noscript_keyboard_mobile_and_print(engine, tmp
         capture_output=True,
         text=True,
         timeout=60,
+        env=synthetic_browser_environment(output),
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(result.stdout)["verdict"] == "PASS"
@@ -645,6 +659,7 @@ def test_isolated_browser_offline_noscript_keyboard_mobile_and_print(engine, tmp
         capture_output=True,
         text=True,
         timeout=60,
+        env=synthetic_browser_environment(renderer_output),
     )
     assert renderer_check.returncode == 0, renderer_check.stdout + renderer_check.stderr
     assert json.loads(renderer_check.stdout)["verdict"] == "PASS"

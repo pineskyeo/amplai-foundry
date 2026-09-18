@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/model-profile.schema.json",
+  "title": "AMPLAI V3 model-profile",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "profile_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "provider": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "provider_model_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "model_version_policy": {
+      "enum": [
+        "pinned",
+        "alias_with_drift_detection"
+      ]
+    },
+    "driver_profile_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "reasoning_profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "data_classes_allowed": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "public",
+          "internal",
+          "confidential",
+          "restricted"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "context_limit_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "price_snapshot_ref": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "qualification_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "profile_id",
+    "provider",
+    "provider_model_id",
+    "model_version_policy",
+    "driver_profile_ref",
+    "reasoning_profile",
+    "data_classes_allowed",
+    "required_capabilities",
+    "context_limit_tokens",
+    "price_snapshot_ref",
+    "qualification_ref",
+    "enabled"
+  ],
+  "additionalProperties": false
+}

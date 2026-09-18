@@ -1,0 +1,32 @@
+{
+  "schema_version": "3.0.0",
+  "app_id": "fixture-app-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "repo_identity": "fixture-repo-identity",
+  "aliases": [],
+  "owner_subject_id": "fixture-owner-subject-id",
+  "allowed_roots": [
+    "fixture-allowed-roots"
+  ],
+  "environment_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "invariant_refs": [],
+  "verifier_profile_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "data_classification": "public",
+  "requested_capabilities_ceiling": [],
+  "registry_revision": 1
+}

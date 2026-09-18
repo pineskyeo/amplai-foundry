@@ -1,0 +1,785 @@
+{
+  "package": "AMPLAI V3 Design 1.0",
+  "baseline_date": "2026-09-15",
+  "validation_type": "design_artifact_static_and_structural_validation_only",
+  "status": "pass",
+  "checks": [
+    {
+      "check": "all_json_parse",
+      "status": "pass",
+      "detail": {
+        "files": 121
+      }
+    },
+    {
+      "check": "all_yaml_parse",
+      "status": "pass",
+      "detail": {
+        "files": 2
+      }
+    },
+    {
+      "check": "json_schema_2020_12_metaschema",
+      "status": "pass",
+      "detail": {
+        "schemas": 30,
+        "errors": []
+      }
+    },
+    {
+      "check": "offline_schema_reference_resolution",
+      "status": "pass",
+      "detail": {
+        "errors": [],
+        "network_used": false
+      }
+    },
+    {
+      "check": "valid_structural_fixtures",
+      "status": "pass",
+      "detail": {
+        "count": 29
+      }
+    },
+    {
+      "check": "invalid_structural_fixtures_rejected",
+      "status": "pass",
+      "detail": {
+        "count": 35
+      }
+    },
+    {
+      "check": "semantic_negative_are_structurally_valid",
+      "status": "pass",
+      "detail": {
+        "count": 8,
+        "errors": [],
+        "semantic_runtime_rejection_tested": false
+      }
+    },
+    {
+      "check": "cross_app_scenario_structural_validation",
+      "status": "pass",
+      "detail": {
+        "errors": [],
+        "semantic_activation_tested": false
+      }
+    },
+    {
+      "check": "unique_registry_ids",
+      "status": "pass",
+      "detail": {
+        "gate": 24,
+        "inv": 28,
+        "sem": 25,
+        "test": 112,
+        "task": 62,
+        "req": 35
+      }
+    },
+    {
+      "check": "all_id_and_required_document_references",
+      "status": "pass",
+      "detail": {
+        "missing": []
+      }
+    },
+    {
+      "check": "all_invariants_and_gates_have_tests",
+      "status": "pass",
+      "detail": {
+        "uncovered": []
+      }
+    },
+    {
+      "check": "all_requirements_have_design_contract_gate_test_task",
+      "status": "pass",
+      "detail": {
+        "requirements": 35
+      }
+    },
+    {
+      "check": "implementation_task_dag_acyclic",
+      "status": "pass",
+      "detail": {
+        "tasks": 62,
+        "topological_order": [
+          "V3-001",
+          "V3-002",
+          "V3-003",
+          "V3-004",
+          "V3-005",
+          "V3-006",
+          "V3-007",
+          "V3-009",
+          "V3-008",
+          "V3-010",
+          "V3-018",
+          "V3-011",
+          "V3-012",
+          "V3-019",
+          "V3-013",
+          "V3-020",
+          "V3-022",
+          "V3-014",
+          "V3-023",
+          "V3-024",
+          "V3-015",
+          "V3-025",
+          "V3-026",
+          "V3-027",
+          "V3-028",
+          "V3-032",
+          "V3-051",
+          "V3-016",
+          "V3-029",
+          "V3-034",
+          "V3-040",
+          "V3-017",
+          "V3-036",
+          "V3-037",
+          "V3-038",
+          "V3-039",
+          "V3-041",
+          "V3-021",
+          "V3-030",
+          "V3-031",
+          "V3-033",
+          "V3-035",
+          "V3-042",
+          "V3-044",
+          "V3-043",
+          "V3-045",
+          "V3-046",
+          "V3-048",
+          "V3-047",
+          "V3-049",
+          "V3-050",
+          "V3-052",
+          "V3-054",
+          "V3-053",
+          "V3-055",
+          "V3-056",
+          "V3-057",
+          "V3-058",
+          "V3-059",
+          "V3-060",
+          "V3-061",
+          "V3-062"
+        ],
+        "cycle_nodes": []
+      }
+    },
+    {
+      "check": "state_machine_structure_and_guard_references",
+      "status": "pass",
+      "detail": {
+        "machines": 6,
+        "transitions": 56,
+        "errors": [],
+        "runtime_transitions_executed": false
+      }
+    },
+    {
+      "check": "research_citations_resolve",
+      "status": "pass",
+      "detail": {
+        "sources": 36,
+        "cited": [
+          "R01",
+          "R02",
+          "R03",
+          "R04",
+          "R05",
+          "R06",
+          "R08",
+          "R09",
+          "R10",
+          "R11",
+          "R12",
+          "R13",
+          "R14",
+          "R15",
+          "R17",
+          "R18",
+          "R19",
+          "R20",
+          "R21",
+          "R22",
+          "R23",
+          "R24",
+          "R25",
+          "R27",
+          "R28",
+          "R29",
+          "R30",
+          "R31",
+          "R32",
+          "R33",
+          "R34",
+          "R35",
+          "R36"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "check": "original_archive_unchanged",
+      "status": "pass",
+      "detail": {
+        "sha256": "1a9b8e656b5a133087c20d8164dd7ff6276c34d7e74cff59223f71e9ece954ef"
+      }
+    },
+    {
+      "check": "no_runtime_implementation_or_source_archive_in_deliverable",
+      "status": "pass",
+      "detail": {
+        "unexpected": []
+      }
+    },
+    {
+      "check": "migration_components_match_actual_source",
+      "status": "pass",
+      "detail": {
+        "components": 38,
+        "unmatched": []
+      }
+    },
+    {
+      "check": "migration_inventory_all_non_destructive",
+      "status": "pass",
+      "detail": {
+        "inventory_rows": 1669,
+        "destructive_actions_authorized": 0
+      }
+    },
+    {
+      "check": "local_links_and_payload_safety",
+      "status": "pass",
+      "detail": {
+        "relative_links_checked": 50,
+        "html_anchors_checked": 86,
+        "errors": []
+      }
+    },
+    {
+      "check": "html_content_smoke",
+      "status": "pass",
+      "detail": {
+        "method": "Chromium set_content of locally generated authorized HTML; fresh page per viewport",
+        "scope_limit": "Native file:// launch and relative-file navigation are not tested; environment blocks file navigation. No browser policy bypass used.",
+        "viewports": {
+          "desktop": {
+            "viewport": 1440,
+            "document": 1440,
+            "chapters": 35,
+            "filtered_nav_visible": 1
+          },
+          "mobile": {
+            "viewport": 390,
+            "document": 390,
+            "chapters": 35,
+            "filtered_nav_visible": 1
+          }
+        },
+        "page_errors": [],
+        "automatic_http_requests": [],
+        "meta_chapter_opened": true,
+        "status": "pass"
+      }
+    }
+  ],
+  "fixture_results": [
+    {
+      "file": "valid/intent-envelope.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/resolution.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/goal-contract.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/workgraph.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/execution-envelope.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/execution-grant.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/context-bundle.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/question.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/steering-event.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/driver-capabilities.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/model-profile.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/capability-pack.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/app-binding.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/verification-plan.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/verifier-profile.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/evidence.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/verdict.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/effect-request.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/effect-receipt.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/checkpoint.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/run-record.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/harness-composition.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/harness-change-proposal.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/eval-experiment.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/eval-report.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/promotion-plan.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/release-set.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/migration-plan.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "valid/runtime-event.json",
+      "expected": "valid",
+      "matched": true,
+      "errors": []
+    },
+    {
+      "file": "invalid/intent-envelope-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/resolution-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/goal-contract-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/workgraph-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/execution-envelope-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/execution-grant-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/context-bundle-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/question-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/steering-event-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/driver-capabilities-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/model-profile-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/capability-pack-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/app-binding-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/verification-plan-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/verifier-profile-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/evidence-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/verdict-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/effect-request-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/effect-receipt-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/checkpoint-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/run-record-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/harness-composition-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/harness-change-proposal-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/eval-experiment-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/eval-report-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/promotion-plan-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/release-set-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/migration-plan-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/runtime-event-unknown-field.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "Additional properties are not allowed ('unexpected_elevated_permission' was unexpected)"
+      ]
+    },
+    {
+      "file": "invalid/goal-contract-empty-acceptance.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "[] should be non-empty"
+      ]
+    },
+    {
+      "file": "invalid/workgraph-empty-graph.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "[] should be non-empty"
+      ]
+    },
+    {
+      "file": "invalid/execution-envelope-zero-fence.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "0 is less than the minimum of 1"
+      ]
+    },
+    {
+      "file": "invalid/effect-receipt-unknown-state.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "'done' is not one of ['prepared', 'dispatched', 'applied', 'not_applied', 'unknown', 'reconciled']"
+      ]
+    },
+    {
+      "file": "invalid/intent-envelope-wrong-major.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "'3.0.0' was expected"
+      ]
+    },
+    {
+      "file": "invalid/execution-grant-invalid-time.json",
+      "expected": "invalid",
+      "matched": true,
+      "errors": [
+        "'yesterday' is not a 'date-time'",
+        "'yesterday' does not match 'Z$'"
+      ]
+    }
+  ],
+  "not_run": [
+    "original AMPLAI unit/integration suite",
+    "V3 implementation execution",
+    "semantic validators executing against runtime",
+    "real driver/API conformance",
+    "authority grant signature verification",
+    "database migration/rollback against real state",
+    "RHEL/legacy host compatibility",
+    "external effect crash/reconcile tests",
+    "frontend/document pack actual product rendering",
+    "meta experiment/canary/promotion/rollback",
+    "independent external/subagent review",
+    "production deployment"
+  ],
+  "limitations": [
+    "Static coherence checks do not prove algorithm correctness, authorization, statistical validity or production support.",
+    "Source inventory is complete for filtered normal files, not a semantic audit of every source file.",
+    "All fixture identities/hashes/keys are synthetic and not executable authorization."
+  ],
+  "counts": {
+    "design_documents": 33,
+    "schemas": 30,
+    "invariants": 28,
+    "gates": 24,
+    "semantic_validator_specs": 25,
+    "state_machines": 6,
+    "transitions": 56,
+    "test_specifications": 112,
+    "implementation_tasks": 62,
+    "requirements": 35,
+    "sources": 36,
+    "valid_fixtures": 29,
+    "invalid_fixtures": 35,
+    "semantic_negative_fixtures": 8,
+    "audited_inventory_files": 1669
+  }
+}
