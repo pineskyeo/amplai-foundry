@@ -8,27 +8,30 @@ claiming an independent hidden holdout requires an external evaluator boundary.
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import now
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.evidence.cas import ArtifactStore
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 SPLITS = frozenset({"development", "validation", "holdout"})
 
 
 class CorpusService:
-    def __init__(self, store, artifacts):
+    def __init__(self, store: Store, artifacts: ArtifactStore) -> None:
         self.store, self.artifacts = store, artifacts
 
     def freeze(
         self,
         actor: Actor,
         corpus_id: str,
-        cases: list[dict],
+        cases: list[dict[str, Any]],
         *,
         holdout_use_limit: int,
-        metadata: dict | None = None,
-    ) -> dict:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         actor.require("corpus.manage")
         if "harness.propose" in actor.permissions:
             raise Hold(
@@ -119,7 +122,9 @@ class CorpusService:
         with self.store.tx() as db:
             return self.store.put(db, actor.scope, "eval-corpus", corpus_id, 1, value)
 
-    def select(self, actor: Actor, corpus_ref: dict, split: str, *, purpose: str) -> list[dict]:
+    def select(
+        self, actor: Actor, corpus_ref: dict[str, Any], split: str, *, purpose: str
+    ) -> list[dict[str, Any]]:
         actor.require("corpus.read")
         if split not in SPLITS:
             raise RuntimeFault("CORPUS_SPLIT", "Unknown corpus split")
@@ -132,9 +137,14 @@ class CorpusService:
                 raise Hold(
                     "HOLDOUT_PURPOSE", "Holdout is read only for a frozen approved experiment"
                 )
-        return deepcopy([c for c in corpus["cases"] if c["split"] == split])
+        selected: list[dict[str, Any]] = deepcopy(
+            [c for c in corpus["cases"] if c["split"] == split]
+        )
+        return selected
 
-    def consume_holdout(self, actor: Actor, corpus_ref: dict, experiment_ref: dict) -> None:
+    def consume_holdout(
+        self, actor: Actor, corpus_ref: dict[str, Any], experiment_ref: dict[str, Any]
+    ) -> None:
         actor.require("corpus.holdout.evaluate")
         if "harness.propose" in actor.permissions:
             raise Hold("HOLDOUT_PROPOSER", "Proposer cannot consume holdout")
@@ -201,7 +211,7 @@ class CorpusService:
                 {"experiment_ref": experiment_ref, "case_count": len(keys) - 1},
             )
 
-    def contamination(self, scope, corpus_ref: dict) -> bool:
+    def contamination(self, scope: Scope, corpus_ref: dict[str, Any]) -> bool:
         corpus = self.store.get(scope, "eval-corpus", corpus_ref)
         if corpus.get("contamination_findings"):
             return True
@@ -219,7 +229,7 @@ class CorpusService:
                     raise
         return False
 
-    def mark_contaminated(self, actor: Actor, corpus_ref: dict, reason: str):
+    def mark_contaminated(self, actor: Actor, corpus_ref: dict[str, Any], reason: str) -> None:
         actor.require("corpus.manage")
         if not isinstance(reason, str) or not reason.strip():
             raise RuntimeFault("CONTAMINATION_REASON", "An audit reason is required")

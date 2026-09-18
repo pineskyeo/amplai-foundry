@@ -91,7 +91,7 @@ class ClosureLedger:
         tests: dict[str, dict[str, Any]] = {}
         for tid, spec in self.catalog.items():
             tied = []
-            for module, func in mentions.get(tid, []):
+            for _module, func in mentions.get(tid, []):
                 matched = [
                     k
                     for k in executed

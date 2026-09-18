@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from amplai_foundry.runtime.errors import Hold
+
 from ...agent_drivers.ports import DriverRegistry, RecipePort
 from ...agent_drivers.protocol import SessionJournal
 from ...sandbox.workspace import WorkspaceManager
@@ -41,6 +43,10 @@ def run_execution_reference(root: Path) -> dict[str, Any]:
             results = list(pool.map(execute, claims))
         runs = []
         for dispatch in claims:
+            if dispatch is None:
+                raise Hold(
+                    "REFERENCE_NO_DISPATCH", "Reference goal admitted fewer works than expected"
+                )
             work = d.store.head(d.scope, "work", dispatch["node"]["work_id"])
             for acceptance in dispatch["node"]["acceptance_ids"]:
                 output = "result-" + dispatch["node"]["target_ref"]["id"]

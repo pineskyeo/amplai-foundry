@@ -7,16 +7,24 @@ Release rollback never restores grants, secrets, data or already committed effec
 from __future__ import annotations
 
 import json
+import sqlite3
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import PurePosixPath
+from typing import Any
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from amplai_foundry.evaluation.analysis import analyze_pairs
 from amplai_foundry.evaluation.corpus import CorpusService
 from amplai_foundry.evaluation.receipts import check_observation, read_receipt
+from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.gates import Observation, StateMachines
 from amplai_foundry.runtime.contracts.identity import digest, new_id, now, verify_signature
 from amplai_foundry.runtime.contracts.semantics import check_refs, resolve_ref
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
+from amplai_foundry.runtime.evidence.cas import ArtifactStore
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 from .budget import EvolutionBudget
 from .composition import CompositionService
@@ -53,13 +61,29 @@ CANARY_FIELDS = {
 
 
 class MetaHarness:
-    def __init__(self, store, contracts, artifacts, *, approval_check, trusted_release_keys: dict):
+    def __init__(
+        self,
+        store: Store,
+        contracts: Any,
+        artifacts: ArtifactStore,
+        *,
+        approval_check: Callable[..., Any],
+        trusted_release_keys: dict[str, Ed25519PublicKey],
+    ) -> None:
         self.store, self.contracts, self.artifacts = store, contracts, artifacts
         self.approval_check, self.keys = approval_check, trusted_release_keys
         self.compositions = CompositionService(store, contracts)
         self.machines, self.budgets = StateMachines(contracts), EvolutionBudget(store)
 
-    def _move(self, db, scope, proposal_id, command, observations, extra=None):
+    def _move(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        command: str,
+        observations: dict[str, Any],
+        extra: dict[str, Any] | None = None,
+    ) -> str:
         head = self.store.head(scope, "evolution", proposal_id, db=db)
         state, gates = self.machines.transition("evolution", head["state"], command, observations)
         data = {**head["data"], **(extra or {}), "gate_results": gates}
@@ -74,7 +98,7 @@ class MetaHarness:
         )
         return state
 
-    def _independent(self, actor, head):
+    def _independent(self, actor: Actor, head: dict[str, Any]) -> None:
         if (
             actor.subject_id == head["data"]["proposer_id"]
             or "harness.propose" in actor.permissions
@@ -84,7 +108,7 @@ class MetaHarness:
                 "A proposer identity cannot review, approve, execute or promote a candidate",
             )
 
-    def submit(self, actor, proposal: dict) -> dict:
+    def submit(self, actor: Actor, proposal: dict[str, Any]) -> dict[str, Any]:
         actor.require("harness.propose")
         self.contracts.validate("harness-change-proposal", proposal)
         if (
@@ -124,7 +148,9 @@ class MetaHarness:
             )
         return ref
 
-    def record_review(self, actor, proposal_id: str, review_artifact: dict) -> dict:
+    def record_review(
+        self, actor: Actor, proposal_id: str, review_artifact: dict[str, Any]
+    ) -> dict[str, Any]:
         actor.require("harness.review")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -172,7 +198,7 @@ class MetaHarness:
             )
         return ref
 
-    def screen(self, actor, proposal_id: str) -> dict:
+    def screen(self, actor: Actor, proposal_id: str) -> dict[str, Any]:
         actor.require("harness.review")
         scope, head = actor.scope, self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -237,8 +263,12 @@ class MetaHarness:
         return {"state": state, "classification": classification}
 
     def approve_experiment(
-        self, actor, proposal_id: str, approval_ref: dict, experiment_ref: dict
-    ) -> dict:
+        self,
+        actor: Actor,
+        proposal_id: str,
+        approval_ref: dict[str, Any],
+        experiment_ref: dict[str, Any],
+    ) -> dict[str, Any]:
         actor.require("experiment.approve")
         scope, head = actor.scope, self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -275,7 +305,7 @@ class MetaHarness:
             )
         return {"state": state}
 
-    def start_offline(self, actor, proposal_id: str):
+    def start_offline(self, actor: Actor, proposal_id: str) -> str:
         actor.require("experiment.run")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -296,7 +326,9 @@ class MetaHarness:
         with self.store.tx() as db:
             return self._move(db, actor.scope, proposal_id, "start_offline", obs)
 
-    def _report(self, scope, report_ref):
+    def _report(
+        self, scope: Scope, report_ref: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         report = self.store.get(scope, "eval-report", report_ref)
         self.contracts.validate("eval-report", report)
         exp = self.store.get(scope, "eval-experiment", report["experiment_ref"])
@@ -337,7 +369,7 @@ class MetaHarness:
             )
         return report, analysis, exp
 
-    def evaluate(self, actor, proposal_id: str, report_ref: dict):
+    def evaluate(self, actor: Actor, proposal_id: str, report_ref: dict[str, Any]) -> str:
         actor.require("harness.review")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -364,7 +396,7 @@ class MetaHarness:
                 },
             )
 
-    def _passing_report(self, scope, report_ref: dict):
+    def _passing_report(self, scope: Scope, report_ref: dict[str, Any]) -> dict[str, Any]:
         report, analysis, exp = self._report(scope, report_ref)
         if (
             report["verdict"] != "pass"
@@ -403,12 +435,13 @@ class MetaHarness:
             )
         return report
 
-    def _canary_policy(self, scope, policy_ref):
+    def _canary_policy(self, scope: Scope, policy_ref: dict[str, Any]) -> dict[str, Any]:
         _, p = resolve_ref(self.store, scope, policy_ref)
         if not (CANARY_FIELDS | {"task_binding_refs"}) <= set(p):
             raise Hold(
                 "CANARY_POLICY",
-                "Declare opt-in, eligible risk/targets, all budgets, concurrency, abort and fallback",
+                "Declare opt-in, eligible risk/targets, all budgets, concurrency, "
+                "abort and fallback",
             )
         for k in ("max_runs", "max_wall_seconds", "max_concurrent"):
             if type(p[k]) is not int or p[k] < 1:
@@ -457,7 +490,7 @@ class MetaHarness:
         self._release(scope, p["fallback_release_ref"])
         return p
 
-    def _canary_authority(self, actor, head):
+    def _canary_authority(self, actor: Actor, head: dict[str, Any]) -> None:
         self._independent(actor, head)
         self._check_kill(actor.scope)
         self.approval_check(
@@ -473,7 +506,13 @@ class MetaHarness:
             ),
         )
 
-    def approve_canary(self, actor, proposal_id: str, policy_ref: dict, approval_ref: dict):
+    def approve_canary(
+        self,
+        actor: Actor,
+        proposal_id: str,
+        policy_ref: dict[str, Any],
+        approval_ref: dict[str, Any],
+    ) -> str:
         actor.require("canary.approve")
         scope, head = actor.scope, self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -519,7 +558,7 @@ class MetaHarness:
                 },
             )
 
-    def start_canary(self, actor, proposal_id: str):
+    def start_canary(self, actor: Actor, proposal_id: str) -> str:
         actor.require("canary.run")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._canary_authority(actor, head)
@@ -541,7 +580,13 @@ class MetaHarness:
                 },
             )
 
-    def canary_trial(self, actor, proposal_id: str, task_id: str, execute):
+    def canary_trial(
+        self,
+        actor: Actor,
+        proposal_id: str,
+        task_id: str,
+        execute: Callable[[str], dict[str, Any]],
+    ) -> dict[str, Any]:
         actor.require("canary.run")
         scope = actor.scope
         head = self.store.head(scope, "evolution", proposal_id)
@@ -729,7 +774,7 @@ class MetaHarness:
             "allocation_id": allocation_id,
         }
 
-    def request_promotion(self, actor, proposal_id: str):
+    def request_promotion(self, actor: Actor, proposal_id: str) -> str:
         actor.require("harness.review")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._canary_authority(actor, head)
@@ -753,7 +798,7 @@ class MetaHarness:
         with self.store.tx() as db:
             return self._move(db, actor.scope, proposal_id, "request_promotion", obs)
 
-    def _release(self, scope, ref):
+    def _release(self, scope: Scope, ref: dict[str, Any]) -> dict[str, Any]:
         release = self.store.get(scope, "release-set", ref)
         self.contracts.validate("release-set", release)
         verify_signature(release, self.keys)
@@ -765,7 +810,7 @@ class MetaHarness:
             raise Hold("RELEASE_QUALIFICATION", "Release qualification has not passed")
         return release
 
-    def promote(self, actor, proposal_id: str, plan: dict):
+    def promote(self, actor: Actor, proposal_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         actor.require("release.promote")
         scope = actor.scope
         self.contracts.validate("promotion-plan", plan)
@@ -879,7 +924,14 @@ class MetaHarness:
             )
         return {"state": state, "active_release_ref": plan["candidate_release_ref"]}
 
-    def rollback(self, actor, proposal_id, target_ref, expected_active_ref, approval_ref):
+    def rollback(
+        self,
+        actor: Actor,
+        proposal_id: str,
+        target_ref: dict[str, Any],
+        expected_active_ref: dict[str, Any],
+        approval_ref: dict[str, Any],
+    ) -> dict[str, Any]:
         actor.require("release.rollback")
         scope, head = actor.scope, self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -954,7 +1006,7 @@ class MetaHarness:
             "data_restored": False,
         }
 
-    def abort(self, actor, proposal_id: str, reason: str):
+    def abort(self, actor: Actor, proposal_id: str, reason: str) -> dict[str, Any]:
         actor.require("canary.run")
         if not isinstance(reason, str) or not reason.strip():
             raise RuntimeFault("ABORT_REASON", "Audit reason is required")
@@ -980,7 +1032,7 @@ class MetaHarness:
             "fallback": "candidate admission stopped; active pointer unchanged",
         }
 
-    def recover_canary(self, actor, proposal_id):
+    def recover_canary(self, actor: Actor, proposal_id: str) -> dict[str, Any]:
         actor.require("experiment.reconcile")
         head = self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
@@ -996,7 +1048,7 @@ class MetaHarness:
             actor, proposal_id, "previous_owner_interrupted_reconcile_pending_actions"
         )
 
-    def kill_switch(self, actor, enabled: bool, reason: str):
+    def kill_switch(self, actor: Actor, enabled: bool, reason: str) -> dict[str, Any]:
         actor.require("runtime.admin")
         if type(enabled) is not bool or not isinstance(reason, str) or not reason.strip():
             raise RuntimeFault("KILL_REASON", "Boolean state and audit reason required")
@@ -1026,8 +1078,9 @@ class MetaHarness:
                 "runtime.kill_changed",
                 {"enabled": enabled, "actor": actor.subject_id},
             )
+        return {"enabled": enabled, "reason": reason, "actor": actor.subject_id}
 
-    def _check_kill(self, scope):
+    def _check_kill(self, scope: Scope) -> None:
         try:
             head = self.store.head(scope, "runtime-control", "kill")
         except RuntimeFault as exc:

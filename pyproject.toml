@@ -91,6 +91,10 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 #
 # 이 예외는 `scripts/` 의 두 파일에만 걸린다. `src/` 와 `tests/` 는 그대로 strict 다.
 [tool.ruff.lint.per-file-ignores]
+# _vendor/rfc8785.py 는 upstream 형식을 유지한다 (JCS 참조 구현, D-046 과 같은 이유).
+"src/amplai_foundry/_vendor/rfc8785.py" = ["UP031"]
+# cli.py 의 V3 ops typer 는 governance typer 들이 등록된 뒤 붙여야 한다 (의도된 late import).
+"src/amplai_foundry/cli.py" = ["E402"]
 "scripts/loopctl.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 "scripts/loopv2.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 

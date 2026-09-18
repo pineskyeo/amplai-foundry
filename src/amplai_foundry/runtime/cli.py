@@ -5,14 +5,18 @@ from __future__ import annotations
 import json
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, TypeVar
 
 import typer
 
+from amplai_foundry.control_plane.api_v3.client import AmplaiClient
 from amplai_foundry.runtime.contracts.identity import canonical, new_id
 from amplai_foundry.runtime.contracts.registry import Contracts
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+
+T = TypeVar("T")
 
 app = typer.Typer(name="amplai", help="AMPLAI V3 — Intent to Verified Work", no_args_is_help=True)
 ops = typer.Typer(
@@ -23,11 +27,11 @@ app.add_typer(ops, name="ops")
 ops.add_typer(kit, name="kit")
 
 
-def emit(value):
+def emit(value: object) -> None:
     typer.echo(json.dumps(value, ensure_ascii=False, indent=2))
 
 
-def guarded(operation):
+def guarded(operation: Callable[[], T]) -> T:
     try:
         result = operation()
         emit(result)
@@ -40,9 +44,7 @@ def guarded(operation):
         raise typer.Exit(2) from exc
 
 
-def client():
-    from amplai_foundry.control_plane.api_v3.client import AmplaiClient
-
+def client() -> AmplaiClient:
     from .deployment import private_bytes
 
     token_file = os.getenv("AMPLAI_TOKEN_FILE")
@@ -54,8 +56,8 @@ def client():
     return AmplaiClient(os.getenv("AMPLAI_URL", "http://127.0.0.1:5083/"), token)
 
 
-def submit(text, mode, targets, request_id):
-    def operation():
+def submit(text: str, mode: str, targets: list[str], request_id: str | None) -> None:
+    def operation() -> Any:
         connection = client()
         try:
             return connection.submit(
@@ -72,7 +74,7 @@ def work(
     text: Annotated[str, typer.Argument()],
     target: Annotated[list[str] | None, typer.Option("--app")] = None,
     request_id: Annotated[str | None, typer.Option("--request-id")] = None,
-):
+) -> None:
     """Submit intent; the runtime resolves targets and measurable completion."""
     submit(text, "work", target or [], request_id)
 
@@ -82,13 +84,13 @@ def design(
     text: Annotated[str, typer.Argument()],
     target: Annotated[list[str] | None, typer.Option("--app")] = None,
     request_id: Annotated[str | None, typer.Option("--request-id")] = None,
-):
+) -> None:
     """Design-only intent. It does not authorize implementation or deployment."""
     submit(text, "design", target or [], request_id)
 
 
 @ops.command("version")
-def version():
+def version() -> None:
     """Report development/package status separately from the wire schema version."""
     from amplai_foundry import __version__
 
@@ -104,8 +106,8 @@ def version():
 
 
 @ops.command("status")
-def status(goal_id: str):
-    def operation():
+def status(goal_id: str) -> None:
+    def operation() -> Any:
         c = client()
         try:
             return c.goal(goal_id)
@@ -116,7 +118,7 @@ def status(goal_id: str):
 
 
 @ops.command("demo")
-def demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-demo")):
+def demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-demo")) -> None:
     """Execute actual cross-app files and independent verification, without an LLM."""
     from .reference import run_reference
 
@@ -134,7 +136,7 @@ def demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-d
 @ops.command("execution-demo")
 def execution_demo(
     output: Annotated[Path, typer.Option("--output")] = Path("./amplai-dev02-execution"),
-):
+) -> None:
     """Execute real parallel worker/session/snapshot flow and independent checks."""
     from .execution.reference import run_execution_reference
 
@@ -146,7 +148,9 @@ def execution_demo(
 
 
 @ops.command("meta-demo")
-def meta_demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-meta-demo")):
+def meta_demo(
+    output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-meta-demo"),
+) -> None:
     """Run real paired arithmetic trials, canary, CAS promotion and rollback."""
     from amplai_foundry.meta_harness.reference import run_meta_reference
 
@@ -160,7 +164,7 @@ def meta_demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai
 @ops.command("evolution-demo")
 def evolution_demo(
     output: Annotated[Path, typer.Option("--output")] = Path("./amplai-dev03-evolution"),
-):
+) -> None:
     """Run 48 real V3 paired trials, two canaries, signed promotion and rollback."""
     from amplai_foundry.meta_harness.pipeline_reference import run_pipeline_evolution
 
@@ -182,11 +186,11 @@ def observatory(
     risk: str | None = None,
     since: str | None = None,
     until: str | None = None,
-):
+) -> None:
     """Read scoped metrics from the authenticated control plane; never mutate work."""
     from urllib.parse import urlencode
 
-    def operation():
+    def operation() -> Any:
         params = {
             k: v
             for k, v in {
@@ -210,8 +214,8 @@ def observatory(
 
 
 @ops.command("validate")
-def validate(kind: str, document: Path):
-    def operation():
+def validate(kind: str, document: Path) -> None:
+    def operation() -> Any:
         value = json.loads(document.read_bytes())
         Contracts().validate(kind, value)
         return {
@@ -224,8 +228,8 @@ def validate(kind: str, document: Path):
 
 
 @ops.command("schemas")
-def schemas(output: Annotated[Path | None, typer.Option("--output")] = None):
-    def operation():
+def schemas(output: Annotated[Path | None, typer.Option("--output")] = None) -> None:
+    def operation() -> Any:
         c = Contracts()
         if output:
             output.mkdir(parents=True, exist_ok=True)
@@ -245,7 +249,7 @@ def schemas(output: Annotated[Path | None, typer.Option("--output")] = None):
 
 
 @ops.command("keygen")
-def keygen(path: Path):
+def keygen(path: Path) -> None:
     """Create an owner-only Ed25519 key; this does not grant execution authority."""
     from .deployment import generate_key
 
@@ -258,7 +262,7 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 5083,
     behind_tls_proxy: Annotated[bool, typer.Option("--behind-tls-proxy")] = False,
-):
+) -> None:
     """Start one control-plane owner. Enroll Foundry identities and keys first."""
     if host not in {"127.0.0.1", "localhost", "::1"} and not behind_tls_proxy:
         raise typer.BadParameter(
@@ -288,10 +292,10 @@ def serve(
 
 
 @ops.command("doctor")
-def doctor(root: Annotated[Path | None, typer.Option("--runtime-root")] = None):
+def doctor(root: Annotated[Path | None, typer.Option("--runtime-root")] = None) -> None:
     """Read-only checks. Never increments owner epoch or creates an empty store."""
 
-    def operation():
+    def operation() -> Any:
         if root is None:
             c = client()
             try:
@@ -315,7 +319,9 @@ def doctor(root: Annotated[Path | None, typer.Option("--runtime-root")] = None):
     guarded(operation)
 
 
-def installer(root, bundle_path, trust_path):
+def installer(
+    root: Path, bundle_path: Path | None, trust_path: Path | None
+) -> tuple[Any, Any, Any, Any]:
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
     from amplai_foundry.distribution.installer import KitInstaller
@@ -344,9 +350,9 @@ def installer(root, bundle_path, trust_path):
 
 
 @kit.command("plan")
-def kit_plan(root: Path, bundle: Path, trust: Path, output: Path):
-    def operation():
-        store, actor, service, data = installer(root.absolute(), bundle, trust)
+def kit_plan(root: Path, bundle: Path, trust: Path, output: Path) -> None:
+    def operation() -> Any:
+        store, _actor, service, data = installer(root.absolute(), bundle, trust)
         try:
             plan = service.plan(root.absolute(), data)
             if output.exists():
@@ -360,8 +366,8 @@ def kit_plan(root: Path, bundle: Path, trust: Path, output: Path):
 
 
 @kit.command("apply")
-def kit_apply(root: Path, bundle: Path, trust: Path, plan: Path):
-    def operation():
+def kit_apply(root: Path, bundle: Path, trust: Path, plan: Path) -> None:
+    def operation() -> Any:
         store, actor, service, data = installer(root.absolute(), bundle, trust)
         try:
             return service.apply(actor, root.absolute(), data, json.loads(plan.read_bytes()))
@@ -372,8 +378,8 @@ def kit_apply(root: Path, bundle: Path, trust: Path, plan: Path):
 
 
 @kit.command("recover")
-def kit_recover(root: Path):
-    def operation():
+def kit_recover(root: Path) -> None:
+    def operation() -> Any:
         store, actor, service, _data = installer(root.absolute(), None, None)
         try:
             return service.recover(actor, root.absolute())
@@ -384,14 +390,14 @@ def kit_recover(root: Path):
 
 
 @ops.command("restore")
-def restore(snapshot: Path, destination: Path):
+def restore(snapshot: Path, destination: Path) -> None:
     """Restore into an EMPTY store; restored work starts behind a kill switch."""
     from .recovery.service import RecoveryService
 
     guarded(lambda: RecoveryService.restore(snapshot, destination, operator_confirmed=True))
 
 
-def main():
+def main() -> None:
     app()
 
 

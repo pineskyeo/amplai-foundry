@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Callable
 from datetime import datetime
 from statistics import median
 from typing import Any
 
 from amplai_foundry.runtime.errors import RuntimeFault
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 TERMINAL_GOALS = frozenset(
     {"verified", "failed", "cancelled", "blocked", "aborted", "inconclusive"}
@@ -34,17 +36,17 @@ def _instant(value: str | None) -> float | None:
 
 
 class Observatory:
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
     def summary(
         self,
-        scope,
+        scope: Scope,
         *,
-        filters: dict | None = None,
+        filters: dict[str, str] | None = None,
         since: str | None = None,
         until: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         filters = filters or {}
         if set(filters) - FILTERS or any(not isinstance(v, str) or not v for v in filters.values()):
             raise RuntimeFault("METRIC_FILTER", "Unknown or empty metric slice")
@@ -60,11 +62,13 @@ class Observatory:
             ).fetchall()
             objects = self.store.conn.execute(
                 "SELECT kind,id,revision,digest,data FROM objects WHERE tenant=? AND project=? "
-                "AND kind IN ('goal-contract','workgraph','app-binding','verdict','goal-verification')",
+                "AND kind IN ('goal-contract','workgraph','app-binding',"
+                "'verdict','goal-verification')",
                 scope.keys(),
             ).fetchall()
             events = self.store.conn.execute(
-                "SELECT seq,event_type,aggregate_id,created_at FROM events WHERE tenant=? AND project=? "
+                "SELECT seq,event_type,aggregate_id,created_at FROM events "
+                "WHERE tenant=? AND project=? "
                 "ORDER BY seq",
                 scope.keys(),
             ).fetchall()
@@ -72,10 +76,11 @@ class Observatory:
             (r["kind"], r["id"], r["revision"], r["digest"]): json.loads(r["data"]) for r in objects
         }
 
-        def get(kind, ref):
+        def get(kind: str, ref: object) -> dict[str, Any] | None:
             if not isinstance(ref, dict):
                 return None
-            return obj.get((kind, ref.get("id"), ref.get("revision"), ref.get("digest")))
+            found = obj.get((kind, ref.get("id"), ref.get("revision"), ref.get("digest")))
+            return found if isinstance(found, dict) else None
 
         decoded = [{**dict(r), "data": json.loads(r["data"])} for r in heads]
         runs = [r["data"]["record"] for r in decoded if r["kind"] == "run"]
@@ -83,7 +88,7 @@ class Observatory:
         for r in runs:
             contract = get("goal-contract", r.get("contract_ref"))
             graph = get("workgraph", r.get("graph_ref"))
-            node = next(
+            node: dict[str, Any] = next(
                 (n for n in (graph or {}).get("nodes", []) if n["work_id"] == r["work_id"]), {}
             )
             binding = get("app-binding", node.get("target_ref"))
@@ -100,6 +105,8 @@ class Observatory:
             if not isinstance(labels["risk"], str):
                 labels["risk"] = str(labels["risk"].get("level", "unreported"))
             started = _instant(r["started_at"])
+            if started is None:
+                continue
             if (lo is not None and started < lo) or (hi is not None and started >= hi):
                 continue
             if any(labels[k] != v for k, v in filters.items()):
@@ -169,8 +176,9 @@ class Observatory:
         known_cost = sum(x["measured_microunits"] + x["estimated_microunits"] for x in cost_values)
         elapsed = []
         for r in selected:
-            if r["finished_at"]:
-                delta = _instant(r["finished_at"]) - _instant(r["started_at"])
+            finished, begun = _instant(r["finished_at"]), _instant(r["started_at"])
+            if finished is not None and begun is not None:
+                delta = finished - begun
                 if delta >= 0:
                     elapsed.append(delta * 1000)
                 else:
@@ -275,11 +283,19 @@ class Observatory:
             "queue_ms": None,
             "human_wait_ms": None,
             "integrity_findings": integrity,
-            "note": "Descriptive counts, not causal effects. Unknown time breakdowns are not inferred. "
+            "note": "Descriptive counts, not causal effects. "
+            "Unknown time breakdowns are not inferred. "
             "Small slices expose counts; a zero incident count is not proof of zero risk.",
         }
 
-    def export_batch(self, scope, after: int, exporter, *, limit: int = 100):
+    def export_batch(
+        self,
+        scope: Scope,
+        after: int,
+        exporter: Callable[[list[dict[str, Any]]], bool],
+        *,
+        limit: int = 100,
+    ) -> int:
         from .telemetry import project_event
 
         if type(after) is not int or after < 0 or type(limit) is not int or not 1 <= limit <= 1000:
@@ -289,4 +305,5 @@ class Observatory:
         if safe:
             self.store.assert_outside_tx()
             exporter(safe)
-        return events[-1]["seq"] if events else after
+        last: int = events[-1]["seq"] if events else after
+        return last

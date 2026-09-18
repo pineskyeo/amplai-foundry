@@ -11,15 +11,18 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from amplai_foundry.runtime.contracts.identity import canonical, digest
 from amplai_foundry.runtime.errors import RuntimeFault
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 MAPPING_VERSION = "amplai.otel-metadata/1.0"
 
 
-def project_event(scope, event: dict) -> dict:
+def project_event(scope: Scope, event: dict[str, Any]) -> dict[str, Any]:
     return {
         "mapping_version": MAPPING_VERSION,
         "event_id": event["event_id"],
@@ -37,7 +40,7 @@ def project_event(scope, event: dict) -> dict:
 
 
 class TelemetrySpool:
-    def __init__(self, store, path: Path, *, max_events: int, max_bytes: int):
+    def __init__(self, store: Store, path: Path, *, max_events: int, max_bytes: int) -> None:
         if type(max_events) is not int or not 1 <= max_events <= 1_000_000:
             raise RuntimeFault("TELEMETRY_LIMIT", "A bounded positive event capacity is required")
         if type(max_bytes) is not int or not 1024 <= max_bytes <= 1_000_000_000:
@@ -59,7 +62,7 @@ class TelemetrySpool:
                 data BLOB NOT NULL, size INTEGER NOT NULL, PRIMARY KEY(scope,seq));
         """)
 
-    def capture(self, scope, *, batch: int = 100) -> dict:
+    def capture(self, scope: Scope, *, batch: int = 100) -> dict[str, Any]:
         if type(batch) is not int or not 1 <= batch <= 1000:
             raise RuntimeFault("TELEMETRY_LIMIT", "Capture batch must be between 1 and 1000")
         key = digest(scope.wire())
@@ -98,7 +101,9 @@ class TelemetrySpool:
                 raise
         return self.status(scope)
 
-    def drain(self, scope, exporter, *, limit: int = 100) -> dict:
+    def drain(
+        self, scope: Scope, exporter: Callable[[list[dict[str, Any]]], bool], *, limit: int = 100
+    ) -> dict[str, Any]:
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise RuntimeFault("TELEMETRY_LIMIT", "Drain batch must be between 1 and 1000")
         key = digest(scope.wire())
@@ -134,7 +139,7 @@ class TelemetrySpool:
                         raise
         return {**self.status(scope), "delivery": "acknowledged" if rows else "empty"}
 
-    def status(self, scope) -> dict:
+    def status(self, scope: Scope) -> dict[str, Any]:
         key = digest(scope.wire())
         with self._lock:
             row = self.db.execute("SELECT * FROM cursor WHERE scope=?", (key,)).fetchone()
@@ -154,5 +159,5 @@ class TelemetrySpool:
             "delivery_semantics": "at_least_once",
         }
 
-    def close(self):
+    def close(self) -> None:
         self.db.close()

@@ -146,7 +146,7 @@ class ContainerSandbox:
             if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", name):
                 raise RuntimeFault("ENV_NAME", "Invalid injected environment key")
             args += ["--env", name]
-        return args + [p.image, *argv]
+        return [*args, p.image, *argv]
 
     def probe(self) -> dict[str, Any]:
         try:

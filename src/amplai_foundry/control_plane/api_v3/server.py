@@ -23,6 +23,7 @@ from amplai_foundry.runtime.contracts.identity import canonical, digest, now
 from amplai_foundry.runtime.contracts.semantics import check_refs
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
+from amplai_foundry.runtime.storage.store import Store
 
 
 class Body(BaseModel):
@@ -189,19 +190,19 @@ class ApiServices:
     verification: Any = None
     meta: Any = None
     planning: Any = None
-    planning_context: Callable | None = None
+    planning_context: Callable[..., Any] | None = None
     authority_bridge: Any = None
     # Collector is a local worker/qualified supervisor, not a request payload.
-    worker_collector: Callable | None = None
-    global_checker: Callable | None = None
-    doctor: Callable | None = None
-    object_read_guard: Callable | None = None
-    artifact_read_guard: Callable | None = None
+    worker_collector: Callable[..., Any] | None = None
+    global_checker: Callable[..., Any] | None = None
+    doctor: Callable[..., Any] | None = None
+    object_read_guard: Callable[..., Any] | None = None
+    artifact_read_guard: Callable[..., Any] | None = None
     evaluation: Any = None
     # Installed server executors only. Clients cannot send commands, counters,
     # callback code, approval results or fabricated trial outcomes.
-    eval_executor: Callable | None = None
-    canary_executor: Callable | None = None
+    eval_executor: Callable[..., Any] | None = None
+    canary_executor: Callable[..., Any] | None = None
 
 
 class ApiCommands:
@@ -212,10 +213,17 @@ class ApiCommands:
     their receipts after an interrupted HTTP response.
     """
 
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
-    def run(self, actor, key, route, payload, operation):
+    def run(
+        self,
+        actor: Actor,
+        key: str,
+        route: str,
+        payload: Any,
+        operation: Callable[[], Any],
+    ) -> Any:
         if not key or len(key) > 256:
             raise RuntimeFault("IDEMPOTENCY_REQUIRED", "Idempotency-Key is required")
         identity = digest({"actor": actor.subject_id, "key": key})[7:]
@@ -237,7 +245,8 @@ class ApiCommands:
                     raise RuntimeFault(err["code"], err["message"], outcome=err["outcome"])
                 raise Hold(
                     "COMMAND_OUTCOME_UNKNOWN",
-                    "The command is in flight or requires receipt reconciliation; it was not repeated",
+                    "The command is in flight or requires receipt reconciliation; "
+                    "it was not repeated",
                 )
             self.store.cas(
                 db,
@@ -290,12 +299,13 @@ class ApiCommands:
 class BoundedBody:
     """Bound memory before JSON parsing, including chunked requests."""
 
-    def __init__(self, app, maximum=4 * 1024 * 1024):
+    def __init__(self, app: Any, maximum: int = 4 * 1024 * 1024) -> None:
         self.app, self.maximum = app, maximum
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
-            return await self.app(scope, receive, send)
+            await self.app(scope, receive, send)
+            return
         chunks, count = [], 0
         while True:
             message = await receive()
@@ -309,10 +319,10 @@ class BoundedBody:
             if not message.get("more_body", False):
                 break
 
-        async def replay():
+        async def replay() -> Any:
             return chunks.pop(0) if chunks else await receive()
 
-        return await self.app(scope, replay, send)
+        await self.app(scope, replay, send)
 
 
 def create_app(services: ApiServices) -> FastAPI:
@@ -322,7 +332,7 @@ def create_app(services: ApiServices) -> FastAPI:
     commands, steering = ApiCommands(store), SteeringService(runtime)
 
     @app.exception_handler(RuntimeFault)
-    async def fault_handler(request, exc):
+    async def fault_handler(request: Request, exc: RuntimeFault) -> Any:
         status = 409 if isinstance(exc, Conflict) else 423 if exc.outcome == "hold" else 400
         if exc.code == "UNAUTHENTICATED":
             status = 401
@@ -350,20 +360,20 @@ def create_app(services: ApiServices) -> FastAPI:
             )
         return int(raw)
 
-    def require_service(value, name):
+    def require_service(value: Any, name: str) -> Any:
         if value is None:
             raise Hold(
                 "SERVICE_NOT_CONFIGURED", name + " is not qualified/configured in this deployment"
             )
         return value
 
-    def command(a, k, route, body, operation):
+    def command(a: Actor, k: str, route: str, body: Any, operation: Callable[[], Any]) -> Any:
         return commands.run(
             a, k, route, body.model_dump() if isinstance(body, BaseModel) else body, operation
         )
 
     @app.get("/healthz")
-    def health():
+    def health() -> Any:
         return {
             "service": "amplai-foundry",
             "version": "3.0.0",
@@ -372,7 +382,7 @@ def create_app(services: ApiServices) -> FastAPI:
         }
 
     @app.get("/api/v3/readyz")
-    def ready(a: Actor = Depends(actor)):
+    def ready(a: Actor = Depends(actor)) -> Any:
         a.require("runtime.read")
         result = (
             services.doctor()
@@ -382,7 +392,7 @@ def create_app(services: ApiServices) -> FastAPI:
         return JSONResponse(result, status_code=200 if result.get("status") == "pass" else 503)
 
     @app.post("/api/v3/intents", status_code=202)
-    def submit(body: IntentBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def submit(body: IntentBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("goal.submit")
         return command(
             a,
@@ -403,17 +413,18 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.get("/api/v3/goals")
-    def list_goals(a: Actor = Depends(actor)):
+    def list_goals(a: Actor = Depends(actor)) -> Any:
         a.require("runtime.read")
         with store._lock:
             rows = store.conn.execute(
-                "SELECT id,state,row_version FROM heads WHERE tenant=? AND project=? AND kind='goal' ORDER BY id LIMIT 1000",
+                "SELECT id,state,row_version FROM heads WHERE tenant=? AND project=? "
+                "AND kind='goal' ORDER BY id LIMIT 1000",
                 a.scope.keys(),
             ).fetchall()
         return {"items": [dict(r) for r in rows], "limit": 1000, "scope": a.scope.wire()}
 
     @app.get("/api/v3/goals/{goal_id}")
-    def get_goal(goal_id: str, a: Actor = Depends(actor)):
+    def get_goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
         a.require("runtime.read")
         value = store.head(a.scope, "goal", goal_id)
         return JSONResponse(
@@ -424,10 +435,10 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/goals/{goal_id}/plan")
     def plan(
         goal_id: str, a: Actor = Depends(actor), k: str = Depends(key), v: int = Depends(version)
-    ):
+    ) -> Any:
         a.require("goal.resolve")
 
-        def execute():
+        def execute() -> Any:
             if store.head(a.scope, "goal", goal_id)["row_version"] != v:
                 raise Conflict("STALE_VERSION", "Goal changed before discovery")
             ctx = require_service(services.planning_context, "Context resolver")(a, goal_id)
@@ -442,7 +453,7 @@ def create_app(services: ApiServices) -> FastAPI:
         a: Actor = Depends(actor),
         k: str = Depends(key),
         v: int = Depends(version),
-    ):
+    ) -> Any:
         a.require("contract.propose")
         if body.contract.get("goal_id") != goal_id:
             raise RuntimeFault("GOAL_BINDING", "Contract target differs from URL")
@@ -455,7 +466,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/graphs")
-    def graph(body: GraphBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def graph(body: GraphBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("graph.propose")
         return command(
             a,
@@ -472,7 +483,7 @@ def create_app(services: ApiServices) -> FastAPI:
         a: Actor = Depends(actor),
         k: str = Depends(key),
         v: int = Depends(version),
-    ):
+    ) -> Any:
         a.require("goal.activate")
         if body.contract_ref.get("id") != goal_id:
             raise RuntimeFault("GOAL_BINDING", "Contract differs from goal URL")
@@ -498,10 +509,10 @@ def create_app(services: ApiServices) -> FastAPI:
         a: Actor = Depends(actor),
         k: str = Depends(key),
         v: int = Depends(version),
-    ):
+    ) -> Any:
         a.require("goal.steer")
 
-        def execute():
+        def execute() -> Any:
             if store.head(a.scope, "goal", goal_id)["row_version"] != v:
                 raise Conflict("STALE_VERSION", "Goal changed before steering")
             return steering.receive(
@@ -520,7 +531,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/questions/answer")
-    def answer(body: AnswerBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def answer(body: AnswerBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("question.answer")
         return command(
             a,
@@ -531,24 +542,24 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/workers/claim")
-    def claim(body: ClaimBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def claim(body: ClaimBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("worker.execute")
         return command(a, k, "worker.claim", body, lambda: runtime.claim(a, goal_id=body.goal_id))
 
     @app.post("/api/v3/runs/start")
-    def start(body: StartBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def start(body: StartBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("worker.execute")
         return command(
             a, k, "run.start", body, lambda: runtime.start(a, body.dispatch, body.session_handle)
         )
 
     @app.post("/api/v3/runs/{run_id}/heartbeat")
-    def heartbeat(run_id: str, body: HeartbeatBody, a: Actor = Depends(actor)):
+    def heartbeat(run_id: str, body: HeartbeatBody, a: Actor = Depends(actor)) -> Any:
         a.require("worker.execute")
         return runtime.heartbeat(a, run_id, body.lease_id, body.fence, body.sequence)
 
     @app.post("/api/v3/runs/{run_id}/events")
-    def worker_event(run_id: str, body: EventBody, a: Actor = Depends(actor)):
+    def worker_event(run_id: str, body: EventBody, a: Actor = Depends(actor)) -> Any:
         a.require("worker.execute")
         return runtime.worker_event(
             a,
@@ -562,10 +573,12 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/runs/{run_id}/collect")
-    def collect(run_id: str, body: LeaseBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def collect(
+        run_id: str, body: LeaseBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("worker.execute")
 
-        def execute():
+        def execute() -> Any:
             runtime.lease(a, run_id, body.lease_id, body.fence)
             observed = require_service(services.worker_collector, "Observed worker collector")(
                 a, run_id
@@ -583,7 +596,9 @@ def create_app(services: ApiServices) -> FastAPI:
         return command(a, k, "run.collect:" + run_id, body, execute)
 
     @app.post("/api/v3/verification/runs/{run_id}")
-    def verify(run_id: str, body: VerifyBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def verify(
+        run_id: str, body: VerifyBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("verifier.run")
         return command(
             a,
@@ -596,7 +611,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/verification/runs/{run_id}/finish")
-    def finish_work(run_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def finish_work(run_id: str, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("verifier.run")
         return command(
             a,
@@ -609,7 +624,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/verification/goals/{goal_id}")
-    def finish_goal(goal_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def finish_goal(goal_id: str, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("verifier.run")
         return command(
             a,
@@ -622,7 +637,9 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/registry/{kind}")
-    def register(kind: str, body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def register(
+        kind: str, body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("runtime.admin")
         allowed = {
             "app-binding",
@@ -638,7 +655,7 @@ def create_app(services: ApiServices) -> FastAPI:
                 "This object requires its dedicated authority/evidence lifecycle",
             )
 
-        def execute():
+        def execute() -> Any:
             runtime.contracts.validate(kind, body.value)
             check_refs(store, a.scope, body.value)
             if kind == "app-binding":
@@ -651,7 +668,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.get("/api/v3/objects/{kind}/{object_id}")
     def read_object(
         kind: str, object_id: str, revision: int, digest: str, a: Actor = Depends(actor)
-    ):
+    ) -> Any:
         a.require("runtime.read")
         if kind in {
             "eval-corpus",
@@ -679,7 +696,9 @@ def create_app(services: ApiServices) -> FastAPI:
         return store.get(a.scope, kind, ref)
 
     @app.post("/api/v3/authority/link")
-    def authority_link(body: AuthorityLinkBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def authority_link(
+        body: AuthorityLinkBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("runtime.admin")
         from amplai_foundry.governance.models import ProposalRef
 
@@ -697,7 +716,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/authority/grants")
-    def grant(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def grant(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("grant.issue")
         return command(
             a, k, "authority.issue", body, lambda: runtime.authority.issue(a, body.value)
@@ -714,7 +733,7 @@ def create_app(services: ApiServices) -> FastAPI:
         since: str | None = None,
         until: str | None = None,
         a: Actor = Depends(actor),
-    ):
+    ) -> Any:
         a.require("runtime.read")
         filters = {
             k: v
@@ -731,14 +750,19 @@ def create_app(services: ApiServices) -> FastAPI:
         return Observatory(store).summary(a.scope, filters=filters, since=since, until=until)
 
     @app.get("/api/v3/telemetry/events")
-    def telemetry_events(after: int = 0, limit: int = 100, a: Actor = Depends(actor)):
+    def telemetry_events(after: int = 0, limit: int = 100, a: Actor = Depends(actor)) -> Any:
         a.require("runtime.read")
-        safe = []
-        cursor = Observatory(store).export_batch(a.scope, after, safe.extend, limit=limit)
+        safe: list[dict[str, Any]] = []
+
+        def collect(batch: list[dict[str, Any]]) -> bool:
+            safe.extend(batch)
+            return True
+
+        cursor = Observatory(store).export_batch(a.scope, after, collect, limit=limit)
         return {"events": safe, "next_cursor": cursor, "payload_exported": False}
 
     @app.post("/api/v3/evaluation/corpora")
-    def corpus_freeze(body: CorpusBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def corpus_freeze(body: CorpusBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("corpus.manage")
         service = require_service(services.evaluation, "Evaluation service")
         return command(
@@ -756,7 +780,9 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/evaluation/experiments")
-    def experiment_freeze(body: PromotionBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def experiment_freeze(
+        body: PromotionBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("experiment.approve")
         return command(
             a,
@@ -767,7 +793,9 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/evaluation/run")
-    def experiment_run(body: ExperimentRunBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def experiment_run(
+        body: ExperimentRunBody, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("experiment.run")
         executor = require_service(services.eval_executor, "Qualified evaluation executor")
         return command(
@@ -788,7 +816,7 @@ def create_app(services: ApiServices) -> FastAPI:
         follow: bool = False,
         last_event_id: str = Header(default="", alias="Last-Event-ID"),
         a: Actor = Depends(actor),
-    ):
+    ) -> Any:
         a.require("runtime.read")
         if after < 0 or not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event cursor/limit")
@@ -798,7 +826,7 @@ def create_app(services: ApiServices) -> FastAPI:
             after = max(after, int(last_event_id))
         authorization = request.headers.get("authorization", "")
 
-        async def stream():
+        async def stream() -> Any:
             cursor = after
             for _ in range(60 if follow else 1):
                 current_actor = services.authenticate(authorization)
@@ -829,7 +857,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/meta/proposals")
-    def meta_submit(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def meta_submit(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("harness.propose")
         return command(
             a,
@@ -840,7 +868,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/meta/{proposal_id}/screen")
-    def meta_screen(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def meta_screen(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("harness.review")
         return command(
             a,
@@ -853,7 +881,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/review")
     def meta_review(
         proposal_id: str, body: RefBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("harness.review")
         return command(
             a,
@@ -866,7 +894,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/meta/{proposal_id}/start-offline")
-    def meta_offline(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def meta_offline(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("experiment.run")
         return command(
             a,
@@ -877,7 +905,9 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/meta/{proposal_id}/start-canary")
-    def meta_start_canary(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def meta_start_canary(
+        proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("canary.run")
         return command(
             a,
@@ -890,7 +920,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/canary-trial")
     def meta_trial(
         proposal_id: str, body: CanaryTrialBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("canary.run")
         executor = require_service(services.canary_executor, "Qualified canary executor")
         return command(
@@ -904,7 +934,9 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/meta/{proposal_id}/request-promotion")
-    def meta_request_promotion(proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)):
+    def meta_request_promotion(
+        proposal_id: str, a: Actor = Depends(actor), k: str = Depends(key)
+    ) -> Any:
         a.require("canary.run")
         return command(
             a,
@@ -919,7 +951,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/abort")
     def meta_abort(
         proposal_id: str, body: ReasonBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("canary.run")
         return command(
             a,
@@ -932,14 +964,14 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.get("/api/v3/meta/{proposal_id}/budget")
-    def meta_budget(proposal_id: str, a: Actor = Depends(actor)):
+    def meta_budget(proposal_id: str, a: Actor = Depends(actor)) -> Any:
         a.require("experiment.read")
         return require_service(services.meta, "Meta-harness").budgets.totals(a.scope, proposal_id)
 
     @app.post("/api/v3/meta/{proposal_id}/approve-experiment")
     def meta_experiment(
         proposal_id: str, body: MetaApprovalBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("experiment.approve")
         return command(
             a,
@@ -954,7 +986,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/evaluate")
     def meta_evaluate(
         proposal_id: str, body: RefBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("harness.review")
         return command(
             a,
@@ -969,7 +1001,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/approve-canary")
     def meta_canary(
         proposal_id: str, body: CanaryApprovalBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("canary.approve")
         return command(
             a,
@@ -984,7 +1016,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/promote")
     def meta_promote(
         proposal_id: str, body: PromotionBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("release.promote")
         return command(
             a,
@@ -999,7 +1031,7 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.post("/api/v3/meta/{proposal_id}/rollback")
     def meta_rollback(
         proposal_id: str, body: RollbackBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ):
+    ) -> Any:
         a.require("release.rollback")
         return command(
             a,
@@ -1012,7 +1044,7 @@ def create_app(services: ApiServices) -> FastAPI:
         )
 
     @app.post("/api/v3/runtime/kill")
-    def kill(body: KillBody, a: Actor = Depends(actor), k: str = Depends(key)):
+    def kill(body: KillBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:
         a.require("runtime.admin")
         return command(
             a,

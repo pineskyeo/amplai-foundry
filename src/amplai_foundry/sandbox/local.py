@@ -6,6 +6,7 @@ as an OS sandbox suitable for executing arbitrary model-generated source code.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import stat
@@ -56,10 +57,8 @@ class DataSandbox:
         try:
             for part in parts[:-1]:
                 if create:
-                    try:
+                    with contextlib.suppress(FileExistsError):
                         os.mkdir(part, mode=0o700, dir_fd=fd)
-                    except FileExistsError:
-                        pass
                 child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
                 os.close(fd)
                 fd = child
@@ -83,9 +82,9 @@ class DataSandbox:
         try:
             try:
                 oldfd = os.open(leaf, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
-            except FileNotFoundError:
+            except FileNotFoundError as missing:
                 if expected_old_digest is not None:
-                    raise Hold("SOURCE_CHANGED", "Expected file no longer exists")
+                    raise Hold("SOURCE_CHANGED", "Expected file no longer exists") from missing
             else:
                 with os.fdopen(oldfd, "rb") as src:
                     info = os.fstat(src.fileno())
@@ -110,10 +109,8 @@ class DataSandbox:
                 "SANDBOX_WRITE", "Output path is not a writable regular sandbox file"
             ) from exc
         finally:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 os.unlink(tmp, dir_fd=fd)
-            except FileNotFoundError:
-                pass
             os.close(fd)
 
     def read(self, name: str) -> bytes:

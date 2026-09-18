@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 from amplai_foundry.evaluation.service import EvaluationService, ExecutorPolicy, TrialObservation
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id, now
@@ -23,10 +25,10 @@ from .reference import MetaReference
 class PipelineMetaReference(MetaReference):
     """A deployable local acceptance drill; independent of production authorization."""
 
-    def __init__(self, root):
+    def __init__(self, root: str | Path) -> None:
         super().__init__(root)
-        self.case_runs = []
-        self.case_bindings = {}
+        self.case_runs: list[dict[str, Any]] = []
+        self.case_bindings: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {}
         qualification = self.put(
             "executor-qualification",
             {
@@ -34,7 +36,10 @@ class PipelineMetaReference(MetaReference):
                 "status": "pass",
                 "executor_id": "local-v3-pipeline",
                 "source_qualification_ref": self.prepared["execution_profile"]["environment_ref"],
-                "scope_note": "Real V3 local recipe worker; not an external LLM or physical container qualification",
+                "scope_note": (
+                    "Real V3 local recipe worker; "
+                    "not an external LLM or physical container qualification"
+                ),
             },
         )
         self.eval = EvaluationService(
@@ -48,7 +53,9 @@ class PipelineMetaReference(MetaReference):
             ),
         )
 
-    def execute_case(self, composition_ref, case, repeat, mode):
+    def execute_case(
+        self, composition_ref: dict[str, Any], case: dict[str, Any], repeat: int, mode: str
+    ) -> TrialObservation:
         if mode not in {"sandbox_rerun", "shadow", "canary"}:
             raise Hold("PIPELINE_MODE", "This local executor does not label reruns as trace replay")
         d, scope = self.d, self.d.scope
@@ -268,6 +275,8 @@ class PipelineMetaReference(MetaReference):
             expected_version=d.store.head(scope, "goal", goal_id)["row_version"],
         )
         dispatch = d.runtime.claim(d.worker, goal_id=goal_id)
+        if dispatch is None:
+            raise Hold("PIPELINE_NO_DISPATCH", "Reference goal admitted no work to execute")
         d.driver.run(
             d.runtime,
             d.worker,
@@ -305,7 +314,9 @@ class PipelineMetaReference(MetaReference):
         if verdict["outcome"] == "pass":
             d.verification.finish_work(d.verifier, dispatch["run_id"])
 
-            def global_check(contract, graph, outputs):
+            def global_check(
+                contract: dict[str, Any], graph: dict[str, Any], outputs: dict[str, Any]
+            ) -> VerificationObservation:
                 actual = [
                     json.loads(d.artifacts.read(scope, a))
                     for ports in outputs.values()
@@ -337,7 +348,7 @@ class PipelineMetaReference(MetaReference):
                 evidence_refs=[verdict_ref],
             )
 
-            def stopped(run_id, kind):
+            def stopped(run_id: str, kind: str) -> dict[str, Any]:
                 run = d.store.head(scope, "run", run_id)["data"]
                 return {
                     "process_stopped": run.get("process_stopped") is True,
@@ -395,7 +406,7 @@ class PipelineMetaReference(MetaReference):
             success, (artifact, proof_artifact), cost_microunits=0, input_tokens=0, output_tokens=0
         )
 
-    def canary_target(self, task_id):
+    def canary_target(self, task_id: str) -> dict[str, Any]:
         if task_id not in self.case_bindings:
             raise Hold(
                 "CANARY_CASE_UNQUALIFIED",
@@ -403,19 +414,22 @@ class PipelineMetaReference(MetaReference):
             )
         return self.case_bindings[task_id][0]
 
-    def execute(self, prepared, *, rollback=True):
+    def execute(self, prepared: dict[str, Any], *, rollback: bool = True) -> dict[str, Any]:
         result = super().execute(prepared, rollback=rollback)
         result = {
             **result,
             "actual_pipeline_trials": len(self.case_runs),
             "case_runs": self.case_runs,
-            "qualification": "local actual V3 pipeline; not model-quality, live-provider or physical-container qualification",
+            "qualification": (
+                "local actual V3 pipeline; not model-quality, live-provider "
+                "or physical-container qualification"
+            ),
         }
         (self.root / "pipeline-evolution-report.json").write_bytes(canonical(result))
         return result
 
 
-def run_pipeline_evolution(root):
+def run_pipeline_evolution(root: str | Path) -> dict[str, Any]:
     deployment = PipelineMetaReference(root)
     try:
         return deployment.execute(deployment.prepare())

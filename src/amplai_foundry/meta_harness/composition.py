@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.semantics import check_refs
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 PROTECTED_FIELDS = frozenset({"verification_policy_ref", "protocol_major"})
 MUTABLE_A = frozenset({"prompt_bundle_ref", "router_policy_ref", "context_policy_ref"})
@@ -20,10 +24,10 @@ MUTABLE_B = frozenset(
 
 
 class CompositionService:
-    def __init__(self, store, contracts):
+    def __init__(self, store: Store, contracts: Any) -> None:
         self.store, self.contracts = store, contracts
 
-    def register(self, actor, value: dict) -> dict:
+    def register(self, actor: Actor, value: dict[str, Any]) -> dict[str, Any]:
         actor.require("harness.propose")
         self.contracts.validate("harness-composition", value)
         check_refs(self.store, actor.scope, value)
@@ -50,7 +54,9 @@ class CompositionService:
                 value,
             )
 
-    def classify(self, scope, baseline_ref: dict, candidate_ref: dict) -> dict:
+    def classify(
+        self, scope: Scope, baseline_ref: dict[str, Any], candidate_ref: dict[str, Any]
+    ) -> dict[str, Any]:
         baseline = self.store.get(scope, "harness-composition", baseline_ref)
         candidate = self.store.get(scope, "harness-composition", candidate_ref)
         ignored = {"composition_id", "revision", "created_at"}
@@ -75,13 +81,13 @@ class CompositionService:
 
     def select(
         self,
-        scope,
-        candidates: list[dict],
+        scope: Scope,
+        candidates: list[dict[str, Any]],
         *,
         classification: str,
         required_actions: set[str],
         scores: dict[str, float] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         import math
 
         if scores is not None and (

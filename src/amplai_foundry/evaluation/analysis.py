@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import random
 from statistics import NormalDist, mean
+from typing import Any
 
 from amplai_foundry.runtime.errors import RuntimeFault
 
@@ -24,7 +25,7 @@ REQUIRED = {
 }
 
 
-def validate_analysis_plan(plan: dict):
+def validate_analysis_plan(plan: dict[str, Any]) -> None:
     if not isinstance(plan, dict) or not set(plan) >= REQUIRED:
         raise RuntimeFault(
             "ANALYSIS_PLAN", "Predeclare analysis, sampling and missing-data policies"
@@ -79,21 +80,18 @@ def validate_analysis_plan(plan: dict):
                 "SEQUENTIAL_RULE", "This implementation qualifies fixed-sample analysis only"
             )
     benefit = plan.get("benefit")
-    if benefit is not None:
-        if (
-            not isinstance(benefit, dict)
-            or set(benefit) != {"endpoint", "minimum_reduction", "bootstrap_samples", "seed"}
-            or benefit["endpoint"] != "cost_mean_microunits"
-            or type(benefit["minimum_reduction"]) not in (float, int)
-            or not math.isfinite(benefit["minimum_reduction"])
-            or benefit["minimum_reduction"] <= 0
-            or type(benefit["bootstrap_samples"]) is not int
-            or not 1000 <= benefit["bootstrap_samples"] <= 20000
-            or type(benefit["seed"]) is not int
-        ):
-            raise RuntimeFault(
-                "BENEFIT_PLAN", "Predeclare the supported paired-task benefit analysis"
-            )
+    if benefit is not None and (
+        not isinstance(benefit, dict)
+        or set(benefit) != {"endpoint", "minimum_reduction", "bootstrap_samples", "seed"}
+        or benefit["endpoint"] != "cost_mean_microunits"
+        or type(benefit["minimum_reduction"]) not in (float, int)
+        or not math.isfinite(benefit["minimum_reduction"])
+        or benefit["minimum_reduction"] <= 0
+        or type(benefit["bootstrap_samples"]) is not int
+        or not 1000 <= benefit["bootstrap_samples"] <= 20000
+        or type(benefit["seed"]) is not int
+    ):
+        raise RuntimeFault("BENEFIT_PLAN", "Predeclare the supported paired-task benefit analysis")
 
 
 def wilson(successes: int, n: int, z: float) -> tuple[float, float]:
@@ -105,15 +103,15 @@ def wilson(successes: int, n: int, z: float) -> tuple[float, float]:
 
 
 def analyze_pairs(
-    trials: list[dict],
-    plan: dict,
+    trials: list[dict[str, Any]],
+    plan: dict[str, Any],
     *,
     expected_tasks: list[str],
     environment_drifted: bool = False,
     contamination: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     validate_analysis_plan(plan)
-    groups = {}
+    groups: dict[tuple[str, str, int], dict[str, Any]] = {}
     reasons = []
     if (
         not isinstance(expected_tasks, list)
@@ -161,7 +159,7 @@ def analyze_pairs(
             ):
                 missing.append({"task_id": task, "arm": arm})
             else:
-                arm_results[arm] = all(v["success"] is True for v in values)
+                arm_results[arm] = all(v is not None and v["success"] is True for v in values)
         if len(arm_results) == 2:
             paired.append((arm_results["baseline"], arm_results["candidate"]))
     n = len(paired)
@@ -212,12 +210,23 @@ def analyze_pairs(
     for task in expected_tasks:
         bs = [groups.get((task, "baseline", i)) for i in range(plan["repeats_per_task"])]
         cs = [groups.get((task, "candidate", i)) for i in range(plan["repeats_per_task"])]
-        if all(v and v.get("cost_microunits") is not None for v in bs + cs):
+        present = [v for v in bs + cs if v is not None]
+        if len(present) == len(bs + cs) and all(
+            v.get("cost_microunits") is not None for v in present
+        ):
+            cs_present = [v for v in cs if v is not None]
+            bs_present = [v for v in bs if v is not None]
             cost_pairs.append(
-                mean(v["cost_microunits"] for v in cs) - mean(v["cost_microunits"] for v in bs)
+                mean(v["cost_microunits"] for v in cs_present)
+                - mean(v["cost_microunits"] for v in bs_present)
             )
-        if all(v and v.get("elapsed_ms") is not None for v in bs + cs):
-            latencies.append(mean(v["elapsed_ms"] for v in cs) - mean(v["elapsed_ms"] for v in bs))
+        if len(present) == len(bs + cs) and all(v.get("elapsed_ms") is not None for v in present):
+            cs_present = [v for v in cs if v is not None]
+            bs_present = [v for v in bs if v is not None]
+            latencies.append(
+                mean(v["elapsed_ms"] for v in cs_present)
+                - mean(v["elapsed_ms"] for v in bs_present)
+            )
     benefit_result = None
     if plan.get("benefit"):
         benefit_result = analyze_benefit(cost_pairs, plan, len(expected_tasks))
@@ -242,12 +251,17 @@ def analyze_pairs(
         if len(cost_pairs) == len(expected_tasks)
         else None,
         "elapsed_delta_mean_ms": mean(latencies) if len(latencies) == len(expected_tasks) else None,
-        "interval_limitations": "Wilson approximation with conservative simultaneous adjustment; not an exact finite-sample guarantee",
+        "interval_limitations": (
+            "Wilson approximation with conservative simultaneous adjustment; "
+            "not an exact finite-sample guarantee"
+        ),
         "secondary_metrics_use": "descriptive_only_not_a_safety_tradeoff",
     }
 
 
-def analyze_benefit(deltas: list[float], plan: dict, expected_count: int) -> dict:
+def analyze_benefit(
+    deltas: list[float], plan: dict[str, Any], expected_count: int
+) -> dict[str, Any]:
     """Paired TASK bootstrap, never resampling repeated trajectories as independent.
 
     Percentile bootstrap is approximate. Report its bounds and limitations; it
@@ -286,5 +300,8 @@ def analyze_benefit(deltas: list[float], plan: dict, expected_count: int) -> dic
         "method": "paired_task_percentile_bootstrap",
         "seed": b["seed"],
         "resamples": b["bootstrap_samples"],
-        "limitation": "Approximate bootstrap interval; fixed sample, no optional stopping or task pseudoreplication",
+        "limitation": (
+            "Approximate bootstrap interval; fixed sample, no optional stopping "
+            "or task pseudoreplication"
+        ),
     }

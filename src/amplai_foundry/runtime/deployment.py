@@ -12,6 +12,7 @@ import os
 import platform
 import stat
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ from amplai_foundry.governance.object_store import ImmutableDefinitionObjectStor
 from amplai_foundry.governance.store import GovernanceStore
 from amplai_foundry.knowledge_runtime.service import KnowledgeService
 from amplai_foundry.meta_harness.service import MetaHarness
+from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.verification.runtime.service import JsonVerifier, VerificationService
 
 from .contracts.authority import Authority
@@ -97,7 +99,7 @@ def read_key(path: Path) -> Ed25519PrivateKey:
     return key
 
 
-def generate_key(path: Path) -> dict:
+def generate_key(path: Path) -> dict[str, Any]:
     path = path.expanduser().absolute()
     if path.exists() or path.is_symlink():
         raise Hold("KEY_EXISTS", "An existing trust key will not be overwritten")
@@ -122,10 +124,10 @@ def generate_key(path: Path) -> dict:
 
 
 class ObjectStoreRouter:
-    def __init__(self, projects):
+    def __init__(self, projects: dict[tuple[str, str], Any]) -> None:
         self.projects = projects
 
-    def get_definition_object(self, proposal_ref, expected_digest):
+    def get_definition_object(self, proposal_ref: Any, expected_digest: str) -> Any:
         key = (proposal_ref.project_ref.namespace, proposal_ref.project_ref.project_id)
         if key not in self.projects:
             raise Hold("PROJECT_BINDING", "Unknown Foundry object namespace")
@@ -133,7 +135,7 @@ class ObjectStoreRouter:
 
 
 class RuntimeDeployment:
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path) -> None:
         self.path = Path(config_path).expanduser().absolute()
         self.config = DeploymentConfig.model_validate_json(self.path.read_bytes())
         if self.config.schema_version != "3.0.0":
@@ -142,18 +144,18 @@ class RuntimeDeployment:
         self.contracts = Contracts()
         self.store = Store(self.local_path(self.config.runtime_root))
         self.artifacts = ArtifactStore(self.store)
-        self.http_clients = []
+        self.http_clients: list[Any] = []
         try:
             self._configure()
         except BaseException:
             self.close()
             raise
 
-    def local_path(self, value):
+    def local_path(self, value: str | Path) -> Path:
         p = Path(value).expanduser()
         return p if p.is_absolute() else self.base / p
 
-    def _configure(self):
+    def _configure(self) -> None:
         cfg = self.config
         governance_path = self.local_path(cfg.governance_database)
         if not governance_path.is_file():
@@ -233,23 +235,23 @@ class RuntimeDeployment:
         )
 
         # The credential directory is read again per request; rotation/revocation is live.
-        def authenticate(authorization):
+        def authenticate(authorization: str | None) -> Any:
             directory = json.loads(private_bytes(self.local_path(cfg.credential_bindings_file)))
 
-            def resolve(binding):
+            def resolve(binding: dict[str, Any]) -> Any:
                 scope = Scope.parse(binding["scope"])
                 request = DirectAuthorityRequest.model_validate(
                     {**binding["foundry_identity"], "request_id": new_id("http-auth")}
                 )
                 return self.bridge.authenticate(scope, request)
 
-            return BearerAuthenticator(directory, resolve)(authorization)
+            return BearerAuthenticator(directory, resolve)(authorization or "")
 
         self.authenticate = authenticate
         self._load_registry()
         self._load_verifiers()
-        self.planning = None
-        self.context_provider = None
+        self.planning: PlanningService | None = None
+        self.context_provider: Callable[[Actor, str], Any] | None = None
         if cfg.planning:
             self._load_planning(cfg.planning)
         self.services = ApiServices(
@@ -265,7 +267,7 @@ class RuntimeDeployment:
         )
         self.app = create_app(self.services)
 
-    def _load_registry(self):
+    def _load_registry(self) -> None:
         if not self.config.registry_snapshot_file:
             return
         data = json.loads(self.local_path(self.config.registry_snapshot_file).read_bytes())
@@ -307,7 +309,7 @@ class RuntimeDeployment:
                 self.store.put(db, scope, item["kind"], item["id"], item["revision"], item["value"])
         # Import is an operator action, not a claim that a profile's live probes passed.
 
-    def _load_verifiers(self):
+    def _load_verifiers(self) -> None:
         if not self.config.verification_bindings_file:
             return
         bindings = json.loads(self.local_path(self.config.verification_bindings_file).read_bytes())
@@ -321,7 +323,7 @@ class RuntimeDeployment:
                 entry["profile_ref"], JsonVerifier(entry["schema"], equals=entry.get("equals"))
             )
 
-    def _load_planning(self, config):
+    def _load_planning(self, config: dict[str, Any]) -> None:
         from .contracts.semantics import resolve_ref
 
         scope = Scope.parse(config["scope"])
@@ -357,7 +359,7 @@ class RuntimeDeployment:
             planning_policy=config["policy"],
         )
 
-        def context(actor, goal_id):
+        def context(actor: Actor, goal_id: str) -> Any:
             if actor.scope != scope:
                 raise Hold("PLANNING_SCOPE", "Planner context is not bound to this project")
             knowledge = KnowledgeService(self.store, self.contracts)
@@ -371,7 +373,7 @@ class RuntimeDeployment:
 
         self.context_provider = context
 
-    def doctor(self):
+    def doctor(self) -> dict[str, Any]:
         checks = [
             {
                 "check": "python",
@@ -416,7 +418,7 @@ class RuntimeDeployment:
             "qualification_is_not_inferred_from_credentials": True,
         }
 
-    def close(self):
+    def close(self) -> None:
         for client in getattr(self, "http_clients", []):
             client.close()
         if getattr(self, "store", None):

@@ -10,10 +10,32 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from ...runtime.contracts.identity import digest_bytes
 from ...runtime.errors import Hold, RuntimeFault
 from .service import VerificationObservation
+
+# Page geometry/a11y probe run inside the pinned browser; kept as one JS program.
+_GEOMETRY_JS = """() => {
+                  const visible=e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
+                  const critical=[...document.querySelectorAll('[data-amplai-critical]')].filter(visible);
+                  const clipped=critical.filter(e=>e.scrollWidth>e.clientWidth+2||e.scrollHeight>e.clientHeight+2).map(e=>e.id||e.tagName);
+                  const overflow=critical.filter(e=>{const r=e.getBoundingClientRect();return r.left< -1||r.right>innerWidth+1}).map(e=>e.id||e.tagName);
+                  const overlaps=[];
+                  for(let i=0;i<critical.length;i++)for(let j=i+1;j<critical.length;j++){
+                    const a=critical[i],b=critical[j];if(a.contains(b)||b.contains(a))continue;
+                    const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+                    if(Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2)overlaps.push([a.id,b.id]);
+                  }
+                  return {horizontal_overflow:document.documentElement.scrollWidth>innerWidth+1,
+                    clipped_critical:clipped,outside_critical:overflow,critical_overlaps:overlaps,
+                    broken_images:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),
+                    font_status:document.fonts.status,font_failures:[...document.fonts].filter(f=>f.status==='error').map(f=>f.family),
+                    title:document.title,language:document.documentElement.lang,visible_text:document.body.innerText.slice(0,20000),
+                    invalid_buttons:[...document.querySelectorAll('button')].filter(e=>visible(e)&&!e.innerText.trim()&&!e.getAttribute('aria-label')).length,
+                    unlabelled_inputs:[...document.querySelectorAll('input:not([type=hidden])')].filter(e=>visible(e)&&!e.labels?.length&&!e.getAttribute('aria-label')&&!e.getAttribute('aria-labelledby')).length};
+}"""  # noqa: E501
 
 
 @dataclass(frozen=True)
@@ -27,20 +49,23 @@ class BrowserPolicy:
     isolated_test_fixture_digest: str | None = None
 
 
+DEFAULT_BROWSER_POLICY = BrowserPolicy()
+
+
 class BrowserRenderer:
-    def __init__(self, policy: BrowserPolicy = BrowserPolicy()):
+    def __init__(self, policy: BrowserPolicy = DEFAULT_BROWSER_POLICY) -> None:
         self.policy = policy
 
     def render(
         self,
         html: bytes,
-        destination,
+        destination: str | Path,
         *,
-        width=1280,
-        height=900,
-        steps=None,
-        required_selectors=None,
-    ):
+        width: int = 1280,
+        height: int = 900,
+        steps: list[dict[str, str]] | None = None,
+        required_selectors: list[str] | None = None,
+    ) -> dict[str, Any]:
         if (
             len(html) > self.policy.max_html_bytes
             or not 320 <= width <= 3840
@@ -58,8 +83,8 @@ class BrowserRenderer:
                 "TEST_FIXTURE_BINDING",
                 "Sandbox exception only applies to the exact reviewed test fixture",
             )
-        errors = []
-        blocked = []
+        errors: list[str] = []
+        blocked: list[str] = []
         with sync_playwright() as p:
             browser_type = getattr(p, self.policy.browser, None)
             if browser_type is None:
@@ -81,9 +106,12 @@ class BrowserRenderer:
                     java_script_enabled=self.policy.execute_scripts,
                     service_workers="block",
                 )
-                context.route(
-                    "**/*", lambda route: (blocked.append(route.request.url), route.abort())
-                )
+
+                def _block(route: Any) -> None:
+                    blocked.append(route.request.url)
+                    route.abort()
+
+                context.route("**/*", _block)
                 page = context.new_page()
                 page.set_default_timeout(self.policy.timeout_ms)
                 page.on("pageerror", lambda e: errors.append(str(e)[:512]))
@@ -115,25 +143,7 @@ class BrowserRenderer:
                             "RENDER_STEP",
                             "Functional verifier does not execute arbitrary submitted JavaScript",
                         )
-                details = page.evaluate("""() => {
-                  const visible=e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
-                  const critical=[...document.querySelectorAll('[data-amplai-critical]')].filter(visible);
-                  const clipped=critical.filter(e=>e.scrollWidth>e.clientWidth+2||e.scrollHeight>e.clientHeight+2).map(e=>e.id||e.tagName);
-                  const overflow=critical.filter(e=>{const r=e.getBoundingClientRect();return r.left< -1||r.right>innerWidth+1}).map(e=>e.id||e.tagName);
-                  const overlaps=[];
-                  for(let i=0;i<critical.length;i++)for(let j=i+1;j<critical.length;j++){
-                    const a=critical[i],b=critical[j];if(a.contains(b)||b.contains(a))continue;
-                    const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
-                    if(Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2)overlaps.push([a.id,b.id]);
-                  }
-                  return {horizontal_overflow:document.documentElement.scrollWidth>innerWidth+1,
-                    clipped_critical:clipped,outside_critical:overflow,critical_overlaps:overlaps,
-                    broken_images:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),
-                    font_status:document.fonts.status,font_failures:[...document.fonts].filter(f=>f.status==='error').map(f=>f.family),
-                    title:document.title,language:document.documentElement.lang,visible_text:document.body.innerText.slice(0,20000),
-                    invalid_buttons:[...document.querySelectorAll('button')].filter(e=>visible(e)&&!e.innerText.trim()&&!e.getAttribute('aria-label')).length,
-                    unlabelled_inputs:[...document.querySelectorAll('input:not([type=hidden])')].filter(e=>visible(e)&&!e.labels?.length&&!e.getAttribute('aria-label')&&!e.getAttribute('aria-labelledby')).length};
-                }""")
+                details = page.evaluate(_GEOMETRY_JS)
                 missing = [
                     selector
                     for selector in required_selectors or []
@@ -179,7 +189,9 @@ class BrowserRenderer:
                 browser.close()
 
     @staticmethod
-    def compare_golden(actual, golden, *, max_changed_fraction):
+    def compare_golden(
+        actual: str | Path, golden: str | Path, *, max_changed_fraction: float
+    ) -> dict[str, Any]:
         if not 0 <= max_changed_fraction <= 1:
             raise RuntimeFault("GOLDEN_THRESHOLD", "Difference threshold must be predeclared")
         from PIL import Image, ImageChops
@@ -204,8 +216,13 @@ class BrowserRenderer:
 
 class VisualVerifier:
     def __init__(
-        self, renderer, *, viewports=((1280, 900), (390, 844)), required_selectors=(), steps=()
-    ):
+        self,
+        renderer: BrowserRenderer,
+        *,
+        viewports: tuple[tuple[int, int], ...] = ((1280, 900), (390, 844)),
+        required_selectors: tuple[str, ...] = (),
+        steps: tuple[dict[str, str], ...] = (),
+    ) -> None:
         self.renderer, self.viewports, self.required, self.steps = (
             renderer,
             viewports,
@@ -213,8 +230,8 @@ class VisualVerifier:
             steps,
         )
 
-    def __call__(self, raw):
-        results = []
+    def __call__(self, raw: bytes) -> VerificationObservation:
+        results: list[dict[str, Any]] = []
         with tempfile.TemporaryDirectory(prefix="amplai-render-") as temp:
             for width, height in self.viewports:
                 result = self.renderer.render(
@@ -222,8 +239,8 @@ class VisualVerifier:
                     Path(temp) / str(width),
                     width=width,
                     height=height,
-                    required_selectors=self.required,
-                    steps=self.steps,
+                    required_selectors=list(self.required),
+                    steps=list(self.steps),
                 )
                 # Embed evidence bytes into the observation for the trusted collector;
                 # temporary paths are not durable artifact references.
@@ -242,7 +259,7 @@ class VisualVerifier:
 
 class DocumentFreshness:
     @staticmethod
-    def verify(manifest, current_inputs):
+    def verify(manifest: dict[str, Any], current_inputs: dict[str, str]) -> VerificationObservation:
         required = {
             "source_digests",
             "renderer_version",

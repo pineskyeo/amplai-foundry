@@ -10,11 +10,15 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from amplai_foundry.meta_harness.budget import EvolutionBudget
+from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id, now
 from amplai_foundry.runtime.contracts.semantics import check_refs, resolve_ref
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.evidence.cas import ArtifactStore
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 from .analysis import analyze_pairs, validate_analysis_plan
 from .corpus import CorpusService
@@ -24,7 +28,7 @@ from .receipts import check_observation, read_receipt
 @dataclass(frozen=True)
 class TrialObservation:
     success: bool | None
-    artifact_refs: tuple
+    artifact_refs: tuple[dict[str, Any], ...]
     safety_failures: int = 0
     unknown_effects: int = 0
     cost_microunits: int | None = None
@@ -40,10 +44,10 @@ class ExecutorPolicy:
     modes: frozenset[str]
     max_trial_tokens: int
     max_trial_cost_microunits: int
-    qualification_ref: dict
+    qualification_ref: dict[str, Any]
     external_effects: bool = False
 
-    def validate(self):
+    def validate(self) -> None:
         if not self.modes or not self.modes <= {"static", "replay", "sandbox_rerun", "shadow"}:
             raise RuntimeFault(
                 "EXECUTOR_MODE", "Canary is admitted by MetaHarness, not generic evaluation"
@@ -66,25 +70,25 @@ class ExecutorPolicy:
 class EvaluationService:
     def __init__(
         self,
-        store,
-        contracts,
-        artifacts,
+        store: Store,
+        contracts: Any,
+        artifacts: ArtifactStore,
         *,
-        approval_check,
+        approval_check: Callable[..., Any],
         executor_id: str,
-        environment_probe: Callable | None = None,
+        environment_probe: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
         executor_policy: ExecutorPolicy | None = None,
-    ):
+    ) -> None:
         self.store, self.contracts, self.artifacts = store, contracts, artifacts
         self.approval_check, self.executor_id = approval_check, executor_id
         self.environment_probe, self.executor_policy = environment_probe, executor_policy
         self.corpus, self.budgets = CorpusService(store, artifacts), EvolutionBudget(store)
 
     @staticmethod
-    def approval_subject(plan: dict):
+    def approval_subject(plan: dict[str, Any]) -> dict[str, Any]:
         return {k: v for k, v in plan.items() if k != "approval_ref"}
 
-    def _independent(self, actor, plan):
+    def _independent(self, actor: Actor, plan: dict[str, Any]) -> dict[str, Any]:
         p = self.store.get(actor.scope, "harness-change-proposal", plan["proposal_ref"])
         if (
             p["proposer"]["subject_id"] == actor.subject_id
@@ -96,7 +100,7 @@ class EvaluationService:
             )
         return p
 
-    def _guard(self, actor, plan):
+    def _guard(self, actor: Actor, plan: dict[str, Any]) -> None:
         self._independent(actor, plan)
         self.approval_check(
             actor.scope,
@@ -111,7 +115,7 @@ class EvaluationService:
             if exc.code != "NOT_FOUND":
                 raise
 
-    def freeze(self, actor, plan: dict) -> dict:
+    def freeze(self, actor: Actor, plan: dict[str, Any]) -> dict[str, Any]:
         actor.require("experiment.approve")
         self.contracts.validate("eval-experiment", plan)
         if plan["scope"] != actor.scope.wire():
@@ -132,9 +136,10 @@ class EvaluationService:
                 "Only the qualified paired binary primary endpoint is enabled",
             )
         _, sampling = resolve_ref(self.store, actor.scope, plan["sampling_plan_ref"])
-        cases = self.corpus.select(
-            actor, plan["corpus_ref"], sampling.get("split"), purpose="frozen_experiment"
-        )
+        split = sampling.get("split")
+        if not isinstance(split, str):
+            raise Hold("SAMPLING_SPLIT", "Sampling plan must pin a split name")
+        cases = self.corpus.select(actor, plan["corpus_ref"], split, purpose="frozen_experiment")
         if not cases or sampling.get("case_ids") != [c["case_id"] for c in cases]:
             raise Hold(
                 "SAMPLING_CHANGED",
@@ -143,7 +148,8 @@ class EvaluationService:
         if len(cases) * 2 * analysis["policy"]["repeats_per_task"] > 256:
             raise Hold(
                 "REPORT_CAPACITY",
-                "The pinned report schema admits at most 256 trial references; reduce the frozen sample",
+                "The pinned report schema admits at most 256 trial references; "
+                "reduce the frozen sample",
             )
         if (
             analysis["policy"].get("purpose") == "confirmatory"
@@ -174,7 +180,7 @@ class EvaluationService:
             )
         return ref
 
-    def _validate_executor(self, scope, mode):
+    def _validate_executor(self, scope: Scope, mode: str) -> ExecutorPolicy:
         policy = self.executor_policy
         if policy is None:
             raise Hold(
@@ -196,7 +202,14 @@ class EvaluationService:
             )
         return policy
 
-    def run(self, actor, experiment_ref: dict, executor, *, split: str = "validation") -> dict:
+    def run(
+        self,
+        actor: Actor,
+        experiment_ref: dict[str, Any],
+        executor: Callable[..., TrialObservation],
+        *,
+        split: str = "validation",
+    ) -> dict[str, Any]:
         actor.require("experiment.run")
         scope = actor.scope
         plan = self.store.get(scope, "eval-experiment", experiment_ref)
@@ -290,7 +303,8 @@ class EvaluationService:
                             plan["mode"],
                         )
                     except Exception as exc:
-                        # The process may already have written; uncertain effects/usage stay explicit.
+                        # The process may already have written; uncertain effects/usage
+                        # stay explicit.
                         error_type = type(exc).__name__
                         observation = TrialObservation(
                             None, (), unknown_effects=1, usage_status="unknown"
@@ -540,7 +554,15 @@ class EvaluationService:
             )
         return ref
 
-    def _validate_observation(self, scope, observation, composition_ref, task_id, repeat, mode):
+    def _validate_observation(
+        self,
+        scope: Scope,
+        observation: TrialObservation,
+        composition_ref: dict[str, Any],
+        task_id: str,
+        repeat: int,
+        mode: str,
+    ) -> None:
         if not isinstance(observation, TrialObservation):
             raise RuntimeFault("TRIAL_RESULT", "Executor must return a typed observation")
         if observation.success is not None and type(observation.success) is not bool:
@@ -552,12 +574,13 @@ class EvaluationService:
                 raise RuntimeFault(
                     "TRIAL_USAGE", "Safety and uncertainty counters must be nonnegative integers"
                 )
-        for value in (
+        optional_values: tuple[int | None, ...] = (
             observation.cost_microunits,
             observation.input_tokens,
             observation.output_tokens,
-        ):
-            if value is not None and (type(value) is not int or value < 0):
+        )
+        for optional in optional_values:
+            if optional is not None and (type(optional) is not int or optional < 0):
                 raise RuntimeFault(
                     "TRIAL_USAGE", "Usage is nonnegative integer or explicitly unknown"
                 )
@@ -583,7 +606,7 @@ class EvaluationService:
         }
         check_observation(receipt, expected)
 
-    def recover_interrupted(self, actor, experiment_ref: dict) -> dict:
+    def recover_interrupted(self, actor: Actor, experiment_ref: dict[str, Any]) -> dict[str, Any]:
         actor.require("experiment.reconcile")
         plan = self.store.get(actor.scope, "eval-experiment", experiment_ref)
         self._independent(actor, plan)

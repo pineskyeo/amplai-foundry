@@ -6,6 +6,7 @@ import json
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Any
 
 from ...runtime.contracts.identity import digest_bytes
 from ...runtime.errors import RuntimeFault
@@ -15,16 +16,16 @@ from .service import VerificationObservation
 class StructuredCommandVerifier:
     def __init__(
         self,
-        command_id,
-        argv,
+        command_id: str,
+        argv: list[str],
         *,
-        sandbox,
-        workspace,
-        timeout_seconds=120,
-        report_path="junit.xml",
-        format="junit",
-        minimum_tests=1,
-    ):
+        sandbox: Any,
+        workspace: str | Path,
+        timeout_seconds: int = 120,
+        report_path: str = "junit.xml",
+        format: str = "junit",
+        minimum_tests: int = 1,
+    ) -> None:
         if not command_id or not argv or not 1 <= timeout_seconds <= 86400 or minimum_tests < 1:
             raise RuntimeFault("VERIFIER_COMMAND", "Verifier command profile is incomplete")
         self.id, self.argv, self.sandbox, self.workspace, self.timeout = (
@@ -36,7 +37,7 @@ class StructuredCommandVerifier:
         )
         self.report, self.format, self.minimum = report_path, format, minimum_tests
 
-    def __call__(self, raw):
+    def __call__(self, raw: bytes) -> VerificationObservation:
         # The sandbox has a dedicated verifier-owned immutable test source mount.
         # Raw worker output is evidence input, never interpolated into a shell command.
         path = self.workspace / "subject.bin"

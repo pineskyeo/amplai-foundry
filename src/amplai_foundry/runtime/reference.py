@@ -8,8 +8,10 @@ claim to measure model quality or qualify an external LLM account.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -58,7 +60,7 @@ PERMISSIONS = frozenset(
 )
 
 
-def qualify_data_sandbox(directory: Path) -> dict:
+def qualify_data_sandbox(directory: Path) -> dict[str, Any]:
     directory.mkdir(parents=True, exist_ok=True)
     sandbox = DataSandbox(directory / "sandbox")
     checks = {}
@@ -101,11 +103,13 @@ def qualify_data_sandbox(directory: Path) -> dict:
 
 
 class ReferenceDeployment:
-    def __init__(self, root: Path, *, clock=None):
+    def __init__(self, root: Path, *, clock: Callable[[], float] | None = None) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self.scope = Scope("demo-local", "demo-amplai")
-        self.store = Store(self.root / "state", **({"clock": clock} if clock else {}))
+        self.store = (
+            Store(self.root / "state", clock=clock) if clock else Store(self.root / "state")
+        )
         self.contracts = Contracts()
         self.actor = Actor(
             "demo-owner", self.scope, PERMISSIONS, authn_context_ref="isolated-local-demo"
@@ -126,9 +130,9 @@ class ReferenceDeployment:
         )
         self.signer = Ed25519PrivateKey.generate()
         self.verifier_signer = Ed25519PrivateKey.generate()
-        self.decisions = {}
+        self.decisions: dict[str, dict[str, Any]] = {}
 
-        def resolve(scope, ref):
+        def resolve(scope: Scope, ref: dict[str, Any]) -> dict[str, Any]:
             if scope != self.scope:
                 raise RuntimeFault("DEMO_SCOPE", "Demo authority never covers another scope")
             value = self.decisions.get(digest(ref))
@@ -156,13 +160,17 @@ class ReferenceDeployment:
         self.driver = RecipeDriver(self.root / "workspaces")
         self.knowledge = KnowledgeService(self.store, self.contracts)
 
-    def put(self, kind: str, object_id: str, value: dict, revision: int = 1) -> dict:
+    def put(
+        self, kind: str, object_id: str, value: dict[str, Any], revision: int = 1
+    ) -> dict[str, Any]:
         if kind in self.contracts.definitions:
             self.contracts.validate(kind, value)
         with self.store.tx() as db:
             return self.store.put(db, self.scope, kind, object_id, revision, value)
 
-    def prepare(self, *, two_apps: bool = False, initial_value: str = "AMPLAI V3") -> dict:
+    def prepare(
+        self, *, two_apps: bool = False, initial_value: str = "AMPLAI V3"
+    ) -> dict[str, Any]:
         scope = self.scope
         caps = [
             {
@@ -234,7 +242,7 @@ class ReferenceDeployment:
                 ],
             },
         )
-        profile = {
+        profile: dict[str, Any] = {
             "schema_version": "3.0.0",
             "profile_id": "demo-json-verifier",
             "version": "3.0.0",
@@ -425,7 +433,7 @@ class ReferenceDeployment:
             "protected_regression_refs": [],
             "policy_ref": policy_ref,
         }
-        plan_ref = self.put("verification-plan", plan["plan_id"], plan)
+        plan_ref = self.put("verification-plan", str(plan["plan_id"]), plan)
         contract = {
             "schema_version": "3.0.0",
             "goal_id": goal_id,
@@ -487,7 +495,7 @@ class ReferenceDeployment:
             "graph_ref": graph_ref,
             "capabilities": caps,
         }
-        decision_ref = self.put("demo-decision", decision["decision_id"], decision)
+        decision_ref = self.put("demo-decision", str(decision["decision_id"]), decision)
         self.decisions[digest(decision_ref)] = decision
         current = datetime.fromtimestamp(self.store.clock(), UTC)
         grant = {
@@ -545,8 +553,8 @@ class ReferenceDeployment:
             "execution_profile": execution_profile,
         }
 
-    def execute(self, prepared: dict) -> dict:
-        runs = []
+    def execute(self, prepared: dict[str, Any]) -> dict[str, Any]:
+        runs: list[dict[str, Any]] = []
         while True:
             dispatch = self.runtime.claim(self.worker, goal_id=prepared["goal_id"])
             if dispatch is None:
@@ -566,7 +574,9 @@ class ReferenceDeployment:
             result = self.verification.finish_work(self.verifier, dispatch["run_id"])
             runs.append({"run_id": dispatch["run_id"], **result})
 
-        def integration(contract, graph, outputs):
+        def integration(
+            contract: dict[str, Any], graph: dict[str, Any], outputs: dict[str, Any]
+        ) -> VerificationObservation:
             values = [
                 json.loads(self.artifacts.read(self.scope, a))
                 for ports in outputs.values()
@@ -597,16 +607,16 @@ class ReferenceDeployment:
         (self.root / "reference-report.json").write_bytes(canonical(report))
         return report
 
-    def close(self):
+    def close(self) -> None:
         self.store.close()
 
-    def __enter__(self):
+    def __enter__(self) -> ReferenceDeployment:
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         self.close()
 
 
-def run_reference(root: Path, *, two_apps: bool = True) -> dict:
+def run_reference(root: Path, *, two_apps: bool = True) -> dict[str, Any]:
     with ReferenceDeployment(root) as deployment:
         return deployment.execute(deployment.prepare(two_apps=two_apps))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from urllib.parse import quote
 
 from amplai_foundry.agent_drivers.http import BoundHttp
@@ -10,7 +11,7 @@ from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 
 class AmplaiClient:
-    def __init__(self, base_url: str, token: str, *, transport=None):
+    def __init__(self, base_url: str, token: str, *, transport: Any | None = None) -> None:
         if not token or len(token) < 32:
             raise Hold("CLIENT_AUTH", "Set AMPLAI_TOKEN_FILE or an explicit server credential")
         self.http = BoundHttp(
@@ -21,24 +22,35 @@ class AmplaiClient:
             timeout=120,
         )
 
-    def call(self, method: str, path: str, *, payload=None, key=None, version=None):
+    def call(
+        self,
+        method: str,
+        path: str,
+        *,
+        payload: Any = None,
+        key: str | None = None,
+        version: int | str | None = None,
+    ) -> Any:
         if "://" in path or path.startswith("//") or ".." in path.split("/"):
             raise RuntimeFault("CLIENT_PATH", "Request cannot leave the configured control plane")
-        headers = {}
+        headers: dict[str, str] = {}
         if method != "GET":
             headers["Idempotency-Key"] = key or new_id("request")
         if version is not None:
             headers["If-Match"] = '"' + str(version) + '"'
-        kwargs = {"headers": headers}
-        if payload is not None:
-            kwargs["json"] = payload
         # No retry after a timeout: return the same request key for explicit reconciliation.
         try:
-            response = self.http.client.request(method, path.lstrip("/"), **kwargs)
+            if payload is not None:
+                response = self.http.client.request(
+                    method, path.lstrip("/"), headers=headers, json=payload
+                )
+            else:
+                response = self.http.client.request(method, path.lstrip("/"), headers=headers)
         except Exception as exc:
             raise Hold(
                 "CLIENT_OUTCOME_UNKNOWN",
-                "Request outcome is unknown; reuse the same idempotency key after checking the goal/command receipt",
+                "Request outcome is unknown; reuse the same idempotency key "
+                "after checking the goal/command receipt",
                 details={"key": headers.get("Idempotency-Key")},
             ) from exc
         if response.status_code >= 300:
@@ -57,8 +69,14 @@ class AmplaiClient:
         return response.json()
 
     def submit(
-        self, text: str, *, mode="work", target_hints=None, key=None, external_message_id=None
-    ):
+        self,
+        text: str,
+        *,
+        mode: str = "work",
+        target_hints: list[str] | None = None,
+        key: str | None = None,
+        external_message_id: str | None = None,
+    ) -> Any:
         return self.call(
             "POST",
             "api/v3/intents",
@@ -71,10 +89,12 @@ class AmplaiClient:
             key=key,
         )
 
-    def goal(self, goal_id):
+    def goal(self, goal_id: str) -> Any:
         return self.call("GET", "api/v3/goals/" + quote(goal_id, safe=""))
 
-    def hermes_submit(self, text, *, workspace_id, channel_id, message_id, mode="work"):
+    def hermes_submit(
+        self, text: str, *, workspace_id: str, channel_id: str, message_id: str, mode: str = "work"
+    ) -> Any:
         from amplai_foundry.runtime.contracts.identity import digest
 
         # Transport identity deduplicates delivery; app resolution remains server-owned.
@@ -83,5 +103,5 @@ class AmplaiClient:
             text, mode=mode, key="hermes:" + identity, external_message_id=message_id
         )
 
-    def close(self):
+    def close(self) -> None:
         self.http.close()

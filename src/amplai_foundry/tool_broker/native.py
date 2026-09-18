@@ -163,7 +163,7 @@ class NativeToolBroker:
             "grant_ref": envelope["grant_ref"],
             "requested_at": data["requested_at"],
         }
-        prepared = self.effects.prepare(worker, request)
+        self.effects.prepare(worker, request)
         receipt = self.effects.dispatch(scope, data["effect_id"])
         return {
             "native_call_id": native_call_id,

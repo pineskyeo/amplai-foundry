@@ -10,6 +10,9 @@ import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
+
+from amplai_foundry.runtime.storage.store import Scope
 
 from ..evaluation.corpus import CorpusService
 from ..evaluation.service import EvaluationService, ExecutorPolicy, TrialObservation
@@ -21,7 +24,7 @@ from .service import MetaHarness
 
 
 class MetaReference:
-    def __init__(self, root):
+    def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
         self.d = ReferenceDeployment(self.root / "runtime")
         self.prepared = self.d.prepare()
@@ -48,9 +51,9 @@ class MetaReference:
                 }
             ),
         )
-        self.approvals = {}
+        self.approvals: dict[str, dict[str, Any]] = {}
 
-        def check(scope, ref, action, subject):
+        def check(scope: Scope, ref: dict[str, Any], action: str, subject: str) -> dict[str, Any]:
             value = self.approvals.get(digest(ref))
             if (
                 scope != self.d.scope
@@ -76,7 +79,10 @@ class MetaReference:
                 "qualification_id": new_id("executor-qualification"),
                 "status": "pass",
                 "executor_id": "local-arithmetic-qualification",
-                "scope_note": "local deterministic data-only executor; no external model or production qualification",
+                "scope_note": (
+                    "local deterministic data-only executor; "
+                    "no external model or production qualification"
+                ),
             },
         )
         self.eval = EvaluationService(
@@ -90,14 +96,14 @@ class MetaReference:
             ),
         )
 
-    def put(self, kind, value):
+    def put(self, kind: str, value: dict[str, Any]) -> dict[str, Any]:
         field = next((k for k in value if k.endswith("_id")), None)
         if not field:
             value = {**value, "object_id": new_id(kind)}
             field = "object_id"
         return self.d.put(kind, value[field], value, value.get("revision", 1))
 
-    def approve(self, action, subject):
+    def approve(self, action: str, subject: str) -> dict[str, Any]:
         value = {
             "approval_id": new_id("demo-approval"),
             "scope": self.d.scope.wire(),
@@ -110,13 +116,15 @@ class MetaReference:
         self.approvals[digest(ref)] = value
         return ref
 
-    def release(self, name, composition_ref):
+    def release(self, name: str, composition_ref: dict[str, Any]) -> dict[str, Any]:
         matrix = self.put(
             "qualification-matrix",
             {
                 "matrix_id": new_id("matrix"),
                 "status": "pass",
-                "qualification_scope": "local deterministic data-only reference, not production or external provider",
+                "qualification_scope": (
+                    "local deterministic data-only reference, not production or external provider"
+                ),
                 "checks": [
                     "actual protected file-boundary probes",
                     "actual JSON output verification",
@@ -202,7 +210,9 @@ class MetaReference:
         }
         return self.put("release-set", sign(release, "demo-release", self.d.signer))
 
-    def prepare(self, *, mode="sandbox_rerun", bad_candidate=False):
+    def prepare(
+        self, *, mode: str = "sandbox_rerun", bad_candidate: bool = False
+    ) -> dict[str, Any]:
         d = self.d
         baseline = d.store.get(
             d.scope, "harness-composition", self.prepared["execution_profile"]["composition_ref"]
@@ -251,7 +261,8 @@ class MetaReference:
         )
         observation = d.artifacts.admit(
             d.scope,
-            b'{"issue":"Exercise actual evolution gates on a controlled arithmetic corpus, not model efficiency claims"}',
+            b'{"issue":"Exercise actual evolution gates on a controlled arithmetic corpus, '
+            b'not model efficiency claims"}',
             "application/json",
             trust="verifier",
         )
@@ -278,10 +289,15 @@ class MetaReference:
             "baseline_ref": br,
             "candidate_ref": cr,
             "surface_class": "A",
-            "hypothesis": "In the local reference corpus, builtin summation preserves each arithmetic result. This is not evidence about any LLM.",
+            "hypothesis": (
+                "In the local reference corpus, builtin summation preserves each arithmetic "
+                "result. This is not evidence about any LLM."
+            ),
             "observation_refs": [observation_ref],
             "change_artifact": change,
-            "expected_benefit": "Validate the meta-control lifecycle without changing security boundaries",
+            "expected_benefit": (
+                "Validate the meta-control lifecycle without changing security boundaries"
+            ),
             "risks": ["Deterministic toy corpus does not estimate model quality"],
             "protected_surface_findings": [],
             "experiment_plan_ref": draftplan,
@@ -290,7 +306,7 @@ class MetaReference:
             "status": "draft",
         }
         proposal_ref = self.meta.submit(self.proposer, proposal)
-        self.meta.screen(self.reviewer, proposal["proposal_id"])
+        self.meta.screen(self.reviewer, str(proposal["proposal_id"]))
         cases = []
         for i in range(24):
             payload = {"numbers": [i, -i // 2, 2 * i + 3], "expected": sum([i, -i // 2, 2 * i + 3])}
@@ -322,7 +338,9 @@ class MetaReference:
                     "safety_failure_limit": 0,
                     "missing_policy": "inconclusive",
                 },
-                "scope_note": "Predeclared local control-path drill only; not production acceptance threshold",
+                "scope_note": (
+                    "Predeclared local control-path drill only; not production acceptance threshold"
+                ),
             },
         )
         sampling = self.put(
@@ -367,7 +385,7 @@ class MetaReference:
         plan["approval_ref"] = self.approve("experiment.execute", digest(plan))
         experiment_ref = self.eval.freeze(self.reviewer, plan)
         self.meta.approve_experiment(
-            self.reviewer, proposal["proposal_id"], plan["approval_ref"], experiment_ref
+            self.reviewer, str(proposal["proposal_id"]), plan["approval_ref"], experiment_ref
         )
         return {
             "proposal_id": proposal["proposal_id"],
@@ -380,7 +398,9 @@ class MetaReference:
             "cases": cases,
         }
 
-    def execute_case(self, composition_ref, case, repeat, mode):
+    def execute_case(
+        self, composition_ref: dict[str, Any], case: dict[str, Any], repeat: int, mode: str
+    ) -> TrialObservation:
         d = self.d
         composition = d.store.get(d.scope, "harness-composition", composition_ref)
         from ..runtime.contracts.semantics import resolve_ref
@@ -430,12 +450,12 @@ class MetaReference:
             independent["success"], (artifact,), cost_microunits=0, input_tokens=0, output_tokens=0
         )
 
-    def canary_target(self, task_id):
-        return self.d.store.get(self.d.scope, "goal-contract", self.prepared["contract_ref"])[
-            "targets"
-        ][0]
+    def canary_target(self, task_id: str) -> dict[str, Any]:
+        contract = self.d.store.get(self.d.scope, "goal-contract", self.prepared["contract_ref"])
+        target: dict[str, Any] = contract["targets"][0]
+        return target
 
-    def execute(self, prepared, *, rollback=True):
+    def execute(self, prepared: dict[str, Any], *, rollback: bool = True) -> dict[str, Any]:
         d = self.d
         pid = prepared["proposal_id"]
         self.meta.start_offline(self.reviewer, pid)
@@ -485,7 +505,7 @@ class MetaReference:
         self.meta.start_canary(self.reviewer, pid)
         for case in prepared["cases"][:2]:
 
-            def run_canary(_):
+            def run_canary(_: str, case: dict[str, Any] = case) -> dict[str, Any]:
                 result = self.execute_case(prepared["candidate_ref"], case, 0, "canary")
                 return {
                     "success": result.success,
@@ -541,16 +561,19 @@ class MetaReference:
             "promotion": promoted,
             "rollback": restored,
             "distinct_tasks": 24,
-            "scope": "local deterministic arithmetic and lifecycle qualification, not LLM performance or production release",
+            "scope": (
+                "local deterministic arithmetic and lifecycle qualification, "
+                "not LLM performance or production release"
+            ),
         }
         (self.root / "meta-reference-report.json").write_bytes(canonical(result))
         return result
 
-    def close(self):
+    def close(self) -> None:
         self.d.close()
 
 
-def run_meta_reference(root):
+def run_meta_reference(root: str | Path) -> dict[str, Any]:
     demo = MetaReference(root)
     try:
         return demo.execute(demo.prepare())

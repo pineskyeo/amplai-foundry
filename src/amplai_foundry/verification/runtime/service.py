@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import math
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from jsonschema import Draft202012Validator
 
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -21,18 +24,19 @@ from amplai_foundry.runtime.contracts.identity import (
 )
 from amplai_foundry.runtime.contracts.semantics import resolve_ref
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
+from amplai_foundry.runtime.storage.store import Scope
 
 
 @dataclass(frozen=True)
 class VerificationObservation:
     outcome: str
     reason: str
-    details: dict
+    details: dict[str, Any]
     exit_code: int | None = None
 
 
-def _strict_object(pairs):
-    result = {}
+def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
             raise ValueError("Duplicate JSON member: " + key)
@@ -40,19 +44,19 @@ def _strict_object(pairs):
     return result
 
 
-def _finite_float(text):
+def _finite_float(text: str) -> float:
     value = float(text)
     if not math.isfinite(value):
         raise ValueError("Non-finite JSON number")
     return value
 
 
-def _reject_constant(text):
+def _reject_constant(text: str) -> Any:
     raise ValueError("Non-JSON numeric constant: " + text)
 
 
 class JsonVerifier:
-    def __init__(self, schema: dict, *, equals: dict | None = None):
+    def __init__(self, schema: dict[str, Any], *, equals: dict[str, Any] | None = None) -> None:
         Draft202012Validator.check_schema(schema)
         self.schema, self.equals = schema, equals or {}
 
@@ -90,15 +94,24 @@ class JsonVerifier:
 
 
 class VerificationService:
-    def __init__(self, runtime, *, signer, key_id: str, trusted_keys: dict):
+    def __init__(
+        self,
+        runtime: Any,
+        *,
+        signer: Ed25519PrivateKey,
+        key_id: str,
+        trusted_keys: dict[str, Ed25519PublicKey],
+    ) -> None:
         self.runtime, self.store, self.artifacts = runtime, runtime.store, runtime.artifacts
         self.signer, self.key_id, self.keys = signer, key_id, trusted_keys
-        self.runners = {}
-        self.global_runners = {}
-        self.regression_runners = {}
-        self.human_receipts = {}
+        self.runners: dict[str, Callable[[bytes], VerificationObservation]] = {}
+        self.global_runners: dict[str, Callable[..., VerificationObservation]] = {}
+        self.regression_runners: dict[str, Callable[..., VerificationObservation]] = {}
+        self.human_receipts: dict[str, dict[str, Any]] = {}
 
-    def _assert_current_run(self, actor: Actor, run: dict, *, db=None) -> None:
+    def _assert_current_run(
+        self, actor: Actor, run: dict[str, Any], *, db: sqlite3.Connection | None = None
+    ) -> None:
         if actor.kind != "service":
             raise RuntimeFault("VERIFIER_IDENTITY", "Trusted verification needs a service identity")
         record = run["data"]["record"]
@@ -125,19 +138,25 @@ class VerificationService:
                 "Resolve cancellation or steering before accepting verification",
             )
 
-    def register(self, profile_ref: dict, runner: Callable[[bytes], VerificationObservation]):
+    def register(
+        self, profile_ref: dict[str, Any], runner: Callable[[bytes], VerificationObservation]
+    ) -> None:
         key = digest(profile_ref)
         if key in self.runners:
             raise RuntimeFault("VERIFIER_DUPLICATE", "A verifier revision is already bound")
         self.runners[key] = runner
 
-    def register_global(self, profile_ref: dict, runner: Callable):
+    def register_global(
+        self, profile_ref: dict[str, Any], runner: Callable[..., VerificationObservation]
+    ) -> None:
         key = digest(profile_ref)
         if key in self.global_runners and self.global_runners[key] is not runner:
             raise RuntimeFault("VERIFIER_DUPLICATE", "Global verifier revision is already bound")
         self.global_runners[key] = runner
 
-    def register_regression(self, profile_ref: dict, runner: Callable):
+    def register_regression(
+        self, profile_ref: dict[str, Any], runner: Callable[..., VerificationObservation]
+    ) -> None:
         key = digest(profile_ref)
         if key in self.regression_runners:
             raise RuntimeFault(
@@ -147,16 +166,16 @@ class VerificationService:
 
     def human_accept(
         self,
-        actor,
-        run_id,
-        acceptance_id,
-        subject,
-        outcome,
-        reason,
+        actor: Actor,
+        run_id: str,
+        acceptance_id: str,
+        subject: dict[str, Any],
+        outcome: str,
+        reason: str,
         *,
-        approval_ref,
-        approval_check,
-    ):
+        approval_ref: dict[str, Any],
+        approval_check: Callable[..., Any],
+    ) -> dict[str, Any]:
         actor.require("acceptance.human")
         if actor.kind != "human" or outcome not in {"pass", "fail"} or not reason.strip():
             raise Hold("HUMAN_RECEIPT", "Explicit authenticated human acceptance is required")
@@ -197,10 +216,13 @@ class VerificationService:
             self.store.event(
                 db, actor.scope, "run", run_id, "acceptance.human_recorded", {"receipt_ref": ref}
             )
-        return ref
+        receipt_ref: dict[str, Any] = ref
+        return receipt_ref
 
-    def _human_observation(self, scope, run_id, acceptance_id, subject):
-        receipts = []
+    def _human_observation(
+        self, scope: Scope, run_id: str, acceptance_id: str, subject: dict[str, Any]
+    ) -> VerificationObservation:
+        receipts: list[tuple[dict[str, Any], dict[str, Any]]] = []
         for ref, receipt in self.store.list_objects(scope, "human-acceptance"):
             if (
                 receipt["run_id"] == run_id
@@ -218,7 +240,9 @@ class VerificationService:
             receipt["outcome"], receipt["reason"], {"human_receipt_ref": ref}
         )
 
-    def _attest(self, db, scope, kind: str, payload: dict) -> dict:
+    def _attest(
+        self, db: sqlite3.Connection, scope: Scope, kind: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         value = sign(
             {
                 "attestation_id": new_id("attest"),
@@ -230,9 +254,12 @@ class VerificationService:
             self.key_id,
             self.signer,
         )
-        return self.store.put(db, scope, "attestation", value["attestation_id"], 1, value)
+        attested: dict[str, Any] = self.store.put(
+            db, scope, "attestation", value["attestation_id"], 1, value
+        )
+        return attested
 
-    def validate_attested(self, scope, kind: str, record: dict):
+    def validate_attested(self, scope: Scope, kind: str, record: dict[str, Any]) -> None:
         attestation = self.store.get(scope, "attestation", record["attestation_ref"])
         verify_signature(attestation, self.keys)
         payload = {k: v for k, v in record.items() if k != "attestation_ref"}
@@ -245,7 +272,9 @@ class VerificationService:
                 "ATTESTATION_BINDING", "Attestation does not cover this exact evidence/verdict"
             )
 
-    def verify(self, actor: Actor, run_id: str, acceptance_id: str, subject: dict) -> dict:
+    def verify(
+        self, actor: Actor, run_id: str, acceptance_id: str, subject: dict[str, Any]
+    ) -> dict[str, Any]:
         actor.require("verifier.run")
         scope = actor.scope
         if actor.kind != "service":
@@ -289,11 +318,12 @@ class VerificationService:
             )
         raw = self.artifacts.read(scope, subject)
         started = now()
-        observation = (
-            self._human_observation(scope, run_id, acceptance_id, subject)
-            if profile["kind"] == "human"
-            else runner(raw)
-        )
+        if profile["kind"] == "human":
+            observation = self._human_observation(scope, run_id, acceptance_id, subject)
+        else:
+            if runner is None:
+                raise Hold("VERIFIER_RUNNER", "No trusted runner is bound to this verifier profile")
+            observation = runner(raw)
         if not isinstance(observation, VerificationObservation) or observation.outcome not in {
             "pass",
             "fail",
@@ -383,17 +413,18 @@ class VerificationService:
                 "verdict.issued",
                 {"verdict_ref": verdict_ref, "outcome": observation.outcome},
             )
-        return verdict_ref
+        verdict_result: dict[str, Any] = verdict_ref
+        return verdict_result
 
     def check_verdict(
         self,
-        scope,
-        ref: dict,
-        contract_ref: dict,
-        graph_ref: dict,
-        expected_subject: dict | None = None,
-    ) -> dict:
-        verdict = self.store.get(scope, "verdict", ref)
+        scope: Scope,
+        ref: dict[str, Any],
+        contract_ref: dict[str, Any],
+        graph_ref: dict[str, Any],
+        expected_subject: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        verdict: dict[str, Any] = self.store.get(scope, "verdict", ref)
         self.runtime.contracts.validate("verdict", verdict)
         self.validate_attested(scope, "verdict", verdict)
         if verdict["contract_ref"] != contract_ref or verdict["graph_ref"] != graph_ref:
@@ -426,7 +457,7 @@ class VerificationService:
                 )
         return verdict
 
-    def finish_work(self, actor: Actor, run_id: str) -> dict:
+    def finish_work(self, actor: Actor, run_id: str) -> dict[str, Any]:
         actor.require("verifier.run")
         scope = actor.scope
         run = self.store.head(scope, "run", run_id)
@@ -558,8 +589,11 @@ class VerificationService:
         return {"work_id": record["work_id"], "outcome": "pass" if passed else "fail"}
 
     def finish_goal(
-        self, actor: Actor, goal_id: str, global_checker: Callable | None = None
-    ) -> dict:
+        self,
+        actor: Actor,
+        goal_id: str,
+        global_checker: Callable[..., VerificationObservation] | None = None,
+    ) -> dict[str, Any]:
         actor.require("verifier.run")
         scope = actor.scope
         head = self.store.head(scope, "goal", goal_id)
@@ -599,7 +633,8 @@ class VerificationService:
             raise Hold("GLOBAL_COVERAGE", "Global mandatory acceptance is not covered")
         with self.store._lock:
             effects = self.store.conn.execute(
-                "SELECT data FROM heads WHERE tenant=? AND project=? AND kind='effect' AND state IN ('prepared','dispatched','unknown')",
+                "SELECT data FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+                "AND state IN ('prepared','dispatched','unknown')",
                 scope.keys(),
             ).fetchall()
         for row in effects:
@@ -719,4 +754,5 @@ class VerificationService:
                 {**current["data"], "goal_verification_ref": ref},
             )
             self.store.event(db, scope, "goal", goal_id, "goal.verified", {"verification_ref": ref})
-        return ref
+        verification_ref: dict[str, Any] = ref
+        return verification_ref

@@ -7,15 +7,28 @@ create execution grants and is never restored by a release-pointer rollback.
 
 from __future__ import annotations
 
+import sqlite3
+from typing import Any
+
+from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import now
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
+from amplai_foundry.runtime.evidence.cas import ArtifactStore
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 
 class EvolutionBudget:
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
-    def freeze(self, db, scope, proposal_id, experiment_ref, limits):
+    def freeze(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        experiment_ref: dict[str, Any],
+        limits: dict[str, Any],
+    ) -> None:
         try:
             head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         except RuntimeFault as exc:
@@ -52,7 +65,16 @@ class EvolutionBudget:
             {**data, "experiment_refs": [*refs, experiment_ref]},
         )
 
-    def reserve(self, db, scope, proposal_id, allocation_id, *, tokens: int, cost: int):
+    def reserve(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        allocation_id: str,
+        *,
+        tokens: int,
+        cost: int,
+    ) -> None:
         if any(type(x) is not int or x < 0 for x in (tokens, cost)):
             raise RuntimeFault("META_RESERVATION", "Executor ceilings must be nonnegative integers")
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
@@ -103,7 +125,17 @@ class EvolutionBudget:
             {**data, "allocations": {**a, key: allocation}},
         )
 
-    def settle(self, db, scope, proposal_id, allocation_id, *, tokens, cost, uncertain=False):
+    def settle(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        allocation_id: str,
+        *,
+        tokens: int | None,
+        cost: int | None,
+        uncertain: bool = False,
+    ) -> dict[str, Any]:
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         data = head["data"]
         a = data["allocations"]
@@ -137,7 +169,7 @@ class EvolutionBudget:
         )
         return {"overrun": overrun, "uncertain": uncertain}
 
-    def totals(self, scope, proposal_id):
+    def totals(self, scope: Scope, proposal_id: str) -> dict[str, Any]:
         data = self.store.head(scope, "meta-budget", proposal_id)["data"]
         a = list(data["allocations"].values())
         return {
@@ -152,15 +184,15 @@ class EvolutionBudget:
 
     def reconcile(
         self,
-        actor,
-        proposal_id,
-        allocation_id,
+        actor: Actor,
+        proposal_id: str,
+        allocation_id: str,
         *,
         tokens: int,
         cost: int,
-        evidence_ref: dict,
-        artifacts,
-    ):
+        evidence_ref: dict[str, Any],
+        artifacts: ArtifactStore,
+    ) -> None:
         actor.require("experiment.reconcile")
         if "harness.propose" in actor.permissions:
             raise Hold("SELF_RECONCILE", "A proposer cannot clear uncertain evaluation spending")
