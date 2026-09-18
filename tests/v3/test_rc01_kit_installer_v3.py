@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from amplai_foundry.distribution.installer import PROTECTED_PATHS, KitInstaller, release_truth
 from amplai_foundry.distribution.packs import PackRegistry, seal_pack
-from amplai_foundry.runtime.errors import Conflict, Hold
+from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
 KEY = Ed25519PrivateKey.generate()
 REPO = Path(__file__).resolve().parents[2]
@@ -158,6 +158,27 @@ def test_protected_paths_are_gated_before_apply(kit):
         "paths": [".ai-team/app.json"]
     }
     assert not (app / ".ai-team" / "app.json").exists()
+
+
+@pytest.mark.parametrize("pack_id", ["owner.lock", "Pending", "backups"])
+def test_receipt_filename_guard_rejects_reserved_pack_ids(kit, pack_id):
+    """A receipt must never overwrite meta/pending.json, backups/ or owner.lock."""
+    _d, _actor, installer, app = kit
+    with pytest.raises(Hold) as exc:
+        installer.plan(app, sealed({"x.md": b"x\n"}, pack_id=pack_id))
+    assert exc.value.code == "PACK_ID_RESERVED"
+    assert not (app / ".ai-team" / "install-v3" / (pack_id + ".json")).exists()
+
+
+def test_receipt_filename_guard_rejects_traversal_even_past_the_schema(kit, tmp_path):
+    """The manifest schema rejects '../' ids first; the receipt path guard stays as depth."""
+    _d, _actor, installer, app = kit
+    with pytest.raises(RuntimeFault):
+        installer.plan(app, sealed({"x.md": b"x\n"}, pack_id="../evil"))
+    for bad in ("../evil", "a/b", ".."):
+        with pytest.raises(Hold) as exc:
+            KitInstaller._receipt_path(tmp_path, bad)
+        assert exc.value.code == "PACK_ID_PATH"
 
 
 def test_signed_plan_and_receipt_cas_and_preimage_guards(kit):
