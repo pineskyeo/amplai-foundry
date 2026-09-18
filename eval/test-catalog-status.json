@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0.0",
   "source_catalog": "design-reference/eval/test-catalog.json",
-  "implementation_revision": "c721f4d9b4ded3020b264d50bd51dcb1df3e0daa",
+  "implementation_revision": "6bedba781442ed66dc5ac7ad5f59efcf8ee7f572",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],
@@ -12,24 +12,24 @@
   },
   "tests": {
     "T-001": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-002": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-003": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 3
     },
     "T-004": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-005": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-006": {
       "status": "local_pass",
@@ -48,8 +48,8 @@
       "cases": 0
     },
     "T-010": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-011": {
       "status": "not_run",
@@ -68,28 +68,28 @@
       "cases": 0
     },
     "T-015": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-016": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-017": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-018": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-019": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-020": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-021": {
       "status": "not_run",
@@ -125,7 +125,7 @@
     },
     "T-029": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-030": {
       "status": "not_run",
@@ -236,32 +236,32 @@
       "cases": 0
     },
     "T-057": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-058": {
       "status": "not_run",
       "cases": 0
     },
     "T-059": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-060": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-061": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-062": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-063": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-064": {
       "status": "not_run",
@@ -300,28 +300,28 @@
       "cases": 0
     },
     "T-073": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-074": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-075": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-076": {
       "status": "not_run",
       "cases": 0
     },
     "T-077": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-078": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-079": {
       "status": "not_run",
@@ -356,20 +356,20 @@
       "cases": 0
     },
     "T-087": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-088": {
       "status": "not_run",
       "cases": 0
     },
     "T-089": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-090": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-091": {
       "status": "not_run",
@@ -380,24 +380,24 @@
       "cases": 4
     },
     "T-093": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-094": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-095": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-096": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-097": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 2
     },
     "T-098": {
       "status": "local_pass",
@@ -405,39 +405,39 @@
     },
     "T-099": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-100": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-101": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 3
     },
     "T-102": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-103": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 3
     },
     "T-104": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 3
     },
     "T-105": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 2
     },
     "T-106": {
       "status": "local_pass",
-      "cases": 1
+      "cases": 3
     },
     "T-107": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-108": {
       "status": "not_run",
@@ -452,12 +452,12 @@
       "cases": 1
     },
     "T-111": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     },
     "T-112": {
-      "status": "not_run",
-      "cases": 0
+      "status": "local_pass",
+      "cases": 1
     }
   }
 }

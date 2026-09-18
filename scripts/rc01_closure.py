@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Rebuild release/rc01-conformance-closure.json and eval/test-catalog-status.json.
 
-Run after `pytest tests/v3 tests/runtime_storage --junitxml=specs/013-amplai-v3/junit/rc01-v3-e2e.xml`.
+Run after
+`pytest tests/v3 tests/runtime_storage --junitxml=specs/013-amplai-v3/junit/rc01-v3-e2e.xml`.
 The ledger only ties catalog ids to cases that junit file actually executed (design/21 §4).
 """
 
