@@ -9,6 +9,7 @@ contract or experiment still references stays hot and keeps a backlink.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -36,8 +37,15 @@ LIVE_KINDS: tuple[str, ...] = (
 
 
 class EvidenceArchiveService:
-    def __init__(self, store: Store, artifacts: ArtifactStore) -> None:
+    def __init__(
+        self,
+        store: Store,
+        artifacts: ArtifactStore,
+        approval_check: Callable[[Scope, Ref, str, str], Any] | None = None,
+    ) -> None:
         self.store, self.artifacts = store, artifacts
+        # Same contract as CutoverService: (scope, decision_ref, action, subject_digest).
+        self.approval_check = approval_check
 
     # -- live reference index -----------------------------------------------------
     def live_refs(self, scope: Scope) -> dict[str, list[dict[str, Any]]]:
@@ -234,6 +242,13 @@ class EvidenceArchiveService:
                 "Live references block the tombstone",
                 details={"live_refs": index[latest[1]["artifact"]["digest"]]},
             )
+        if self.approval_check is None:
+            raise Hold(
+                "TOMBSTONE_APPROVAL_UNAVAILABLE",
+                "A tombstone needs an independent destructive_change approval check",
+            )
+        subject = digest({"alias_id": alias_id, "artifact_digest": latest[1]["artifact"]["digest"]})
+        self.approval_check(actor.scope, decision_ref, "destructive_change", subject)
         value = {
             **latest[1],
             "tombstone": {

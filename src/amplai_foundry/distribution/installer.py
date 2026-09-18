@@ -26,6 +26,8 @@ Ref = dict[str, Any]
 Plan = dict[str, Any]
 
 # Paths a pack may never own, whatever the ALLOWED_ROOTS say (authority/identity/local state).
+# Files the installer itself keeps under meta/; a receipt must never overwrite them.
+RESERVED_META_NAMES = frozenset({"pending", "backups", "receipts", "owner.lock"})
 PROTECTED_PATHS: tuple[str, ...] = (
     ".ai-team/app.json",
     ".ai-team/policy/approvals.jsonl",
@@ -114,6 +116,8 @@ class KitInstaller:
     def _receipt_path(meta: Path, pack_id: str) -> Path:
         if "/" in pack_id or ".." in pack_id:
             raise Hold("PACK_ID_PATH", "Pack ID cannot be used as an unsafe filename")
+        if pack_id.lower() in RESERVED_META_NAMES:
+            raise Hold("PACK_ID_RESERVED", "Pack ID collides with a kit metadata file")
         return meta / (pack_id + ".json")
 
     # -- plan / dry-run ------------------------------------------------------------
@@ -276,7 +280,7 @@ class KitInstaller:
                 if actual != change["before"]:
                     raise Conflict("INSTALL_PREIMAGE", "File changed after dry-run")
             backups = meta / "backups" / plan["plan_id"]
-            backups.mkdir(parents=True, mode=0o700)
+            backups.mkdir(parents=True, exist_ok=True, mode=0o700)
             for i, change in enumerate(plan["changes"]):
                 if change["before"] is not None:
                     shutil.copy2(self._path(root_path, change["path"]), backups / str(i))

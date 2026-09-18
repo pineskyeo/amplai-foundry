@@ -171,25 +171,32 @@ class Store:
                 self._owner.close()
                 self._owner = None
                 raise Hold("ACTIVE_OWNER", "Another control plane owns this local store") from exc
-        self.conn = sqlite3.connect(
-            f"file:{self.path}?mode=ro" if readonly else self.path,
-            uri=readonly,
-            timeout=10,
-            isolation_level=None,
-            check_same_thread=False,
-        )
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA foreign_keys=ON")
-        self.conn.execute("PRAGMA busy_timeout=10000")
-        if not readonly:
-            self.conn.execute("PRAGMA journal_mode=WAL")
-            self.conn.execute("PRAGMA synchronous=FULL")
-            self.conn.executescript(DDL)
-            self._migrate_commands_operation()
-        version = self.conn.execute("SELECT value FROM meta WHERE key='schema_major'").fetchone()
-        if version and version[0] != "3":
+        try:
+            self.conn = sqlite3.connect(
+                f"file:{self.path}?mode=ro" if readonly else self.path,
+                uri=readonly,
+                timeout=10,
+                isolation_level=None,
+                check_same_thread=False,
+            )
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys=ON")
+            self.conn.execute("PRAGMA busy_timeout=10000")
+            if not readonly:
+                self.conn.execute("PRAGMA journal_mode=WAL")
+                self.conn.execute("PRAGMA synchronous=FULL")
+                self.conn.executescript(DDL)
+                self._migrate_commands_operation()
+            version = self.conn.execute(
+                "SELECT value FROM meta WHERE key='schema_major'"
+            ).fetchone()
+            if version and version[0] != "3":
+                self.close()
+                raise Hold("SCHEMA_VERSION", "Store schema is incompatible; no automatic downgrade")
+        except BaseException:
+            # Release the owner lock when opening fails; nothing else holds it.
             self.close()
-            raise Hold("SCHEMA_VERSION", "Store schema is incompatible; no automatic downgrade")
+            raise
         self.epoch = 0
         if not readonly:
             with self.tx() as db:

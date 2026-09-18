@@ -7,14 +7,30 @@ from dataclasses import replace
 import pytest
 
 from amplai_foundry.migration.archive.service import EvidenceArchiveService, gardening_report
+from amplai_foundry.runtime.contracts.identity import digest, new_id
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+
+APPROVALS: dict[str, tuple[str, str]] = {}
+
+
+def _check(scope, ref, action, subject):
+    value = APPROVALS.get(digest(ref))
+    if value != (action, subject):
+        raise Hold("DEMO_APPROVAL", "No exact independent local approval")
+    return {"action": action, "subject_digest": subject}
+
+
+def _approve(action, subject):
+    ref = {"id": new_id("decision"), "revision": 1, "digest": digest({"a": action, "s": subject})}
+    APPROVALS[digest(ref)] = (action, subject)
+    return ref
 
 
 @pytest.fixture
 def archive(deployment):
     d = deployment
     actor = replace(d.actor, permissions=d.actor.permissions | {"evidence.archive"})
-    return d, actor, EvidenceArchiveService(d.store, d.artifacts)
+    return d, actor, EvidenceArchiveService(d.store, d.artifacts, approval_check=_check)
 
 
 def test_plan_is_report_only_and_separates_hot_from_cold_candidates(archive):
@@ -114,7 +130,19 @@ def test_purge_is_a_proposal_and_tombstone_needs_no_live_refs(archive, tmp_path)
     assert "destructive_change human gate" in proposal["requires"]
     manifest = svc.move(actor, plan, tmp_path / "cold")
     alias_id = manifest["moved"][0]["alias_id"]
-    decision = {"id": "decision-1", "revision": 1, "digest": "sha256:" + "a" * 64}
+    alias = next(
+        v for r, v in d.store.list_objects(d.scope, "evidence-alias") if r["id"] == alias_id
+    )
+    subject = digest({"alias_id": alias_id, "artifact_digest": alias["artifact"]["digest"]})
+    wrong = _approve("destructive_change", digest({"other": True}))
+    with pytest.raises(Hold) as no_match:
+        svc.tombstone(actor, alias_id, decision_ref=wrong)
+    assert no_match.value.code == "DEMO_APPROVAL"
+    unchecked = EvidenceArchiveService(d.store, d.artifacts)
+    with pytest.raises(Hold) as no_check:
+        unchecked.tombstone(actor, alias_id, decision_ref=wrong)
+    assert no_check.value.code == "TOMBSTONE_APPROVAL_UNAVAILABLE"
+    decision = _approve("destructive_change", subject)
     ref = svc.tombstone(actor, alias_id, decision_ref=decision)
     assert ref["revision"] == 2
     with pytest.raises(Hold) as exc:
