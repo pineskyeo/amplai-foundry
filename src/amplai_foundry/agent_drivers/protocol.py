@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import threading
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from amplai_foundry.runtime.contracts.identity import ID, canonical, digest, new_id, now
 from amplai_foundry.runtime.contracts.registry import strict_json_loads
@@ -20,12 +23,12 @@ class JsonlDecoder:
         self.max_line = max_line_bytes
         self.max_total = max_total_bytes
 
-    def feed(self, data: bytes, *, final: bool = False) -> list[dict]:
+    def feed(self, data: bytes, *, final: bool = False) -> list[dict[str, Any]]:
         self.total += len(data)
         if self.total > self.max_total:
             raise Hold("PROVIDER_STREAM_LIMIT", "Provider output exceeded its byte budget")
         self.buffer += data
-        output = []
+        output: list[dict[str, Any]] = []
         while b"\n" in self.buffer:
             line, self.buffer = self.buffer.split(b"\n", 1)
             if len(line) > self.max_line:
@@ -81,8 +84,8 @@ class EventNormalizer:
             False,
             False,
         )
-        self.calls = {}
-        self.usage = {
+        self.calls: dict[str, str] = {}
+        self.usage: dict[str, int | str | None] = {
             "input_tokens": None,
             "output_tokens": None,
             "cost_microunits": None,
@@ -91,7 +94,7 @@ class EventNormalizer:
             "source_ref": None,
         }
 
-    def accept(self, event: dict) -> dict:
+    def accept(self, event: dict[str, Any]) -> dict[str, Any]:
         kind = event.get("type")
         allowed = self.CODEX if self.provider == "codex" else self.CLAUDE
         if kind not in allowed:
@@ -177,7 +180,7 @@ class SessionJournal:
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.lock = threading.RLock()
 
-    def _path(self, handle: str):
+    def _path(self, handle: str) -> Path:
         if not isinstance(handle, str) or not ID.fullmatch(handle):
             raise RuntimeFault("SESSION_ID", "Journal session ID is malformed")
         path = self.root / (handle + ".json")
@@ -185,8 +188,8 @@ class SessionJournal:
             raise RuntimeFault("SESSION_SYMLINK", "Journal path cannot be a symlink")
         return path
 
-    @__import__("contextlib").contextmanager
-    def _guard(self, handle: str):
+    @contextlib.contextmanager
+    def _guard(self, handle: str) -> Iterator[Path]:
         import fcntl
 
         path = self._path(handle)
@@ -199,14 +202,15 @@ class SessionJournal:
                 fcntl.flock(fd, fcntl.LOCK_UN)
                 os.close(fd)
 
-    def _read(self, path: Path):
+    def _read(self, path: Path) -> dict[str, Any]:
         from amplai_foundry.runtime.contracts.registry import strict_json_loads
 
         if not path.is_file():
             raise RuntimeFault("SESSION_NOT_FOUND", "Exact session journal not found")
-        return strict_json_loads(path.read_bytes())
+        value: dict[str, Any] = strict_json_loads(path.read_bytes())
+        return value
 
-    def _write(self, path: Path, value: dict):
+    def _write(self, path: Path, value: dict[str, Any]) -> None:
         temp = path.with_suffix(".tmp-" + new_id("write"))
         fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         try:
@@ -224,7 +228,7 @@ class SessionJournal:
             if temp.exists():
                 temp.unlink()
 
-    def create(self, dispatch_id: str, payload: dict) -> dict:
+    def create(self, dispatch_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         with self._guard(dispatch_id) as path:
             fp = digest(payload)
             if path.exists():
@@ -248,16 +252,16 @@ class SessionJournal:
             self._write(path, value)
             return value
 
-    def read(self, handle: str) -> dict:
+    def read(self, handle: str) -> dict[str, Any]:
         with self._guard(handle) as path:
             return self._read(path)
 
-    def write(self, handle: str, value: dict):
+    def write(self, handle: str, value: dict[str, Any]) -> None:
         # Compatibility method for a trusted collector; mutation is still atomic.
         with self._guard(handle) as path:
             self._write(path, value)
 
-    def update(self, handle: str, **changes):
+    def update(self, handle: str, **changes: Any) -> dict[str, Any]:
         with self._guard(handle) as path:
             value = self._read(path)
             value.update(changes)
@@ -267,8 +271,14 @@ class SessionJournal:
             return value
 
     def transition(
-        self, handle: str, states: set[str], new_state: str, *, expected_version=None, **changes
-    ):
+        self,
+        handle: str,
+        states: set[str],
+        new_state: str,
+        *,
+        expected_version: int | None = None,
+        **changes: Any,
+    ) -> dict[str, Any]:
         with self._guard(handle) as path:
             value = self._read(path)
             if value["state"] not in states or (
@@ -284,7 +294,7 @@ class SessionJournal:
             self._write(path, value)
             return value
 
-    def append(self, handle: str, event_id: str, event: dict):
+    def append(self, handle: str, event_id: str, event: dict[str, Any]) -> int:
         """Ordered sanitized observations with exact duplicate detection."""
         if len(canonical(event)) > 65536:
             raise Hold("SESSION_EVENT_LIMIT", "Normalized event exceeds limit")
@@ -297,8 +307,9 @@ class SessionJournal:
                         raise Conflict(
                             "SESSION_EVENT_CONFLICT", "Event ID binds another observation"
                         )
-                    return old["cursor"]
-            cursor = value.get("cursor", 0) + 1
+                    old_cursor: int = old["cursor"]
+                    return old_cursor
+            cursor: int = value.get("cursor", 0) + 1
             value["events"] = [
                 *value["events"],
                 {"event_id": event_id, "cursor": cursor, "digest": fp, "value": event},
@@ -309,7 +320,7 @@ class SessionJournal:
             self._write(path, value)
             return cursor
 
-    def events_after(self, handle: str, cursor: int):
+    def events_after(self, handle: str, cursor: int) -> list[dict[str, Any]]:
         value = self.read(handle)
         if type(cursor) is not int or cursor < 0 or cursor > value.get("cursor", 0):
             raise Hold("SESSION_CURSOR", "Cursor is not part of this session")

@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
 from ..runtime.contracts.identity import new_id, now
 from ..runtime.errors import Hold
+
+if TYPE_CHECKING:
+    from ..runtime.contracts.authority import Actor
+    from ..runtime.evidence.cas import ArtifactStore
+    from ..runtime.storage.store import Store
 
 MANDATORY = (
     "exact_version",
@@ -19,10 +27,17 @@ MANDATORY = (
 
 
 class QualificationRunner:
-    def __init__(self, store, artifacts):
+    def __init__(self, store: Store, artifacts: ArtifactStore) -> None:
         self.store, self.artifacts = store, artifacts
 
-    def run(self, actor, driver_id, driver_version, environment_ref, probes):
+    def run(
+        self,
+        actor: Actor,
+        driver_id: str,
+        driver_version: str,
+        environment_ref: dict[str, Any],
+        probes: dict[str, Callable[[], dict[str, Any]]],
+    ) -> dict[str, Any]:
         actor.require("driver.qualify")
         if set(probes) != set(MANDATORY):
             raise Hold(
@@ -50,7 +65,7 @@ class QualificationRunner:
             for artifact in result["artifact_refs"]:
                 self.artifacts.read(actor.scope, artifact, trusted=True)
             results.append({"name": name, **result})
-        report = {
+        report: dict[str, Any] = {
             "qualification_id": new_id("qualification"),
             "scope": actor.scope.wire(),
             "driver_id": driver_id,

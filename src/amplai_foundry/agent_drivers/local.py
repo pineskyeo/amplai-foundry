@@ -4,21 +4,28 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from amplai_foundry.runtime.contracts.identity import canonical, digest
 from amplai_foundry.runtime.errors import Conflict, Hold
 from amplai_foundry.sandbox.local import DataSandbox
+
+if TYPE_CHECKING:
+    from amplai_foundry.runtime.contracts.authority import Actor
+    from amplai_foundry.runtime.execution.service import Runtime
 
 
 class RecipeDriver:
     driver_id = "local-recipe"
     version = "3.0.0"
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
 
-    def run(self, runtime, worker, dispatch: dict, recipe: dict) -> dict:
+    def run(
+        self, runtime: Runtime, worker: Actor, dispatch: dict[str, Any], recipe: dict[str, Any]
+    ) -> dict[str, Any]:
         run_id = dispatch["run_id"]
         lease = dispatch["lease"]
         workspace = self.root / run_id
@@ -68,7 +75,7 @@ class RecipeDriver:
             process_stopped=True,
         )
 
-    def probe(self) -> dict:
+    def probe(self) -> dict[str, Any]:
         return {
             "driver_id": self.driver_id,
             "version": self.version,

@@ -7,14 +7,21 @@ handoff. Registration is an administrator action, never a worker self-approval.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from ..runtime.contracts.identity import digest
 from ..runtime.contracts.registry import strict_json_loads
 from ..runtime.errors import Conflict, Hold, RuntimeFault
 from ..sandbox.local import DataSandbox
 from .protocol import SessionJournal
+
+if TYPE_CHECKING:
+    from ..runtime.contracts.authority import Actor
+    from ..runtime.storage.store import Scope, Store
+    from .cli import CliDriver
+    from .http import OpenCodeDriver
 
 UNKNOWN_USAGE = {
     "input_tokens": None,
@@ -39,24 +46,28 @@ class AgentDriverPort(Protocol):
     version: str
     strategies: frozenset[str]
 
-    def prepare(self, dispatch: dict, prompt: str, workspace: Path) -> dict: ...
-    def start(self, prepared: dict) -> str: ...
-    def poll(self, handle: str) -> dict: ...
-    def cancel(self, handle: str) -> dict: ...
-    def pause(self, handle: str) -> dict: ...
-    def checkpoint(self, handle: str) -> dict: ...
-    def collect(self, handle: str) -> dict: ...
-    def resume(self, dispatch: dict, prompt: str, workspace: Path, checkpoint: dict) -> str: ...
-    def steer(self, handle: str, event: dict) -> dict: ...
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]: ...
+    def start(self, prepared: dict[str, Any]) -> str: ...
+    def poll(self, handle: str) -> dict[str, Any]: ...
+    def cancel(self, handle: str) -> dict[str, Any]: ...
+    def pause(self, handle: str) -> dict[str, Any]: ...
+    def checkpoint(self, handle: str) -> dict[str, Any]: ...
+    def collect(self, handle: str) -> dict[str, Any]: ...
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str: ...
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]: ...
     def destroy(self, handle: str) -> None: ...
 
 
 class DriverRegistry:
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
-        self.entries: dict[tuple, tuple[dict, AgentDriverPort]] = {}
+        self.entries: dict[tuple[str, ...], tuple[dict[str, Any], AgentDriverPort]] = {}
 
-    def register(self, administrator, profile_ref: dict, port: AgentDriverPort):
+    def register(
+        self, administrator: Actor, profile_ref: dict[str, Any], port: AgentDriverPort
+    ) -> None:
         administrator.require("runtime.admin")
         if not isinstance(port, AgentDriverPort):
             raise RuntimeFault("DRIVER_PORT", "Driver does not implement the required lifecycle")
@@ -90,7 +101,7 @@ class DriverRegistry:
                 },
             )
 
-    def resolve(self, scope, profile_ref: dict, strategy: str):
+    def resolve(self, scope: Scope, profile_ref: dict[str, Any], strategy: str) -> AgentDriverPort:
         value = self.entries.get((*scope.keys(), digest(profile_ref)))
         if value is None:
             raise Hold("DRIVER_NOT_INSTALLED", "No port for the exact scoped driver profile")
@@ -107,10 +118,10 @@ class RecipePort:
     version = "3.0.0"
     strategies = frozenset({"direct", "bounded_loop"})
 
-    def __init__(self, journal: SessionJournal):
+    def __init__(self, journal: SessionJournal) -> None:
         self.journal = journal
 
-    def prepare(self, dispatch, prompt, workspace):
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
         recipe = strict_json_loads(prompt)
         if not isinstance(recipe, dict) or set(recipe) != {"operations"}:
             raise Hold("RECIPE_SHAPE", "Declarative worker accepts operations only")
@@ -125,8 +136,8 @@ class RecipePort:
         self.journal.create(dispatch["dispatch_id"], prepared)
         return prepared
 
-    def start(self, prepared):
-        did = prepared["dispatch_id"]
+    def start(self, prepared: dict[str, Any]) -> str:
+        did: str = prepared["dispatch_id"]
         record = self.journal.read(did)
         if record["request_digest"] != digest(prepared):
             raise Conflict("RECIPE_REPLAY", "Recipe changed after preparation")
@@ -162,10 +173,10 @@ class RecipePort:
             raise
         return did
 
-    def poll(self, handle):
+    def poll(self, handle: str) -> dict[str, Any]:
         return self.journal.read(handle)
 
-    def cancel(self, handle):
+    def cancel(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] in {"running", "starting"}:
             # No asynchronous interrupt claims for an in-progress synchronous operation.
@@ -176,10 +187,10 @@ class RecipePort:
             "state": record["state"],
         }
 
-    def pause(self, handle):
+    def pause(self, handle: str) -> dict[str, Any]:
         return self.cancel(handle)
 
-    def checkpoint(self, handle):
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record.get("process_stopped") is not True:
             raise Hold("CHECKPOINT_UNCONFIRMED", "Recipe is not at a boundary")
@@ -189,7 +200,7 @@ class RecipePort:
             "driver_version": self.version,
         }
 
-    def collect(self, handle):
+    def collect(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] != "completed":
             raise Hold("DRIVER_NOT_COMPLETE", "Recipe did not complete")
@@ -201,56 +212,60 @@ class RecipePort:
             "goal_verified": False,
         }
 
-    def steer(self, handle, event):
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         self.journal.read(handle)
         return {"status": "checkpoint_required", "native_applied": False}
 
-    def resume(self, dispatch, prompt, workspace, checkpoint):
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
         raise Hold(
             "NEW_SESSION_REQUIRED",
             "Declarative operations use bounded new attempts, not private native resume",
         )
 
-    def destroy(self, handle):
+    def destroy(self, handle: str) -> None:
         self.cancel(handle)
 
 
 class CliPort:
     strategies = frozenset({"direct", "bounded_loop", "deliberative", "discovery"})
 
-    def __init__(self, driver):
+    def __init__(self, driver: CliDriver) -> None:
         self.driver = driver
         self.driver_id = driver.provider + "-cli"
         self.version = driver.version
 
-    def prepare(self, dispatch, prompt, workspace):
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
         return self.driver.prepare(dispatch, prompt, workspace)
 
-    def start(self, prepared):
+    def start(self, prepared: dict[str, Any]) -> str:
         return self.driver.start(prepared)
 
-    def poll(self, handle):
+    def poll(self, handle: str) -> dict[str, Any]:
         return self.driver.poll(handle)
 
-    def cancel(self, handle):
+    def cancel(self, handle: str) -> dict[str, Any]:
         return self.driver.cancel(handle)
 
-    def pause(self, handle):
+    def pause(self, handle: str) -> dict[str, Any]:
         return self.driver.pause(handle)
 
-    def checkpoint(self, handle):
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         return self.driver.checkpoint(handle)
 
-    def collect(self, handle):
+    def collect(self, handle: str) -> dict[str, Any]:
         return self.driver.collect(handle)
 
-    def resume(self, dispatch, prompt, workspace, checkpoint):
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
         return self.driver.resume(dispatch, prompt, workspace, checkpoint)
 
-    def steer(self, handle, event):
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         return self.driver.steer(handle, event)
 
-    def destroy(self, handle):
+    def destroy(self, handle: str) -> None:
         return self.driver.destroy(handle)
 
 
@@ -260,13 +275,15 @@ class OpenCodePort:
     strategies = frozenset({"direct", "bounded_loop", "deliberative", "discovery"})
     driver_id = "opencode-server"
 
-    def __init__(self, driver, *, workspace: Path, workspace_probe):
+    def __init__(
+        self, driver: OpenCodeDriver, *, workspace: Path, workspace_probe: Callable[[], str]
+    ) -> None:
         self.driver = driver
         self.version = driver.expected_version
         self.workspace = Path(workspace).absolute()
         self.workspace_probe = workspace_probe
 
-    def prepare(self, dispatch, prompt, workspace):
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
         if Path(workspace).resolve() != self.workspace or self.workspace_probe() != str(
             self.workspace
         ):
@@ -276,35 +293,39 @@ class OpenCodePort:
         self.driver.prepare(dispatch, prompt)
         return {"dispatch": dispatch, "prompt": prompt}
 
-    def start(self, prepared):
+    def start(self, prepared: dict[str, Any]) -> str:
         self.driver.start(prepared["dispatch"], prepared["prompt"])
-        return prepared["dispatch"]["dispatch_id"]
+        dispatch_id: str = prepared["dispatch"]["dispatch_id"]
+        return dispatch_id
 
-    def poll(self, handle):
+    def poll(self, handle: str) -> dict[str, Any]:
         return self.driver.poll(handle)
 
-    def cancel(self, handle):
+    def cancel(self, handle: str) -> dict[str, Any]:
         return self.driver.cancel(handle)
 
-    def pause(self, handle):
+    def pause(self, handle: str) -> dict[str, Any]:
         return self.driver.pause(handle)
 
-    def checkpoint(self, handle):
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         return self.driver.checkpoint(handle)
 
-    def collect(self, handle):
+    def collect(self, handle: str) -> dict[str, Any]:
         return self.driver.collect(handle)
 
-    def resume(self, dispatch, prompt, workspace, checkpoint):
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
         if Path(workspace).resolve() != self.workspace or self.workspace_probe() != str(
             self.workspace
         ):
             raise Hold("OPENCODE_WORKSPACE", "Resume workspace changed")
         self.driver.resume(dispatch, prompt, checkpoint)
-        return dispatch["dispatch_id"]
+        dispatch_id: str = dispatch["dispatch_id"]
+        return dispatch_id
 
-    def steer(self, handle, event):
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         return self.driver.steer(handle, event)
 
-    def destroy(self, handle):
+    def destroy(self, handle: str) -> None:
         return self.driver.destroy(handle)

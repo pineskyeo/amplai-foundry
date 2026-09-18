@@ -7,18 +7,33 @@ same dispatch. External transport I/O happens outside these transactions.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from ..runtime.contracts.identity import digest
 from ..runtime.errors import Conflict, Hold, RuntimeFault
+
+if TYPE_CHECKING:
+    from ..runtime.contracts.authority import Actor
+    from ..runtime.contracts.registry import Contracts
+    from ..runtime.storage.store import Store
 
 BINDINGS = ("contract_ref", "graph_ref", "context_bundle_ref", "composition_ref", "sandbox_ref")
 PROFILE_BINDINGS = ("driver_profile_ref", "model_profile_ref", "environment_ref")
 
 
 class SessionStore:
-    def __init__(self, store, contracts):
+    def __init__(self, store: Store, contracts: Contracts) -> None:
         self.store, self.contracts = store, contracts
 
-    def prepare(self, actor, dispatch_id, envelope, profile, *, workspace_digest):
+    def prepare(
+        self,
+        actor: Actor,
+        dispatch_id: str,
+        envelope: dict[str, Any],
+        profile: dict[str, Any],
+        *,
+        workspace_digest: str,
+    ) -> dict[str, Any]:
         actor.require("worker.execute")
         self.contracts.validate("execution-envelope", envelope)
         if envelope["scope"] != actor.scope.wire():
@@ -65,7 +80,9 @@ class SessionStore:
             )
             return self.store.head(actor.scope, "driver-session", dispatch_id, db=db)
 
-    def bind(self, actor, dispatch_id, provider_session, *, expected_version):
+    def bind(
+        self, actor: Actor, dispatch_id: str, provider_session: str, *, expected_version: int
+    ) -> dict[str, Any]:
         actor.require("worker.execute")
         if (
             not isinstance(provider_session, str)
@@ -105,15 +122,15 @@ class SessionStore:
 
     def checkpoint(
         self,
-        actor,
-        dispatch_id,
+        actor: Actor,
+        dispatch_id: str,
         *,
-        expected_version,
-        process_stopped,
-        snapshot_digest,
-        pending_effects,
-        driver_receipt,
-    ):
+        expected_version: int,
+        process_stopped: bool,
+        snapshot_digest: str,
+        pending_effects: list[str],
+        driver_receipt: dict[str, Any],
+    ) -> dict[str, Any]:
         actor.require("worker.execute")
         if process_stopped is not True or pending_effects:
             raise Hold(
@@ -155,8 +172,15 @@ class SessionStore:
             return cp
 
     def resume_check(
-        self, actor, dispatch_id, envelope, profile, *, workspace_digest, pending_effects
-    ):
+        self,
+        actor: Actor,
+        dispatch_id: str,
+        envelope: dict[str, Any],
+        profile: dict[str, Any],
+        *,
+        workspace_digest: str,
+        pending_effects: list[str],
+    ) -> dict[str, Any]:
         actor.require("worker.execute")
         self.contracts.validate("execution-envelope", envelope)
         if envelope["scope"] != actor.scope.wire():

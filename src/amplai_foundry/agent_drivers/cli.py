@@ -7,15 +7,21 @@ sandbox qualification. No host-shell fallback or automatic orphan replay exists.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import subprocess
 import threading
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
 from .protocol import EventNormalizer, JsonlDecoder, SessionJournal
+
+if TYPE_CHECKING:
+    from amplai_foundry.sandbox.container import ContainerSandbox
 
 ACTIVE = frozenset({"starting", "running", "cancelling", "unknown"})
 TERMINAL = frozenset({"completed", "failed", "cancelled", "paused"})
@@ -27,14 +33,14 @@ class CliDriver:
         provider: str,
         binary: str,
         version: str,
-        sandbox,
+        sandbox: ContainerSandbox,
         journal: SessionJournal,
         *,
         model: str,
         qualified: bool = False,
         environment: dict[str, str] | None = None,
         max_seconds: float = 3600,
-    ):
+    ) -> None:
         if provider not in {"claude", "codex"}:
             raise RuntimeFault("DRIVER_KIND", "Unknown CLI provider")
         if not model or model in {"latest", "default", "auto"}:
@@ -59,13 +65,13 @@ class CliDriver:
                 "ENV_AUTHORITY", "Credential injection cannot replace process/runtime settings"
             )
         self.max_seconds = max_seconds
-        self.processes: dict[str, subprocess.Popen] = {}
+        self.processes: dict[str, subprocess.Popen[bytes]] = {}
         self.threads: dict[str, threading.Thread] = {}
         self.native_root = journal.root / "native"
         self.native_root.mkdir(mode=0o700, exist_ok=True)
 
     @staticmethod
-    def exact_session(session):
+    def exact_session(session: str | None) -> str | None:
         if session is not None and (
             not isinstance(session, str)
             or not session
@@ -78,7 +84,11 @@ class CliDriver:
         return session
 
     def argv(
-        self, prompt: str, *, session: str | None = None, output_schema: dict | None = None
+        self,
+        prompt: str,
+        *,
+        session: str | None = None,
+        output_schema: dict[str, Any] | None = None,
     ) -> list[str]:
         import json
 
@@ -112,9 +122,9 @@ class CliDriver:
             args += ["--sandbox", "workspace-write"]
         if output_schema is not None:
             raise Hold("SCHEMA_FILE_REQUIRED", "Codex needs a pinned read-only schema file")
-        return args + [prompt]
+        return [*args, prompt]
 
-    def probe(self) -> dict:
+    def probe(self) -> dict[str, Any]:
         return {
             "driver_id": self.provider + "-cli",
             "configured_version": self.version,
@@ -150,13 +160,13 @@ class CliDriver:
 
     def prepare(
         self,
-        dispatch: dict,
+        dispatch: dict[str, Any],
         prompt: str,
         workspace: Path,
         *,
         session: str | None = None,
         native_home: Path | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         if not self.qualified:
             raise Hold("DRIVER_UNQUALIFIED", "Exact-version environment qualification is required")
         self.exact_session(session)
@@ -203,8 +213,8 @@ class CliDriver:
             )
         return prepared
 
-    def start(self, prepared: dict) -> str:
-        did = prepared["dispatch_id"]
+    def start(self, prepared: dict[str, Any]) -> str:
+        did: str = prepared["dispatch_id"]
         record = self.journal.read(did)
         if record.get("prepared_digest") != digest(prepared):
             raise Conflict(
@@ -247,7 +257,7 @@ class CliDriver:
         threading.Thread(target=self._deadline, args=(did, process), daemon=True).start()
         return did
 
-    def _deadline(self, did, process):
+    def _deadline(self, did: str, process: subprocess.Popen[bytes]) -> None:
         try:
             process.wait(timeout=self.max_seconds)
         except subprocess.TimeoutExpired:
@@ -258,28 +268,30 @@ class CliDriver:
                     did, state="unknown", failure="deadline_stop_unconfirmed", process_stopped=False
                 )
 
-    def _collect(self, did, process, expected_session):
+    def _collect(
+        self, did: str, process: subprocess.Popen[bytes], expected_session: str | None
+    ) -> None:
         decoder = JsonlDecoder()
         normalizer = EventNormalizer(self.provider, expected_session=expected_session)
         stderr_overflow = threading.Event()
+        stdout, stderr = process.stdout, process.stderr
+        assert isinstance(stdout, io.BufferedReader) and stderr is not None
 
-        def drain():
+        def drain() -> None:
             size = 0
-            while chunk := process.stderr.read(4096):
+            while chunk := stderr.read(4096):
                 size += len(chunk)
                 if size > 4 * 1024 * 1024:
                     stderr_overflow.set()
-                    try:
+                    with contextlib.suppress(Exception):
                         self.sandbox.stop(did)
-                    except Exception:
-                        pass
                     break
 
         stderr_thread = threading.Thread(target=drain, daemon=True)
         stderr_thread.start()
         seq = 0
 
-        def observe(event):
+        def observe(event: dict[str, Any]) -> None:
             nonlocal seq
             normalized = normalizer.accept(event)
             seq += 1
@@ -287,7 +299,7 @@ class CliDriver:
             self.journal.update(did, session_handle=normalizer.session, usage=normalizer.usage)
 
         try:
-            while chunk := process.stdout.read1(16384):
+            while chunk := stdout.read1(16384):
                 for event in decoder.feed(chunk):
                     observe(event)
             for event in decoder.feed(b"", final=True):
@@ -341,7 +353,7 @@ class CliDriver:
                 if stream:
                     stream.close()
 
-    def poll(self, handle: str) -> dict:
+    def poll(self, handle: str) -> dict[str, Any]:
         result = self.journal.read(handle)
         if result["state"] in ACTIVE and handle not in self.processes:
             raise Hold(
@@ -349,7 +361,7 @@ class CliDriver:
             )
         return result
 
-    def steer(self, handle: str, event: dict) -> dict:
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         self.journal.read(handle)
         return {
             "status": "checkpoint_required",
@@ -357,10 +369,10 @@ class CliDriver:
             "reason": "No qualified mid-turn control channel in this CLI profile",
         }
 
-    def pause(self, handle: str) -> dict:
+    def pause(self, handle: str) -> dict[str, Any]:
         return self.cancel(handle, reason="checkpoint_pause")
 
-    def cancel(self, handle: str, *, reason: str = "cancel") -> dict:
+    def cancel(self, handle: str, *, reason: str = "cancel") -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] in {"cancelled", "paused"} and record.get("process_stopped"):
             return {
@@ -393,7 +405,7 @@ class CliDriver:
         record = self.journal.update(handle, state=state, process_stopped=True, failure=reason)
         return {"process_stopped": True, "session_handle": record["session_handle"], "state": state}
 
-    def checkpoint(self, handle: str) -> dict:
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         thread = self.threads.get(handle)
         if thread and thread is not threading.current_thread():
             thread.join(timeout=5)
@@ -410,7 +422,9 @@ class CliDriver:
             "workspace": record.get("workspace"),
         }
 
-    def resume(self, new_dispatch: dict, prompt: str, workspace: Path, checkpoint: dict) -> str:
+    def resume(
+        self, new_dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
         prior = self.journal.read(checkpoint["dispatch_id"])
         if (
             digest(prior) != checkpoint["journal_digest"]
@@ -437,7 +451,7 @@ class CliDriver:
             )
         )
 
-    def collect(self, handle: str) -> dict:
+    def collect(self, handle: str) -> dict[str, Any]:
         record = self.poll(handle)
         if record["state"] != "completed" or record.get("process_stopped") is not True:
             raise Hold("DRIVER_NOT_COMPLETE", "Provider output is not a confirmed completed turn")
@@ -450,7 +464,7 @@ class CliDriver:
             "event_count": record.get("cursor", 0),
         }
 
-    def destroy(self, handle: str):
+    def destroy(self, handle: str) -> None:
         record = self.journal.read(handle)
         if record["state"] not in TERMINAL or record.get("process_stopped") is not True:
             raise Hold(
@@ -464,10 +478,14 @@ class CliDriver:
 
 
 class ClaudeCodeDriver(CliDriver):
-    def __init__(self, version, sandbox, journal, **kwargs):
+    def __init__(
+        self, version: str, sandbox: ContainerSandbox, journal: SessionJournal, **kwargs: Any
+    ) -> None:
         super().__init__("claude", "claude", version, sandbox, journal, **kwargs)
 
 
 class CodexCliDriver(CliDriver):
-    def __init__(self, version, sandbox, journal, **kwargs):
+    def __init__(
+        self, version: str, sandbox: ContainerSandbox, journal: SessionJournal, **kwargs: Any
+    ) -> None:
         super().__init__("codex", "codex", version, sandbox, journal, **kwargs)

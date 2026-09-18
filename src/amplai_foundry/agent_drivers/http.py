@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
@@ -14,14 +16,14 @@ from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from .protocol import SessionJournal
 
 
-def response_json(response):
+def response_json(response: httpx.Response) -> Any:
     try:
         return strict_json_loads(response.content)
     except (ValueError, RuntimeFault) as exc:
         raise Hold("PROVIDER_JSON", "Provider response is not strict JSON") from exc
 
 
-def native_id(value):
+def native_id(value: object) -> str:
     if (
         not isinstance(value, str)
         or not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", value)
@@ -36,12 +38,12 @@ class BoundHttp:
         self,
         base_url: str,
         *,
-        headers: dict | None = None,
-        auth=None,
-        transport=None,
+        headers: dict[str, str] | None = None,
+        auth: httpx.Auth | None = None,
+        transport: httpx.BaseTransport | None = None,
         allow_local: bool = False,
         timeout: float = 30,
-    ):
+    ) -> None:
         url = urlsplit(base_url)
         local = url.hostname in {"127.0.0.1", "localhost", "::1"}
         if (
@@ -66,7 +68,7 @@ class BoundHttp:
             trust_env=False,
         )
 
-    def request(self, method: str, path: str, **kwargs):
+    def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         if (
             "://" in path
             or path.startswith("//")
@@ -103,7 +105,7 @@ class BoundHttp:
             )
         return response
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
 
 
@@ -124,11 +126,11 @@ class OpenCodeDriver:
         provider_id: str,
         model_id: str,
         qualified: bool = False,
-        transport=None,
-        allow_local=False,
+        transport: httpx.BaseTransport | None = None,
+        allow_local: bool = False,
         expected_version: str | None = None,
-        boundary_probe=None,
-    ):
+        boundary_probe: Callable[[str], bool] | None = None,
+    ) -> None:
         if not password:
             raise Hold("OPENCODE_AUTH", "Server authentication is required")
         if not model_id or model_id in {"latest", "default", "auto"}:
@@ -147,7 +149,7 @@ class OpenCodeDriver:
         )
         self.expected_version, self.boundary_probe = expected_version, boundary_probe
 
-    def probe(self):
+    def probe(self) -> dict[str, Any]:
         result = response_json(self.http.request("GET", "global/health"))
         if self.expected_version and result.get("version") != self.expected_version:
             raise Hold("OPENCODE_VERSION", "Server version differs from the qualified profile")
@@ -159,7 +161,7 @@ class OpenCodeDriver:
             "native_delegation": False,
         }
 
-    def prepare(self, dispatch: dict, prompt: str):
+    def prepare(self, dispatch: dict[str, Any], prompt: str) -> dict[str, Any]:
         if not self.qualified or not self.expected_version:
             raise Hold(
                 "DRIVER_UNQUALIFIED", "Exact server version and boundary qualification required"
@@ -177,7 +179,7 @@ class OpenCodeDriver:
             },
         )
 
-    def start(self, dispatch: dict, prompt: str):
+    def start(self, dispatch: dict[str, Any], prompt: str) -> dict[str, Any]:
         record = self.prepare(dispatch, prompt)
         did = dispatch["dispatch_id"]
         if record["state"] != "prepared":
@@ -222,12 +224,12 @@ class OpenCodeDriver:
             "completed": False,
         }
 
-    def _boundary(self, session):
+    def _boundary(self, session: str) -> bool:
         if self.boundary_probe is None:
             return False
         return self.boundary_probe(session) is True
 
-    def poll(self, handle: str):
+    def poll(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if (
             record["state"] in {"cancelled", "paused", "completed", "failed"}
@@ -285,7 +287,7 @@ class OpenCodeDriver:
             goal_verified=False,
         )
 
-    def cancel(self, handle: str):
+    def cancel(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] in {"cancelled", "paused"}:
             return record
@@ -299,17 +301,17 @@ class OpenCodeDriver:
         # A true /abort response is NOT a stopped process receipt.
         return self.poll(handle)
 
-    def pause(self, handle: str):
+    def pause(self, handle: str) -> dict[str, Any]:
         result = self.cancel(handle)
         if result["state"] == "cancelled":
             return self.journal.transition(handle, {"cancelled"}, "paused")
         return result
 
-    def steer(self, handle: str, event: dict):
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         self.journal.read(handle)
         return {"status": "checkpoint_required", "native_applied": False}
 
-    def checkpoint(self, handle: str):
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         state = self.poll(handle)
         if (
             state["state"] not in {"completed", "cancelled", "paused", "failed"}
@@ -328,7 +330,9 @@ class OpenCodeDriver:
             "request_message_id": state["request_message_id"],
         }
 
-    def resume(self, dispatch, prompt, checkpoint):
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, checkpoint: dict[str, Any]
+    ) -> dict[str, Any]:
         prior = self.journal.read(checkpoint["dispatch_id"])
         if (
             digest(prior) != checkpoint["journal_digest"]
@@ -386,7 +390,7 @@ class OpenCodeDriver:
             )
             raise
 
-    def collect(self, handle):
+    def collect(self, handle: str) -> dict[str, Any]:
         state = self.poll(handle)
         if state["state"] != "completed" or state.get("process_stopped") is not True:
             raise Hold("DRIVER_NOT_COMPLETE", "Not a confirmed completed turn")
@@ -398,7 +402,7 @@ class OpenCodeDriver:
             "usage": None,
         }
 
-    def destroy(self, handle):
+    def destroy(self, handle: str) -> None:
         record = self.journal.read(handle)
         if record.get("process_stopped") is not True:
             raise Hold("DESTROY_RUNNING", "Stop and reconcile before destruction")
@@ -415,8 +419,8 @@ class ResponsesDriver:
         model: str,
         base_url: str = "https://api.openai.com/v1/",
         qualified: bool = False,
-        transport=None,
-    ):
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
         if not api_key:
             raise Hold("RESPONSES_AUTH", "Server-side OpenAI credential is required")
         if not model or model in {"latest", "auto", "default"}:
@@ -428,12 +432,12 @@ class ResponsesDriver:
 
     def start(
         self,
-        dispatch: dict,
+        dispatch: dict[str, Any],
         prompt: str,
         *,
         max_output_tokens: int,
-        tools: list[dict] | None = None,
-    ):
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         if not self.qualified:
             raise Hold("DRIVER_UNQUALIFIED", "Responses adapter requires deployment qualification")
         if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 100000:
@@ -472,9 +476,9 @@ class ResponsesDriver:
         if not response_id:
             raise Hold("RESPONSE_CORRELATION", "Provider did not return a response identifier")
         response_id = native_id(response_id)
-        pending = []
-        text = []
-        call_ids = set()
+        pending: list[dict[str, Any]] = []
+        text: list[str] = []
+        call_ids: set[str] = set()
         for item in result.get("output", []):
             if item.get("type") == "function_call":
                 if not item.get("call_id") or item["call_id"] in call_ids:
@@ -516,10 +520,10 @@ class ResponsesDriver:
             "goal_verified": False,
         }
 
-    def poll(self, handle: str):
+    def poll(self, handle: str) -> dict[str, Any]:
         return self.journal.read(handle)
 
-    def tool_outputs(self, handle: str, outputs: list[dict]) -> list[dict]:
+    def tool_outputs(self, handle: str, outputs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         record = self.journal.read(handle)
         expected = {c["provider_call_id"] for c in record.get("pending_calls", [])}
         supplied = [o["provider_call_id"] for o in outputs]
@@ -538,7 +542,9 @@ class ResponsesDriver:
             for o in outputs
         ]
 
-    def structured_plan(self, prompt: str, schema: dict, *, max_output_tokens: int = 8192) -> dict:
+    def structured_plan(
+        self, prompt: str, schema: dict[str, Any], *, max_output_tokens: int = 8192
+    ) -> dict[str, Any]:
         if not self.qualified:
             raise Hold("PLANNER_UNQUALIFIED", "Planning model is not qualified")
         result = response_json(
@@ -571,7 +577,7 @@ class ResponsesDriver:
             if part.get("type") == "output_text"
         ]
         try:
-            value = strict_json_loads("".join(texts))
+            value: dict[str, Any] = strict_json_loads("".join(texts))
         except ValueError as exc:
             raise Hold("PLANNER_JSON", "Planning response is not valid structured JSON") from exc
         from jsonschema import Draft202012Validator
@@ -588,24 +594,27 @@ class ExperimentalDriver:
     No guessed vendor endpoint or fake successful implementation is provided.
     """
 
-    def __init__(self, name: str, implementation=None, qualification_ref: dict | None = None):
+    def __init__(
+        self, name: str, implementation: Any = None, qualification_ref: dict[str, Any] | None = None
+    ) -> None:
         self.name, self.implementation, self.qualification_ref = (
             name,
             implementation,
             qualification_ref,
         )
 
-    def probe(self):
+    def probe(self) -> dict[str, Any]:
         return {
             "driver_id": self.name,
             "maturity": "experimental",
             "enabled": self.implementation is not None and self.qualification_ref is not None,
         }
 
-    def start(self, *args, **kwargs):
+    def start(self, *args: Any, **kwargs: Any) -> Any:
         if not self.implementation or not self.qualification_ref:
             raise Hold(
                 "EXPERIMENTAL_DISABLED",
-                "This optional transport has not been implemented and qualified by an installed adapter pack",
+                "This optional transport has not been implemented and qualified "
+                "by an installed adapter pack",
             )
         return self.implementation.start(*args, **kwargs)

@@ -15,34 +15,46 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Hold
 
 from .protocol import JsonlDecoder, SessionJournal
 
+if TYPE_CHECKING:
+    from amplai_foundry.sandbox.container import ContainerSandbox
+
 
 class JsonlRpc:
     """One bounded JSONL connection; request IDs are scoped to this connection."""
 
-    def __init__(self, process, on_notification: Callable, *, timeout=30):
+    def __init__(
+        self,
+        process: subprocess.Popen[bytes],
+        on_notification: Callable[[str, dict[str, Any]], None],
+        *,
+        timeout: float = 30,
+    ) -> None:
         self.process = process
         self.notify = on_notification
         self.timeout = timeout
         self.decoder = JsonlDecoder()
         self.sequence = 0
-        self.pending = {}
+        self.pending: dict[str, dict[str, Any] | None] = {}
         self.lock = threading.RLock()
         self.selector = selectors.DefaultSelector()
+        assert process.stdout is not None and process.stderr is not None
         self.selector.register(process.stdout, selectors.EVENT_READ)
         self.selector.register(process.stderr, selectors.EVENT_READ)
         self.stderr_bytes = 0
         self.failure = None
 
-    def send(self, value):
+    def send(self, value: dict[str, Any]) -> None:
         encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode() + b"\n"
         if len(encoded) > 1024 * 1024:
             raise Hold("RPC_REQUEST_LIMIT", "Native RPC request exceeds its byte budget")
+        assert self.process.stdin is not None
         try:
             self.process.stdin.write(encoded)
             self.process.stdin.flush()
@@ -51,9 +63,10 @@ class JsonlRpc:
                 "RPC_DISCONNECTED", "Native request outcome is unknown after disconnect"
             ) from exc
 
-    def _pump(self, seconds):
+    def _pump(self, seconds: float) -> None:
         for key, _ in self.selector.select(max(0, seconds)):
-            data = os.read(key.fileobj.fileno(), 16384)
+            fileobj = key.fileobj
+            data = os.read(fileobj if isinstance(fileobj, int) else fileobj.fileno(), 16384)
             if not data:
                 self.selector.unregister(key.fileobj)
                 if key.fileobj is self.process.stdout:
@@ -101,7 +114,7 @@ class JsonlRpc:
                         "RPC_CALL_MAPPING", "Unknown response ID cannot be attached to another call"
                     )
 
-    def request(self, method, params):
+    def request(self, method: str, params: dict[str, Any]) -> Any:
         with self.lock:
             self.sequence += 1
             request_id = "amplai-" + str(self.sequence)
@@ -118,6 +131,7 @@ class JsonlRpc:
                         )
                     self._pump(remaining)
                 response = self.pending[request_id]
+                assert response is not None
                 if "error" in response:
                     raise Hold(
                         "RPC_REJECTED",
@@ -130,11 +144,11 @@ class JsonlRpc:
             finally:
                 self.pending.pop(request_id, None)
 
-    def poll(self, seconds=0):
+    def poll(self, seconds: float = 0) -> None:
         with self.lock:
             self._pump(seconds)
 
-    def close(self):
+    def close(self) -> None:
         self.selector.close()
 
 
@@ -165,24 +179,24 @@ class CodexAppServerDriver:
 
     def __init__(
         self,
-        version,
-        sandbox,
+        version: str,
+        sandbox: ContainerSandbox,
         journal: SessionJournal,
         *,
-        model,
-        qualified=False,
-        environment=None,
-        rpc_timeout=30,
-    ):
+        model: str,
+        qualified: bool = False,
+        environment: dict[str, str] | None = None,
+        rpc_timeout: float = 30,
+    ) -> None:
         if not model or model in {"auto", "latest", "default"}:
             raise Hold("MODEL_UNPINNED", "An exact configured model is required")
         self.version, self.sandbox, self.journal = version, sandbox, journal
         self.model, self.qualified, self.environment = model, qualified, environment or {}
         self.rpc_timeout = rpc_timeout
-        self.connections = {}
-        self.processes = {}
+        self.connections: dict[str, JsonlRpc] = {}
+        self.processes: dict[str, subprocess.Popen[bytes]] = {}
 
-    def probe(self):
+    def probe(self) -> dict[str, Any]:
         return {
             "driver_id": "codex-app-server",
             "driver_version": self.version,
@@ -192,7 +206,15 @@ class CodexAppServerDriver:
             "native_delegation": False,
         }
 
-    def prepare(self, dispatch, prompt, workspace, *, session=None, native_home=None):
+    def prepare(
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        *,
+        session: str | None = None,
+        native_home: str | Path | None = None,
+    ) -> dict[str, Any]:
         if not self.qualified:
             raise Hold(
                 "DRIVER_UNQUALIFIED",
@@ -236,7 +258,7 @@ class CodexAppServerDriver:
             "native_home": str(home),
         }
 
-    def _notification(self, did, method, params):
+    def _notification(self, did: str, method: str, params: dict[str, Any]) -> None:
         if method not in self.NOTIFICATIONS:
             raise Hold(
                 "UNKNOWN_PROVIDER_EVENT",
@@ -250,7 +272,7 @@ class CodexAppServerDriver:
         turn_id = params.get("turnId") or turn.get("id")
         if turn_id and record.get("turn_id") and turn_id != record["turn_id"]:
             raise Hold("RPC_TURN_MISMATCH", "Native event belongs to another turn")
-        changes = {}
+        changes: dict[str, Any] = {}
         if method == "thread/started":
             native = params.get("thread", {}).get("id")
             if native and record.get("session_handle") not in {None, native}:
@@ -277,8 +299,8 @@ class CodexAppServerDriver:
         # Only digests/IDs/usage are retained, not private reasoning or raw tool data.
         self.journal.update(did, **changes)
 
-    def start(self, prepared):
-        did = prepared["dispatch_id"]
+    def start(self, prepared: dict[str, Any]) -> str:
+        did: str = prepared["dispatch_id"]
         record = self.journal.read(did)
         if record["state"] != "prepared":
             if did not in self.connections and record["state"] in {"starting", "running"}:
@@ -352,7 +374,7 @@ class CodexAppServerDriver:
             )
             raise
 
-    def poll(self, handle):
+    def poll(self, handle: str) -> dict[str, Any]:
         if handle not in self.connections:
             raise Hold("RPC_ORPHAN", "Exact native connection needs reconciliation")
         record = self.journal.read(handle)
@@ -360,7 +382,7 @@ class CodexAppServerDriver:
             self.connections[handle].poll(0)
         return self.journal.read(handle)
 
-    def steer(self, handle, event):
+    def steer(self, handle: str, event: dict[str, Any]) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] != "running":
             raise Hold("RPC_NOT_RUNNING", "Native steering needs an active turn")
@@ -381,7 +403,7 @@ class CodexAppServerDriver:
             "native_applied": False,
         }
 
-    def cancel(self, handle):
+    def cancel(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] == "running":
             self.connections[handle].request(
@@ -398,7 +420,7 @@ class CodexAppServerDriver:
 
     pause = cancel
 
-    def checkpoint(self, handle):
+    def checkpoint(self, handle: str) -> dict[str, Any]:
         record = self.journal.read(handle)
         if record["state"] not in {"completed", "cancelled", "interrupted", "failed"}:
             raise Hold("CHECKPOINT_UNCONFIRMED", "Native process/turn boundary is not confirmed")
@@ -410,7 +432,9 @@ class CodexAppServerDriver:
             "journal_digest": digest(record),
         }
 
-    def resume(self, dispatch, prompt, workspace, checkpoint):
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
         if checkpoint["driver_version"] != self.version or checkpoint["model"] != self.model:
             raise Hold("RESUME_PROFILE", "Model/protocol changed since checkpoint")
         return self.start(
@@ -423,7 +447,7 @@ class CodexAppServerDriver:
             )
         )
 
-    def collect(self, handle):
+    def collect(self, handle: str) -> dict[str, Any]:
         record = self.poll(handle)
         if record["state"] != "completed":
             raise Hold("DRIVER_NOT_COMPLETE", "Native turn is not complete")
@@ -438,7 +462,7 @@ class CodexAppServerDriver:
             "usage": record.get("usage"),
         }
 
-    def destroy(self, handle):
+    def destroy(self, handle: str) -> None:
         if not self.sandbox.stopped(handle):
             raise Hold("DESTROY_RUNNING", "A live native process cannot be forgotten")
         if handle in self.connections:
