@@ -3,14 +3,29 @@
 Inputs are pinned contract facts and server-observed task characteristics, not a
 model's self-rating. Unknown capability/budget is HOLD rather than a weaker mode.
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+
 from ..errors import Hold, RuntimeFault
 
 RISK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
-PROTECTED = frozenset({".ai-team", ".github", "verifiers", "policies", "migrations",
-                      "authority", "holdout", "eval", "contracts"})
+PROTECTED = frozenset(
+    {
+        ".ai-team",
+        ".github",
+        "verifiers",
+        "policies",
+        "migrations",
+        "authority",
+        "holdout",
+        "eval",
+        "contracts",
+    }
+)
+
 
 @dataclass(frozen=True)
 class TaskFacts:
@@ -22,18 +37,35 @@ class TaskFacts:
     read_only: bool = False
     target_count: int = 1
 
+
 @dataclass(frozen=True)
 class StrategyDecision:
     strategy: str
     risk_floor: str
     reasons: tuple[str, ...]
-    mandatory_gates: tuple[str, ...] = ("scope", "authority", "containment", "budget",
-                                        "evidence", "independent_verification")
+    mandatory_gates: tuple[str, ...] = (
+        "scope",
+        "authority",
+        "containment",
+        "budget",
+        "evidence",
+        "independent_verification",
+    )
+
 
 class StrategyRouter:
-    def select(self, contract: dict, facts: TaskFacts, *, available: frozenset[str]) -> StrategyDecision:
-        if contract.get("risk") not in RISK or facts.uncertainty not in {"low", "medium", "high", "unknown"}:
-            raise RuntimeFault("STRATEGY_INPUT", "Risk and uncertainty must be explicit policy values")
+    def select(
+        self, contract: dict, facts: TaskFacts, *, available: frozenset[str]
+    ) -> StrategyDecision:
+        if contract.get("risk") not in RISK or facts.uncertainty not in {
+            "low",
+            "medium",
+            "high",
+            "unknown",
+        }:
+            raise RuntimeFault(
+                "STRATEGY_INPUT", "Risk and uncertainty must be explicit policy values"
+            )
         if facts.target_count < 1:
             raise Hold("TARGET_UNKNOWN", "An admitted target is required")
         risk = contract["risk"]
@@ -55,14 +87,21 @@ class StrategyRouter:
         elif facts.uncertainty in {"high", "unknown"}:
             strategy = "deliberative"
             reasons.append("Explicit planning/review boundary before implementation")
-        elif facts.local_change and facts.deterministic_verifier and risk == "low" and facts.target_count == 1:
+        elif (
+            facts.local_change
+            and facts.deterministic_verifier
+            and risk == "low"
+            and facts.target_count == 1
+        ):
             strategy = "direct"
             reasons.append("One attempt; independent verification remains mandatory")
         else:
             strategy = "bounded_loop"
             reasons.append("Each verifier repair creates a new Run within the root budget")
         if strategy not in available:
-            raise Hold("STRATEGY_UNSUPPORTED", "Required strategy is not qualified; no silent downgrade")
+            raise Hold(
+                "STRATEGY_UNSUPPORTED", "Required strategy is not qualified; no silent downgrade"
+            )
         if facts.target_count > 1:
             reasons.append("Cross-app work remains explicit WorkGraph nodes with a global verifier")
         return StrategyDecision(strategy, risk, tuple(reasons))
@@ -72,5 +111,7 @@ class StrategyRouter:
         strategy = node["strategy"]
         if strategy == "direct" and contract["risk"] != "low":
             raise Hold("DIRECT_RISK", "Direct mode is restricted to low-risk admitted contracts")
-        if strategy == "discovery" and any(c["effect_class"] != "pure_read" for c in node["capabilities"]):
+        if strategy == "discovery" and any(
+            c["effect_class"] != "pure_read" for c in node["capabilities"]
+        ):
             raise Hold("DISCOVERY_WRITE", "Discovery may not perform writes")
