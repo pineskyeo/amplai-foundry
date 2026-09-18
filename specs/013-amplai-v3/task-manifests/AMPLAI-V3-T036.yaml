@@ -101,64 +101,10 @@
   "acceptance": {
     "behaviors": [
       {
-        "id": "T-031",
-        "given": "small typo work with direct strategy",
-        "when": "execute",
-        "then": "minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]"
-      },
-      {
-        "id": "T-032",
-        "given": "two writes target same repo worktree resource",
-        "when": "claim concurrently",
-        "then": "only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]"
-      },
-      {
-        "id": "T-033",
-        "given": "parent plus native children collectively exceed cap",
-        "when": "admit another child/continuation",
-        "then": "BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]"
-      },
-      {
-        "id": "T-034",
-        "given": "provider omits usage after disconnect",
-        "when": "close reservation",
-        "then": "unknown upper-bound held/reconciled, not zero cost [Unknown usage]"
-      },
-      {
-        "id": "T-035",
-        "given": "verifier repeatedly fails under bounded loop",
-        "when": "exhaust max attempts including initial",
-        "then": "old Runs terminal, no more auto repair; typed failure/HOLD [Attempt budget]"
-      },
-      {
-        "id": "T-036",
-        "given": "same signature reaches stop count",
-        "when": "request next repair",
-        "then": "escalate instead of fruitless retries [Repeated failure signature]"
-      },
-      {
-        "id": "T-037",
-        "given": "one root has many ready nodes plus another project ready",
-        "when": "scheduler ticks",
-        "then": "per-root cap and project fairness prevent starvation within defined scheduler policy [Fairness under large goal]"
-      },
-      {
-        "id": "T-038",
-        "given": "provider hangs for a long tool call",
-        "when": "other worker heartbeat/store command",
-        "then": "DB transaction not held by provider call; heartbeat commit possible [No long IO in transaction]"
-      },
-      {
         "id": "T-057",
         "given": "required Korean font unavailable in render environment",
         "when": "document verify",
         "then": "HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]"
-      },
-      {
-        "id": "T-058",
-        "given": "source SVG syntactically valid but final embedding clips text",
-        "when": "render final output",
-        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]"
       },
       {
         "id": "T-059",
@@ -239,6 +185,62 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-031",
+        "then": "minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-032",
+        "then": "only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-033",
+        "then": "BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-034",
+        "then": "unknown upper-bound held/reconciled, not zero cost [Unknown usage]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-035",
+        "then": "old Runs terminal, no more auto repair; typed failure/HOLD [Attempt budget]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-036",
+        "then": "escalate instead of fruitless retries [Repeated failure signature]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-037",
+        "then": "per-root cap and project fairness prevent starvation within defined scheduler policy [Fairness under large goal]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-038",
+        "then": "DB transaction not held by provider call; heartbeat commit possible [No long IO in transaction]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-058",
+        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -267,8 +269,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S07",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

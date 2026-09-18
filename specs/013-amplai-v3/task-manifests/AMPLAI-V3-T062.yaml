@@ -114,12 +114,6 @@
         "then": "authority rejects forged role [Self-approval denied]"
       },
       {
-        "id": "T-088",
-        "given": "canary produces unknown effect/security incident",
-        "when": "next scheduler tick",
-        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]"
-      },
-      {
         "id": "T-089",
         "given": "two promotions reference same previous active release",
         "when": "promote concurrently",
@@ -130,12 +124,6 @@
         "given": "previous release backup contains old grant state",
         "when": "rollback code/data",
         "then": "latest revocations retained; no resurrected access [Rollback keeps revocations]"
-      },
-      {
-        "id": "T-091",
-        "given": "new release promoted while old Run active",
-        "when": "read run context/continue",
-        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]"
       },
       {
         "id": "T-092",
@@ -184,18 +172,6 @@
         "given": "isolated test app, qualified baseline driver, frozen authority/policy",
         "when": "rough intent to contract/graph/run/evidence/global verify",
         "then": "every required boundary passes with current refs; no fabricated runtime pass [Full V3 representative end-to-end]"
-      },
-      {
-        "id": "T-108",
-        "given": "direct/discovery/deliberative/bounded profiles",
-        "when": "reach a mandatory boundary under fast/tiny flag",
-        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]"
-      },
-      {
-        "id": "T-109",
-        "given": "eligible experiment and controlled nonproduction canary",
-        "when": "exercise pass/fail/inconclusive/promote/rollback branches",
-        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]"
       },
       {
         "id": "T-110",
@@ -264,6 +240,32 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-088",
+        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-091",
+        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-108",
+        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-109",
+        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -292,8 +294,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S20",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

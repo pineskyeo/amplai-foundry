@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0.0",
   "kind": "v3_conformance_closure",
-  "implementation_revision": "6bedba781442ed66dc5ac7ad5f59efcf8ee7f572",
+  "implementation_revision": "3ae387981631c0be6b8f62cdb12e2de247ba0c92",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],

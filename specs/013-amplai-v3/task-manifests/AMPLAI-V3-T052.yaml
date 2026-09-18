@@ -261,8 +261,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S14",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

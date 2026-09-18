@@ -115,12 +115,6 @@
         "then": "HOLD; no unapproved cloud transmission [Cloud fallback prohibited]"
       },
       {
-        "id": "T-076",
-        "given": "worker prompt/tool asks for production token",
-        "when": "secret access",
-        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]"
-      },
-      {
         "id": "T-077",
         "given": "parent limited scope; child asks wider root",
         "when": "delegate",
@@ -223,6 +217,14 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-076",
+        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -251,8 +253,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S05",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

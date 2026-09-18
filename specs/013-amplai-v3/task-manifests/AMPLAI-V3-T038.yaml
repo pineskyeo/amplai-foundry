@@ -103,12 +103,6 @@
         "then": "HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]"
       },
       {
-        "id": "T-058",
-        "given": "source SVG syntactically valid but final embedding clips text",
-        "when": "render final output",
-        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]"
-      },
-      {
         "id": "T-059",
         "given": "builder changes screenshot golden to erase diff",
         "when": "verify changes",
@@ -229,6 +223,14 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-058",
+        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -257,8 +259,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S09",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

@@ -144,6 +144,9 @@ Acceptance:
 - T-073 data treated untrusted; policy/effect boundary blocks [Prompt injection]
 - T-074 filesystem boundary denies without touching target [Symlink traversal]
 
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+
+
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_repo_facts.py`
 - `.venv/bin/python -m ruff check src/amplai_foundry/knowledge_runtime/repo_facts.py tests/v3/test_rc01_repo_facts.py`
@@ -169,11 +172,13 @@ Acceptance:
 - T-073 data treated untrusted; policy/effect boundary blocks [Prompt injection]
 - T-074 filesystem boundary denies without touching target [Symlink traversal]
 - T-075 HOLD; no unapproved cloud transmission [Cloud fallback prohibited]
-- T-076 broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]
 - T-077 subset intersection; deny escalation [Native subagent escape]
 - T-078 HOLD; cached grant not treated perpetual [Missing authority]
 - T-092 blocked until replacement equivalence/tests and refs cleared [Legacy import still active]
 - T-093 not blanket corruption failure; report optional omission separately [Optional marker absence]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-076 broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_pack_registry.py`
@@ -197,10 +202,12 @@ Tasks:
 
 Acceptance:
 - T-006 verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence [Resolve without target hint]
+- T-010 DESIGN_SCOPE_VIOLATION; only design artifact writes allowed [Design stays design]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
 - T-007 hold + one consolidated question; no write dispatch [Ambiguous target hold]
 - T-008 read sources, do not ask already-answerable technical questions [Existing fact avoids question]
 - T-009 ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]
-- T-010 DESIGN_SCOPE_VIOLATION; only design artifact writes allowed [Design stays design]
 - T-011 origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]
 - T-012 HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]
 - T-013 reject duplicate criterion IDs [Criteria ID collision]
@@ -227,6 +234,9 @@ Tasks:
   - files: `packs/software/`, `tests/v3/test_rc01_pack_software.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
 Acceptance:
+
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
 - T-031 minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]
 - T-032 only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]
 - T-033 BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]
@@ -259,12 +269,14 @@ Tasks:
 
 Acceptance:
 - T-057 HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]
-- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 - T-059 protected baseline guard fails [Frontend golden tampering]
 - T-060 functional/accessibility criterion fails independently [Pixel pass UX fail]
 - T-061 digest/version mismatch; rerender required [Final artifact exact version]
 - T-062 protected diff guard fails; not accepted [Test deletion gaming]
 - T-063 mandatory compatibility fails despite node successes [Independent integration]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_pack_frontend.py`
@@ -289,13 +301,15 @@ Tasks:
 
 Acceptance:
 - T-057 HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]
-- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 - T-059 protected baseline guard fails [Frontend golden tampering]
 - T-060 functional/accessibility criterion fails independently [Pixel pass UX fail]
 - T-061 digest/version mismatch; rerender required [Final artifact exact version]
 - T-062 protected diff guard fails; not accepted [Test deletion gaming]
 - T-063 mandatory compatibility fails despite node successes [Independent integration]
 - T-092 blocked until replacement equivalence/tests and refs cleared [Legacy import still active]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_pack_documents.py`
@@ -328,6 +342,9 @@ Acceptance:
 - T-073 data treated untrusted; policy/effect boundary blocks [Prompt injection]
 - T-074 filesystem boundary denies without touching target [Symlink traversal]
 
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+
+
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_pack_research_ontology.py`
 - `.venv/bin/python -m ruff check  tests/v3/test_rc01_pack_research_ontology.py`
@@ -358,6 +375,8 @@ Acceptance:
 - T-004 IDEMPOTENCY_CONFLICT; original state unchanged [Idempotency payload conflict]
 - T-005 401; no anonymous status/data leakage [Missing authentication]
 - T-006 verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence [Resolve without target hint]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
 - T-007 hold + one consolidated question; no write dispatch [Ambiguous target hold]
 - T-008 read sources, do not ask already-answerable technical questions [Existing fact avoids question]
 
@@ -479,11 +498,13 @@ Acceptance:
 - T-073 data treated untrusted; policy/effect boundary blocks [Prompt injection]
 - T-074 filesystem boundary denies without touching target [Symlink traversal]
 - T-075 HOLD; no unapproved cloud transmission [Cloud fallback prohibited]
-- T-076 broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]
 - T-077 subset intersection; deny escalation [Native subagent escape]
 - T-078 HOLD; cached grant not treated perpetual [Missing authority]
 - T-099 same dispatch correlation; no duplicate active lease [Claim commit crash]
 - T-100 worker journal/probe yields existing handle, no duplicate spawn [Spawn ACK lost]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-076 broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_deployment_profiles.py`
@@ -507,13 +528,15 @@ Tasks:
   - files: `tests/e2e/cross_app/`, `tests/v3/test_rc01_e2e_cross_app.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
 Acceptance:
+- T-027 old result audit only, no active state/effect update [Replan stale worker]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
 - T-021 GRAPH_INVALID; no graph activation [Cycle rejection]
 - T-022 same canonical DAG content digest and stable topological order [Stable compiler output]
 - T-023 GRAPH_DATA_TYPES reject with exact edge finding [Typed artifact mismatch]
 - T-024 reject; source must be exactly one [Input XOR]
 - T-025 coverage failure; add global verifier or blocking finding [Missing global acceptance]
 - T-026 unsafe join rejected [Unsafe any-success join]
-- T-027 old result audit only, no active state/effect update [Replan stale worker]
 - T-028 reuse rejected or reverify, no stale pass [Conservative output reuse]
 
 Eval:
@@ -539,12 +562,14 @@ Tasks:
 
 Acceptance:
 - T-057 HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]
-- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 - T-059 protected baseline guard fails [Frontend golden tampering]
 - T-060 functional/accessibility criterion fails independently [Pixel pass UX fail]
 - T-061 digest/version mismatch; rerender required [Final artifact exact version]
 - T-062 protected diff guard fails; not accepted [Test deletion gaming]
 - T-063 mandatory compatibility fails despite node successes [Independent integration]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_e2e_render.py`
@@ -610,6 +635,8 @@ Acceptance:
 - T-004 IDEMPOTENCY_CONFLICT; original state unchanged [Idempotency payload conflict]
 - T-005 401; no anonymous status/data leakage [Missing authentication]
 - T-006 verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence [Resolve without target hint]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
 - T-007 hold + one consolidated question; no write dispatch [Ambiguous target hold]
 - T-008 read sources, do not ask already-answerable technical questions [Existing fact avoids question]
 
@@ -639,13 +666,15 @@ Tasks:
 
 Acceptance:
 - T-087 authority rejects forged role [Self-approval denied]
-- T-088 abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]
 - T-089 one wins, other conflict; no mixed pointer state [Active release CAS]
 - T-090 latest revocations retained; no resurrected access [Rollback keeps revocations]
-- T-091 old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]
 - T-092 blocked until replacement equivalence/tests and refs cleared [Legacy import still active]
 - T-093 not blanket corruption failure; report optional omission separately [Optional marker absence]
 - T-094 conflict HOLD and preserve user bytes [Owned file changed by user]
+
+Deferred (ledger not_run, no runtime evidence on this tree — see release/rc01-conformance-closure.json):
+- T-088 abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]
+- T-091 old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]
 
 Eval:
 - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_cutover.py`

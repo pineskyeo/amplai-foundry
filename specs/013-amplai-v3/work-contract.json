@@ -41,7 +41,9 @@
       "eval/",
       "docs/v3/",
       "pyproject.toml",
-      "specs/013-amplai-v3/"
+      "specs/013-amplai-v3/",
+      "scripts/rc01_closure.py",
+      "tests/runtime_storage/"
     ],
     "exclude": [
       "vault/",
@@ -106,8 +108,8 @@
       "id": "W3-HERMES",
       "statement": "V3-049: integrations/hermes 가 authenticated identity mapping, deduped intake, read projection 을 제공하고 approval 은 authority 경로만 통과한다.",
       "evidence": [
-        "tests/v3 T-087~T-091 대응 case",
-        "Hermes 가 activation authority 를 갖지 못하는 negative case"
+        "tests/v3/test_rc01_hermes_adapter.py — ledger local_pass T-087/T-089/T-090; T-088, T-091 은 not_run (release/rc01-conformance-closure.json remaining_blockers)",
+        "Hermes 가 activation authority 를 갖지 못하는 negative case (test_t002_conversation_text_never_mints_authority, test_t087_approval_goes_through_authority_not_adapter)"
       ]
     },
     {
@@ -122,8 +124,8 @@
       "id": "W4-E2E",
       "statement": "V3-057/059: cross-app end-to-end (rough intent → 두 sandbox app → integration evidence, mid-steer old worker fencing) 와 frontend/docs actual-render acceptance suite 가 로컬 실행으로 재현된다.",
       "evidence": [
-        "tests/e2e/cross_app, tests/e2e/artifacts",
-        "재실행 시 동일 artifact digest"
+        "tests/v3/test_rc01_e2e_cross_app.py, tests/v3/test_rc01_e2e_render.py (slice eval 경로; tests/e2e/ 는 fixture·golden registry 만 보유, tests/e2e/README.md 참조)",
+        "재실행 시 동일 artifact digest (golden-registry.json 의 human-sealed digest 와 대조)"
       ]
     },
     {
@@ -176,7 +178,9 @@
     "AMPLAI V3 Design 1.0 (2026-09-15, design-reference/, CHECKSUMS digest 5f9e4044f9a1a174…) 은 승인 설계이며 이 Work 는 그것을 변경하지 않는다",
     "DEV-03 parent: AMPLAI_V3_DEV_02_3e21c3b2 (sha256 3e21c3b2…), DEV-03 source tree sha256 e92b82d1…; 검증기 verify_delivery --patches passed (2026-09-18 로컬 재현)",
     "2026-09-18 사용자 지시: '위 amplai V3 컨셉대로 실제로 만들어달라' — 로컬 브랜치 feat/013-amplai-v3 에서 구현·검증. push/merge/release 는 포함하지 않는다",
-    "품질 게이트 (ruff/mypy) 는 설정 완화가 아니라 주석·수정으로 닫는다. 예외는 FastAPI Depends immutable-call 선언과 optional visual extra (playwright/PIL) missing-import 뿐이며 둘 다 우리 코드 검사를 약화하지 않는다"
+    "품질 게이트 (ruff/mypy) 는 설정 완화가 아니라 주석·수정으로 닫는다. 예외는 FastAPI Depends immutable-call 선언과 optional visual extra (playwright/PIL) missing-import 뿐이며 둘 다 우리 코드 검사를 약화하지 않는다",
+    "2026-09-18 review R002/R003: S16/S17 실행 case 는 slice eval 이 지정한 tests/v3/test_rc01_e2e_*.py 로 옮겼고, ledger 재생성기 scripts/rc01_closure.py 와 storage tier test tests/runtime_storage/ 를 scope 에 추가했다. 기능 계약은 바뀌지 않았다",
+    "2026-09-18 review R001: task manifest acceptance.behaviors 는 ledger 가 local_pass 로 기록한 catalog id 만 남기고, 나머지는 acceptance.deferred 로 명시한다. design mapping 은 runtime evidence 가 아니다 (W5-CLOSURE)"
   ],
   "blocked_by": [],
   "status": "ready"

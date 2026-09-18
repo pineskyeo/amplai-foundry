@@ -67,7 +67,9 @@
       "eval/",
       "tests/v3/test_rc01_conformance_closure.py",
       "specs/013-amplai-v3/",
-      "pyproject.toml"
+      "pyproject.toml",
+      "scripts/rc01_closure.py",
+      "tests/runtime_storage/"
     ],
     "forbidden_paths": [
       "vault/",
@@ -148,52 +150,10 @@
         "then": "verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence [Resolve without target hint]"
       },
       {
-        "id": "T-007",
-        "given": "two authorized apps share an alias",
-        "when": "resolve intent",
-        "then": "hold + one consolidated question; no write dispatch [Ambiguous target hold]"
-      },
-      {
-        "id": "T-008",
-        "given": "build commands and invariants are in canonical repo facts",
-        "when": "resolve rough request",
-        "then": "read sources, do not ask already-answerable technical questions [Existing fact avoids question]"
-      },
-      {
-        "id": "T-009",
-        "given": "objective says make better, no measurable/human rubric bindings",
-        "when": "freeze contract",
-        "then": "ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]"
-      },
-      {
         "id": "T-010",
         "given": "mode design and requested source implementation effect",
         "when": "admission/dispatch",
         "then": "DESIGN_SCOPE_VIOLATION; only design artifact writes allowed [Design stays design]"
-      },
-      {
-        "id": "T-011",
-        "given": "planner infers scope from non-authoritative text",
-        "when": "create contract",
-        "then": "origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]"
-      },
-      {
-        "id": "T-012",
-        "given": "same blocking ambiguity remains after configured rounds",
-        "when": "planner/critic repeat",
-        "then": "HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]"
-      },
-      {
-        "id": "T-013",
-        "given": "two acceptance rows share same ID",
-        "when": "semantic validation",
-        "then": "reject duplicate criterion IDs [Criteria ID collision]"
-      },
-      {
-        "id": "T-014",
-        "given": "grant bound to contract v1; v2 changes target",
-        "when": "activate v2 then request effect using v1 grant",
-        "then": "GRANT_STALE; reauthorization required [Contract revision invalidates grant]"
       },
       {
         "id": "T-015",
@@ -232,52 +192,10 @@
         "then": "pinned snapshot used or stale HOLD; current URL not assumed same digest [External URL drift]"
       },
       {
-        "id": "T-021",
-        "given": "A depends B and B depends A",
-        "when": "compile",
-        "then": "GRAPH_INVALID; no graph activation [Cycle rejection]"
-      },
-      {
-        "id": "T-022",
-        "given": "same frozen plan contract registry snapshot",
-        "when": "compile twice in different input iteration order",
-        "then": "same canonical DAG content digest and stable topological order [Stable compiler output]"
-      },
-      {
-        "id": "T-023",
-        "given": "producer outputs JSON; consumer requires binary ABI artifact",
-        "when": "compile",
-        "then": "GRAPH_DATA_TYPES reject with exact edge finding [Typed artifact mismatch]"
-      },
-      {
-        "id": "T-024",
-        "given": "consumes supplies both from_node and external_ref",
-        "when": "semantic validate",
-        "then": "reject; source must be exactly one [Input XOR]"
-      },
-      {
-        "id": "T-025",
-        "given": "nodes cover unit tests but no cross-app integration criterion",
-        "when": "compile/activate",
-        "then": "coverage failure; add global verifier or blocking finding [Missing global acceptance]"
-      },
-      {
-        "id": "T-026",
-        "given": "write node joins either of two required approvals",
-        "when": "compile",
-        "then": "unsafe join rejected [Unsafe any-success join]"
-      },
-      {
         "id": "T-027",
         "given": "new graph v2 activates while v1 worker still running",
         "when": "old worker sends result/effect",
         "then": "old result audit only, no active state/effect update [Replan stale worker]"
-      },
-      {
-        "id": "T-028",
-        "given": "upstream artifact digest matches but verifier/env changed",
-        "when": "reuse prior node success",
-        "then": "reuse rejected or reverify, no stale pass [Conservative output reuse]"
       },
       {
         "id": "T-029",
@@ -286,178 +204,10 @@
         "then": "one CAS succeeds; other REVISION_CONFLICT [Concurrent replans]"
       },
       {
-        "id": "T-030",
-        "given": "draft exceeds configured max nodes",
-        "when": "compile",
-        "then": "bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out [Graph node budget limit]"
-      },
-      {
-        "id": "T-031",
-        "given": "small typo work with direct strategy",
-        "when": "execute",
-        "then": "minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]"
-      },
-      {
-        "id": "T-032",
-        "given": "two writes target same repo worktree resource",
-        "when": "claim concurrently",
-        "then": "only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]"
-      },
-      {
-        "id": "T-033",
-        "given": "parent plus native children collectively exceed cap",
-        "when": "admit another child/continuation",
-        "then": "BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]"
-      },
-      {
-        "id": "T-034",
-        "given": "provider omits usage after disconnect",
-        "when": "close reservation",
-        "then": "unknown upper-bound held/reconciled, not zero cost [Unknown usage]"
-      },
-      {
-        "id": "T-035",
-        "given": "verifier repeatedly fails under bounded loop",
-        "when": "exhaust max attempts including initial",
-        "then": "old Runs terminal, no more auto repair; typed failure/HOLD [Attempt budget]"
-      },
-      {
-        "id": "T-036",
-        "given": "same signature reaches stop count",
-        "when": "request next repair",
-        "then": "escalate instead of fruitless retries [Repeated failure signature]"
-      },
-      {
-        "id": "T-037",
-        "given": "one root has many ready nodes plus another project ready",
-        "when": "scheduler ticks",
-        "then": "per-root cap and project fairness prevent starvation within defined scheduler policy [Fairness under large goal]"
-      },
-      {
-        "id": "T-038",
-        "given": "provider hangs for a long tool call",
-        "when": "other worker heartbeat/store command",
-        "then": "DB transaction not held by provider call; heartbeat commit possible [No long IO in transaction]"
-      },
-      {
-        "id": "T-039",
-        "given": "worker holds old lease after recovery",
-        "when": "heartbeat/event/effect",
-        "then": "STALE_LEASE; no renewed authority [Expired fence rejected]"
-      },
-      {
-        "id": "T-040",
-        "given": "CP owner epoch advances after crash",
-        "when": "worker claims same Work again",
-        "then": "fencing token never reused or decreases [Monotonic fence restart]"
-      },
-      {
-        "id": "T-041",
-        "given": "not_before or expiry field malformed",
-        "when": "schedule/resume",
-        "then": "validation HOLD, not immediate retry-ready [Malformed time fail closed]"
-      },
-      {
-        "id": "T-042",
-        "given": "paused Run bound v1; desired contract becomes v2",
-        "when": "resume same Run",
-        "then": "reject same-run ref mutation; new Run from checkpoint with new contract [Pause revision mismatch]"
-      },
-      {
-        "id": "T-043",
-        "given": "worker claims expiry differs from server",
-        "when": "heartbeat",
-        "then": "server time and current lease decide, worker cannot extend arbitrarily [Worker time skew]"
-      },
-      {
-        "id": "T-044",
-        "given": "remote receives write, response lost",
-        "when": "retry workflow",
-        "then": "UNKNOWN receipt; query/reconcile before any resend [Timeout may have applied]"
-      },
-      {
-        "id": "T-045",
-        "given": "effect key already bound to old payload",
-        "when": "dispatch altered args",
-        "then": "IDEMPOTENCY_CONFLICT [Same effect key new args]"
-      },
-      {
-        "id": "T-046",
-        "given": "grant revoked after preparation before broker call",
-        "when": "dispatch",
-        "then": "deny new send; record not applied only if positively unsent [Revoke before dispatch]"
-      },
-      {
-        "id": "T-047",
-        "given": "external accepted before revocation",
-        "when": "observe revoke",
-        "then": "do not claim rollback; receipt/reconcile reveals outcome [Revoke after dispatch]"
-      },
-      {
-        "id": "T-048",
-        "given": "endpoint lacks idempotency and lookup",
-        "when": "timeout on write",
-        "then": "human reconciliation HOLD, no blind retry [Non-idempotent endpoint]"
-      },
-      {
-        "id": "T-049",
-        "given": "original write applied but wrong",
-        "when": "request undo",
-        "then": "new grant/effect receipt linked to original; original not erased [Compensation is new effect]"
-      },
-      {
-        "id": "T-050",
-        "given": "some external items applied, others unknown",
-        "when": "aggregate result",
-        "then": "item receipts + partial/unknown state; not all succeeded [Partial batch]"
-      },
-      {
-        "id": "T-051",
-        "given": "callback with valid run ID but wrong project/call_id",
-        "when": "ingest callback",
-        "then": "reject, original pending request unchanged [Remote callback spoof]"
-      },
-      {
-        "id": "T-052",
-        "given": "agent declares artifact hash not matching uploaded bytes",
-        "when": "commit artifact",
-        "then": "reject/quarantine mismatched digest [Forged digest]"
-      },
-      {
-        "id": "T-053",
-        "given": "worker exits0 without required evidence",
-        "when": "global verify",
-        "then": "inconclusive/fail; no verified goal [Exit zero not pass]"
-      },
-      {
-        "id": "T-054",
-        "given": "v1 tests passed but contract/artifact v2 active",
-        "when": "submit verdict for active goal",
-        "then": "not accepted toward active coverage [Old revision pass]"
-      },
-      {
-        "id": "T-055",
-        "given": "V2 imported log says PASS",
-        "when": "migrate to V3",
-        "then": "legacy_imported preserved; no automatic server_verified [Legacy evidence trust]"
-      },
-      {
-        "id": "T-056",
-        "given": "CAS rename completed, registry commit crashed",
-        "when": "recovery/GC",
-        "then": "verified orphan attach or retention GC; no invalid artifact ref exposure [Artifact orphan crash]"
-      },
-      {
         "id": "T-057",
         "given": "required Korean font unavailable in render environment",
         "when": "document verify",
         "then": "HOLD or explicit approved fallback; missing glyphs not PASS [Rendered doc font missing]"
-      },
-      {
-        "id": "T-058",
-        "given": "source SVG syntactically valid but final embedding clips text",
-        "when": "render final output",
-        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]"
       },
       {
         "id": "T-059",
@@ -490,60 +240,6 @@
         "then": "mandatory compatibility fails despite node successes [Independent integration]"
       },
       {
-        "id": "T-064",
-        "given": "two CLI sessions exist",
-        "when": "resume Work A",
-        "then": "exact A session used; no continue latest heuristic [Exact session resume]"
-      },
-      {
-        "id": "T-065",
-        "given": "provider event JSON split across chunks",
-        "when": "decode input",
-        "then": "buffer until complete, typed event validation, no heuristic session pollution [Partial JSONL stream]"
-      },
-      {
-        "id": "T-066",
-        "given": "SDK upgrade adds unsupported event type",
-        "when": "ingest",
-        "then": "quarantine/unsupported with version finding, no guessed success [Unknown provider event]"
-      },
-      {
-        "id": "T-067",
-        "given": "tool result references different provider_call_id",
-        "when": "forward result",
-        "then": "reject mapping; correct pending call unchanged [Async result call mismatch]"
-      },
-      {
-        "id": "T-068",
-        "given": "provider ack queued but connection dies before application",
-        "when": "reconnect",
-        "then": "ledger reconciles unresolved steering; no false applied status [Steering queued disconnect]"
-      },
-      {
-        "id": "T-069",
-        "given": "driver lacks steer capability",
-        "when": "user changes constraints",
-        "then": "safe checkpoint/restart fallback; no text injection hack [Native steering absent]"
-      },
-      {
-        "id": "T-070",
-        "given": "Codex app-server profile unqualified",
-        "when": "production dispatch",
-        "then": "CAPABILITY_UNQUALIFIED; qualified CLI fallback only if policy permits [Experimental transport]"
-      },
-      {
-        "id": "T-071",
-        "given": "prompt_async responds204",
-        "when": "status projection",
-        "then": "accepted/running only, not completed [OpenCode 204]"
-      },
-      {
-        "id": "T-072",
-        "given": "worker submits goal.verified or grant.revoked",
-        "when": "event ingress",
-        "then": "forbidden event; only server authority emits transition [Server-only event forgery]"
-      },
-      {
         "id": "T-073",
         "given": "repo doc tells agent to disable verifiers/send secrets",
         "when": "context and tool use",
@@ -562,12 +258,6 @@
         "then": "HOLD; no unapproved cloud transmission [Cloud fallback prohibited]"
       },
       {
-        "id": "T-076",
-        "given": "worker prompt/tool asks for production token",
-        "when": "secret access",
-        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]"
-      },
-      {
         "id": "T-077",
         "given": "parent limited scope; child asks wider root",
         "when": "delegate",
@@ -580,64 +270,10 @@
         "then": "HOLD; cached grant not treated perpetual [Missing authority]"
       },
       {
-        "id": "T-079",
-        "given": "candidate harness diff also weakens verifier",
-        "when": "screen proposal",
-        "then": "class C separate governed work; no same experiment pass [Protected evaluator change]"
-      },
-      {
-        "id": "T-080",
-        "given": "MetaProposer requests hidden evaluation answers",
-        "when": "fetch corpus",
-        "then": "access denied and contamination/security finding [Holdout leakage]"
-      },
-      {
-        "id": "T-081",
-        "given": "experiment already frozen",
-        "when": "change primary endpoint or task corpus",
-        "then": "new experiment revision required, original preserved [Immutable experiment]"
-      },
-      {
-        "id": "T-082",
-        "given": "baseline and candidate use changed model alias resolution",
-        "when": "analyze",
-        "then": "environment_drifted with limits; no harness-only improvement claim [Provider alias drift]"
-      },
-      {
-        "id": "T-083",
-        "given": "recorded tool outcomes replayed without live model/tool",
-        "when": "report",
-        "then": "marked replay; not evidence of real-world success improvement [Replay vs rerun]"
-      },
-      {
-        "id": "T-084",
-        "given": "small/noisy sample under frozen noninferiority rule",
-        "when": "analyze",
-        "then": "inconclusive; no manufactured performance guarantee [Insufficient evidence]"
-      },
-      {
-        "id": "T-085",
-        "given": "candidate improves cost but violates safety gate",
-        "when": "evaluate",
-        "then": "fail regardless of aggregate score [Failed safety test]"
-      },
-      {
-        "id": "T-086",
-        "given": "many candidates selected against same evaluation set",
-        "when": "confirmatory evaluation",
-        "then": "holdout reuse policy enforced; exploratory result not automatic promote [Multiple candidate selection]"
-      },
-      {
         "id": "T-087",
         "given": "meta proposer submits its own promotion as authorized human",
         "when": "promote",
         "then": "authority rejects forged role [Self-approval denied]"
-      },
-      {
-        "id": "T-088",
-        "given": "canary produces unknown effect/security incident",
-        "when": "next scheduler tick",
-        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]"
       },
       {
         "id": "T-089",
@@ -650,12 +286,6 @@
         "given": "previous release backup contains old grant state",
         "when": "rollback code/data",
         "then": "latest revocations retained; no resurrected access [Rollback keeps revocations]"
-      },
-      {
-        "id": "T-091",
-        "given": "new release promoted while old Run active",
-        "when": "read run context/continue",
-        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]"
       },
       {
         "id": "T-092",
@@ -754,18 +384,6 @@
         "then": "every required boundary passes with current refs; no fabricated runtime pass [Full V3 representative end-to-end]"
       },
       {
-        "id": "T-108",
-        "given": "direct/discovery/deliberative/bounded profiles",
-        "when": "reach a mandatory boundary under fast/tiny flag",
-        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]"
-      },
-      {
-        "id": "T-109",
-        "given": "eligible experiment and controlled nonproduction canary",
-        "when": "exercise pass/fail/inconclusive/promote/rollback branches",
-        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]"
-      },
-      {
         "id": "T-110",
         "given": "existing Foundry decision+apply path with new runtime proposal",
         "when": "try publish with/without valid ApplyGrant",
@@ -832,6 +450,392 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-007",
+        "then": "hold + one consolidated question; no write dispatch [Ambiguous target hold]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-008",
+        "then": "read sources, do not ask already-answerable technical questions [Existing fact avoids question]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-009",
+        "then": "ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-011",
+        "then": "origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-012",
+        "then": "HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-013",
+        "then": "reject duplicate criterion IDs [Criteria ID collision]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-014",
+        "then": "GRANT_STALE; reauthorization required [Contract revision invalidates grant]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-021",
+        "then": "GRAPH_INVALID; no graph activation [Cycle rejection]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-022",
+        "then": "same canonical DAG content digest and stable topological order [Stable compiler output]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-023",
+        "then": "GRAPH_DATA_TYPES reject with exact edge finding [Typed artifact mismatch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-024",
+        "then": "reject; source must be exactly one [Input XOR]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-025",
+        "then": "coverage failure; add global verifier or blocking finding [Missing global acceptance]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-026",
+        "then": "unsafe join rejected [Unsafe any-success join]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-028",
+        "then": "reuse rejected or reverify, no stale pass [Conservative output reuse]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-030",
+        "then": "bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out [Graph node budget limit]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-031",
+        "then": "minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-032",
+        "then": "only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-033",
+        "then": "BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-034",
+        "then": "unknown upper-bound held/reconciled, not zero cost [Unknown usage]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-035",
+        "then": "old Runs terminal, no more auto repair; typed failure/HOLD [Attempt budget]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-036",
+        "then": "escalate instead of fruitless retries [Repeated failure signature]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-037",
+        "then": "per-root cap and project fairness prevent starvation within defined scheduler policy [Fairness under large goal]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-038",
+        "then": "DB transaction not held by provider call; heartbeat commit possible [No long IO in transaction]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-039",
+        "then": "STALE_LEASE; no renewed authority [Expired fence rejected]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-040",
+        "then": "fencing token never reused or decreases [Monotonic fence restart]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-041",
+        "then": "validation HOLD, not immediate retry-ready [Malformed time fail closed]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-042",
+        "then": "reject same-run ref mutation; new Run from checkpoint with new contract [Pause revision mismatch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-043",
+        "then": "server time and current lease decide, worker cannot extend arbitrarily [Worker time skew]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-044",
+        "then": "UNKNOWN receipt; query/reconcile before any resend [Timeout may have applied]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-045",
+        "then": "IDEMPOTENCY_CONFLICT [Same effect key new args]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-046",
+        "then": "deny new send; record not applied only if positively unsent [Revoke before dispatch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-047",
+        "then": "do not claim rollback; receipt/reconcile reveals outcome [Revoke after dispatch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-048",
+        "then": "human reconciliation HOLD, no blind retry [Non-idempotent endpoint]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-049",
+        "then": "new grant/effect receipt linked to original; original not erased [Compensation is new effect]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-050",
+        "then": "item receipts + partial/unknown state; not all succeeded [Partial batch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-051",
+        "then": "reject, original pending request unchanged [Remote callback spoof]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-052",
+        "then": "reject/quarantine mismatched digest [Forged digest]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-053",
+        "then": "inconclusive/fail; no verified goal [Exit zero not pass]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-054",
+        "then": "not accepted toward active coverage [Old revision pass]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-055",
+        "then": "legacy_imported preserved; no automatic server_verified [Legacy evidence trust]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-056",
+        "then": "verified orphan attach or retention GC; no invalid artifact ref exposure [Artifact orphan crash]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-058",
+        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-064",
+        "then": "exact A session used; no continue latest heuristic [Exact session resume]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-065",
+        "then": "buffer until complete, typed event validation, no heuristic session pollution [Partial JSONL stream]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-066",
+        "then": "quarantine/unsupported with version finding, no guessed success [Unknown provider event]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-067",
+        "then": "reject mapping; correct pending call unchanged [Async result call mismatch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-068",
+        "then": "ledger reconciles unresolved steering; no false applied status [Steering queued disconnect]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-069",
+        "then": "safe checkpoint/restart fallback; no text injection hack [Native steering absent]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-070",
+        "then": "CAPABILITY_UNQUALIFIED; qualified CLI fallback only if policy permits [Experimental transport]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-071",
+        "then": "accepted/running only, not completed [OpenCode 204]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-072",
+        "then": "forbidden event; only server authority emits transition [Server-only event forgery]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-076",
+        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-079",
+        "then": "class C separate governed work; no same experiment pass [Protected evaluator change]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-080",
+        "then": "access denied and contamination/security finding [Holdout leakage]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-081",
+        "then": "new experiment revision required, original preserved [Immutable experiment]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-082",
+        "then": "environment_drifted with limits; no harness-only improvement claim [Provider alias drift]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-083",
+        "then": "marked replay; not evidence of real-world success improvement [Replay vs rerun]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-084",
+        "then": "inconclusive; no manufactured performance guarantee [Insufficient evidence]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-085",
+        "then": "fail regardless of aggregate score [Failed safety test]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-086",
+        "then": "holdout reuse policy enforced; exploratory result not automatic promote [Multiple candidate selection]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-088",
+        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-091",
+        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-108",
+        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-109",
+        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -860,8 +864,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S19",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [

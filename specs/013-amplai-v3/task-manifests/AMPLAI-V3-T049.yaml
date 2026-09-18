@@ -133,64 +133,16 @@
         "then": "verified target binding produced; no TARGET_APP_REQUIRED based solely on hint absence [Resolve without target hint]"
       },
       {
-        "id": "T-007",
-        "given": "two authorized apps share an alias",
-        "when": "resolve intent",
-        "then": "hold + one consolidated question; no write dispatch [Ambiguous target hold]"
-      },
-      {
-        "id": "T-008",
-        "given": "build commands and invariants are in canonical repo facts",
-        "when": "resolve rough request",
-        "then": "read sources, do not ask already-answerable technical questions [Existing fact avoids question]"
-      },
-      {
-        "id": "T-009",
-        "given": "objective says make better, no measurable/human rubric bindings",
-        "when": "freeze contract",
-        "then": "ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]"
-      },
-      {
         "id": "T-010",
         "given": "mode design and requested source implementation effect",
         "when": "admission/dispatch",
         "then": "DESIGN_SCOPE_VIOLATION; only design artifact writes allowed [Design stays design]"
       },
       {
-        "id": "T-011",
-        "given": "planner infers scope from non-authoritative text",
-        "when": "create contract",
-        "then": "origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]"
-      },
-      {
-        "id": "T-012",
-        "given": "same blocking ambiguity remains after configured rounds",
-        "when": "planner/critic repeat",
-        "then": "HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]"
-      },
-      {
-        "id": "T-013",
-        "given": "two acceptance rows share same ID",
-        "when": "semantic validation",
-        "then": "reject duplicate criterion IDs [Criteria ID collision]"
-      },
-      {
-        "id": "T-014",
-        "given": "grant bound to contract v1; v2 changes target",
-        "when": "activate v2 then request effect using v1 grant",
-        "then": "GRANT_STALE; reauthorization required [Contract revision invalidates grant]"
-      },
-      {
         "id": "T-087",
         "given": "meta proposer submits its own promotion as authorized human",
         "when": "promote",
         "then": "authority rejects forged role [Self-approval denied]"
-      },
-      {
-        "id": "T-088",
-        "given": "canary produces unknown effect/security incident",
-        "when": "next scheduler tick",
-        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]"
       },
       {
         "id": "T-089",
@@ -203,12 +155,6 @@
         "given": "previous release backup contains old grant state",
         "when": "rollback code/data",
         "then": "latest revocations retained; no resurrected access [Rollback keeps revocations]"
-      },
-      {
-        "id": "T-091",
-        "given": "new release promoted while old Run active",
-        "when": "read run context/continue",
-        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]"
       }
     ],
     "commands": [
@@ -259,6 +205,62 @@
         "source": "check-4",
         "required": true
       }
+    ],
+    "deferred": [
+      {
+        "id": "T-007",
+        "then": "hold + one consolidated question; no write dispatch [Ambiguous target hold]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-008",
+        "then": "read sources, do not ask already-answerable technical questions [Existing fact avoids question]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-009",
+        "then": "ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-011",
+        "then": "origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-012",
+        "then": "HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-013",
+        "then": "reject duplicate criterion IDs [Criteria ID collision]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-014",
+        "then": "GRANT_STALE; reauthorization required [Contract revision invalidates grant]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-088",
+        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-091",
+        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
     ]
   },
   "risk": {
@@ -287,8 +289,11 @@
     "evidence_paths": [
       ".specify/eval/history.jsonl#slice=S11",
       ".specify/eval/verifier-last.json",
-      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
-    ]
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 3ae3879 is specs/013-amplai-v3/verifier-v2-report.json"
   },
   "handoff": {
     "expected_changes": [
