@@ -6,9 +6,11 @@ provide a live decision resolver. The local demo supplies an isolated test autho
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
@@ -26,11 +28,11 @@ class Actor:
     kind: str = "human"
     authn_context_ref: str = ""
 
-    def require(self, permission: str):
+    def require(self, permission: str) -> None:
         if permission not in self.permissions:
             raise RuntimeFault("FORBIDDEN", "Actor lacks required permission: " + permission)
 
-    def wire(self):
+    def wire(self) -> dict[str, str]:
         return {
             "subject_id": self.subject_id,
             "kind": self.kind,
@@ -38,7 +40,7 @@ class Actor:
         }
 
 
-def capability_contains(ceiling: list[dict], requested: dict) -> bool:
+def capability_contains(ceiling: list[dict[str, Any]], requested: dict[str, Any]) -> bool:
     # Exact resources, no wildcard strings, shell fragments or prefix escalation.
     return any(
         all(c.get(k) == requested.get(k) for k in ("action", "resource", "effect_class"))
@@ -47,8 +49,10 @@ def capability_contains(ceiling: list[dict], requested: dict) -> bool:
 
 
 def intersect_capabilities(
-    requested: list[dict], *ceilings: list[dict], denied: list[dict] | None = None
-) -> list[dict]:
+    requested: list[dict[str, Any]],
+    *ceilings: list[dict[str, Any]],
+    denied: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     denied = denied or []
     return [
         r
@@ -63,7 +67,7 @@ class Authority:
         store: Store,
         contracts: Contracts,
         trusted_keys: dict[str, Ed25519PublicKey],
-        decision_resolver: Callable[[Scope, dict], dict],
+        decision_resolver: Callable[[Scope, dict[str, Any]], dict[str, Any]],
         *,
         signer: Ed25519PrivateKey | None = None,
         key_id: str = "",
@@ -71,7 +75,7 @@ class Authority:
         self.store, self.contracts, self.keys = store, contracts, trusted_keys
         self.resolver, self.signer, self.key_id = decision_resolver, signer, key_id
 
-    def _decision(self, scope: Scope, ref: dict) -> dict:
+    def _decision(self, scope: Scope, ref: dict[str, Any]) -> dict[str, Any]:
         self.store.assert_outside_tx()
         try:
             result = self.resolver(scope, ref)
@@ -87,7 +91,7 @@ class Authority:
             raise Hold("AUTHORITY_DENIED", "Decision is missing, revoked, or outside the project")
         return result
 
-    def issue(self, actor: Actor, grant: dict) -> dict:
+    def issue(self, actor: Actor, grant: dict[str, Any]) -> dict[str, Any]:
         actor.require("grant.issue")
         if not self.signer:
             raise Hold("SIGNING_UNAVAILABLE", "No configured signing authority")
@@ -120,15 +124,15 @@ class Authority:
     def preflight(
         self,
         scope: Scope,
-        ref: dict,
+        ref: dict[str, Any],
         *,
         subject_id: str,
-        contract_ref: dict,
-        graph_ref: dict,
-        capabilities: list[dict],
+        contract_ref: dict[str, Any],
+        graph_ref: dict[str, Any],
+        capabilities: list[dict[str, Any]],
         effect_key: str | None = None,
         artifact_digest: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         grant = self.store.get(scope, "execution-grant", ref)
         self.contracts.validate("execution-grant", grant)
         verify_signature(grant, self.keys)
@@ -169,9 +173,17 @@ class Authority:
             )
         return grant
 
-    def consume(self, db, scope: Scope, grant: dict, effect_key: str, payload_digest: str) -> None:
+    def consume(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        grant: dict[str, Any],
+        effect_key: str,
+        payload_digest: str,
+    ) -> None:
         row = db.execute(
-            "SELECT payload_digest FROM grant_uses WHERE tenant=? AND project=? AND grant_id=? AND effect_key=?",
+            "SELECT payload_digest FROM grant_uses "
+            "WHERE tenant=? AND project=? AND grant_id=? AND effect_key=?",
             (*scope.keys(), grant["grant_id"], effect_key),
         ).fetchone()
         if row:

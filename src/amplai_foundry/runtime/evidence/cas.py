@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from ..contracts.identity import canonical, digest_bytes, new_id, now
 from ..errors import Conflict, Hold, RuntimeFault
@@ -63,7 +64,7 @@ class ArtifactStore:
         classification: str = "internal",
         expected_digest: str | None = None,
         trust: str = "worker",
-    ) -> dict:
+    ) -> dict[str, Any]:
         self.store.assert_outside_tx()
         if not isinstance(data, bytes) or len(data) > self.max_bytes:
             raise RuntimeFault("ARTIFACT_SIZE", "Artifact exceeds its configured maximum")
@@ -108,7 +109,7 @@ class ArtifactStore:
             finally:
                 if os.path.exists(temporary):
                     os.unlink(temporary)
-        result = {
+        result: dict[str, Any] = {
             "id": new_id("artifact"),
             "digest": value_digest,
             "media_type": media_type,
@@ -132,7 +133,7 @@ class ArtifactStore:
             self.store.event(db, scope, "run", result["id"], "artifact.admitted", result)
         return result
 
-    def read(self, scope: Scope, artifact: dict, *, trusted: bool = False) -> bytes:
+    def read(self, scope: Scope, artifact: dict[str, Any], *, trusted: bool = False) -> bytes:
         with self.store._lock:
             row = self.store.conn.execute(
                 "SELECT * FROM artifacts WHERE tenant=? AND project=? AND id=?",
@@ -155,7 +156,7 @@ class ArtifactStore:
             raise Hold("ARTIFACT_CORRUPT", "Artifact content verification failed")
         return raw
 
-    def inventory(self, scope: Scope) -> dict:
+    def inventory(self, scope: Scope) -> dict[str, Any]:
         with self.store._lock:
             rows = self.store.conn.execute(
                 "SELECT digest FROM artifacts WHERE tenant=? AND project=?", scope.keys()

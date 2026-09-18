@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 
 from ..errors import RuntimeFault
-from .registry import BASE
+from .registry import BASE, Contracts
 
 
 class ProviderSchema:
-    def __init__(self, contracts):
+    def __init__(self, contracts: Contracts) -> None:
         self.contracts = contracts
 
-    def inline(self, schema):
-        def resolve(node, stack=()):
+    def inline(self, schema: dict[str, Any]) -> dict[str, Any]:
+        def resolve(node: Any, stack: tuple[str, ...] = ()) -> Any:
             if isinstance(node, list):
                 return [resolve(x, stack) for x in node]
             if not isinstance(node, dict):
@@ -35,19 +36,20 @@ class ProviderSchema:
                 target = self.contracts.definitions[name]
                 for part in fragment.lstrip("/").split("/") if fragment else []:
                     target = target[part.replace("~1", "/").replace("~0", "~")]
-                return resolve(target, stack + (ref,))
+                return resolve(target, (*stack, ref))
             return {
                 k: resolve(v, stack)
                 for k, v in node.items()
                 if k not in {"$schema", "$id", "description", "title", "$defs"}
             }
 
-        return resolve(deepcopy(schema))
+        result: dict[str, Any] = resolve(deepcopy(schema))
+        return result
 
-    def structured_output(self, schema):
+    def structured_output(self, schema: dict[str, Any]) -> dict[str, Any]:
         result = self.inline(schema)
 
-        def normalize(node):
+        def normalize(node: Any) -> None:
             if isinstance(node, dict):
                 # Keep normative nullable/required semantics; reject schemas that would
                 # need permission or identity semantics changed for a vendor subset.
@@ -56,7 +58,8 @@ class ProviderSchema:
                     if set(node.get("required", [])) != set(props):
                         raise RuntimeFault(
                             "PROVIDER_SCHEMA_OPTIONAL",
-                            "Explicit nullable fields are required for this structured-output profile",
+                            "Explicit nullable fields are required "
+                            "for this structured-output profile",
                         )
                     node["additionalProperties"] = False
                 for value in node.values():

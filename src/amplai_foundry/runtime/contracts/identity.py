@@ -8,6 +8,7 @@ import json
 import re
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
@@ -39,11 +40,11 @@ def digest(value: object) -> str:
     return digest_bytes(canonical(unsigned(value) if isinstance(value, dict) else value))
 
 
-def freeze(value: object):
+def freeze(value: object) -> Any:
     return json.loads(canonical(value))
 
 
-def reference(record: dict, id_field: str, revision: int | None = None) -> dict:
+def reference(record: dict[str, Any], id_field: str, revision: int | None = None) -> dict[str, Any]:
     return {
         "id": record[id_field],
         "revision": revision or record.get("revision", 1),
@@ -51,12 +52,12 @@ def reference(record: dict, id_field: str, revision: int | None = None) -> dict:
     }
 
 
-def unsigned(record: dict) -> dict:
+def unsigned(record: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in record.items() if k != "signature"}
 
 
-def sign(record: dict, key_id: str, key: Ed25519PrivateKey) -> dict:
-    result = freeze(unsigned(record))
+def sign(record: dict[str, Any], key_id: str, key: Ed25519PrivateKey) -> dict[str, Any]:
+    result: dict[str, Any] = freeze(unsigned(record))
     raw = canonical(result)
     result["signature"] = {
         "algorithm": "ed25519",
@@ -67,7 +68,7 @@ def sign(record: dict, key_id: str, key: Ed25519PrivateKey) -> dict:
     return result
 
 
-def verify_signature(record: dict, trusted_keys: dict[str, Ed25519PublicKey]) -> None:
+def verify_signature(record: dict[str, Any], trusted_keys: dict[str, Ed25519PublicKey]) -> None:
     sig = record.get("signature", {})
     if sig.get("algorithm") != "ed25519" or sig.get("key_id") not in trusted_keys:
         raise RuntimeFault("UNTRUSTED_SIGNATURE", "No trusted signing key for this object")

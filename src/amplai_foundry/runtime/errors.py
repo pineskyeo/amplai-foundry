@@ -10,7 +10,7 @@ class RuntimeFault(Exception):
         super().__init__(message)
         self.code, self.message, self.outcome, self.details = code, message, outcome, details
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, object]:
         return {
             "code": self.code,
             "message": self.message,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from ..errors import Hold, RuntimeFault
 from .registry import Contracts
@@ -12,11 +13,13 @@ from .registry import Contracts
 class Observation:
     outcome: str
     reason: str
-    evidence_refs: tuple = ()
+    evidence_refs: tuple[dict[str, Any], ...] = ()
     applicability_rule: str | None = None
 
     @classmethod
-    def check(cls, predicate: bool, reason: str, evidence_refs: tuple = ()):
+    def check(
+        cls, predicate: bool, reason: str, evidence_refs: tuple[dict[str, Any], ...] = ()
+    ) -> Observation:
         return cls("pass" if predicate else "hold", reason, evidence_refs)
 
 
@@ -24,8 +27,10 @@ class GateEngine:
     def __init__(self, contracts: Contracts):
         self.definitions = {g["id"]: g for g in contracts.gates["gates"]}
 
-    def evaluate(self, required: list[str], observations: dict[str, Observation]) -> list[dict]:
-        results = []
+    def evaluate(
+        self, required: list[str], observations: dict[str, Observation]
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         for gate in required:
             if gate not in self.definitions:
                 raise RuntimeFault("UNKNOWN_GATE", gate)
@@ -67,7 +72,7 @@ class StateMachines:
 
     def transition(
         self, kind: str, current: str, command: str, observations: dict[str, Observation]
-    ) -> tuple[str, list[dict]]:
+    ) -> tuple[str, list[dict[str, Any]]]:
         machine = self.machines.get(kind)
         if not machine:
             raise RuntimeFault("UNKNOWN_STATE_MACHINE", kind)

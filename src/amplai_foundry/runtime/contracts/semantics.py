@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import Iterator
 from datetime import datetime
+from typing import Any
 
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
@@ -22,7 +25,7 @@ READINESS_AREAS = frozenset(
 )
 
 
-def walk_refs(value):
+def walk_refs(value: object) -> Iterator[dict[str, Any]]:
     if isinstance(value, dict):
         if set(value) == {"id", "revision", "digest"}:
             yield value
@@ -34,14 +37,17 @@ def walk_refs(value):
             yield from walk_refs(child)
 
 
-def resolve_ref(store: Store, scope: Scope, ref: dict, *, db=None) -> tuple[str, dict]:
+def resolve_ref(
+    store: Store, scope: Scope, ref: dict[str, Any], *, db: sqlite3.Connection | None = None
+) -> tuple[str, dict[str, Any]]:
     import json
 
     with store._lock:
         rows = (
             (db or store.conn)
             .execute(
-                "SELECT kind,digest,data FROM objects WHERE tenant=? AND project=? AND id=? AND revision=?",
+                "SELECT kind,digest,data FROM objects "
+                "WHERE tenant=? AND project=? AND id=? AND revision=?",
                 (*scope.keys(), ref["id"], ref["revision"]),
             )
             .fetchall()
@@ -60,12 +66,14 @@ def resolve_ref(store: Store, scope: Scope, ref: dict, *, db=None) -> tuple[str,
     return matches[0]["kind"], value
 
 
-def check_refs(store: Store, scope: Scope, value: dict, *, db=None) -> None:
+def check_refs(
+    store: Store, scope: Scope, value: dict[str, Any], *, db: sqlite3.Connection | None = None
+) -> None:
     for ref in walk_refs(value):
         resolve_ref(store, scope, ref, db=db)
 
 
-def check_readiness(entries: list[dict], *, na_rules: set[str] | None = None) -> None:
+def check_readiness(entries: list[dict[str, Any]], *, na_rules: set[str] | None = None) -> None:
     areas = [item["area"] for item in entries]
     if len(areas) != 8 or set(areas) != READINESS_AREAS:
         raise Hold("READINESS_INCOMPLETE", "All eight distinct readiness areas are required")
@@ -79,7 +87,7 @@ def check_readiness(entries: list[dict], *, na_rules: set[str] | None = None) ->
             raise Hold("KNOWLEDGE_NOT_READY", "Unresolved knowledge: " + item["area"])
 
 
-def check_context(bundle: dict, governing_refs: list[dict]) -> None:
+def check_context(bundle: dict[str, Any], governing_refs: list[dict[str, Any]]) -> None:
     if not bundle["governing_set_complete"]:
         raise Hold("CONTEXT_INCOMPLETE", "Governing context must not be truncated")
     actual = {digest(ref) for ref in bundle["core_refs"]}
@@ -92,7 +100,7 @@ def check_context(bundle: dict, governing_refs: list[dict]) -> None:
             raise Hold("CONTEXT_STALE", "A mandatory context entry has been superseded or is stale")
 
 
-def check_contract(contract: dict, *, previous: dict | None = None) -> None:
+def check_contract(contract: dict[str, Any], *, previous: dict[str, Any] | None = None) -> None:
     if not contract["objective"].strip():
         raise Hold("OBJECTIVE_EMPTY", "A whitespace-only objective is not actionable")
     if any(not c["statement"].strip() for c in contract["constraints"]):

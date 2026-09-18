@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from amplai_foundry.domain.identity import ProjectRef
 from amplai_foundry.governance.authority import AuthorityService, DirectAuthorityRequest
@@ -17,9 +18,11 @@ from amplai_foundry.governance.definitions import (
     canonicalize_definition,
 )
 from amplai_foundry.governance.models import ProposalRef
+from amplai_foundry.governance.review_cards import DefinitionObjectReader
+from amplai_foundry.governance.store import GovernanceStore
 
 from ..errors import Hold
-from ..storage.store import Scope
+from ..storage.store import Scope, Store
 from .authority import Actor
 from .identity import new_id
 
@@ -35,13 +38,13 @@ class RuntimeRoleBinding:
 class FoundryAuthorityBridge:
     def __init__(
         self,
-        runtime_store,
-        governance_store,
-        object_store,
+        runtime_store: Store,
+        governance_store: GovernanceStore,
+        object_store: DefinitionObjectReader,
         *,
         project_bindings: Mapping[Scope, ProjectRef],
         roles: tuple[RuntimeRoleBinding, ...],
-    ):
+    ) -> None:
         self.runtime_store = runtime_store
         self.governance_store = governance_store
         self.object_store = object_store
@@ -82,12 +85,16 @@ class FoundryAuthorityBridge:
         )
 
     def link(
-        self, actor, proposal_ref: ProposalRef, definition_digest: str, authorization_name: str
-    ) -> dict:
+        self,
+        actor: Actor,
+        proposal_ref: ProposalRef,
+        definition_digest: str,
+        authorization_name: str,
+    ) -> dict[str, Any]:
         actor.require("runtime.admin")
         if self.projects.get(actor.scope) != proposal_ref.project_ref:
             raise Hold("PROJECT_AUTHORITY", "Proposal is outside the exact runtime project")
-        value = {
+        value: dict[str, Any] = {
             "link_id": new_id("foundry-decision"),
             "scope": actor.scope.wire(),
             "proposal_ref": proposal_ref.model_dump(mode="json"),
@@ -101,7 +108,7 @@ class FoundryAuthorityBridge:
                 db, actor.scope, "foundry-decision-link", value["link_id"], 1, value
             )
 
-    def _resolve_link(self, scope, value):
+    def _resolve_link(self, scope: Scope, value: dict[str, Any]) -> dict[str, Any]:
         project = self.projects.get(scope)
         ref = ProposalRef.model_validate(value["proposal_ref"])
         if value.get("scope") != scope.wire() or project is None or ref.project_ref != project:
@@ -109,7 +116,9 @@ class FoundryAuthorityBridge:
         self.runtime_store.assert_outside_tx()
         with self.governance_store.connect() as db:
             row = db.execute(
-                "SELECT active_definition_digest,decision_epoch,status FROM governance_active_proposals WHERE project_namespace=? AND project_id=? AND proposal_id=?",
+                "SELECT active_definition_digest,decision_epoch,status "
+                "FROM governance_active_proposals "
+                "WHERE project_namespace=? AND project_id=? AND proposal_id=?",
                 (project.namespace, project.project_id, ref.proposal_id),
             ).fetchone()
             if (
@@ -122,7 +131,10 @@ class FoundryAuthorityBridge:
                     "Definition changed or proposal is not currently approved",
                 )
             decision = db.execute(
-                "SELECT actor_id,decision_epoch,action FROM governance_decision_results WHERE project_namespace=? AND project_id=? AND proposal_id=? AND active_definition_digest=? AND decision_epoch=? AND action='approve' ORDER BY processed_at DESC LIMIT 1",
+                "SELECT actor_id,decision_epoch,action FROM governance_decision_results "
+                "WHERE project_namespace=? AND project_id=? AND proposal_id=? "
+                "AND active_definition_digest=? AND decision_epoch=? AND action='approve' "
+                "ORDER BY processed_at DESC LIMIT 1",
                 (project.namespace, project.project_id, ref.proposal_id, row[0], row[1]),
             ).fetchone()
             if decision is None:
@@ -134,7 +146,9 @@ class FoundryAuthorityBridge:
                 "SELECT actor_type,status FROM governance_actors WHERE actor_id=?", (decision[0],)
             ).fetchone()
             permission = db.execute(
-                "SELECT 1 FROM governance_actor_permissions WHERE actor_id=? AND project_namespace=? AND project_id=? AND permission='proposal.decide'",
+                "SELECT 1 FROM governance_actor_permissions "
+                "WHERE actor_id=? AND project_namespace=? AND project_id=? "
+                "AND permission='proposal.decide'",
                 (decision[0], project.namespace, project.project_id),
             ).fetchone()
             if actor is None or actor[0] != "human" or actor[1] != "active" or permission is None:
@@ -162,10 +176,11 @@ class FoundryAuthorityBridge:
                 "Approved definition lacks exactly one named V3 authorization precondition",
             )
         entry = entries[0]
-        if entry.get("scope") != scope.wire() or not isinstance(entry.get("authorization"), dict):
+        authorization = entry.get("authorization")
+        if entry.get("scope") != scope.wire() or not isinstance(authorization, dict):
             raise Hold("AUTHORIZATION_SCOPE", "Approved precondition is malformed or outside scope")
         return {
-            **entry["authorization"],
+            **authorization,
             "scope": scope.wire(),
             "status": "approved",
             "revoked": False,
@@ -175,11 +190,13 @@ class FoundryAuthorityBridge:
             "source_proposal_ref": value["proposal_ref"],
         }
 
-    def resolve_decision(self, scope, decision_ref):
+    def resolve_decision(self, scope: Scope, decision_ref: dict[str, Any]) -> dict[str, Any]:
         link = self.runtime_store.get(scope, "foundry-decision-link", decision_ref)
         return self._resolve_link(scope, link)
 
-    def check_approval(self, scope, approval_ref, action, subject_digest):
+    def check_approval(
+        self, scope: Scope, approval_ref: dict[str, Any], action: str, subject_digest: str
+    ) -> dict[str, Any]:
         decision = self.resolve_decision(scope, approval_ref)
         if decision.get("action") != action or decision.get("subject_digest") != subject_digest:
             raise Hold(
