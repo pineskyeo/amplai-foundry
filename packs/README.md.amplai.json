@@ -1,0 +1,54 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:packs-readme-md",
+    "topic_id": "amplai-foundry:packs-readme-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "packs/README.md"
+    },
+    "title": "Capability packs",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/packs/catalog.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/packs/conformance.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/packs/spec_surface.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/distribution/packs.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "packs/spec/PACK.json",
+        "kind": "contract"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

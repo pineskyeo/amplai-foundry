@@ -1,0 +1,467 @@
+{
+  "snapshot": "a70a32032ce9f6de4578777ebb717078242676762332cf58fa07a3c4a8e6b23f",
+  "reviews": [
+    {
+      "document": ".ai-team/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The only .ai-team change in this Work is documentation.json registering V3 guides and three source routes. Loop layout, /work and /design entry points, verifier registry and knowledge rules described here are unchanged (git diff shows no other .ai-team file).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Knowledge store layout and review-store role are unchanged; its declared dependency (documentation.json) only gained roots and routes.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Controller workflow, converge and review steps are unchanged; no skill under .agents/skills changed in this Work (packs/spec/skills is a read-only projection).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "registry.json and run.py are unchanged; profile v2 ran and passed on this tree.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Repository rules are unchanged; the documentation policy edit adds guides to the governed set and does not alter any rule stated here.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Claude adapter instructions are unchanged; commands, skill layout and verification commands still match the tree.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Unchanged since the Work base (5edbb78, post DEV-03 import). The DEV-03 snapshot section (package 3.0.0.dev3, wire schema 3.0.0, links to the two docs/v3 guides, evolution-demo command) still matches the tree, and the Foundry governance, ingest and memory sections are untouched by V3. README now also owns design-reference/ and docs/SOURCE-INGESTION.md as bound source inputs.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "deployment/README.md",
+      "outcome": "updated",
+      "reason": "New guide for V3-054 deployment profiles: describes runtime/profiles.py, the support matrix and support evidence; matches the current code (only local-dev is supported, others fail closed) as exercised by tests/v3/test_rc01_profiles.py.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Knowledge lint rules are unchanged; vault-lint passed (0 errors) in the verifier run. V3 code adds knowledge_runtime adapters that read the vault and do not alter its rules.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/LIFECYCLE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Memory lifecycle states are unchanged; src/amplai_foundry/domain and schemas are untouched since the base commit.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PORTABLE-DEVELOPMENT.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Kit and portable-development flow are unchanged; tools/amplai-loop-kit has no diff since the base commit.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Project pack format and commands are unchanged; project-pack verifier passed (OK amplai).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Proposal workflow is unchanged; governance/store.py gained two lines without changing proposal semantics, and domain/schemas are untouched.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/RELATIONSHIPS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Relationship model is unchanged; domain and schemas are untouched since the base commit.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/ROADMAP.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Roadmap content and its planning source are unchanged; the dependency snapshot was re-bound only because the shared documentation policy changed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/VERSIONING.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The version axes and rules are unchanged. The package version value moved from 0.4.0 to 3.0.0.dev3 with the DEV-03 import while schema_version stays 3.0.0, which is exactly the split this policy describes.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Vision text is unchanged; matched only by the keyword 'amplai'.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "outcome": "updated",
+      "reason": "DEV-02 execution-layer guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ that exist on this tree (all 17 files verified present). Content otherwise unchanged from the delivery.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Unchanged since the Work base; primary-source notes for the DEV-02 transport layer whose only declared dependency is the DEV-02 guide, which this review updated for repository paths only.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "outcome": "updated",
+      "reason": "DEV-03 observatory/meta-harness guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ (9 files verified present). The 477/132 test counts describe the DEV-03 delivery state; the current tree runs 601 V3 cases (release/README.md, closure ledger).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Unchanged since the Work base; primary-source notes for DEV-03 whose only declared dependency is the DEV-03 guide, which this review updated for repository paths only.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "integrations/hermes/README.md",
+      "outcome": "updated",
+      "reason": "New guide for V3-049 Hermes adapter: intake/status/approve through control_plane/hermes.py with channel identity mapping; no new auth or central server, as the code and tests/v3/test_rc01_hermes.py show.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "migration/README.md",
+      "outcome": "updated",
+      "reason": "New guide for V3-060 legacy retirement: retirement-proposal.json is proposal-only (7 blocked / 0 proposed / 0 deleted) as produced by migration/retirement.py; no deletion is performed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "packs/README.md",
+      "outcome": "updated",
+      "reason": "New guide for V3-034..039 capability packs: catalog, conformance runners, spec host surface; packs/spec/skills is the projection of .agents/skills bound as this guide's source asset.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "release/README.md",
+      "outcome": "updated",
+      "reason": "New guide for V3-061 conformance closure; regeneration path now names tests/runtime_storage and scripts/rc01_closure.py, matching the committed ledger (local_pass 48/112, rc_candidate_not_final).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tests/e2e/artifacts/README.md",
+      "outcome": "updated",
+      "reason": "New guide for the V3-059 golden registry; policy locator wording corrected and the executable suite now lives at tests/v3/test_rc01_e2e_render.py (moved for the slice eval path).",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The kit is unchanged in this Work (no diff under tools/amplai-loop-kit); matched only by keywords kit/release from V3 release artifacts.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The kit is unchanged in this Work; kit-seal verify passed. Matched only by keywords kit/release.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": "AGENTS.md",
+      "reference": ".amplai/tmp/",
+      "line": 41,
+      "disposition": "example",
+      "reason": "Scratch directory the ingest workflow creates at runtime for pasted source text and deletes after ingest; a runtime path, not a repository file.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": ".amplai/runtime/governance.db",
+      "line": 96,
+      "disposition": "example",
+      "reason": "The selected workspace runtime creates this governance database; cli.py constructs the path. The clean source checkout is not expected to contain runtime state.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": "_v3_delivery/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": "validation/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "reference": ".amplai/runtime/index/memory-index.json",
+      "line": 34,
+      "disposition": "example",
+      "reason": "ProjectPack service creates the memory index below its configured runtime root; this is a generated project output path, not a required repository file.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "drafts/",
+      "line": 9,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "patches/",
+      "line": 9,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "drafts/",
+      "line": 19,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reference": "_v3_delivery/*TRACE.json",
+      "line": 7,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "line": 3,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "validation/",
+      "line": 119,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "line": 119,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reference": "supervisor/",
+      "line": 86,
+      "disposition": "historical",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+    "topic_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md"
+    },
+    "title": "DEV-03 — Observatory & Meta-Harness",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/evaluation/service.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/evaluation/observatory.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/meta_harness/service.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/runtime/cli.py",
+        "kind": "code"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:integrations-hermes-readme-md",
+    "topic_id": "amplai-foundry:integrations-hermes-readme-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "integrations/hermes/README.md"
+    },
+    "title": "Hermes V3 adapter",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/control_plane/hermes.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "integrations/hermes/plugin.yaml",
+        "kind": "contract"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

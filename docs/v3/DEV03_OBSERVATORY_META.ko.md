@@ -12,15 +12,15 @@
 
 | 책임 | 구현 |
 |---|---|
-| 일관된 scoped 조회·집계 | `evaluation/observatory.py` |
-| bounded metadata queue | `evaluation/telemetry.py` |
-| corpus ACL·노출·오염 추적 | `evaluation/corpus.py` |
-| 계획 동결·실험 실행·중단 복구 | `evaluation/service.py` |
-| 별도 통계 판정 | `evaluation/analysis.py` |
-| 엄격한 JSON receipt 검사 | `evaluation/receipts.py` |
-| proposal 공통 비용·횟수·동시성 | `meta_harness/budget.py` |
-| 검토·카나리·승격·롤백 | `meta_harness/service.py` |
-| 실제 Runtime을 통한 로컬 재현 | `meta_harness/pipeline_reference.py` |
+| 일관된 scoped 조회·집계 | `src/amplai_foundry/evaluation/observatory.py` |
+| bounded metadata queue | `src/amplai_foundry/evaluation/telemetry.py` |
+| corpus ACL·노출·오염 추적 | `src/amplai_foundry/evaluation/corpus.py` |
+| 계획 동결·실험 실행·중단 복구 | `src/amplai_foundry/evaluation/service.py` |
+| 별도 통계 판정 | `src/amplai_foundry/evaluation/analysis.py` |
+| 엄격한 JSON receipt 검사 | `src/amplai_foundry/evaluation/receipts.py` |
+| proposal 공통 비용·횟수·동시성 | `src/amplai_foundry/meta_harness/budget.py` |
+| 검토·카나리·승격·롤백 | `src/amplai_foundry/meta_harness/service.py` |
+| 실제 Runtime을 통한 로컬 재현 | `src/amplai_foundry/meta_harness/pipeline_reference.py` |
 
 위 경로의 기준 디렉터리는 `src/amplai_foundry/`이다.
 

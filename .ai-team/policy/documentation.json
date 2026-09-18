@@ -47,7 +47,17 @@
       "docs/VERSIONING.md",
       "docs/VISION.md",
       "tools/amplai-loop-kit/CHANGELOG.md",
-      "tools/amplai-loop-kit/README.md"
+      "tools/amplai-loop-kit/README.md",
+      "deployment/README.md",
+      "migration/README.md",
+      "release/README.md",
+      "integrations/hermes/README.md",
+      "packs/README.md",
+      "tests/e2e/artifacts/README.md",
+      "docs/v3/DEV02_EXECUTION.ko.md",
+      "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "docs/v3/DEV03_RESEARCH_SOURCES.md"
     ],
     "review_store": ".ai-team/knowledge/document-reviews.json",
     "default_security": "INTERNAL",
@@ -523,6 +533,27 @@
       "owner": "tools/amplai-loop-kit/CHANGELOG.md",
       "security": "INTERNAL",
       "reason": "Finite internal AI/Kit regression source directory referenced by the changelog; exact membership remains bounded and dependency-bound."
+    },
+    {
+      "path": "design-reference",
+      "kind": "source_asset",
+      "owner": "README.md",
+      "security": "INTERNAL",
+      "reason": "Approved AMPLAI V3 Design 1.0 bundle imported unchanged for Work 013. Bind its exact bytes as README's design input; it is never rewritten, promoted or approved here."
+    },
+    {
+      "path": "packs/spec/skills",
+      "kind": "source_asset",
+      "owner": "packs/README.md",
+      "security": "INTERNAL",
+      "reason": "Projection of the ten .agents/skills speckit skills rendered by packs/spec_surface.py (V3-035). The packs guide review binds the projection bytes; the .agents/skills originals remain the executable source."
+    },
+    {
+      "path": "docs/SOURCE-INGESTION.md",
+      "kind": "source_asset",
+      "owner": "README.md",
+      "security": "INTERNAL",
+      "reason": "Retained Phase 1 ingest contract surfaced only by knowledge-map keywords. Preserve its bytes as a README-owned input without promoting it as a reviewed current guide."
     }
   ]
 }

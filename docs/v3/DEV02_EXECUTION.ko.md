@@ -28,18 +28,18 @@ amplai ops execution-demo --output /tmp/amplai-dev02-new-run
 
 | 책임 | 구현 모듈 |
 |---|---|
-| 전략 선택 / 위험도 상향 / 필수 Gate | `runtime/execution/strategies.py` |
-| 승인된 사실을 이용한 그래프 전략 지정 | `runtime/graphs/compiler.py:compile_adaptive` |
-| 실시간 권한·정책·환경·예산 교집합 | `runtime/execution/envelope.py` |
-| 디스패치·폴링·파일 수집·검증 인계 | `runtime/execution/worker.py:WorkCoordinator` |
-| lease·fence·예산·공유 자원 | `runtime/execution/service.py`, `runtime/budgets/service.py` |
-| 모델과 분리된 Driver port / 관리자 registry | `agent_drivers/ports.py` |
-| 네이티브 journal / exact-session 저장 | `agent_drivers/protocol.py`, `agent_drivers/sessions.py` |
-| CLI lifecycle / 서버·API 전송 | `agent_drivers/cli.py`, `agent_drivers/http.py` |
-| 실제 작업 폴더의 snapshot/restore/collect | `sandbox/workspace.py` |
-| OS 격리 레시피 / 제한된 로컬 데이터 작업 | `sandbox/container.py`, `sandbox/local.py` |
-| native call-id ↔ effect-id 연결 | `tool_broker/native.py`, `runtime/effects/service.py` |
-| pause/cancel/resume/checkpoint | `runtime/execution/steering.py` |
+| 전략 선택 / 위험도 상향 / 필수 Gate | `src/amplai_foundry/runtime/execution/strategies.py` |
+| 승인된 사실을 이용한 그래프 전략 지정 | `src/amplai_foundry/runtime/graphs/compiler.py` (`compile_adaptive`) |
+| 실시간 권한·정책·환경·예산 교집합 | `src/amplai_foundry/runtime/execution/envelope.py` |
+| 디스패치·폴링·파일 수집·검증 인계 | `src/amplai_foundry/runtime/execution/worker.py` (`WorkCoordinator`) |
+| lease·fence·예산·공유 자원 | `src/amplai_foundry/runtime/execution/service.py`, `src/amplai_foundry/runtime/budgets/service.py` |
+| 모델과 분리된 Driver port / 관리자 registry | `src/amplai_foundry/agent_drivers/ports.py` |
+| 네이티브 journal / exact-session 저장 | `src/amplai_foundry/agent_drivers/protocol.py`, `src/amplai_foundry/agent_drivers/sessions.py` |
+| CLI lifecycle / 서버·API 전송 | `src/amplai_foundry/agent_drivers/cli.py`, `src/amplai_foundry/agent_drivers/http.py` |
+| 실제 작업 폴더의 snapshot/restore/collect | `src/amplai_foundry/sandbox/workspace.py` |
+| OS 격리 레시피 / 제한된 로컬 데이터 작업 | `src/amplai_foundry/sandbox/container.py`, `src/amplai_foundry/sandbox/local.py` |
+| native call-id ↔ effect-id 연결 | `src/amplai_foundry/tool_broker/native.py`, `src/amplai_foundry/runtime/effects/service.py` |
+| pause/cancel/resume/checkpoint | `src/amplai_foundry/runtime/execution/steering.py` |
 
 `DriverRegistry.register()`는 `runtime.admin` 권한이 필요하다. 등록되는 port의 driver ID·버전이 저장된 profile과 같아야 하며, `qualified` profile이어야 한다. Worker는 등록하거나 스스로 qualification을 부여할 수 없다. registry의 설치 여부, profile의 서명·권한, environment qualification은 각각 별도로 검사한다. 생성자에 `qualified=True`를 넣는 행위만으로 운영 qualification이 생기는 것은 아니다.
 

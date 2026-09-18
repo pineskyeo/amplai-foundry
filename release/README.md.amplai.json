@@ -1,0 +1,49 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:release-readme-md",
+    "topic_id": "amplai-foundry:release-readme-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "release/README.md"
+    },
+    "title": "RC-01 conformance closure (V3-061)",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/distribution/closure.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/rc01_closure.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "release/rc01-conformance-closure.json",
+        "kind": "contract"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "eval/test-catalog-status.json",
+        "kind": "contract"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}
