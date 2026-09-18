@@ -1,0 +1,23 @@
+{
+  "public_entries": [
+    "work",
+    "design"
+  ],
+  "host_syntax": {
+    "claude": "/work, /design",
+    "codex": "$work, $design"
+  },
+  "internal_capabilities": [
+    "speckit-specify",
+    "speckit-clarify",
+    "speckit-plan",
+    "taskify",
+    "speckit-analyze",
+    "speckit-converge",
+    "speckit-checklist",
+    "speckit-constitution",
+    "speckit-implement",
+    "speckit-taskstoissues"
+  ],
+  "kit_payload_projection": "V3-050 (S12) generates .agents/skills into the Kit payload"
+}

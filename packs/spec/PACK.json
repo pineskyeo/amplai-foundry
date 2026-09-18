@@ -1,0 +1,29 @@
+{
+  "schema_version": "3.0.0",
+  "pack_id": "spec",
+  "version": "3.0.0-rc1",
+  "publisher": "amplai",
+  "protocol_major": 3,
+  "entry_capabilities": [
+    "spec.specify",
+    "spec.clarify",
+    "spec.plan",
+    "spec.taskify",
+    "spec.analyze",
+    "spec.converge",
+    "spec.checklist",
+    "spec.constitution",
+    "spec.implement",
+    "spec.taskstoissues"
+  ],
+  "dependencies": [],
+  "permissions": [
+    {"action": "workspace.read", "resource": "sandbox:*", "effect_class": "pure_read"},
+    {"action": "workspace.design_write", "resource": "sandbox:specs", "effect_class": "sandbox_write"}
+  ],
+  "model_requirements": [],
+  "context_refs": [],
+  "verifier_refs": [],
+  "eval_case_ids": [],
+  "license": "Proprietary"
+}
