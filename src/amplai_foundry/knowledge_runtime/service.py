@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from amplai_foundry.domain.enums import MemoryKind
 from amplai_foundry.runtime.contracts.identity import digest
@@ -17,7 +18,9 @@ from amplai_foundry.runtime.storage.store import Scope, Store
 
 
 class KnowledgeService:
-    def __init__(self, store: Store, contracts, *, governed_submit: Callable | None = None):
+    def __init__(
+        self, store: Store, contracts: Any, *, governed_submit: Callable[..., Any] | None = None
+    ) -> None:
         self.store, self.contracts, self.governed_submit = store, contracts, governed_submit
 
     def record_observation(
@@ -29,17 +32,26 @@ class KnowledgeService:
         kind: str = "repo_fact",
         trust: str = "observed",
         classification: str = "internal",
-    ) -> dict:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if trust not in {"observed", "untrusted", "legacy_imported"}:
             raise RuntimeFault(
                 "KNOWLEDGE_AUTHORITY", "Observation ingestion cannot mint canonical authority"
             )
-        content = {
+        reserved = {"locator", "text", "kind", "trust", "classification", "observation_id", "scope"}
+        if metadata and (set(metadata) & reserved):
+            raise RuntimeFault(
+                "OBSERVATION_METADATA", "Metadata may not override observation fields"
+            )
+        content: dict[str, Any] = {
             "locator": locator,
             "text": text,
             "kind": kind,
             "trust": trust,
             "classification": classification,
+            # Repository and external material is evidence, never an instruction channel.
+            "untrusted_as_instructions": True,
+            **(metadata or {}),
         }
         record = {
             "observation_id": "obs-" + digest(content)[7:31],
@@ -51,11 +63,11 @@ class KnowledgeService:
                 db, scope, "knowledge-observation", record["observation_id"], 1, record
             )
 
-    def import_vault_readonly(self, scope: Scope, root: Path) -> list[dict]:
+    def import_vault_readonly(self, scope: Scope, root: Path) -> list[dict[str, Any]]:
         # Canonical writes stay in the existing governed Foundry path; imported files
         # remain observations unless checked against an actual applied decision.
         root = root.resolve()
-        results = []
+        results: list[dict[str, Any]] = []
         for path in sorted(root.rglob("*.md")):
             if path.is_symlink() or not path.resolve().is_relative_to(root):
                 continue
@@ -69,7 +81,9 @@ class KnowledgeService:
             )
         return results
 
-    def propose_canonical_change(self, actor, source_refs: list[dict], patch: dict):
+    def propose_canonical_change(
+        self, actor: Any, source_refs: list[dict[str, Any]], patch: dict[str, Any]
+    ) -> Any:
         actor.require("knowledge.propose")
         if self.governed_submit is None:
             raise Hold(
@@ -81,12 +95,12 @@ class KnowledgeService:
     def readiness(
         self,
         scope: Scope,
-        evidence_by_area: dict[str, list[dict]],
+        evidence_by_area: dict[str, list[dict[str, Any]]],
         *,
-        conflicts: dict | None = None,
-    ) -> list[dict]:
+        conflicts: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         conflicts = conflicts or {}
-        entries = []
+        entries: list[dict[str, Any]] = []
         from amplai_foundry.runtime.contracts.semantics import resolve_ref
 
         for area in sorted(READINESS_AREAS):
@@ -119,12 +133,12 @@ class KnowledgeService:
         scope: Scope,
         *,
         bundle_id: str,
-        core_refs: list[dict],
-        entries: list[dict],
-        invariant_registry_ref: dict,
+        core_refs: list[dict[str, Any]],
+        entries: list[dict[str, Any]],
+        invariant_registry_ref: dict[str, Any],
         token_budget: int,
         assembled_at: str,
-    ) -> tuple[dict, dict]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         from amplai_foundry.runtime.contracts.semantics import resolve_ref
 
         for ref in core_refs:
@@ -138,7 +152,8 @@ class KnowledgeService:
         if used > token_budget:
             raise Hold(
                 "CORE_CONTEXT_BUDGET",
-                "Core context cannot fit; increase budget or approved summarization, never silently truncate",
+                "Core context cannot fit; increase budget or approved summarization, "
+                "never silently truncate",
             )
         selected = list(mandatory)
         for entry in optional:
@@ -164,9 +179,70 @@ class KnowledgeService:
             ref = self.store.put(db, scope, "context-bundle", bundle_id, 1, value)
         return ref, value
 
+    def progressive_bundle(
+        self,
+        scope: Scope,
+        *,
+        bundle_id: str,
+        core_refs: list[dict[str, Any]],
+        entries: list[dict[str, Any]],
+        invariant_registry_ref: dict[str, Any],
+        token_budget: int,
+        assembled_at: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Core + map + bounded excerpts (design/12 §3).
+
+        Optional excerpts that do not fit are not dropped silently: they stay in the
+        bundle as map entries (address/version/digest, ``excerpt`` = null) so the model can
+        request them explicitly. Mandatory entries are never demoted.
+        """
+        from amplai_foundry.runtime.contracts.semantics import resolve_ref
+
+        for ref in core_refs:
+            resolve_ref(self.store, scope, ref)
+        mandatory = [e for e in entries if e["mandatory"]]
+        optional = [e for e in entries if not e["mandatory"]]
+
+        def size(entry: dict[str, Any]) -> int:
+            return len(json.dumps(entry, ensure_ascii=False).encode("utf-8"))
+
+        used = sum(size(e) for e in mandatory) + len(json.dumps(core_refs).encode())
+        if used > token_budget:
+            raise Hold(
+                "CORE_CONTEXT_BUDGET",
+                "Core context cannot fit; increase budget or approved summarization, "
+                "never silently truncate",
+            )
+        selected: list[dict[str, Any]] = list(mandatory)
+        for entry in optional:
+            if used + size(entry) <= token_budget:
+                selected.append(entry)
+                used += size(entry)
+            else:
+                mapped = {**entry, "excerpt": None, "mandatory": False}
+                selected.append(mapped)
+                used += size(mapped)
+        value: dict[str, Any] = {
+            "schema_version": "3.0.0",
+            "bundle_id": bundle_id,
+            "scope": scope.wire(),
+            "contract_ref": None,
+            "core_refs": core_refs,
+            "entries": selected,
+            "invariant_registry_ref": invariant_registry_ref,
+            "governing_set_complete": True,
+            "token_budget": token_budget,
+            "assembled_at": assembled_at,
+        }
+        self.contracts.validate("context-bundle", value)
+        check_context(value, core_refs)
+        with self.store.tx() as db:
+            ref = self.store.put(db, scope, "context-bundle", bundle_id, 1, value)
+        return ref, value
+
     def materialize_context(
-        self, scope: Scope, bundle_ref: dict, *, allowed_classes: set[str]
-    ) -> dict:
+        self, scope: Scope, bundle_ref: dict[str, Any], *, allowed_classes: set[str]
+    ) -> dict[str, Any]:
         from amplai_foundry.runtime.contracts.semantics import resolve_ref
         from amplai_foundry.runtime.evidence.cas import scan_secrets
 
@@ -197,7 +273,8 @@ class KnowledgeService:
             if used > bundle["token_budget"]:
                 raise Hold(
                     "CONTEXT_PAYLOAD_BUDGET",
-                    "Actual mandatory context is larger than the conservative byte bound; no silent truncation",
+                    "Actual mandatory context is larger than the conservative byte bound; "
+                    "no silent truncation",
                 )
             sources.append(
                 {
@@ -216,40 +293,12 @@ class KnowledgeService:
 
 
 class RepoFacts:
-    EXCLUDED = {".git", ".venv", "node_modules", "__pycache__", ".env"}
+    """Compatibility facade; the resolver lives in knowledge_runtime.repo_facts."""
+
+    EXCLUDED = frozenset({".git", ".venv", "node_modules", "__pycache__", ".env"})
 
     @classmethod
-    def inspect(cls, root: Path, *, max_files: int = 4096) -> dict:
-        import os
+    def inspect(cls, root: Path, *, max_files: int = 4096) -> dict[str, Any]:
+        from amplai_foundry.knowledge_runtime.repo_facts import RepoFactsResolver
 
-        root = root.resolve()
-        files = []
-        for directory, subdirs, names in os.walk(root):
-            subdirs[:] = sorted(
-                d
-                for d in subdirs
-                if d not in cls.EXCLUDED and not (Path(directory) / d).is_symlink()
-            )
-            for name in sorted(names):
-                path = Path(directory) / name
-                if name in cls.EXCLUDED or path.is_symlink():
-                    continue
-                if not path.resolve().is_relative_to(root):
-                    raise RuntimeFault(
-                        "REPO_PATH_ESCAPE", "Repository path escapes its allowed root"
-                    )
-                files.append({"path": str(path.relative_to(root)), "size": path.stat().st_size})
-                if len(files) > max_files:
-                    raise Hold(
-                        "REPO_FACT_LIMIT", "Repository inventory needs a narrower approved scope"
-                    )
-        return {
-            "root": str(root),
-            "files": files,
-            "test_configs": [
-                f["path"]
-                for f in files
-                if Path(f["path"]).name
-                in {"pyproject.toml", "package.json", "Makefile", "go.mod", "Cargo.toml"}
-            ],
-        }
+        return RepoFactsResolver(root, max_files=max_files).inspect()
