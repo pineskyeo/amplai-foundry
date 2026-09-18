@@ -215,22 +215,23 @@ class Store:
         with self._lock:
             self.conn.execute("BEGIN IMMEDIATE")
             try:
-                self.conn.executescript(
-                    """
-                    CREATE TABLE commands_v2 (
+                # Individual execute() calls: executescript() would COMMIT the open
+                # transaction first and silently break the atomic guarantee.
+                for statement in (
+                    """CREATE TABLE commands_v2 (
                      tenant TEXT NOT NULL,project TEXT NOT NULL,actor TEXT NOT NULL,
                      operation TEXT NOT NULL,key TEXT NOT NULL,request_digest TEXT NOT NULL,
                      result BLOB NOT NULL,retention_class TEXT NOT NULL DEFAULT 'command',
                      created_at TEXT NOT NULL,
-                     PRIMARY KEY(tenant,project,actor,operation,key));
-                    INSERT INTO commands_v2
+                     PRIMARY KEY(tenant,project,actor,operation,key))""",
+                    """INSERT INTO commands_v2
                      SELECT tenant,project,actor,'command',key,request_digest,result,
                             'command',created_at
-                     FROM commands;
-                    DROP TABLE commands;
-                    ALTER TABLE commands_v2 RENAME TO commands;
-                    """
-                )
+                     FROM commands""",
+                    "DROP TABLE commands",
+                    "ALTER TABLE commands_v2 RENAME TO commands",
+                ):
+                    self.conn.execute(statement)
                 self.conn.execute("COMMIT")
             except BaseException:
                 self.conn.execute("ROLLBACK")
