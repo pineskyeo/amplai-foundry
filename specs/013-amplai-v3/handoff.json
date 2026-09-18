@@ -1,0 +1,46 @@
+{
+  "blockers": [
+    "offline_views: guide-release-r6.json 이 묶은 tools/amplai-loop-kit/CHECKSUMS.sha256 이 main 의 3a4e0f6/3dc6d82 뒤 바뀌어 docs validate 가 STALE. 이 Work 밖 (kit release 작업).",
+    "EXTERNAL_QUALIFICATION_PENDING: live provider/container/holdout 자격은 로컬에서 판정 불가. release ledger local_pass 48/112, release_status rc_candidate_not_final."
+  ],
+  "completed_slices": [
+    "S00",
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14",
+    "S15",
+    "S16",
+    "S17",
+    "S18",
+    "S19",
+    "S20"
+  ],
+  "context_pack_hash": "7b10f7dbb900fb0c23440d6fcb182814039749a51f04032b4c274f534a963ce3",
+  "current_slice": null,
+  "git_checkpoint": "6dbe9508e27b2496367c95b93ce9e50a6b33cb76",
+  "last_verification": {
+    "check_count": 0,
+    "environment": {},
+    "exit_code": null,
+    "failed_checks": [],
+    "profile": "fast",
+    "source": ".specify/eval/last.json",
+    "verdict": "PASS"
+  },
+  "next_action": "사용자 결정 3건: (1) feat/013-amplai-v3 를 push/PR 할지, (2) offline_views 를 위해 kit release manifest r7 을 별도 Work 로 만들지 (main 에서부터 STALE), (3) gardening scan cap 120 상향 여부. 코드 후속: R102 cutover receipt 를 pointer switch 와 같은 tx 로, R107 v2 plan_digest 무조건 검증, R106 hard-crash temp 잔여 정리, R108 hermes bind 권한 subset 검사.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "review",
+  "work_id": "AMPLAI-V3-RC01"
+}
