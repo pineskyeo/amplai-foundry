@@ -6,12 +6,11 @@ network access is enabled. No privileged mode, host socket, home mount, or host 
 
 from __future__ import annotations
 
-from typing import Any
-
 import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 

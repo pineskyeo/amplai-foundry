@@ -510,9 +510,7 @@ class MetaReference:
             "canary_policy_ref": policy_ref,
             "abort_rules": ["No unknown effects", "No security regression"],
             "rollback_release_ref": prepared["baseline_release_ref"],
-            "expires_at": (
-                datetime.fromtimestamp(d.store.clock(), UTC) + timedelta(minutes=5)
-            )
+            "expires_at": (datetime.fromtimestamp(d.store.clock(), UTC) + timedelta(minutes=5))
             .isoformat()
             .replace("+00:00", "Z"),
             "active_run_policy": "drain",

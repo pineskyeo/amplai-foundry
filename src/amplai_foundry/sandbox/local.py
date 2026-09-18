@@ -6,12 +6,11 @@ as an OS sandbox suitable for executing arbitrary model-generated source code.
 
 from __future__ import annotations
 
-from typing import Any
-
 import json
 import os
 import stat
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 from amplai_foundry.runtime.contracts.identity import canonical, digest_bytes
 from amplai_foundry.runtime.errors import Hold, RuntimeFault

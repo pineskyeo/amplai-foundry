@@ -113,7 +113,8 @@ class Observatory:
         goals = [
             h
             for h in decoded
-            if h["kind"] == "goal" and (h["id"] in ids or (not filters and lo is None and hi is None))
+            if h["kind"] == "goal"
+            and (h["id"] in ids or (not filters and lo is None and hi is None))
         ]
         goal_counts = Counter(h["state"] for h in goals)
         eligible = sum(goal_counts[s] for s in ("verified", "failed"))

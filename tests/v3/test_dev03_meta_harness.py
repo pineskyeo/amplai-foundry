@@ -93,9 +93,7 @@ def promotion_plan(m, p):
         "canary_policy_ref": p["policy_ref"],
         "abort_rules": ["Abort unknown effects", "Abort safety failure"],
         "rollback_release_ref": p["baseline_release_ref"],
-        "expires_at": (
-            datetime.fromtimestamp(m.d.store.clock(), UTC) + timedelta(minutes=5)
-        )
+        "expires_at": (datetime.fromtimestamp(m.d.store.clock(), UTC) + timedelta(minutes=5))
         .isoformat()
         .replace("+00:00", "Z"),
         "active_run_policy": "drain",
