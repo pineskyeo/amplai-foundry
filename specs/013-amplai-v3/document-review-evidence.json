@@ -2,11 +2,11 @@
   "schema_version": "1.0",
   "work_id": "AMPLAI-V3-RC01",
   "feature": "specs/013-amplai-v3",
-  "reviewed_at": "2026-09-18 11:20:21 UTC",
+  "reviewed_at": "2026-09-18 15:56:49 UTC",
   "review_scope": "Attributed implementation-document review after S00-S20 slice PASS; not independent review, human gate or publication.",
-  "implementation_revision": "f1dc4f1bbfa4dba8d4caa08d873a89d43fa0b61e",
+  "implementation_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
   "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
-  "semantic_snapshot": "a70a32032ce9f6de4578777ebb717078242676762332cf58fa07a3c4a8e6b23f",
+  "semantic_snapshot": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
   "guide_sources": [
     {
       "path": ".ai-team/README.md",
@@ -164,7 +164,7 @@
     },
     {
       "check": "pytest tests/v3 tests/runtime_storage",
-      "result": "601 passed, 0 skipped",
+      "result": "605 passed, 0 skipped",
       "junit": "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
     },
     {
@@ -199,5 +199,11 @@
     "offline_views: pre-existing SOURCE_DRIFT on main (guide-release-r6.json binds tools/amplai-loop-kit/CHECKSUMS.sha256 from before commits 3a4e0f6/3dc6d82); not resolved by this Work",
     "Live provider/container/holdout qualification remains EXTERNAL_QUALIFICATION_PENDING",
     "This review is by the implementing agent; the three sequential reviewers have not run yet"
-  ]
+  ],
+  "review_rounds": [
+    "round 1 contract lens CHANGES_REQUIRED -> R001-R004, R006 fixed (29044c4)",
+    "round 2 failure lens PASS; R101/R103/R104/R105 fixed (bb70203); R102/R106/R107/R108 deferred",
+    "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)"
+  ],
+  "rebind_note": "Re-bound after review rounds 2-3 changed installer.py, archive/service.py, store.py (guards only: PACK_ID_RESERVED, tombstone approval_check, owner-lock release, backups exist_ok). No guide describes those internals; guide text unchanged."
 }
