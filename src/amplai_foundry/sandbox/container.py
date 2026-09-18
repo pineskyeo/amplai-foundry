@@ -6,6 +6,8 @@ network access is enabled. No privileged mode, host socket, home mount, or host 
 
 from __future__ import annotations
 
+from typing import Any
+
 import re
 import subprocess
 from dataclasses import dataclass
@@ -23,7 +25,7 @@ class ContainerProfile:
     cpus: float = 1.0
     pids: int = 128
     network: str = "none"
-    network_qualification_ref: dict | None = None
+    network_qualification_ref: dict[str, Any] | None = None
 
 
 class ContainerSandbox:
@@ -147,7 +149,7 @@ class ContainerSandbox:
             args += ["--env", name]
         return args + [p.image, *argv]
 
-    def probe(self) -> dict:
+    def probe(self) -> dict[str, Any]:
         try:
             result = subprocess.run(
                 [self.engine, "image", "inspect", self.profile.image],
@@ -165,7 +167,7 @@ class ContainerSandbox:
             "reason": "Image availability alone is not an escape/egress qualification",
         }
 
-    def stop(self, name: str):
+    def stop(self, name: str) -> None:
         if not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", name):
             raise RuntimeFault("CONTAINER_NAME", "Invalid run name")
         result = subprocess.run(
@@ -200,7 +202,7 @@ class ContainerSandbox:
         except (OSError, ValueError, subprocess.TimeoutExpired):
             return False
 
-    def destroy(self, name: str):
+    def destroy(self, name: str) -> None:
         if not self.stopped(name):
             raise Hold("DESTROY_RUNNING", "Container must be positively stopped before removal")
         result = subprocess.run(

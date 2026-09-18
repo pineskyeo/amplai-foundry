@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import secrets
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator
@@ -23,23 +25,23 @@ class ToolResult:
 @dataclass(frozen=True)
 class Tool:
     tool_id: str
-    ref: dict
+    ref: dict[str, Any]
     action: str
     resource: str
     effect_class: str
-    input_schema: dict
-    output_schema: dict
-    invoke: object
-    reconcile: object | None = None
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any]
+    invoke: Callable[..., Any]
+    reconcile: Callable[..., Any] | None = None
     timeout_seconds: int = 30
     max_result_bytes: int = 1024 * 1024
 
 
 class ToolRegistry:
-    def __init__(self):
-        self.tools = {}
+    def __init__(self) -> None:
+        self.tools: dict[str, Tool] = {}
 
-    def register(self, tool: Tool):
+    def register(self, tool: Tool) -> None:
         if tool.tool_id in self.tools:
             raise RuntimeFault("TOOL_DUPLICATE", "Tool IDs are immutable within a runtime")
         if (
@@ -60,7 +62,7 @@ class ToolRegistry:
             raise RuntimeFault("TOOL_EFFECT_CLASS", "Tool needs an explicit supported effect class")
         self.tools[tool.tool_id] = tool
 
-    def get(self, ref: dict) -> Tool:
+    def get(self, ref: dict[str, Any]) -> Tool:
         tool = self.tools.get(ref["id"])
         if not tool or tool.ref != ref:
             raise Hold(
@@ -68,12 +70,12 @@ class ToolRegistry:
             )
         return tool
 
-    def validate_input(self, tool: Tool, args):
+    def validate_input(self, tool: Tool, args: object) -> None:
         errors = list(Draft202012Validator(tool.input_schema).iter_errors(args))
         if errors:
             raise RuntimeFault("TOOL_INPUT_SCHEMA", "Tool argument schema violation")
 
-    def validate_result(self, tool: Tool, result: ToolResult):
+    def validate_result(self, tool: Tool, result: ToolResult) -> None:
         if not isinstance(result, ToolResult) or result.outcome not in {"applied", "not_applied"}:
             raise Hold("TOOL_OUTCOME_UNKNOWN", "Tool adapter did not establish an external outcome")
         if len(canonical(result.value)) > tool.max_result_bytes:
@@ -86,14 +88,20 @@ class ToolRegistry:
 
 class SecretBroker:
     def __init__(
-        self, values: dict[str, str], *, allowed_hosts: dict[str, set[str]], clock=time.monotonic
-    ):
+        self,
+        values: dict[str, str],
+        *,
+        allowed_hosts: dict[str, set[str]],
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._values = dict(values)
         self._hosts = allowed_hosts
-        self._handles = {}
+        self._handles: dict[str, tuple[str, str, float, object]] = {}
         self.clock = clock
 
-    def issue_handle(self, name: str, host: str, *, ttl_seconds: float = 300, scope=None) -> str:
+    def issue_handle(
+        self, name: str, host: str, *, ttl_seconds: float = 300, scope: object = None
+    ) -> str:
         if not 0 < ttl_seconds <= 3600:
             raise Hold("SECRET_TTL", "Secret handles need a bounded lifetime")
         if name not in self._values or host not in self._hosts.get(name, set()):
@@ -102,7 +110,9 @@ class SecretBroker:
         self._handles[handle] = (name, host, self.clock() + ttl_seconds, scope)
         return handle
 
-    def with_secret(self, handle: str, url: str, operation, *, scope=None):
+    def with_secret(
+        self, handle: str, url: str, operation: Callable[[str], Any], *, scope: object = None
+    ) -> Any:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.username or parsed.password or parsed.fragment:
             raise RuntimeFault(
@@ -119,8 +129,8 @@ class SecretBroker:
             raise Hold("SECRET_SCOPE", "Secret handle is not bound to this host")
         return operation(self._values[binding[0]])
 
-    def revoke(self, handle: str):
+    def revoke(self, handle: str) -> None:
         self._handles.pop(handle, None)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<SecretBroker values=REDACTED>"

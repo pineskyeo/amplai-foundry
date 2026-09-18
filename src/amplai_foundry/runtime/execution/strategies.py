@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from typing import Any
 
 from ..errors import Hold, RuntimeFault
 
@@ -55,7 +56,7 @@ class StrategyDecision:
 
 class StrategyRouter:
     def select(
-        self, contract: dict, facts: TaskFacts, *, available: frozenset[str]
+        self, contract: dict[str, Any], facts: TaskFacts, *, available: frozenset[str]
     ) -> StrategyDecision:
         if contract.get("risk") not in RISK or facts.uncertainty not in {
             "low",
@@ -107,7 +108,7 @@ class StrategyRouter:
         return StrategyDecision(strategy, risk, tuple(reasons))
 
     @staticmethod
-    def validate_node(node: dict, contract: dict) -> None:
+    def validate_node(node: dict[str, Any], contract: dict[str, Any]) -> None:
         strategy = node["strategy"]
         if strategy == "direct" and contract["risk"] != "low":
             raise Hold("DIRECT_RISK", "Direct mode is restricted to low-risk admitted contracts")

@@ -120,7 +120,9 @@ def demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-d
     """Execute actual cross-app files and independent verification, without an LLM."""
     from .reference import run_reference
 
-    if (output / "state" / "runtime.sqlite3").exists() or (output.exists() and any(output.iterdir())):
+    if (output / "state" / "runtime.sqlite3").exists() or (
+        output.exists() and any(output.iterdir())
+    ):
         raise typer.BadParameter(
             "Use a new empty output directory; existing work will not be overwritten"
         )
@@ -372,7 +374,7 @@ def kit_apply(root: Path, bundle: Path, trust: Path, plan: Path):
 @kit.command("recover")
 def kit_recover(root: Path):
     def operation():
-        store, actor, service, data = installer(root.absolute(), None, None)
+        store, actor, service, _data = installer(root.absolute(), None, None)
         try:
             return service.recover(actor, root.absolute())
         finally:

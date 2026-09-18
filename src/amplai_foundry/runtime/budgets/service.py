@@ -3,23 +3,25 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+from typing import Any
 
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 
 
 class BudgetService:
-    def __init__(self, store: Store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
     def reserve(
         self,
-        db,
+        db: sqlite3.Connection,
         scope: Scope,
         goal_id: str,
         run_id: str,
-        root: dict,
-        request: dict,
+        root: dict[str, Any],
+        request: dict[str, Any],
         *,
         depth: int = 0,
         attempt: int = 1,
@@ -39,7 +41,8 @@ class BudgetService:
         ):
             raise Hold("WALL_BUDGET", "Root elapsed-time budget has expired")
         rows = db.execute(
-            "SELECT tokens,cost,status FROM reservations WHERE tenant=? AND project=? AND goal_id=?",
+            "SELECT tokens,cost,status FROM reservations "
+            "WHERE tenant=? AND project=? AND goal_id=?",
             (*scope.keys(), goal_id),
         ).fetchall()
         active = sum(r["status"] == "active" for r in rows)
@@ -74,7 +77,9 @@ class BudgetService:
             ),
         )
 
-    def settle(self, db, scope: Scope, run_id: str, usage: dict) -> None:
+    def settle(
+        self, db: sqlite3.Connection, scope: Scope, run_id: str, usage: dict[str, Any]
+    ) -> None:
         row = db.execute(
             "SELECT * FROM reservations WHERE tenant=? AND project=? AND run_id=?",
             (*scope.keys(), run_id),
@@ -105,7 +110,8 @@ class BudgetService:
         ):
             status = "overrun"
         db.execute(
-            "UPDATE reservations SET tokens=?,cost=?,status=?,usage=? WHERE tenant=? AND project=? AND run_id=?",
+            "UPDATE reservations SET tokens=?,cost=?,status=?,usage=? "
+            "WHERE tenant=? AND project=? AND run_id=?",
             (tokens, cost, status, json.dumps(usage), *scope.keys(), run_id),
         )
         if status == "overrun":
@@ -113,7 +119,7 @@ class BudgetService:
                 db, scope, "run", run_id, "budget.overrun", {"tokens": tokens, "cost": cost}
             )
 
-    def totals(self, scope: Scope, goal_id: str) -> dict:
+    def totals(self, scope: Scope, goal_id: str) -> dict[str, Any]:
         with self.store._lock:
             rows = self.store.conn.execute(
                 "SELECT * FROM reservations WHERE tenant=? AND project=? AND goal_id=?",
@@ -129,7 +135,7 @@ class BudgetService:
             "active_runs": sum(r["status"] == "active" for r in rows),
         }
 
-    def suspend(self, db, scope: Scope, run_id: str) -> None:
+    def suspend(self, db: sqlite3.Connection, scope: Scope, run_id: str) -> None:
         """Release a compute slot only; unknown token/cost reservation is retained."""
         row = db.execute(
             "SELECT status FROM reservations WHERE tenant=? AND project=? AND run_id=?",
@@ -142,7 +148,15 @@ class BudgetService:
             (*scope.keys(), run_id),
         )
 
-    def resume(self, db, scope: Scope, run_id: str, root: dict, *, goal_started: float) -> None:
+    def resume(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        run_id: str,
+        root: dict[str, Any],
+        *,
+        goal_started: float,
+    ) -> None:
         if self.store.clock() - goal_started >= root["max_wall_seconds"]:
             raise Hold("WALL_BUDGET", "Human wait does not reset the deadline")
         row = db.execute(
@@ -152,7 +166,8 @@ class BudgetService:
         if not row or row["status"] != "suspended":
             raise Hold("RESERVATION_STATE", "An exact suspended reservation is required")
         active = db.execute(
-            "SELECT COUNT(*) FROM reservations WHERE tenant=? AND project=? AND goal_id=? AND status='active'",
+            "SELECT COUNT(*) FROM reservations "
+            "WHERE tenant=? AND project=? AND goal_id=? AND status='active'",
             (*scope.keys(), row["goal_id"]),
         ).fetchone()[0]
         if active >= root["max_parallel_works"]:

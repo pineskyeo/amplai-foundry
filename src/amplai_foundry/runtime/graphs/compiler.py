@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import heapq
 from copy import deepcopy
+from typing import TYPE_CHECKING, Any
 
 from ..contracts.authority import capability_contains
 from ..contracts.identity import digest, reference
+from ..contracts.registry import Contracts
 from ..errors import Hold, RuntimeFault
 
+if TYPE_CHECKING:
+    from ..execution.strategies import TaskFacts
 
-def validate_graph(graph: dict, contract: dict, contract_ref: dict) -> list[str]:
+
+def validate_graph(
+    graph: dict[str, Any], contract: dict[str, Any], contract_ref: dict[str, Any]
+) -> list[str]:
     if reference(contract, "goal_id") != contract_ref:
         raise Hold("CONTRACT_DIGEST", "Graph must bind the exact canonical contract definition")
     if graph["scope"] != contract["scope"] or graph["contract_ref"] != contract_ref:
@@ -23,9 +30,9 @@ def validate_graph(graph: dict, contract: dict, contract_ref: dict) -> list[str]
     if len(by_id) != len(nodes) or len({n["work_id"] for n in nodes}) != len(nodes):
         raise RuntimeFault("DUPLICATE_NODE", "Node and Work identifiers must be unique")
     if not 1 <= len(nodes) <= 64:
-        raise Hold("GRAPH_NODE_LIMIT", "WorkGraph must have 1–64 nodes")
+        raise Hold("GRAPH_NODE_LIMIT", "WorkGraph must have 1–64 nodes")  # noqa: RUF001
     indegree = {k: 0 for k in by_id}
-    children = {k: [] for k in by_id}
+    children: dict[str, list[str]] = {k: [] for k in by_id}
     targets = {digest(r) for r in contract["targets"]}
     from ..execution.strategies import StrategyRouter
 
@@ -129,10 +136,12 @@ def validate_graph(graph: dict, contract: dict, contract_ref: dict) -> list[str]
 
 
 class GraphCompiler:
-    def __init__(self, contracts):
+    def __init__(self, contracts: Contracts) -> None:
         self.contracts = contracts
 
-    def compile(self, draft: dict, contract: dict, contract_ref: dict) -> dict:
+    def compile(
+        self, draft: dict[str, Any], contract: dict[str, Any], contract_ref: dict[str, Any]
+    ) -> dict[str, Any]:
         self.contracts.validate("goal-contract", contract)
         graph = deepcopy(draft)
         self.contracts.validate("workgraph", graph)
@@ -143,7 +152,15 @@ class GraphCompiler:
             node["depends_on"] = sorted(node["depends_on"])
         return graph
 
-    def compile_adaptive(self, draft, contract, contract_ref, *, facts_by_node, available):
+    def compile_adaptive(
+        self,
+        draft: dict[str, Any],
+        contract: dict[str, Any],
+        contract_ref: dict[str, Any],
+        *,
+        facts_by_node: dict[str, TaskFacts],
+        available: frozenset[str],
+    ) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
         """Route from server-observed facts; never silently lower contract risk.
 
         A raised risk floor needs a newly reviewed contract before graph admission.
@@ -153,7 +170,7 @@ class GraphCompiler:
         from ..execution.strategies import RISK, StrategyRouter
 
         graph = deepcopy(draft)
-        decisions = {}
+        decisions: dict[str, dict[str, Any]] = {}
         router = StrategyRouter()
         if set(facts_by_node) != {node["node_id"] for node in graph["nodes"]}:
             raise Hold(

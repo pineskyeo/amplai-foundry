@@ -10,15 +10,27 @@ from __future__ import annotations
 import os
 import stat
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 from ..runtime.contracts.identity import canonical, new_id
 from ..runtime.contracts.registry import strict_json_loads
 from ..runtime.errors import Hold, RuntimeFault
+from ..runtime.evidence.cas import ArtifactStore
+from ..runtime.storage.store import Scope
 from .local import DataSandbox
+
+Ref = dict[str, Any]
 
 
 class WorkspaceManager:
-    def __init__(self, root: Path, artifacts, *, max_bytes=64 * 1024 * 1024, max_files=4096):
+    def __init__(
+        self,
+        root: Path,
+        artifacts: ArtifactStore,
+        *,
+        max_bytes: int = 64 * 1024 * 1024,
+        max_files: int = 4096,
+    ) -> None:
         self.root = Path(root).absolute()
         if self.root.resolve() != self.root:
             raise Hold("WORKSPACE_ROOT", "Workspace storage cannot traverse links")
@@ -50,11 +62,12 @@ class WorkspaceManager:
             )
         return name
 
-    def snapshot(self, scope, directory: Path) -> dict:
+    def snapshot(self, scope: Scope, directory: Path) -> Ref:
         root = Path(directory).absolute()
         if root.resolve() != root or not root.is_dir():
             raise Hold("WORKSPACE_SOURCE", "Expected a real directory")
-        files, size = {}, 0
+        files: dict[str, dict[str, Any]] = {}
+        size = 0
         # No followlinks; each opened file is separately checked against link races.
         for current, dirs, names in os.walk(root, followlinks=False):
             for name in sorted(dirs):
@@ -88,14 +101,14 @@ class WorkspaceManager:
             scope, canonical(value), "application/vnd.amplai.workspace+json"
         )
 
-    def empty_snapshot(self, scope):
+    def empty_snapshot(self, scope: Scope) -> Ref:
         return self.artifacts.admit(
             scope,
             canonical({"format": "amplai.workspace.v1", "files": {}, "total_bytes": 0}),
             "application/vnd.amplai.workspace+json",
         )
 
-    def _contents(self, scope, snapshot):
+    def _contents(self, scope: Scope, snapshot: Ref) -> dict[str, tuple[bytes, bool]]:
         value = strict_json_loads(self.artifacts.read(scope, snapshot))
         if (
             set(value) != {"format", "files", "total_bytes"}
@@ -105,7 +118,7 @@ class WorkspaceManager:
             raise Hold("WORKSPACE_FORMAT", "Unknown workspace snapshot format")
         if len(value["files"]) > self.max_files:
             raise Hold("WORKSPACE_QUOTA", "Too many files")
-        content = {}
+        content: dict[str, tuple[bytes, bool]] = {}
         total = 0
         for name, entry in value["files"].items():
             self.path(name)
@@ -120,7 +133,7 @@ class WorkspaceManager:
             raise Hold("WORKSPACE_SIZE", "Snapshot total differs from bytes")
         return content
 
-    def materialize(self, scope, run_id, snapshot):
+    def materialize(self, scope: Scope, run_id: str, snapshot: Ref) -> Path:
         from ..runtime.contracts.identity import ID
 
         if not ID.fullmatch(run_id):
@@ -145,7 +158,15 @@ class WorkspaceManager:
             shutil.rmtree(temporary)
             raise
 
-    def collect(self, scope, workspace, bindings, node, *, process_stopped):
+    def collect(
+        self,
+        scope: Scope,
+        workspace: str | Path,
+        bindings: dict[str, str],
+        node: dict[str, Any],
+        *,
+        process_stopped: bool,
+    ) -> dict[str, Ref]:
         if process_stopped is not True:
             raise Hold("COLLECT_RUNNING", "Outputs cannot be trusted before process stop")
         root = Path(workspace).absolute()
@@ -159,20 +180,20 @@ class WorkspaceManager:
                 "OUTPUT_BINDINGS", "Output file mapping must cover required graph ports only"
             )
         box = DataSandbox(root, max_bytes=self.max_bytes, protected=())
-        result = {}
+        result: dict[str, Ref] = {}
         for port, name in bindings.items():
             self.path(name)
             data = box.read(name)
             result[port] = self.artifacts.admit(scope, data, ports[port]["media_type"])
         return result
 
-    def assert_matches(self, scope, directory, snapshot):
+    def assert_matches(self, scope: Scope, directory: str | Path, snapshot: Ref) -> bool:
         """Compare actual bytes/modes to a frozen snapshot, without re-admission IDs."""
         root = Path(directory).absolute()
         if root.resolve() != root or root.parent != self.root:
             raise Hold("WORKSPACE_SCOPE", "Cannot resume outside the managed workspace root")
         expected = self._contents(scope, snapshot)
-        seen = set()
+        seen: set[str] = set()
         box = DataSandbox(root, max_bytes=self.max_bytes, protected=())
         for current, dirs, names in os.walk(root, followlinks=False):
             for name in dirs:

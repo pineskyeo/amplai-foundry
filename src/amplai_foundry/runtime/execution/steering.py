@@ -7,23 +7,32 @@ or a confirmed process boundary makes a steering event effective.
 from __future__ import annotations
 
 import json
+import sqlite3
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
+from ..contracts.authority import Actor
 from ..contracts.gates import Observation
 from ..contracts.identity import new_id, now
 from ..contracts.semantics import check_context, check_refs
 from ..errors import Conflict, Hold, RuntimeFault
+from ..storage.store import Scope
+
+if TYPE_CHECKING:
+    from .service import Runtime
 
 
 class SteeringService:
-    def __init__(self, runtime):
+    def __init__(self, runtime: Runtime) -> None:
         self.runtime = runtime
         self.store = runtime.store
         self.contracts = runtime.contracts
 
-    def _runs(self, scope, goal_id):
+    def _runs(self, scope: Scope, goal_id: str) -> list[tuple[str, dict[str, Any]]]:
         with self.store._lock:
             rows = self.store.conn.execute(
-                "SELECT id,state,row_version,data FROM heads WHERE tenant=? AND project=? AND kind='run'",
+                "SELECT id,state,row_version,data FROM heads "
+                "WHERE tenant=? AND project=? AND kind='run'",
                 scope.keys(),
             ).fetchall()
         return [
@@ -39,15 +48,24 @@ class SteeringService:
             if json.loads(x["data"])["record"]["root_goal_id"] == goal_id
         ]
 
-    def _unknown(self, scope, run_id):
+    def _unknown(self, scope: Scope, run_id: str) -> list[str]:
         with self.store._lock:
             rows = self.store.conn.execute(
-                "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='effect' AND state IN ('prepared','dispatched','unknown')",
+                "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+                "AND state IN ('prepared','dispatched','unknown')",
                 scope.keys(),
             ).fetchall()
         return [x["id"] for x in rows if json.loads(x["data"])["request"]["run_id"] == run_id]
 
-    def _move(self, db, scope, steering_id, command, observations, updates=None):
+    def _move(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        steering_id: str,
+        command: str,
+        observations: dict[str, Observation],
+        updates: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         h = self.store.head(scope, "steering", steering_id, db=db)
         state, gates = self.runtime.machines.transition(
             "steering", h["state"], command, observations
@@ -71,16 +89,16 @@ class SteeringService:
 
     def receive(
         self,
-        actor,
-        goal_id,
-        kind,
-        text,
+        actor: Actor,
+        goal_id: str,
+        kind: str,
+        text: str,
         *,
-        expected_contract_ref,
-        key,
-        evidence_refs=None,
-        priority=None,
-    ):
+        expected_contract_ref: dict[str, Any],
+        key: str,
+        evidence_refs: list[dict[str, Any]] | None = None,
+        priority: int | None = None,
+    ) -> dict[str, Any]:
         actor.require("goal.steer")
         scope = actor.scope
         goal = self.store.head(scope, "goal", goal_id)
@@ -88,7 +106,7 @@ class SteeringService:
             raise Conflict("STALE_CONTRACT", "Steering must target the exact active revision")
         if kind == "priority_change" and (type(priority) is not int or not -100 <= priority <= 100):
             raise RuntimeFault("PRIORITY", "Priority must be an integer between -100 and 100")
-        event = {
+        event: dict[str, Any] = {
             "schema_version": "3.0.0",
             "steering_id": new_id("steer"),
             "scope": scope.wire(),
@@ -119,7 +137,7 @@ class SteeringService:
         request = {k: v for k, v in event.items() if k not in {"steering_id", "received_at"}}
         request["priority"] = priority
 
-        def apply(db):
+        def apply(db: sqlite3.Connection) -> dict[str, Any]:
             h = self.store.head(scope, "goal", goal_id, db=db)
             if h["data"]["active_contract_ref"] != expected_contract_ref:
                 raise Conflict("STALE_CONTRACT", "Concurrent revision activation")
@@ -142,7 +160,7 @@ class SteeringService:
 
         return self.store.command(scope, actor.subject_id, key, request, apply)
 
-    def native_ack(self, actor, steering_id, native_turn_id):
+    def native_ack(self, actor: Actor, steering_id: str, native_turn_id: str) -> dict[str, Any]:
         actor.require("worker.execute")
         if not native_turn_id:
             raise RuntimeFault("NATIVE_ACK", "Exact provider turn identifier required")
@@ -161,7 +179,9 @@ class SteeringService:
             )
         return {"status": "queued", "native_acknowledged": True, "applied": False}
 
-    def _checkpoint(self, scope, run_id, run, driver_result):
+    def _checkpoint(
+        self, scope: Scope, run_id: str, run: dict[str, Any], driver_result: dict[str, Any]
+    ) -> dict[str, Any]:
         record = run["data"]["record"]
         goal = self.store.head(scope, "goal", record["root_goal_id"])
         diff = driver_result.get("workspace_diff_artifact")
@@ -221,7 +241,12 @@ class SteeringService:
         with self.store.tx() as db:
             return self.store.put(db, scope, "checkpoint", value["checkpoint_id"], 1, value)
 
-    def quiesce(self, actor, steering_id, stop_and_snapshot):
+    def quiesce(
+        self,
+        actor: Actor,
+        steering_id: str,
+        stop_and_snapshot: Callable[[str, str], dict[str, Any]],
+    ) -> dict[str, Any]:
         actor.require("goal.steer")
         scope = actor.scope
         h = self.store.head(scope, "steering", steering_id)
@@ -230,7 +255,7 @@ class SteeringService:
             raise Hold(
                 "STEERING_STATE", "This operation requires a queued stop or revision-changing event"
             )
-        outcomes = []
+        outcomes: list[dict[str, Any]] = []
         for run_id, run in self._runs(scope, event["goal_id"]):
             if run["state"] in {"succeeded", "failed", "cancelled", "lost"}:
                 continue
@@ -416,7 +441,7 @@ class SteeringService:
             "outcomes": outcomes,
         }
 
-    def apply_revision(self, actor, steering_id):
+    def apply_revision(self, actor: Actor, steering_id: str) -> dict[str, Any]:
         actor.require("goal.steer")
         scope = actor.scope
         h = self.store.head(scope, "steering", steering_id)
@@ -463,7 +488,13 @@ class SteeringService:
             )
         return {"status": "applied", "steering_ref": ref}
 
-    def resume(self, actor, steering_id, worker, resume_exact):
+    def resume(
+        self,
+        actor: Actor,
+        steering_id: str,
+        worker: Actor,
+        resume_exact: Callable[[str, dict[str, Any]], dict[str, Any]],
+    ) -> dict[str, Any]:
         actor.require("goal.steer")
         worker.require("worker.execute")
         scope = actor.scope
@@ -630,7 +661,8 @@ class SteeringService:
                     "expires_at_epoch": self.store.clock() + 120,
                 }
                 db.execute(
-                    "UPDATE leases SET lease_id=?,fence=?,epoch=?,expires=?,heartbeat_seq=0 WHERE tenant=? AND project=? AND run_id=?",
+                    "UPDATE leases SET lease_id=?,fence=?,epoch=?,expires=?,heartbeat_seq=0 "
+                    "WHERE tenant=? AND project=? AND run_id=?",
                     (
                         lease["lease_id"],
                         lease["fencing_token"],

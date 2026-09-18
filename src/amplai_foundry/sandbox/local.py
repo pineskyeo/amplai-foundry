@@ -6,6 +6,8 @@ as an OS sandbox suitable for executing arbitrary model-generated source code.
 
 from __future__ import annotations
 
+from typing import Any
+
 import json
 import os
 import stat
@@ -49,7 +51,7 @@ class DataSandbox:
             )
         return path.parts
 
-    def _parent(self, name: str, create: bool = False):
+    def _parent(self, name: str, create: bool = False) -> tuple[int, str]:
         parts = self._parts(name)
         fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         try:
@@ -69,7 +71,7 @@ class DataSandbox:
                 raise
             raise RuntimeFault("SANDBOX_PATH", "Parent path is unavailable or a symlink") from exc
 
-    def write(self, name: str, data: bytes, *, expected_old_digest: str | None = None):
+    def write(self, name: str, data: bytes, *, expected_old_digest: str | None = None) -> None:
         if len(data) > self.max_bytes:
             raise Hold("SANDBOX_QUOTA", "Single output exceeds the sandbox quota")
         existing_size = sum(
@@ -132,7 +134,7 @@ class DataSandbox:
         finally:
             os.close(fd)
 
-    def execute(self, operations: list[dict]) -> None:
+    def execute(self, operations: list[dict[str, Any]]) -> None:
         if not isinstance(operations, list) or len(operations) > 256:
             raise Hold(
                 "OPERATION_LIMIT", "Declarative operation count exceeds the configured limit"

@@ -7,27 +7,33 @@ for reconciliation; at-least-once dispatch is not at-least-once native spawn.
 
 from __future__ import annotations
 
+import contextlib
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from ...agent_drivers.ports import UNKNOWN_USAGE
+from ...agent_drivers.ports import UNKNOWN_USAGE, DriverRegistry
 from ...agent_drivers.sessions import SessionStore
 from ...sandbox.workspace import WorkspaceManager
+from ..contracts.authority import Actor
 from ..contracts.identity import digest
 from ..errors import Conflict, Hold, RuntimeFault
 from .envelope import assert_execution_live, execution_envelope
+
+if TYPE_CHECKING:
+    from .service import Runtime
 
 
 class WorkCoordinator:
     def __init__(
         self,
-        runtime,
-        registry,
+        runtime: Runtime,
+        registry: DriverRegistry,
         workspaces: WorkspaceManager,
         *,
-        poll_seconds=0.05,
-        max_seconds=3600,
-    ):
+        poll_seconds: float = 0.05,
+        max_seconds: float = 3600,
+    ) -> None:
         if not 0 < poll_seconds <= 30 or not 0 < max_seconds <= 86400:
             raise RuntimeFault("WORKER_LIMITS", "Polling and execution must be bounded")
         self.runtime, self.store, self.registry, self.workspaces = (
@@ -39,10 +45,10 @@ class WorkCoordinator:
         self.sessions = SessionStore(self.store, runtime.contracts)
         self.poll_seconds, self.max_seconds = poll_seconds, max_seconds
 
-    def _state(self, worker, did):
+    def _state(self, worker: Actor, did: str) -> dict[str, Any]:
         return self.store.head(worker.scope, "worker-execution", did)
 
-    def _update(self, worker, did, state, **changes):
+    def _update(self, worker: Actor, did: str, state: str, **changes: Any) -> dict[str, Any] | None:
         with self.store.tx() as db:
             h = self.store.head(worker.scope, "worker-execution", did, db=db)
             if state == "held" and h["state"] in {"paused", "cancelled", "resuming"}:
@@ -64,8 +70,9 @@ class WorkCoordinator:
                 "worker." + state,
                 {"dispatch_id": did},
             )
+        return None
 
-    def _existing(self, worker, did, request_digest):
+    def _existing(self, worker: Actor, did: str, request_digest: str) -> dict[str, Any] | None:
         try:
             h = self._state(worker, did)
         except RuntimeFault as exc:
@@ -78,21 +85,22 @@ class WorkCoordinator:
         ):
             raise Conflict("EXECUTION_REPLAY", "Dispatch payload or owner changed")
         if h["state"] == "verifying":
-            return h["data"]["result"]
+            result: dict[str, Any] = h["data"]["result"]
+            return result
         raise Hold(
             "EXECUTION_RECONCILE", "Existing dispatch may have started; do not spawn it again"
         )
 
     def execute(
         self,
-        worker,
-        dispatch,
+        worker: Actor,
+        dispatch: dict[str, Any],
         *,
         prompt: str,
-        base_snapshot: dict,
+        base_snapshot: dict[str, Any],
         output_paths: dict[str, str],
-        planning_receipt: dict | None = None,
-    ):
+        planning_receipt: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         worker.require("worker.execute")
         did = dispatch["dispatch_id"]
         scope = worker.scope
@@ -108,6 +116,8 @@ class WorkCoordinator:
         if prior:
             return prior
         envelope = execution_envelope(self.runtime, worker, dispatch)
+        if envelope is None:
+            raise RuntimeFault("EXECUTION_ENVELOPE", "Execution envelope was not constructed")
         port = self.registry.resolve(
             scope, dispatch["profile"]["driver_profile_ref"], dispatch["node"]["strategy"]
         )
@@ -169,7 +179,7 @@ class WorkCoordinator:
         handle = None
         bound = False
         sequence = 0
-        last_heartbeat = 0
+        last_heartbeat: float = 0
         start = time.monotonic()
         timeout = min(self.max_seconds, dispatch["node"]["budget"]["max_wall_seconds"])
         try:
@@ -253,10 +263,8 @@ class WorkCoordinator:
         except Exception as exc:
             stopped = False
             if handle is not None:
-                try:
+                with contextlib.suppress(Exception):
                     stopped = port.cancel(handle).get("process_stopped") is True
-                except Exception:
-                    pass
             self._update(
                 worker,
                 did,
@@ -266,7 +274,7 @@ class WorkCoordinator:
             )
             raise
 
-    def stop_and_snapshot(self, worker, run_id, kind):
+    def stop_and_snapshot(self, worker: Actor, run_id: str, kind: str) -> dict[str, Any]:
         # Used by SteeringService.quiesce. Side effects must still be reconciled
         # there before a checkpoint is admitted or reservations are released.
         with self.store._lock:
@@ -312,7 +320,7 @@ class WorkCoordinator:
             "workspace_base_digest": data["base_snapshot"]["digest"],
         }
 
-    def _run_execution(self, worker, run_id):
+    def _run_execution(self, worker: Actor, run_id: str) -> tuple[str, dict[str, Any]]:
         with self.store._lock:
             rows = self.store.conn.execute(
                 "SELECT id FROM heads WHERE tenant=? AND project=? AND kind='worker-execution'",
@@ -330,7 +338,9 @@ class WorkCoordinator:
             raise Hold("SESSION_OWNER", "Wrong process owner")
         return did, h
 
-    def resume_exact(self, worker, run_id, checkpoint):
+    def resume_exact(
+        self, worker: Actor, run_id: str, checkpoint: dict[str, Any]
+    ) -> dict[str, Any]:
         """Callback for SteeringService.resume after authority/resource preflight.
 
         Returns only exact provider session acceptance. New effects remain blocked
@@ -380,7 +390,7 @@ class WorkCoordinator:
             "No exact native session receipt; reconcile before another attempt",
         )
 
-    def continue_resumed(self, worker, run_id):
+    def continue_resumed(self, worker: Actor, run_id: str) -> dict[str, Any]:
         """Collect a resumed turn only after the controller commits the new lease."""
         from copy import deepcopy
 
@@ -402,7 +412,7 @@ class WorkCoordinator:
         )
         handle = data["driver_handle"]
         start = time.monotonic()
-        last = 0
+        last: float = 0
         seq = 0
         try:
             while time.monotonic() - start < min(
@@ -465,10 +475,8 @@ class WorkCoordinator:
             return result
         except Exception as exc:
             stopped = False
-            try:
+            with contextlib.suppress(Exception):
                 stopped = port.cancel(handle).get("process_stopped") is True
-            except Exception:
-                pass
             self._update(
                 worker,
                 did,

@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import sqlite3
+from typing import TYPE_CHECKING, Any
+
 from ..contracts.authority import Actor, capability_contains
 from ..contracts.identity import digest, new_id, now
 from ..contracts.registry import strict_json_loads
 from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope
 
+if TYPE_CHECKING:
+    from ...tool_broker.service import ToolRegistry
+    from ..execution.service import Runtime
+
 
 class Effects:
-    def __init__(self, runtime, tools):
+    def __init__(self, runtime: Runtime, tools: ToolRegistry) -> None:
         self.runtime, self.store, self.authority, self.artifacts, self.tools = (
             runtime,
             runtime.store,
@@ -21,16 +28,16 @@ class Effects:
 
     def _receipt(
         self,
-        db,
-        scope,
-        head,
-        state,
+        db: sqlite3.Connection,
+        scope: Scope,
+        head: dict[str, Any],
+        state: str,
         *,
-        result_artifact=None,
-        operation_id=None,
-        reconciliation_ref=None,
-        resolved_outcome=None,
-    ):
+        result_artifact: dict[str, Any] | None = None,
+        operation_id: str | None = None,
+        reconciliation_ref: dict[str, Any] | None = None,
+        resolved_outcome: str | None = None,
+    ) -> dict[str, Any]:
         receipt = {
             **head["data"]["receipt"],
             "state": state,
@@ -58,15 +65,13 @@ class Effects:
         )
         return ref
 
-    def prepare(self, worker: Actor, request: dict) -> dict:
+    def prepare(self, worker: Actor, request: dict[str, Any]) -> dict[str, Any]:
         worker.require("worker.execute")
         scope = worker.scope
         self.runtime.contracts.validate("effect-request", request)
         if request["scope"] != scope.wire():
             raise RuntimeFault("SCOPE_MISMATCH", "Effect belongs to another project")
-        lease = self.runtime.lease(
-            worker, request["run_id"], request["lease_id"], request["fencing_token"]
-        )
+        self.runtime.lease(worker, request["run_id"], request["lease_id"], request["fencing_token"])
         run = self.store.head(scope, "run", request["run_id"])
         if run["state"] != "running":
             raise Hold(
@@ -134,7 +139,8 @@ class Effects:
                     "EFFECT_ADMISSION_PAUSED", "Goal stopped admitting effects during preparation"
                 )
             prior = db.execute(
-                "SELECT request_digest,effect_id FROM effect_keys WHERE tenant=? AND project=? AND key=?",
+                "SELECT request_digest,effect_id FROM effect_keys "
+                "WHERE tenant=? AND project=? AND key=?",
                 (*scope.keys(), request["effect_key"]),
             ).fetchone()
             if prior:
@@ -142,7 +148,10 @@ class Effects:
                     raise Conflict(
                         "EFFECT_KEY_CONFLICT", "Effect key already binds a different request"
                     )
-                return self.store.head(scope, "effect", prior[1], db=db)["data"]["receipt"]
+                existing: dict[str, Any] = self.store.head(scope, "effect", prior[1], db=db)[
+                    "data"
+                ]["receipt"]
+                return existing
             self.authority.consume(db, scope, grant, request["effect_key"], request_digest)
             receipt = {
                 "schema_version": "3.0.0",
@@ -184,14 +193,15 @@ class Effects:
             )
         return receipt
 
-    def dispatch(self, scope: Scope, effect_id: str) -> dict:
+    def dispatch(self, scope: Scope, effect_id: str) -> dict[str, Any]:
         self.store.assert_outside_tx()
         head = self.store.head(scope, "effect", effect_id)
         request = head["data"]["request"]
         if head["state"] != "prepared":
             if head["state"] in {"unknown", "dispatched"}:
                 raise Hold("EFFECT_UNKNOWN", "Reconcile before any retry; dispatch is not repeated")
-            return head["data"]["receipt"]
+            prepared: dict[str, Any] = head["data"]["receipt"]
+            return prepared
         tool = self.tools.get(request["tool_ref"])
         args = strict_json_loads(self.artifacts.read(scope, request["args_artifact"]))
         run = self.store.head(scope, "run", request["run_id"])
@@ -271,9 +281,10 @@ class Effects:
                 result_artifact=artifact,
                 operation_id=result.operation_id,
             )
-        return self.store.head(scope, "effect", effect_id)["data"]["receipt"]
+        receipt: dict[str, Any] = self.store.head(scope, "effect", effect_id)["data"]["receipt"]
+        return receipt
 
-    def reconcile(self, actor: Actor, effect_id: str) -> dict:
+    def reconcile(self, actor: Actor, effect_id: str) -> dict[str, Any]:
         actor.require("effect.reconcile")
         scope = actor.scope
         head = self.store.head(scope, "effect", effect_id)
@@ -324,4 +335,5 @@ class Effects:
                 reconciliation_ref=ref,
                 resolved_outcome=result.outcome,
             )
-        return self.store.head(scope, "effect", effect_id)["data"]["receipt"]
+        receipt: dict[str, Any] = self.store.head(scope, "effect", effect_id)["data"]["receipt"]
+        return receipt

@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import re
+import sqlite3
+from collections.abc import Callable
 from copy import deepcopy
+from typing import Any
 
 from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
+from ..contracts.registry import Contracts
 from ..contracts.semantics import (
     check_contract,
     check_readiness,
@@ -17,10 +21,10 @@ from ..storage.store import Scope, Store
 
 
 class AppRegistry:
-    def __init__(self, store: Store, contracts):
+    def __init__(self, store: Store, contracts: Contracts) -> None:
         self.store, self.contracts = store, contracts
 
-    def register(self, actor: Actor, binding: dict) -> dict:
+    def register(self, actor: Actor, binding: dict[str, Any]) -> dict[str, Any]:
         actor.require("app.register")
         self.contracts.validate("app-binding", binding)
         if binding["scope"] != actor.scope.wire():
@@ -46,13 +50,15 @@ class AppRegistry:
         boundary = r"(?=$|[^\w]|" + particle + r"(?=$|[^\w]))"
         return re.search(r"(?<![\w])" + re.escape(name) + boundary, text, re.IGNORECASE) is not None
 
-    def resolve(self, scope: Scope, text: str, hints: list[str]) -> list[tuple[dict, dict]]:
-        latest = {}
+    def resolve(
+        self, scope: Scope, text: str, hints: list[str]
+    ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+        latest: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
         for ref, binding in self.store.list_objects(scope, "app-binding"):
             old = latest.get(binding["app_id"])
             if old is None or ref["revision"] > old[0]["revision"]:
                 latest[binding["app_id"]] = (ref, binding)
-        names = {}
+        names: dict[str, set[str]] = {}
         for app_id, pair in latest.items():
             binding = pair[1]
             for name in {binding["app_id"], *binding["aliases"], binding["repo_identity"]}:
@@ -86,7 +92,7 @@ class AppRegistry:
 
 
 class GoalService:
-    def __init__(self, store: Store, contracts):
+    def __init__(self, store: Store, contracts: Contracts) -> None:
         self.store, self.contracts = store, contracts
         self.apps = AppRegistry(store, contracts)
 
@@ -97,16 +103,16 @@ class GoalService:
         text: str,
         mode: str = "work",
         target_hints: list[str] | None = None,
-        attachment_refs: list[dict] | None = None,
+        attachment_refs: list[dict[str, Any]] | None = None,
         channel: str = "cli",
         external_message_id: str | None = None,
         classification: str = "internal",
         key: str,
-    ) -> dict:
+    ) -> dict[str, Any]:
         actor.require("goal.submit")
         if not isinstance(text, str) or not text.strip():
             raise RuntimeFault("INTENT_EMPTY", "An intent must contain meaningful text")
-        value = {
+        value: dict[str, Any] = {
             "schema_version": "3.0.0",
             "intent_id": new_id("intent"),
             "scope": actor.scope.wire(),
@@ -128,7 +134,7 @@ class GoalService:
             artifacts.read(actor.scope, artifact)
         payload = {k: v for k, v in value.items() if k not in {"intent_id", "received_at"}}
 
-        def operation(db):
+        def operation(db: sqlite3.Connection) -> dict[str, Any]:
             ref = self.store.put(db, actor.scope, "intent-envelope", value["intent_id"], 1, value)
             goal_id = new_id("goal")
             self.store.cas(
@@ -156,11 +162,11 @@ class GoalService:
         self,
         actor: Actor,
         goal_id: str,
-        readiness: list[dict],
+        readiness: list[dict[str, Any]],
         *,
-        facts: list[dict] | None = None,
+        facts: list[dict[str, Any]] | None = None,
         na_rules: set[str] | None = None,
-    ) -> tuple[dict, dict]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         actor.require("goal.resolve")
         head = self.store.head(actor.scope, "goal", goal_id)
         if head["state"] not in {"draft", "discovering", "awaiting_decision", "blocked"}:
@@ -190,7 +196,7 @@ class GoalService:
                         {"goal": goal_id, "question": question_text, "intent_ref": intent_ref}
                     )[7:31]
                 )
-                q = {
+                q: dict[str, Any] = {
                     "schema_version": "3.0.0",
                     "question_id": question_id,
                     "scope": actor.scope.wire(),
@@ -206,7 +212,9 @@ class GoalService:
                     "asked_at": now(),
                 }
                 existing = db.execute(
-                    "SELECT revision,digest,data FROM objects WHERE tenant=? AND project=? AND kind=? AND id=? ORDER BY revision DESC LIMIT 1",
+                    "SELECT revision,digest,data FROM objects "
+                    "WHERE tenant=? AND project=? AND kind=? AND id=? "
+                    "ORDER BY revision DESC LIMIT 1",
                     (*actor.scope.keys(), "question", question_id),
                 ).fetchone()
                 if existing:
@@ -257,11 +265,11 @@ class GoalService:
     def freeze_contract(
         self,
         actor: Actor,
-        contract: dict,
+        contract: dict[str, Any],
         *,
         expected_version: int,
         na_rules: set[str] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         actor.require("contract.propose")
         self.contracts.validate("goal-contract", contract)
         scope = actor.scope
@@ -328,8 +336,13 @@ class GoalService:
         return ref
 
     def refine_intent(
-        self, actor: Actor, question_ref: dict, text: str, *, target_hints: list[str] | None = None
-    ) -> dict:
+        self,
+        actor: Actor,
+        question_ref: dict[str, Any],
+        text: str,
+        *,
+        target_hints: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Resolve pre-contract questions without inventing a nonexistent contract ref.
 
         The normative Question answer requires a real contract. Before that exists,
@@ -365,7 +378,8 @@ class GoalService:
             if current["row_version"] != goal["row_version"]:
                 raise Conflict("ANSWER_REVISION", "Goal changed during clarification")
             latest = db.execute(
-                "SELECT MAX(revision) FROM objects WHERE tenant=? AND project=? AND kind=? AND id=?",
+                "SELECT MAX(revision) FROM objects "
+                "WHERE tenant=? AND project=? AND kind=? AND id=?",
                 (*scope.keys(), "question", question["question_id"]),
             ).fetchone()[0]
             if latest != question_ref["revision"]:
@@ -429,8 +443,12 @@ class GoalService:
         }
 
     def answer(
-        self, actor: Actor, question_ref: dict, text: str, contract_ref: dict | None = None
-    ) -> dict:
+        self,
+        actor: Actor,
+        question_ref: dict[str, Any],
+        text: str,
+        contract_ref: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if contract_ref is None:
             return self.refine_intent(actor, question_ref, text)
         actor.require("question.answer")
@@ -457,7 +475,8 @@ class GoalService:
         self.contracts.validate("question", q)
         with self.store.tx() as db:
             rows = db.execute(
-                "SELECT MAX(revision) FROM objects WHERE tenant=? AND project=? AND kind=? AND id=?",
+                "SELECT MAX(revision) FROM objects "
+                "WHERE tenant=? AND project=? AND kind=? AND id=?",
                 (*actor.scope.keys(), "question", q["question_id"]),
             ).fetchone()
             if rows[0] != question_ref["revision"]:
@@ -468,17 +487,17 @@ class GoalService:
 
 
 class ContractCritic:
-    def __init__(self, contracts):
+    def __init__(self, contracts: Contracts) -> None:
         self.contracts = contracts
 
     def review(
         self,
-        candidate: dict,
+        candidate: dict[str, Any],
         *,
-        previous: dict | None = None,
-        model_findings: list[dict] | None = None,
-    ) -> dict:
-        findings = []
+        previous: dict[str, Any] | None = None,
+        model_findings: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        findings: list[dict[str, Any]] = []
         try:
             self.contracts.validate("goal-contract", candidate)
             check_contract(candidate, previous=previous)
@@ -494,7 +513,12 @@ class ContractCritic:
             "findings": findings,
         }
 
-    def negotiate(self, initial: dict, planner, reviewer) -> dict:
+    def negotiate(
+        self,
+        initial: dict[str, Any],
+        planner: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]],
+        reviewer: Callable[[dict[str, Any]], list[dict[str, Any]]],
+    ) -> dict[str, Any]:
         candidate = deepcopy(initial)
         for round_number in range(2):
             report = self.review(candidate, model_findings=reviewer(deepcopy(candidate)))

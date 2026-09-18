@@ -9,16 +9,22 @@ from __future__ import annotations
 
 import queue
 import threading
+from typing import TYPE_CHECKING, Any
 
 from ..runtime.contracts.identity import canonical, digest, new_id, now
 from ..runtime.contracts.registry import strict_json_loads
 from ..runtime.errors import Conflict, Hold, RuntimeFault
 
+if TYPE_CHECKING:
+    from ..runtime.contracts.authority import Actor
+    from ..runtime.effects.service import Effects
+    from .service import Tool
 
-def invoke_bounded(tool, args, effect_key):
-    results = queue.Queue(maxsize=1)
 
-    def run():
+def invoke_bounded(tool: Tool, args: object, effect_key: str) -> Any:
+    results: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=1)
+
+    def run() -> None:
         try:
             results.put((True, tool.invoke(args, effect_key, tool.timeout_seconds)))
         except Exception as exc:
@@ -37,7 +43,7 @@ def invoke_bounded(tool, args, effect_key):
 
 
 class NativeToolBroker:
-    def __init__(self, effects, bindings: dict[str, dict]):
+    def __init__(self, effects: Effects, bindings: dict[str, dict[str, Any]]) -> None:
         self.effects, self.runtime, self.store = effects, effects.runtime, effects.store
         self.bindings = dict(bindings)
         for name, ref in self.bindings.items():
@@ -47,15 +53,15 @@ class NativeToolBroker:
 
     def invoke(
         self,
-        worker,
-        envelope,
+        worker: Actor,
+        envelope: dict[str, Any],
         *,
         session_handle: str,
         native_turn_id: str,
         native_call_id: str,
         name: str,
         arguments: str,
-    ):
+    ) -> dict[str, Any]:
         worker.require("worker.execute")
         scope = worker.scope
         self.runtime.contracts.validate("execution-envelope", envelope)

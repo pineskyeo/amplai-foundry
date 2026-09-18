@@ -255,7 +255,9 @@ class ReferenceDeployment:
             {
                 "global_id": "demo-global",
                 "scope": scope.wire(),
-                "rule": "all named JSON outputs have distinct per-app identifiers and expected message",
+                "rule": (
+                    "all named JSON outputs have distinct per-app identifiers and expected message"
+                ),
                 "owner": self.verifier.subject_id,
             },
         )
@@ -305,7 +307,8 @@ class ReferenceDeployment:
         facts = self.knowledge.record_observation(
             scope,
             "local-reference-task",
-            "Reference task: output exact message and app identity; no performance threshold inferred",
+            "Reference task: output exact message and app identity; "
+            "no performance threshold inferred",
         )
         readiness = self.knowledge.readiness(
             scope,
@@ -324,7 +327,7 @@ class ReferenceDeployment:
             },
         )
         resolution_ref, resolution = self.goals.resolve(self.actor, goal_id, readiness)
-        bundle_ref, bundle = self.knowledge.bundle(
+        bundle_ref, _bundle = self.knowledge.bundle(
             scope,
             bundle_id=new_id("context"),
             core_refs=[policy_ref, invariant_ref],
@@ -587,7 +590,9 @@ class ReferenceDeployment:
             "verification_ref": final,
             "runs": runs,
             "budget": self.runtime.budgets.totals(self.scope, prepared["goal_id"]),
-            "qualification_kind": "local data-only deterministic reference, not external LLM or production",
+            "qualification_kind": (
+                "local data-only deterministic reference, not external LLM or production"
+            ),
         }
         (self.root / "reference-report.json").write_bytes(canonical(report))
         return report

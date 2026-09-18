@@ -159,7 +159,8 @@ class RuntimeDeployment:
         if not governance_path.is_file():
             raise Hold(
                 "FOUNDRY_NOT_INITIALIZED",
-                "Initialize/enroll the existing Foundry authority explicitly; V3 will not mint replacement authority",
+                "Initialize/enroll the existing Foundry authority explicitly; "
+                "V3 will not mint replacement authority",
             )
         self.governance = GovernanceStore(governance_path)
         projects, object_stores = {}, {}
@@ -291,7 +292,8 @@ class RuntimeDeployment:
             ):
                 raise Hold(
                     "REGISTRY_IMPORT_KIND",
-                    "Startup registry import cannot create grants, approvals, verdicts, active runs or release pointers",
+                    "Startup registry import cannot create grants, approvals, verdicts, "
+                    "active runs or release pointers",
                 )
             scope = Scope.parse(item["scope"])
             if scope not in self.bridge.projects:

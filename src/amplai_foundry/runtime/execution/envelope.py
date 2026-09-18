@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 from ..contracts.authority import intersect_capabilities
 from ..contracts.identity import digest, new_id
 from ..errors import Conflict, Hold
 
+if TYPE_CHECKING:
+    from ..contracts.authority import Actor
+    from .service import Runtime
 
-def execution_envelope(runtime, worker, dispatch: dict, *, _validate_only=False) -> dict | None:
+
+def execution_envelope(
+    runtime: Runtime, worker: Actor, dispatch: dict[str, Any], *, _validate_only: bool = False
+) -> dict[str, Any] | None:
     worker.require("worker.execute")
     scope, store = worker.scope, runtime.store
     lease = dispatch["lease"]
@@ -124,6 +131,6 @@ def execution_envelope(runtime, worker, dispatch: dict, *, _validate_only=False)
     return result
 
 
-def assert_execution_live(runtime, worker, dispatch):
+def assert_execution_live(runtime: Runtime, worker: Actor, dispatch: dict[str, Any]) -> None:
     """Recheck authority/fencing without creating an envelope for every poll."""
     execution_envelope(runtime, worker, dispatch, _validate_only=True)

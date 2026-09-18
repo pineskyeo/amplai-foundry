@@ -6,12 +6,18 @@ from design/05 and design/14 against the scoped immutable object store.
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..contracts.identity import digest
+from ..contracts.registry import Contracts
 from ..contracts.semantics import check_context, check_refs
 from ..errors import Hold
+from ..storage.store import Scope, Store
 
 
-def validate_bindings(store, contracts, scope, contract: dict) -> None:
+def validate_bindings(
+    store: Store, contracts: Contracts, scope: Scope, contract: dict[str, Any]
+) -> None:
     plan = store.get(scope, "verification-plan", contract["verification_plan_ref"])
     contracts.validate("verification-plan", plan)
     check_refs(store, scope, plan)

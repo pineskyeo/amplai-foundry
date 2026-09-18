@@ -11,14 +11,17 @@ import json
 import os
 import shutil
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
+from ..contracts.authority import Actor
 from ..contracts.identity import canonical, new_id, now
 from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope, Store
 
 
-def file_digest(path):
+def file_digest(path: str | Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for b in iter(lambda: f.read(1048576), b""):
@@ -27,10 +30,10 @@ def file_digest(path):
 
 
 class RecoveryService:
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
-    def backup(self, actor, destination):
+    def backup(self, actor: Actor, destination: str | Path) -> dict[str, Any]:
         actor.require("runtime.backup")
         self.store.assert_outside_tx()
         destination = Path(destination).absolute()
@@ -47,7 +50,7 @@ class RecoveryService:
             db = sqlite3.connect(database)
             db.row_factory = sqlite3.Row
             rows = db.execute("SELECT * FROM artifacts").fetchall()
-            objects = []
+            objects: list[dict[str, Any]] = []
             for row in rows:
                 scope = Scope(row["tenant"], row["project"])
                 from ..evidence.cas import ArtifactStore
@@ -89,7 +92,9 @@ class RecoveryService:
                 "artifacts": objects,
                 "scopes": scopes,
                 "source_owner_epoch": self.store.epoch,
-                "restore_policy": "raise epoch; kill admission; reconcile processes/effects; check live authority",
+                "restore_policy": (
+                    "raise epoch; kill admission; reconcile processes/effects; check live authority"
+                ),
             }
             (staging / "backup-manifest.json").write_bytes(canonical(manifest))
             os.replace(staging, destination)
@@ -99,7 +104,9 @@ class RecoveryService:
             raise
 
     @staticmethod
-    def restore(backup, destination, *, operator_confirmed=False):
+    def restore(
+        backup: str | Path, destination: str | Path, *, operator_confirmed: bool = False
+    ) -> dict[str, Any]:
         if not operator_confirmed:
             raise Hold("RESTORE_CONFIRMATION", "Explicit operator restore confirmation required")
         backup = Path(backup).absolute()
@@ -179,14 +186,17 @@ class RecoveryService:
 class OutboxPump:
     """At-least-once delivery with stable event IDs; acknowledgments are not executions."""
 
-    def __init__(self, store):
+    def __init__(self, store: Store) -> None:
         self.store = store
 
-    def pump(self, deliver, *, limit=100):
+    def pump(
+        self, deliver: Callable[[dict[str, Any]], object], *, limit: int = 100
+    ) -> list[dict[str, Any]]:
         self.store.assert_outside_tx()
         with self.store._lock:
             rows = self.store.conn.execute(
-                "SELECT e.*,o.attempts FROM outbox o JOIN events e ON e.seq=o.event_seq WHERE o.status=? AND o.next_at<=? ORDER BY e.seq LIMIT ?",
+                "SELECT e.*,o.attempts FROM outbox o JOIN events e ON e.seq=o.event_seq "
+                "WHERE o.status=? AND o.next_at<=? ORDER BY e.seq LIMIT ?",
                 ("pending", self.store.clock(), min(limit, 1000)),
             ).fetchall()
         results = []
@@ -199,7 +209,8 @@ class OutboxPump:
             with self.store.tx() as db:
                 if acknowledged:
                     db.execute(
-                        "UPDATE outbox SET status='acknowledged',ack_at=?,attempts=attempts+1 WHERE event_seq=?",
+                        "UPDATE outbox SET status='acknowledged',ack_at=?,attempts=attempts+1 "
+                        "WHERE event_seq=?",
                         (now(), row["seq"]),
                     )
                 else:

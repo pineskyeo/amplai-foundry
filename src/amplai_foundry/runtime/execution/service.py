@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from ..budgets.service import BudgetService
 from ..contracts.authority import Actor, Authority, intersect_capabilities
 from ..contracts.gates import Observation, StateMachines
 from ..contracts.identity import canonical, digest, new_id, now
+from ..contracts.registry import Contracts
 from ..contracts.semantics import check_context, check_contract, check_refs, resolve_ref
 from ..errors import Conflict, Hold, RuntimeFault
 from ..graphs.compiler import GraphCompiler, validate_graph
 from ..storage.store import Scope, Store
+
+if TYPE_CHECKING:
+    from ..evidence.cas import ArtifactStore
 
 WORKER_EVENTS = frozenset(
     {
@@ -38,12 +45,14 @@ class Lease:
     owner_epoch: int
     expires_at_epoch: float
 
-    def wire(self):
+    def wire(self) -> dict[str, Any]:
         return self.__dict__.copy()
 
 
 class Runtime:
-    def __init__(self, store: Store, contracts, authority: Authority, artifacts):
+    def __init__(
+        self, store: Store, contracts: Contracts, authority: Authority, artifacts: ArtifactStore
+    ) -> None:
         self.store, self.contracts, self.authority, self.artifacts = (
             store,
             contracts,
@@ -54,7 +63,9 @@ class Runtime:
         self.graphs = GraphCompiler(contracts)
         self.budgets = BudgetService(store)
 
-    def save_graph(self, actor: Actor, draft: dict, contract_ref: dict) -> dict:
+    def save_graph(
+        self, actor: Actor, draft: dict[str, Any], contract_ref: dict[str, Any]
+    ) -> dict[str, Any]:
         actor.require("graph.propose")
         contract = self.store.get(actor.scope, "goal-contract", contract_ref)
         graph = self.graphs.compile(draft, contract, contract_ref)
@@ -90,8 +101,12 @@ class Runtime:
             )
 
     def _profile(
-        self, scope: Scope, profile: dict, capabilities: list[dict], classification: str
-    ) -> dict:
+        self,
+        scope: Scope,
+        profile: dict[str, Any],
+        capabilities: list[dict[str, Any]],
+        classification: str,
+    ) -> dict[str, Any]:
         for field in PROFILE_REFS:
             resolve_ref(self.store, scope, profile[field])
         driver = self.store.get(scope, "driver-capabilities", profile["driver_profile_ref"])
@@ -161,13 +176,13 @@ class Runtime:
     def activate(
         self,
         actor: Actor,
-        contract_ref: dict,
-        graph_ref: dict,
-        grant_ref: dict,
-        profile: dict,
+        contract_ref: dict[str, Any],
+        graph_ref: dict[str, Any],
+        grant_ref: dict[str, Any],
+        profile: dict[str, Any],
         *,
         expected_version: int,
-    ) -> dict:
+    ) -> dict[str, Any]:
         actor.require("goal.activate")
         scope = actor.scope
         contract = self.store.get(scope, "goal-contract", contract_ref)
@@ -177,10 +192,10 @@ class Runtime:
         check_refs(self.store, scope, contract)
         check_refs(self.store, scope, graph)
         intent = self.store.get(scope, "intent-envelope", contract["intent_ref"])
-        environment = self._profile(
+        self._profile(
             scope, profile, contract["requested_capabilities"], intent["data_classification"]
         )
-        grant = self.authority.preflight(
+        self.authority.preflight(
             scope,
             grant_ref,
             subject_id=actor.subject_id,
@@ -202,7 +217,9 @@ class Runtime:
                     "REVISION_NOT_NEW", "New activation requires a new contract revision"
                 )
             active = db.execute(
-                "SELECT COUNT(*) FROM leases WHERE tenant=? AND project=? AND work_id IN (SELECT id FROM heads WHERE tenant=? AND project=? AND kind='work' AND state IN ('leased','running','verifying'))",
+                "SELECT COUNT(*) FROM leases WHERE tenant=? AND project=? AND work_id IN "
+                "(SELECT id FROM heads WHERE tenant=? AND project=? AND kind='work' "
+                "AND state IN ('leased','running','verifying'))",
                 (*scope.keys(), *scope.keys()),
             ).fetchone()[0]
             if head["state"] in {"active", "verifying"} or (
@@ -210,7 +227,8 @@ class Runtime:
             ):
                 raise Hold(
                     "DRAIN_REQUIRED",
-                    "Existing running work must be stopped and reconciled before revision activation",
+                    "Existing running work must be stopped and reconciled "
+                    "before revision activation",
                 )
             observations = {
                 g: Observation.check(True, r)
@@ -276,7 +294,9 @@ class Runtime:
             )
         return {"goal_id": contract["goal_id"], "row_version": version, "state": state}
 
-    def _dependencies(self, db, scope: Scope, node: dict, graph: dict) -> bool:
+    def _dependencies(
+        self, db: sqlite3.Connection, scope: Scope, node: dict[str, Any], graph: dict[str, Any]
+    ) -> bool:
         by_id = {n["node_id"]: n for n in graph["nodes"]}
         states = []
         for dep in node["depends_on"]:
@@ -290,7 +310,13 @@ class Runtime:
         )
 
     def _check_lease(
-        self, db, scope: Scope, run_id: str, worker_id: str, lease_id: str, fence: int
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        run_id: str,
+        worker_id: str,
+        lease_id: str,
+        fence: int,
     ) -> Lease:
         row = db.execute(
             "SELECT * FROM leases WHERE tenant=? AND project=? AND run_id=?",
@@ -338,7 +364,7 @@ class Runtime:
                 self.store.conn, actor.scope, run_id, actor.subject_id, lease_id, fence
             )
 
-    def claim(self, worker: Actor, *, goal_id: str | None = None) -> dict | None:
+    def claim(self, worker: Actor, *, goal_id: str | None = None) -> dict[str, Any] | None:
         worker.require("worker.execute")
         scope = worker.scope
         try:
@@ -349,10 +375,12 @@ class Runtime:
         else:
             if kill["data"].get("enabled") or kill["state"] == "enabled":
                 raise Hold("KILL_SWITCH", "New work admission is disabled by the operator")
-        # Candidate selection is outside the write transaction; live authority IO also stays outside.
+        # Candidate selection is outside the write transaction; live authority IO also
+        # stays outside.
         with self.store._lock:
             rows = self.store.conn.execute(
-                "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='goal' AND state IN ('ready','active')",
+                "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='goal' "
+                "AND state IN ('ready','active')",
                 scope.keys(),
             ).fetchall()
         candidates = [
@@ -415,7 +443,8 @@ class Runtime:
                         conflicts = False
                         for claim in node["resource_claims"]:
                             resource_rows = db.execute(
-                                "SELECT mode FROM resources WHERE tenant=? AND project=? AND resource=?",
+                                "SELECT mode FROM resources "
+                                "WHERE tenant=? AND project=? AND resource=?",
                                 (*scope.keys(), claim["resource"]),
                             ).fetchall()
                             if any(
@@ -482,7 +511,7 @@ class Runtime:
                             }.items()
                         }
                         state = work["state"]
-                        gates = []
+                        gates: list[dict[str, Any]] = []
                         if state == "pending":
                             state, gates = self.machines.transition(
                                 "work", state, "dependencies_ready", observations
@@ -571,7 +600,7 @@ class Runtime:
                         payload["dispatch_id"] = dispatch_id
                         self.store.event(db, scope, "run", run_id, "work.dispatch", payload)
                         if goal["state"] == "ready":
-                            goal_state, gg = self.machines.transition(
+                            goal_state, _gg = self.machines.transition(
                                 "goal", "ready", "dispatch", observations
                             )
                         else:
@@ -594,7 +623,15 @@ class Runtime:
             )
         return None
 
-    def _run_state(self, db, scope: Scope, run_id: str, head: dict, state: str, data: dict) -> None:
+    def _run_state(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        run_id: str,
+        head: dict[str, Any],
+        state: str,
+        data: dict[str, Any],
+    ) -> None:
         record = {**data["record"], "status": state}
         if state in {"succeeded", "failed", "cancelled", "lost"}:
             record["finished_at"] = record["finished_at"] or now()
@@ -604,7 +641,7 @@ class Runtime:
             db, scope, "run", run_id, head["row_version"], state, {**data, "record": record}
         )
 
-    def start(self, worker: Actor, dispatch: dict, session_handle: str) -> dict:
+    def start(self, worker: Actor, dispatch: dict[str, Any], session_handle: str) -> dict[str, Any]:
         worker.require("worker.execute")
         if (
             not isinstance(session_handle, str)
@@ -655,7 +692,7 @@ class Runtime:
                     )
                 return {"status": "acknowledged", "session_handle": session_handle}
             obs = {"G-09": Observation.check(True, "Lease and exact session binding checked")}
-            state, gates = self.machines.transition("run", run["state"], "start_ack", obs)
+            state, _gates = self.machines.transition("run", run["state"], "start_ack", obs)
             self._run_state(
                 db,
                 scope,
@@ -670,7 +707,8 @@ class Runtime:
                 db, scope, "work", lease["work_id"], work["row_version"], state, work["data"]
             )
             db.execute(
-                "UPDATE worker_dispatch SET state='acknowledged' WHERE tenant=? AND project=? AND dispatch_id=?",
+                "UPDATE worker_dispatch SET state='acknowledged' "
+                "WHERE tenant=? AND project=? AND dispatch_id=?",
                 (*scope.keys(), dispatch["dispatch_id"]),
             )
             self.store.event(
@@ -685,10 +723,10 @@ class Runtime:
 
     def heartbeat(
         self, worker: Actor, run_id: str, lease_id: str, fence: int, sequence: int
-    ) -> dict:
+    ) -> dict[str, Any]:
         worker.require("worker.execute")
         with self.store.tx() as db:
-            lease = self._check_lease(db, worker.scope, run_id, worker.subject_id, lease_id, fence)
+            self._check_lease(db, worker.scope, run_id, worker.subject_id, lease_id, fence)
             row = db.execute(
                 "SELECT heartbeat_seq FROM leases WHERE tenant=? AND project=? AND run_id=?",
                 (*worker.scope.keys(), run_id),
@@ -697,7 +735,8 @@ class Runtime:
                 raise Conflict("HEARTBEAT_SEQUENCE", "Heartbeat sequence must increase")
             expiry = self.store.clock() + 120
             db.execute(
-                "UPDATE leases SET expires=?,heartbeat_seq=? WHERE tenant=? AND project=? AND run_id=?",
+                "UPDATE leases SET expires=?,heartbeat_seq=? "
+                "WHERE tenant=? AND project=? AND run_id=?",
                 (expiry, sequence, *worker.scope.keys(), run_id),
             )
         return {"expires_at_epoch": expiry, "fencing_token": fence}
@@ -712,8 +751,8 @@ class Runtime:
         message_id: str,
         sequence: int,
         event_type: str,
-        payload: dict,
-    ) -> dict:
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
         worker.require("worker.execute")
         if event_type not in WORKER_EVENTS:
             raise RuntimeFault(
@@ -726,7 +765,8 @@ class Runtime:
         )
         with self.store.tx() as db:
             prior = db.execute(
-                "SELECT digest,result FROM inbox WHERE tenant=? AND project=? AND producer=? AND message_id=?",
+                "SELECT digest,result FROM inbox "
+                "WHERE tenant=? AND project=? AND producer=? AND message_id=?",
                 (*worker.scope.keys(), worker.subject_id, message_id),
             ).fetchone()
             if prior:
@@ -734,7 +774,8 @@ class Runtime:
                     raise Conflict(
                         "INBOX_CONFLICT", "Worker event ID was reused for different content"
                     )
-                return json.loads(prior[1])
+                cached: dict[str, Any] = json.loads(prior[1])
+                return cached
             self._check_lease(db, worker.scope, run_id, worker.subject_id, lease_id, fence)
             run = self.store.head(worker.scope, "run", run_id, db=db)
             if sequence != run["data"]["worker_seq"] + 1:
@@ -776,11 +817,11 @@ class Runtime:
         run_id: str,
         lease_id: str,
         fence: int,
-        outputs: dict[str, dict],
+        outputs: dict[str, dict[str, Any]],
         *,
-        usage: dict,
+        usage: dict[str, Any],
         process_stopped: bool,
-    ) -> dict:
+    ) -> dict[str, Any]:
         # Called by a qualified driver collector, not directly by an HTTP worker event.
         worker.require("worker.execute")
         if process_stopped is not True:
@@ -803,7 +844,8 @@ class Runtime:
             if any(ports[k]["media_type"] != a["media_type"] for k, a in outputs.items()):
                 raise Hold("OUTPUT_TYPE", "Output media type differs from graph")
             pending = db.execute(
-                "SELECT id FROM heads WHERE tenant=? AND project=? AND kind='effect' AND state IN ('prepared','dispatched','unknown')",
+                "SELECT id FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+                "AND state IN ('prepared','dispatched','unknown')",
                 worker.scope.keys(),
             ).fetchall()
             # Filter by run; unrelated projects/runs do not block each other.
@@ -817,7 +859,9 @@ class Runtime:
                 "G-09": Observation.check(True, "Current lease and execution revision"),
                 "G-11": Observation.check(True, "Actual named output bytes verified"),
             }
-            work_state, gates = self.machines.transition("work", work["state"], "output_ready", obs)
+            work_state, _gates = self.machines.transition(
+                "work", work["state"], "output_ready", obs
+            )
             # Run command name is defined by the approved state machine, not invented.
             command = next(
                 t["command"]
@@ -846,13 +890,16 @@ class Runtime:
             )
         return {"status": "verifying", "run_id": run_id}
 
-    def reap(self, scope: Scope, process_probe) -> list[dict]:
+    def reap(
+        self, scope: Scope, process_probe: Callable[[str, str], object]
+    ) -> list[dict[str, Any]]:
         self.store.assert_outside_tx()
         with self.store._lock:
             stale = [
                 dict(r)
                 for r in self.store.conn.execute(
-                    "SELECT * FROM leases WHERE tenant=? AND project=? AND (epoch<>? OR expires<=?)",
+                    "SELECT * FROM leases "
+                    "WHERE tenant=? AND project=? AND (epoch<>? OR expires<=?)",
                     (*scope.keys(), self.store.epoch, self.store.clock()),
                 ).fetchall()
             ]
@@ -865,7 +912,8 @@ class Runtime:
                     continue
                 unknown = []
                 effects = db.execute(
-                    "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='effect' AND state IN ('dispatched','unknown')",
+                    "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+                    "AND state IN ('dispatched','unknown')",
                     scope.keys(),
                 ).fetchall()
                 unknown = [

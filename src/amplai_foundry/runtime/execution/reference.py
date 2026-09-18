@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 from ...agent_drivers.ports import DriverRegistry, RecipePort
 from ...agent_drivers.protocol import SessionJournal
@@ -15,7 +16,7 @@ from ..reference import ReferenceDeployment
 from .worker import WorkCoordinator
 
 
-def run_execution_reference(root: Path) -> dict:
+def run_execution_reference(root: Path) -> dict[str, Any]:
     with ReferenceDeployment(root) as d:
         p = d.prepare(two_apps=True)
         registry = DriverRegistry(d.store)
@@ -26,7 +27,7 @@ def run_execution_reference(root: Path) -> dict:
         claims = [d.runtime.claim(d.worker, goal_id=p["goal_id"]) for _ in range(2)]
         base = workspaces.empty_snapshot(d.scope)
 
-        def execute(dispatch):
+        def execute(dispatch: dict[str, Any]) -> dict[str, Any]:
             recipe = p["recipes"][dispatch["node"]["work_id"]]
             return coordinator.execute(
                 d.worker,
@@ -53,7 +54,11 @@ def run_execution_reference(root: Path) -> dict:
                 }
             )
 
-        def integration(contract, graph, outputs):
+        def integration(
+            contract: dict[str, Any],
+            graph: dict[str, Any],
+            outputs: dict[str, dict[str, dict[str, Any]]],
+        ) -> VerificationObservation:
             values = [
                 json.loads(d.artifacts.read(d.scope, artifact))
                 for ports in outputs.values()
