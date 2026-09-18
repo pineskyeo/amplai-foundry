@@ -39,8 +39,9 @@ def executed_cases(junit_paths: list[Path]) -> dict[str, dict[str, Any]]:
 def catalog_mentions(test_roots: list[Path]) -> dict[str, list[tuple[str, str]]]:
     """catalog id → [(module classname, test function)].
 
-    Only ids written inside a test function body count. A file docstring that lists
-    ids is prose and attributes nothing (design/21 §4: a mention is not evidence).
+    Only ids carried by a test function count: written inside its body, or encoded in
+    its name (``test_t003_...`` names T-003). A file docstring that lists ids is prose
+    and attributes nothing (design/21 §4: a mention is not evidence).
     """
     mentions: dict[str, list[tuple[str, str]]] = {}
     for root in test_roots:
@@ -50,8 +51,11 @@ def catalog_mentions(test_roots: list[Path]) -> dict[str, list[tuple[str, str]]]
             depth = 3 if "e2e" in parts else 2
             module = ".".join(parts[-depth:])
             for match in re.finditer(r"\ndef (test_\w+)\(.*?(?=\ndef |\Z)", text, re.S):
-                for tid in set(CATALOG_ID.findall(match.group(0))):
-                    mentions.setdefault(tid, []).append((module, match.group(1)))
+                func = match.group(1)
+                ids = set(CATALOG_ID.findall(match.group(0)))
+                ids.update(f"T-{num}" for num in re.findall(r"(?:^|_)t(\d{3})(?=_)", func))
+                for tid in ids:
+                    mentions.setdefault(tid, []).append((module, func))
     return mentions
 
 
@@ -87,7 +91,13 @@ class ClosureLedger:
 
     def build(self, junit_paths: list[Path], *, external_pending: list[str]) -> dict[str, Any]:
         executed = executed_cases(junit_paths)
-        mentions = catalog_mentions([self.root / "tests" / "v3", self.root / "tests" / "e2e"])
+        mentions = catalog_mentions(
+            [
+                self.root / "tests" / "v3",
+                self.root / "tests" / "e2e",
+                self.root / "tests" / "runtime_storage",
+            ]
+        )
         tests: dict[str, dict[str, Any]] = {}
         for tid, spec in self.catalog.items():
             tied = []

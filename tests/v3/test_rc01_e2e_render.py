@@ -19,7 +19,7 @@ from amplai_foundry.verification.runtime.render_acceptance import (
     sha256_file,
 )
 
-REPO = Path(__file__).resolve().parents[3]
+REPO = Path(__file__).resolve().parents[2]
 VIEWS = [
     "specs/012-portable-document-lifecycle/html-developer-r6",
     "specs/012-portable-document-lifecycle/html-operator-r6",

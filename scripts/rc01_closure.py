@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+"""Rebuild release/rc01-conformance-closure.json and eval/test-catalog-status.json.
+
+Run after `pytest tests/v3 tests/runtime_storage --junitxml=specs/013-amplai-v3/junit/rc01-v3-e2e.xml`.
+The ledger only ties catalog ids to cases that junit file actually executed (design/21 §4).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from amplai_foundry.distribution.closure import ClosureLedger
+
+REPO = Path(__file__).resolve().parents[1]
+JUNIT = REPO / "specs" / "013-amplai-v3" / "junit" / "rc01-v3-e2e.xml"
+LEDGER = REPO / "release" / "rc01-conformance-closure.json"
+STATUS = REPO / "eval" / "test-catalog-status.json"
+
+
+def main() -> None:
+    evidence = json.loads(
+        (REPO / "specs" / "013-amplai-v3" / "dev03-delivery-evidence.json").read_text()
+    )
+    ledger = ClosureLedger(REPO).build(
+        [JUNIT], external_pending=evidence["external_qualification_pending"]
+    )
+    ClosureLedger.write(ledger, LEDGER)
+    view = {
+        "schema_version": ledger["schema_version"],
+        "source_catalog": "design-reference/eval/test-catalog.json",
+        "implementation_revision": ledger["implementation_revision"],
+        "junit_reports": ledger["junit_reports"],
+        "status_values": {
+            "local_pass": "executed locally on this tree; not live qualification",
+            "not_run": "no executed evidence names this id",
+            "fail": "executed and failed",
+        },
+        "tests": {
+            tid: {"status": v["status"], "cases": len(v["executed_cases"])}
+            for tid, v in ledger["tests"].items()
+        },
+    }
+    STATUS.write_text(json.dumps(view, ensure_ascii=False, indent=2) + "\n")
+    print(json.dumps(ledger["summary"], ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
