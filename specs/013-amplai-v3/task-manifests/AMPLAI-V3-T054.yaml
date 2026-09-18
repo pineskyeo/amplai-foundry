@@ -3,7 +3,7 @@
   "id": "AMPLAI-V3-T054",
   "title": "V3-054 Local/onprem/hybrid/offline/legacy profiles",
   "type": "feature",
-  "status": "ready",
+  "status": "done",
   "goal": {
     "outcome": "Local/onprem/hybrid/offline/legacy profiles",
     "user_value": "Intent→Verified Work 파이프라인의 Operations Engineer 책임 영역이 evidence 로 닫힌다."
@@ -293,10 +293,14 @@
     ]
   },
   "completion": {
-    "all_acceptance_passed": false,
-    "required_evidence_present": false,
-    "completed_at": "",
-    "evidence_paths": []
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-18T10:41:18Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S15",
+      ".specify/eval/verifier-last.json",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
+    ]
   },
   "handoff": {
     "expected_changes": [

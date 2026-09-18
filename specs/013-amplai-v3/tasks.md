@@ -21,7 +21,7 @@ Goal:
 - DEV-03 가 들여온 ruff 167 / mypy 1216 오류를 의미 변경 없이 0 으로 만들고 v2 verifier 가 PASS 한다
 
 Tasks:
-- [ ] AMPLAI-V3-T000 GATE DEV-03 소스의 ruff/mypy strict 게이트 닫기
+- [x] AMPLAI-V3-T000 GATE DEV-03 소스의 ruff/mypy strict 게이트 닫기
   - manifest: `task-manifests/AMPLAI-V3-T000.yaml`
   - files: `src/amplai_foundry/`, `tests/v3/`, `pyproject.toml`
 
@@ -44,7 +44,7 @@ Goal:
 - Unit of work, idempotency, inbox/outbox
 
 Tasks:
-- [ ] AMPLAI-V3-T007 V3-007 Unit of work, idempotency, inbox/outbox
+- [x] AMPLAI-V3-T007 V3-007 Unit of work, idempotency, inbox/outbox
   - manifest: `task-manifests/AMPLAI-V3-T007.yaml`
   - files: `src/amplai_foundry/runtime/storage/`, `tests/runtime_storage/`, `tests/v3/test_rc01_storage_uow.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
@@ -73,7 +73,7 @@ Goal:
 - Foundry read/context knowledge adapters
 
 Tasks:
-- [ ] AMPLAI-V3-T012 V3-012 Foundry read/context knowledge adapters
+- [x] AMPLAI-V3-T012 V3-012 Foundry read/context knowledge adapters
   - manifest: `task-manifests/AMPLAI-V3-T012.yaml`
   - files: `src/amplai_foundry/knowledge_runtime/`, `tests/v3/test_rc01_knowledge_adapters.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
@@ -100,7 +100,7 @@ Goal:
 - Readiness and context completeness validator
 
 Tasks:
-- [ ] AMPLAI-V3-T013 V3-013 Readiness and context completeness validator
+- [x] AMPLAI-V3-T013 V3-013 Readiness and context completeness validator
   - manifest: `task-manifests/AMPLAI-V3-T013.yaml`
   - depends on: AMPLAI-V3-T012
   - files: `src/amplai_foundry/knowledge_runtime/readiness.py`, `tests/v3/test_rc01_readiness_validator.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -129,7 +129,7 @@ Goal:
 - Repo facts resolver and source provenance
 
 Tasks:
-- [ ] AMPLAI-V3-T014 V3-014 Repo facts resolver and source provenance
+- [x] AMPLAI-V3-T014 V3-014 Repo facts resolver and source provenance
   - manifest: `task-manifests/AMPLAI-V3-T014.yaml`
   - depends on: AMPLAI-V3-T012, AMPLAI-V3-T013
   - files: `src/amplai_foundry/knowledge_runtime/repo_facts.py`, `tests/v3/test_rc01_repo_facts.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -161,7 +161,7 @@ Goal:
 - Versioned capability pack registry
 
 Tasks:
-- [ ] AMPLAI-V3-T034 V3-034 Versioned capability pack registry
+- [x] AMPLAI-V3-T034 V3-034 Versioned capability pack registry
   - manifest: `task-manifests/AMPLAI-V3-T034.yaml`
   - files: `packs/`, `src/amplai_foundry/packs/`, `tests/v3/test_rc01_pack_registry.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
@@ -190,7 +190,7 @@ Goal:
 - Core work/design host surface and SpecKit internalization
 
 Tasks:
-- [ ] AMPLAI-V3-T035 V3-035 Core work/design host surface and SpecKit internalization
+- [x] AMPLAI-V3-T035 V3-035 Core work/design host surface and SpecKit internalization
   - manifest: `task-manifests/AMPLAI-V3-T035.yaml`
   - depends on: AMPLAI-V3-T034
   - files: `tools/amplai-loop-kit/payload/.agents/skills/`, `packs/spec/`, `tests/v3/test_rc01_host_surface.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -221,7 +221,7 @@ Goal:
 - Software/review/debug capability pack
 
 Tasks:
-- [ ] AMPLAI-V3-T036 V3-036 Software/review/debug capability pack
+- [x] AMPLAI-V3-T036 V3-036 Software/review/debug capability pack
   - manifest: `task-manifests/AMPLAI-V3-T036.yaml`
   - depends on: AMPLAI-V3-T034
   - files: `packs/software/`, `tests/v3/test_rc01_pack_software.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -252,7 +252,7 @@ Goal:
 - Frontend functional/visual/UX pack
 
 Tasks:
-- [ ] AMPLAI-V3-T037 V3-037 Frontend functional/visual/UX pack
+- [x] AMPLAI-V3-T037 V3-037 Frontend functional/visual/UX pack
   - manifest: `task-manifests/AMPLAI-V3-T037.yaml`
   - depends on: AMPLAI-V3-T034
   - files: `packs/frontend/`, `tests/v3/test_rc01_pack_frontend.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -282,7 +282,7 @@ Goal:
 - Document lifecycle/render/golden pack
 
 Tasks:
-- [ ] AMPLAI-V3-T038 V3-038 Document lifecycle/render/golden pack
+- [x] AMPLAI-V3-T038 V3-038 Document lifecycle/render/golden pack
   - manifest: `task-manifests/AMPLAI-V3-T038.yaml`
   - depends on: AMPLAI-V3-T034
   - files: `packs/documents/`, `tests/v3/test_rc01_pack_documents.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -313,7 +313,7 @@ Goal:
 - Research/ontology/domain pack adapters
 
 Tasks:
-- [ ] AMPLAI-V3-T039 V3-039 Research/ontology/domain pack adapters
+- [x] AMPLAI-V3-T039 V3-039 Research/ontology/domain pack adapters
   - manifest: `task-manifests/AMPLAI-V3-T039.yaml`
   - depends on: AMPLAI-V3-T012, AMPLAI-V3-T013, AMPLAI-V3-T014, AMPLAI-V3-T034
   - files: `packs/research/`, `packs/ontology/`, `packs/semiconductor-dc/`, `tests/v3/test_rc01_pack_research_ontology.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -347,7 +347,7 @@ Goal:
 - Hermes intake/status/approval adapter
 
 Tasks:
-- [ ] AMPLAI-V3-T049 V3-049 Hermes intake/status/approval adapter
+- [x] AMPLAI-V3-T049 V3-049 Hermes intake/status/approval adapter
   - manifest: `task-manifests/AMPLAI-V3-T049.yaml`
   - files: `integrations/hermes/`, `tests/v3/test_rc01_hermes_adapter.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
@@ -376,7 +376,7 @@ Goal:
 - Kit installer v3 plan/dry-run/apply/receipt
 
 Tasks:
-- [ ] AMPLAI-V3-T050 V3-050 Kit installer v3 plan/dry-run/apply/receipt
+- [x] AMPLAI-V3-T050 V3-050 Kit installer v3 plan/dry-run/apply/receipt
   - manifest: `task-manifests/AMPLAI-V3-T050.yaml`
   - depends on: AMPLAI-V3-T034, AMPLAI-V3-T035
   - files: `tools/amplai-loop-kit/`, `tests/v3/test_rc01_kit_installer_v3.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -407,7 +407,7 @@ Goal:
 - Runtime/contract V2 import without authority upgrade
 
 Tasks:
-- [ ] AMPLAI-V3-T051 V3-051 Runtime/contract V2 import without authority upgrade
+- [x] AMPLAI-V3-T051 V3-051 Runtime/contract V2 import without authority upgrade
   - manifest: `task-manifests/AMPLAI-V3-T051.yaml`
   - files: `src/amplai_foundry/migration/`, `tests/v3/test_rc01_v2_import.py`, `specs/013-amplai-v3/`, `pyproject.toml`
 
@@ -436,7 +436,7 @@ Goal:
 - Evidence hot/cold archive and safe gardening
 
 Tasks:
-- [ ] AMPLAI-V3-T052 V3-052 Evidence hot/cold archive and safe gardening
+- [x] AMPLAI-V3-T052 V3-052 Evidence hot/cold archive and safe gardening
   - manifest: `task-manifests/AMPLAI-V3-T052.yaml`
   - depends on: AMPLAI-V3-T012, AMPLAI-V3-T013, AMPLAI-V3-T038, AMPLAI-V3-T050
   - files: `src/amplai_foundry/migration/archive/`, `specs/`, `tests/v3/test_rc01_evidence_archive.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -470,7 +470,7 @@ Goal:
 - Local/onprem/hybrid/offline/legacy profiles
 
 Tasks:
-- [ ] AMPLAI-V3-T054 V3-054 Local/onprem/hybrid/offline/legacy profiles
+- [x] AMPLAI-V3-T054 V3-054 Local/onprem/hybrid/offline/legacy profiles
   - manifest: `task-manifests/AMPLAI-V3-T054.yaml`
   - depends on: AMPLAI-V3-T050
   - files: `deployment/`, `tools/amplai-loop-kit/`, `tests/v3/test_rc01_deployment_profiles.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -501,7 +501,7 @@ Goal:
 - Cross-app end-to-end goal/steer/replan demo
 
 Tasks:
-- [ ] AMPLAI-V3-T057 V3-057 Cross-app end-to-end goal/steer/replan demo
+- [x] AMPLAI-V3-T057 V3-057 Cross-app end-to-end goal/steer/replan demo
   - manifest: `task-manifests/AMPLAI-V3-T057.yaml`
   - depends on: AMPLAI-V3-T054
   - files: `tests/e2e/cross_app/`, `tests/v3/test_rc01_e2e_cross_app.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -532,7 +532,7 @@ Goal:
 - Frontend/docs actual-render acceptance suite
 
 Tasks:
-- [ ] AMPLAI-V3-T059 V3-059 Frontend/docs actual-render acceptance suite
+- [x] AMPLAI-V3-T059 V3-059 Frontend/docs actual-render acceptance suite
   - manifest: `task-manifests/AMPLAI-V3-T059.yaml`
   - depends on: AMPLAI-V3-T037, AMPLAI-V3-T038, AMPLAI-V3-T054
   - files: `tests/e2e/artifacts/`, `tests/v3/test_rc01_e2e_render.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -564,7 +564,7 @@ Goal:
 - Legacy retirement candidates and exact deletion proposal
 
 Tasks:
-- [ ] AMPLAI-V3-T060 V3-060 Legacy retirement candidates and exact deletion proposal
+- [x] AMPLAI-V3-T060 V3-060 Legacy retirement candidates and exact deletion proposal
   - manifest: `task-manifests/AMPLAI-V3-T060.yaml`
   - depends on: AMPLAI-V3-T050, AMPLAI-V3-T051, AMPLAI-V3-T052, AMPLAI-V3-T057, AMPLAI-V3-T059
   - files: `migration/`, `src/amplai_foundry/governance/`, `tests/v3/test_rc01_legacy_retirement.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -598,7 +598,7 @@ Goal:
 - Final V3 conformance and requirement evidence closure
 
 Tasks:
-- [ ] AMPLAI-V3-T061 V3-061 Final V3 conformance and requirement evidence closure
+- [x] AMPLAI-V3-T061 V3-061 Final V3 conformance and requirement evidence closure
   - manifest: `task-manifests/AMPLAI-V3-T061.yaml`
   - depends on: AMPLAI-V3-T054, AMPLAI-V3-T057, AMPLAI-V3-T059, AMPLAI-V3-T060
   - files: `release/`, `eval/`, `tests/v3/test_rc01_conformance_closure.py`, `specs/013-amplai-v3/`, `pyproject.toml`
@@ -632,7 +632,7 @@ Goal:
 - Authorized cutover and independent release receipts
 
 Tasks:
-- [ ] AMPLAI-V3-T062 V3-062 Authorized cutover and independent release receipts
+- [x] AMPLAI-V3-T062 V3-062 Authorized cutover and independent release receipts
   - manifest: `task-manifests/AMPLAI-V3-T062.yaml`
   - depends on: AMPLAI-V3-T049, AMPLAI-V3-T050, AMPLAI-V3-T051, AMPLAI-V3-T054, AMPLAI-V3-T061
   - files: `deployment/`, `release/`, `tests/v3/test_rc01_cutover.py`, `specs/013-amplai-v3/`, `pyproject.toml`

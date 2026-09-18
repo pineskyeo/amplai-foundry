@@ -41,7 +41,7 @@
     {
       "id": "AMPLAI-V3-T000",
       "title": "GATE DEV-03 소스의 ruff/mypy strict 게이트 닫기",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "GATE-001",
@@ -51,7 +51,7 @@
     {
       "id": "AMPLAI-V3-T007",
       "title": "V3-007 Unit of work, idempotency, inbox/outbox",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "REQ-09"
@@ -60,7 +60,7 @@
     {
       "id": "AMPLAI-V3-T012",
       "title": "V3-012 Foundry read/context knowledge adapters",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "REQ-13",
@@ -70,7 +70,7 @@
     {
       "id": "AMPLAI-V3-T013",
       "title": "V3-013 Readiness and context completeness validator",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T012"
       ],
@@ -82,7 +82,7 @@
     {
       "id": "AMPLAI-V3-T014",
       "title": "V3-014 Repo facts resolver and source provenance",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T012",
         "AMPLAI-V3-T013"
@@ -95,7 +95,7 @@
     {
       "id": "AMPLAI-V3-T034",
       "title": "V3-034 Versioned capability pack registry",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "REQ-15",
@@ -105,7 +105,7 @@
     {
       "id": "AMPLAI-V3-T035",
       "title": "V3-035 Core work/design host surface and SpecKit internalization",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T034"
       ],
@@ -116,7 +116,7 @@
     {
       "id": "AMPLAI-V3-T036",
       "title": "V3-036 Software/review/debug capability pack",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T034"
       ],
@@ -127,7 +127,7 @@
     {
       "id": "AMPLAI-V3-T037",
       "title": "V3-037 Frontend functional/visual/UX pack",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T034"
       ],
@@ -138,7 +138,7 @@
     {
       "id": "AMPLAI-V3-T038",
       "title": "V3-038 Document lifecycle/render/golden pack",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T034"
       ],
@@ -149,7 +149,7 @@
     {
       "id": "AMPLAI-V3-T039",
       "title": "V3-039 Research/ontology/domain pack adapters",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T012",
         "AMPLAI-V3-T013",
@@ -163,7 +163,7 @@
     {
       "id": "AMPLAI-V3-T049",
       "title": "V3-049 Hermes intake/status/approval adapter",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "REQ-24",
@@ -173,7 +173,7 @@
     {
       "id": "AMPLAI-V3-T050",
       "title": "V3-050 Kit installer v3 plan/dry-run/apply/receipt",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T034",
         "AMPLAI-V3-T035"
@@ -188,7 +188,7 @@
     {
       "id": "AMPLAI-V3-T051",
       "title": "V3-051 Runtime/contract V2 import without authority upgrade",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "REQ-02",
@@ -199,7 +199,7 @@
     {
       "id": "AMPLAI-V3-T052",
       "title": "V3-052 Evidence hot/cold archive and safe gardening",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T012",
         "AMPLAI-V3-T013",
@@ -213,7 +213,7 @@
     {
       "id": "AMPLAI-V3-T054",
       "title": "V3-054 Local/onprem/hybrid/offline/legacy profiles",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T050"
       ],
@@ -224,7 +224,7 @@
     {
       "id": "AMPLAI-V3-T057",
       "title": "V3-057 Cross-app end-to-end goal/steer/replan demo",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T054"
       ],
@@ -235,7 +235,7 @@
     {
       "id": "AMPLAI-V3-T059",
       "title": "V3-059 Frontend/docs actual-render acceptance suite",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T037",
         "AMPLAI-V3-T038",
@@ -250,7 +250,7 @@
     {
       "id": "AMPLAI-V3-T060",
       "title": "V3-060 Legacy retirement candidates and exact deletion proposal",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T050",
         "AMPLAI-V3-T051",
@@ -266,7 +266,7 @@
     {
       "id": "AMPLAI-V3-T061",
       "title": "V3-061 Final V3 conformance and requirement evidence closure",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T054",
         "AMPLAI-V3-T057",
@@ -282,7 +282,7 @@
     {
       "id": "AMPLAI-V3-T062",
       "title": "V3-062 Authorized cutover and independent release receipts",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3-T049",
         "AMPLAI-V3-T050",

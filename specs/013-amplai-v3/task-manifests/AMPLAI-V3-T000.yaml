@@ -3,7 +3,7 @@
   "id": "AMPLAI-V3-T000",
   "title": "GATE DEV-03 소스의 ruff/mypy strict 게이트 닫기",
   "type": "chore",
-  "status": "in_progress",
+  "status": "done",
   "goal": {
     "outcome": "DEV-03 가 들여온 ruff 167 / mypy 1216 오류를 의미 변경 없이 0 으로 만들고 v2 verifier 가 PASS 한다",
     "user_value": "이후 모든 slice 가 프로젝트 완료 게이트 위에서 돈다"
@@ -158,10 +158,14 @@
     ]
   },
   "completion": {
-    "all_acceptance_passed": false,
-    "required_evidence_present": false,
-    "completed_at": "",
-    "evidence_paths": []
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-18T10:52:24Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S00",
+      ".specify/eval/verifier-last.json",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
+    ]
   },
   "handoff": {
     "expected_changes": [
