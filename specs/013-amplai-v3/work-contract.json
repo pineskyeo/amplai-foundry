@@ -1,0 +1,183 @@
+{
+  "schema_version": "2.0",
+  "id": "AMPLAI-V3-RC01",
+  "title": "AMPLAI V3 RC-01 — Integration & Migration",
+  "goal": "DEV-03 (3.0.0.dev3) snapshot 을 이 저장소의 품질 게이트에 통과시키고, 승인 설계(AMPLAI V3 Design 1.0, design-reference/) 의 62 task 중 미착수 20 task 를 wave 의존 순서로 구현·검증하여 Intent→Verified Work 파이프라인이 로컬 실행 evidence 로 닫히는 RC 후보를 만든다. 실제 provider/컨테이너/물리 holdout 자격 인증과 production cutover 는 별도 human gate 뒤에 둔다.",
+  "source": [
+    "spec.md",
+    "plan.md",
+    "../../design-reference/implementation/tasks.yaml",
+    "../../design-reference/implementation/requirements-traceability.json",
+    "../../design-reference/FULL_DESIGN.md",
+    "../../docs/v3/DEV03_OBSERVATORY_META.ko.md",
+    "dev03-delivery-evidence.json"
+  ],
+  "work_type": "architecture",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "src/amplai_foundry/runtime/",
+      "src/amplai_foundry/evaluation/",
+      "src/amplai_foundry/meta_harness/",
+      "src/amplai_foundry/knowledge_runtime/",
+      "src/amplai_foundry/packs/",
+      "src/amplai_foundry/migration/",
+      "src/amplai_foundry/distribution/",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/sandbox/",
+      "src/amplai_foundry/tool_broker/",
+      "src/amplai_foundry/control_plane/",
+      "src/amplai_foundry/verification/runtime/",
+      "src/amplai_foundry/governance/",
+      "tests/v3/",
+      "tests/e2e/",
+      "contracts/",
+      "packs/",
+      "integrations/hermes/",
+      "tools/amplai-loop-kit/",
+      "deployment/",
+      "migration/",
+      "release/",
+      "eval/",
+      "docs/v3/",
+      "pyproject.toml",
+      "specs/013-amplai-v3/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경. 충돌은 DESIGN_CHANGE_PROPOSAL 로 기록)",
+      "Canonical Vault 와 governed knowledge mutation",
+      "Production configuration, live provider account, paid API call",
+      "Git push/merge/release/deploy",
+      "실제 Slack/Hermes workspace 활성화",
+      "다른 저장소 (synapse, cortex) 의 실제 설치·변경"
+    ]
+  },
+  "non_goals": [
+    "Live Claude/Codex/OpenCode/Responses provider qualification (credential 필요, EXTERNAL_QUALIFICATION_PENDING 9건)",
+    "docker/podman 실제 격리, 물리 holdout 서비스 분리",
+    "모델 가중치 변경, 무인 production 제어",
+    "V2 API 의 파괴적 변경, 기존 Foundry governance 약화",
+    "V3 FINAL 선언 — 이 Work 의 산출물은 RC 후보이며 cutover 는 V3-062 human gate 뒤",
+    "human gate 매핑: destructive_change=V3-060 실제 삭제, production_operation=V3-062 cutover 및 external qualification, git_publish=push/PR/merge/release"
+  ],
+  "acceptance": [
+    {
+      "id": "GATE-001",
+      "statement": "DEV-03 소스가 이 저장소의 v2 verifier profile (ruff, ruff-format, mypy strict, pytest 전체, schema, vault-lint, project-pack, kit-seal, loop-runtime-doctor) 을 통과한다. HEAD 기준 0 이던 lint/type 오류가 0 으로 돌아온다.",
+      "evidence": [
+        ".ai-team/verifiers/run.py --profile v2 PASS + environment fingerprint",
+        "tests/v3 477 + 전체 regression 2971 이상 passed"
+      ]
+    },
+    {
+      "id": "GATE-002",
+      "statement": "DEV-03 가 도입한 477 test 와 기존 2971 test 를 모두 유지한다. 삭제·skip 으로 통과시키지 않는다.",
+      "evidence": [
+        "pytest junit 에서 test 수 비감소",
+        "evidence-trace 에 매 slice 의 PASS 명령과 exit code"
+      ]
+    },
+    {
+      "id": "W1-STORAGE",
+      "statement": "V3-007: Runtime Store 가 transactional unit-of-work, idempotency(key+payload digest → 같은 결과, 다른 payload → IDEMPOTENCY_CONFLICT), inbox/outbox, bounded dispatch journal 을 design/09 §4 의 원자 경계대로 제공한다.",
+      "evidence": [
+        "tests/v3 에 T-099~T-106 대응 positive/negative case",
+        "crash-between-commit-and-ack 재전달 시 중복 미적용 test"
+      ]
+    },
+    {
+      "id": "W2-KNOWLEDGE",
+      "statement": "V3-012/013/014: knowledge_runtime 이 Foundry 8 kind 를 보존한 read/context adapter, 8 readiness 항목 validator(contradiction → HOLD), scoped repo facts resolver(source versioning, 외부 implicit authority 없음) 를 제공한다.",
+      "evidence": [
+        "tests/v3 에 T-015~T-020, T-073~T-078 대응 case",
+        "governance 보호 경로에서 proposer 가 canonical 을 직접 쓰지 못하는 negative case"
+      ]
+    },
+    {
+      "id": "W3-PACKS",
+      "statement": "V3-034~039: capability-pack.schema.json 기반 signed pack registry, work/design 두 public entry 와 SpecKit 내재화 map, software/frontend/documents/research/ontology pack 의 interface·validation profile 이 설치/권한/호출/결과수집 contract conformance 로 검증된다. 모든 domain pack 엔진 완성을 주장하지 않는다.",
+      "evidence": [
+        "packs/*/PACK.json schema validation + dependency cycle/unknown publisher/elevated permission 설치 전 실패 test",
+        "pack 이 path 문자열만으로 tool 등록 불가 negative case"
+      ]
+    },
+    {
+      "id": "W3-HERMES",
+      "statement": "V3-049: integrations/hermes 가 authenticated identity mapping, deduped intake, read projection 을 제공하고 approval 은 authority 경로만 통과한다.",
+      "evidence": [
+        "tests/v3 T-087~T-091 대응 case",
+        "Hermes 가 activation authority 를 갖지 못하는 negative case"
+      ]
+    },
+    {
+      "id": "W4-DISTRIBUTION",
+      "statement": "V3-050/051/052/054: Kit installer v3 plan/dry-run/apply/receipt, V2 runtime/contract import without authority upgrade, evidence hot/cold archive (report-only 기본), local/onprem/hybrid/offline/legacy profile 이 activation prerequisite 와 no-cloud-fallback 을 지킨다.",
+      "evidence": [
+        "tests/v3 T-092~T-106 대응 case",
+        "expected_old_digest 불일치 시 conflict 후 중지, override 보존, rollback receipt test"
+      ]
+    },
+    {
+      "id": "W4-E2E",
+      "statement": "V3-057/059: cross-app end-to-end (rough intent → 두 sandbox app → integration evidence, mid-steer old worker fencing) 와 frontend/docs actual-render acceptance suite 가 로컬 실행으로 재현된다.",
+      "evidence": [
+        "tests/e2e/cross_app, tests/e2e/artifacts",
+        "재실행 시 동일 artifact digest"
+      ]
+    },
+    {
+      "id": "W5-CLOSURE",
+      "statement": "V3-060/061/062: 레거시 retirement 후보와 정확한 삭제 제안(자동 삭제 없음), REQ/task/test evidence closure (design check 를 runtime pass 로 세지 않음), 그리고 cutover 는 human-approved release set 없이는 실행되지 않는 fail-closed 경계를 갖는다.",
+      "evidence": [
+        "release/ 와 eval/ 의 traceability ledger",
+        "V3-062 는 human gate 미승인 상태에서 HOLD 를 반환하는 test"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "Live provider/컨테이너/holdout 자격은 NOT PASS 로 남긴다 (EXTERNAL_QUALIFICATION_PENDING)",
+      "evolution-demo 는 산술 recipe 이며 LLM 품질 개선 근거가 아니다",
+      "design-reference/ 는 무변경. 설계 충돌은 DESIGN_CHANGE_PROPOSAL.md 에 기록"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "production_operation",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "Existing D-046: controller/V2 유지, semantic runtime 미이식",
+    "Existing D-053: canonical Kit 은 tools/amplai-loop-kit",
+    "Existing D-056: Kit Python 3.6 호환, implicit Store rebinding/supervisor activation 없음",
+    "AMPLAI V3 Design 1.0 (2026-09-15, design-reference/, CHECKSUMS digest 5f9e4044f9a1a174…) 은 승인 설계이며 이 Work 는 그것을 변경하지 않는다",
+    "DEV-03 parent: AMPLAI_V3_DEV_02_3e21c3b2 (sha256 3e21c3b2…), DEV-03 source tree sha256 e92b82d1…; 검증기 verify_delivery --patches passed (2026-09-18 로컬 재현)",
+    "2026-09-18 사용자 지시: '위 amplai V3 컨셉대로 실제로 만들어달라' — 로컬 브랜치 feat/013-amplai-v3 에서 구현·검증. push/merge/release 는 포함하지 않는다",
+    "품질 게이트 (ruff/mypy) 는 설정 완화가 아니라 주석·수정으로 닫는다. 예외는 FastAPI Depends immutable-call 선언과 optional visual extra (playwright/PIL) missing-import 뿐이며 둘 다 우리 코드 검사를 약화하지 않는다"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

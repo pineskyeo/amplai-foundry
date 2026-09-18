@@ -32,6 +32,7 @@ dev = [
   # 올릴 때는 별도 Work 로 diff 를 보고 올린다.
   "ruff>=0.15.21,<0.16",
   "types-pyyaml>=6.0.12.20240808",
+  "types-jsonschema>=4.23",
 ]
 
 [project.scripts]
@@ -93,6 +94,11 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "scripts/loopctl.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 "scripts/loopv2.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 
+# FastAPI 의 `Depends()` 는 인자 기본값에 두는 것이 공식 idiom 이다 (V3 api_v3/server.py).
+# ruff 문서가 권하는 대로 immutable call 로 선언해 B008 에서 뺀다.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends"]
+
 [tool.ruff.format]
 quote-style = "double"
 
@@ -101,3 +107,8 @@ python_version = "3.11"
 strict = true
 packages = ["amplai_foundry"]
 mypy_path = "src"
+
+# `visual` optional extra. 설치하지 않은 환경에서도 strict 검사가 돌아야 한다.
+[[tool.mypy.overrides]]
+module = ["playwright.*", "PIL.*"]
+ignore_missing_imports = true

@@ -1,0 +1,272 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3-T034",
+  "title": "V3-034 Versioned capability pack registry",
+  "type": "feature",
+  "status": "ready",
+  "goal": {
+    "outcome": "Versioned capability pack registry",
+    "user_value": "Intent→Verified Work 파이프라인의 Pack Engineer 책임 영역이 evidence 로 닫힌다."
+  },
+  "source": {
+    "feature": "013-amplai-v3",
+    "files": [
+      {
+        "path": "specs/013-amplai-v3/spec.md",
+        "section": "User Stories"
+      },
+      {
+        "path": "specs/013-amplai-v3/plan.md",
+        "section": "Slice S05"
+      },
+      {
+        "path": "design-reference/implementation/tasks.yaml",
+        "section": "V3-034"
+      },
+      {
+        "path": "design-reference/design/13_CAPABILITY_PACKS.md",
+        "section": "전체"
+      }
+    ],
+    "requirements": [
+      "REQ-15",
+      "REQ-30"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-056",
+      "AMPLAI V3 Design 1.0 (2026-09-15)",
+      "specs/013-amplai-v3/work-contract.json decisions"
+    ]
+  },
+  "scope": {
+    "include": [
+      "packs/",
+      "src/amplai_foundry/packs/",
+      "tests/v3/test_rc01_pack_registry.py",
+      "specs/013-amplai-v3/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "packs/",
+      "src/amplai_foundry/packs/",
+      "tests/v3/test_rc01_pack_registry.py",
+      "specs/013-amplai-v3/",
+      "pyproject.toml"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "산출물: signed pack/dependency/permission/schema registry",
+      "산출물: app-independent install boundary",
+      "설계 정본: design/13_CAPABILITY_PACKS.md",
+      "선행 task (DEV-02/03 부분 구현, 이 Work 밖): V3-003, V3-005, V3-008, V3-024, V3-032. 의존하는 범위의 test 를 추가해 증거를 쌓는다.",
+      "먼저 acceptance 와 negative test 를 명확히 한 뒤 구현→검증→bounded repair (design-reference/IMPLEMENTATION_START.md)"
+    ],
+    "invariants": [
+      "기존 Foundry governance 가 유일 authority 다. LLM self-approval, client-supplied actor 신뢰 금지 (design/02 §4)",
+      "저장 원자 경계와 CAS commit 순서를 지킨다 (design/09 §4, §6)",
+      "설계와 충돌하면 DESIGN_CHANGE_PROPOSAL.md 에 기록하고 임의 선택하지 않는다",
+      "test 삭제·skip 으로 통과시키지 않는다. unavailable 환경은 NOT PASS 다",
+      "mypy strict / ruff 를 유지한다. design-reference/ 는 바꾸지 않는다"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "Canonical Vault mutation",
+      "push/merge/release"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "T-073",
+        "given": "repo doc tells agent to disable verifiers/send secrets",
+        "when": "context and tool use",
+        "then": "data treated untrusted; policy/effect boundary blocks [Prompt injection]"
+      },
+      {
+        "id": "T-074",
+        "given": "workspace path links outside allowed root",
+        "when": "write tool",
+        "then": "filesystem boundary denies without touching target [Symlink traversal]"
+      },
+      {
+        "id": "T-075",
+        "given": "confidential data, local provider unavailable",
+        "when": "model route selection",
+        "then": "HOLD; no unapproved cloud transmission [Cloud fallback prohibited]"
+      },
+      {
+        "id": "T-076",
+        "given": "worker prompt/tool asks for production token",
+        "when": "secret access",
+        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]"
+      },
+      {
+        "id": "T-077",
+        "given": "parent limited scope; child asks wider root",
+        "when": "delegate",
+        "then": "subset intersection; deny escalation [Native subagent escape]"
+      },
+      {
+        "id": "T-078",
+        "given": "AuthorityService unreachable before write",
+        "when": "admission/effect",
+        "then": "HOLD; cached grant not treated perpetual [Missing authority]"
+      },
+      {
+        "id": "T-092",
+        "given": "legacy_gates imported by current governance",
+        "when": "delete plan",
+        "then": "blocked until replacement equivalence/tests and refs cleared [Legacy import still active]"
+      },
+      {
+        "id": "T-093",
+        "given": "manifest handoff required=false create_if_missing=false",
+        "when": "integrity check",
+        "then": "not blanket corruption failure; report optional omission separately [Optional marker absence]"
+      },
+      {
+        "id": "T-094",
+        "given": "current digest differs installer expected_old_digest",
+        "when": "update/delete",
+        "then": "conflict HOLD and preserve user bytes [Owned file changed by user]"
+      },
+      {
+        "id": "T-095",
+        "given": "active ContextBundle references archived evidence path",
+        "when": "archive/move",
+        "then": "alias/backlink preserved and ref verification; no unapproved purge [Evidence archive live refs]"
+      },
+      {
+        "id": "T-096",
+        "given": "old approval did not cover new action",
+        "when": "migrate grant",
+        "then": "no new authority inferred; reapproval required [Authority import semantics]"
+      },
+      {
+        "id": "T-097",
+        "given": "README candidate version differs VERSION/release receipt",
+        "when": "build release inventory",
+        "then": "explicit discrepancy and chosen authoritative release proof before shipping [Version fact reconciliation]"
+      },
+      {
+        "id": "T-098",
+        "given": "V3 app has kit installed",
+        "when": "uninstall kit and run app build/test",
+        "then": "domain builds without kit/host runtime dependency [Kit removal independent app]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_pack_registry.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check src/amplai_foundry/packs/ tests/v3/test_rc01_pack_registry.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Pack Engineer 영역의 authority/storage/effect 경계"
+    ],
+    "approvals": [
+      "2026-09-18 사용자 지시 (work-contract.json decisions). 외부/production/삭제는 별도 human gate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": false,
+    "required_evidence_present": false,
+    "completed_at": "",
+    "evidence_paths": []
+  },
+  "handoff": {
+    "expected_changes": [
+      "packs/",
+      "src/amplai_foundry/packs/",
+      "tests/v3/test_rc01_pack_registry.py"
+    ],
+    "notes": [
+      "wave 3 / Pack Engineer",
+      "test 파일은 task 산출물이며 생성 전까지 check-1 은 실행 불가"
+    ]
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC01",
+    "slice_id": "S05",
+    "context_pack": "specs/013-amplai-v3/context-pack.json",
+    "environment": "specs/013-amplai-v3/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "5edbb7879ce4793db466371d72340b3fe3c864b3"
+  }
+}

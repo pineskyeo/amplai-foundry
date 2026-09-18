@@ -1,0 +1,55 @@
+{
+  "captured_at": "2026-09-18T08:35:01Z",
+  "content_hash": "6af4c39b118c62b538e0b21d3f8980fa4fff9d138bbe78cc2bad3d26950302b4",
+  "fixture_refs": [
+    "testdata/"
+  ],
+  "git": {
+    "branch": "feat/013-amplai-v3",
+    "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+    "dirty": true
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python": "3.11.15",
+    "system": "Darwin"
+  },
+  "safe_environment": {},
+  "schema_version": "1.0",
+  "target_assumptions": {
+    "not_verified": [
+      "다른 OS·architecture 에서의 동작",
+      "pyproject 의 requires-python 아래 버전에서의 동작"
+    ],
+    "python_requirement": ">=3.11",
+    "verified_on": "macOS-26.2-arm64-arm-64bit",
+    "verifier_interpreter": [
+      ".venv/bin/python",
+      "python3"
+    ]
+  },
+  "tools": [
+    {
+      "command": "/Users/pinesky/workspace/amplai-foundry-013-amplai-v3/.venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": ".venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": "python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": "git --version",
+      "exit_code": 0,
+      "output": "git version 2.50.1 (Apple Git-155)"
+    }
+  ],
+  "work_id": "AMPLAI-V3-RC01"
+}
