@@ -1,0 +1,24 @@
+{
+  "schema_version": "3.0.0",
+  "pack_id": "semiconductor-dc",
+  "version": "3.0.0-rc1",
+  "publisher": "amplai",
+  "protocol_major": 3,
+  "entry_capabilities": [
+    "dc.context",
+    "dc.compatibility"
+  ],
+  "dependencies": [],
+  "permissions": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "model_requirements": [],
+  "context_refs": [],
+  "verifier_refs": [],
+  "eval_case_ids": [],
+  "license": "Proprietary"
+}

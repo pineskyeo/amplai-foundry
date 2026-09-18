@@ -1,0 +1,9 @@
+{
+  "case_id": "on-002",
+  "title": "SHACL optional",
+  "given": "host without SHACL adapter",
+  "when": "install pack",
+  "expected": "ontology-shacl reported disabled_unqualified, other definitions available",
+  "verifier_definition": "ontology-validate",
+  "split": "dev"
+}

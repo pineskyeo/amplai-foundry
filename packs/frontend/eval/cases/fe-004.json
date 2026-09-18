@@ -1,0 +1,9 @@
+{
+  "case_id": "fe-004",
+  "title": "Final artifact exact version",
+  "given": "release build",
+  "when": "digest mismatch",
+  "expected": "rerender required (T-061)",
+  "verifier_definition": "frontend-golden",
+  "split": "validation"
+}

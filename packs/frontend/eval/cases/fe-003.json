@@ -1,0 +1,9 @@
+{
+  "case_id": "fe-003",
+  "title": "SVG clipping and overlap",
+  "given": "hero SVG",
+  "when": "render at 390x844",
+  "expected": "visual findings with region; bounded repair then rerender (T-058)",
+  "verifier_definition": "frontend-render",
+  "split": "dev"
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "dc-001",
+  "title": "Kit removal independent app",
+  "given": "app with DC domain data",
+  "when": "uninstall kit",
+  "expected": "domain builds without kit/host runtime dependency (T-098)",
+  "verifier_definition": "dc-compatibility",
+  "split": "dev"
+}

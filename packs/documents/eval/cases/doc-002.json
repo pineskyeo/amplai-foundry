@@ -1,0 +1,9 @@
+{
+  "case_id": "doc-002",
+  "title": "Final artifact exact version",
+  "given": "PDF regenerated",
+  "when": "digest differs",
+  "expected": "rerender required (T-061)",
+  "verifier_definition": "documents-freshness",
+  "split": "dev"
+}

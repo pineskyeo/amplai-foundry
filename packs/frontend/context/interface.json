@@ -1,0 +1,34 @@
+{
+  "pack_id": "frontend",
+  "role": "functional UX, accessibility, responsive and visual checks with pinned browser renders",
+  "inputs": [
+    "user flows",
+    "reference direction",
+    "design tokens",
+    "target devices/viewports",
+    "accessibility target",
+    "non-goals",
+    "example content"
+  ],
+  "outputs": [
+    "screenshots per pinned viewport",
+    "interaction trace",
+    "console/network errors",
+    "overflow/clipping/overlap report",
+    "keyboard flow",
+    "empty/loading/error states",
+    "readability observations"
+  ],
+  "not_core": [
+    "automatic product approval from an aesthetics score",
+    "agent-updated golden baselines",
+    "screenshot existence as functional success"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "optional",
+    "when": "visual direction and final important UX; task-based rubric, never a single 9/10 score"
+  }
+}

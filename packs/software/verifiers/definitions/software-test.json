@@ -1,0 +1,25 @@
+{
+  "definition_id": "software-test",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "test-junit"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "protected": true,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "protected regression corpus is a separate trust boundary; test deletion is caught by the diff guard"
+}

@@ -1,0 +1,25 @@
+{
+  "pack_id": "ontology",
+  "role": "semantic validation, mapping and contradiction detection over reviewed domain facts",
+  "inputs": [
+    "DomainConcept/Relation/Constraint/Mapping registry snapshot",
+    "candidate facts"
+  ],
+  "outputs": [
+    "validation findings",
+    "mapping proposals",
+    "contradiction pairs (both sides disclosed)"
+  ],
+  "not_core": [
+    "graph database requirement",
+    "merging every domain into one central ontology",
+    "RDF/TTL/SHACL as a core dependency"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "required_for_promotion",
+    "when": "Knowledge Governor approves candidate facts via the existing path"
+  }
+}

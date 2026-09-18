@@ -1,0 +1,9 @@
+{
+  "case_id": "sw-004",
+  "title": "Independent integration",
+  "given": "two nodes each pass",
+  "when": "global verifier",
+  "expected": "mandatory compatibility fails despite node successes (T-063)",
+  "verifier_definition": "software-abi",
+  "split": "validation"
+}

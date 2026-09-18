@@ -1,0 +1,20 @@
+{
+  "definition_id": "ontology-contradictions",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "contradiction-scan"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "two active facts that contradict → HOLD, no arbitrary winner (T-016)"
+}

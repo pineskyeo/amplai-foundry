@@ -1,0 +1,18 @@
+{
+  "definition_id": "research-uncertainty",
+  "version": "3.0.0-rc1",
+  "kind": "model_assisted",
+  "runner": "model_critique",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": true,
+  "notes": "labels confidence; never a truth oracle"
+}

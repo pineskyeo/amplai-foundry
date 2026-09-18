@@ -1,0 +1,9 @@
+{
+  "case_id": "sw-003",
+  "title": "Repeated failure signature",
+  "given": "same failure three times",
+  "when": "repair loop",
+  "expected": "escalate instead of fruitless retries (T-036)",
+  "verifier_definition": "software-debug",
+  "split": "dev"
+}

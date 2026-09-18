@@ -1,0 +1,9 @@
+{
+  "case_id": "fe-002",
+  "title": "Pixel pass UX fail",
+  "given": "screenshot matches",
+  "when": "keyboard flow broken",
+  "expected": "functional/accessibility criterion fails independently (T-060)",
+  "verifier_definition": "frontend-a11y",
+  "split": "dev"
+}

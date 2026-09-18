@@ -1,0 +1,24 @@
+{
+  "pack_id": "semiconductor-dc",
+  "role": "DC domain/context/safety/compatibility constraints supplied as context, never core coupling",
+  "inputs": [
+    "equipment/instrument/pin/physical-state ownership rules",
+    "ABI/compatibility constraints",
+    "safety envelopes"
+  ],
+  "outputs": [
+    "domain context excerpts with provenance",
+    "compatibility findings"
+  ],
+  "not_core": [
+    "direct tester or production control from the core",
+    "PCMU/Cortex-specific fields in AMPLAI core (design/12 §5)"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "required",
+    "when": "any effect touching equipment is production_control and stays outside this pack"
+  }
+}
