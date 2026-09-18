@@ -49,7 +49,7 @@ def verify(d, x):
 def test_dev02_actual_parallel_coordinator_to_independent_global_verifier(deployment, prepared):
     d = deployment
     p = prepared
-    w, ws, port, _ = rig(d, p)
+    w, ws, _port, _ = rig(d, p)
     claims = [d.runtime.claim(d.worker, goal_id=p["goal_id"]) for _ in range(2)]
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda x: execute(d, p, w, ws, x), claims))
@@ -80,7 +80,7 @@ def test_dev02_actual_parallel_coordinator_to_independent_global_verifier(deploy
 def test_dev02_dispatch_replay_does_not_spawn_or_regenerate(deployment):
     d = deployment
     p = d.prepare()
-    w, ws, port, _ = rig(d, p)
+    w, ws, _port, _ = rig(d, p)
     x = d.runtime.claim(d.worker)
     a = execute(d, p, w, ws, x)
     path = ws.root / x["run_id"] / "result.json"
@@ -195,8 +195,7 @@ def paused(d, p):
 def test_dev02_pause_releases_slot_and_resource_not_cost(deployment):
     d = deployment
     p = d.prepare()
-    before = None
-    x, ss = paused(d, p)
+    x, _ss = paused(d, p)
     row = d.store.conn.execute(
         "SELECT * FROM reservations WHERE run_id=?", (x["run_id"],)
     ).fetchone()
@@ -214,7 +213,7 @@ def test_dev02_pause_releases_slot_and_resource_not_cost(deployment):
 def test_dev02_resume_reacquires_resources_before_io(deployment):
     d = deployment
     p = d.prepare()
-    x, ss = paused(d, p)
+    _x, ss = paused(d, p)
     r = ss.receive(
         d.actor, p["goal_id"], "resume", "go", expected_contract_ref=p["contract_ref"], key="r"
     )
@@ -294,7 +293,7 @@ def test_dev02_unknown_resume_receipt_is_not_repeated(deployment):
 @pytest.mark.parametrize("value", [-1, True, 1.5, "1"])
 def test_dev02_usage_not_silently_coerced(deployment, field, value):
     d = deployment
-    p = d.prepare()
+    d.prepare()
     x = d.runtime.claim(d.worker)
     usage = {"input_tokens": 0, "output_tokens": 0, "cost_microunits": 0, "status": "measured"}
     usage[field] = value
@@ -385,7 +384,7 @@ def test_dev02_compile_adaptive_uses_observed_facts_not_draft_strategy(deploymen
         n["node_id"]: TaskFacts(deterministic_verifier=True, local_change=True, uncertainty="low")
         for n in g["nodes"]
     }
-    graph, decisions = d.runtime.graphs.compile_adaptive(
+    graph, _decisions = d.runtime.graphs.compile_adaptive(
         g,
         c,
         p["contract_ref"],
@@ -405,7 +404,7 @@ def test_dev02_compile_adaptive_uses_observed_facts_not_draft_strategy(deploymen
 def test_dev02_resume_wrong_worker_never_calls_provider(deployment):
     d = deployment
     p = d.prepare()
-    x, ss = paused(d, p)
+    _x, ss = paused(d, p)
     r = ss.receive(
         d.actor, p["goal_id"], "resume", "resume", expected_contract_ref=p["contract_ref"], key="r"
     )
@@ -456,7 +455,7 @@ def test_dev02_output_stop_proof_must_be_boolean_true(deployment, proof):
 def test_dev02_actual_budget_overrun_blocks_verified_completion(deployment):
     d = deployment
     p = d.prepare()
-    w, ws, port, _ = rig(d, p)
+    w, ws, _port, _ = rig(d, p)
     x = d.runtime.claim(d.worker)
     execute(d, p, w, ws, x)
     # Simulate a trusted meter's late measured overrun; evidence must not hide it.

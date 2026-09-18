@@ -166,13 +166,13 @@ def test_unqualified_driver_cannot_claim(deployment, prepared):
 def test_old_fence_and_native_duplicate_start(deployment, prepared):
     d = deployment
     x = d.runtime.claim(d.worker)
-    l = x["lease"]
+    lease = x["lease"]
     d.runtime.start(d.worker, x, "exact:1")
     assert d.runtime.start(d.worker, x, "exact:1")["status"] == "acknowledged"
     with pytest.raises(Conflict):
         d.runtime.start(d.worker, x, "exact:2")
     with pytest.raises(Hold):
-        d.runtime.lease(d.worker, x["run_id"], l["lease_id"], l["fencing_token"] - 1)
+        d.runtime.lease(d.worker, x["run_id"], lease["lease_id"], lease["fencing_token"] - 1)
 
 
 def test_native_start_does_not_allow_latest(deployment, prepared):

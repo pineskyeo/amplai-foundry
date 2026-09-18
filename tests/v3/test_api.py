@@ -38,7 +38,7 @@ def api(deployment):
 
 
 def test_authentication_scope_not_from_body(api):
-    d, c, actors, _ = api
+    _d, c, actors, _ = api
     assert c.get("/api/v3/goals", headers={"Authorization": "invalid"}).status_code == 401
     response = c.post(
         "/api/v3/intents",
@@ -57,7 +57,7 @@ def test_authentication_scope_not_from_body(api):
 
 
 def test_api_replay_conflict_and_no_automatic_execution(api):
-    d, c, actors, _ = api
+    d, c, _actors, _ = api
     kwargs = {
         "headers": {"Idempotency-Key": "delivery-42"},
         "json": {"text": "Make Cortex reliable"},
@@ -77,7 +77,7 @@ def test_api_replay_conflict_and_no_automatic_execution(api):
 
 
 def test_api_current_permissions_rechecked_on_replay(api):
-    d, c, actors, _ = api
+    _d, c, actors, _ = api
     kwargs = {"headers": {"Idempotency-Key": "revoke"}, "json": {"text": "A bounded task"}}
     assert c.post("/api/v3/intents", **kwargs).status_code == 202
     actors["reader"] = replace(actors["reader"], permissions=frozenset())
@@ -85,7 +85,7 @@ def test_api_current_permissions_rechecked_on_replay(api):
 
 
 def test_body_limit_and_strict_protocol(api):
-    d, c, _, _ = api
+    _d, c, _, _ = api
     assert c.post("/api/v3/intents", json={"text": "x"}).status_code == 400
     assert (
         c.post("/api/v3/intents", headers={"Idempotency-Key": "s"}, json={"text": 1}).status_code

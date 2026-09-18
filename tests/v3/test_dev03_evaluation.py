@@ -134,7 +134,7 @@ def test_dev03_ambiguous_trial_measurements_rejected(field, value):
 def test_dev03_duplicate_task_or_trial_cannot_inflate_score():
     ts = observations()
     with pytest.raises(RuntimeFault):
-        analyze_pairs(ts + [ts[0]], analysis_plan(), expected_tasks=[str(i) for i in range(24)])
+        analyze_pairs([*ts, ts[0]], analysis_plan(), expected_tasks=[str(i) for i in range(24)])
     with pytest.raises(RuntimeFault):
         analyze_pairs(ts, analysis_plan(), expected_tasks=["0", "0"])
 
@@ -234,7 +234,7 @@ def test_dev03_proposer_role_cannot_override_split_acl(meta03, split):
 
 
 def test_dev03_duplicate_case_bytes_cannot_become_independent_tasks(meta03):
-    ref, artifact = freeze_case(meta03, split="development")
+    _ref, artifact = freeze_case(meta03, split="development")
     cases = [
         {"case_id": str(i), "split": "validation", "task_class": "sum", "artifact_ref": artifact}
         for i in range(2)

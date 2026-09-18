@@ -244,7 +244,7 @@ def test_dev01_graph_contract_digest_is_verified(deployment):
 def test_dev01_graph_semantic_bindings(deployment, mutation):
     d = deployment
     p = d.prepare()
-    c, g = graph_input(d, p)
+    _c, g = graph_input(d, p)
     g["graph_id"] = new_id("testgraph")
     n = g["nodes"][0]
     if mutation == "duplicate_resource":

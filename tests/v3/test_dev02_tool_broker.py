@@ -74,7 +74,7 @@ def invoke(d, env, broker, arguments='{"value":1}', **changes):
 
 def test_dev02_native_call_replay_is_one_actual_effect(deployment):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d)
+    _p, _x, e, broker, _effects, calls, external = setup(d)
     a = invoke(d, e, broker)
     b = invoke(d, e, broker)
     assert a == b and len(calls) == 1 and a["receipt"]["state"] == "applied"
@@ -86,7 +86,7 @@ def test_dev02_native_call_replay_is_one_actual_effect(deployment):
 
 def test_dev02_native_call_timeout_late_commit_requires_reconcile(deployment):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d, timeout=0.02, delay=0.08)
+    _p, _x, e, broker, effects, calls, external = setup(d, timeout=0.02, delay=0.08)
     with pytest.raises(Hold, match="unknown"):
         invoke(d, e, broker)
     effect = d.store.conn.execute("SELECT id FROM heads WHERE kind='effect'").fetchone()[0]
@@ -115,7 +115,7 @@ def test_dev02_native_call_timeout_late_commit_requires_reconcile(deployment):
 )
 def test_dev02_native_tool_rejects_ambiguous_or_unbound_call(deployment, changes):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d)
+    _p, _x, e, broker, _effects, calls, _external = setup(d)
     with pytest.raises(RuntimeFault):
         invoke(d, e, broker, **changes)
     assert calls == []
@@ -123,7 +123,7 @@ def test_dev02_native_tool_rejects_ambiguous_or_unbound_call(deployment, changes
 
 def test_dev02_native_tool_live_grant_revocation(deployment):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d)
+    p, _x, e, broker, _effects, calls, _external = setup(d)
     d.decisions[digest(p["decision_ref"])]["revoked"] = True
     with pytest.raises(Hold):
         invoke(d, e, broker)
@@ -132,7 +132,7 @@ def test_dev02_native_tool_live_grant_revocation(deployment):
 
 def test_dev02_native_tool_denied_envelope_cannot_borrow_grant(deployment):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d)
+    _p, _x, e, broker, _effects, calls, _external = setup(d)
     e = deepcopy(e)
     e["effective_capabilities"] = []
     with pytest.raises(Hold):
@@ -180,7 +180,7 @@ def test_dev02_secret_revocation_is_immediate():
 
 def test_dev02_direct_effect_prepare_cannot_borrow_root_capability(deployment):
     d = deployment
-    p, x, e, broker, effects, calls, external = setup(d)
+    _p, x, e, broker, _effects, calls, _external = setup(d)
     # A narrower work envelope must be enforced by Effects, not just the facade.
     work = d.store.head(d.scope, "work", x["node"]["work_id"])
     with d.store.tx() as db:

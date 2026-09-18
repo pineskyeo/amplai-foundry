@@ -76,7 +76,7 @@ def test_dev03_unknown_or_estimated_cost_never_becomes_actual_total(
 
 def test_dev03_distinct_currencies_not_summed(deployment, prepared):
     result = deployment.execute(prepared)
-    for run, currency in zip(result["runs"], ["USD", "KRW"]):
+    for run, currency in zip(result["runs"], ["USD", "KRW"], strict=False):
         change_run(
             deployment,
             run["run_id"],

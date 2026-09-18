@@ -70,7 +70,11 @@ def fixture_driver(tmp_path, script, **kwargs):
     return driver, sandbox, workspace
 
 
-SUCCESS = 'import sys;sys.stdout.write(\'{"type":"thread.started","thread_id":"native_exact"}\\n{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":2}}\');sys.stdout.flush()'
+SUCCESS = (
+    'import sys;sys.stdout.write(\'{"type":"thread.started","thread_id":"native_exact"}\\n'
+    '{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":2}}\');'
+    "sys.stdout.flush()"
+)
 
 
 def wait(driver, handle):
@@ -80,7 +84,7 @@ def wait(driver, handle):
 
 
 def test_dev02_cli_real_subprocess_jsonl_tail_and_native_home(tmp_path):
-    d, box, ws = fixture_driver(tmp_path, SUCCESS)
+    d, _box, ws = fixture_driver(tmp_path, SUCCESS)
     prepared = d.prepare({"dispatch_id": "dispatch-one"}, "task", ws)
     handle = d.start(prepared)
     record = wait(d, handle)
@@ -109,7 +113,7 @@ def test_dev02_cli_exact_resume_retains_native_home(tmp_path):
 
 @pytest.mark.parametrize("field", ["command", "workspace", "session", "native_home"])
 def test_dev02_cli_prepared_arguments_cannot_be_mutated(tmp_path, field):
-    d, box, ws = fixture_driver(tmp_path, SUCCESS)
+    d, _box, ws = fixture_driver(tmp_path, SUCCESS)
     p = d.prepare({"dispatch_id": "dispatch-one"}, "task", ws)
     p[field] = ["sh", "-c", "false"] if field == "command" else "/changed"
     with pytest.raises(Conflict):
@@ -118,7 +122,7 @@ def test_dev02_cli_prepared_arguments_cannot_be_mutated(tmp_path, field):
 
 
 def test_dev02_cli_concurrent_start_never_spawns_twice(tmp_path):
-    d, box, ws = fixture_driver(tmp_path, SUCCESS)
+    d, _box, ws = fixture_driver(tmp_path, SUCCESS)
     p = d.prepare({"dispatch_id": "dispatch-one"}, "task", ws)
 
     def start(_):
@@ -136,7 +140,8 @@ def test_dev02_cli_concurrent_start_never_spawns_twice(tmp_path):
 @pytest.mark.parametrize(
     "script",
     [
-        'print(\'{"type":"thread.started","thread_id":"native_exact"}\')',  # zero exit without completion
+        # zero exit without completion
+        'print(\'{"type":"thread.started","thread_id":"native_exact"}\')',
         'print(\'{"type":"new.event"}\')',
         'print(\'{"type":"thread.started","thread_id":"a"}\');print(\'{"type":"thread.started","thread_id":"b"}\')',
         'print(\'{"type":"turn.completed"}\')',  # missing exact session
@@ -144,7 +149,7 @@ def test_dev02_cli_concurrent_start_never_spawns_twice(tmp_path):
     ],
 )
 def test_dev02_cli_bad_stream_or_missing_receipt_does_not_succeed(tmp_path, script):
-    d, box, ws = fixture_driver(tmp_path, script)
+    d, _box, ws = fixture_driver(tmp_path, script)
     h = d.start(d.prepare({"dispatch_id": "dispatch-one"}, "task", ws))
     assert wait(d, h)["state"] != "completed"
     with pytest.raises(Hold):
@@ -152,8 +157,12 @@ def test_dev02_cli_bad_stream_or_missing_receipt_does_not_succeed(tmp_path, scri
 
 
 def test_dev02_cli_cancel_confirmed_and_late_collector_does_not_overwrite(tmp_path):
-    script = 'import time; print(\'{"type":"thread.started","thread_id":"native_exact"}\',flush=True);time.sleep(30)'
-    d, box, ws = fixture_driver(tmp_path, script)
+    script = (
+        "import time; "
+        'print(\'{"type":"thread.started","thread_id":"native_exact"}\',flush=True);'
+        "time.sleep(30)"
+    )
+    d, _box, ws = fixture_driver(tmp_path, script)
     h = d.start(d.prepare({"dispatch_id": "dispatch-one"}, "task", ws))
     for _ in range(100):
         if d.journal.read(h)["session_handle"]:
@@ -181,7 +190,7 @@ def test_dev02_cli_unknown_stop_cannot_checkpoint(tmp_path):
 
 
 def test_dev02_cli_deadline_stops_fixture_process(tmp_path):
-    d, box, ws = fixture_driver(tmp_path, "import time;time.sleep(30)", max_seconds=0.05)
+    d, _box, ws = fixture_driver(tmp_path, "import time;time.sleep(30)", max_seconds=0.05)
     h = d.start(d.prepare({"dispatch_id": "dispatch-one"}, "task", ws))
     wait(d, h)
     for _ in range(100):
@@ -193,7 +202,7 @@ def test_dev02_cli_deadline_stops_fixture_process(tmp_path):
 
 
 def test_dev02_cli_orphan_start_requires_reconciliation(tmp_path):
-    d, box, ws = fixture_driver(tmp_path, SUCCESS)
+    d, _box, ws = fixture_driver(tmp_path, SUCCESS)
     p = d.prepare({"dispatch_id": "dispatch-one"}, "task", ws)
     d.journal.transition("dispatch-one", {"prepared"}, "starting")
     with pytest.raises(Hold):
@@ -209,7 +218,7 @@ def test_dev02_credential_injection_does_not_reconfigure_launcher(tmp_path, key)
 
 @pytest.mark.parametrize("session", ["latest", "continue", "--continue", "", True])
 def test_dev02_cli_rejects_unpinned_native_resume(tmp_path, session):
-    d, box, ws = fixture_driver(tmp_path, SUCCESS)
+    d, _box, ws = fixture_driver(tmp_path, SUCCESS)
     with pytest.raises(Hold):
         d.prepare({"dispatch_id": "dispatch-one"}, "task", ws, session=session)
 

@@ -153,7 +153,7 @@ def prepared_session(d):
 
 def test_dev02_server_session_reopen_and_resume_exact_binding(deployment):
     d = deployment
-    p, x, e, ss, cp = prepared_session(d)
+    _p, x, e, _ss, cp = prepared_session(d)
     other = SessionStore(d.store, d.contracts)
     result = other.resume_check(
         d.worker,
@@ -173,7 +173,7 @@ def test_dev02_server_session_reopen_and_resume_exact_binding(deployment):
 )
 def test_dev02_session_revisions_do_not_resume(deployment, binding):
     d = deployment
-    p, x, e, ss, cp = prepared_session(d)
+    _p, x, e, ss, cp = prepared_session(d)
     e = deepcopy(e)
     e[binding]["revision"] += 1
     with pytest.raises(Hold):
@@ -190,7 +190,7 @@ def test_dev02_session_revisions_do_not_resume(deployment, binding):
 @pytest.mark.parametrize("binding", ["driver_profile_ref", "model_profile_ref", "environment_ref"])
 def test_dev02_changed_driver_profile_requires_new_session(deployment, binding):
     d = deployment
-    p, x, e, ss, cp = prepared_session(d)
+    _p, x, e, ss, cp = prepared_session(d)
     profile = deepcopy(x["profile"])
     profile[binding]["revision"] += 1
     result = ss.resume_check(
@@ -208,7 +208,7 @@ def test_dev02_changed_driver_profile_requires_new_session(deployment, binding):
 
 def test_dev02_session_snapshot_effects_owner_scope_fail_closed(deployment):
     d = deployment
-    p, x, e, ss, cp = prepared_session(d)
+    _p, x, e, ss, cp = prepared_session(d)
     with pytest.raises(Hold):
         ss.resume_check(
             d.worker,

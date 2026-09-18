@@ -29,9 +29,7 @@ def test_real_paired_canary_promote_and_rollback(meta):
     assert result["rollback"]["authority_restored"] is False
     assert meta.d.store.conn.execute("SELECT COUNT(*) FROM grant_uses").fetchone()[0] == before
     report = meta.d.store.get(meta.d.scope, "eval-report", result["report_ref"])
-    artifact = json.loads(
-        meta.d.artifacts.read(meta.d.scope, report["analysis_artifact"], trusted=True)
-    )
+    json.loads(meta.d.artifacts.read(meta.d.scope, report["analysis_artifact"], trusted=True))
     assert len(list((meta.root / "trials").glob("*/result.json"))) == 50
     assert (
         meta.d.store.head(meta.d.scope, "release-pointer", "active")["data"]["release_ref"]
