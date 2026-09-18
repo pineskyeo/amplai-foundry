@@ -47,7 +47,7 @@ _ESCAPE_DCT = {
     chr(9): r"\t",
 }
 for _i in range(32):
-    _ESCAPE_DCT.setdefault(chr(_i), "\\u%04x" % _i)
+    _ESCAPE_DCT.setdefault(chr(_i), "\\u%04x" % _i)  # noqa: UP031 (vendored upstream form)
 
 
 def _string(value: str, sink: BytesIO) -> None:
