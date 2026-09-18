@@ -1,0 +1,69 @@
+{
+  "schema_version": "3.0.0",
+  "rows": [
+    {
+      "profile": "local-dev",
+      "status": "supported",
+      "required_evidence": [
+        "baseline driver conformance",
+        "state/fault suite"
+      ],
+      "evidence_refs": [
+        "specs/013-amplai-v3/evidence-trace.jsonl",
+        "tests/v3 (557 passed, 2026-09-18)"
+      ],
+      "python_matrix": [
+        "3.11.15 (macOS 25.2, this host)"
+      ]
+    },
+    {
+      "profile": "onprem",
+      "status": "disabled",
+      "required_evidence": [
+        "internal auth/secret/backup/fleet test"
+      ],
+      "evidence_refs": [],
+      "python_matrix": []
+    },
+    {
+      "profile": "hybrid",
+      "status": "disabled",
+      "required_evidence": [
+        "both routes conformance",
+        "privacy policy"
+      ],
+      "evidence_refs": [],
+      "python_matrix": []
+    },
+    {
+      "profile": "offline",
+      "status": "disabled",
+      "required_evidence": [
+        "cold start",
+        "cache staleness",
+        "deny tests"
+      ],
+      "evidence_refs": [],
+      "python_matrix": []
+    },
+    {
+      "profile": "legacy-app-client",
+      "status": "disabled",
+      "required_evidence": [
+        "actual OS/Python smoke",
+        "uninstall independence (T-098)"
+      ],
+      "evidence_refs": [],
+      "python_matrix": []
+    },
+    {
+      "profile": "managed-optional",
+      "status": "disabled",
+      "required_evidence": [
+        "exact provider capability/exit/effect tests"
+      ],
+      "evidence_refs": [],
+      "python_matrix": []
+    }
+  ]
+}
