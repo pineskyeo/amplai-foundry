@@ -41,7 +41,7 @@
     {
       "id": "AMPLAI-V3C-T001",
       "title": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -50,7 +50,7 @@
     {
       "id": "AMPLAI-V3C-T002",
       "title": "CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -59,7 +59,7 @@
     {
       "id": "AMPLAI-V3C-T003",
       "title": "CAT-EFFECTS tool/effect protocol 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -68,7 +68,7 @@
     {
       "id": "AMPLAI-V3C-T004",
       "title": "CAT-GOAL goal resolver/contract critic 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -77,7 +77,7 @@
     {
       "id": "AMPLAI-V3C-T005",
       "title": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -86,7 +86,7 @@
     {
       "id": "AMPLAI-V3C-T006",
       "title": "CAT-META observatory/meta-harness/canary 케이스 실행 증거",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -95,7 +95,7 @@
     {
       "id": "AMPLAI-V3C-T007",
       "title": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -104,7 +104,7 @@
     {
       "id": "AMPLAI-V3C-T008",
       "title": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "requirements": [
         "W5-CLOSURE"
@@ -113,7 +113,7 @@
     {
       "id": "AMPLAI-V3C-T009",
       "title": "CLOSURE ledger 재생성과 release truth 갱신",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "AMPLAI-V3C-T001",
         "AMPLAI-V3C-T002",

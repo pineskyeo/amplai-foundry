@@ -21,7 +21,7 @@ Goal:
 - CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T001 CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거
+- [x] AMPLAI-V3C-T001 CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T001.yaml`
   - files: `tests/v3/test_rc02_graph.py`, `src/amplai_foundry/runtime/graphs/`, `src/amplai_foundry/runtime/execution/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -50,7 +50,7 @@ Goal:
 - CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T002 CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거
+- [x] AMPLAI-V3C-T002 CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T002.yaml`
   - files: `tests/v3/test_rc02_runtime.py`, `src/amplai_foundry/runtime/execution/`, `src/amplai_foundry/runtime/budgets/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -79,7 +79,7 @@ Goal:
 - CAT-EFFECTS tool/effect protocol 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T003 CAT-EFFECTS tool/effect protocol 케이스 실행 증거
+- [x] AMPLAI-V3C-T003 CAT-EFFECTS tool/effect protocol 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T003.yaml`
   - files: `tests/v3/test_rc02_effects.py`, `src/amplai_foundry/runtime/effects/`, `src/amplai_foundry/tool_broker/`, `src/amplai_foundry/sandbox/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -108,7 +108,7 @@ Goal:
 - CAT-GOAL goal resolver/contract critic 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T004 CAT-GOAL goal resolver/contract critic 케이스 실행 증거
+- [x] AMPLAI-V3C-T004 CAT-GOAL goal resolver/contract critic 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T004.yaml`
   - files: `tests/v3/test_rc02_goal.py`, `src/amplai_foundry/runtime/goals/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -136,7 +136,7 @@ Goal:
 - CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T005 CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거
+- [x] AMPLAI-V3C-T005 CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T005.yaml`
   - files: `tests/v3/test_rc02_lease.py`, `tests/v3/test_rc02_evidence.py`, `src/amplai_foundry/runtime/execution/`, `src/amplai_foundry/runtime/evidence/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -167,7 +167,7 @@ Goal:
 - CAT-META observatory/meta-harness/canary 케이스 실행 증거
 
 Tasks:
-- [ ] AMPLAI-V3C-T006 CAT-META observatory/meta-harness/canary 케이스 실행 증거
+- [x] AMPLAI-V3C-T006 CAT-META observatory/meta-harness/canary 케이스 실행 증거
   - manifest: `task-manifests/AMPLAI-V3C-T006.yaml`
   - files: `tests/v3/test_rc02_meta.py`, `src/amplai_foundry/evaluation/`, `src/amplai_foundry/meta_harness/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -198,7 +198,7 @@ Goal:
 - CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시
 
 Tasks:
-- [ ] AMPLAI-V3C-T007 CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시
+- [x] AMPLAI-V3C-T007 CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시
   - manifest: `task-manifests/AMPLAI-V3C-T007.yaml`
   - files: `tests/v3/test_rc02_driver.py`, `tests/v3/test_rc02_boundary.py`, `src/amplai_foundry/agent_drivers/`, `src/amplai_foundry/verification/runtime/`, `src/amplai_foundry/distribution/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -232,7 +232,7 @@ Goal:
 - FOLLOWUP review round 2 should-fix R102/R106/R107/R108
 
 Tasks:
-- [ ] AMPLAI-V3C-T008 FOLLOWUP review round 2 should-fix R102/R106/R107/R108
+- [x] AMPLAI-V3C-T008 FOLLOWUP review round 2 should-fix R102/R106/R107/R108
   - manifest: `task-manifests/AMPLAI-V3C-T008.yaml`
   - files: `src/amplai_foundry/distribution/cutover.py`, `src/amplai_foundry/distribution/installer.py`, `src/amplai_foundry/migration/v2.py`, `src/amplai_foundry/control_plane/hermes.py`, `tests/v3/test_rc02_followups.py`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`
 
@@ -257,7 +257,7 @@ Goal:
 - CLOSURE ledger 재생성과 release truth 갱신
 
 Tasks:
-- [ ] AMPLAI-V3C-T009 CLOSURE ledger 재생성과 release truth 갱신
+- [x] AMPLAI-V3C-T009 CLOSURE ledger 재생성과 release truth 갱신
   - manifest: `task-manifests/AMPLAI-V3C-T009.yaml`
   - depends on: AMPLAI-V3C-T001, AMPLAI-V3C-T002, AMPLAI-V3C-T003, AMPLAI-V3C-T004, AMPLAI-V3C-T005, AMPLAI-V3C-T006, AMPLAI-V3C-T007, AMPLAI-V3C-T008
   - files: `release/`, `eval/`, `specs/013-amplai-v3/junit/`, `specs/014-v3-catalog-closure/`, `release/`, `eval/`, `specs/013-amplai-v3/junit/`

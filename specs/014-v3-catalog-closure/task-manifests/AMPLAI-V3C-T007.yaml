@@ -3,7 +3,7 @@
   "id": "AMPLAI-V3C-T007",
   "title": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
   "type": "test",
-  "status": "ready",
+  "status": "done",
   "goal": {
     "outcome": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
     "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
@@ -233,10 +233,15 @@
     ]
   },
   "completion": {
-    "all_acceptance_passed": false,
-    "required_evidence_present": false,
-    "completed_at": "",
-    "evidence_paths": []
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T05:03:04Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S07",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "release/rc01-conformance-closure.json",
+      "specs/014-v3-catalog-closure/external-boundary.json"
+    ]
   },
   "handoff": {
     "expected_changes": [
