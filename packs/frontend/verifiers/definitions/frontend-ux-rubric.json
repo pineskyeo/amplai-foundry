@@ -1,0 +1,18 @@
+{
+  "definition_id": "frontend-ux-rubric",
+  "version": "3.0.0-rc1",
+  "kind": "human",
+  "runner": "human_review",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "task-based rubric, e.g. operator identifies lot state and next action on one screen"
+}

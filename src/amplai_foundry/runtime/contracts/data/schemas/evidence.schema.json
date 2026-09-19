@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/evidence.schema.json",
+  "title": "AMPLAI V3 evidence",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "evidence_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "run_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "contract_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "graph_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "subject_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "verifier_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "environment_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "observations_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "started_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "finished_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "exit_code": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": -255,
+          "maximum": 255
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "producer": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/actor"
+    },
+    "trust": {
+      "enum": [
+        "server_verified",
+        "legacy_imported",
+        "untrusted"
+      ]
+    },
+    "redacted": {
+      "type": "boolean"
+    },
+    "attestation_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    }
+  },
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "scope",
+    "run_id",
+    "contract_ref",
+    "graph_ref",
+    "subject_artifact",
+    "verifier_ref",
+    "environment_ref",
+    "observations_artifact",
+    "started_at",
+    "finished_at",
+    "exit_code",
+    "producer",
+    "trust",
+    "redacted",
+    "attestation_ref"
+  ],
+  "additionalProperties": false
+}

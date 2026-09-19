@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S03",
+  "status": "LOCAL_SLICE_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11T05:25:09Z",
+  "authority": "execution-authorization.json / E021",
+  "contribution_boundary": "One metadata owner and filtered current/history selection implemented. S04 complete change impact/review publication, S05 HTML/release bundles and S08 independent integration remain; no original Astra case is finally closed.",
+  "implementation": {
+    "metadata": "Strict stdlib JSON frontmatter or exactly one .amplai.json sidecar; duplicate JSON keys/authority, self-attestation fields, unknown states, qualified identity/alias collisions and invalid paths reject.",
+    "dimensions": "Authority, lifecycle, freshness, security and exact release applicability remain independent. An older explicitly selected release has no age-only expiry.",
+    "evidence": "Source/metadata/dependency/rule/profile snapshots and evidence byte hashes stay outside authored sources. ACTIVE alone is unknown freshness; drift is stale.",
+    "reads": "Bounded no-follow root descriptors; membership/content rechecks; required roots cannot silently disappear; optional empty roots are explicitly declared; byte/file caps fail rather than truncate.",
+    "selection": "Shared resolver for all enumerated current consumers. Current eligibility precedes title/snippet/ranking; no private counters, rejected names or raw query echo. Derived indexes are recomputed, not trusted as caches.",
+    "packaging": {
+      "baseline_files": 69,
+      "shared_source_parity_files": 7,
+      "package_checksum_rows": 116,
+      "source_hashes": {
+        "scripts/amplai_docs.py": {
+          "sha256": "d3b9b6272e94167d534bbd9dcccd72b579db2b90e1310e103fb7fb31ebd423fd",
+          "bytes": 31358
+        },
+        "scripts/loopctl.py": {
+          "sha256": "a39784d48b65db79e2da7314ad91d20bc57473e7d69fc768599678a5cd25e82f",
+          "bytes": 46602
+        },
+        "scripts/loopv2.py": {
+          "sha256": "9b5fa9dcda8e84e83e69a6b229ca7077bc6cbea3140e2b51b58acc903f8f7084",
+          "bytes": 81843
+        },
+        ".ai-team/policy/documentation.json": {
+          "sha256": "42f9fdfa197b5c7fb1cd365603a96f6abab5fab48c52d7580d592d05085682df",
+          "bytes": 7129
+        },
+        ".ai-team/knowledge/context-pack.schema.json": {
+          "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+          "bytes": 2104
+        },
+        "tools/amplai-loop-kit/baseline/manifest.json": {
+          "sha256": "d2ea627c050689edb207427bde8b570b1e258fa759a3cf73b9c7b5d8134ea50b",
+          "bytes": 15260
+        },
+        "tools/amplai-loop-kit/CHECKSUMS.sha256": {
+          "sha256": "fe154dd15b3fcf388f0e571b0b7e47d0646510c202d3feef99e3d35e06c608d6",
+          "bytes": 13012
+        },
+        "tests/ai/test_document_lifecycle.py": {
+          "sha256": "0785037dc2ac19e352b0572e3f27a75ebf5511e48ab7200000e56b2140ddab47",
+          "bytes": 25303
+        }
+      }
+    },
+    "migration": "Unmanaged legacy Markdown remains byte-preserved and is never promoted from ACTIVE alone. No exact release selection means no current document guidance; source policies/registry still load as control inputs. Existing AGENTS/CLAUDE host instructions remain authoritative."
+  },
+  "tdd": {
+    "initial": {
+      "log": "w003-s03-red.log",
+      "exit_code": 1,
+      "tests": 29,
+      "cause": "Consumed document engine absent"
+    },
+    "repair_history": [
+      {
+        "log": "w003-s03-first.log",
+        "passed": 22,
+        "failed": 7,
+        "causes": [
+          "Query text unnecessarily echoed into filtered output",
+          "Loop/CLI integration not wired",
+          "One legacy-CANDIDATE fixture supplied conflicting active lifecycle; fixture corrected without weakening rejection"
+        ]
+      },
+      {
+        "log": "w003-s03-second.log",
+        "passed": 29,
+        "exit_code": 0
+      },
+      {
+        "log": "w003-s03-boundaries-first.log",
+        "passed": 41,
+        "failed": 1,
+        "cause": "Null-valued declared frontmatter was confused with no owner, permitting a second sidecar",
+        "repair": "Track owner declaration independently of its metadata value"
+      },
+      {
+        "log": "w003-s03-boundaries-green.log",
+        "passed": 43,
+        "exit_code": 0
+      }
+    ]
+  },
+  "verification": {
+    "canonical": {
+      "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S03",
+      "archived_input": "s03-eval-input-tasks.md",
+      "verdict": "PASS",
+      "exit_code": 0,
+      "tests": 44
+    },
+    "full": {
+      "profile": "v2",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "checks": [
+        {
+          "id": "ruff-check",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "ruff-format",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "mypy",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-runtime-doctor",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "manifest-validator",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "pytest",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-shell-syntax",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "schema",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "vault-lint",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "project-pack",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "kit-seal",
+          "status": "PASS",
+          "exit_code": 0
+        }
+      ],
+      "pytest_passed": 1724,
+      "pytest_deselected": 4,
+      "environment": {
+        "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "git": "git version 2.50.1 (Apple Git-155)",
+        "machine": "arm64",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "python": "3.11.15",
+        "registry_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+        "system": "Darwin",
+        "target_assumptions": {
+          "not_verified": [
+            "다른 OS·architecture 에서의 동작",
+            "pyproject 의 requires-python 아래 버전에서의 동작"
+          ],
+          "python_requirement": ">=3.11",
+          "verified_on": "macOS-26.2-arm64-arm-64bit",
+          "verifier_interpreter": [
+            ".venv/bin/python",
+            "python3"
+          ]
+        }
+      }
+    },
+    "installed": "Actual sealed install supplies inventory/query/index with python -I -S. Removing installed engine causes doctor failure; copied-source-only canaries are not the sole evidence.",
+    "context": "Actual CLI build/validate rejects dependency, classification, lifecycle, evidence and release drift; source/claim/decision paths share the current filter.",
+    "refreshed_context": {
+      "verdict": "MATCH",
+      "content_hash": "290612174764e53239a55fe8dd71fb9cea51e3461d10d947c0ed34f2d4c9cb9b",
+      "previous_archived": "context-pack-s02.json"
+    }
+  },
+  "logs": {
+    "w003-s03-boundaries-first.log": {
+      "sha256": "8932cb3dcd1d3d3d7aa6b4e10f91a56d59691dd7fb76eb16a54f0a168a48ae94",
+      "bytes": 1325
+    },
+    "w003-s03-boundaries-green.log": {
+      "sha256": "986dbc9a5d6b6525242d1315dd44f9f5e97162596004680091f1927df955e4ea",
+      "bytes": 80
+    },
+    "w003-s03-compat-first.log": {
+      "sha256": "59f023734f6cb1483201466b425c83aa15db929c4a49f21e3d4a47285a49fb80",
+      "bytes": 160
+    },
+    "w003-s03-eval.log": {
+      "sha256": "3b2550d20b72d7a37552c860e3d9f48168db0e9c0ff194fff51b08f86b6b6099",
+      "bytes": 1765
+    },
+    "w003-s03-first.log": {
+      "sha256": "22bd032612a6cf0f954e97bd89f8f2ebff94c9ec8fd6199b0b2e070b60cc66ca",
+      "bytes": 18208
+    },
+    "w003-s03-full.json": {
+      "sha256": "928f6fd2d4f62573e847f9a9dbb93b2413c9c4fc9cbb9faf485c8da1ea657cdb",
+      "bytes": 7344
+    },
+    "w003-s03-full.log": {
+      "sha256": "3879818ca65250c11b7737b1057deabedc983f41f4c8de08bcecf4291741dd04",
+      "bytes": 4030
+    },
+    "w003-s03-red.log": {
+      "sha256": "7779deade960305503f8f297dcfa54388ca2b6269e804ecf9ca0ff35e17190ca",
+      "bytes": 19246
+    },
+    "w003-s03-second.log": {
+      "sha256": "b71db6006ecc410f6085db2500759568a2da5d0cdf2fd3f7165307654085abe2",
+      "bytes": 80
+    }
+  },
+  "consumer_inventory": "s03-consumer-inventory.json",
+  "limitations": [
+    "Full Work change/index/rename completeness, review write transactions and concurrent batch preservation belong to immediate S04.",
+    "Only the view resolver exists here; HTML generation, audience sections and approved external input bundles remain S05.",
+    "Legacy unmanaged Markdown is preserved, not rewritten or automatically declared verified; no broad legacy migration is claimed.",
+    "Python 3.6 grammar and -I -S on available Python are not execution on Python 3.6 or RHEL7.",
+    "No live installation, deployment, publication, real deletion, Git action or new Platform/Vault API."
+  ],
+  "original_acceptance_passes": 0
+}

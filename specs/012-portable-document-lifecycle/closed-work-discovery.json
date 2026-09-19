@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "status": "OBSERVED",
+  "observer": "independent read-only explorer foundry_closed_work_discovery",
+  "native_work_state_changed": false,
+  "real_project_store_accessed": false,
+  "source_files": [
+    {
+      "path": "scripts/amplai.py",
+      "sha256": "3378002071bf78134adb06a77fbc4081692faaeb9605c4802aee4e200bdf4fea"
+    },
+    {
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "d4edd88c00c994e4c17fde763047c021ee3e5f4ac04bfd406de5c7506279d7fb"
+    },
+    {
+      "path": "scripts/amplai_hook.py",
+      "sha256": "bce0aebd61a4047720c0aa02e78caac590ad17aa977f85c1f3a31fbe7334dea6"
+    },
+    {
+      "path": "scripts/amplai_hosts.py",
+      "sha256": "cebdfff825af78d1c7d255d3241eb6ab2004749c3ef707ab5f575c850db4a039"
+    },
+    {
+      "path": "scripts/amplai_supervisor.py",
+      "sha256": "34cd5062d21a0679e98f24c69be9007f4b45ff3692c2d789d17647f4f67a54cd"
+    },
+    {
+      "path": "tests/ai/test_amplai_async_runtime.py",
+      "sha256": "aceb63c9e1ec146294375eb301d7d667b417a631506a597f2c58f07026a2c2ee"
+    },
+    {
+      "path": "tests/ai/test_amplai_host_adapters.py",
+      "sha256": "4041e0bcbf493c26137ae437dc3e1c2093b847f57349cc98b6bf6432624d31e5"
+    }
+  ],
+  "reproduction": {
+    "command": "python3 -B <disposable isolated reproduction script>",
+    "exit_code": 0,
+    "fixture": "tests/ai/test_amplai_async_runtime.py:setUp/make_work/add_evidence; git_init=False",
+    "lifecycle": [
+      "DRAFT",
+      "READY",
+      "CLAIMED",
+      "RUNNING",
+      "DONE"
+    ],
+    "reads": {
+      "runtime_context": "DONE with own result",
+      "cli_context_json": "exit 0, DONE with own result",
+      "cli_context_markdown": "exit 0, DONE, own result omitted",
+      "cli_handoff_render": "exit 0",
+      "cli_work_show": "exit 0",
+      "store_content_and_mtime_unchanged": true
+    },
+    "execution_guards": {
+      "activate": "exit 3; terminal state rejected",
+      "claim": "exit 3; READY required",
+      "start_and_heartbeat": "exit 3; no active lease"
+    },
+    "projection": {
+      "markdown_unconditionally_requests_update": true,
+      "session_start_only_active_or_ready": true
+    },
+    "heartbeat": {
+      "runtime_lease_renewal_preserved": true,
+      "claim_stdout_redacted": true,
+      "heartbeat_stdout_contains_lease_credential": true,
+      "credential_value_or_locator_reported": false,
+      "same_credential_can_complete_work": true
+    }
+  },
+  "existing_tests": {
+    "count": 9,
+    "exit_code": 0,
+    "scope": "handoff, dependency activation, completion guards, host continuation and both host hooks"
+  },
+  "conclusion": "DONE reads work; repair terminal Markdown guidance and own-result projection, plus default heartbeat output redaction. Preserve execution guards and runtime authentication.",
+  "limits": [
+    "Native E002 original cause remains unproven",
+    "No actual Claude/Codex process or real Store command",
+    "No source/docs/Git edits by the explorer"
+  ]
+}

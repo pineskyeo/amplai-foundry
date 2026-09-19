@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S13",
+  "recorded_at": "2026-09-11 14:25:37 UTC",
+  "command": ".venv/bin/python -B -m pytest -o addopts= -q tests/ai/test_document_review.py -k public_atomic_record --tb=short -rN",
+  "exit_code": 1,
+  "failed": 6,
+  "passed": 2,
+  "deselected": 50,
+  "source_sha256": "60c871bb2264185a6b260965f1ff4cae4405202ee218a98430e86ee889f3bd2b",
+  "test_sha256": "efd3d25f662ef9a2af6accf8e973319c26081641d04ddced84d572e6820eaa3c",
+  "cases": [
+    "Review and impact both lose0640 under umask0077",
+    "Review and impact both accept late chmod instead of SOURCE_DRIFT",
+    "Review and impact both accept same-bytes inode replacement instead of SOURCE_DRIFT"
+  ],
+  "controls": "Both late content-drift controls already pass",
+  "log": "s13-red.log",
+  "limits": [
+    "Disposable public-operation fixtures only",
+    "No live permission or ownership mutation"
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 02:00:52 UTC",
+  "source_validation": {
+    "command": "python3 -B scripts/loopctl.py docs validate specs/012-portable-document-lifecycle",
+    "exit_code": 0,
+    "dependency_snapshot_hash": "371a912969c350319dd59fd471418492ffaf02e08c30636025b3e6c0ddd6a3c0",
+    "errors": [],
+    "mode": "work",
+    "offline_views": {
+      "checked": 2,
+      "status": "MATCH",
+      "valid": true,
+      "views": [
+        {
+          "code": "MATCH",
+          "input_sha256": "2aec6e1ca535dcf700cb1cb7e83ffda2d16d82a6fca75c64fcaea50a1bec0fb8",
+          "valid": true
+        },
+        {
+          "code": "MATCH",
+          "input_sha256": "24a1532932db8bffcc9408acaf1e21b7678c98c14cdacbd9085306ba56418437",
+          "valid": true
+        }
+      ]
+    },
+    "valid": true,
+    "verdict": "RESOLVED"
+  },
+  "browser": {
+    "developer": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/browser.json",
+          "sha256": "8c46d22d5d5800f7de2d3193dc6624c03ba49ea33538eab6e99ac6ff424b18d4",
+          "bytes": 486
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/desktop.png",
+          "sha256": "af18fdaa8d964f13a0b3880b94db654068a45b9f393f49ef7d5229537d1af8e9",
+          "bytes": 175603
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/guide-desktop.png",
+          "sha256": "179fe80890d0225a12350f65330b7570debfbab82325dde75cf133516f6c81b7",
+          "bytes": 1335972
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/guide-mobile.png",
+          "sha256": "d0bc8aa78fe56713a24dcea3a958b3d46e3c8d6af7e3e49a5b57b8a965b15ba1",
+          "bytes": 1338496
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/mobile.png",
+          "sha256": "ac5433c041a6299c5a130530c1fefcd2d6e1b58c454dcea6aa25cdce6856a315",
+          "bytes": 138044
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/print.pdf",
+          "sha256": "68ea68ebdbcc0f15e63080c6385bef2439a6fa3374e9443fe252aa9600da80ef",
+          "bytes": 451959
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/developer/print.pdf.png",
+          "sha256": "9d691dd4ef2dbee413d648004bbb08293e59311c1956ef677e2e849ed89c3013",
+          "bytes": 227959
+        }
+      ]
+    },
+    "operator": {
+      "verdict": "PASS",
+      "browser": "Chrome/152.0.7977.83",
+      "pages": 3,
+      "offline": true,
+      "javascript_disabled": true,
+      "javascript_enabled_xss_safe": true,
+      "private_canaries_absent": true,
+      "executable_source_absent": true,
+      "keyboard_skip_link": true,
+      "desktop_no_overflow": true,
+      "mobile_width": 375,
+      "mobile_no_overflow": true,
+      "print_media": true,
+      "pdf_generated": true,
+      "http_requests": 0,
+      "environment": "isolated local browser fixture; not production",
+      "artifacts": [
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/browser.json",
+          "sha256": "8c46d22d5d5800f7de2d3193dc6624c03ba49ea33538eab6e99ac6ff424b18d4",
+          "bytes": 486
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/desktop.png",
+          "sha256": "76eed51302d5c70af90ee5230c4624a122c0ac67d4f5f7d5b74e4d40ad688272",
+          "bytes": 175283
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/guide-desktop.png",
+          "sha256": "e7510f1f7693ee5c17518a0ba2254c44cdd3f65741d8d70fb061534f28f8020b",
+          "bytes": 1335669
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/guide-mobile.png",
+          "sha256": "67e9cad8ff6333d5bb0d0e905c3ade137f73e1b13bb8a7073d8d05a7f2dbf5fb",
+          "bytes": 1338191
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/mobile.png",
+          "sha256": "028f067deec7ca41fdd3a9aef79fe38d3dbd514e1e456ccdd4065fb257550bd0",
+          "bytes": 137738
+        },
+        {
+          "path": "/tmp/w003-browser-r4.PKaRh6/operator/print.pdf",
+          "sha256": "8251dd4a8488a368262d750c3ce0fac0151c33082b67e5cb148423424a626bb8",
+          "bytes": 451773
+        }
+      ]
+    }
+  },
+  "outputs": [
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "2149677a8d13899939f16f25b6699ab2699988713117898aac11cc5ba1adf36f",
+      "bytes": 19714
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "4d5a82a7cb064a05720c4914c7f0d077928b27bd2e036f6ac181d56f0abf1a77",
+      "bytes": 15094
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/index.html",
+      "sha256": "158d87a5992c25c219c7456695fa43f8b2fe26fd51dbcb1c56897937a01719f5",
+      "bytes": 5097
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/manifest.json",
+      "sha256": "4bfa086bc6ae97bf49bae1fb5bd75755d36a0f49b4f18a29cade82848b8bf0c1",
+      "bytes": 1863
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "ef07ccc64460be0be45474ae8d7f0150cd1a380c06562cbab50cf76a6a17a1b0",
+      "bytes": 19713
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "241680e2d7750a31f257a75ccd11a5e8f0d9c8465146f72b840de6f039b564f4",
+      "bytes": 15093
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/index.html",
+      "sha256": "c57d3717ad813b0224e2e1730b5ad888bb9839534ac6e1c373b5e7147f094ce8",
+      "bytes": 5096
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/manifest.json",
+      "sha256": "0e2fe802717045a11ce0412e661956e7ca52f1d9b59d6bcd2ef1bcd60431ccc4",
+      "bytes": 1862
+    }
+  ],
+  "visual_inspection": {
+    "method": "Main inspected actual generated desktop/mobile guide and index screenshots plus developer PDF first-page Quick Look rendering.",
+    "result": "Readable layout, source/release identity present, compact screen reflow, no clipped body text or overlapping sections; wide release tables use the existing horizontally scrollable wrapper.",
+    "files": [
+      "developer/desktop.png",
+      "operator/mobile.png",
+      "developer/guide-desktop.png",
+      "operator/guide-mobile.png",
+      "developer/print.pdf.png"
+    ]
+  },
+  "limits": [
+    "Isolated local existing acceptance harness, not authenticated user browser, production or RHEL7 evidence.",
+    "No external HTTP requests; browser version is observed test environment, not target compatibility.",
+    "Document release set is a reference-source set, not deployable backend BOM; independent R4 review and final derived membership refresh remain."
+  ]
+}

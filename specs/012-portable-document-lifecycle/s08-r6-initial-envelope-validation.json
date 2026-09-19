@@ -1,0 +1,8 @@
+{
+  "chunk_id": "3cbc84",
+  "wall_time_seconds": 0.000001291,
+  "session_id": 4374,
+  "original_token_count": 156,
+  "output": "{\n  \"dependency_snapshot_hash\": \"b44fc0bb30a512d1bed7d3e36db2c33d846af96541908809b99d8588ae29d926\",\n  \"errors\": [\n    \"DERIVED_REPORT_DRIFT\"\n  ],\n  \"mode\": \"work\",\n  \"offline_views\": {\n    \"checked\": 2,\n    \"status\": \"MATCH\",\n    \"valid\": true,\n    \"views\": [\n      {\n        \"code\": \"MATCH\",\n        \"input_sha256\": \"b8928e296e5bb6fbce9cf78dc4bc02a60a503f230f17fefccd907509321f80d1\",\n        \"valid\": true\n      },\n      {\n        \"code\": \"MATCH\",\n        \"input_sha256\": \"ef613754ab9379d148142405a375831aa672c90cf1eeedad5196c10c467a7d43\",\n        \"valid\": true\n      }\n    ]\n  },\n  \"valid\": false,\n  \"verdict\": \"STALE\"\n}\n",
+  "exit_code": 1
+}

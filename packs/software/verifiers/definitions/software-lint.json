@@ -1,0 +1,25 @@
+{
+  "definition_id": "software-lint",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "lint"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": ""
+}

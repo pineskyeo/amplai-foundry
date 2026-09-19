@@ -255,7 +255,14 @@ def cmd_work(args):
     if action == "start":
         return store.start_work(args.id, lease_token(args), actor=args.actor)
     if action == "heartbeat":
-        return store.heartbeat(args.id, lease_token(args), actor=args.actor)
+        lease = store.heartbeat(args.id, lease_token(args), actor=args.actor)
+        # A detached, allowlisted display is not the sealed native lease.
+        view = {key: lease[key] for key in (
+            "schema_version", "lease_id", "work_id", "worker_id", "host",
+            "claimed_at", "heartbeat_at", "expires_at", "lease_seconds",
+        ) if key in lease}
+        view.update({"kind": "lease_view", "view_only": True, "token": "<redacted>"})
+        return view
     if action == "complete":
         return store.complete_work(
             args.id, lease_token(args), args.summary,

@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "capability": "speckit-analyze under existing work controller",
+  "reviewed_at": "2026-09-12 09:34:50 UTC",
+  "verdict": "PASS",
+  "verdict_scope": "Final local task/contract/traceability consistency after exact R6 verifier/views/three independent reviews and report-only garden. All20local tasks done;43PASS_LOCAL/3UNVERIFIED original cases. Not operational or whole-goal completion.",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "4f0f65e55e4bc4f85a08c5e53f257d8483cd926ec96c4baf2bba609c23a0713e",
+    "research.md": "b86f8843daf28883f7f658732a37772f0e04a9c4befe124be562b17f563407a5",
+    "tasks.md": "9b5d731c3891e19d268c8b0ce17e996b0bcb551e033dd3b6c3e8cc9a55397147",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "d2204f042c2cc8b91f56e409de36f1dc50989fdf5f15f167ac02b605943ac053",
+    "knowledge-readiness.json": "6ee2c50497ccca6e45981710cfb420a20c5c3334cec2c56d5d402b4ced8e98f2",
+    "domain-discovery.json": "7768a45992cf5cfa5db0d22320b6c0f3f073c69daaaa19de3df12f3415593fb5",
+    "context-pack.json": "22608b7726858bbc7d40f329abcd5fa82e04e21d4fba6c158731062c55a453ef",
+    "environment.json": "2187b368de510655101d0065a119ec0ca5e9d4465e3aa7c15feffa554c5beb9e",
+    "review-r5.json": "7977ac1348685f1e2edb7f041c8138dfe01c47d048b929522506d047c98af313",
+    "task-manifests/index.yaml": "4b68f41555bee2f5ccfa0d952b902b837c7a548cd2eed24833bbc7bf7ccfe0a7",
+    "task-manifests/PORTABLE-DOC-T001.yaml": "110354cc5059a0c0759acb47048ff4536625e9b5e5fdf9207c01c6b3ecf36df0",
+    "task-manifests/PORTABLE-DOC-T002.yaml": "3d0c9f163fa0f06e36caa6103cd59182dc805a99b754fa58fc46daa07ad53e48",
+    "task-manifests/PORTABLE-DOC-T003.yaml": "942b54c2e023532f3c0afe3701d3f2439e27504e9dfffd1652df6e0ba1585a12",
+    "task-manifests/PORTABLE-DOC-T004.yaml": "bee8636dbfa5a8a2d22e9bbf239efc17f95b0b8ea938fe4f9889f30a70e6bfee",
+    "task-manifests/PORTABLE-DOC-T005.yaml": "4b3a86ce8fb57e2e7457852dbcd46396252d38be123640c947b99393d14d0da9",
+    "task-manifests/PORTABLE-DOC-T006.yaml": "2365d1b178a65ce7732bc47f4fdb9426d0b55f8a9d4a0312d1f6a5e3eaf3e630",
+    "task-manifests/PORTABLE-DOC-T007.yaml": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+    "task-manifests/PORTABLE-DOC-T008.yaml": "f3ecf731802287411e7fc63b92bbea5b7f6c34225095a2e40092aa299e15c1f5",
+    "task-manifests/PORTABLE-DOC-T009.yaml": "b45a5c7de0e064930daf9ef2d1314e3a6bbb354661389ca676bc6bab3151b8be",
+    "task-manifests/PORTABLE-DOC-T010.yaml": "b60fbe3abb320f4d82d6e426a0e0b1234a202742c583b0ee813861d73e19e8de",
+    "task-manifests/PORTABLE-DOC-T011.yaml": "0fb6dd96a7cb79c2d45af7b7fffbce48b3005a196b8ba70dce2da1bc7b0af980",
+    "task-manifests/PORTABLE-DOC-T012.yaml": "679333879f3e563c5f6eefff417be5a2e441b3e1f571fdb5ba9d31a8cede7a3b",
+    "task-manifests/PORTABLE-DOC-T013.yaml": "056629d43f42e8a2c55b630260bd2986c18ebde415b84bd8f8a609f97ef87c5c",
+    "task-manifests/PORTABLE-DOC-T014.yaml": "b39a15fc4c5f3ffd80ab980186059671324294a61df39f80d65be816154266ee",
+    "task-manifests/PORTABLE-DOC-T015.yaml": "7a3f7e905c7938831ceb962f66d93485174e5590b041a528181dd69f1d7bf75f",
+    "task-manifests/PORTABLE-DOC-T016.yaml": "fadf6b5d5a832aed80ae4c83cfbdf1dae1057b4aeddea8c69f4756f528acbabd",
+    "task-manifests/PORTABLE-DOC-T017.yaml": "06427fe58e9a7a648a4a456d00165b32db68ae3522b329ad51f52252ac8c6706",
+    "task-manifests/PORTABLE-DOC-T018.yaml": "78eb6999f0055448c39a4c8595decd48620fa6743b7c3e088670966edc78ced4",
+    "task-manifests/PORTABLE-DOC-T019.yaml": "f3b11f80fec051c7db94c09afe2fd2733bfac7919a66e0759eb3f9017d77920d",
+    "task-manifests/PORTABLE-DOC-T020.yaml": "78f31f822de5c6b0904a82bef4914cca15cd2d078a8bf421e7f6b070ab42dc08"
+  },
+  "current_context_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10",
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "tasks": 20,
+    "revalidation_queue": 0,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0,
+    "uncovered_requirements": 0,
+    "locally_completed_tasks": 20,
+    "open_tasks": 0
+  },
+  "executed": [
+    {
+      "command": "python3 -B .specify/scripts/taskify_to_tasks_md.py specs/012-portable-document-lifecycle/task-manifests --out specs/012-portable-document-lifecycle/tasks.md",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "bash .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B .agents/skills/taskify/scripts/validate_task_manifest.py specs/012-portable-document-lifecycle/task-manifests",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py contract validate specs/012-portable-document-lifecycle/work-contract.json",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py readiness evaluate specs/012-portable-document-lifecycle/knowledge-readiness.json",
+      "exit_code": 0,
+      "complete": true
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py context build specs/012-portable-document-lifecycle --force",
+      "exit_code": 0,
+      "complete": true
+    }
+  ],
+  "additional_executed": [
+    {
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "summary": "MATCH; existing missing-guide behavior remains a RED repair target"
+    },
+    {
+      "command": "node specs/012-portable-document-lifecycle/verify-traceability.mjs /Users/pinesky/workspace/synapse-app-split",
+      "exit_code": 0,
+      "summary": "23original requirements/46cases preserved,0finalPASS"
+    },
+    {
+      "command": "read-only Node manifest/index/command/scope/DAG audit",
+      "exit_code": 0,
+      "summary": "20manifests; required commands agree, no unknown original coverage or out-of-contract allowed path"
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py doctor",
+      "exit_code": 0,
+      "summary": "Repository controller/profile/knowledge/skill parity PASS"
+    },
+    {
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --list-slices",
+      "exit_code": 0,
+      "summary": "S20 first, then S19 and14revalidations/S08;3already-done slices excluded by existing renderer"
+    },
+    {
+      "command": "Current S19 focused131tests; strict seal119; scoped Ruff check/format; source/map/policy comparison; canonical docs review-batch r13; real Context build",
+      "exit_code": 0,
+      "summary": "32new+99existing tests,25source reviews resolved,24prior mappings unchanged,3owning guide registrations; generated Context14records/10unique paths."
+    },
+    {
+      "command": "Fourteen canonical slice evaluations and native transport probe",
+      "exit_code": 0,
+      "summary": "s08-predecessor-revalidation-r6.json and s08-native-r6.json; no source/governing drift, no native full Work/Python3.6/RHEL7 claim."
+    },
+    {
+      "command": "Full canonical S08 on exact current source155/governing46 inputs",
+      "exit_code": 0,
+      "summary": "s08-local-verification-r6.json:2494passed,4existing live Slack deselections; outerfast5/v2full11,seal119,selftest12; no source/governing drift."
+    },
+    {
+      "command": "docs sync-views and two isolated document-browser.mjs runs",
+      "exit_code": 0,
+      "summary": "s08-view-evidence-r6.json:2current source-derived bundles MATCH, current25source reviews RESOLVED, offline/no-script/XSS/private/keyboard/desktop/mobile/print passed."
+    },
+    {
+      "command": "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+      "exit_code": 0,
+      "summary": "Fresh current MATCH plus actual generated/stored guide delivery checked in canonical S08. An initial diagnostic passed the feature directory instead of the required file path, returned EISDIR2 with no mutation; corrected exact file command passed."
+    },
+    {
+      "command": "post-review docs/context/traceability/raw-retention checks",
+      "exit_code": 0,
+      "summary": "s08-post-review-checks-r6.json:RESOLVED/MATCH,original46cases preserved,6raw artifacts byte-exact."
+    },
+    {
+      "command": "task generator and manifest validator after terminal T008 metadata",
+      "exit_code": 0,
+      "summary": "20tasks generated;all20manifests validate. Test commands/acceptance procedures/scope unchanged."
+    }
+  ],
+  "refinements": [
+    "S20canonical295PASS and S19canonical131PASS; both original R5 findings have bounded local repair evidence, not independent closure.",
+    "All14affected canonical slices passed on unchanged155source/38governing inputs. Older completions retained; no required command or verifier threshold weakened.",
+    "Exactly3current owning Kit guides and7instructions appear in actual generated/stored Context with exact source hashes and MATCH. R13 attributed source review resolved25docs/24optional references without route/security promotion.",
+    "Original23requirements/46cases, case procedures and declared environments remain;0finalPASS until full integration, views and independent review.19tasks locallydone,T008 retains closure gates.",
+    "R6 independent contract/recovery/regression allPASS with0findings. Exact raw reports retained; regression independently reproduced2494passes and five intended mutation kills.",
+    "Post-review garden is complete/report-only with24candidates,0applied paths; no implementation changes after R6 freeze.",
+    "Native W003 scoped DONE recorded09:21:21UTC; terminal T008 index projection reconciled afterward. Original commands and task semantics are unchanged. Recheck current docs/trace before finishing this bookkeeping."
+  ],
+  "prior_analysis": "analysis-before-r6-review.json",
+  "remaining": [
+    "AC-039-P full native work/design lifecycle unverified",
+    "AC-050-P actual tracked retirement not authorized/executed",
+    "AC-054-P actual deployment BOM binding remains W004",
+    "Actual Python3.6/target/signing/fleet/whole-goal proof remains separate"
+  ],
+  "questions": [],
+  "business_scope_changes": false
+}

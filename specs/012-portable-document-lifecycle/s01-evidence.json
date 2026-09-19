@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S01",
+  "status": "LOCAL_FOUNDATION_PASS",
+  "recorded_at": "2026-09-11T04:08:17.483Z",
+  "authority": "execution-authorization.json / CR-SYNAPSE-APP-SPLIT-E021",
+  "contribution_boundary": "S01 proves finite generic source/payload and assembled runtime. Actual transaction installation remains S02. No original Astra requirement/acceptance case is marked PASS by this foundation receipt.",
+  "implementation": {
+    "baseline_payload_files": 68,
+    "mandatory_skills": 12,
+    "relative_claude_mirrors": 12,
+    "shared_source_parity_files": 6,
+    "foundry_profile": "18 existing skills and full verifier preserved",
+    "controller": "Existing loopctl/loopv2/eval only",
+    "manifest": {
+      "sha256": "16f6611d6aa247d685adde9ae6b1f123061e6210b4bc706a2a9e153c9f6b3e1e",
+      "bytes": 15066
+    },
+    "package_checksums": {
+      "sha256": "c44cca49bd7d8ab6a9a2ae509f6a12962c5ecbe2c638d6a0aa524aaa594df0c2",
+      "bytes": 12906
+    }
+  },
+  "tdd": {
+    "red": {
+      "tests": 15,
+      "passed": 1,
+      "failed": 14,
+      "raw_log": "w003-s01-harness-red.log",
+      "observed": "Pytest failure summary preserved; the initial shell wrapper masked exit status, so no wrapper exit-1 claim.",
+      "cause": "Eager PyYAML dependency, Phase-only generator, Python 3.6 incompatible future directive"
+    },
+    "green": {
+      "tests": 29,
+      "exit_code": 0
+    },
+    "repair_history": [
+      "Initial assembled suite 28/29: generic gardening seed retained a Cortex-specific description; removed that project-only description and reran 29/29.",
+      "Fixture tasks reset to ready independently of live completion state; final 29/29 rerun includes this repair."
+    ]
+  },
+  "verification": {
+    "canonical": {
+      "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S01",
+      "archived_input": "s01-eval-input-tasks.md",
+      "exit_code": 0,
+      "tests": 29,
+      "profile": "fast"
+    },
+    "full": {
+      "profile": "v2",
+      "verdict": "PASS",
+      "exit_code": 0,
+      "checks": [
+        {
+          "id": "ruff-check",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "ruff-format",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "mypy",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-runtime-doctor",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "manifest-validator",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "pytest",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-shell-syntax",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "schema",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "vault-lint",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "project-pack",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "kit-seal",
+          "status": "PASS",
+          "exit_code": 0
+        }
+      ],
+      "pytest_passed": 1654,
+      "pytest_deselected": 4,
+      "environment": {
+        "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "git": "git version 2.50.1 (Apple Git-155)",
+        "machine": "arm64",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "python": "3.11.15",
+        "registry_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+        "system": "Darwin",
+        "target_assumptions": {
+          "not_verified": [
+            "다른 OS·architecture 에서의 동작",
+            "pyproject 의 requires-python 아래 버전에서의 동작"
+          ],
+          "python_requirement": ">=3.11",
+          "verified_on": "macOS-26.2-arm64-arm-64bit",
+          "verifier_interpreter": [
+            ".venv/bin/python",
+            "python3"
+          ]
+        }
+      }
+    },
+    "assembly_canary": [
+      "Actual doctor/contract/readiness/context/environment/task validator/generator/eval",
+      "python3 -I -S JSON task paths",
+      "Required capability removal and mirror/policy negatives",
+      "Foundry private-profile exclusion"
+    ]
+  },
+  "logs": {
+    "w003-s01-full-final.json": {
+      "sha256": "b5e54f2cdc07a1c0fe0e23e989ce515d26a665ab906c3d2ada4d5613e5fbfa9c",
+      "bytes": 7262
+    },
+    "w003-s01-eval-final.log": {
+      "sha256": "7d1c20d5abfb667a3c4e0b61e19e1851469ea015ecd0bbc14360d41db4788a79",
+      "bytes": 2040
+    },
+    "w003-s01-full-final.log": {
+      "sha256": "8fb2554422aa636673d6fe8754de440e3e7d5052e4acd435c9fc2f85e58b237d",
+      "bytes": 3946
+    },
+    "w003-s01-harness-red.log": {
+      "sha256": "c2d0755aa82bafa5c07848d64496cd7aebc6a3eb1b958323a350ba2407e9fa6e",
+      "bytes": 22196
+    }
+  },
+  "limitations": [
+    "No actual installed baseline yet; installer does not consume this opt-in payload until S02.",
+    "No native Claude/Codex host smoke, Python3.6 interpreter, RHEL7 or real server proof.",
+    "General skill-creator quick_validate rejected existing supported project frontmatter extensions; it is not recorded as PASS. Actual project doctor and exact-skill/mirror/invocation canaries passed.",
+    "No Store rebind, live installation, trust change, fleet action, commit or publication.",
+    "S01 foundation completion is not W003 completion; S02-S08 remain."
+  ],
+  "original_acceptance_passes": 0
+}

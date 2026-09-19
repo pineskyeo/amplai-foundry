@@ -1,0 +1,219 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        {
+          "path": "design-reference/eval/test-catalog.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/implementation/requirements-traceability.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/21_TEST_ACCEPTANCE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/013-amplai-v3/work-contract.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/013-amplai-v3/spec.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "112 test 각각에 given/when/expected 가 있다. 미착수 20 task 의 test_ids 가 tasks.yaml 에 매핑돼 있다. 설계 검수(schema/fixture)는 제품 검증이 아니다 (21 §1). fake driver 는 state machine unit 에만 유효하고 provider conformance 를 대체하지 않는다 (21 §4).",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        {
+          "path": "design-reference/design/01_SCOPE_AND_DECISIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/24_ADR_LOG.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "docs/workstreams/amplai-loop-runtime-adoption/DECISIONS.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "발견된 충돌 없음. 잠재 긴장 1건을 기록한다: .ai-team/README.md 'Scope freeze' 는 V2 에 scheduler/worker fan-out 을 두지 않는다고 하고, V3 설계는 그것을 runtime 에 둔다 — 이는 모순이 아니라 V2→V3 경계이며 D-046/D-051/D-053 각주가 이미 V3 로 미룬 항목이다. Kit 의 Local Supervisor 는 V3 execution fabric 이 아니다 (README 각주). 이 Work 는 그 각주를 바꾸지 않는다.",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        {
+          "path": "specs/013-amplai-v3/dev03-delivery-evidence.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "docs/v3/DEV02_EXECUTION.ko.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "tests/v3/conftest.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/reference.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/meta_harness/pipeline_reference.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/control_plane/api_v3/server.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "DEV-03 는 runtime(goals/graphs/execution/storage/effects/budgets/recovery), agent_drivers, sandbox, tool_broker, evaluation, meta_harness, api_v3 를 구현했고 477 test 가 로컬에서 통과한다 (2026-09-18 재현). 62 task 중 20 개는 미착수이며 목록은 dev03-delivery-evidence.json 에 있다. 품질 게이트(ruff/mypy)는 HEAD 0 대비 DEV-03 가 오류를 들여왔고 S00 이 닫는다.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        {
+          "path": "design-reference/contracts/invariant-registry.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/contracts/gate-matrix.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/03_INVARIANT_REGISTRY.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/09_STORAGE_TRANSACTIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "불변조건 registry 와 gate matrix 가 정본이다. 저장 원자 경계(09 §4), authority 재조회(09 §5), CAS commit 순서(09 §6), LLM self-approval 금지, client-supplied actor 불신, 승인 없는 push/merge/deploy 금지, 자동 삭제 금지.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        {
+          "path": "design-reference/contracts/README.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/contracts/schema-index.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/implementation/tasks.yaml",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/eval/test-catalog.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/09_STORAGE_TRANSACTIONS.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "schema/*.json 이 wire 정본, tasks.yaml 이 작업 정본, test-catalog.json 이 인수 정본. 저장 SSOT 는 객체별 단일 소유자(09 §1 표). 자연어와 JSON 이 불일치하면 DESIGN_CONFLICT 로 보고하고 임의 선택하지 않는다.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        {
+          "path": "specs/013-amplai-v3/work-contract.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/02_ARCHITECTURE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/13_CAPABILITY_PACKS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "AGENTS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": ".ai-team/README.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "Control plane 이 goals/workgraph/runtime/sessions/verification/evaluation/evolution 을 소유하고 기존 governance 가 유일 authority 다 (02 §2). Worker 는 candidate_completed 관측만 낸다. Platform 과 Kit 은 독립 release train (01 §3). /work·/design 두 public entry 만 유지 (13 §1, AGENTS.md). design-reference/ 는 무변경.",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        {
+          "path": "design-reference/design/01_SCOPE_AND_DECISIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/02_ARCHITECTURE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/33_IDENTITY_REFERENCE_LIFECYCLE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/contracts/schemas/common.schema.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "Goal/Contract/WorkGraph/Run/Lease/Effect/Evidence/Verdict/Composition/ReleaseSet/Pack/AppBinding 용어는 승인 설계 01·02·33 과 30 개 schema 가 정의한다. DEV-03 문서가 Observatory/Corpus/Experiment/Canary/Promotion 의 구현 용어를 같은 정의로 쓴다. 세 graph(WorkGraph/KnowledgeGraph/HarnessComposition)를 혼동하지 않는다 (02 §5).",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        {
+          "path": ".ai-team/verifiers/registry.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "scripts/eval.sh",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "pyproject.toml",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/013-amplai-v3/plan.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "v2 profile = runtime + full + kit-seal. slice 별 Eval 은 task-manifest required command. mypy strict, ruff E/F/I/UP/B/SIM/RUF. optional visual extra 는 mypy override 로 stub 부재만 허용. Unavailable 환경(브라우저/컨테이너/provider)은 NOT PASS 로 남긴다.",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+    "contract": "specs/013-amplai-v3/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "AMPLAI-V3-RC01",
+  "work_type": "architecture"
+}

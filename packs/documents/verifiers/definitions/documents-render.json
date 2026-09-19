@@ -1,0 +1,23 @@
+{
+  "definition_id": "documents-render",
+  "version": "3.0.0-rc1",
+  "kind": "artifact_visual",
+  "runner": "artifact_inspection",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "human_approved_baseline",
+  "optional": false,
+  "notes": "final rendered result is inspected, not only the source"
+}

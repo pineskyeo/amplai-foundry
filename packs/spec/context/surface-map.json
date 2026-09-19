@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "kind": "spec_surface_map",
+  "source_of_truth": ".agents/skills (D-046); packs/spec is a generated projection",
+  "files": {
+    "skills/speckit-specify/SKILL.md": {
+      "source": ".agents/skills/speckit-specify/SKILL.md",
+      "digest": "sha256:fd8a7d52cbe12fd2877231d7cae0ec130afed491d783f6ec48d248fd045818af"
+    },
+    "skills/speckit-clarify/SKILL.md": {
+      "source": ".agents/skills/speckit-clarify/SKILL.md",
+      "digest": "sha256:a77b0ef00631bd5cdc8eabbfb3359c09cca3f25c7e31fbb0fa878351621faf3a"
+    },
+    "skills/speckit-plan/SKILL.md": {
+      "source": ".agents/skills/speckit-plan/SKILL.md",
+      "digest": "sha256:8f79a8c972628da92a4b402bbd8d6fffb6e4e3b56cde3c0faef32b7019fe55de"
+    },
+    "skills/taskify/SKILL.md": {
+      "source": ".agents/skills/taskify/SKILL.md",
+      "digest": "sha256:3fddc7f574a0ce870347adbb4726fd0d5cd5f1218aafda0d76616b1bfca4ff12"
+    },
+    "skills/speckit-analyze/SKILL.md": {
+      "source": ".agents/skills/speckit-analyze/SKILL.md",
+      "digest": "sha256:9f65d12e168dad1fcb03642032317ca90114123bb82eeb162b6ac5ae01fd70b6"
+    },
+    "skills/speckit-converge/SKILL.md": {
+      "source": ".agents/skills/speckit-converge/SKILL.md",
+      "digest": "sha256:b650b75edeaf2589e59c503e966522404960cb9dc138bbf4b44c044b5c72b27f"
+    },
+    "skills/speckit-checklist/SKILL.md": {
+      "source": ".agents/skills/speckit-checklist/SKILL.md",
+      "digest": "sha256:d0dcd33e974c500140d9b3e3e51656a11b8ee2a48e43ebb1b4226dba0db40131"
+    },
+    "skills/speckit-constitution/SKILL.md": {
+      "source": ".agents/skills/speckit-constitution/SKILL.md",
+      "digest": "sha256:ced1e2bf9d7e2d022a1fccba41c9781a15ea78bdfb3e09addc06f63715934639"
+    },
+    "skills/speckit-implement/SKILL.md": {
+      "source": ".agents/skills/speckit-implement/SKILL.md",
+      "digest": "sha256:e213c87e99556f050efbbf9029313b4297243ad053385ef5f1bdf8768adae21f"
+    },
+    "skills/speckit-taskstoissues/SKILL.md": {
+      "source": ".agents/skills/speckit-taskstoissues/SKILL.md",
+      "digest": "sha256:cc09e3555e84c1f8d22fe103cc476fbf2573f991d5bd43fb08a12ce9e02c13f8"
+    }
+  }
+}

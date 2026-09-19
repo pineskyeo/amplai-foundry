@@ -1,0 +1,23 @@
+{
+  "definition_id": "frontend-render",
+  "version": "3.0.0-rc1",
+  "kind": "artifact_visual",
+  "runner": "visual_render",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "pinned browser/font/OS/animation/timestamp; viewports 1280x900 and 390x844"
+}

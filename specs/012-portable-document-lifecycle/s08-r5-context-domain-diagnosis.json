@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "classification": "PLAN_SCOPE_MAPPING",
+  "observed_at": "2026-09-12 05:07:13 UTC",
+  "reproduction": {
+    "command": "python3 -B scripts/loopctl.py context build specs/012-portable-document-lifecycle --force",
+    "exit_code": 2,
+    "error": "CROSS_BOUNDARY_REFERENCE",
+    "log": "s08-context-r5-first-failure.log"
+  },
+  "root_cause": "The R5 source-preparation step assigned the Kit candidate release to21 additional Foundry product/governing guides. The existing release-wide Context selector consequently attempted their typed references, including unclassified private/generated namespaces and command/namespace notation outside the three Kit guides. Required source classification correctly blocked output.",
+  "diagnostic": {
+    "inspected_guides": 25,
+    "blocked": [
+      {
+        "path": ".ai-team/README.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": ".ai-team/knowledge/README.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": ".ai-team/runtime/INSTALLATION.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": ".ai-team/runtime/escalation.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "AGENTS.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "CLAUDE.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "README.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "docs/PROJECT-PACK.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "docs/ROADMAP.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+        "lifecycle": "archived",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      },
+      {
+        "path": "docs/VERSIONING.md",
+        "lifecycle": "active",
+        "code": "CROSS_BOUNDARY_REFERENCE"
+      }
+    ]
+  },
+  "repair": {
+    "code_or_security_label_changes": false,
+    "current_kit_release": "kit-2.5.0-candidate-r5",
+    "guides": [
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "tools/amplai-loop-kit/README.md",
+      "tools/amplai-loop-kit/CHANGELOG.md"
+    ],
+    "retained_prior_memberships": [
+      ".ai-team/README.md.amplai.json",
+      ".ai-team/contracts/README.md.amplai.json",
+      ".ai-team/evidence/README.md.amplai.json",
+      ".ai-team/knowledge/README.md.amplai.json",
+      ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md.amplai.json",
+      ".ai-team/runtime/INSTALLATION.md.amplai.json",
+      ".ai-team/runtime/WORKFLOW.md.amplai.json",
+      ".ai-team/runtime/escalation.md.amplai.json",
+      ".ai-team/verifiers/README.md.amplai.json",
+      "AGENTS.md.amplai.json",
+      "CLAUDE.md.amplai.json",
+      "README.md.amplai.json",
+      "docs/KNOWLEDGE-RULES.md.amplai.json",
+      "docs/LIFECYCLE.md.amplai.json",
+      "docs/MEMORY-DOMAIN-MODEL.md.amplai.json",
+      "docs/PROJECT-PACK.md.amplai.json",
+      "docs/PROPOSALS.md.amplai.json",
+      "docs/RELATIONSHIPS.md.amplai.json",
+      "docs/ROADMAP.md.amplai.json",
+      "docs/VERSIONING.md.amplai.json",
+      "docs/VISION.md.amplai.json"
+    ],
+    "governing": "Existing release-independent governing_snapshot remains authoritative. Shared instruction bodies/roles and indexed Decisions are unchanged.",
+    "scope": "Restore only this turn's R5 enrollments of21 non-Kit guides to their exact prior release membership. Do not reclassify Vault/Proposal/product sources or weaken reference guards. The archived bridge metadata remains unchanged.",
+    "verification_required": "Real three-guide current selection, real mandatory governing inputs, current Context build/validate, all25mandatory source reviews, full S08 including existing predecessor tests, fresh release/HTML/browser and all3R5lenses."
+  },
+  "limits": [
+    "The retained foreign product/candidate sources are not certified as currently shareable; their strict cross-boundary errors remain.",
+    "13 canonical predecessor runs remain evidence of their exact earlier source pins. Current full integration must pin the21metadata-only deltas and the new real selection check.",
+    "No original requirement/case was removed; no new release publication or actual app/host mutation."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "3.0.0",
+  "pack_id": "research",
+  "version": "3.0.0-rc1",
+  "publisher": "amplai",
+  "protocol_major": 3,
+  "entry_capabilities": [
+    "research.retrieve",
+    "research.provenance",
+    "research.uncertainty"
+  ],
+  "dependencies": [],
+  "permissions": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "model_requirements": [],
+  "context_refs": [],
+  "verifier_refs": [],
+  "eval_case_ids": [],
+  "license": "Proprietary"
+}

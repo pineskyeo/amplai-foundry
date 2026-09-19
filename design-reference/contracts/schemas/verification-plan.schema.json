@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/verification-plan.schema.json",
+  "title": "AMPLAI V3 verification-plan",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "plan_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "contract_ref": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "acceptance_id": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+          },
+          "verifier_ref": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+          },
+          "subject_selector": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "environment_ref": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+          },
+          "required_evidence_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "minItems": 1,
+            "maxItems": 256
+          },
+          "decision_rule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "independent_review": {
+            "type": "boolean"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "acceptance_id",
+          "verifier_ref",
+          "subject_selector",
+          "environment_ref",
+          "required_evidence_types",
+          "decision_rule",
+          "independent_review",
+          "timeout_seconds"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "protected_regression_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "policy_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    }
+  },
+  "required": [
+    "schema_version",
+    "plan_id",
+    "scope",
+    "contract_ref",
+    "bindings",
+    "protected_regression_refs",
+    "policy_ref"
+  ],
+  "additionalProperties": false
+}

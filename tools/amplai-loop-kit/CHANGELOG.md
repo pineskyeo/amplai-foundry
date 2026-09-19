@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.5.0 (Local Integration Candidate)
+
+- Added an opt-in runnable generic baseline, exact complete-package seals and recoverable installation.
+- Added one-owner document metadata, dependency-bound review, current/history filtering and offline HTML.
+- Preserved original sections and made normal gardening report-only; no destructive CLI is exposed.
+- Added explicit historical/development-source roles without bypassing mandatory current-guide review.
+- Rendered terminal Work results as read-only views and removed credentials from heartbeat display.
+- Preserved mandatory governing instructions and applicable indexed Decisions with complete Context validation.
+- Checked normalized local references before all current/history consumer output and HTML bundle selection.
+- Rejected oversized review and impact output before replacing readable files; retained original history and modes.
+- Scanned multiline/nested Markdown and HTML references with exact URI filename identity before consumer output.
+- Preserved POSIX record modes under restrictive umask and rejected concurrent identity/metadata drift before publication.
+- Bounded aggregate reference retention before prefix/label/path allocation in lexical and typed extraction.
+- Defined finite single-URL/inert HTML attributes and namespace handling; rejected compound/embedded syntax and local-file/opaque schemes before output.
+- Retained separate XSS intake rejection and renderer-only escaping/offline browser checks; unsupported active raw source is no longer accepted as a current guide.
+- Applied existing Work-memory roles before impact parsing and bounded candidate extraction without repeated declaration context; preserved strict exact validation, relative extensionless candidates and legacy-interpreter literal-name handling.
+- Bounded declaration classification work before scanning and removed repeated suffix backtracking while retaining required/list/negation meaning.
+- Checked typed inline-code/tree/directory/glob and existing optional targets before output, with alias-aware security and bounded dependency/visibility traversal; kept finite bare command/location notation distinct from file references.
+- Preserved borrowed baseline file permissions across reinstall, package updates and uninstall; retained installer-owned mode updates and borrowed-content conflict checks.
+- Rejected escaping, dangling and cyclic optional aliases before fallback/output, including parent aliases and resolution failures; retained genuine absence and safe internal alias behavior with bounded prefix checks.
+- Registered the three owning Kit guides in Foundry's existing knowledge map and verified actual generated/stored Context delivery with exact source hashes; preserved mandatory instructions and release/security filtering.
+- Local candidate only: publication, real fleet upgrades and target deployment remain separate.
+
 ## 2.4.0
 
 Host abstraction and Platform federation boundary.

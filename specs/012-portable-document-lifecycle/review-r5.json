@@ -1,0 +1,237 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 5,
+  "status": "CHANGES_REQUIRED",
+  "recorded_at": "2026-09-12 06:22:01 UTC",
+  "scope_sha256": "8cf0f966f0828e83ebe38089d372c0b5b598bcb18127630a1943b338de4c76f2",
+  "scope_file_sha256": "b55caffb94912d373af08e83003650193790b8ac6ceb6b81faa68be0100a4451",
+  "source_snapshot": {
+    "path": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r5-source-snapshot.tar.gz",
+    "sha256": "5abd5efec29f929a0f6d63c6a8b91d1d3d5be759287b286d5c3076a5b21d3f54",
+    "source_files": 152,
+    "governing_artifacts": 512,
+    "verified_files": 664,
+    "archive_members": 665,
+    "all_sha_bytes_modes_match": true,
+    "metadata_companions": 0
+  },
+  "reviews": [
+    {
+      "lens": "contract",
+      "verdict": "CHANGES_REQUIRED",
+      "retained_report": "review-r5-contract.md",
+      "sha256": "fdee0f3efa4f0b9f02169fd01b301c6dc2710296a19f2deffae7ff1079343b6b",
+      "raw_message": "review-r5-contract-raw.json",
+      "counts": {
+        "p0": 0,
+        "p1": 0,
+        "blocking_p2": 1,
+        "advisory": 0
+      }
+    },
+    {
+      "lens": "recovery",
+      "verdict": "CHANGES_REQUIRED",
+      "retained_report": "review-r5-recovery.md",
+      "sha256": "0383b2c8c02d01f852563d7a9b068b4d1ceedfe6bdc01524c1dff1a3dff84d1c",
+      "raw_message": "review-r5-recovery-raw.json",
+      "counts": {
+        "p0": 0,
+        "p1": 1,
+        "blocking_p2": 0,
+        "advisory": 0
+      }
+    },
+    {
+      "lens": "regression",
+      "verdict": "PASS",
+      "retained_report": "review-r5-regression.md",
+      "sha256": "bf1b911b5246796fcece1a1f64fbd422ee50543e995c240aad1a3d54a1e15ef3",
+      "counts": {
+        "p0": 0,
+        "p1": 0,
+        "blocking_p2": 0,
+        "advisory": 0
+      }
+    }
+  ],
+  "triage": [
+    {
+      "id": "W003-R5-01",
+      "severity": "Blocking-P2",
+      "findings": [
+        "contract selected Kit guides never enter actual Work Context"
+      ],
+      "owner_task": "PORTABLE-DOC-T019",
+      "disposition": "ACCEPTED_LOCAL_REPAIR",
+      "root_cause": "The three selected Kit guides have no entries in the existing knowledge map. Actual context_records and context_build required_knowledge therefore omit them, while the feature verifier asserts only upstream document selection.",
+      "main_reproduction": {
+        "command": ".venv/bin/python -B -c <read-only actual selector/context_records/stored required_knowledge comparison>",
+        "exit_code": 1,
+        "retained_probe": "review-r5-main-context-probe.txt",
+        "raw_probe": "review-r5-main-context-probe-raw.json",
+        "retained_log": "review-r5-main-context-red.log",
+        "missing_generated_guides": 3,
+        "missing_stored_guides": 3
+      }
+    },
+    {
+      "id": "W003-R5-02",
+      "severity": "P1",
+      "findings": [
+        "recovery R5-FR-001",
+        "main escaping/dangling/cyclic leaf and parent optional alias controls"
+      ],
+      "owner_task": "PORTABLE-DOC-T020",
+      "disposition": "ACCEPTED_LOCAL_REPAIR",
+      "root_cause": "Unsafe candidate resolution is silently discarded; a nonexistent document-relative fallback or unresolved logical alias is treated as an optional absent example before disclosure classification. A restricted identifier reaches output.",
+      "main_reproduction": {
+        "command": ".venv/bin/python -B /tmp/w003-r5-main-alias.Pc5i5J/probe.py",
+        "exit_code": 1,
+        "retained_probe": "review-r5-main-alias-probe.txt",
+        "retained_log": "review-r5-main-alias-red.log",
+        "failed_engine_case_combinations": 12,
+        "passed_control_combinations": 8,
+        "checks_per_combination": 14,
+        "limit": "Synthetic identifiers only; no outside-file content read or actual secret exposure established."
+      }
+    }
+  ],
+  "advisories": [],
+  "gate": {
+    "all_three_sequential_reviews_completed": true,
+    "p0": 0,
+    "p1": 1,
+    "blocking_p2": 1,
+    "advisory": 0,
+    "pass": false,
+    "next": "S20 unsafe optional alias distinction, then S19 actual guide delivery; affected canonical regressions/full S08, exact current docs/Context/immutable HTML, and three fresh sequential R6 lenses."
+  },
+  "retention": {
+    "pre_edit_check": {
+      "at": "2026-09-12T06:20:17.193Z",
+      "checked": 664,
+      "drift": [],
+      "all_three_completed": true
+    },
+    "raw_copies": [
+      {
+        "original": "exact independent contract reviewer final message",
+        "retained": "review-r5-contract-raw.json",
+        "bytes": 3612,
+        "sha256": "d3f9724b102aaa3e27a52c2b84ed7b25c250830ad899b290bde03b89e783a7ba"
+      },
+      {
+        "original": "exact independent contract reviewer final message",
+        "retained": "review-r5-contract.md",
+        "bytes": 3445,
+        "sha256": "fdee0f3efa4f0b9f02169fd01b301c6dc2710296a19f2deffae7ff1079343b6b",
+        "raw_envelope": "review-r5-contract-raw.json",
+        "framing": "single terminal LF appended to readable view; verbatim string retained separately"
+      },
+      {
+        "original": "exact independent recovery reviewer final message",
+        "retained": "review-r5-recovery-raw.json",
+        "bytes": 6339,
+        "sha256": "bfb255da33bab47d538a6e1588c9f2613eab04138e8823d971549ffb7467dcf3"
+      },
+      {
+        "original": "exact independent recovery reviewer final message",
+        "retained": "review-r5-recovery.md",
+        "bytes": 6130,
+        "sha256": "0383b2c8c02d01f852563d7a9b068b4d1ceedfe6bdc01524c1dff1a3dff84d1c",
+        "raw_envelope": "review-r5-recovery-raw.json",
+        "framing": "single terminal LF appended to readable view; verbatim string retained separately"
+      },
+      {
+        "original": "/tmp/w003-r5-regression.cJS4Cl/review.md",
+        "retained": "review-r5-regression.md",
+        "bytes": 7057,
+        "sha256": "bf1b911b5246796fcece1a1f64fbd422ee50543e995c240aad1a3d54a1e15ef3"
+      },
+      {
+        "original": "executed read-only probe retained from tool memory",
+        "retained": "review-r5-main-context-probe-raw.json",
+        "bytes": 1024,
+        "sha256": "dad921f9d9e9311dc68cd3694827fa1b7bc3e1b92c4fdd69150b60ee4d59c581"
+      },
+      {
+        "original": "executed read-only probe retained from tool memory",
+        "retained": "review-r5-main-context-probe.txt",
+        "bytes": 855,
+        "sha256": "069e1ef68bb3708ef0c5176c5bcb2c18fa69e5b151454c95f48ae8cfc3f18f03",
+        "raw_envelope": "review-r5-main-context-probe-raw.json",
+        "framing": "single terminal LF appended to readable view; verbatim string retained separately"
+      },
+      {
+        "original": "exact executed stdout",
+        "retained": "review-r5-main-context-red.log",
+        "bytes": 440,
+        "sha256": "b850a194a282d8024cb7bc4c07359b67321409d901c3b6d4d594f259ba96b81e"
+      },
+      {
+        "original": "/tmp/w003-r5-main-alias.Pc5i5J/probe.py",
+        "retained": "review-r5-main-alias-probe.txt",
+        "bytes": 4522,
+        "sha256": "a6465550ed8702a34d7d72831455c1a26707e036c37660afb3f5b06eeaf7bbd4"
+      },
+      {
+        "original": "exact executed stdout",
+        "retained": "review-r5-main-alias-red.log",
+        "bytes": 5454,
+        "sha256": "7b21af461a361dac6d65606c5a182bf40bc246e01afcf954e83405638f3e5bf7"
+      },
+      {
+        "original": "/tmp/w003-r5-recovery.qESisa/probe_optional_alias.py",
+        "retained": "review-r5-recovery-alias-probe.txt",
+        "bytes": 2309,
+        "sha256": "1bd214c958e4527106f7a575750c0e512789a2a818433820030db6758f92d2be"
+      },
+      {
+        "original": "/tmp/w003-r5-recovery.qESisa/probe_optional_alias_delivery.py",
+        "retained": "review-r5-recovery-delivery-probe.txt",
+        "bytes": 4521,
+        "sha256": "21bee1bf5350af0acee564b232a76525a8c3ea58264c8d0ff8babceb011090f5"
+      },
+      {
+        "original": "/tmp/w003-r5-recovery.qESisa/optional-alias.json",
+        "retained": "review-r5-recovery-alias-results.json",
+        "bytes": 13207,
+        "sha256": "82ab598a3aefd4fe26ef34bbd6ad7d22dbf0b14ca38f75fe56898314787573e8"
+      },
+      {
+        "original": "/tmp/w003-r5-recovery.qESisa/optional-alias-delivery.json",
+        "retained": "review-r5-recovery-delivery-results.json",
+        "bytes": 1378,
+        "sha256": "608e3e61bf70e9fb93b7d2b6f15517ae3d35037c6bab84b715ba5ef4da5ac50d"
+      },
+      {
+        "original": "/tmp/w003-r5-regression.cJS4Cl/mutation_probe.py",
+        "retained": "review-r5-regression-mutation-probe.txt",
+        "bytes": 3220,
+        "sha256": "175b1b844c2d9bc82f963a01c7a5df7973931b6784ba3f62c9038f83b006f408"
+      },
+      {
+        "original": "/tmp/w003-r5-regression.cJS4Cl/mutation.log",
+        "retained": "review-r5-regression-mutation.log",
+        "bytes": 1083,
+        "sha256": "978aed4bdea894be13c5ce69a094732bc75a3b65dbf3dca0d7f2298b147553c4"
+      }
+    ],
+    "security_scan": {
+      "files": 16,
+      "original_texts_scanned": 13,
+      "credential_findings": 0,
+      "scope": "Internal Work review/probe retention only; exact known lease and narrow credential-pattern scan plus content inspection. Not customer delivery, DLP, publication or independent approval.",
+      "framing": "Three messages/probe strings without final LF also have a JSON envelope that losslessly retains original text. Readable views add one terminal LF only; every retained byte was checked."
+    }
+  },
+  "evidence_limits": [
+    "R5 full2374PASS with4pre-existing liveSlack exclusions is exact historical evidence, not proof that these newly reproduced negative controls pass.",
+    "Reviewer focused counts overlap and are not summed. Regression five mutants assess selected guard assertions only.",
+    "All152full-eval source pins still matched; exactly plan.md and acceptance-map.json were declared post-eval reporting changes among32governing inputs.",
+    "No original23requirements/46cases or total84/168 final PASS is inferred; no approval, security classification or ownership boundary changes.",
+    "No Python3.6, RHEL7, full native Work/resume, signing/fleet, actual retirement, W004 deployment or production evidence."
+  ]
+}

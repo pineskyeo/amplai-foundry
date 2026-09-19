@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S11",
+  "task": "PORTABLE-DOC-T011",
+  "status": "LOCAL_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11 12:07:39 UTC",
+  "review_finding": "review-r1.json#W003-R1-03",
+  "canonical": {
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S11",
+    "exit_code": 0,
+    "tests": 89,
+    "verifier_checks": 5,
+    "seal": "PASS",
+    "log": "s11-canonical-eval.log",
+    "tasks": "s11-eval-input-tasks.md"
+  },
+  "red": {
+    "exit_code": 1,
+    "failures": 2,
+    "log": "s11-red.log",
+    "causes": [
+      "Accumulated valid reviews replace their readable store before over-budget rejection",
+      "Configured projection reader cap does not prevent oversized publication"
+    ]
+  },
+  "focused_green": {
+    "exit_code": 0,
+    "tests": 3,
+    "seconds": 9.52
+  },
+  "behavior": [
+    "Exact UTF-8 pretty JSON checked before any pending stage or replacement",
+    "Review store fixed 8388608-byte budget; impact projection uses its configured max_file_bytes and matching expected-byte read",
+    "Rejected accumulated history preserves prior hash/size/mode; current selection, impact and a later compact attributed review recover",
+    "700 changed source fixtures exceed the 262144-byte projection cap without exceeding per-source or file-count limits; rejection preserves prior readable projection and normal retry",
+    "Unicode exact-size boundary accepted; one-byte-under cap rejects without invoking publication callback; permissions preserved"
+  ],
+  "source_hashes": {
+    "scripts/amplai_docs.py": "30beeaf7847325d3cbd0b8275aa7410402190a642b26c583a3e2f8d603af9b8f",
+    "tests/ai/test_document_review.py": "13a9177cc705b6108b50ce0c2e39073da5e8bb3c38cd53e4f0e6164aa5da1302",
+    "tests/ai/test_document_preservation.py": "bca77985592fa5244cd322bae0836130e8acb7507d82ee7f06dadcbc0471ce7c",
+    "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py": "30beeaf7847325d3cbd0b8275aa7410402190a642b26c583a3e2f8d603af9b8f",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "a045d11821b9b6e6306c8288405548fb6eb053700b54ed2cdebdcd8e104a87f1",
+    "specs/012-portable-document-lifecycle/tasks.md": "dc9bed4f6d04095cb74c63aaf9e675b0c26ee09b0430b752aa92d21800f28fa2"
+  },
+  "limits": [
+    "Three R1 repairs are locally verified, not independently closed",
+    "S01-S06 revalidation and S08 current full verification/docs/views/R2 review remain",
+    "No real retirement, production/RHEL7/Python3.6/full native Work or publication"
+  ],
+  "authority": "E021 local fixture/Kit repair only"
+}

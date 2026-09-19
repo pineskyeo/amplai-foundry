@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "verdict": "PASS",
+  "input_sha256": "68e70cb5c128da58e6ecd4ca97fb88af1cb5d9fdde3a026badbc0ae20a5570ea",
+  "checks": [
+    {
+      "id": "s08-local-verification-r4",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-local-verification-r4.json",
+        "sha256": "7054a5e791d732d16e4dc6b9f07832133d4e7c58d4b8ad39ebd423bd9049f247"
+      }
+    },
+    {
+      "id": "s08-guide-components-r4",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-guide-components-r4.json",
+        "sha256": "1e359857a9819fdf368b852357efd0152d580b6e1273b02f8a8d766517779e85"
+      }
+    },
+    {
+      "id": "s08-context-r4-final",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-context-r4-final.json",
+        "sha256": "627e56b031a9cd581b9da252364362024e54c128f93da5adf63d14ff8c258031"
+      }
+    }
+  ]
+}

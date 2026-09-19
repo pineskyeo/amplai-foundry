@@ -1,0 +1,835 @@
+{
+  "version": "3.0.0",
+  "gates": [
+    {
+      "id": "G-01",
+      "name": "Authenticated scope",
+      "invariants": [
+        "INV-01",
+        "INV-02",
+        "INV-23"
+      ],
+      "when": "모든 command/worker/API ingress",
+      "owner": "AuthorityService",
+      "required_evidence": "검증된 ActorContext와 scope; idempotency payload binding",
+      "skip_policy": "정책상 불필요한 public read만 별도 read profile. write는 skip 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-001",
+        "T-002",
+        "T-003",
+        "T-004",
+        "T-005"
+      ]
+    },
+    {
+      "id": "G-02",
+      "name": "Intent and target resolution",
+      "invariants": [
+        "INV-04",
+        "INV-20"
+      ],
+      "when": "resolution 완료 및 execution admission",
+      "owner": "GoalService",
+      "required_evidence": "registry target, data class, source-backed facts",
+      "skip_policy": "design 탐색은 unresolved target 기록 후 제한 read만 허용",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-006",
+        "T-007",
+        "T-107"
+      ]
+    },
+    {
+      "id": "G-03",
+      "name": "Goal contract and critic",
+      "invariants": [
+        "INV-03",
+        "INV-05",
+        "INV-06"
+      ],
+      "when": "contract freeze/activate",
+      "owner": "ContractCompiler",
+      "required_evidence": "acceptance binding, non-goals, protected constraints, critic findings closure",
+      "skip_policy": "tiny는 condensed contract 가능; contract 자체 skip 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-006",
+        "T-007",
+        "T-008",
+        "T-009",
+        "T-010",
+        "T-011",
+        "T-012",
+        "T-013",
+        "T-014",
+        "T-108"
+      ]
+    },
+    {
+      "id": "G-04",
+      "name": "Knowledge readiness",
+      "invariants": [
+        "INV-16",
+        "INV-18"
+      ],
+      "when": "context compile/resume",
+      "owner": "ContextService",
+      "required_evidence": "8 readiness 항목, mandatory governing refs, conflict resolution",
+      "skip_policy": "N/A는 rule과 reason 필요",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-015",
+        "T-016",
+        "T-017",
+        "T-018",
+        "T-019",
+        "T-020",
+        "T-110"
+      ]
+    },
+    {
+      "id": "G-05",
+      "name": "WorkGraph compile",
+      "invariants": [
+        "INV-03",
+        "INV-07"
+      ],
+      "when": "graph create/activate/replan",
+      "owner": "GraphCompiler",
+      "required_evidence": "cycle/type/ref/coverage/resource checks",
+      "skip_policy": "single node도 동일 schema 적용",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-021",
+        "T-022",
+        "T-023",
+        "T-024",
+        "T-025",
+        "T-026",
+        "T-027",
+        "T-028",
+        "T-029",
+        "T-030"
+      ]
+    },
+    {
+      "id": "G-06",
+      "name": "Authority and capability admission",
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-20",
+        "INV-21"
+      ],
+      "when": "worker dispatch/steering activation",
+      "owner": "PolicyService",
+      "required_evidence": "current grant, policy intersection, qualified environment",
+      "skip_policy": "explicitly read-only safe capability profile만 허용",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-073",
+        "T-074",
+        "T-075",
+        "T-076",
+        "T-077",
+        "T-078",
+        "T-108",
+        "T-112"
+      ]
+    },
+    {
+      "id": "G-07",
+      "name": "Environment and release integrity",
+      "invariants": [
+        "INV-17",
+        "INV-21",
+        "INV-26",
+        "INV-27"
+      ],
+      "when": "startup/dispatch/install",
+      "owner": "ReleaseService",
+      "required_evidence": "pinned release, driver/sandbox probes, workspace fingerprint",
+      "skip_policy": "unsupported platform은 HOLD",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-107",
+        "T-111",
+        "T-112"
+      ]
+    },
+    {
+      "id": "G-08",
+      "name": "Root budget and resources",
+      "invariants": [
+        "INV-10",
+        "INV-11"
+      ],
+      "when": "claim/child spawn/continuation",
+      "owner": "BudgetService",
+      "required_evidence": "atomic reservation, lease, write resource exclusivity",
+      "skip_policy": "추가 예산 승인 없이 bypass 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-031",
+        "T-032",
+        "T-033",
+        "T-034",
+        "T-035",
+        "T-036",
+        "T-037",
+        "T-038"
+      ]
+    },
+    {
+      "id": "G-09",
+      "name": "Lease and freshness",
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-10",
+        "INV-16"
+      ],
+      "when": "worker event/heartbeat/resume",
+      "owner": "RuntimeService",
+      "required_evidence": "exact revision+epoch+lease; governing context unchanged",
+      "skip_policy": "stale event는 audit 가능하나 상태 반영 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-039",
+        "T-040",
+        "T-041",
+        "T-042",
+        "T-043"
+      ]
+    },
+    {
+      "id": "G-10",
+      "name": "Tool effect preflight",
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-12",
+        "INV-20",
+        "INV-23"
+      ],
+      "when": "broker dispatch 및 재전송",
+      "owner": "EffectService",
+      "required_evidence": "grant consume, effect key binding, egress/args policy",
+      "skip_policy": "pure read도 scope policy 유지",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-044",
+        "T-045",
+        "T-046",
+        "T-047",
+        "T-048",
+        "T-049",
+        "T-050",
+        "T-051"
+      ]
+    },
+    {
+      "id": "G-11",
+      "name": "Evidence admission",
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ],
+      "when": "artifact/evidence registry commit",
+      "owner": "EvidenceService",
+      "required_evidence": "실제 bytes hash, provenance, verifier identity, size/media/secret checks",
+      "skip_policy": "untrusted는 저장 가능하나 trusted pass 제외",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-052",
+        "T-053",
+        "T-054",
+        "T-055",
+        "T-056"
+      ]
+    },
+    {
+      "id": "G-12",
+      "name": "Work verification",
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-15",
+        "INV-25"
+      ],
+      "when": "work verify/repair decision",
+      "owner": "VerifierService",
+      "required_evidence": "mandatory node acceptance, frozen regression, exact artifact",
+      "skip_policy": "subjective는 human/model-assisted profile로 명시",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-057",
+        "T-058",
+        "T-059",
+        "T-060",
+        "T-061",
+        "T-062",
+        "T-063"
+      ]
+    },
+    {
+      "id": "G-13",
+      "name": "Global convergence",
+      "invariants": [
+        "INV-05",
+        "INV-14",
+        "INV-16",
+        "INV-19",
+        "INV-25"
+      ],
+      "when": "goal verified 전",
+      "owner": "GoalVerifier",
+      "required_evidence": "integration/doc freshness/no pending effects/questions + coverage",
+      "skip_policy": "waiver는 허용 criterion에 한해 별도 상태. invariant waiver 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-057",
+        "T-107"
+      ]
+    },
+    {
+      "id": "G-14",
+      "name": "Canonical publish and human authority",
+      "invariants": [
+        "INV-02",
+        "INV-09",
+        "INV-18"
+      ],
+      "when": "knowledge/apply/release external action",
+      "owner": "FoundryGovernance",
+      "required_evidence": "Decision/ApplyGrant와 exact subject digest",
+      "skip_policy": "사람 대답 없음은 승인 아님",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-019",
+        "T-110"
+      ]
+    },
+    {
+      "id": "G-15",
+      "name": "Pack install and app separation",
+      "invariants": [
+        "INV-17",
+        "INV-24",
+        "INV-27"
+      ],
+      "when": "pack/kit install update uninstall",
+      "owner": "Installer",
+      "required_evidence": "owned path/hash/deps/trust/kit-absent build",
+      "skip_policy": "optional marker missing는 자체 실패 사유 아님",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-060",
+        "T-098",
+        "T-111"
+      ]
+    },
+    {
+      "id": "G-16",
+      "name": "Experiment protection and freeze",
+      "invariants": [
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ],
+      "when": "experiment approved/start",
+      "owner": "EvaluationService",
+      "required_evidence": "baseline/candidate/corpus/verifier/budget/analysis/holdout 고정",
+      "skip_policy": "protected class C 일반 auto-evolution 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-079",
+        "T-080",
+        "T-081",
+        "T-082",
+        "T-083",
+        "T-109"
+      ]
+    },
+    {
+      "id": "G-17",
+      "name": "Offline eval decision",
+      "invariants": [
+        "INV-14",
+        "INV-15",
+        "INV-22",
+        "INV-25"
+      ],
+      "when": "canary 후보 승인 전",
+      "owner": "EvaluationService",
+      "required_evidence": "valid metrics, safety tests, uncertainty, independent evaluation",
+      "skip_policy": "inconclusive/fail은 promote 조건 아님",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-084",
+        "T-085",
+        "T-086",
+        "T-109"
+      ]
+    },
+    {
+      "id": "G-18",
+      "name": "Canary admission and abort",
+      "invariants": [
+        "INV-08",
+        "INV-09",
+        "INV-11",
+        "INV-12",
+        "INV-22"
+      ],
+      "when": "canary start/iteration",
+      "owner": "EvolutionService",
+      "required_evidence": "opt-in eligible class+budget+stop rules+fallback",
+      "skip_policy": "canary 불가 환경은 별도 승인된 제한 release 평가 필요; 자동 통과 금지",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-082",
+        "T-089",
+        "T-109"
+      ]
+    },
+    {
+      "id": "G-19",
+      "name": "Promotion and rollback authority",
+      "invariants": [
+        "INV-03",
+        "INV-09",
+        "INV-22",
+        "INV-27"
+      ],
+      "when": "active release pointer CAS",
+      "owner": "ReleaseService",
+      "required_evidence": "exact grant+eval report+expected active+rollback compatibility",
+      "skip_policy": "proposer self approval 금지",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-087",
+        "T-088",
+        "T-089",
+        "T-090",
+        "T-091",
+        "T-109"
+      ]
+    },
+    {
+      "id": "G-20",
+      "name": "Migration and deletion",
+      "invariants": [
+        "INV-09",
+        "INV-18",
+        "INV-24",
+        "INV-25"
+      ],
+      "when": "dry-run/apply/delete/archive",
+      "owner": "MigrationService",
+      "required_evidence": "baseline/hash/owner/refs/backup/approval/restore tests",
+      "skip_policy": "이름이 legacy라고 skip 불가",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-093",
+        "T-094",
+        "T-095",
+        "T-096",
+        "T-097",
+        "T-098",
+        "T-111"
+      ]
+    },
+    {
+      "id": "G-21",
+      "name": "Recovery and reconciliation",
+      "invariants": [
+        "INV-10",
+        "INV-12",
+        "INV-13",
+        "INV-19",
+        "INV-23",
+        "INV-26"
+      ],
+      "when": "crash/startup/cancel resume",
+      "owner": "RecoveryService",
+      "required_evidence": "new epoch, inbox/outbox idempotency, external outcome classified",
+      "skip_policy": "unknown effect 남은 write scope는 HOLD",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-099",
+        "T-100",
+        "T-101",
+        "T-102",
+        "T-103",
+        "T-104",
+        "T-105",
+        "T-106"
+      ]
+    },
+    {
+      "id": "G-22",
+      "name": "Protected surface change",
+      "invariants": [
+        "INV-02",
+        "INV-15",
+        "INV-18",
+        "INV-22"
+      ],
+      "when": "policy/verifier/authority diff review",
+      "owner": "Governor",
+      "required_evidence": "independent review + 기존 validator + separate benchmark qualification",
+      "skip_policy": "동일 실험에서 evaluator 변경으로 효과 주장 금지",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-060",
+        "T-085",
+        "T-110"
+      ]
+    },
+    {
+      "id": "G-23",
+      "name": "Protocol compatibility",
+      "invariants": [
+        "INV-01",
+        "INV-21",
+        "INV-23",
+        "INV-27"
+      ],
+      "when": "handshake/adapter upgrade/event ingestion",
+      "owner": "ProtocolService",
+      "required_evidence": "supported major/schema/versioned provider decoder",
+      "skip_policy": "unknown fields/event는 reject/quarantine",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-064",
+        "T-065",
+        "T-066",
+        "T-067",
+        "T-068",
+        "T-069",
+        "T-070",
+        "T-071",
+        "T-072"
+      ]
+    },
+    {
+      "id": "G-24",
+      "name": "Final release acceptance",
+      "invariants": [
+        "INV-14",
+        "INV-17",
+        "INV-22",
+        "INV-24",
+        "INV-25",
+        "INV-27",
+        "INV-28"
+      ],
+      "when": "V3 release enable",
+      "owner": "ReleaseService",
+      "required_evidence": "requirements→tests→evidence coverage; fault/security/migration/meta rollback evidence",
+      "skip_policy": "design-only validation을 runtime test 대신 사용 금지",
+      "on_unknown": "hold",
+      "strategies": [
+        "direct",
+        "bounded_loop",
+        "deliberative",
+        "discovery"
+      ],
+      "risk_levels": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "required_test_ids": [
+        "T-107",
+        "T-108",
+        "T-109",
+        "T-111",
+        "T-112"
+      ]
+    }
+  ],
+  "note": "Gates run when their lifecycle boundary is reached; all strategies listed means no strategy-level bypass, not that every job must install packs or run meta experiments."
+}

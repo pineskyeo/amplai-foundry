@@ -1,0 +1,9 @@
+{
+  "case_id": "doc-003",
+  "title": "Structure coverage",
+  "given": "20-section source",
+  "when": "render to PDF",
+  "expected": "every section present in reading order",
+  "verifier_definition": "documents-structure",
+  "split": "dev"
+}

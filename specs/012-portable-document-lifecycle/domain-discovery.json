@@ -1,0 +1,2805 @@
+{
+  "blocking_questions": [],
+  "contradictions": [],
+  "evidence_candidates": [
+    {
+      "locators": [
+        "line:1335:> Result and review delivery MUST **preserve existing** destination ordering, reconciliation,",
+        "line:81:동일한 단일 `workspace_id:api_app_id` 형식이다. Parser는 strict UTF-8, duplicate-key",
+        "line:103:수렴하지 않는다. 다만 durable commit은 이미 끝났으므로 background worker가 decision을",
+        "line:117:worker를 탈출하지 않도록 봉쇄하고 `IngressService.stranded()`로 관측 가능하게만 한다.",
+        "line:131:안전하다. Lease를 잃은 worker는 뒤이은 finalize에서 `LEASE_LOST`를 받는다.",
+        "line:133:MGC-006 이후 존재했으나 worker가 없어 도달 불가였다."
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:12:- [x] CHK002 Are cleanup-attempt obligations defined for both successful and failed readback without weakening the different startup decisions? [Completeness, S",
+        "line:24:- [x] CHK011 Is “preserve the original readback cause” defined in a form that also specifies how secondary cleanup failure information is represented? [Clarity,",
+        "line:47:- [x] CHK025 Is the required state defined when Slack deletion succeeds but durable lifecycle resolution cannot be recorded? [Edge Case, Gap, Spec §FR-026–FR-02",
+        "line:48:- [x] CHK026 Are repeated exact-cleanup failures specified without permitting a new probe or silently converting the state to ready? [Coverage, Spec §FR-027–FR-",
+        "line:14:- [x] CHK004 Is the ownership and permitted mechanism for resolving a permanently blocked probe explicitly defined or explicitly deferred with a follow-up requi",
+        "line:15:- [x] CHK005 Are the requirements for production pre-claim gating, diagnostic emission, and worker activation each assigned to exactly one delivery boundary? [C"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:95:network call and preserve current worker behavior.",
+        "line:15:Result Card, which the Delivery section below owns. The worker returns nothing here so that one",
+        "line:18:The background worker maps every other internal result to a closed public vocabulary.",
+        "line:34:whether the worker observed the outcome of the final attempt, and then, within the observed case,",
+        "line:38:- **The worker observed the last attempt, it failed, and no decision was committed.** The outcome",
+        "line:39:is known, so the worker ends the command as a recovery hold and the mapping above reports"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:53:| Process interruption during render or post | Issued IDs may exist, raw lost | Scrub secret-bearing frames; preserve the interruption class; reconcile before r",
+        "line:84:- bound Slack workspace and channel",
+        "line:90:workspace and channel. Review command uniqueness and Slack destination ordering use the same",
+        "line:91:provider/workspace/channel scope. The destination sequence is channel-wide, but source-state revision"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:101:**FR-021 을 Decision 없이 약화했다.** `preserve existing … retry, hold … behavior` 를",
+        "line:37:### F-1 — P1 — `ingress_worker.py:393`, `:323`",
+        "line:59:`test_a_worker_observed_exhaustion_ends_as_a_recovery_hold_with_feedback` 은 앞선 attempt 에서",
+        "line:79:dispatcher 를 통과하면 event 가 `leased` 로 남고 worker 가 매번 죽다가 lease 만료로만 수렴한다.",
+        "line:114:| RL-1 | `ingress_worker.py:376` | `and result.decision.replayed` 제거 → 첫 성공 decision 이 `already_completed` 를 보낸다 (D-034 가 막으려던 이중 통지) |"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:143:\"Process interruption during render or post … preserve the interruption class\" 를 어긴다.",
+        "line:90:live Slack E2E (`-m slack_e2e`) 는 이번 review 에서 실행하지 않았다. 실제 workspace 에 보이는",
+        "line:106:| `C-7` | Blocking-P2 | `ingress_worker.py:366-385`, `slack_http.py:529` | `completed` safe outcome 이 계약에 선언됐으나 어느 경로에서도 생성되지 않는다. artifact 3자 불일치 | contract |",
+        "line:141:operator 에게 신호가 가지 않는다. `except Exception` 으로 도는 worker loop 도 이 예외를 못 잡아",
+        "line:142:worker 가 죽는다. `contracts/review-card-lifecycle.md` 의 crash matrix",
+        "line:256:`src/amplai_foundry/governance/ingress_worker.py:366-385`, `src/amplai_foundry/governance/slack_http.py:529`"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:20:closed safe feedback outcome. Feedback failure preserved the final governed and ingress state.",
+        "line:24:Review Cards were posted to the configured test workspace and converged through their remote metadata",
+        "line:43:**실제 Slack workspace 로 나가는 행위라 wave 11 이 실행하지 않는다.** 이 저장소 밖으로"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:129:- **FR-021**: Result and review delivery MUST preserve existing destination ordering, reconciliation, retry, hold, and provider-isolation behavior.",
+        "line:135:- **FR-027**: A transient delivery-store failure MUST consume the ordinary retry budget rather than immediately stopping its destination, and MUST be distinguis",
+        "line:154:- **SC-006**: Cards with 1, 3, 4, and maximum-supported operation counts preserve correct totals, stable preview order, and bounded readable output.",
+        "line:24:- Q: When background processing of a reviewer action exhausts its retry budget, what does the reviewer receive? → A: A terminal safe outcome. The worker's final",
+        "line:26:- Q: When the retry budget is exhausted without any worker observing the outcome (repeated worker death), what does the reviewer receive? → A: Nothing. The true",
+        "line:102:- Background processing of a reviewer action runs out of retries: which of the three endings applies depends on whether the worker observed the final attempt an"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/003-slack-proposal-card/spec.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:115:file still exists: True    app rule preserved: True",
+        "line:117:file still exists: False   app rule preserved: FILE DELETED - app content lost",
+        "line:390:`~/workspace/amplai-project` 는 읽기만 했고 쓰지 않았다."
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/007-kit-source-and-distribution/evidence/review-regression.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:4:{\"data\": {\"broken_symlinks\": 0, \"finding\": \"work skill referenced tools/ontology/semanticctl.py which does not exist (D-046)\", \"identical\": 6, \"pure_addition_2_",
+        "line:8:{\"data\": {\"codex_hooks_merge\": \"ran kit merge_hooks on synapse origin/main .codex/hooks.json — existing SessionStart matcher entry and 3 PostToolUse hooks prese",
+        "line:1:{\"data\": {\"artifact\": \"AMPLAI_2.3.1_to_Kit_2.4.0_Platform_0.4.0.zip\", \"baseline\": \"ced83af53f9d625f5d91edb069a8e877ed3bb3b5\", \"files\": 1040, \"patch_stat\": \"122 ",
+        "line:2:{\"data\": {\"apply_check\": \"PASS\", \"docs_validate\": \"STALE\", \"doctor\": \"PASS\", \"failing_block_checks\": [\"ruff-check 46 errors\", \"ruff-format 9 files\", \"mypy 2 err",
+        "line:3:{\"data\": {\"CP-1\": \"UNCAUGHT sqlite3.IntegrityError on cp_objects.canonical_ref\", \"CP-2\": \"UNCAUGHT TypeError from int() on a list\", \"observed\": \"start_response ",
+        "line:5:{\"data\": {\"docs_failure\": \"AGENTS.md:135 -> agents/openai.yaml does not resolve\", \"false_positive_excluded\": \"AGENTS.md:41 -> .amplai/tmp/ is a gitignored runti"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:4:{\"data\": {\"codex_hooks\": \"existing SessionStart(matcher) and PostToolUse preserved; kit hook appended as a new group; SessionEnd added\", \"doctor\": \"PASS\", \"pr\":",
+        "line:1:{\"data\": {\"cortex\": {\"behind_origin_main\": 279, \"branch\": \"feat/card-id-and-prober-id\", \"codex_hooks_json\": false, \"dirty\": 2, \"kit\": \"2.3.1\"}, \"synapse\": {\"beh",
+        "line:2:{\"data\": {\"consequence\": \"user local checkouts need no sync or cleanup\", \"evidence\": \"install.py:935-936 early return; 953-955 register_app never reached; 596-5",
+        "line:3:{\"data\": {\"context_pack_hash\": \"bb310b834b9220012af134f060363cb643abedf8436379c04639291b3443918e\", \"depends_on\": \"ALR-008\", \"first_slice\": \"S01 synapse\", \"human",
+        "line:5:{\"data\": {\"ai_team_toplevel\": \"core 7 + install + backups — inside the D-054 exception; guard test 76 OK\", \"commit_profile\": \"PASS (11 checks incl. high-risk-ac",
+        "line:6:{\"data\": {\"amplai-foundry\": \"2.4.0\", \"cortex\": \"2.4.0\", \"local_copies_unchanged\": {\"cortex\": \"feat/card-id-and-prober-id dirty=2\", \"synapse\": \"feat/chuck-max-te"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:2065:\"preserves\",",
+        "line:18:\"line:96:`/work specs/003-slack-proposal-card` 로 wave 15 를 시작한다.\"",
+        "line:23:\"path\": \"docs/workstreams/HANDOFF_2026-08-28.md\",",
+        "line:33:\"path\": \"docs/workstreams/HANDOFF_2026-08-29.md\",",
+        "line:47:\"path\": \"docs/workstreams/HANDOFF_2026-09-02.md\",",
+        "line:59:\"path\": \"docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md\","
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:32:guidance: [Keep Python 3.6 compatibility in Loop Kit scripts and preserve singular runner fallback.]",
+        "line:3:title: Dispatch one selected runner in one managed worktree",
+        "line:7:outcome: Each Work selects design or work plus one Claude Code or Codex profile and executes in a clean managed worktree pinned to its immutable base commit.",
+        "line:17:include: [Work schema migration, local runner profiles, controller-specific prompt, managed worktree lifecycle, retry and continuation]",
+        "line:34:- One Work has one active runner and one attempt workspace.",
+        "line:35:- Resume reuses the same runner and workspace."
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:31:then: exactly one Work reaches the contracted state and rollback preserves existing workflows",
+        "line:7:outcome: A real Slack request, AMPLAI human activation, worker run, result projection, failure injection, and rollback rehearsal all match the approved contract",
+        "line:8:user_value: The complete user-facing workflow is proven before auto-start is enabled.",
+        "line:15:include: [Real Slack workspace E2E, Hermes Socket Mode, signed AMPLAI action, failure injection, rollback]"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:54:{\"id\": \"AC-014\", \"statement\": \"Disabling the Hermes plugin and provider activation preserves existing CLI, Slack Proposal Card and direct host workflows.\", \"evi",
+        "line:5:\"goal\": \"Slack 사용자가 Hermes에 설계·구현 작업을 요청하면 AMPLAI가 human activation, durable Project Store, isolated workspace와 selected Claude Code 또는 Codex runner를 통해 작업을 완료하",
+        "line:11:\"work_type\": \"architecture\",",
+        "line:18:\"scripts/amplai_runtime.py, scripts/amplai_supervisor.py, scripts/amplai_hosts.py — Work runner profiles and managed workspace\",",
+        "line:22:\"docs/workstreams/messenger-governance-closure-v3/ — MGC-014~016 decision impact\",",
+        "line:38:\"사용자 main checkout에서 autonomous worker 실행\""
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "specs/011-hermes-slack-orchestration/work-contract.json",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:85:A draft ``IGNORE`` operation preserves the source and explicitly asks a",
+        "line:28:\"\"\"Preserve an explicit source, then prepare—not apply—curation work.\"\"\"",
+        "line:35:workspace: Path,",
+        "line:40:self.workspace = workspace.expanduser().resolve(strict=False)",
+        "line:58:output = self.workspace / \".amplai\" / \"jobs\" / f\"CURATE-{result.source_id}.md\"",
+        "line:63:repository = ProposalRepository(self.workspace / \".amplai\" / \"proposals\")"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "src/amplai_foundry/control_plane/knowledge_intake.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:523:\"workflow\": \"source-preserve_then_governed_curation\",",
+        "line:27:ORCHESTRATION_CONTROLLERS = frozenset({\"status\", \"design\", \"work\"})",
+        "line:34:def get_work(self, work_id: str) -> dict[str, Any]: ...",
+        "line:64:work_reader: OrchestrationWorkReader | None = None,",
+        "line:68:self.work_reader = work_reader",
+        "line:389:reply_route_json, correlation_id, status, hold_code, work_ref,"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "src/amplai_foundry/control_plane/service.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:993:transport_failure = self._rewrap(error, preserve_cause=not is_review)",
+        "line:1083:preserve_cause: bool = True,",
+        "line:1108:if preserve_cause:",
+        "line:5:(`docs/workstreams/messenger-governance-closure-v3/DECISIONS.md` D-018 항목 2).",
+        "line:101:# message 수\" 는 workspace 에 달렸고 **모른다.** 최악 5회 호출은 Tier 2 예산의 4분의 1이다.",
+        "line:295:network 문제와 Slack 문제를 가른다. `persisted_code_suffix` 가 소문자로 내리므로"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "src/amplai_foundry/governance/slack_projection.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:68:\"custom\": {\"preserve\": True},",
+        "line:106:def test_existing_content_hooks_and_permissions_are_preserved(self):",
+        "line:111:\"custom\": {\"preserve\": True},",
+        "line:119:self.assertEqual(settings[\"custom\"], {\"preserve\": True})",
+        "line:129:self.assertEqual(codex[\"custom\"], {\"preserve\": True})",
+        "line:146:def test_policy_merge_preserves_hand_written_formatting(self):"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/ai/test_amplai_kit_installer.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:766:# created_at is preserved so the record still shows when the run",
+        "line:128:def make_work(self, cr_id, app=\"cortex\", depends=None, max_attempts=None):",
+        "line:129:return self.store.create_work(",
+        "line:144:work = self.make_work(cr_id)",
+        "line:145:self.assertEqual(self.store.get_work(work[\"work_id\"])[\"change_id\"], cr_id)",
+        "line:147:question = self.store.create_question(work[\"work_id\"], \"결정이 필요한가?\")"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/ai/test_amplai_kit_regressions.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:16:existing_statement: Sources preserve original evidence.",
+        "line:17:incoming_statement: Sources preserve original evidence.",
+        "line:18:action: preserve",
+        "line:48:incoming_statement: Original inputs remain preserved.",
+        "line:49:action: preserve",
+        "line:88:action: preserve"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/fixtures/semantic-golden-set.yaml",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:362:def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters(",
+        "line:288:with ThreadPoolExecutor(max_workers=2) as executor:",
+        "line:552:with ThreadPoolExecutor(max_workers=2) as executor:",
+        "line:588:with ThreadPoolExecutor(max_workers=2) as executor:"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_active_proposals.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:2926:def test_process_kill_before_cas_preserves_retryable_database_truth(tmp_path: Path) -> None:",
+        "line:77:workspace_id=\"T123\",",
+        "line:258:leased = jobs.claim_next(\"worker-publish-fixture\")",
+        "line:262:worker_id=\"worker-publish-fixture\",",
+        "line:267:worker_id=\"worker-publish-fixture\",",
+        "line:470:with ThreadPoolExecutor(max_workers=2) as executor:"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_apply_jobs.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:648:assert job.payload[\"workflow\"] == \"source-preserve_then_governed_curation\"",
+        "line:156:first = queue.claim_next(worker_id=\"worker-1\")",
+        "line:162:second = queue.claim_next(worker_id=\"worker-1\")",
+        "line:514:\"controller\": \"work\",",
+        "line:522:\"workspace_id\": \"T001\",",
+        "line:561:def test_orchestration_request_holds_unknown_target_without_runnable_work(platform) -> None:"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_control_plane.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:538:def test_ambiguous_artifact_preserves_source_but_creates_no_proposal(tmp_path: Path) -> None:",
+        "line:901:\"# Roadmap\\n\\n## Phase 1A\\n\\nTracker roadmap must add and preserve version history.\\n\",",
+        "line:280:with ThreadPoolExecutor(max_workers=2) as executor:",
+        "line:436:\"--workspace\",",
+        "line:708:workspace = tmp_path / \"workspace\"",
+        "line:709:pack_root = workspace / \"products/amplai\""
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_intake_e2e.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:2236:def test_rollback_planner_preserves_preexisting_destination_provenance(tmp_path: Path) -> None:",
+        "line:6527:def test_progressed_v18_backfill_preserves_next_active_projection_revision(",
+        "line:7242:def test_existing_qualified_proposal_conflict_preserves_original_state(tmp_path: Path) -> None:",
+        "line:107:workspace_id=\"T123\",",
+        "line:4411:with ThreadPoolExecutor(max_workers=2) as pool:",
+        "line:4625:channel=CHANNEL.model_copy(update={\"workspace_id\": \"T999\"}),"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_legacy_migration.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:96:def test_pack_archive_is_stable_inside_canonical_output_and_preserves_empty_memory(",
+        "line:127:root = tmp_path / \"credentials-workspace/pack\"",
+        "line:170:imports=[{\"module\": \"work-management\", \"version\": \"1.x\"}],",
+        "line:174:\"work-management\","
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_project_packs.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:296:def test_operation_summary_preserves_totals_and_stable_preview(",
+        "line:85:workspace_id=\"T123\",",
+        "line:888:failed = dispatcher.deliver_next(\"wrong-channel-worker\", destination)",
+        "line:913:assert dispatcher.deliver_next(\"wrong-channel-worker\", destination) is None",
+        "line:1373:workspace_ids=frozenset({\"T123\"}),",
+        "line:1381:worker = IngressDecisionWorker("
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_review_cards.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:65:def test_roadmap_diff_preserves_cancelled_items_and_rebuilds_next_plan(",
+        "line:180:with ThreadPoolExecutor(max_workers=2) as executor:",
+        "line:310:\"# Roadmap\\n\\n## Phase 99Z — Surprise\\n\\nUnknown work.\","
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_roadmap_changes.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:1383:def test_finalize_failure_preserves_the_denial_code(",
+        "line:56:from amplai_foundry.governance.ingress_worker import _DENIED_CODES",
+        "line:81:workspace_id=\"T123\",",
+        "line:87:workspace_id=\"T123\",",
+        "line:172:workspace_ids=frozenset({\"T123\"}),",
+        "line:320:def _worker("
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_slack_ack_boundary.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:2156:def test_post_readback_failure_matrix_preserves_the_primary_code(",
+        "line:56:from amplai_foundry.governance.ingress_worker import SafeInteractionOutcome",
+        "line:123:# Fake Slack. 실제 network 를 쓰지 않는다 — loopback 에 뜨는 http.server 하나다.",
+        "line:663:workspace_id=\"T0WORKSPACE\",",
+        "line:1833:def test_every_malformed_probe_input_is_rejected_without_network(",
+        "line:1975:def test_a_supplied_lifecycle_cause_hard_blocks_without_network("
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_slack_http.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:2570:def test_raise_sanitized_interruption_preserves_the_kind(",
+        "line:806:# operator 가 network 문제와 Slack 문제를 가르는 유일한 근거다.",
+        "line:958:event = dispatcher.deliver_next(\"worker\", destination)",
+        "line:1017:final = dispatcher.deliver_next(\"worker\", destination)",
+        "line:1044:dispatcher.deliver_next(\"worker\", destination)",
+        "line:1084:dispatcher.deliver_next(\"worker\", destination)"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_slack_projection.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:156:def test_missing_human_activation_authority_preserves_draft(",
+        "line:165:def test_disabled_provider_and_stale_card_preserve_draft() -> None:",
+        "line:36:from amplai_foundry.governance.slack_work_activation import (",
+        "line:40:from amplai_foundry.governance.work_activation import (",
+        "line:50:from amplai_foundry.governance.work_activation_card_outbox import (",
+        "line:53:from amplai_foundry.governance.work_activation_http import ("
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tests/test_work_activation.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:15:signed human activation boundary and durable Work status outbox preserve Project Store authority.",
+        "line:26:preserved and uninstall removes only AMPLAI-owned handlers.",
+        "line:8:- Preserved `/work` for Claude Code and `$work` for Codex while sharing the same durable Work contract.",
+        "line:13:dispatches a Work in a managed detached worktree and emits host-specific `/work` or `$work` prompts.",
+        "line:22:session resume, JSONL `thread.started.thread_id` recovery, `$work` prompting,",
+        "line:32:`$work` or `$design` rather than bypassing the controller."
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:440:help=\"JSON object keyed by claude-code/codex; preserves the singular runner fallback\",",
+        "line:190:A supervised worker already has AMPLAI_LEASE_TOKEN in its environment, so",
+        "line:199:\"AMPLAI_LEASE_TOKEN (see `work claim --token-file`)\"",
+        "line:204:def cmd_work(args):",
+        "line:206:action = args.work_action",
+        "line:208:return store.create_work("
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:68:\"custom\": {\"preserve\": True},",
+        "line:106:def test_existing_content_hooks_and_permissions_are_preserved(self):",
+        "line:111:\"custom\": {\"preserve\": True},",
+        "line:119:self.assertEqual(settings[\"custom\"], {\"preserve\": True})",
+        "line:129:self.assertEqual(codex[\"custom\"], {\"preserve\": True})",
+        "line:146:def test_policy_merge_preserves_hand_written_formatting(self):"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_installer.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:623:# created_at is preserved so the record still shows when the run",
+        "line:101:def make_work(self, cr_id, app=\"cortex\", depends=None, max_attempts=None):",
+        "line:102:return self.store.create_work(",
+        "line:113:work = self.make_work(cr_id)",
+        "line:114:self.assertEqual(self.store.get_work(work[\"work_id\"])[\"change_id\"], cr_id)",
+        "line:116:question = self.store.create_question(work[\"work_id\"], \"결정이 필요한가?\")"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/payload/tests/ai/test_amplai_kit_regressions.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:4:framework. It preserves the host-neutral workflow and adds Claude Code/Codex adapters at the edge.",
+        "line:41:- Claude settings: additive SessionStart/SessionEnd; existing permissions/hooks preserved",
+        "line:42:- Codex hooks: additive SessionStart/SessionEnd; existing fields/hooks preserved",
+        "line:9:- `design` and `work` as the only public development meanings",
+        "line:35:- `work`: Evidence/Decision resolution, cross-app Work creation, durable terminal transition",
+        "line:38:- workflow: async cross-app extension"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/reference/REFERENCE_INTEGRATION.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:13:- Installer preserves unrelated hooks in `.claude/settings.json` and `.codex/hooks.json`; uninstall removes",
+        "line:3:- Lease tokens are host-local. Supervised workers receive them through `AMPLAI_LEASE_TOKEN`; the token",
+        "line:4:does not need to appear on argv. `work claim` redacts it unless `--print-token` is given.",
+        "line:19:configured worker; effective permissions are determined by runner args.",
+        "line:20:- `policy.forbidden_automatic_actions` is partly machine-enforced and partly worker guidance."
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/reference/SECURITY_AND_RECOVERY.md",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:61:\"custom\": {\"preserve\": True},",
+        "line:108:assert settings[\"custom\"][\"preserve\"] is True",
+        "line:205:assert settings[\"custom\"][\"preserve\"] is True",
+        "line:43:write(os.path.join(root, \".agents/skills/work/SKILL.md\"), \"# Existing /work\\n\\nKeep this app rule.\\n\")",
+        "line:48:write(os.path.join(root, \".ai-team/runtime/WORKFLOW.md\"), \"# Existing workflow\\n\")",
+        "line:51:\"public_commands\": [\"work\", \"design\"],"
+      ],
+      "matches": [
+        "preserve",
+        "work"
+      ],
+      "path": "tools/amplai-loop-kit/selftest.py",
+      "score": 2.0
+    },
+    {
+      "locators": [
+        "line:18:4. File Input과 같은 workflow를 수행한다.",
+        "line:40:이 workflow는 외부 LLM API, embedding, vector DB, MCP server를 사용하지 않는다. Codex 자체가 Harness와 Context Bundle을 따라 curator 역할을 수행한다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/CODEX-CURATION-WORKFLOW.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:workspace-level `ResolutionHoldRecord`만 저장한다.",
+        "line:69:이 worker는 Proposal apply나 canonical Vault 변경을 실행하지 않는다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:56:전송 worker가 직전에 발급하고 hash-only activation ledger에만 남긴다. 전송 직후 process가"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/LIFECYCLE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:27:amplai-foundry project list --workspace .",
+        "line:41:Project Pack은 runner profile, managed worktree, Slack activation ledger 또는 Slack status outbox를 canonical"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/PROJECT-PACK.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:5:Source는 수집 당시 원문 bytes를 보존하는 ingest-only immutable record다. Source 생성은 `amplai-foundry ingest`만 수행한다. Proposal과 일반 수정 workflow는 Source를 생성하거나 변경하지 않는다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/SOURCE-INGESTION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:13:3. `/speckit-specify` 를 부르지 않고 workstream 디렉터리에 **손으로** 분석 문서를 썼다",
+        "line:43:이 repo 는 `specs/` 와 `docs/workstreams/` 가 병존한다. 둘의 역할 구분이 문서에 없으면",
+        "line:44:workstream 손문서가 spec 자리를 차지하기 쉽다.",
+        "line:54:| Pipeline bullet | spec·plan 손작성 금지 + `docs/workstreams/` = 조사 기록용 구분 |",
+        "line:60:docs/workstreams/  =  조사 기록  (fact 수집 · 원본 대조 · 측정 log)"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/SPECKIT-GRILLME-CHAIN.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:8:`workflow.yml` 의 `tasks` step 은 gate 로 바뀌어 `/taskify` 를 부르게 했다. 그런데 **다음 step",
+        "line:71:| `.specify/workflows/speckit/workflow.yml` | tasks gate 에 3단계 명시, implement 에 주석 |"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:9:- Claude Code: `/work`, `/design`",
+        "line:10:- Codex: `$work`, `$design`",
+        "line:16:Local objects are authoritative for repository work and are never silently turned into Platform knowledge."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:39:Context work uses `pending → running → done/dead` with lease token, expiry, heartbeat/retry semantics.  Event creation and outbox insertion occur in the same SQ"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:노출된 상태였지 실제 worker·resume·hook까지 호환되지는 않았다. 이번 2.3.2 patch로 이 단기 결함은",
+        "line:60:- `work` / `design` controller",
+        "line:64:- Claude Code/Codex/command worker adapter",
+        "line:99:- Codex prompt의 `$work` 진입",
+        "line:108:사실상 정본으로 사용했다. 일부는 복사본, 일부는 symlink여서 두 host workflow가 갈라질 수 있었다.",
+        "line:118:internal capability도 Codex가 prompt만으로 자동 선택할 수 있었다. 일반 개발 요청이 `$work`의"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/reviews/2026-08-29-platform-kit-audit.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:59:├── work-management",
+        "line:375:├── work-management/",
+        "line:395:- module: work-management",
+        "line:439:└── work-management",
+        "line:450:└── work-management",
+        "line:605:관리 Agent용 공통 도메인 `work-management`를 별도로 둔다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:39:├── work-management",
+        "line:247:├── work-management/",
+        "line:267:- module: work-management",
+        "line:311:└── work-management",
+        "line:322:└── work-management",
+        "line:443:관리 Agent용 공통 도메인 `work-management`를 별도로 둔다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:한 세션에서 workstream 둘을 건드렸다. 새 세션은 **아래 \"다음 세션이 할 일\" 만 읽고 시작해도",
+        "line:4:된다.** 세부는 각 workstream 의 `CURRENT_ITEM.md` 가 담는다.",
+        "line:16:1. round 21 three-lens review        messenger workstream — FAIL 6건",
+        "line:23:## workstream 1 — messenger-governance-closure-v3",
+        "line:28:진입점    docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+        "line:58:## workstream 2 — amplai-loop-runtime-adoption"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-08-28.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:133:cd ~/workspace/cortex",
+        "line:139:`origin/main` 에서 뜬 별도 worktree 에서 했고 끝나고 지웠다.",
+        "line:156:export AMPLAI_PROJECT_HOME=~/workspace/amplai-project        # 그 세션에서만",
+        "line:159:--project-home ~/workspace/amplai-project",
+        "line:173:3. wave 15           messenger workstream. round 21 blocker 6건 (F21-1 은 P1).",
+        "line:178:그 밖에 열린 것들은 `docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md` 의"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:84:worktree 에 물려 있다 (`.claude/worktrees/feat-retest`, `.claude/worktrees/gpm-connect`).",
+        "line:88:git -C ~/workspace/<repo> fetch origin",
+        "line:89:git -C ~/workspace/<repo> switch -c feat/새작업 origin/main",
+        "line:109:git -C ~/workspace/<app> worktree add --detach /tmp/kit-<app> origin/main",
+        "line:112:# 그 저장소 방식으로 test → commit → PR → 머지 → worktree 제거",
+        "line:118:**Store 바인딩이 필요하면 그것만 따로, 실제 체크아웃에서 한다** — worktree 나 임시 경로에서"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-08-30.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:32:항목을 추가하고 commit 한다. working tree 사본은 인정되지 않는다\" 로 적는다.",
+        "line:40:p = pathlib.Path(\"docs/workstreams/messenger-governance-closure-v3/DECISIONS.md\")",
+        "line:174:messenger       docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+        "line:176:결정            docs/workstreams/messenger-governance-closure-v3/DECISIONS.md  (D-058 이 최신)",
+        "line:182:kit 운영        docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+        "line:183:kit workstream  docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:6:쓴다. 절차 주도권을 `/work` controller 에 넘기고 user-invocable 을 `/work`·`/design` 둘로",
+        "line:32:전부 2.4.0 이다. 각 저장소의 `origin/main` worktree 에 `--project-home` 없이 설치했으므로",
+        "line:44:공개 진입        Claude /work·/design, Codex $work·$design",
+        "line:45:worker           claude-code | codex | command",
+        "line:76:| public skill | `/work`, `/design` 둘. internal 17개 |",
+        "line:84:**`/work` 를 돌리자마자 loop 가 자기 발에 걸렸다.** contract → readiness → context 순서에서"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:**대상:** `~/workspace/cortex` main `3a3eb46b` (PR #83 `worktree-amplai-v21-patch`)",
+        "line:14:| main HEAD | `3a3eb46b` Merge PR #83 `worktree-amplai-v21-patch` |",
+        "line:15:| 직전 | PR #82 `worktree-amplai-v21-hardening` |",
+        "line:31:공개 표면은 **둘뿐**이다 — `/work`, `/design`.",
+        "line:34:/work",
+        "line:57:| `.claude/skills/` | work 285줄, dev-loop 125, design 116, code-review 58, systematic-debugging |"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:35:retained\" 로 `/design`·`/work`, Knowledge Readiness, Context Pack, Evidence Trace, verifier 를",
+        "line:44:Claude Code -p worker    SessionStart/SessionEnd hook 으로 붙는다",
+        "line:83:> V2에는 parallel worker, fan-out/fan-in, **Work DAG scheduler**, remote worker,",
+        "line:135:`fragments/work.md` 마지막 줄도 같은 말을 한다.",
+        "line:145:1. **Local Supervisor 자동 실행.** READY Work 를 claim 해 `claude -p` worker 를 띄운다.",
+        "line:193:### (b) `/work` SKILL.md 절 번호 중복"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:20:**fleet 셋이 전부 kit 2.4.0 이다.** 배포는 각 저장소의 `origin/main` 에서 뜬 worktree 에",
+        "line:53:이 호스트의 주 체크아웃은 늘 feature 브랜치에 있고 `main` 은 별도 worktree 가 들고 있다.",
+        "line:78:Claude Code   /work, /design    claude-code runner    .claude/settings.json",
+        "line:79:Codex         $work, $design    codex runner          .codex/hooks.json",
+        "line:145:1. preflight        selftest, 대상 경로 해석, working tree 상태"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:**출처:** cortex main `3a3eb46b` (PR #83 `worktree-amplai-v21-patch`)",
+        "line:15:| skill 5개 | `work`, `design`, `dev-loop`, `code-review`, `systematic-debugging` |",
+        "line:62:| forbidden 에서 `.specify/workflows` 제거 | `workflow.yml` 이 아직 three-lens gate 의 문서상 근거다 |",
+        "line:98:바꿨다. 이제 user-invocable 개발 skill 은 `work`·`design` 둘이다.",
+        "line:105:- public skills: /work, /design",
+        "line:126:이식 세션은 `tests/test_slack_http.py` 실패를 \"sandbox network 정책이 바뀐 것 **(추정)**\" 으로"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:- Migration compatibility: exact v29 → additive v30 PASS, historical checksums preserved"
+      ],
+      "matches": [
+        "preserve"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-011-gate-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:14:- Authenticator → durable ingress → worker AuthorityContext integration PASS",
+        "line:20:- Canonical single-workspace installation",
+        "line:21:- Raw-body HMAC, timestamp, app/workspace/enterprise/action allowlist",
+        "line:28:- Background decision worker"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-1-gate-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:61:| `process_next` worker_id 미검증 | `test_process_next_rejects_a_blank_worker_id_before_touching_ingress` |",
+        "line:74:`a560843`부터 존재했으나 worker가 없어 도달 불가였고 Package 2가 처음 도달 가능하게",
+        "line:81:- operator `IngressService`와 worker fleet의 `max_attempts`·clock이 다르면 pre-sweep",
+        "line:89:- `src/` 전역 logging 부재 — workstream 범위 밖"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:27:| C1 | `GovernanceEventError`가 worker를 탈출해 command를 `leased`로 방치 | `process`가 `GovernanceEventError`와 잔여 `Exception`을 봉쇄한다 |",
+        "line:29:| C3 | finalize와 claim 경로의 store error가 worker loop을 종료 | `FINALIZE_FAILED`, `CLAIM_FAILED` outcome으로 봉쇄한다 |",
+        "line:60:- `src/` 전역 logging 부재 — workstream 범위 밖"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:41:| R1 | `stranded()`가 retry 소진 command를 놓쳐 worker 정지 시 빈 결과 반환 | 술어에 `retry_wait AND attempts >= max_attempts` 추가 |",
+        "line:61:package diff 밖이다. 이 순서 결함은 `a560843`부터 존재했으나 worker가 없어 도달 불가였고",
+        "line:74:- `process_next`가 빈 `worker_id`에 `ValueError`를 던진다 — docstring의 \"never raise\"와 불일치",
+        "line:83:- `src/` 전역 logging 부재 — workstream 범위 밖"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:44:wave 4 regression lens 가 격리 `git worktree` 에서 16종을 돌렸다. **16종 사망, survivor 0.**",
+        "line:87:mutation 은 격리 worktree 에서만 한다.**",
+        "line:103:task manifest 를 만드는 것이 다음 단계다. Slack test workspace 구성과 credential 경로는"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:26:lens 는 매 라운드 셋 전부 돌렸다 (D-019 항목 4). 이름은 `workflow.yml` 의",
+        "line:121:`.specify/workflows/speckit/workflow.yml` 의 `review-implementation` 기준을 적용한다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-1-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:81:- D-022 에 `APR-002` 참조를 넣었다. reviewer 가 workstream 문서 전체를 훑어 `YamlProjectionDestination.send` 의 예외 종류를 규정한 기존 기록이 없음을 확인했다 — `supersedes` 대상이 없고 이 Decision 이 최초"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:14:보고서도 \"working tree changed under me three times\" 로 그 사실을 스스로 적었고, regression"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-3-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:28:격리 조건에서 **100회 반복 0 실패**, regression lens 의 격리 worktree 40회 + 공유 checkout",
+        "line:31:**wave 5 부터 regression lens 는 반드시 단독으로 돌린다. mutation 은 격리 `git worktree`",
+        "line:136:regression lens 가 격리 `git worktree` 에서 돌렸다. **16종 전부 사망, survivor 0.**",
+        "line:202:- taskify manifest validator 가 `done` task 에 `completed_at` 을 요구하는데 workstream"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:76:**이 repo 에서 `git worktree` 격리는 기본으로 안 된다.** `.venv` 의 editable install `.pth`",
+        "line:77:가 main tree 를 가리켜 worktree 의 pytest 가 main tree source 를 import 한다. round 2",
+        "line:79:`PYTHONPATH` 를 worktree 의 `src` 로 세워야 한다.",
+        "line:82:돌리고 mutation 은 격리 worktree 에서만 한다\" — 은 유지한다.",
+        "line:91:| workspace | `amplai` (`T0BNPT96BFD`), enterprise install 아님 |",
+        "line:104:- `OQ-003` metadata 크기 상한, `OQ-005` marker 의 workspace 전체 노출, `OQ-006` T011 이"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-gate-2026-08-08.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:119:regression lens 의 첫 30회 반복이 21/30 실패로 나왔다. 그 수치는 무효다. `git worktree` 를",
+        "line:123:$ cd <worktree> && .venv/bin/python -c \"import ...slack_http as m; print(m.__file__)\"",
+        "line:124:/Users/pinesky/workspace/amplai-foundry/src/amplai_foundry/governance/slack_http.py",
+        "line:127:worktree 의 pytest 가 main tree 의 source 를 import 했고, 그 시점에 lens 는 main tree 에서",
+        "line:128:mutation 을 돌리고 있었다. 그래서 network 와 무관한 test 까지 깨졌다.",
+        "line:130:worktree 안에 전용 venv 를 만들어 (`python -m venv .venv-wt && pip install -e .`) import"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:15:| `MGC-012-T009` | network-free E2E harness, marker/deselect/skip, four-value config contract | done |",
+        "line:25:- Schema, production entrypoint, release/deployment와 실제 Slack workspace는 이 wave 범위가",
+        "line:45:실행하지 않은 live Slack check는 PASS로 세지 않았다. 이번 wave의 acceptance가 network-free로",
+        "line:65:- `MGC-012-T013` — production Slack worker entrypoint, official provider recovery contract,",
+        "line:66:governed probe recovery work item, narrow lifecycle schema/repository 승인이 pending이다.",
+        "line:82:$pinesky-workstream-next docs/workstreams/messenger-governance-closure-v3"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-6r-gate-2026-08-12.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:23:2. **`P1-1`** — `committed_decision()` 읽기가 실패할 때 무엇을 할지. 지금은 예외가 worker",
+        "line:38:| `P1-1` | **P1** | `ingress_worker.py:444` | `committed_decision()` 읽기가 `try` 밖. 실패하면 예외가 새고 command 가 `leased` 로 남는다. **실패 모드가 상관돼 있다** — 재시도를 만든 조건이 이 읽기도 실패",
+        "line:43:| `F-3` | Blocking-P2 | `ingress_worker.py:446` | 승격된 hold 의 원인 code 무방비 |",
+        "line:80:- Item: `MGC-012-T010` — real Slack workspace reference E2E"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:14:- A4: verified payload의 `api_app_id`, workspace 또는 enterprise identity가 Project installation allowlist와 일치함",
+        "line:20:- A10: ack 이후 decision 처리는 기존 authority, idempotency, token과 Proposal state 계약을 background worker에서 사용함",
+        "line:23:- A13: unsupported payload, invalid signature/timestamp/app/workspace/actor/action과 malformed form/JSON test가 fail-closed함",
+        "line:44:- Package 4 Wave 6R — typed readback, network-free E2E harness, Provider isolation:",
+        "line:83:- **2026-08-26 wave 11 완료.** `T035`(구현)·`T036`(test)·`T037`(문서) 셋을 `/work` 로 탔다.",
+        "line:84:V2 artifact 를 이 feature 에 처음 만들었다 — `work-contract.json`(`MGC-012-P5-W11`),"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:2:workstream: messenger-governance-closure-v3"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/PROGRESSION_QUEUE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:26:다음 조건을 모두 만족하면 workstream을 완료한다."
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/ROADMAP.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:128:않고 destination 전체를 되돌릴 수 없이 멈춘다. 같은 저장소가 `ingress_worker.py`에서는 같은",
+        "line:217:무방비가 되고 `None.replayed` 로 worker 가 죽는다. 지우지 않고 이름·docstring 만 고쳤다.",
+        "line:261:wave 5 이전에 \"아직 없다\"고 적었던 셋은 전부 닫혔다. Slack workspace와 app은 만들어졌고",
+        "line:278:다음 세션은 먼저 workstream을 resume하고, 이어서 아래 command로 blocker 하나만 선택한다.",
+        "line:281:$pinesky-workstream-next docs/workstreams/messenger-governance-closure-v3",
+        "line:314:| `F17-1` | P1 | `FR-1` 의 guard 가 만료 lease 를 \"다른 worker 가 가져갔다\" 로 오해한다. **round 15 의 head-of-line 차단이 되돌아왔다** |"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/STATUS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:233:규칙). 정작 필요한 숫자인 \"Card 한 장과 다음 Card 사이에 쌓이는 message 수\" 는 workspace"
+      ],
+      "matches": [
+        "work"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/contracts/slack-transport.md",
+      "score": 1.0
+    }
+  ],
+  "generated_from": {
+    "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+    "contract": "specs/012-portable-document-lifecycle/work-contract.json",
+    "working_diff": ".specify/feature.json"
+  },
+  "invariants": [
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:68:\"custom\": {\"preserve\": True},",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:106:def test_existing_content_hooks_and_permissions_are_preserved(self):",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:111:\"custom\": {\"preserve\": True},",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:119:self.assertEqual(settings[\"custom\"], {\"preserve\": True})",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:129:self.assertEqual(codex[\"custom\"], {\"preserve\": True})",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:146:def test_policy_merge_preserves_hand_written_formatting(self):",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/ai/test_amplai_kit_installer.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:766:# created_at is preserved so the record still shows when the run",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:128:def make_work(self, cr_id, app=\"cortex\", depends=None, max_attempts=None):",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:129:return self.store.create_work(",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:144:work = self.make_work(cr_id)",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:145:self.assertEqual(self.store.get_work(work[\"work_id\"])[\"change_id\"], cr_id)",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:147:question = self.store.create_question(work[\"work_id\"], \"결정이 필요한가?\")",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/ai/test_amplai_kit_regressions.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:16:existing_statement: Sources preserve original evidence.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:17:incoming_statement: Sources preserve original evidence.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:48:incoming_statement: Original inputs remain preserved.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:49:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:88:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/fixtures/semantic-golden-set.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:362:def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters(",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:288:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:552:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:588:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_active_proposals.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:2926:def test_process_kill_before_cas_preserves_retryable_database_truth(tmp_path: Path) -> None:",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:77:workspace_id=\"T123\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:258:leased = jobs.claim_next(\"worker-publish-fixture\")",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:262:worker_id=\"worker-publish-fixture\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:267:worker_id=\"worker-publish-fixture\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:470:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_apply_jobs.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:648:assert job.payload[\"workflow\"] == \"source-preserve_then_governed_curation\"",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:156:first = queue.claim_next(worker_id=\"worker-1\")",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:162:second = queue.claim_next(worker_id=\"worker-1\")",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:514:\"controller\": \"work\",",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:522:\"workspace_id\": \"T001\",",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:561:def test_orchestration_request_holds_unknown_target_without_runnable_work(platform) -> None:",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_control_plane.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:538:def test_ambiguous_artifact_preserves_source_but_creates_no_proposal(tmp_path: Path) -> None:",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:901:\"# Roadmap\\n\\n## Phase 1A\\n\\nTracker roadmap must add and preserve version history.\\n\",",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:280:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:436:\"--workspace\",",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:708:workspace = tmp_path / \"workspace\"",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:709:pack_root = workspace / \"products/amplai\"",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_intake_e2e.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:2236:def test_rollback_planner_preserves_preexisting_destination_provenance(tmp_path: Path) -> None:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:6527:def test_progressed_v18_backfill_preserves_next_active_projection_revision(",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:7242:def test_existing_qualified_proposal_conflict_preserves_original_state(tmp_path: Path) -> None:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:107:workspace_id=\"T123\",",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:4411:with ThreadPoolExecutor(max_workers=2) as pool:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:4625:channel=CHANNEL.model_copy(update={\"workspace_id\": \"T999\"}),",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_legacy_migration.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:96:def test_pack_archive_is_stable_inside_canonical_output_and_preserves_empty_memory(",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:127:root = tmp_path / \"credentials-workspace/pack\"",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:170:imports=[{\"module\": \"work-management\", \"version\": \"1.x\"}],",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:174:\"work-management\",",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_project_packs.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:296:def test_operation_summary_preserves_totals_and_stable_preview(",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:85:workspace_id=\"T123\",",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:888:failed = dispatcher.deliver_next(\"wrong-channel-worker\", destination)",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:913:assert dispatcher.deliver_next(\"wrong-channel-worker\", destination) is None",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1373:workspace_ids=frozenset({\"T123\"}),",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1381:worker = IngressDecisionWorker(",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_review_cards.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:65:def test_roadmap_diff_preserves_cancelled_items_and_rebuilds_next_plan(",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:180:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:310:\"# Roadmap\\n\\n## Phase 99Z — Surprise\\n\\nUnknown work.\",",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_roadmap_changes.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:1383:def test_finalize_failure_preserves_the_denial_code(",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:56:from amplai_foundry.governance.ingress_worker import _DENIED_CODES",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:81:workspace_id=\"T123\",",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:87:workspace_id=\"T123\",",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:172:workspace_ids=frozenset({\"T123\"}),",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:320:def _worker(",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_slack_ack_boundary.py",
+      "status": "candidate"
+    }
+  ],
+  "known_facts": [
+    {
+      "status": "verified_for_work",
+      "statement": "R5 full2374PASS does not close the Work: independent reviews and main RED probes show unsafe optional alias disclosure and three Kit guides absent from actual generated/stored Context. S20/S19 are bounded existing-contract repairs; final R6 gates remain.",
+      "evidence": [
+        {
+          "type": "review",
+          "source": "specs/012-portable-document-lifecycle/review-r5.json",
+          "locator": "W003-R5-01/W003-R5-02 and retained main RED logs"
+        }
+      ]
+    },
+    {"status":"verified_for_work","statement":"Canonical Kit is tools/amplai-loop-kit; current default installer requires an existing Loop baseline.","evidence":[{"type":"code","source":"tools/amplai-loop-kit/install.py","locator":"validate_target"}]},
+    {"status":"verified_for_work","statement":"Current task generator emits Phase sections while eval.sh consumes Slice sections; S01 owns this existing executable-harness gap.","evidence":[{"type":"code","source":".specify/scripts/taskify_to_tasks_md.py","locator":"render"},{"type":"code","source":"scripts/eval.sh","locator":"slice section parsing"}]},
+    {"status":"verified_for_work","statement":"D-055 already approves .agents canonical skills and exact Claude mirrors; the stale index entry was superseded while preserving its original statement and provenance.","evidence":[{"type":"artifact","source":"specs/012-portable-document-lifecycle/knowledge-reconciliation.json"}]},
+    {"status":"verified_for_work","statement":"DONE reads work without reactivation; own-result Markdown and heartbeat output need presentation repair.","evidence":[{"type":"test","source":"specs/012-portable-document-lifecycle/closed-work-discovery.json"}]},
+    {"status":"verified_for_work","statement":"23 assigned original requirements and 46 original positive/negative cases have complete planned allocation, with zero execution PASS.","evidence":[{"type":"artifact","source":"specs/012-portable-document-lifecycle/acceptance-map.json"}]},
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:1335:> Result and review delivery MUST **preserve existing** destination ordering, reconciliation,",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:81:동일한 단일 `workspace_id:api_app_id` 형식이다. Parser는 strict UTF-8, duplicate-key",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:103:수렴하지 않는다. 다만 durable commit은 이미 끝났으므로 background worker가 decision을",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:117:worker를 탈출하지 않도록 봉쇄하고 `IngressService.stranded()`로 관측 가능하게만 한다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:131:안전하다. Lease를 잃은 worker는 뒤이은 finalize에서 `LEASE_LOST`를 받는다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:133:MGC-006 이후 존재했으나 worker가 없어 도달 불가였다.",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:12:- [x] CHK002 Are cleanup-attempt obligations defined for both successful and failed readback without weakening the different startup decisions? [Completeness, S",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:24:- [x] CHK011 Is “preserve the original readback cause” defined in a form that also specifies how secondary cleanup failure information is represented? [Clarity,",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:47:- [x] CHK025 Is the required state defined when Slack deletion succeeds but durable lifecycle resolution cannot be recorded? [Edge Case, Gap, Spec §FR-026–FR-02",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:48:- [x] CHK026 Are repeated exact-cleanup failures specified without permitting a new probe or silently converting the state to ready? [Coverage, Spec §FR-027–FR-",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:14:- [x] CHK004 Is the ownership and permitted mechanism for resolving a permanently blocked probe explicitly defined or explicitly deferred with a follow-up requi",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:15:- [x] CHK005 Are the requirements for production pre-claim gating, diagnostic emission, and worker activation each assigned to exactly one delivery boundary? [C",
+          "source": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:95:network call and preserve current worker behavior.",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:15:Result Card, which the Delivery section below owns. The worker returns nothing here so that one",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:The background worker maps every other internal result to a closed public vocabulary.",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:34:whether the worker observed the outcome of the final attempt, and then, within the observed case,",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:38:- **The worker observed the last attempt, it failed, and no decision was committed.** The outcome",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:39:is known, so the worker ends the command as a recovery hold and the mapping above reports",
+          "source": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:53:| Process interruption during render or post | Issued IDs may exist, raw lost | Scrub secret-bearing frames; preserve the interruption class; reconcile before r",
+          "source": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:84:- bound Slack workspace and channel",
+          "source": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:90:workspace and channel. Review command uniqueness and Slack destination ordering use the same",
+          "source": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:91:provider/workspace/channel scope. The destination sequence is channel-wide, but source-state revision",
+          "source": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:101:**FR-021 을 Decision 없이 약화했다.** `preserve existing … retry, hold … behavior` 를",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:37:### F-1 — P1 — `ingress_worker.py:393`, `:323`",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:59:`test_a_worker_observed_exhaustion_ends_as_a_recovery_hold_with_feedback` 은 앞선 attempt 에서",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:79:dispatcher 를 통과하면 event 가 `leased` 로 남고 worker 가 매번 죽다가 lease 만료로만 수렴한다.",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:114:| RL-1 | `ingress_worker.py:376` | `and result.decision.replayed` 제거 → 첫 성공 decision 이 `already_completed` 를 보낸다 (D-034 가 막으려던 이중 통지) |",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:143:\"Process interruption during render or post … preserve the interruption class\" 를 어긴다.",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:90:live Slack E2E (`-m slack_e2e`) 는 이번 review 에서 실행하지 않았다. 실제 workspace 에 보이는",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:106:| `C-7` | Blocking-P2 | `ingress_worker.py:366-385`, `slack_http.py:529` | `completed` safe outcome 이 계약에 선언됐으나 어느 경로에서도 생성되지 않는다. artifact 3자 불일치 | contract |",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:141:operator 에게 신호가 가지 않는다. `except Exception` 으로 도는 worker loop 도 이 예외를 못 잡아",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:142:worker 가 죽는다. `contracts/review-card-lifecycle.md` 의 crash matrix",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:256:`src/amplai_foundry/governance/ingress_worker.py:366-385`, `src/amplai_foundry/governance/slack_http.py:529`",
+          "source": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/evidence/3lens-review.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:20:closed safe feedback outcome. Feedback failure preserved the final governed and ingress state.",
+          "source": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:24:Review Cards were posted to the configured test workspace and converged through their remote metadata",
+          "source": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:43:**실제 Slack workspace 로 나가는 행위라 wave 11 이 실행하지 않는다.** 이 저장소 밖으로",
+          "source": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:129:- **FR-021**: Result and review delivery MUST preserve existing destination ordering, reconciliation, retry, hold, and provider-isolation behavior.",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:135:- **FR-027**: A transient delivery-store failure MUST consume the ordinary retry budget rather than immediately stopping its destination, and MUST be distinguis",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:154:- **SC-006**: Cards with 1, 3, 4, and maximum-supported operation counts preserve correct totals, stable preview order, and bounded readable output.",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:24:- Q: When background processing of a reviewer action exhausts its retry budget, what does the reviewer receive? → A: A terminal safe outcome. The worker's final",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:26:- Q: When the retry budget is exhausted without any worker observing the outcome (repeated worker death), what does the reviewer receive? → A: Nothing. The true",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:102:- Background processing of a reviewer action runs out of retries: which of the three endings applies depends on whether the worker observed the final attempt an",
+          "source": "specs/003-slack-proposal-card/spec.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/003-slack-proposal-card/spec.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:115:file still exists: True    app rule preserved: True",
+          "source": "specs/007-kit-source-and-distribution/evidence/review-regression.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:117:file still exists: False   app rule preserved: FILE DELETED - app content lost",
+          "source": "specs/007-kit-source-and-distribution/evidence/review-regression.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:390:`~/workspace/amplai-project` 는 읽기만 했고 쓰지 않았다.",
+          "source": "specs/007-kit-source-and-distribution/evidence/review-regression.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/007-kit-source-and-distribution/evidence/review-regression.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:4:{\"data\": {\"broken_symlinks\": 0, \"finding\": \"work skill referenced tools/ontology/semanticctl.py which does not exist (D-046)\", \"identical\": 6, \"pure_addition_2_",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:8:{\"data\": {\"codex_hooks_merge\": \"ran kit merge_hooks on synapse origin/main .codex/hooks.json — existing SessionStart matcher entry and 3 PostToolUse hooks prese",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1:{\"data\": {\"artifact\": \"AMPLAI_2.3.1_to_Kit_2.4.0_Platform_0.4.0.zip\", \"baseline\": \"ced83af53f9d625f5d91edb069a8e877ed3bb3b5\", \"files\": 1040, \"patch_stat\": \"122 ",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:2:{\"data\": {\"apply_check\": \"PASS\", \"docs_validate\": \"STALE\", \"doctor\": \"PASS\", \"failing_block_checks\": [\"ruff-check 46 errors\", \"ruff-format 9 files\", \"mypy 2 err",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:3:{\"data\": {\"CP-1\": \"UNCAUGHT sqlite3.IntegrityError on cp_objects.canonical_ref\", \"CP-2\": \"UNCAUGHT TypeError from int() on a list\", \"observed\": \"start_response ",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:{\"data\": {\"docs_failure\": \"AGENTS.md:135 -> agents/openai.yaml does not resolve\", \"false_positive_excluded\": \"AGENTS.md:41 -> .amplai/tmp/ is a gitignored runti",
+          "source": "specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/009-kit-2-4-platform-0-4/evidence-trace.jsonl",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:4:{\"data\": {\"codex_hooks\": \"existing SessionStart(matcher) and PostToolUse preserved; kit hook appended as a new group; SessionEnd added\", \"doctor\": \"PASS\", \"pr\":",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1:{\"data\": {\"cortex\": {\"behind_origin_main\": 279, \"branch\": \"feat/card-id-and-prober-id\", \"codex_hooks_json\": false, \"dirty\": 2, \"kit\": \"2.3.1\"}, \"synapse\": {\"beh",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:2:{\"data\": {\"consequence\": \"user local checkouts need no sync or cleanup\", \"evidence\": \"install.py:935-936 early return; 953-955 register_app never reached; 596-5",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:3:{\"data\": {\"context_pack_hash\": \"bb310b834b9220012af134f060363cb643abedf8436379c04639291b3443918e\", \"depends_on\": \"ALR-008\", \"first_slice\": \"S01 synapse\", \"human",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:{\"data\": {\"ai_team_toplevel\": \"core 7 + install + backups — inside the D-054 exception; guard test 76 OK\", \"commit_profile\": \"PASS (11 checks incl. high-risk-ac",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        },
+        {
+          "locator": "line:6:{\"data\": {\"amplai-foundry\": \"2.4.0\", \"cortex\": \"2.4.0\", \"local_copies_unchanged\": {\"cortex\": \"feat/card-id-and-prober-id dirty=2\", \"synapse\": \"feat/chuck-max-te",
+          "source": "specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/010-kit-2-4-fleet-distribution/evidence-trace.jsonl",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:2065:\"preserves\",",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:\"line:96:`/work specs/003-slack-proposal-card` 로 wave 15 를 시작한다.\"",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:23:\"path\": \"docs/workstreams/HANDOFF_2026-08-28.md\",",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:33:\"path\": \"docs/workstreams/HANDOFF_2026-08-29.md\",",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:47:\"path\": \"docs/workstreams/HANDOFF_2026-09-02.md\",",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:59:\"path\": \"docs/workstreams/amplai-loop-runtime-adoption/CURRENT_ITEM.md\",",
+          "source": "specs/011-hermes-slack-orchestration/domain-discovery.json",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/011-hermes-slack-orchestration/domain-discovery.json",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:32:guidance: [Keep Python 3.6 compatibility in Loop Kit scripts and preserve singular runner fallback.]",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:3:title: Dispatch one selected runner in one managed worktree",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:7:outcome: Each Work selects design or work plus one Claude Code or Codex profile and executes in a clean managed worktree pinned to its immutable base commit.",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:17:include: [Work schema migration, local runner profiles, controller-specific prompt, managed worktree lifecycle, retry and continuation]",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:34:- One Work has one active runner and one attempt workspace.",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:35:- Resume reuses the same runner and workspace.",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/011-hermes-slack-orchestration/task-manifests/HSO-T005.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:31:then: exactly one Work reaches the contracted state and rollback preserves existing workflows",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:7:outcome: A real Slack request, AMPLAI human activation, worker run, result projection, failure injection, and rollback rehearsal all match the approved contract",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:8:user_value: The complete user-facing workflow is proven before auto-start is enabled.",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:15:include: [Real Slack workspace E2E, Hermes Socket Mode, signed AMPLAI action, failure injection, rollback]",
+          "source": "specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/011-hermes-slack-orchestration/task-manifests/HSO-T007.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:54:{\"id\": \"AC-014\", \"statement\": \"Disabling the Hermes plugin and provider activation preserves existing CLI, Slack Proposal Card and direct host workflows.\", \"evi",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:\"goal\": \"Slack 사용자가 Hermes에 설계·구현 작업을 요청하면 AMPLAI가 human activation, durable Project Store, isolated workspace와 selected Claude Code 또는 Codex runner를 통해 작업을 완료하",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:11:\"work_type\": \"architecture\",",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:\"scripts/amplai_runtime.py, scripts/amplai_supervisor.py, scripts/amplai_hosts.py — Work runner profiles and managed workspace\",",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:22:\"docs/workstreams/messenger-governance-closure-v3/ — MGC-014~016 decision impact\",",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        },
+        {
+          "locator": "line:38:\"사용자 main checkout에서 autonomous worker 실행\"",
+          "source": "specs/011-hermes-slack-orchestration/work-contract.json",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/011-hermes-slack-orchestration/work-contract.json",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:85:A draft ``IGNORE`` operation preserves the source and explicitly asks a",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:28:\"\"\"Preserve an explicit source, then prepare—not apply—curation work.\"\"\"",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:35:workspace: Path,",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:40:self.workspace = workspace.expanduser().resolve(strict=False)",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:58:output = self.workspace / \".amplai\" / \"jobs\" / f\"CURATE-{result.source_id}.md\"",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:63:repository = ProposalRepository(self.workspace / \".amplai\" / \"proposals\")",
+          "source": "src/amplai_foundry/control_plane/knowledge_intake.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: src/amplai_foundry/control_plane/knowledge_intake.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:523:\"workflow\": \"source-preserve_then_governed_curation\",",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:27:ORCHESTRATION_CONTROLLERS = frozenset({\"status\", \"design\", \"work\"})",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:34:def get_work(self, work_id: str) -> dict[str, Any]: ...",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:64:work_reader: OrchestrationWorkReader | None = None,",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:68:self.work_reader = work_reader",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:389:reply_route_json, correlation_id, status, hold_code, work_ref,",
+          "source": "src/amplai_foundry/control_plane/service.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: src/amplai_foundry/control_plane/service.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:993:transport_failure = self._rewrap(error, preserve_cause=not is_review)",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1083:preserve_cause: bool = True,",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1108:if preserve_cause:",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:(`docs/workstreams/messenger-governance-closure-v3/DECISIONS.md` D-018 항목 2).",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:101:# message 수\" 는 workspace 에 달렸고 **모른다.** 최악 5회 호출은 Tier 2 예산의 4분의 1이다.",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:295:network 문제와 Slack 문제를 가른다. `persisted_code_suffix` 가 소문자로 내리므로",
+          "source": "src/amplai_foundry/governance/slack_projection.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: src/amplai_foundry/governance/slack_projection.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:68:\"custom\": {\"preserve\": True},",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:106:def test_existing_content_hooks_and_permissions_are_preserved(self):",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:111:\"custom\": {\"preserve\": True},",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:119:self.assertEqual(settings[\"custom\"], {\"preserve\": True})",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:129:self.assertEqual(codex[\"custom\"], {\"preserve\": True})",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:146:def test_policy_merge_preserves_hand_written_formatting(self):",
+          "source": "tests/ai/test_amplai_kit_installer.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/ai/test_amplai_kit_installer.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:766:# created_at is preserved so the record still shows when the run",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:128:def make_work(self, cr_id, app=\"cortex\", depends=None, max_attempts=None):",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:129:return self.store.create_work(",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:144:work = self.make_work(cr_id)",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:145:self.assertEqual(self.store.get_work(work[\"work_id\"])[\"change_id\"], cr_id)",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:147:question = self.store.create_question(work[\"work_id\"], \"결정이 필요한가?\")",
+          "source": "tests/ai/test_amplai_kit_regressions.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/ai/test_amplai_kit_regressions.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:16:existing_statement: Sources preserve original evidence.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:17:incoming_statement: Sources preserve original evidence.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:48:incoming_statement: Original inputs remain preserved.",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:49:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:88:action: preserve",
+          "source": "tests/fixtures/semantic-golden-set.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/fixtures/semantic-golden-set.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:362:def test_state_only_transition_matrix_is_exact_and_preserves_definition_counters(",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:288:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:552:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:588:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_active_proposals.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_active_proposals.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:2926:def test_process_kill_before_cas_preserves_retryable_database_truth(tmp_path: Path) -> None:",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:77:workspace_id=\"T123\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:258:leased = jobs.claim_next(\"worker-publish-fixture\")",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:262:worker_id=\"worker-publish-fixture\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:267:worker_id=\"worker-publish-fixture\",",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:470:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_apply_jobs.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_apply_jobs.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:648:assert job.payload[\"workflow\"] == \"source-preserve_then_governed_curation\"",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:156:first = queue.claim_next(worker_id=\"worker-1\")",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:162:second = queue.claim_next(worker_id=\"worker-1\")",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:514:\"controller\": \"work\",",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:522:\"workspace_id\": \"T001\",",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:561:def test_orchestration_request_holds_unknown_target_without_runnable_work(platform) -> None:",
+          "source": "tests/test_control_plane.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_control_plane.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:538:def test_ambiguous_artifact_preserves_source_but_creates_no_proposal(tmp_path: Path) -> None:",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:901:\"# Roadmap\\n\\n## Phase 1A\\n\\nTracker roadmap must add and preserve version history.\\n\",",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:280:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:436:\"--workspace\",",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:708:workspace = tmp_path / \"workspace\"",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:709:pack_root = workspace / \"products/amplai\"",
+          "source": "tests/test_intake_e2e.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_intake_e2e.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:2236:def test_rollback_planner_preserves_preexisting_destination_provenance(tmp_path: Path) -> None:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:6527:def test_progressed_v18_backfill_preserves_next_active_projection_revision(",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:7242:def test_existing_qualified_proposal_conflict_preserves_original_state(tmp_path: Path) -> None:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:107:workspace_id=\"T123\",",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:4411:with ThreadPoolExecutor(max_workers=2) as pool:",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:4625:channel=CHANNEL.model_copy(update={\"workspace_id\": \"T999\"}),",
+          "source": "tests/test_legacy_migration.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_legacy_migration.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:96:def test_pack_archive_is_stable_inside_canonical_output_and_preserves_empty_memory(",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:127:root = tmp_path / \"credentials-workspace/pack\"",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:170:imports=[{\"module\": \"work-management\", \"version\": \"1.x\"}],",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:174:\"work-management\",",
+          "source": "tests/test_project_packs.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_project_packs.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:296:def test_operation_summary_preserves_totals_and_stable_preview(",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:85:workspace_id=\"T123\",",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:888:failed = dispatcher.deliver_next(\"wrong-channel-worker\", destination)",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:913:assert dispatcher.deliver_next(\"wrong-channel-worker\", destination) is None",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1373:workspace_ids=frozenset({\"T123\"}),",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1381:worker = IngressDecisionWorker(",
+          "source": "tests/test_review_cards.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_review_cards.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:65:def test_roadmap_diff_preserves_cancelled_items_and_rebuilds_next_plan(",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:180:with ThreadPoolExecutor(max_workers=2) as executor:",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:310:\"# Roadmap\\n\\n## Phase 99Z — Surprise\\n\\nUnknown work.\",",
+          "source": "tests/test_roadmap_changes.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_roadmap_changes.py",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:1383:def test_finalize_failure_preserves_the_denial_code(",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:56:from amplai_foundry.governance.ingress_worker import _DENIED_CODES",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:81:workspace_id=\"T123\",",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:87:workspace_id=\"T123\",",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:172:workspace_ids=frozenset({\"T123\"}),",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        },
+        {
+          "locator": "line:320:def _worker(",
+          "source": "tests/test_slack_ack_boundary.py",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: tests/test_slack_ack_boundary.py",
+      "status": "candidate"
+    }
+  ],
+  "schema_version": "1.0",
+  "terms": [
+    "preserve",
+    "work",
+    "design",
+    "and",
+    "repository-local",
+    "rules",
+    "while",
+    "delivering",
+    "runnable",
+    "portable",
+    "baseline",
+    "dependency-bound",
+    "versioned",
+    "documentation",
+    "safe",
+    "offline",
+    "html",
+    "through",
+    "the",
+    "canonical",
+    "foundry",
+    "kit.",
+    "document",
+    "lifecycle",
+    "kit",
+    "tools",
+    "amplai-loop-kit",
+    "scripts",
+    "loopctl.py",
+    "loopv2.py",
+    "amplai.py",
+    "amplai_runtime.py",
+    "amplai_docs.py",
+    "eval.sh",
+    "tests",
+    "ai",
+    "ai-team",
+    "runtime",
+    "policy",
+    "documentation.json",
+    "gardening.json",
+    "verifiers",
+    "agents",
+    "skills",
+    "dev-loop",
+    "readme.md",
+    "docs",
+    "specs",
+    "012",
+    "portable-document-lifecycle",
+    "specify",
+    "feature.json",
+    "contracts",
+    "knowledge",
+    "map.json",
+    "claims.jsonl",
+    "doc-impact.schema.json",
+    "context-pack.schema.json",
+    "garden-report.schema.json",
+    "taskify",
+    "templates",
+    "pyproject.toml",
+    "an",
+    "explicit",
+    "baseline-plus-extension",
+    "install",
+    "boots",
+    "real",
+    "validation",
+    "in",
+    "new",
+    "repository",
+    "without",
+    "private",
+    "domain",
+    "dependencies",
+    "current",
+    "local",
+    "host",
+    "trust",
+    "remain",
+    "intact.",
+    "exact",
+    "package",
+    "installed",
+    "inventories",
+    "three-way",
+    "update",
+    "reinstall",
+    "uninstall",
+    "fault",
+    "recovery",
+    "reject",
+    "drift",
+    "unrelated",
+    "files",
+    "settings",
+    "store",
+    "bindings.",
+    "complete",
+    "diff",
+    "dependency",
+    "impact",
+    "hash-bound",
+    "review",
+    "include",
+    "rename",
+    "delete",
+    "doc-only",
+    "changes",
+    "pinned",
+    "ontology",
+    "incomplete",
+    "scans",
+    "stale",
+    "reviews",
+    "cannot",
+    "pass.",
+    "single-authority",
+    "metadata",
+    "separates",
+    "authority",
+    "freshness",
+    "security",
+    "release",
+    "all",
+    "active",
+    "retrieval",
+    "index",
+    "context",
+    "surfaces",
+    "enforce",
+    "qualified",
+    "ids",
+    "uniqueness",
+    "pre-output",
+    "filters.",
+    "deterministic",
+    "indexes",
+    "derive",
+    "from",
+    "reviewed",
+    "owner",
+    "sources",
+    "generated",
+    "audience-specific",
+    "guidance",
+    "pass",
+    "xss",
+    "privacy",
+    "accessibility",
+    "print",
+    "mobile",
+    "checks.",
+    "section",
+    "preservation",
+    "scoped",
+    "post-review",
+    "gardening",
+    "approval",
+    "hash",
+    "retention",
+    "backup",
+    "deletion",
+    "guards",
+    "user",
+    "backups",
+    "history",
+    "cleanup",
+    "stays",
+    "report-only.",
+    "cross-app",
+    "views",
+    "project",
+    "projections",
+    "is",
+    "authoritative",
+    "completed",
+    "can",
+    "be",
+    "read",
+    "reactivation",
+    "default",
+    "progress",
+    "output",
+    "never",
+    "exposes",
+    "lease",
+    "credential.",
+    "existing",
+    "full",
+    "verification",
+    "three",
+    "sequential",
+    "independent",
+    "with",
+    "versus",
+    "unavailable",
+    "target",
+    "evidence",
+    "explicitly",
+    "distinguished."
+  ],
+  "unknowns": [
+    "Actual Python 3.6 and native host smoke execution are unavailable; current-host fixtures do not replace this evidence.",
+    "No RHEL7 target exists. W004 owns separately authorized actual target deployment evidence."
+  ],
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003"
+}

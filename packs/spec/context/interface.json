@@ -1,0 +1,11 @@
+{
+  "pack_id": "spec",
+  "role": "requirements, design, task decomposition and critic rubrics as internal capabilities behind work/design",
+  "inputs": ["intent", "repository facts", "knowledge readiness", "active decisions"],
+  "outputs": ["spec.md", "plan.md", "task manifests", "analysis findings"],
+  "not_core": ["a mandatory nine-stage pipeline for every work", "a third public entry point"],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {"kind": "optional", "when": "requirement_decision or architecture_change per .ai-team/runtime/policy.json"}
+}

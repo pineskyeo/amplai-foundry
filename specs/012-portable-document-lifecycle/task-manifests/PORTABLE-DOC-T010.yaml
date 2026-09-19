@@ -1,0 +1,248 @@
+{
+  "schema_version": "1.0",
+  "id": "PORTABLE-DOC-T010",
+  "title": "Block private references before current or historical selection output",
+  "type": "bugfix",
+  "status": "done",
+  "goal": {
+    "outcome": "Block private references before current or historical selection output",
+    "user_value": "Independent app developers share a reproducible workflow, current documents and recoverable changes."
+  },
+  "source": {
+    "feature": "012-portable-document-lifecycle",
+    "files": [
+      {
+        "path": "specs/012-portable-document-lifecycle/spec.md",
+        "section": "Existing approved requirements; no new requirement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Review R1 Repair Refinement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/review-r1.json",
+        "section": "W003-R1-02"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Review R1 Repair Refinement; exact legacy reference classification"
+      }
+    ],
+    "requirements": [
+      "REQ-043",
+      "REQ-047",
+      "REQ-052",
+      "DOC-002",
+      "DOC-003",
+      "REG-001"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-055",
+      "D-056",
+      "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "CR-SYNAPSE-APP-SPLIT-E021"
+    ]
+  },
+  "scope": {
+    "include": [
+      "Block private references before current or historical selection output"
+    ],
+    "exclude": [
+      "Platform/Vault/governed knowledge mutations",
+      "Live installs, trust changes, Store rebinding, publication or actual tracked deletion"
+    ],
+    "allowed_paths": [
+      "scripts/amplai_docs.py",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_lifecycle.py",
+      "tests/ai/test_document_html.py",
+      "specs/012-portable-document-lifecycle/",
+      ".ai-team/policy/documentation.json"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "src/amplai_foundry/",
+      "schemas/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other real repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "PORTABLE-DOC-T009",
+      "PORTABLE-DOC-T012"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "Normalize supported local Markdown link paths consistently, including encoding/fragments, before security checks.",
+      "Use explicit source classification and fail closed for unclassified low-security targets; do not require every INTERNAL query target to be in the current guide bundle.",
+      "Cover all consumers and CLI including high-relevance private-link queries with RED/GREEN tests.",
+      "Read-only inventory found exactly three existing README Markdown references outside classified roots/routes: KNOWLEDGE-INTAKE.md, SEMANTIC-COMPARISON.md, ROADMAP-CHANGES.md. Preserve their bytes as INTERNAL source assets owned by README; no new current-guide approval."
+    ],
+    "invariants": [
+      "Existing work/design controller, native Project Store and transaction installer remain authoritative",
+      "Preserve unrelated user content, historical provenance and current host trust",
+      "No synthetic result is native host, Python3.6 or RHEL7 evidence"
+    ],
+    "non_goals": [
+      "New Platform storage/API/auth/ontology service",
+      "Automatic fleet activation or destructive cleanup"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "PORTABLE-DOC-T010-AC1",
+        "given": "Reviewed lower-security guides with direct or encoded higher-security references, and valid same-security historical/control references",
+        "when": "All seven current consumers, explicit history, actual query/index CLI and HTML prepare input",
+        "then": "Reference classification precedes ranking/title/snippet creation; no restricted marker leaks in output/errors, legitimate classified same-security references remain usable and HTML stays bundle-strict"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -B -m pytest -q tests/ai/test_document_lifecycle.py tests/ai/test_document_html.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "test",
+        "run": "python3 -B tools/amplai-loop-kit/seal.py --verify",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Installer/document/privacy/lifecycle compatibility within the assigned slice"
+    ],
+    "approvals": [
+      "User local implementation authority in execution-authorization.json and native E021; any external/production/cleanup action remains separate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-12 07:41:51 UTC",
+    "evidence_paths": [
+      "specs/012-portable-document-lifecycle/revalidate-r6-s10.json",
+      "specs/012-portable-document-lifecycle/revalidate-r6-s10.log"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "scripts/amplai_docs.py",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_lifecycle.py",
+      "tests/ai/test_document_html.py",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "notes": [
+      "R1 exact source and prior evidence remain immutable history; required new RED/GREEN and independent R2 closure. New test harness is an explicit task deliverable where absent."
+    ]
+  },
+  "context": {
+    "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+    "slice_id": "S10",
+    "context_pack": "specs/012-portable-document-lifecycle/context-pack.json",
+    "environment": "specs/012-portable-document-lifecycle/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "6e005a5e3035ef05510c403a7cd691d524b733bd"
+  },
+  "completion_history": [
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11 11:58:20 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s10-evidence.json"
+      ],
+      "preserved_for": "R2 frozen source",
+      "review_scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014"
+    },
+    {
+      "recorded_at": "2026-09-11 23:10:19 UTC",
+      "reason": "R3 engine/payload repair requires current-target revalidation; original evidence retained.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-11 14:48:59 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/s10-evidence.json",
+          "specs/012-portable-document-lifecycle/s10-revalidation-r3.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 00:52:57 UTC",
+      "reason": "Revalidate after demonstrated physical-line/Unicode split mismatch in shared typed references; earlier evidence preserved, not current source proof.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 00:27:35 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-s10.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 02:53:17 UTC",
+      "reason": "R4 confirmed classifier/typed-reference/borrowed-mode defects require current-source revalidation; original completion remains historical.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 01:10:20 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-line-s10.json"
+        ]
+      }
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-12 04:36:25 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s10.json",
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s10.log"
+      ]
+    }
+  ],
+  "revalidation": {
+    "reason": "R2 full-document reference/URI and atomic metadata repairs require current-target acceptance; prior completion retained",
+    "review": "review-r2.json",
+    "previous_status": "done",
+    "status": "LOCAL_PASS",
+    "evidence": "s10-revalidation-r3.json"
+  }
+}

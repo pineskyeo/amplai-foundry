@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0",
+  "purpose": "정리는 scoped report-only다. 분류, 파일 나이와 Git history는 삭제 권한이 아니다.",
+  "domains": [
+    "documentation",
+    "knowledge",
+    "ontology",
+    "harness",
+    "repository"
+  ],
+  "modes": {
+    "incremental": {
+      "description": "일반 /work 기본값. changed scope 주변만 본다.",
+      "scope": [
+        "work contract scope",
+        "changed files",
+        "dependency neighborhood",
+        "related tests/config/docs"
+      ],
+      "repository_wide": false
+    },
+    "full": {
+      "description": "명시적인 high-risk repository_gardening Work 안에서만 report-only scan한다.",
+      "scope": [
+        "repository 전체"
+      ],
+      "repository_wide": true,
+      "default_apply": false
+    }
+  },
+  "safety_levels": {
+    "SAFE_AUTO": {
+      "description": "호환 분류만 유지한다. 소유권·재생성·승인·복구 근거 없는 자동 삭제는 실행하지 않는다.",
+      "auto_apply": false
+    },
+    "EVIDENCE_REQUIRED": {
+      "description": "reference/build/test/packaging scan 근거가 모두 모여야 같은 Work 에서 제거할 수 있다.",
+      "auto_apply": false,
+      "required_evidence": [
+        "reference_scan",
+        "build_target_scan",
+        "test_scan",
+        "packaging_scan"
+      ]
+    },
+    "HUMAN_GATED": {
+      "description": "dead 처럼 보여도 candidate/proposal 까지만 만든다. 명시적 사람 승인 없이 삭제하지 않는다.",
+      "auto_apply": false,
+      "gate": "destructive_change"
+    }
+  },
+  "candidate_types": [
+    "generated_garbage",
+    "temporary_backup",
+    "prunable_worktree",
+    "orphan_test_fixture",
+    "obsolete_script",
+    "unused_helper",
+    "duplicate_fixture",
+    "stale_config",
+    "orphan_document",
+    "broken_reference",
+    "legacy_ai_artifact",
+    "dead_code"
+  ],
+  "safe_auto_patterns": [],
+  "safe_auto_requires": {
+    "untracked_or_ignored": true,
+    "reason": "Untracked는 소유권·재생성·보존 의무를 증명하지 않는다. normal apply는 report-only다."
+  },
+  "human_gated_paths": [
+    "docs/**",
+    "specs/**",
+    ".specify/**",
+    ".agents/**",
+    ".ai-team/**",
+    "**/*.bak",
+    "**/*.orig"
+  ],
+  "classification_patterns": {
+    "public_api": [
+      "include/**",
+      "schemas/**"
+    ],
+    "conditional_build": [
+      "Makefile",
+      "tools/build/**"
+    ],
+    "plugin_entry": [
+      "plugins/**"
+    ],
+    "production_path": [
+      "configs/**",
+      "deploy/**",
+      "rpmbuild/**"
+    ]
+  },
+  "reference_scan_extensions": [
+    ".py",
+    ".sh",
+    ".pl",
+    ".pm",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".md"
+  ],
+  "reference_scan_exclude": [
+    "specs",
+    ".specify/eval"
+  ],
+  "reference_scan_exclude_reason": "Work artifact 는 조사 기록이지 코드 참조가 아니다. domain-discovery.json 은 repository 경로를 evidence 로 대량 나열하므로, 그것을 참조로 세면 어떤 파일도 orphan 이 되지 않는다.",
+  "discovery_entry_patterns": [
+    {
+      "pattern": "**/__init__.py",
+      "evidence": "Python package marker"
+    },
+    {
+      "pattern": "**/__main__.py",
+      "evidence": "Python module entry point"
+    }
+  ],
+  "discovery_entry_rule": "runner 가 glob 또는 디렉토리로 수집하는 파일은 이름 참조가 없는 것이 정상이다. orphan candidate 로 만들지 않는다.",
+  "scan_limits": {
+    "incremental_reference_scan": 120,
+    "full_reference_scan": 400,
+    "reason": "reference scan 은 파일당 git grep 을 돌린다. 상한을 넘기면 report 에 남기고 멈춘다 — 조용히 잘라내지 않는다."
+  },
+  "dynamic_entry_evidence": [],
+  "evidence_scans": [
+    {
+      "id": "reference_scan",
+      "description": "repository 전체 텍스트 참조"
+    },
+    {
+      "id": "build_target_scan",
+      "description": "Makefile/spec build target 참조"
+    },
+    {
+      "id": "test_scan",
+      "description": "tests/ 와 tools/ci 참조"
+    },
+    {
+      "id": "packaging_scan",
+      "description": "repository packaging manifest의 install/files 참조"
+    },
+    {
+      "id": "runtime_config_scan",
+      "description": "conf/ 와 runtime config 참조"
+    },
+    {
+      "id": "git_history",
+      "description": "삭제/이동 이력"
+    }
+  ],
+  "no_static_reference_is_not_dead": {
+    "enabled": true,
+    "reason": "등록된 entry point, 자동 수집, skill/manifest의 문자열 참조와 동적 loading을 확인한다. 텍스트 참조가 없다는 사실만으로 dead code라고 판정하지 않는다.",
+    "requires_for_dead_code": [
+      "reference_scan",
+      "build_target_scan",
+      "packaging_scan",
+      "dynamic_entry_review"
+    ]
+  },
+  "pass_criteria": [
+    "발견된 모든 candidate 가 safety level 과 classification 을 가진다",
+    "모든 candidate 가 evidence 를 가진다",
+    "HUMAN_GATED candidate 가 자동 삭제되지 않았다",
+    "삭제된 artifact 에 verifier evidence 가 있다",
+    "broken reference 가 남지 않았다"
+  ],
+  "pass_is_not": "garbage candidate 가 0 개",
+  "post_apply_loop": {
+    "always": [
+      "verify",
+      "converge",
+      "documentation_freshness"
+    ],
+    "review_required_when": [
+      "behavior change",
+      "public API change",
+      "architecture change"
+    ],
+    "review_not_required_when": []
+  },
+  "rule": "Normal work is incremental report-only after documentation and review. Full scan requires an explicit high-risk repository_gardening Work. Retirement application has no public CLI and requires separate exact authority and verified recovery.",
+  "generated_candidate_patterns": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/.DS_Store"
+  ],
+  "user_backup_patterns": [
+    "*.bak",
+    "**/*.bak",
+    "*.bak.*",
+    "**/*.bak.*",
+    "*.orig",
+    "**/*.orig",
+    "*.rej",
+    "**/*.rej",
+    "*~",
+    "**/*~",
+    "**/*.swp",
+    "**/*.swo",
+    "**/.fuse_hidden*"
+  ]
+}

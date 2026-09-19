@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/release-set.schema.json",
+  "title": "AMPLAI V3 release-set",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "release_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "platform_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "kit_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "protocol_major": {
+      "const": 3
+    },
+    "contract_schema_version": {
+      "const": "3.0.0"
+    },
+    "source_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "component_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "qualification_matrix_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "migration_plan_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "sbom_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "provenance_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "signature": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/signature"
+    },
+    "status": {
+      "enum": [
+        "candidate",
+        "approved",
+        "revoked"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "release_id",
+    "platform_version",
+    "kit_version",
+    "protocol_major",
+    "contract_schema_version",
+    "source_revision",
+    "component_refs",
+    "qualification_matrix_ref",
+    "migration_plan_ref",
+    "sbom_ref",
+    "provenance_ref",
+    "signature",
+    "status"
+  ],
+  "additionalProperties": false
+}

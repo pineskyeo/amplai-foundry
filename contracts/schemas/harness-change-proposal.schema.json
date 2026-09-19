@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/harness-change-proposal.schema.json",
+  "title": "AMPLAI V3 harness-change-proposal",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "proposal_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "baseline_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "candidate_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "surface_class": {
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "observation_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "change_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "expected_benefit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "protected_surface_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/finding"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "experiment_plan_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "rollback_plan_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "proposer": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/actor"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "screened",
+        "experiment_approved",
+        "offline_running",
+        "offline_evaluated",
+        "canary_approved",
+        "canary_running",
+        "promotion_pending",
+        "promoted",
+        "rejected",
+        "rolled_back",
+        "aborted"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "proposal_id",
+    "scope",
+    "baseline_ref",
+    "candidate_ref",
+    "surface_class",
+    "hypothesis",
+    "observation_refs",
+    "change_artifact",
+    "expected_benefit",
+    "risks",
+    "protected_surface_findings",
+    "experiment_plan_ref",
+    "rollback_plan_ref",
+    "proposer",
+    "status"
+  ],
+  "additionalProperties": false
+}

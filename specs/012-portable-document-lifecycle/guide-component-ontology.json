@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "component": "ontology",
+  "revision": "7863f885de43258b399f62d9e0a02f068b703308",
+  "manifest_sha256": "81364858c77ec9fd9b0f8f6ae0d8cc26432f116c136481f83b782af2fdd651df",
+  "version": "0.3.0",
+  "scope": "Pinned tracked source and manifest only; no domain mutation or new ontology release.",
+  "verified_by": "s08-guide-components.json",
+  "purpose": "INTERNAL local candidate guide reference; not deployment activation"
+}

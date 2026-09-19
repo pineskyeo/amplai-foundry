@@ -1,0 +1,27 @@
+{
+  "verdict": "PASS_GUIDE_REFERENCE_VISIBILITY",
+  "scope": "Reference classification only. S08 owns current review/release/HTML.",
+  "checks": [
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "status": "PASS",
+      "source_sha256": "ceb24d69e1b2a4de5f43e78e242cff3a1231a8a8ae1047ad695473d6fd771936",
+      "snapshot_sha256": "d0ea61bddff4803dc71dcd20b76a8f95dab229ab785668e72b926e6d4398686c",
+      "freshness": "stale"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "status": "PASS",
+      "source_sha256": "a0cada05cd4d97fc9971ed4a39e352d0b55a15b03b310e0e080448151b05125c",
+      "snapshot_sha256": "bd54e6d83384b54e1380c39f3d87a7966cab9d3f29c89916279eaa1ddf8404a3",
+      "freshness": "stale"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "status": "PASS",
+      "source_sha256": "284fb25c91a96fa54f9309d3d7c589a05bda37e1872d9ff7b7b792835f8755e5",
+      "snapshot_sha256": "c5aca27065bddb320186f057e1041ccea468a2b750ae35e1d17e17d972b07a93",
+      "freshness": "stale"
+    }
+  ]
+}

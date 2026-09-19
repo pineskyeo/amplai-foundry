@@ -1,0 +1,18 @@
+{
+  "definition_id": "ontology-shacl",
+  "version": "3.0.0-rc1",
+  "kind": "schema",
+  "runner": "shacl",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": true,
+  "notes": "W3C SHACL Recommendation baseline; SHACL 1.2 (2026-08-28 WD) is a separate experimental profile. Disabled unless the host installs the adapter"
+}

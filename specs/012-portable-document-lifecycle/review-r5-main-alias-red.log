@@ -1,0 +1,226 @@
+{
+  "verdict": "FAIL_ALIAS_ABSENCE_BOUNDARY",
+  "rows": [
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "escaping_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "escaping_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "dangling_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "dangling_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "cyclic_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "cyclic_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "inside_restricted",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 0,
+      "denied": 14,
+      "marker_outputs": 0,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "inside_public",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "ordinary_absence",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "scripts/amplai_docs.py",
+      "case": "inside_alias_absent_child",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "escaping_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "escaping_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "dangling_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "dangling_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "cyclic_leaf",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "cyclic_parent",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": false
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "inside_restricted",
+      "expected": "DENY",
+      "checks": 14,
+      "allowed": 0,
+      "denied": 14,
+      "marker_outputs": 0,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "inside_public",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "ordinary_absence",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    },
+    {
+      "engine": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "case": "inside_alias_absent_child",
+      "expected": "ALLOW",
+      "checks": 14,
+      "allowed": 14,
+      "denied": 0,
+      "marker_outputs": 14,
+      "unsafe_errors": [],
+      "pass": true
+    }
+  ],
+  "failing_cases": 12
+}

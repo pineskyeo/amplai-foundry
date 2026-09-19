@@ -1,0 +1,14 @@
+...............................F                                         [100%]
+=================================== FAILURES ===================================
+_ test_owning_foundry_guide_sources_are_registered_once_with_ordinary_priority _
+tests/ai/test_document_context_delivery.py:229: in test_owning_foundry_guide_sources_are_registered_once_with_ordinary_priority
+    assert {row["path"] for row in rows} == expected
+E   AssertionError: assert set() == {'docs/PORTAB...it/README.md'}
+E     
+E     Extra items in the right set:
+E     'tools/amplai-loop-kit/CHANGELOG.md'
+E     'docs/PORTABLE-DEVELOPMENT.md'
+E     'tools/amplai-loop-kit/README.md'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_context_delivery.py::test_owning_foundry_guide_sources_are_registered_once_with_ordinary_priority

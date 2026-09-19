@@ -1,0 +1,47 @@
+{
+  "schema_version": "3.0.0",
+  "verdict_id": "fixture-verdict-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "contract_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "graph_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "acceptance_id": "fixture-acceptance-id",
+  "subject_artifact": {
+    "id": "fixture-artifact",
+    "digest": "sha256:dcd22167f3ab965bf7a07fd2dd6a6dda553357bc1810049d35cd223026cb20a5",
+    "media_type": "application/json",
+    "size_bytes": 256
+  },
+  "evidence_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "verifier_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "outcome": "inconclusive",
+  "reason": "Synthetic schema fixture, no actual trusted verifier was executed.",
+  "waiver_decision_ref": null,
+  "issued_at": "2026-09-15T13:30:00Z",
+  "attestation_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "unexpected_elevated_permission": true
+}

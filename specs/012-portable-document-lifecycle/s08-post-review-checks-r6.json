@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 09:15:35 UTC",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "traceability",
+      "at": "2026-09-12T09:13:41.566Z",
+      "command": [
+        "node",
+        "specs/012-portable-document-lifecycle/verify-traceability.mjs",
+        "/Users/pinesky/workspace/synapse-app-split"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"PASS_TRACEABILITY_ONLY\",\n  \"requirements\": 23,\n  \"cases\": 46,\n  \"planned_slices\": 8,\n  \"executed_cases\": 46,\n  \"passed_cases\": 43,\n  \"missing_cases\": [],\n  \"source_hashes\": [\n    {\n      \"app\": \"synapse\",\n      \"path\": \"specs/024-synapse-app-split/reference/requirements.json\",\n      \"sha256\": \"5063beb80c88266378c844f1c091d16fae7cea9438f496e6a8caf34cac4bd224\"\n    },\n    {\n      \"app\": \"synapse\",\n      \"path\": \"specs/024-synapse-app-split/reference/acceptance.json\",\n      \"sha256\": \"ee49350982eeaefa11e0369cef3fee152f4e1c647f5557be5e32045d8a1cdce1\"\n    }\n  ],\n  \"current_source_hashes\": {\n    \"spec.md\": \"f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20\",\n    \"plan.md\": \"4f0f65e55e4bc4f85a08c5e53f257d8483cd926ec96c4baf2bba609c23a0713e\",\n    \"tasks.md\": \"cbde87cf6c8aa03affd4802974f496fff4067be5c6f4443a3ac723b9093321f4\",\n    \"work-contract.json\": \"8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90\",\n    \"acceptance-map.json\": \"032e5c318fa01c3c2ac4914737d7092c16e4b34fca07775d80364f1ba17ae1a5\"\n  },\n  \"method\": \"Read-only original SHA256, exact requirement/case IDs, kind, declared environment, source selectors and retained evidence presence; not a behavior-test or independent-review verdict.\",\n  \"limits\": \"S08 integration and independent reviews are separate. No native full Work, Python3.6, RHEL7 or deployment PASS.\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "docs",
+      "at": "2026-09-12T09:13:41.646Z",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "docs",
+        "validate",
+        "specs/012-portable-document-lifecycle"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"dependency_snapshot_hash\": \"b44fc0bb30a512d1bed7d3e36db2c33d846af96541908809b99d8588ae29d926\",\n  \"errors\": [],\n  \"mode\": \"work\",\n  \"offline_views\": {\n    \"checked\": 2,\n    \"status\": \"MATCH\",\n    \"valid\": true,\n    \"views\": [\n      {\n        \"code\": \"MATCH\",\n        \"input_sha256\": \"b8928e296e5bb6fbce9cf78dc4bc02a60a503f230f17fefccd907509321f80d1\",\n        \"valid\": true\n      },\n      {\n        \"code\": \"MATCH\",\n        \"input_sha256\": \"ef613754ab9379d148142405a375831aa672c90cf1eeedad5196c10c467a7d43\",\n        \"valid\": true\n      }\n    ]\n  },\n  \"valid\": true,\n  \"verdict\": \"RESOLVED\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "context",
+      "at": "2026-09-12T09:14:18.228Z",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "context",
+        "validate",
+        "specs/012-portable-document-lifecycle/context-pack.json"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"expected_hash\": \"a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10\",\n  \"path\": \"specs/012-portable-document-lifecycle/context-pack.json\",\n  \"provenance\": {\n    \"commit\": \"6e005a5e3035ef05510c403a7cd691d524b733bd\",\n    \"commit_state\": \"PRESENT\",\n    \"worktree_state\": \"WORKTREE\"\n  },\n  \"sources\": [\n    {\n      \"id\": \"loop-runtime-readme\",\n      \"path\": \".ai-team/README.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"loop-runtime-policy\",\n      \"path\": \".ai-team/runtime/policy.json\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"loop-runtime-workflow\",\n      \"path\": \".ai-team/runtime/WORKFLOW.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"root-agent-contract\",\n      \"path\": \"AGENTS.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"verifier-registry\",\n      \"path\": \".ai-team/verifiers/registry.json\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"root-claude-contract\",\n      \"path\": \"CLAUDE.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"constitution\",\n      \"path\": \".specify/memory/constitution.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"kit-owning-readme\",\n      \"path\": \"tools/amplai-loop-kit/README.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"kit-owning-changelog\",\n      \"path\": \"tools/amplai-loop-kit/CHANGELOG.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"kit-portable-development\",\n      \"path\": \"docs/PORTABLE-DEVELOPMENT.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"claim-loop-public-surface\",\n      \"path\": \".ai-team/runtime/policy.json\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"claim-semantic-runtime-not-ported\",\n      \"path\": \"AGENTS.md\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"claim-verifier-profile-single-source\",\n      \"path\": \".ai-team/verifiers/registry.json\",\n      \"state\": \"MATCH\"\n    },\n    {\n      \"id\": \"claim-work-artifact-isolation\",\n      \"path\": \".ai-team/README.md\",\n      \"state\": \"MATCH\"\n    }\n  ],\n  \"valid\": true,\n  \"verdict\": \"MATCH\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "retention",
+      "at": "2026-09-12T09:14:25.729Z",
+      "command": [
+        "node",
+        "-e",
+        "const fs=require('fs'),c=require('crypto'),p='specs/012-portable-document-lifecycle/',r=JSON.parse(fs.readFileSync(p+'review-r6.json'));for(const x of r.retention.raw_copies){const b=fs.readFileSync(p+x.path);if(b.length!==x.bytes||c.createHash('sha256').update(b).digest('hex')!==x.sha256)throw Error(x.path+'changed')}console.log(JSON.stringify({status:'PASS',files:r.retention.raw_copies.length}));"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"status\":\"PASS\",\"files\":6}\n",
+      "stderr": ""
+    }
+  ],
+  "limits": [
+    "Freshness will be rechecked after final report-only metadata additions; no execution-source change."
+  ]
+}

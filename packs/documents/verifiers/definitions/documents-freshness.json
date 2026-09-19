@@ -1,0 +1,18 @@
+{
+  "definition_id": "documents-freshness",
+  "version": "3.0.0-rc1",
+  "kind": "artifact_visual",
+  "runner": "document_freshness",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "generation manifest: source digests, renderer version, layout profile, output digest, golden ref"
+}

@@ -1,0 +1,95 @@
+==== AMPLAI eval ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+feature : specs/012-portable-document-lifecycle
+tasks   : specs/012-portable-document-lifecycle/tasks.md
+slice   : S20
+profile : fast
+attempts: 3
+
+--- verifier:fast
+==== AMPLAI verifier ====
+repo    : /Users/pinesky/workspace/amplai-foundry
+profile : fast
+checks  : ruff-check, ruff-format, mypy, loop-runtime-doctor, manifest-validator
+platform: darwin
+
+--- ruff-check [block]
+    All checks passed!
+    PASS (exit 0, 0.084s)
+--- ruff-format [block]
+    171 files already formatted
+    PASS (exit 0, 0.026s)
+--- mypy [block]
+    Success: no issues found in 121 source files
+    PASS (exit 0, 0.248s)
+--- loop-runtime-doctor [block]
+    LOOP DOCTOR: PASS
+    - public entry points: Claude /work,/design | Codex $work,$design
+    - internal capabilities: 16
+    - legacy runtime directories: absent
+    - policy/contract/verifier JSON: valid
+    - verifier profile 집합: commit, fast, full, runtime, standard, v2 (registry 정본, policy/schema/fallback 일치)
+    - Knowledge/Context/Evidence plane: valid
+    - repository profile: foundry; domain checks: verifier registry
+    - Harness quadrant coverage: complete
+    - contract template: valid
+    - skill SSOT: .agents/skills; Claude mirror: exact symlink set
+    - Codex internal skill policy: implicit invocation disabled
+    - Codex hooks: installed and consistent with Kit state
+    PASS (exit 0, 0.074s)
+--- manifest-validator [warn]
+    PASS: validated 48 task manifest(s)
+    PASS (exit 0, 0.251s)
+
+VERIFIER: PASS
+    PASS
+--- slice:S20:.venv/bin/python -B -m pytest -q tests/ai/test_document_optional_aliases.py tests/ai/test_document_typed_visibility.py tests/ai/test_document_reference_resources.py
+    ........................................................................ [ 24%]
+    ........................................................................ [ 48%]
+    ........................................................................ [ 73%]
+    ........................................................................ [ 97%]
+    .......                                                                  [100%]
+    PASS
+--- slice:S20:python3 -B tools/amplai-loop-kit/seal.py --verify
+    {
+      "baseline_stale": [],
+      "checksum_mismatched": [],
+      "checksum_missing_file": [],
+      "hint": null,
+      "manifest_stale": [],
+      "not_in_checksums": [],
+      "ok": true
+    }
+    PASS
+--- slice:S20:.venv/bin/python -B specs/012-portable-document-lifecycle/verify-guide-reference-visibility.py
+    {
+      "verdict": "PASS_GUIDE_REFERENCE_VISIBILITY",
+      "scope": "Reference classification only. S08 owns current review/release/HTML.",
+      "checks": [
+        {
+          "path": "docs/PORTABLE-DEVELOPMENT.md",
+          "status": "PASS",
+          "source_sha256": "ceb24d69e1b2a4de5f43e78e242cff3a1231a8a8ae1047ad695473d6fd771936",
+          "snapshot_sha256": "d0ea61bddff4803dc71dcd20b76a8f95dab229ab785668e72b926e6d4398686c",
+          "freshness": "stale"
+        },
+        {
+          "path": "tools/amplai-loop-kit/README.md",
+          "status": "PASS",
+          "source_sha256": "a0cada05cd4d97fc9971ed4a39e352d0b55a15b03b310e0e080448151b05125c",
+          "snapshot_sha256": "bd54e6d83384b54e1380c39f3d87a7966cab9d3f29c89916279eaa1ddf8404a3",
+          "freshness": "stale"
+        },
+        {
+          "path": "tools/amplai-loop-kit/CHANGELOG.md",
+          "status": "PASS",
+          "source_sha256": "284fb25c91a96fa54f9309d3d7c589a05bda37e1872d9ff7b7b792835f8755e5",
+          "snapshot_sha256": "c5aca27065bddb320186f057e1041ccea468a2b750ae35e1d17e17d972b07a93",
+          "freshness": "stale"
+        }
+      ]
+    }
+    PASS
+
+EVAL: PASS
+ATTEMPT: 0/3 (reset)

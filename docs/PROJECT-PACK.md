@@ -3,7 +3,7 @@
 Project Pack은 한 프로젝트의 canonical 자산과 파생 runtime 경계를 이동 가능한 단위로 묶는다. 절대 clone 경로는 identity에 포함되지 않는다.
 
 ```text
-project-root/
+<project-root>/
 ├── .amplai/
 │   ├── project.yaml
 │   ├── domain.lock.yaml

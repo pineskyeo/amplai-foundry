@@ -1,0 +1,9 @@
+{
+  "case_id": "dc-002",
+  "title": "No production control",
+  "given": "candidate asks to set a pin state",
+  "when": "dispatch",
+  "expected": "production_control effect refused by ceiling; pack has pure_read only",
+  "verifier_definition": "dc-compatibility",
+  "split": "dev"
+}

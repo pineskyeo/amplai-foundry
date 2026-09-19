@@ -1,0 +1,25 @@
+{
+  "definition_id": "frontend-a11y",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "a11y-audit"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "functional/accessibility criterion fails independently of pixels (T-060)"
+}

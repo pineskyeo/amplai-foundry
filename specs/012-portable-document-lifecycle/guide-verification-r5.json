@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "verdict": "PASS",
+  "input_sha256": "d540085c915ad307c259ccde7fa06b8f624a9b7ab62b7ead78a7a42bf3cbf0cb",
+  "checks": [
+    {
+      "id": "s08-local-verification-r5",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-local-verification-r5.json",
+        "sha256": "94568b027a7b2d037ac34ecf6b8b6d96f6a004b5a44d93cf6c7c5abddf5d2ae6"
+      }
+    },
+    {
+      "id": "s08-guide-components-r5",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-guide-components-r5.json",
+        "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c"
+      }
+    },
+    {
+      "id": "s08-context-r5-final",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-context-r5-final.json",
+        "sha256": "acc33fd98cb1dbb5eaa9f006b3d724c09cd968a74d8ce62dfa369439101bbe8e"
+      }
+    },
+    {
+      "id": "s08-r5-domain-guide-check-green",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-r5-domain-guide-check-green.json",
+        "sha256": "cade04f8b48fed4ab7abbc24cabcdb53c84e77e96ed758e4e39dbd1df2e08a88"
+      }
+    }
+  ]
+}

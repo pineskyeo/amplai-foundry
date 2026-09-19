@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "status": "LOCAL_CANONICAL_PASS_PENDING_R6_REVIEW",
+  "recorded_at": "2026-09-12T08:13:49.941Z",
+  "started_at": "2026-09-12 08:00:44 UTC",
+  "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S08 --profile fast",
+  "exit_code": 0,
+  "tests": {
+    "passed": 2494,
+    "deselected": 4,
+    "seconds": 588.67,
+    "deselected_scope": "Four live Slack integration tests excluded by the unchanged v2 profile; not live Slack evidence."
+  },
+  "verifier": {
+    "profile": "v2",
+    "checks": 11,
+    "status": "PASS"
+  },
+  "outer_verifier": {
+    "profile": "fast",
+    "checks": 5,
+    "status": "PASS"
+  },
+  "package": {
+    "version": "2.5.0",
+    "checksum_rows": 119,
+    "selftests": 12,
+    "status": "PASS"
+  },
+  "kit_guide_selection": {
+    "verdict": "PASS_KIT_GUIDE_SELECTION",
+    "release_id": "kit-2.5.0-candidate-r6",
+    "guides": [
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "tools/amplai-loop-kit/CHANGELOG.md",
+      "tools/amplai-loop-kit/README.md"
+    ],
+    "required_instructions": [
+      ".ai-team/README.md",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/runtime/policy.json",
+      ".ai-team/verifiers/registry.json",
+      ".specify/memory/constitution.md",
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "context_delivery": {
+      "guides": [
+        "docs/PORTABLE-DEVELOPMENT.md",
+        "tools/amplai-loop-kit/CHANGELOG.md",
+        "tools/amplai-loop-kit/README.md"
+      ],
+      "required_instructions": [
+        ".ai-team/README.md",
+        ".ai-team/runtime/WORKFLOW.md",
+        ".ai-team/runtime/policy.json",
+        ".ai-team/verifiers/registry.json",
+        ".specify/memory/constitution.md",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
+      "unique_paths": [
+        ".ai-team/README.md",
+        ".ai-team/runtime/WORKFLOW.md",
+        ".ai-team/runtime/policy.json",
+        ".ai-team/verifiers/registry.json",
+        ".specify/memory/constitution.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/PORTABLE-DEVELOPMENT.md",
+        "tools/amplai-loop-kit/CHANGELOG.md",
+        "tools/amplai-loop-kit/README.md"
+      ],
+      "generated_records": 14,
+      "stored_records": 14,
+      "source_hashes": "EXACT_CURRENT_BYTES",
+      "context_validation": "MATCH",
+      "context_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10"
+    },
+    "retained_product_reference_guard": "BLOCKED_CROSS_BOUNDARY_REFERENCE",
+    "scope": "Actual current Kit selection and generated/stored Context delivery; not HTML or deployment approval."
+  },
+  "log": "s08-canonical-eval-r6.log",
+  "log_complete": true,
+  "tasks": "s08-r6-eval-input-tasks.md",
+  "source_snapshot": "s08-r6-eval-source.json",
+  "source_files_verified": 155,
+  "governing_files_verified": 46,
+  "post_check": {
+    "checked_at": "2026-09-12T08:13:49.941Z",
+    "source_files": 155,
+    "governing_files": 46,
+    "source_drift": [],
+    "governing_drift": []
+  },
+  "context": "s08-context-r6-final.json",
+  "context_validation": {
+    "status": "MATCH",
+    "source_mappings": 14,
+    "expected_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10",
+    "actual_delivery": "Actual current generated and stored 14 records cover three owning Kit guides and seven mandatory instructions; all ten unique paths have exact current source hashes."
+  },
+  "native_transport": "s08-native-r6.json",
+  "semantic_document_review": "s08-document-review-evidence-r13.json",
+  "predecessor_revalidation": {
+    "path": "s08-predecessor-revalidation-r6.json",
+    "passed_slices": 14,
+    "source_pins": "r6-revalidation-inputs.json",
+    "limit": "Counts overlap; do not sum predecessor or repair test totals. Exact source and governing inputs were verified before and after each canonical campaign."
+  },
+  "repair_evidence": [
+    "s19-local-verification.json",
+    "s20-local-verification.json"
+  ],
+  "limits": [
+    "Current local candidate only; fresh R6 HTML/browser evidence, three sequential independent reviews and post-review report-only gardening remain.",
+    "No actual RHEL7, Python3.6, full native Work/resume, signing, fleet activation or production deployment proof.",
+    "Historical failures and reviews are retained without rewriting their exact source pins or outcomes.",
+    "Guide component pins identify reference sources/catalog, not deployable backend binary or runtime compatibility approval.",
+    "Original W003 23 requirements and 46 cases retain zero final PASS until completion gates; W004 implementation remains separate."
+  ]
+}

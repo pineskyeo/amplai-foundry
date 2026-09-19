@@ -204,6 +204,22 @@ def main():
         assert remaining == ["echo existing-hook"], remaining
         assert settings["custom"]["preserve"] is True
 
+        baseline_target = os.path.join(temp, "generic-app")
+        os.makedirs(baseline_target)
+        write(os.path.join(baseline_target, "AGENTS.md"), "# Local rules\n")
+        run_install(baseline_target, extra=["--bootstrap-baseline", "--repo-profile", "generic"])
+        baseline = read_json(os.path.join(ROOT, "baseline", "manifest.json"))
+        for item in baseline["mirrors"]:
+            assert os.readlink(os.path.join(baseline_target, item["path"])) == item["target"]
+        subprocess.check_call([sys.executable, "-I", "-S", "-B",
+                               os.path.join(baseline_target, "scripts", "loopctl.py"), "doctor"],
+                              cwd=baseline_target, stdout=subprocess.DEVNULL)
+        repeated, _ = run_install(baseline_target)
+        assert json.loads(repeated)["actions"] == []
+        run_install(baseline_target, extra=["--uninstall"])
+        assert io.open(os.path.join(baseline_target, "AGENTS.md"), encoding="utf-8").read() == "# Local rules\n"
+        assert not os.path.lexists(os.path.join(baseline_target, ".claude", "skills", "work"))
+
         print(json.dumps({
             "ok": True,
             "version": manifest["version"],
@@ -218,6 +234,8 @@ def main():
                 "policy enforcement reporting",
                 "install without AUTONOMY_POLICY.md",
                 "uninstall restores the app",
+                "opt-in actual generic baseline doctor and exact mirrors",
+                "profile-omitted baseline reinstall and uninstall",
             ],
         }, ensure_ascii=False, indent=2))
         return 0

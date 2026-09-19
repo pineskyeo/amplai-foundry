@@ -6,9 +6,28 @@ status: canonical
 
 # 설치와 업데이트
 
-배포 단위는 `amplai-loop-kit` 하나다. 기존 AMPLAI Loop V2 앱에 안전하게 설치·업데이트한다.
+배포 단위는 `amplai-loop-kit` 하나다. 기본 모드는 기존 AMPLAI Loop V2 앱을 확장한다.
 공개 의미는 `work`와 `design` 둘이며 host별 표기는 Claude Code `/work`, `/design`; Codex
 `$work`, `$design`이다.
+
+## Optional Baseline
+
+새 저장소는 Kit 패키지의 `install.py --bootstrap-baseline --repo-profile generic`을 명시한다.
+실제 기본 runtime·task 도구·검증기와 12개 skill mirror를 같은 transaction으로 설치한다.
+이후 profile 옵션을 생략해도 이전 baseline 소유권을 유지한다.
+
+기존 내용이 다른 기본 파일이나 private profile은 자동 교체하지 않는다.
+기존 앱 규칙, host trust, 사용자 hook과 Store 연결을 보존한다.
+패키지 전체 hash와 목록을 검증하며 같은 버전명도 검사 예외가 아니다.
+
+## Interrupted Installation
+
+중단 기록이 있으면 재설치·제거 대신 Kit 패키지에서 `install.py --target <app-path> --recover --dry-run`으로
+범위를 먼저 확인한다. `--recover`는 hash가 일치하는 이전 target 내용을 복구한다.
+수정된 사용자 파일은 보존하고, 쓰다 남은 임시 파일은 백업 영역에 남긴다.
+
+중앙 Project Store는 이 복구 대상이 아니다. `--project-home`을 지정했던 중단 설치는
+해당 Store의 상태도 별도로 확인한다. 설치 기록과 백업을 직접 지워 복구 검사를 우회하지 않는다.
 
 ## 중앙 저장소 초기화
 
@@ -67,11 +86,24 @@ Hermes는 app runner를 activate할 수 없고, DRAFT Work의 activation은 별�
 
 ## Kit installer 원칙
 
+Kit 2.5.0의 generic baseline은 신규 개발 저장소에서 명시적으로 opt-in한다.
+`--bootstrap-baseline --repo-profile generic --dry-run`으로 먼저 변경 계획을 확인한다.
+기존 파일·규칙·host trust와 Project Store 연결은 자동으로 교체하지 않는다.
+Package 전체 checksum을 검증하며 같은 버전명도 무결성 검사를 생략하지 않는다.
+
+첫 문서 작업에서는 실제 app identity에 맞는 repository_id와 guide의 단일 metadata owner를
+확정한다. 기존 guide의 보안·audience·version을 읽고 명시적 Markdown-file roots와
+adjacent .amplai.json 또는 JSON frontmatter를 등록한다. ACTIVE라는 예전 label이나
+baseline 설치 성공은 문서 검토 승인이 아니다. 기능 작업의 같은 work 흐름에서 현재
+source/dependency evidence를 검토하고 configured offline view를 검증한다.
+`document_source_routes`는 개발용 원본을 담당 guide에 연결하거나 과거 baseline을
+그대로 보존한다. 필수 guide, 미분류 원본, 변경된 이력은 이 경로로 우회하지 않는다.
+
 - 모든 파일을 preflight한 뒤 쓰기 시작한다.
 - Kit-owned 파일은 이전 설치 hash가 유지된 경우만 자동 업데이트한다.
 - 로컬 수정은 기본적으로 conflict이며 덮어쓰지 않는다.
 - `--force`일 때만 timestamp backup 후 교체한다.
-- `work`, `design`, autonomy/workflow 문서는 marker section으로 additive merge한다.
+- 확장 모드는 `work`, `design`, autonomy/workflow의 marker를 병합한다. 새 baseline 파일은 전체 파일로 관리한다.
 - `.claude/settings.json`과 `.codex/hooks.json`은 기존 필드와 hook을 보존하고 AMPLAI hook만 dedupe한다.
 - `.agents/skills`가 공통 정본이고 `.claude/skills`는 exact symlink mirror다.
 - 동일 버전 재설치는 idempotent하다.

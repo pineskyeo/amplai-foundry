@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "verdict": "PASS_14_CANONICAL_REVALIDATIONS",
+  "completed_at": "2026-09-12 07:52:46 UTC",
+  "input_pins": "r6-revalidation-inputs.json",
+  "input_tasks": "r6-revalidation-input-tasks.md",
+  "runs": [
+    {
+      "slice": "S17",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S17 --profile fast",
+      "started_at": "2026-09-12 07:23:40 UTC",
+      "completed_at": "2026-09-12 07:26:08 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s17.log",
+      "evidence": "revalidate-r6-s17.json"
+    },
+    {
+      "slice": "S14",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S14 --profile fast",
+      "started_at": "2026-09-12 07:26:08 UTC",
+      "completed_at": "2026-09-12 07:29:17 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s14.log",
+      "evidence": "revalidate-r6-s14.json"
+    },
+    {
+      "slice": "S15",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S15 --profile fast",
+      "started_at": "2026-09-12 07:29:17 UTC",
+      "completed_at": "2026-09-12 07:34:04 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s15.log",
+      "evidence": "revalidate-r6-s15.json"
+    },
+    {
+      "slice": "S12",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S12 --profile fast",
+      "started_at": "2026-09-12 07:34:04 UTC",
+      "completed_at": "2026-09-12 07:37:05 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s12.log",
+      "evidence": "revalidate-r6-s12.json"
+    },
+    {
+      "slice": "S13",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S13 --profile fast",
+      "started_at": "2026-09-12 07:37:05 UTC",
+      "completed_at": "2026-09-12 07:40:19 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s13.log",
+      "evidence": "revalidate-r6-s13.json"
+    },
+    {
+      "slice": "S09",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S09 --profile fast",
+      "started_at": "2026-09-12 07:40:19 UTC",
+      "completed_at": "2026-09-12 07:41:05 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s09.log",
+      "evidence": "revalidate-r6-s09.json"
+    },
+    {
+      "slice": "S10",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S10 --profile fast",
+      "started_at": "2026-09-12 07:41:05 UTC",
+      "completed_at": "2026-09-12 07:41:51 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s10.log",
+      "evidence": "revalidate-r6-s10.json"
+    },
+    {
+      "slice": "S11",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S11 --profile fast",
+      "started_at": "2026-09-12 07:41:51 UTC",
+      "completed_at": "2026-09-12 07:44:48 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s11.log",
+      "evidence": "revalidate-r6-s11.json"
+    },
+    {
+      "slice": "S01",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S01 --profile fast",
+      "started_at": "2026-09-12 07:44:48 UTC",
+      "completed_at": "2026-09-12 07:45:19 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s01.log",
+      "evidence": "revalidate-r6-s01.json"
+    },
+    {
+      "slice": "S02",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S02 --profile fast",
+      "started_at": "2026-09-12 07:45:19 UTC",
+      "completed_at": "2026-09-12 07:46:02 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s02.log",
+      "evidence": "revalidate-r6-s02.json"
+    },
+    {
+      "slice": "S03",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S03 --profile fast",
+      "started_at": "2026-09-12 07:46:02 UTC",
+      "completed_at": "2026-09-12 07:46:15 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s03.log",
+      "evidence": "revalidate-r6-s03.json"
+    },
+    {
+      "slice": "S04",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S04 --profile fast",
+      "started_at": "2026-09-12 07:46:15 UTC",
+      "completed_at": "2026-09-12 07:49:06 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s04.log",
+      "evidence": "revalidate-r6-s04.json"
+    },
+    {
+      "slice": "S05",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S05 --profile fast",
+      "started_at": "2026-09-12 07:49:06 UTC",
+      "completed_at": "2026-09-12 07:52:22 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s05.log",
+      "evidence": "revalidate-r6-s05.json"
+    },
+    {
+      "slice": "S06",
+      "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S06 --profile fast",
+      "started_at": "2026-09-12 07:52:22 UTC",
+      "completed_at": "2026-09-12 07:52:46 UTC",
+      "exit_code": 0,
+      "log": "revalidate-r6-s06.log",
+      "evidence": "revalidate-r6-s06.json"
+    }
+  ],
+  "post_check": {
+    "checked_at": "2026-09-12T07:54:11.291Z",
+    "source": {
+      "count": 155,
+      "failures": []
+    },
+    "governing": {
+      "count": 38,
+      "failures": []
+    }
+  },
+  "source_unchanged": true,
+  "governing_unchanged": true,
+  "limits": "Overlapping targeted test counts are not summed. Full current-source S08, immutableR6HTML/browser and three independent R6lenses remain."
+}

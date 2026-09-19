@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S10",
+  "task": "PORTABLE-DOC-T010",
+  "status": "LOCAL_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11 11:58:20 UTC",
+  "review_finding": "review-r1.json#W003-R1-02",
+  "canonical": {
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S10",
+    "exit_code": 0,
+    "tests": 124,
+    "verifier_checks": 5,
+    "seal": "PASS",
+    "log": "s10-canonical-eval.log",
+    "tasks": "s10-eval-input-tasks.md"
+  },
+  "red": {
+    "exit_code": 1,
+    "failures": 14,
+    "command": "All seven current consumers and explicit historical consumers with a reviewed lower-security private link",
+    "evidence": "s10-red.log"
+  },
+  "coverage": [
+    "Reference visibility before query scoring and title/snippet output across all seven consumers, current/history and actual CLI",
+    "Percent-encoded paths, queries/fragments, angle destinations, quoted titles, literal/fenced examples, reference definitions, raw HTML path attributes and title links",
+    "Explicit same-security historical and non-guide references do not promote target content into current selection",
+    "HTML preparation shares classification/normalization and retains exact bundle membership; approved finite external fixture remains mandatory",
+    "Three pre-existing unclassified README references retained as INTERNAL source assets; their original bytes and governing authority were not changed"
+  ],
+  "iteration_notes": [
+    "Expanded 217-case matrix: 210 passed, seven new HTML tests hit existing APPROVED_EXTERNAL_INPUT_REQUIRED because the tests used the wrong entrypoint. Corrected tests use prepare_view_input plus the existing separately bound approved-input builder; external boundary unchanged.",
+    "All seven corrected HTML probes passed; canonical 124-case S10 suite then passed. Full expanded matrix is not claimed current PASS until S08 rerun.",
+    "Legacy import ordering and a long test command literal were formatted within owned lifecycle test file."
+  ],
+  "source_hashes": {
+    "scripts/amplai_docs.py": "7180f5446be371c7123b4c189ea1928f3c08a82a6b3e2293acde8fa1ee6825e7",
+    ".ai-team/policy/documentation.json": "b1950dba5cfd3aa182bf5c9dad32351fe52a476783930fa67e09b818e141d432",
+    "tests/ai/test_document_lifecycle.py": "c65c30b9b71d3d7ac338c90cf8e311e0fd2de70f7d5db72550565df241f42ebd",
+    "tests/ai/test_document_html.py": "02cf2270e88d5f6e46c24031e1f6c8b6c9738d79540bd9c8b64b5e48d868dece",
+    "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py": "7180f5446be371c7123b4c189ea1928f3c08a82a6b3e2293acde8fa1ee6825e7",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "800dab731b0d921b59ac5780a4114b7283945ad8fd4fb39d4cc08d0f52fdc54e",
+    "specs/012-portable-document-lifecycle/tasks.md": "4cd6551efa4a67c39ee3fa34cfca55c6ec3aa0bbc7ad64eb67e945c9ed539db6"
+  },
+  "limits": [
+    "Other R1 budget finding remains open",
+    "S01-S06 revalidation, fresh docs/full V2 and all three R2 reviewers remain mandatory",
+    "No RHEL7/Python3.6/full native Work or production proof"
+  ],
+  "authority": "E021 local repair only"
+}

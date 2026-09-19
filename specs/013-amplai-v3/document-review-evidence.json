@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-RC01",
+  "feature": "specs/013-amplai-v3",
+  "reviewed_at": "2026-09-18 15:56:49 UTC",
+  "review_scope": "Attributed implementation-document review after S00-S20 slice PASS; not independent review, human gate or publication.",
+  "implementation_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
+  "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+  "semantic_snapshot": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+  "guide_sources": [
+    {
+      "path": ".ai-team/README.md",
+      "sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "bytes": 13989
+    },
+    {
+      "path": ".ai-team/knowledge/README.md",
+      "sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95",
+      "bytes": 2696
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "bytes": 8172
+    },
+    {
+      "path": ".ai-team/verifiers/README.md",
+      "sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189",
+      "bytes": 1358
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "bytes": 7769
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "bytes": 1542
+    },
+    {
+      "path": "README.md",
+      "sha256": "f5d9018d86e9d9c5bf1ffc892a6dc3e5630307526fc18920796e6e6f66064323",
+      "bytes": 9067
+    },
+    {
+      "path": "deployment/README.md",
+      "sha256": "f33457765bcda2cf4ecb77e5925640d53c13eca4ad83d5b1e294590348b13092",
+      "bytes": 1025
+    },
+    {
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93",
+      "bytes": 1257
+    },
+    {
+      "path": "docs/LIFECYCLE.md",
+      "sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e",
+      "bytes": 3070
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f",
+      "bytes": 12666
+    },
+    {
+      "path": "docs/PROJECT-PACK.md",
+      "sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f",
+      "bytes": 2119
+    },
+    {
+      "path": "docs/PROPOSALS.md",
+      "sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
+      "bytes": 3864
+    },
+    {
+      "path": "docs/RELATIONSHIPS.md",
+      "sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829",
+      "bytes": 1161
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a",
+      "bytes": 2955
+    },
+    {
+      "path": "docs/VERSIONING.md",
+      "sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8",
+      "bytes": 2330
+    },
+    {
+      "path": "docs/VISION.md",
+      "sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e",
+      "bytes": 941
+    },
+    {
+      "path": "docs/v3/DEV02_EXECUTION.ko.md",
+      "sha256": "244e72084ce5da3b31d9e3cd3d448ac64c54a7117fc3b94730fe653dea639e0e",
+      "bytes": 11674
+    },
+    {
+      "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "sha256": "a124a4790f581cf03ee4a66b0b853e6be2ad68fab225e29b0882528ee18264aa",
+      "bytes": 1661
+    },
+    {
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771",
+      "bytes": 13219
+    },
+    {
+      "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404",
+      "bytes": 1743
+    },
+    {
+      "path": "integrations/hermes/README.md",
+      "sha256": "8e47d43ec0e236ce875069c882b12c4af3f6d14b7fb397d886b34daa8da8e6c2",
+      "bytes": 1003
+    },
+    {
+      "path": "migration/README.md",
+      "sha256": "fe389d391e27c2fcc75b3d97ac9e1eb3a585370e9a6ec7a7b38274f92babc9dd",
+      "bytes": 977
+    },
+    {
+      "path": "packs/README.md",
+      "sha256": "9398b113211cdc957180d288ad8fab60b6d4a360368be12682049ab7a436f9d7",
+      "bytes": 1423
+    },
+    {
+      "path": "release/README.md",
+      "sha256": "334413d74bdd0c919afc26ff3606c39375fd256f252aa7e7c6f701bd6a4f5dc2",
+      "bytes": 1344
+    },
+    {
+      "path": "tests/e2e/artifacts/README.md",
+      "sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8",
+      "bytes": 638
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42",
+      "bytes": 9555
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd",
+      "bytes": 15185
+    }
+  ],
+  "source_checks": [
+    {
+      "check": "ruff check .",
+      "result": "All checks passed"
+    },
+    {
+      "check": "ruff format --check .",
+      "result": "305 files already formatted"
+    },
+    {
+      "check": "mypy (strict, packages=amplai_foundry)",
+      "result": "Success: no issues found in 220 source files"
+    },
+    {
+      "check": "pytest tests/v3 tests/runtime_storage",
+      "result": "605 passed, 0 skipped",
+      "junit": "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
+    },
+    {
+      "check": "pytest (full suite, slack_e2e deselected)",
+      "result": "3095 passed, 0 skipped, 4 deselected"
+    },
+    {
+      "check": ".ai-team/verifiers/run.py --profile v2",
+      "result": "VERIFIER: PASS",
+      "record": ".specify/eval/verifier-last.json"
+    },
+    {
+      "check": "scripts/eval.sh --slice S00..S20",
+      "result": "21/21 PASS",
+      "record": ".specify/eval/history.jsonl"
+    }
+  ],
+  "reviewed_changes": [
+    "README.md: DEV-03 snapshot section (3.0.0.dev3, docs/v3 links) imported from the DEV-03 zip; kept as-is",
+    "docs/v3/DEV02_EXECUTION.ko.md, docs/v3/DEV03_OBSERVATORY_META.ko.md: package-relative module paths rewritten to repository paths under src/amplai_foundry/",
+    "tests/e2e/artifacts/README.md: policy locator wording fixed; executable cases moved to tests/v3/test_rc01_e2e_render.py",
+    ".ai-team/policy/documentation.json: 10 V3 guides added to portable_documents.roots; 3 source routes (design-reference, packs/spec/skills, docs/SOURCE-INGESTION.md)",
+    "New sidecars (*.amplai.json) for deployment/, migration/, release/, integrations/hermes/, packs/, tests/e2e/artifacts/, docs/v3/"
+  ],
+  "unchanged_inputs_verified": [
+    "git diff 3dc6d82..HEAD -- tools/amplai-loop-kit: empty",
+    "git diff 3dc6d82..HEAD -- .ai-team .agents .claude scripts/loopctl.py scripts/loopv2.py scripts/eval.sh: empty before the policy edit; only .ai-team/policy/documentation.json changed afterwards",
+    "git diff 3dc6d82..HEAD -- src/amplai_foundry/domain schemas src/amplai_foundry/schema.py: empty",
+    "pyproject.toml version 0.4.0 -> 3.0.0.dev3 (DEV-03 import); schema_version stays 3.0.0"
+  ],
+  "limits": [
+    "offline_views: pre-existing SOURCE_DRIFT on main (guide-release-r6.json binds tools/amplai-loop-kit/CHECKSUMS.sha256 from before commits 3a4e0f6/3dc6d82); not resolved by this Work",
+    "Live provider/container/holdout qualification remains EXTERNAL_QUALIFICATION_PENDING",
+    "This review is by the implementing agent; the three sequential reviewers have not run yet"
+  ],
+  "review_rounds": [
+    "round 1 contract lens CHANGES_REQUIRED -> R001-R004, R006 fixed (29044c4)",
+    "round 2 failure lens PASS; R101/R103/R104/R105 fixed (bb70203); R102/R106/R107/R108 deferred",
+    "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)"
+  ],
+  "rebind_note": "Re-bound after review rounds 2-3 changed installer.py, archive/service.py, store.py (guards only: PACK_ID_RESERVED, tombstone approval_check, owner-lock release, backups exist_ok). No guide describes those internals; guide text unchanged."
+}

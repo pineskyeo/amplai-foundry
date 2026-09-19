@@ -1,0 +1,24 @@
+{
+  "schema_version": "3.0.0",
+  "pack_id": "fixture-pack-id",
+  "version": "fixture-version",
+  "publisher": "fixture-publisher",
+  "protocol_major": 3,
+  "entry_capabilities": [
+    "fixture-entry-capabilities"
+  ],
+  "dependencies": [],
+  "permissions": [],
+  "model_requirements": [],
+  "context_refs": [],
+  "verifier_refs": [],
+  "eval_case_ids": [],
+  "owned_paths": [],
+  "license": "fixture-license",
+  "signature": {
+    "algorithm": "ed25519",
+    "key_id": "TEST-KEY-NOT-TRUSTED",
+    "signed_digest": "sha256:c9a5f8705947462c00d41497f5901f7e87ef00e968c7320cc14a8f34dc26cfd2",
+    "signature_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}

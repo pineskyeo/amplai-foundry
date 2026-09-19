@@ -1,0 +1,4092 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 5,
+  "base_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+  "target_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+  "target_kind": "Exact local Worktree; current2374-test canonical S08 and immutable R5 offline guides; no deployment activation",
+  "excluded": [
+    {
+      "path": ".specify/eval/history.jsonl",
+      "reason": "Named evaluator projection; canonical execution evidence retained separately."
+    },
+    {
+      "path": ".specify/eval/last.json",
+      "reason": "Named evaluator projection; canonical execution evidence retained separately."
+    },
+    {
+      "path": ".specify/eval/verifier-last.json",
+      "reason": "Named evaluator projection; canonical execution evidence retained separately."
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/doc-impact.json",
+      "reason": "Derived membership projection only; may regenerate after this envelope. Underlying semantic sources, exact snapshot, reviews and views stay fixed."
+    }
+  ],
+  "document_snapshot_sha256": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+  "required_commands": [
+    "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S08 --profile fast",
+    "python3 -B scripts/loopctl.py docs validate specs/012-portable-document-lifecycle",
+    "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+    "python3 -B scripts/loopctl.py trace verify specs/012-portable-document-lifecycle/evidence-trace.jsonl"
+  ],
+  "review_contract": "Read raw contract/spec/plan/tasks/readiness/context/environment/trace and exact source/evidence. Independently review one lens at a time; no product/guide/governing edits during three sequential reviews. This envelope is self-excluded and independently hash-bound. No earlier verdict substitutes for current review.",
+  "post_review_policy": "Only after all lenses: separately record verdicts and report-only gardening; terminal metadata/trace may advance with preserved reviewed prefix. Implementation changes require a new frozen round.",
+  "frozen_at": "2026-09-12 05:39:17 UTC",
+  "digest_method": "SHA256 of UTF-8 JSON.stringify(scope with scope_sha256 removed), property order retained",
+  "previous_review": {
+    "round": 4,
+    "scope_sha256": "83d37d8d661b7360be05308af5077cf64d542d2e5a452e1b46d56fbf37118e39",
+    "verdict": "CHANGES_REQUIRED",
+    "findings": "specs/012-portable-document-lifecycle/review-r4.json",
+    "archive_sha256": "ad056026489939800efb0df7da7db73f3bc26075d270d774178b2737079496bb"
+  },
+  "repair_scope": [
+    "S16 bounded declaration classification and aggregate work precharge",
+    "S17 typed local reference visibility before all consumers, finite command literals and classified fixtures",
+    "S18 borrowed POSIX mode identity across update/reinstall/uninstall",
+    "Review-fixture positive classification/negative controls; exact3Kit guide release ownership,25mandatory reviews and release-independent instructions",
+    "All13predecessor canonical revalidations plus current2374-test fullS08; immutable R5 HTML and browser checks"
+  ],
+  "files": [
+    {
+      "path": ".agents/skills/design/SKILL.md",
+      "sha256": "7372b993ee73fa19120bbd1526e2d900790cc822fcace06ac5675f11c3594568",
+      "bytes": 6525,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/work/SKILL.md",
+      "sha256": "8facf754f1088f2afdb6d1b96e6b3bde5c367c3d4288866ba65bff04bb93ad1c",
+      "bytes": 19770,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md",
+      "sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "bytes": 13989,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md.amplai.json",
+      "sha256": "7bc26798603355bc8a8daae24800bcbfe02ef6136fcc7948511d7bd15a01e791",
+      "bytes": 1174,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/contracts/README.md.amplai.json",
+      "sha256": "31be22512a618a5f51307cdbb5b9529951cc2e4250053c8493fe5e736b1031c7",
+      "bytes": 1179,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/evidence/README.md.amplai.json",
+      "sha256": "40b34b5fa1de3f3466a570d8209574126b3dddef9ce5742b60bb6178dd7930ad",
+      "bytes": 1183,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md",
+      "sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95",
+      "bytes": 2696,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md.amplai.json",
+      "sha256": "126b09554b30ae343c6c8181ff267772bfdb5e8207b5f89b96924680823ebd61",
+      "bytes": 1188,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/claims.jsonl",
+      "sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+      "bytes": 4257,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/documentation.json",
+      "sha256": "5ad2f1f580f02917f0744e9d44f30eab1dc20fc4042155344bf881e45e125bf1",
+      "bytes": 16240,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/gardening.json",
+      "sha256": "c6cd1614ce2cac2ee92b37c6df0335ac67939603f5884e92b69f16980156739b",
+      "bytes": 8848,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md.amplai.json",
+      "sha256": "5f41121162cbfb704b6c11b49574f9b694659e05bb885ac28c4dd9af514413ab",
+      "bytes": 1250,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md",
+      "sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a",
+      "bytes": 5268,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md.amplai.json",
+      "sha256": "6821da6eb8a8eeecfc6f5d950513575e64f907a4176c200b1bc9543ec971eb6f",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "bytes": 8172,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md.amplai.json",
+      "sha256": "4087a844293012bf96a63451c02be9e9cb58fc348a6d7cabf81fdc003bda733a",
+      "bytes": 1194,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/escalation.md.amplai.json",
+      "sha256": "e9d4b3cb612d15126a811597f037b11334a6f7685c915011c4cfc3f557277748",
+      "bytes": 1189,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/repository-profile.json",
+      "sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5",
+      "bytes": 723,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/README.md.amplai.json",
+      "sha256": "ee66d0115aaa3f301361b65f8a83f03c8f69604a9dd307d64564504763a5070c",
+      "bytes": 1190,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "755"
+    },
+    {
+      "path": ".specify/feature.json",
+      "sha256": "2c1a1e1c59ae58e196dc3034cc922016216e76cb04fba3339b09569c4e00d4aa",
+      "bytes": 67,
+      "mode": "644"
+    },
+    {
+      "path": ".specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "bytes": 7769,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md.amplai.json",
+      "sha256": "520dabd8bc816bc2de154e3c83dde91292fba0fc8710e401f79d2e0f12875659",
+      "bytes": 1124,
+      "mode": "644"
+    },
+    {
+      "path": "CLAUDE.md.amplai.json",
+      "sha256": "d6e991abc91995480de59aa0a7868ac7f01356bc7a2aa60cbb310c21daab4afc",
+      "bytes": 1146,
+      "mode": "644"
+    },
+    {
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "bytes": 8470,
+      "mode": "644"
+    },
+    {
+      "path": "README.md.amplai.json",
+      "sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+      "bytes": 1122,
+      "mode": "644"
+    },
+    {
+      "path": "docs/KNOWLEDGE-RULES.md.amplai.json",
+      "sha256": "5c96ca2ecb79b0d349d2de4d752f5e60f90ec66c47752b64ff7a6d0b6f53d9ca",
+      "bytes": 1165,
+      "mode": "644"
+    },
+    {
+      "path": "docs/LIFECYCLE.md.amplai.json",
+      "sha256": "159a486d9687b5b2a6b6a6ddc2e8ea391dadeaa0d7f9459e573410ebef8956c5",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/MEMORY-DOMAIN-MODEL.md.amplai.json",
+      "sha256": "2b173054fa1ce7671335d1fea03a4bf7d6cd5ae7e94f1cb34ce287f6177968d8",
+      "bytes": 1181,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "sha256": "26719dd47fc7e01a443a1cf6309ac23422459a852dd0329dd213b107cd7368a4",
+      "bytes": 11833,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md.amplai.json",
+      "sha256": "c7038a98a9903c90bc366295528d6327062ad1a6eb27e44e2f883f26bb7e53d9",
+      "bytes": 1201,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md",
+      "sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f",
+      "bytes": 2119,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md.amplai.json",
+      "sha256": "505bea8c826fb1807dc5d605fc789abcf7163cb878da47fa539fa2dc0647e434",
+      "bytes": 1162,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROPOSALS.md.amplai.json",
+      "sha256": "2aa345a537ccf35a9dc466135f734a56b52b335038849949674a7ba26e8100cf",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/RELATIONSHIPS.md.amplai.json",
+      "sha256": "e12426b1902ccdb0d77a89e5c24ad08665005c3070e05cbbcc5cf6f99f6d3565",
+      "bytes": 1590,
+      "mode": "644"
+    },
+    {
+      "path": "docs/ROADMAP.md.amplai.json",
+      "sha256": "31397063a7ccc9b2934ea6ec7dd49ef14d89130c43ad2c292a7c8cb9b4527d68",
+      "bytes": 1140,
+      "mode": "644"
+    },
+    {
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md.amplai.json",
+      "sha256": "7765fa1edcc7ecad69fae7baf57ed5273c2da1cc30acef5af602a6f28de6bfa5",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VERSIONING.md.amplai.json",
+      "sha256": "dccf6a6e98293f92c62ecd4ec7ca620765217d3a4c4e4274344c9d620524aa20",
+      "bytes": 1166,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VISION.md.amplai.json",
+      "sha256": "53870d1f08613c05bb1cdb1cb4bfc2d1482229aa73c33b32f3229f63d6fa15f1",
+      "bytes": 1129,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/amplai_docs.py",
+      "sha256": "3dde71e130b09da8240fb32cf186d76c064dff651300849d2c99ba3344e23ed6",
+      "bytes": 203320,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+      "bytes": 121061,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopv2.py",
+      "sha256": "c489dabf540c3a9b75ac4d311b76b1a0a9e25d76bc01daec0226834ce018ab1f",
+      "bytes": 75907,
+      "mode": "755"
+    },
+    {
+      "path": "tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_governance.py",
+      "sha256": "ea1bd8a6842ba4b0d87c31f456d1806b253dc831fb0a823cdb3fef4d24ba0582",
+      "bytes": 10457,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_html.py",
+      "sha256": "f77f8b104548c41d6daaffe158dc21dc0a6efd25e2ef5a12cac14c8dfbd36138",
+      "bytes": 30296,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_html_references.py",
+      "sha256": "c96a88eba9fe962a42851865855a6f346fc476474dc4d11e663d764627d3e626",
+      "bytes": 9798,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_integration.py",
+      "sha256": "aba4f2f421c54310de10f8e74f67d2bfb1a57186f5adc50a4875d5227788a108",
+      "bytes": 23345,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_lifecycle.py",
+      "sha256": "c65c30b9b71d3d7ac338c90cf8e311e0fd2de70f7d5db72550565df241f42ebd",
+      "bytes": 30649,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_preservation.py",
+      "sha256": "bca77985592fa5244cd322bae0836130e8acb7507d82ee7f06dadcbc0471ce7c",
+      "bytes": 26073,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_reference_resources.py",
+      "sha256": "306b7d54b9020b89e4b76f147ff1637f53fd26ed8eefe6b71bbc057b6c2aeee6",
+      "bytes": 18080,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_references.py",
+      "sha256": "d332ed37716674bd0e9e3a0471a31a84635800b4886a50ebaa3da789a85aa979",
+      "bytes": 15339,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_review.py",
+      "sha256": "9060cb4332380d4cfd5c5c87a07cfaaf14859866e9cad66c0705058736f3e986",
+      "bytes": 44928,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_portable_baseline.py",
+      "sha256": "e2215dc0fbd08803b8cd12b4b780008a820b161c688328fa6686b78bf249040b",
+      "bytes": 42647,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "sha256": "0ca7a582e111d6dca039f286ce88fcfddbaf57e673d6a774e4e9eaa4debd5cb0",
+      "bytes": 9115,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md.amplai.json",
+      "sha256": "824406268321f844b27649eb0810815c7d6a7da9ece89ee1d5cb3ae1c2a97c40",
+      "bytes": 1192,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
+      "sha256": "d994e3c958e7068115b8f6b92010dc38d3eea4eb15ce437d93f445d4901231c0",
+      "bytes": 13284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "sha256": "3c533427a76ef4b79e9d4976ceaab03b79d578598fa8d4a36708015fbd1848fd",
+      "bytes": 14305,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md.amplai.json",
+      "sha256": "5012db3748adf77164cd37ede36c8eb625e6820d6288e6f5c59cda575609883a",
+      "bytes": 1205,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/fragments/bootstrap.md",
+      "sha256": "baf153ec7a0d2055ebeaf739e6056d195f7a73887482837e9f9cd34676871f73",
+      "bytes": 881,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/manifest.json",
+      "sha256": "ce7c802aa27466e911f345efef2168a7ac222417fe031e168d3413dd5b5ea860",
+      "bytes": 15260,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/SKILL.md",
+      "sha256": "a6d1504616486079936dbbe491e7bdcd259327ff8bc886fd55d27dcb20826094",
+      "bytes": 2148,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/agents/openai.yaml",
+      "sha256": "62c1421aa7c1f80302b4d6148aa89e69ee60922d3d1eee35259b5b628a862fef",
+      "bytes": 158,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/design/SKILL.md",
+      "sha256": "8bf290bc1e52b32d6a1b684cbcc89e58bcfc6aeab2c71ca2fbe4c1cfb43a1b9d",
+      "bytes": 5370,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/agents/openai.yaml",
+      "sha256": "3992992e7f55d31aea53b46077167c1125e6e708f057e143851c3c0f29c81d71",
+      "bytes": 155,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/SKILL.md",
+      "sha256": "ea5a8b19f6111714b6ec3b73cc8205f193c04bef0fc0dff6bc5bfa5ac1a96814",
+      "bytes": 12608,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/agents/openai.yaml",
+      "sha256": "0ba5c4c50a1dea8085175f20f521cc5064a44fcb02c7074e20946e81f64dba84",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/SKILL.md",
+      "sha256": "a77b0ef00631bd5cdc8eabbfb3359c09cca3f25c7e31fbb0fa878351621faf3a",
+      "bytes": 19594,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/agents/openai.yaml",
+      "sha256": "7420eb19ee12df06dd95534e3a8390cd7690714f2eb566f9914c630bfa1990e9",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/SKILL.md",
+      "sha256": "764614d5a15cb3700d0e5f9bd4df4484317546f6810fcc53bfac54876fd2ac60",
+      "bytes": 13648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/agents/openai.yaml",
+      "sha256": "4efdc6c8e8df1a951a17283989c5842f12b9f23b94559b16014b18865dd25fcc",
+      "bytes": 163,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/SKILL.md",
+      "sha256": "200d7b08bb9ff7ab302f92a61b004f1dc9a4722677acfa76a0fa3b507d7296e7",
+      "bytes": 13746,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/agents/openai.yaml",
+      "sha256": "5170148826c067790216b1c5a861c28a5d55a39646faae315537bd2039bcba3b",
+      "bytes": 164,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/SKILL.md",
+      "sha256": "8f79a8c972628da92a4b402bbd8d6fffb6e4e3b56cde3c0faef32b7019fe55de",
+      "bytes": 8240,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/agents/openai.yaml",
+      "sha256": "5710a4dcbe7c5c20b63459a4f19b7356ebd5e6411793ef97e40dfb7ce5d8bb57",
+      "bytes": 159,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/SKILL.md",
+      "sha256": "fd8a7d52cbe12fd2877231d7cae0ec130afed491d783f6ec48d248fd045818af",
+      "bytes": 18647,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/agents/openai.yaml",
+      "sha256": "b5800d2b12262a1fc772e45494d24ccafbabf72b62c9d1d48259d1336342939a",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/SKILL.md",
+      "sha256": "5d8ad29120c9941dd7e30c22526a4e61d5ae9a6271348498ab36b6504963eee2",
+      "bytes": 1805,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/agents/openai.yaml",
+      "sha256": "ae7341b55366f997b74a03702565cc7e0ed672235ed627432b79308402122a0e",
+      "bytes": 167,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/SKILL.md",
+      "sha256": "e3230940a8b1031524bd498d0cf9fe19d62a00641bc45f716acc0a06a398314e",
+      "bytes": 8446,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/agents/openai.yaml",
+      "sha256": "33414c79141329f6c923617582678d4f648599dd138d4b88a4b3b1a7239cc9a7",
+      "bytes": 708,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-index.yaml",
+      "sha256": "56b08a4b70f6e431323ad339d1cb643c2d6f8e7efa74d0a29fc4dff419db262f",
+      "bytes": 1133,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-manifest.yaml",
+      "sha256": "4fff463594bea84ac19d2abf06995367e2a8b3ac54c4d74eb480477020d25418",
+      "bytes": 2137,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/references/manifest-contract.md",
+      "sha256": "7f8c52536d544420579a358cb5cab36a23f036f85fd86c0ee2d0a2a50ee606e0",
+      "bytes": 5303,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/requirements.txt",
+      "sha256": "b4603b9468ade4d639d2c6f73b89d50e1fa5d227c73ab15be0382cca478513e6",
+      "bytes": 15,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/work/SKILL.md",
+      "sha256": "b97e41056463bc7aa1d7a0657b4c37ef2cfb11fd6a148db8a73e57e5e3deaa2e",
+      "bytes": 16575,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/README.md",
+      "sha256": "16ebb7169c3c064fb0a082ffe7bd36b36ccfb3d321e9eb580da176846b9c03bb",
+      "bytes": 2132,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/README.md",
+      "sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9",
+      "bytes": 1296,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.schema.json",
+      "sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+      "bytes": 3895,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.template.json",
+      "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5",
+      "bytes": 1202,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/README.md",
+      "sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93",
+      "bytes": 416,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/provenance.schema.json",
+      "sha256": "cddc95df7eba67659dbfd6d33888c85abdead4d1ef354dbed09ffa87d6525668",
+      "bytes": 962,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/README.md",
+      "sha256": "ec46a9e5480bd8e3a01dfa736ba35c790de008bf6f61e6240b67376058f4ba1d",
+      "bytes": 819,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/claims.jsonl",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/decisions.index.json",
+      "sha256": "2e127b8ca192b0f5a087109156d9ff604aa4cdd7a1b48b0af031d71b33eef429",
+      "bytes": 47,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/doc-impact.schema.json",
+      "sha256": "9a78e329cbdc451bce7c9d1f3c45822ec10ee78976e93a59a9f49b7f0c8f8960",
+      "bytes": 2666,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/domain-discovery.schema.json",
+      "sha256": "58227506d0d64021af7c7a8bb8f54a121dabdf6bb28dba14751c2510b4431075",
+      "bytes": 1291,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/handoff.schema.json",
+      "sha256": "3ac0403b77563588b2a8085f02d0b830081b24e6eb5fdfe02f21ddb186766cf8",
+      "bytes": 942,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.schema.json",
+      "sha256": "e9587008b0e648f3196d28ddf543391107811ba2b839c734ab426a6891f26694",
+      "bytes": 2266,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.template.json",
+      "sha256": "32ed5c797525c98bfed3e3577cf30c35161475369a357a8eafc305786ccc27aa",
+      "bytes": 869,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/map.json",
+      "sha256": "394d0a82fa5edf51ba138fbfe654165e782c9bb3c8513b50172596491533fc4e",
+      "bytes": 957,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/documentation.json",
+      "sha256": "8e112727eec7143c5fd42d88319bf491f164b1257e6aa4b41730d82d2d27852c",
+      "bytes": 5960,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/gardening.json",
+      "sha256": "a291894eb1efdbf43e3b52ba6037b8d6e21ce30619fe1eb0d798ca73b79b6ab2",
+      "bytes": 6010,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/knowledge-readiness.json",
+      "sha256": "dd780d1f7d194d7a60c2847e3ffa4785d0087927928ba4ebf71b1d5fe0231ba9",
+      "bytes": 910,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/permissions.json",
+      "sha256": "9f41f4091cb1390808e68c89d7354be0ec10d5fb540e2ecae85e0015459da310",
+      "bytes": 1284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/quadrant.json",
+      "sha256": "b00fa0fdcce2415d5869d30e7ac3bf278b4afc6d90408aa236dd2379faab31c4",
+      "bytes": 908,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/tdd.json",
+      "sha256": "5cdb2b32d065312125a93887680edd1d14c8c25ffce9a91031a8d2964d732592",
+      "bytes": 648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/WORKFLOW.md",
+      "sha256": "77949082f56975dfb316c9a4b6f00db675971cdfe617cad16947e5c868a0860d",
+      "bytes": 2390,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/escalation.md",
+      "sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6",
+      "bytes": 1433,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/policy.json",
+      "sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "bytes": 5561,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/repository-profile.json",
+      "sha256": "6b58f760da68bee2cbc7517f05c6f6b13ef51634f1a79c61870d05831fb6afbe",
+      "bytes": 147,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/README.md",
+      "sha256": "b8c9e239e17056c0c33fdee904ffd126ae875b143b7e6911d38a2bcda3f1a874",
+      "bytes": 677,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/portable.py",
+      "sha256": "563132575b4d1cf33fe1cdd5a53b66f2114033bc08df3f42122de6c8ef87ff0c",
+      "bytes": 3191,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/registry.json",
+      "sha256": "0edb0ce10e4d930d08b564e4ca0e1695d00a7f7663cdb0d6829707bf2e4c1c16",
+      "bytes": 1723,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/memory/constitution.md",
+      "sha256": "608fe9c3234f41e1ede918204843e167b24f1c4c64797e7ad1ed4d24611463f8",
+      "bytes": 762,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/check-prerequisites.sh",
+      "sha256": "3a9c76f4c31465f50250b06a7d30d879d137896e2281e9b86e570ced484ea1cb",
+      "bytes": 6707,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/common.sh",
+      "sha256": "6ff86bf39f6b4684b0f80927dc7a1dadec26b4671988a3fe4d6c2523cbd3aa22",
+      "bytes": 29810,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/setup-plan.sh",
+      "sha256": "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+      "bytes": 2493,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/plan-template.md",
+      "sha256": "474539ac1e69ecb4b0312da5043a72a77a42f722602bd9d65b1073d1156eb4d3",
+      "bytes": 3806,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/spec-template.md",
+      "sha256": "3945437fc35cd30a5b2bf7beea680337c3516826d3efa5a6b92c4a7eca1ba28e",
+      "bytes": 4556,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "sha256": "3dde71e130b09da8240fb32cf186d76c064dff651300849d2c99ba3344e23ed6",
+      "bytes": 203320,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopv2.py",
+      "sha256": "c489dabf540c3a9b75ac4d311b76b1a0a9e25d76bc01daec0226834ce018ab1f",
+      "bytes": 75907,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/install.py",
+      "sha256": "b9c75afc5f8494271dac551edc0edaf0d214ea029a0701b57ea7b7046b10e35d",
+      "bytes": 78312,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/manifest.json",
+      "sha256": "38398b3786c854ff82dc12893ebb00a85930a76b392cbacb62ef7f2cc088c62d",
+      "bytes": 7634,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/INSTALLATION.md",
+      "sha256": "5e380f810ea924a17c7d5492742d7afcc7d56a0d271507974e63d1b72d976b60",
+      "bytes": 6503,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai_runtime.py",
+      "sha256": "f558c9a929e6272f2291ebc94940df77b18018171c358f2ce6926f137972ed6f",
+      "bytes": 121077,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/reference/TEST_REPORT.md",
+      "sha256": "b1b15e4fc6250a35ee3f3eaa2d251a366b29fa8d55cca8a7f5b344134b254143",
+      "bytes": 3587,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/seal.py",
+      "sha256": "6fa4e100314aa675d1284554f1d2a680d7d428823f3f8e42316eeca74d9765be",
+      "bytes": 8447,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/selftest.py",
+      "sha256": "2f8ee1231e2616c98a475b47c207731ea6a583a8975469a95cdee55b85ff1f1d",
+      "bytes": 10520,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/tests/document-browser.mjs",
+      "sha256": "2840991bc8d6ee5075820266b7bd263dcfbed83ab018eec9cca6cf441036b9b6",
+      "bytes": 10763,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_typed_visibility.py",
+      "sha256": "df01274fcee3b78785b017191cda14a7223bc018e72a809b2390f128ad096d3c",
+      "bytes": 14418,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-guide-reference-visibility.py",
+      "sha256": "983ce2ae4f0b65a708803b4ee1f2bac954bf776b32e0e69d30482f79bd7ed0ef",
+      "bytes": 1917,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-kit-guide-selection.py",
+      "sha256": "5a6c8e89b06aaf4cb3c491dbd0f8278dcccfd268c8e1d418d2df06e4a487a971",
+      "bytes": 2279,
+      "mode": "644"
+    }
+  ],
+  "governing_artifacts": [
+    {
+      "path": ".ai-team/knowledge/document-reviews.json",
+      "sha256": "d5f6f5f1f142aebccb24be8b15b8eca04f4e9562135d2c41e579937878f36a96",
+      "bytes": 1423611,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-before-r4.json",
+      "sha256": "1b9f3c47e04381562e60e43351b4882d282afb6a1903fbcb7f93c4efc7b840f5",
+      "bytes": 112874,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-before-r5-final.json",
+      "sha256": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080",
+      "bytes": 133749,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-validation-r2.json",
+      "sha256": "4a544e76988a3829c2f35a3b45c0c4e24baa24ad00033573c0523c3a1b1d0779",
+      "bytes": 1375,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-validation.json",
+      "sha256": "325a23877cef4ae5a8a0f0ef42a5ed0a39801997a7287a614829bb12102f117b",
+      "bytes": 1419,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map.json",
+      "sha256": "edc316525d47aaddd67c9332cd378cf2ee844b9bf2b2734c4cb1927d6053f7b9",
+      "bytes": 155389,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-line-boundary.json",
+      "sha256": "020cb97cd2f90962285931ecbd93efab358cb76911ce42dc6e37aed54612137f",
+      "bytes": 3704,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-r4-completion.json",
+      "sha256": "87b24a6d37058d63262701bfcbcda1e60658c9d65f74634c4a0dfd461f425f42",
+      "bytes": 3483,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-r4-s08.json",
+      "sha256": "8f51400ddbf30119c2053dc6dfa713e09028c1273d5fbb571389b36d648fb416",
+      "bytes": 3028,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-r5-full.json",
+      "sha256": "664052c96a1d905ad4251747f6565bbba2f406e239e4dd26440f015f28072c1e",
+      "bytes": 6910,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-r5-repair.json",
+      "sha256": "1b9122ea31c5631a3bedb804520a8e398cf1a76875c403e9377aeb4efa50a58e",
+      "bytes": 3512,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-r5-revalidation.json",
+      "sha256": "9a35cb7095b98861bdc288d89833cbd8f464fc1829697eb0c07fc2fd8e31b05e",
+      "bytes": 6518,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s08-bytecode-repair.json",
+      "sha256": "cc35d08568b74dbc0b966bb5eedbadcb9d74d6d4160b29efaefacd5a1e363be2",
+      "bytes": 3042,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s08-r3.json",
+      "sha256": "9fef6d5db8b316dabd56a6715e41973f832ef869c945555ff0e40014fae0d53e",
+      "bytes": 3430,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s14-r4.json",
+      "sha256": "17084bb9269e85e4f05954137fe436ec2cfafe6a13da113710bc0d9108f731e1",
+      "bytes": 3377,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s15-integration-completion.json",
+      "sha256": "59d5bb4be86d3ce516fc8339a7e48ec884ec73a1f7d7c99323a598405d2d9cff",
+      "bytes": 3291,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s17-command-sync.json",
+      "sha256": "9591ca174a726bf81e48001288a74d366dd655128dc0a393f7dd2e7ad32452f6",
+      "bytes": 6023,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s17-guide-refinement.json",
+      "sha256": "c79d5cdeffc2d9dead71f4d3bdc3b57f025c3c3d1b4eca872763d4f030f1b89a",
+      "bytes": 8104,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s01-preparation.json",
+      "sha256": "f68bad0738720b9c483005a964f7cd7f2dee58e12f86ee93a5aa22d438076c67",
+      "bytes": 5402,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s02-checkpoint.json",
+      "sha256": "8ee8bf8a67431796b429761ae7e5a37ecb1cac44b1596311bf9e370b62f074d4",
+      "bytes": 6256,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s03-checkpoint.json",
+      "sha256": "b09a2884bf8bc15c30a2cfd3eef91c1a1c766564049358c220630750c38ed70b",
+      "bytes": 6697,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s04-checkpoint.json",
+      "sha256": "a51cf3d7c13cf2ec82abe21a3e7ba71b34bec7e0e7be9ca7bf3821342aaeec7e",
+      "bytes": 7518,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s05-checkpoint.json",
+      "sha256": "57c80a4bb52d4705a35d5ee0b75aad6b4bbd4503b0216a4a379d3927cd1fd3d9",
+      "bytes": 8430,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s06-checkpoint.json",
+      "sha256": "c0977c2ac249a422040a0a6678b57d1aef91ffdfcd47d0fb1ea591f8fe9c7532",
+      "bytes": 9223,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis.json",
+      "sha256": "f0fd9a7d1f812e1eeb2c74f28a62f2038ccf5ee4e9e6a17181235c4377e8de56",
+      "bytes": 7253,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/baseline-inventory.md",
+      "sha256": "b55be49a711eb2ff356d90378ebfea0ed6544ceda422203dffd489285b4cd1f9",
+      "bytes": 3968,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/checklists/requirements.md",
+      "sha256": "cac621b9691db86d2d6e10a7d66c29c94dd5726132bfbf8cf2b0c12149f53aee",
+      "bytes": 1419,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/clarification-coverage.md",
+      "sha256": "1e6297cf62af833e426400d3b4e113a314dcd24d75ea9c991280674a2758d0b0",
+      "bytes": 2028,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/closed-work-discovery.json",
+      "sha256": "005625909e268e1d6f6a541a3ce7d38581ed6bda6ae13e160b76947be558f56b",
+      "bytes": 2969,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-before-r5-current-guides.json",
+      "sha256": "2efe1ea763d82dc541b50709a3916d2c480efc5f40d34e098473fc9356728b50",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-before-r5-fresh-domain-review.json",
+      "sha256": "f77bbe16b1ea5cccd7096f38fd71cb6dc3bbde5ac0ed549b46147b77988d6d6f",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-before-r5-revalidation.json",
+      "sha256": "190572952016f80961b7bf634fbb72d7f7a987515bf4d7fd410cedcaea4418ba",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-before-s14.json",
+      "sha256": "caed438c8ea33561f308ca5613a84cf241bf8b59cee2de189142240af17bf15c",
+      "bytes": 14235,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s02.json",
+      "sha256": "2e996498d4f9c6acf362fff443bb3e0043778fb2665ac67520682878b537830c",
+      "bytes": 14516,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s03.json",
+      "sha256": "23a7f582b942a5cd96bbc25915e9091abc8323ab9677060622226816e0988752",
+      "bytes": 4124,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s04.json",
+      "sha256": "944c346390d4b7f9fbb06f26ec5241e32ec79d025259373ab93df5f3c65cc7b9",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s06.json",
+      "sha256": "35e8dcd9eb5f2ebff08fbda70e7756f79a90f4670891f44361a8f8f1f6123169",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s07.json",
+      "sha256": "78739335215d51dd9e07d02bcc261a0478c85616b59ba04655b7f13720a5d639",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s08-before-guide-review.json",
+      "sha256": "12d88aa393cfa9b2f395fa6f1e88d97dd7f4b9fcaa4a658666960599efd95afa",
+      "bytes": 4708,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack.json",
+      "sha256": "87f05b42d7c33f78202d025053d5b380c5625a01434fb45fd87275a78e0291f9",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/contracts/portable-operations.md",
+      "sha256": "eb5c3f993d2a966d2dcfa7a94b37849da1f544f8c72d80683dfc498b48d2a807",
+      "bytes": 8356,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/data-model.md",
+      "sha256": "623f59ec49288c3d61bc1d399daac24d71956830ae6166657b9479e4996700e0",
+      "bytes": 6815,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/domain-discovery.json",
+      "sha256": "411d805c8134bc6da50927ab42f4ab1ace8c1fff029cc1b11b6679ddd44a562f",
+      "bytes": 118339,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/environment.json",
+      "sha256": "2187b368de510655101d0065a119ec0ca5e9d4465e3aa7c15feffa554c5beb9e",
+      "bytes": 1360,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/evidence-trace.jsonl",
+      "sha256": "579bc9b4c88d4763178aaec4660bdc571289baf0e4fb68cd166c275548abb7c8",
+      "bytes": 142416,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "sha256": "d7c08d0a6471e4fd979da8f271962d684909ffa97fddbf50c58cdb2293c5ebf4",
+      "bytes": 1496,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-backend.json",
+      "sha256": "be46b66a0f5f3774a96e1ae037933fe628e08b28957f885f3a5017a828370b59",
+      "bytes": 548,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-contracts.json",
+      "sha256": "5f69e560f99a91d171787a253a680bf005d1c5210496a4e55b516b501540784e",
+      "bytes": 358,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-ontology.json",
+      "sha256": "236ad50d97cfd2213ef8a8a436ac691cd2e924f9b4096361da85cb476c6b1244",
+      "bytes": 455,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-ui.json",
+      "sha256": "21c8a28b0c5c7fec70b5033cffccaeb192a594539c0609522b9bc2706938fae4",
+      "bytes": 385,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r2.json",
+      "sha256": "e26df0c093e2ee3ae5b42b80f39d7a20cb821f9dc33409c7d79a81ff5232f0df",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r3.json",
+      "sha256": "c83333db1eba68228cd3b2c0788afe93f07ff0424b9ee6419ce859058724e801",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r4.json",
+      "sha256": "d4fa4be34716b951f34888543228ec8d51f1dcada9da902c64c96d1ee06fb320",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r5.json",
+      "sha256": "52b9ea1b498a84ea0b917cf700a8ffc804d014b889e65549a1679b642e758f48",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release.json",
+      "sha256": "63819e6648dc4864682e2fd4b7fbc51aa56792a656cfeec5c33284b14ebc43c2",
+      "bytes": 2390,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r2.json",
+      "sha256": "20461c0c5aeeabe3541724a6cd1f84473b084f9e26212e35da469c50d93410b8",
+      "bytes": 960,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r3.json",
+      "sha256": "5eb54fcd0747d6d737b61e299b6bfeff40cd750fcb8ec3da2d55f6f328474fae",
+      "bytes": 960,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r4.json",
+      "sha256": "7068a377a14b3aeefe02f41f9bbcba7f3a6ae8dd4a66f48e3162c20655c994c3",
+      "bytes": 972,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r5.json",
+      "sha256": "83a2878bd841df0575203e74d9138ca78a381015103db8224d9ea1640c63e664",
+      "bytes": 1261,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification.json",
+      "sha256": "6dfaa7c2951b47c0109e0e9218500ae2a201c9d0ae64db80b80f69223dce747d",
+      "bytes": 717,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/handoff-r5-pre-review.md",
+      "sha256": "8b6cd69f82c1b855b82c5aa1b8736279007cfdcbeb990bbf5fa70c8222c7aacf",
+      "bytes": 1445,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "3b40b396340b518d7f9dd8700dcb6f9c2dee3812c806783d8ace60e396496182",
+      "bytes": 17436,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "114a117c9f0295a675b97c8dceff1772605486b766460b7b55875c83863bc49a",
+      "bytes": 12158,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/index.html",
+      "sha256": "9afef0a3eb556514886d0903dbb1fff17e36b750e46b6012047e6e6fd4e8a1c5",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/manifest.json",
+      "sha256": "800a051c11fe1b691765abcb4e261860ba5d8ef93271bccbe3fa9d9d6eda09a7",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "472394373c3271de3e6e63e9212412bb67a599ff86adf4e158c2cfcf3053a969",
+      "bytes": 18119,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "98a30c6fb08b904af5ca41f2d0a34ca92b5f4b94eb4356d6bf9a7aabe275585e",
+      "bytes": 13156,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/index.html",
+      "sha256": "249fc5d7a243f48e86936caceaebf8c6b0e6f11c079f4eec6b85b1efeeffba5b",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/manifest.json",
+      "sha256": "f494b1a8fe650e766f1f72d2f5811069de385024421037b322d59a90e379e0e1",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "2149677a8d13899939f16f25b6699ab2699988713117898aac11cc5ba1adf36f",
+      "bytes": 19714,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "4d5a82a7cb064a05720c4914c7f0d077928b27bd2e036f6ac181d56f0abf1a77",
+      "bytes": 15094,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/index.html",
+      "sha256": "158d87a5992c25c219c7456695fa43f8b2fe26fd51dbcb1c56897937a01719f5",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r4/manifest.json",
+      "sha256": "4bfa086bc6ae97bf49bae1fb5bd75755d36a0f49b4f18a29cade82848b8bf0c1",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r5/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "7b2f2b3edc2995574e15cc724717ba7be2b1468bbfa01c2dd3067fecdf5bcf9c",
+      "bytes": 20978,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r5/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "1df722405bb1f94a68e6439d5b4304df438f916e3918e091a0785f20a5fde3fd",
+      "bytes": 16436,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r5/index.html",
+      "sha256": "f2c0f113fc43f00ab131c590510f0f72bfed312031597a6beb463a4de137ffe2",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r5/manifest.json",
+      "sha256": "fc22698978c82914f41c5c610150ae0515f2397fe21ded842fe3c3085b93bcbb",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "fe32140dcd56141da608ac755eaa42c8da62e543fae11ef55ee4557fff754501",
+      "bytes": 16615,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "ec1ae8ab02a5232053266f52d687466dce46e79066629b4e7c418c1a3f9fc3e5",
+      "bytes": 10364,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/index.html",
+      "sha256": "f724faf56a606a40d23db2b14e9e7e1a91c9e6288252b3cc62f2316aef3647ff",
+      "bytes": 5091,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/manifest.json",
+      "sha256": "585f1bab851ea9e24ffef99f39c02694ce2c75f46df34791347d0db915593aaa",
+      "bytes": 1860,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "96979732a001d896858da6ad3e427506f12fd2bd7430f5cf4a3b4e2909386bca",
+      "bytes": 17435,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "2c2b44c0a4e75328b512100aacd4a20fb137911fe2796b2dd13c6d7d8daa16e9",
+      "bytes": 12157,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/index.html",
+      "sha256": "5d2a8167111c45139d551041f4ef31c62834243fe7b65cdf8620cad8f5b1d569",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/manifest.json",
+      "sha256": "ef14c8305f01e439267e8754626f8328912edae66bbe99d66ed6a89f48c09678",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "2c24a4da379d29304e88b05fe559e7fb67cd13bece5fb8a7f08109f97539044a",
+      "bytes": 18118,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "4019511fe65232a3434d64b33d031bd745d008300f9c2719b753f54c278d45f5",
+      "bytes": 13155,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/index.html",
+      "sha256": "5969f5fc3314cdf99f1f645afd84d44210d6959809ad2563149ac636744dfdac",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/manifest.json",
+      "sha256": "a5d797d287faaff5e9ee69a683df1de6c1cd2d9ba492ded6553986785e5fd327",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "ef07ccc64460be0be45474ae8d7f0150cd1a380c06562cbab50cf76a6a17a1b0",
+      "bytes": 19713,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "241680e2d7750a31f257a75ccd11a5e8f0d9c8465146f72b840de6f039b564f4",
+      "bytes": 15093,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/index.html",
+      "sha256": "c57d3717ad813b0224e2e1730b5ad888bb9839534ac6e1c373b5e7147f094ce8",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r4/manifest.json",
+      "sha256": "0e2fe802717045a11ce0412e661956e7ca52f1d9b59d6bcd2ef1bcd60431ccc4",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r5/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "0d913e51805ebb23df2cb831f806a24fca50239a68bbf4df168372f1477b0201",
+      "bytes": 20977,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r5/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "29a5c705da8c854d9a831b4421c3b406f8385ddfd68d693bb26aa53a5f40d31a",
+      "bytes": 16435,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r5/index.html",
+      "sha256": "15f23c2591dbe3f70471afc982870910f062c218b6238848ca11d41c27f76a79",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r5/manifest.json",
+      "sha256": "6be3686669b2325c20b5d47d3867f73c36a8b7594416a0f19e969adfbbc64460",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "db52bde476f29ce9738a22d02bd74c285208808658f0adea10f5d61aab8c13ba",
+      "bytes": 16614,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "c2e1da2d8a108ec2f0c6d99ef01f7d03f73da4d5d1ce00c1aafa08ab77ed4eff",
+      "bytes": 10363,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/index.html",
+      "sha256": "d6953ac80ec86b871a3b8c03188afc7a3c4e95e1d94f69b4fb78511bc361e37a",
+      "bytes": 5090,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/manifest.json",
+      "sha256": "77f587f07785ec56df5964792a384ce18b2fcee255656df818f1aa4404b0543c",
+      "bytes": 1859,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/knowledge-readiness.json",
+      "sha256": "75db4bb72cd34c392cff1cf823f07c4160933fa1c17a4125a629ce6438bc81ea",
+      "bytes": 9725,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/knowledge-reconciliation.json",
+      "sha256": "97622a7d33b1edd7e8d7e95b37f22d36a532a8b505096ef8cae6b6354f3fd407",
+      "bytes": 1577,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/plan.md",
+      "sha256": "859d403621a36cf56f35ca7429786f4e7f0f4b8bf2daed799845db8093558331",
+      "bytes": 36837,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/quickstart.md",
+      "sha256": "703a70fd7074467098c8db513be952a64700e796d4451e457dfbca40b434c65b",
+      "bytes": 4752,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/repository-audit.md",
+      "sha256": "87df7f22105fbc67f7afa0b139501c1fcc28841b7099deaf303ff31ff591ff1e",
+      "bytes": 5636,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/research.md",
+      "sha256": "61488103236ee088810ea2ecd96e535c80a0c73f54008966880111e179f09bbd",
+      "bytes": 12320,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s01-eval-input-tasks.md",
+      "sha256": "4ab7ca20307696d04880bef743e1661573296027982c5825eda296ac85a6471d",
+      "bytes": 12790,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s01.json",
+      "sha256": "3c5ea65f4ba0952d911b735bdcca065c6cfaff507664ca9f06ace34ecb236a62",
+      "bytes": 1057,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s01.log",
+      "sha256": "3e07c10057494dbe384545eb8d11f9850130bfa6b6eefd662878372208571ea3",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s02-eval-input-tasks.md",
+      "sha256": "ae2e4809e310877388e90a0246609315227101b8a80bd3ead931949fe904ab35",
+      "bytes": 11308,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s02.json",
+      "sha256": "1f23e37111f082f0112d455cc0ff3f3a21fcc4b4cc0d9ae5598e18fe2b9f4127",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s02.log",
+      "sha256": "ade8a67c30109ec432f460321ce82e4ef6105e75b7ce94a2a6bdbaff13441709",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s03-eval-input-tasks.md",
+      "sha256": "4d62eff4a724a68796342d9e2a9eeccb0f594927f00231bd75f97e9f24f6278f",
+      "bytes": 10096,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s03.json",
+      "sha256": "66d996c9ca528e3348fa8ee384b593194fed10c0963321261dcaa4c3c14340b9",
+      "bytes": 1057,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s03.log",
+      "sha256": "5e926dd5c695e5a53c1435ab8dfde7cc8eb87fea46e45adfcabe60065410f306",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s04-eval-input-tasks.md",
+      "sha256": "a077f2186815cfc465cee73edde85c35ac9ac4865abec478d7ee87fb29890f5f",
+      "bytes": 8864,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s04.json",
+      "sha256": "e1c3b833976eb6d1725cc1e094fa0c43c46e9c3d4e7888448fd153280afc9eca",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s04.log",
+      "sha256": "8171ddddb0ddfba3a5c1421318683a57b153ec47831eee087e9f0bf8915f7ed8",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s05-eval-input-tasks.md",
+      "sha256": "8eda49aea77b87c322ba893be6336da7ef2eb37a96c68674bc91f1e575422bc4",
+      "bytes": 7288,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s05.json",
+      "sha256": "4e54abc9e69f962705a9eae878094c0f8bf372609ee1765a0dd009d0b6dc33fa",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s05.log",
+      "sha256": "78de1a035387d2cd9eb117af85041b8d667fc1b5c01cb0315868ae9dd11e4d32",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s06-eval-input-tasks.md",
+      "sha256": "b52902c92d021c5e34e923a628b7289c4c29055503c94d62d1bac39eaebd81c3",
+      "bytes": 5687,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s06.json",
+      "sha256": "a2ea8130d9852d4f150a79d9a141dbfaecf8471967fe78c6c1d59a5a96c07d4c",
+      "bytes": 1057,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s06.log",
+      "sha256": "bb73e1b0abe02d315a7cfe00e854734a8d7a1b6a40561601e3afbcea69d769af",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s09-eval-input-tasks.md",
+      "sha256": "37e3900187573460baee96b24c4ed218fd413edc783027605d2fd247b8e00367",
+      "bytes": 15526,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s09.json",
+      "sha256": "9b518a7020fa7f432b453db60731095844b60c52ace1c8bb133f71357728de0d",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s09.log",
+      "sha256": "b2596e0864217d3575efa8d36d3cb3d050dd0fb2cdec5a88f1a68a17aec7463e",
+      "bytes": 2284,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s10-eval-input-tasks.md",
+      "sha256": "90d30605bb3c9d985ee7c627a875b567685cdba1f3cf763f796c5716f6817c20",
+      "bytes": 14517,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s10.json",
+      "sha256": "0c2de874eef772a80737883d6d01f6da4b7e3c47c46a65987d08a1e40a27f9e4",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s10.log",
+      "sha256": "08f298b7c6b4bea3e691690e1e7eeb5aa8b6508e6d145539b218dddfb01b3ace",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s11-eval-input-tasks.md",
+      "sha256": "260b3a861ae2f3fc4f0f4bd388b5613abf1bf3d284b0adbe2b5d6da53ed7264e",
+      "bytes": 13613,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s11.json",
+      "sha256": "fa4f4106402a6d09f4e077be13c0b569a58d667fa51f1b96f9e53a22f58d8de9",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s11.log",
+      "sha256": "f626c3778962c09133e6dcd961e32e4f998246c51eb73582aabb7f7b74275f0d",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s12-eval-input-tasks.md",
+      "sha256": "16dbc8f62fe2e0f497fd948e96d3d015a45685a32191f07478b3838f310986c7",
+      "bytes": 17420,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s12.json",
+      "sha256": "a11012232acc3304b277a6031b2ce804092fec147bbf678be95dbf019bd67a27",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s12.log",
+      "sha256": "c7c8ff42a079224b2693576711aedf49258ace69e426049d94f0566664537472",
+      "bytes": 2427,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s13-eval-input-tasks.md",
+      "sha256": "8cee856ac0a8a6168491f4d8955e66c6ca94317e123f50d1cf69fda0b7db136f",
+      "bytes": 16405,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s13.json",
+      "sha256": "009ba1dbd3dbe2035137e9fc5233b226ca6f187cf83c4bb28873ef58d14f6b62",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s13.log",
+      "sha256": "90cacd9b2fb3ae6e0d7840faaaede66022693d34ec7f274e9ead12f0c10269a2",
+      "bytes": 2285,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s14-eval-input-tasks.md",
+      "sha256": "93c634c9586ad004ee1939f21c6f44b9699f3f97fc19d3f42bf1565ba51315f1",
+      "bytes": 20333,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s14.json",
+      "sha256": "2720e5f3b09661147683c6e5a6f554da7289f2cc30b18041bc559b8198da2845",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s14.log",
+      "sha256": "def183e68267ab8ef1e1ac2f7713343646f85c355f82368f3e0944b3fc2e4a62",
+      "bytes": 2496,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s15-eval-input-tasks.md",
+      "sha256": "db3ed1b64b30464396ede39f9dabb1c10384eb9b056abb36d7226e9c140ce168",
+      "bytes": 19440,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s15.json",
+      "sha256": "69efdd4d4d2c5e427d047d7ec7052f7d1cb6ad8978e9b6a721b43b2c0fb60c9d",
+      "bytes": 1058,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-line-s15.log",
+      "sha256": "d22e7068d37460ec892cf193bde822a638f6d1910909809c6214d964cb6bc287",
+      "bytes": 2775,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s01-eval-input-tasks.md",
+      "sha256": "4ab7ca20307696d04880bef743e1661573296027982c5825eda296ac85a6471d",
+      "bytes": 12790,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s01.json",
+      "sha256": "b3de34b76811b282a4c057879152625df59270a5643aa00494024644584835a4",
+      "bytes": 1054,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s01.log",
+      "sha256": "4e2f557c0c1bc3af9c3da4607df1ff895beda1ff0d06c980073623f944eb5c88",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s02-eval-input-tasks.md",
+      "sha256": "ae2e4809e310877388e90a0246609315227101b8a80bd3ead931949fe904ab35",
+      "bytes": 11308,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s02.json",
+      "sha256": "8c6fdebb5860138ce5ad2b9cd94b423e95cfc6538943dc127e12a0d0ad694b70",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s02.log",
+      "sha256": "5cc0bb0c419271c4e26895e0744880abdab60db42c5eab44f4985dd9ac82b15e",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s03-eval-input-tasks.md",
+      "sha256": "4d62eff4a724a68796342d9e2a9eeccb0f594927f00231bd75f97e9f24f6278f",
+      "bytes": 10096,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s03.json",
+      "sha256": "9f65a3f51e49c8619107b53e955a183255dda857efd122c5cef9498c0fa25d28",
+      "bytes": 1054,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s03.log",
+      "sha256": "7d2351bc8c0e5a8c2b46a7c2e863c4693904b014721b970b5bc342f4caa6fa2e",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s04-eval-input-tasks.md",
+      "sha256": "a077f2186815cfc465cee73edde85c35ac9ac4865abec478d7ee87fb29890f5f",
+      "bytes": 8864,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s04.json",
+      "sha256": "c2788bef76e2407ce37e017f7e4145a0a7597d9906e5b495fe4d4d281326a5bd",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s04.log",
+      "sha256": "73284cffbfa83199bf39e48602c7b782435520e4aeafbe8cad6390a21bd4ed04",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s05-eval-input-tasks.md",
+      "sha256": "8eda49aea77b87c322ba893be6336da7ef2eb37a96c68674bc91f1e575422bc4",
+      "bytes": 7288,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s05.json",
+      "sha256": "5bf89bf7cb7461f78bcf083760e40ef37e7982ca3eca1d7d6845186947755f42",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s05.log",
+      "sha256": "23f8eb55c26e354f29c6daf08b0ce5858a3246c4045cafe8d329a974054959de",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s06-eval-input-tasks.md",
+      "sha256": "b52902c92d021c5e34e923a628b7289c4c29055503c94d62d1bac39eaebd81c3",
+      "bytes": 5687,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s06.json",
+      "sha256": "274af6150119fec89e66061ea1db100e87680310dc558575f50ba31afc59bf5b",
+      "bytes": 1054,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s06.log",
+      "sha256": "695cdd887b6361a0e4af43170943a59c9e60c64e664769d2484bcb546dae1b5e",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s09-eval-input-tasks.md",
+      "sha256": "37e3900187573460baee96b24c4ed218fd413edc783027605d2fd247b8e00367",
+      "bytes": 15526,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s09.json",
+      "sha256": "54f0d718cd26ca5de4e8044881693c7fd05bb37c94a420340f55a9462a09a08a",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s09.log",
+      "sha256": "3b42f53695e9028daab9e480088fb530849e4dab07ff25e99e873b74340845a4",
+      "bytes": 2284,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s10-eval-input-tasks.md",
+      "sha256": "90d30605bb3c9d985ee7c627a875b567685cdba1f3cf763f796c5716f6817c20",
+      "bytes": 14517,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s10.json",
+      "sha256": "37ab65229b5bacc47481c3e30bbd869b7c4dfd2521e842bcdb4dd9881b582057",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s10.log",
+      "sha256": "79a4182126ad5b93488e13da930fb84753f171758d90010a871398863976952f",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s11-eval-input-tasks.md",
+      "sha256": "260b3a861ae2f3fc4f0f4bd388b5613abf1bf3d284b0adbe2b5d6da53ed7264e",
+      "bytes": 13613,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s11.json",
+      "sha256": "355d02dd15d21058bf4393251b329abc21b6e7bddf6e2f72926a44fefaeb69e2",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s11.log",
+      "sha256": "b846207be62bb73b708f3653e236e0d1b05d8e012b6a3b8c7a1c3fa332749a07",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s12-eval-input-tasks.md",
+      "sha256": "16dbc8f62fe2e0f497fd948e96d3d015a45685a32191f07478b3838f310986c7",
+      "bytes": 17420,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s12.json",
+      "sha256": "6d8822eb03e54204f20ab93ec474567ffeb0511efcb56e5e0d013f2414763b46",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s12.log",
+      "sha256": "ac2e2f61a2b433fcbbf04259e884ae739f1304c63406ac1707cfa8c64f3762f2",
+      "bytes": 2427,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s13-eval-input-tasks.md",
+      "sha256": "8cee856ac0a8a6168491f4d8955e66c6ca94317e123f50d1cf69fda0b7db136f",
+      "bytes": 16405,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s13.json",
+      "sha256": "a595a414909754e6005d07aeaae8b3e96469116ce19afdf72dbf05278baee883",
+      "bytes": 1055,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r4-s13.log",
+      "sha256": "cd3f45dbe2625f2ed37564a02606fd5a2d39955ca4b53f6efca0b40e3457199e",
+      "bytes": 2285,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s01-eval-input-tasks.md",
+      "sha256": "f5b7a90878b93bc3b301349621d2bb05a577ef9a0043b484e485933a9ddd7bd3",
+      "bytes": 13502,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s01.json",
+      "sha256": "e7940a69377a0ce8b24bf52f8d1bdf4c57bceda9b4d08e175d13df810b98d8f0",
+      "bytes": 2569,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s01.log",
+      "sha256": "85d1f38893a7fa524a8b1f5f597cbf9d27177958be3b711221e27d74fab47f06",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s02-eval-input-tasks.md",
+      "sha256": "b9c2fe820d6739009a29c52b561becf30c13f099042967118bedaf2da37e178b",
+      "bytes": 12020,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s02.json",
+      "sha256": "4cacb458e19d21841032487a08ddde9f04c2c11f2d333e550dcd7a204871a44b",
+      "bytes": 2642,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s02.log",
+      "sha256": "d5fdbe78873de3f73acd37fd03b4b5007c2207766bf9d785bc6b9644fbcab6ef",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s03-eval-input-tasks.md",
+      "sha256": "0dcadcc88b20e3623672e29c6339335fe10906522f6379b89d9e31193365a89c",
+      "bytes": 10808,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s03.json",
+      "sha256": "17c4f8d8b3e3ce00737d33424cfd53b343bb05433d9ee5fc33a9a52a0275a14d",
+      "bytes": 2511,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s03.log",
+      "sha256": "10fdf2e76b0865cff0699a314b7ef2d8af727970f2930cc12a81c2d690507b5d",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s04-eval-input-tasks.md",
+      "sha256": "dbc42891874063beecc0306d3bdbd8e63ae7d23b423a3a03670e3937801b393a",
+      "bytes": 9576,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s04.json",
+      "sha256": "de4b0c93e71c1561a6927eded80a3d6db7bf060669a62502c08bac4fd7e689dd",
+      "bytes": 2544,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s04.log",
+      "sha256": "392ef72801c07c0366a9654f8699ee286087eb02e6dfcbf5848391da6bb69d50",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s05-eval-input-tasks.md",
+      "sha256": "96c5efcadc014042dde3b8205aa94525fcbe09a5ab972ff2ea9dc0196fc2558c",
+      "bytes": 8000,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s05.json",
+      "sha256": "9c98dfc6cb9fe9600db031435e63d5733b440629f6993e1f00a48fbeb0e095d4",
+      "bytes": 2539,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s05.log",
+      "sha256": "df6bd7ff0f7ca2d0a9b11ccc568441cc25919888cb5ffa5ed352c4c480dd809c",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s06-eval-input-tasks.md",
+      "sha256": "18880f98ba436b171885c1e5d40c8b0d34370abac6b411db8e9a3e21517adbca",
+      "bytes": 6399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s06.json",
+      "sha256": "14c973b7d4d3e906d18911a07e3ebddadf87ada75bfce25203b7e2dbb680da8d",
+      "bytes": 2514,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s06.log",
+      "sha256": "1bb7cbfaf32450fd76f019af985aa1996b7ea0279228fea88d8a74afbf9afaea",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s09-eval-input-tasks.md",
+      "sha256": "9e0c2335af14ff1839d77d8e0037ba3a9a4a8f04118e345f157aee8c7b7fbe3c",
+      "bytes": 16238,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s09.json",
+      "sha256": "8bf2f04b4085527bdb4752b2b3460202a2645412a216afa9898ca26e9096abf8",
+      "bytes": 2645,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s09.log",
+      "sha256": "bd71f31d0a0fc4986f779fae8c08cc47c6516bf081aa34735578a913f4a5249f",
+      "bytes": 2284,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s10-eval-input-tasks.md",
+      "sha256": "408f10a28fe669174d4640b8b949e9ed80897edebb344b633c6011a3e73dc889",
+      "bytes": 15229,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s10.json",
+      "sha256": "b92ec9af7fffb54bd206f998a6afb303a17cad3754dae27a897786fb98aeef38",
+      "bytes": 2604,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s10.log",
+      "sha256": "32f7e7ab6a7d29d4b79379d3dbf2b47b3b458eb21e804dea9fdd8f79f83a84d6",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s11-eval-input-tasks.md",
+      "sha256": "5e337672e36469632b7edf46a355dbbe8bd001e2c3a7a68a1c1f9e2720ea415c",
+      "bytes": 14325,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s11.json",
+      "sha256": "1e7f6220d094b2cdf56bdcb8e4452aed9de8f3a9ed87a6ed676679ec6ab343e5",
+      "bytes": 2609,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s11.log",
+      "sha256": "aac9b15da764897ac18d22b3ac3515dbbfb7a45e39307ec71265bb5badca02be",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s12-eval-input-tasks.md",
+      "sha256": "fc21bbfb2968675886bedeb3f5aa580d1aed3f9ddc3a8298ab2107f6f337e5d0",
+      "bytes": 18132,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s12.json",
+      "sha256": "e98a23931ae1cc33d03e5d4c3f8f1b15641a2f9dcdc16e275ab8b6eebd06081e",
+      "bytes": 2704,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s12.log",
+      "sha256": "0e2ddd7d4eee9c6ecf64793f79bc65627dda4dd2ca05e6fb57dcd758aae5cee8",
+      "bytes": 2427,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s13-eval-input-tasks.md",
+      "sha256": "43c80333f5de504ede47148e8d8ad8163f90a98a19e8e712106cc1edb2170eac",
+      "bytes": 17117,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s13.json",
+      "sha256": "8e6e5d4954cb630234e32cfeac4de6420a8df3541baaf894b6f6d80da6a56d9d",
+      "bytes": 2646,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s13.log",
+      "sha256": "45c761ea45f84516f3a7496def54ac53a316e3adee152595213932fa820ef4db",
+      "bytes": 2285,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s14-eval-input-tasks.md",
+      "sha256": "d5d0f0f88a196eda6d3d25425043dffa94405a28598686e0efb58245d99f2554",
+      "bytes": 21103,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s14.json",
+      "sha256": "dbadcae0c861d5bfa880600f7f142660d5c83a3666c9692d398f2037e81d7741",
+      "bytes": 2689,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s14.log",
+      "sha256": "55bd96d86717f0f4e971233e7d5cce85eb677541aabaa961799760dbfd1d6128",
+      "bytes": 2496,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s15-eval-input-tasks.md",
+      "sha256": "9d226398f2d1b6814f274bae32cea9503f692a9ad4d1dbd245ada9ccb184737c",
+      "bytes": 20152,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s15.json",
+      "sha256": "779404bdb093a11f03ae4a82ca05d5e24f66cd7eb3f2f54e16f1d1da67d9f429",
+      "bytes": 2800,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidate-r5-line-s15.log",
+      "sha256": "230813aa73b67baaf957909d0e8cabf9fa8219ea063d3ecbd0d7d844d7e1f7db",
+      "bytes": 2859,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r3.json",
+      "sha256": "3acbe0da9a8612d324e5ac3065299d02716963ff932fcfff884ea52a411bda91",
+      "bytes": 2274,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r4-line.json",
+      "sha256": "bf7573c31f202eba7d7067b3eae499d8d61ace966c95a8221478c898be6201c4",
+      "bytes": 3464,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r4.json",
+      "sha256": "a1bae0f159c2bd525553b280fa0298cd8d0928ce70f9a8b80e669d4f1265b051",
+      "bytes": 3126,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r5-line.json",
+      "sha256": "3b3f297263fd653d3f94101129ed4515970156135531408c019b22e528768195",
+      "bytes": 6764,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r3.json",
+      "sha256": "ecbfad8f6a321d28462bc48af977950be74a93cc04db9c8a5f9336ccf8a39b39",
+      "bytes": 31039,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r4-integration.json",
+      "sha256": "40f815269d277790ff5f488b0cc08d12a116806026761a2342c0336a6dcf2998",
+      "bytes": 32318,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r4-line.json",
+      "sha256": "76c1c2edc8d536ba1c478bb81e3277f8c3f0a230a27f6e914c8f8fe4dbddc8e2",
+      "bytes": 31744,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r4.json",
+      "sha256": "33ecb43637f16232fa5a8cd32d1a425bdade6c1736d183cb5e5cf690f510ba00",
+      "bytes": 31725,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r5-line.json",
+      "sha256": "18bfad0e3ae8d74150fb28416c9e9181da6dba66dcb0a5936b26a6ac2b224921",
+      "bytes": 30424,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r1.json",
+      "sha256": "2c03691521d47dc96b898b0d69e35028d1bd23201b9712f6e34d44a9afcd91b2",
+      "bytes": 9208,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-contract.json",
+      "sha256": "7ea9f59f76f8de250fed5580417077c696a895ec7aff63ba1585b0c1e937daed",
+      "bytes": 11775,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-main-diagnostic.json",
+      "sha256": "913b78eddea678d24f0d0900a1a889bf9ff9c5ddf6553e97a59a4b9b21d98a2c",
+      "bytes": 2637,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-recovery.json",
+      "sha256": "1dcf6dbbbefdb6a38242dc1060d98c2ba69a0e4e270a7bf3ff3d60db761d2a34",
+      "bytes": 8607,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-regression.json",
+      "sha256": "b9c27900f091853a646762d58c4c3e6188e86ae2677521720ce614ac7a512820",
+      "bytes": 13098,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2.json",
+      "sha256": "2291852d7c6825bbd8241267893b2c3a3e86e1ce98874b43df22018a3233c52b",
+      "bytes": 3953,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r3-contract.md",
+      "sha256": "9d23a6b56b3f3a252583b6cba9c22d5e91e7cd1f64e7ce15096f02501d374692",
+      "bytes": 7926,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r3-main-diagnostic.json",
+      "sha256": "b53d1d1ce9da93f14eb85438d85330c182e74436d9b289977bc7468472e62ed4",
+      "bytes": 2370,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r3-recovery.md",
+      "sha256": "1767f084c798265ba443fb3d7fff7760e4932f45bffaa88a70bd77d2a7d45d3c",
+      "bytes": 5311,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r3-regression.md",
+      "sha256": "1d17f6e01cf9dee83484727a219280f9c48cfeca85909c1413f7a3a8f0151011",
+      "bytes": 7928,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r3.json",
+      "sha256": "e61a39c5995050a8906b4c4a774d77c75f70994be21c60fb16170ac65f66a04a",
+      "bytes": 4027,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-contract.md",
+      "sha256": "cd4d9b74494e9844c40ddc7142613eee96242a1fc1b5226df89f93634285635c",
+      "bytes": 8483,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-main-recovery-probe.txt",
+      "sha256": "8917becafaf37bcc321280356d5c7dff101e97c364aa84980a8491ad85398521",
+      "bytes": 2896,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-main-recovery-red.log",
+      "sha256": "8d58f4b13aa4c6e076bddab62b1af23ff9aaba0666665efd50035357ca0ef397",
+      "bytes": 7549,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-main-typed-probe.txt",
+      "sha256": "90a4eb05bb5527ca5cd3ba750697099554c972fb1c8bc13529fb456f81ef93e8",
+      "bytes": 2630,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-main-typed-red.log",
+      "sha256": "8817f2c049baccbe693c4f80b77942541bc99055fa89a8beadd440282f901c1f",
+      "bytes": 2554,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-recovery.md",
+      "sha256": "7d338507ad59bf08b3d7752e10dfccc648c18860e98844f66e97812984314b56",
+      "bytes": 12032,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4-regression.md",
+      "sha256": "d2ec8799d7212ef8e7d1e06ff89887c5b203170b78ceb4c14021dc7727e0891f",
+      "bytes": 10183,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r4.json",
+      "sha256": "c1416e298eff8f086b25704e2f1a5b374452e9e8aaaed1ca9d1c0d6620f14604",
+      "bytes": 7875,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r1.json",
+      "sha256": "4cd8fe4748f6ce7460095069243fe7d38339e4e6890e23f31c2d2a6d98dcb653",
+      "bytes": 53856,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r2.json",
+      "sha256": "2974a23fed8fcce2e6daba4b0f0241d07e473a2948c813baad2be523c192dd04",
+      "bytes": 68652,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r3.json",
+      "sha256": "56f56a1c242dae26bd1ab67515be37ca5c87d0bd28e0dd2acae1d358b8e484bb",
+      "bytes": 85419,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r4.json",
+      "sha256": "a9a85f5c5ea745b07320b34e9d7cdad8e66db1ee6bb25674995a11772ad5a01e",
+      "bytes": 122439,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-eval-input-tasks.md",
+      "sha256": "12747dd1b27b3f242d21c1dae9da6a0f798c41aa75d1151010f56ce9c1b5045c",
+      "bytes": 3394,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-evidence.json",
+      "sha256": "d2f4a9ce48353f2485bedc74e6b07b95c829d9948ba629819df2db20be629594",
+      "bytes": 5648,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2-tasks.md",
+      "sha256": "d497a4b12db854a5e73052a973b548ef84657d27b6226124356bd4d929577651",
+      "bytes": 12338,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2.json",
+      "sha256": "2bf2243f1fb82560b06da9481bec0e4a8ad54ce96d0141c429a114be5001fd06",
+      "bytes": 1589,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2.log",
+      "sha256": "7606fa35f89b29c09864f1e98c38f0eceb4738b7f19af86c5ad12c7fc2350ad6",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3-input-tasks.md",
+      "sha256": "06409079da040f0446f50ae62d08842526c7d3167b46ec50344436c93d1e85cd",
+      "bytes": 11065,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3.json",
+      "sha256": "489107d93ae15e49b1c0a43d84aee549863145f3d485e4f64a61828359f97eb0",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3.log",
+      "sha256": "37b1b1c5b228c6292e371ef082b8994e1c1a7bd63712fc36b1a4988151a9505c",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-eval-input-tasks.md",
+      "sha256": "439ac5e7f3c5454d9f25cf1f2c9b132890ed88c41190108caa3b57625e5e34fe",
+      "bytes": 3155,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-evidence.json",
+      "sha256": "f2f62aaa2cec5a3b48132dba50fda6efe7248cf4075133536cc564df9a0620bb",
+      "bytes": 12579,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2-tasks.md",
+      "sha256": "1d27062216989dc7c2637338f8fb2a9c5a2c77b90a0aff636819b946ccb11cb8",
+      "bytes": 10855,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2.json",
+      "sha256": "fb87e6d656dd7056281574e4f25d71ff0e87e7a08876ba5c82e6cf464d3e51c9",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2.log",
+      "sha256": "713835db06edc7f42dc6b726085ae7a9c8c3cf22fffa6910b033ac0d761b33e5",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3-input-tasks.md",
+      "sha256": "f04abb36d57806796c7f6a0f1b3823956414f0b90c070956b00f7e5ac9a2cc3d",
+      "bytes": 9583,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3.json",
+      "sha256": "c6054406f70dd0d15895047d8c470aab1daa0345e9d80522baac887aca24f308",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3.log",
+      "sha256": "9f4708f398b6131b091990730bb3de7e6a43f0e17dbebba8766df85746144e02",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-consumer-inventory.json",
+      "sha256": "b463fe51a3589c2bd6458634d9162443482ad97302e0f5a370b09b38644c405a",
+      "bytes": 2122,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-eval-input-tasks.md",
+      "sha256": "f66caaf8d666e611d3f16ce52d7d728258b00882269030f695bdd85c6fe686b5",
+      "bytes": 3149,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-evidence.json",
+      "sha256": "dc9365294f53fd7c9411f28fa510baa1b72d96f6f325b23f3e65ed760b40290a",
+      "bytes": 9375,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2-tasks.md",
+      "sha256": "b8d06455c3bd750b1b0ac9da76678ee3e0b5365c6db152c3d106d7d483bd5322",
+      "bytes": 9643,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2.json",
+      "sha256": "e27eb2705968002a18446ea88cdcbfa2496ae66415298d1a7f85448d365aea6c",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2.log",
+      "sha256": "6925826c17b3a53bdafe739df5c739fc8ca0f4a9e92cf67c554f544395203409",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3-input-tasks.md",
+      "sha256": "f69c6c1db94f54623f3382b2d02d5e7717947bb41299fdc50f8387edc03044a2",
+      "bytes": 8371,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3.json",
+      "sha256": "5243465e67645bf07a2cdc6af2cecd4442b417f5e3949805a04568be299d062d",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3.log",
+      "sha256": "84a2d410a9dd794973d3833307ada685cd0fb66792d076a4b34270e9a9354822",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-eval-input-tasks.md",
+      "sha256": "6f9b855c52b814e5f4e0380c5d1b2c536ffea8a514105aef6b88a611ee280f94",
+      "bytes": 3401,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-evidence.json",
+      "sha256": "52dc67754999dbfae83569d12f5f448672f5b9868a0d801af8ae1085ae3c00a0",
+      "bytes": 13844,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2-tasks.md",
+      "sha256": "41e68e18bc4ffd0854cb8982e7c912f2e486bc9b0f79ed04d4226f25a8e13b6e",
+      "bytes": 8417,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2.json",
+      "sha256": "867396842172dc47d321acbac3c239301845759f020a8bd9918d6feb6df0f409",
+      "bytes": 1658,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2.log",
+      "sha256": "d7a6ad02a3e44f1e48a34418bc0979b947f1554fe48fba0f8553da5f57a254dc",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3-input-tasks.md",
+      "sha256": "343a16c012edd41fe7c6469c512da724763f0188ffba9aa775d6681294a54936",
+      "bytes": 7139,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3.json",
+      "sha256": "9f7a0ddfb0fcf8788f43d1feee17c970ec7f7f3d034d605d58adb6cfa090bdec",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3.log",
+      "sha256": "c2c7d7a32b97183af6a2e783fa9ac1bd4e68ee81cb825dcc55740ef6c9806fdb",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-eval-input-tasks.md",
+      "sha256": "cd7e1639f6f01ce76afd0d56994673acf8a7e0d4a865239be7da7a355b25c358",
+      "bytes": 3541,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-evidence.json",
+      "sha256": "78e95831d04ec0468115fe5212c9ffd5142bed0d75dba3d387844750a7ff8a00",
+      "bytes": 16149,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2-tasks.md",
+      "sha256": "f7502d89e67da85a41784902539aed5e0c77edec271441c2bda8cb5abb606b33",
+      "bytes": 6847,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2.json",
+      "sha256": "577c930667ec9474d55ccd23fbe93ef16438daa5dd8d40e5197b55c888df37d5",
+      "bytes": 1658,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2.log",
+      "sha256": "8523bcc941f8bfda89c6d821c15fb65a71c3d7a2190ca495637e567681a0c131",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3-input-tasks.md",
+      "sha256": "d0426cd3f349eda62721473208d9ac35ea74beb2b90975c80d00d0dc807c491f",
+      "bytes": 5563,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3.json",
+      "sha256": "e5bf74b697d6f1012eef67e48e88bc6a1203a26eab480327191a36067fe8ebbb",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3.log",
+      "sha256": "807d747755cc653e9ede66e412cda39f731824a753fa863e725064f600789949",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-eval-input-tasks.md",
+      "sha256": "6cfbc61ce71fba1bbc4cfd203dab70c7e6ec9959598de47823a4b29a563f4f7f",
+      "bytes": 3490,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-evidence.json",
+      "sha256": "57c0936008a45b9fc136d40e324b0b496a142783ba5e10c09d4a73414254ef51",
+      "bytes": 13614,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2-tasks.md",
+      "sha256": "2cf868c60ef98e17888b63cc50b7f9ce8681c76e60ea34af5861c8abc1efc2bd",
+      "bytes": 5246,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2.json",
+      "sha256": "3dd3ec1c292825bb4a89b16761815c04ecede93d389f3809de19f35f24fec50b",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2.log",
+      "sha256": "7b3136ab6da60d31bcf4baa19530ac0610e68d3c5c1c3a5b895e2536c33aa703",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3-input-tasks.md",
+      "sha256": "4355ffc052935119b57bad75b18da7254f3a1a2f337c3a1116d608b3b03771e1",
+      "bytes": 3962,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3.json",
+      "sha256": "b233c614d01fcfc5041abd53f4efca2ad6205888fae27dab8e4cb08aa07c579d",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3.log",
+      "sha256": "f6c4076549186c2d0a1350ef2469d6741a55f40dfb293c1da78845d19516995e",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s07-eval-input-tasks.md",
+      "sha256": "96deaa0385a943597072d9c1cb01803751b91c79bef54ac27f3e91959ef9f932",
+      "bytes": 2810,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s07-evidence.json",
+      "sha256": "7e3caa497c3a2985b2e42c5be73af4d6d5d9fc9b964730bc0e758f0d5fb65157",
+      "bytes": 6216,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-evaluator-output-repair.json",
+      "sha256": "a0dabcd88a424e6ae41d0d1bc4bdb894f35376e3c333ac75389aef6c77875cf2",
+      "bytes": 63565,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-integration-review.json",
+      "sha256": "ddde73d1d1c35c7c2cd97b347a11f221279a0d7fdbf751e42da5a3fc88e66d71",
+      "bytes": 70546,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-self-reference-repair.json",
+      "sha256": "98aae3d29404d2acaf9d278f1c1a4f9e900e38d3ba0a6c8f2e2b641a2d63fdd4",
+      "bytes": 19172,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-store-cycle-repair.json",
+      "sha256": "2326667d30521bfc31e3331fdc3e8eced24ca8de4291d917deb9e79127a2b116",
+      "bytes": 65515,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-diagnosis.json",
+      "sha256": "827b56567f52aa1ec6af0e7ff0860f094cb29d78a44e9d4c088a6d157e95c654",
+      "bytes": 3204,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-final-diagnosis.json",
+      "sha256": "ebbb24b6010a85334becb813f60f87a5ecb8a77994820d9cc5637af69c64881a",
+      "bytes": 3818,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-final-green.log",
+      "sha256": "25f4339da7b981b841b6651f62c53501f08d5e6ed8913678eec64356a0cd2c0c",
+      "bytes": 198,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-flags-red.log",
+      "sha256": "dbe5ec0886f83b1cfc5f822ccff380a97adc54a6e6e127803db450412c655aec",
+      "bytes": 1694,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-green.log",
+      "sha256": "33df625c7eb2e870150dbf9075cfe355caf943af70c37bf0b770b55903e2941c",
+      "bytes": 223,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-order-regression.log",
+      "sha256": "8c867aba13282ca1ef614f392f13f6853055a4c5ac31fe21ddd4d8ee4ab0b645",
+      "bytes": 261,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-bytecode-red.log",
+      "sha256": "4f406f3d484b2f5b080e58cf3cddac2a92c84fefc9f7d96073ed307b72bacf04",
+      "bytes": 891,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r2.log",
+      "sha256": "83678b400175ce0cc75064a869b6cb5525dc94e2935bee5485d2191985e16f0c",
+      "bytes": 7317,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r3.log",
+      "sha256": "0d6b39245dc31a8e3067250202c54524a8fe5ab8fd214ba16382ef93d21e5b12",
+      "bytes": 7405,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r4-first.log",
+      "sha256": "543b960f51e85591ae98330eb561a0b1c2bc92b996f1cb0eaad5d787289749f6",
+      "bytes": 39027,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r4.log",
+      "sha256": "65c47f74a5309d8cdb0c9d84b9a831903dba1e6bdaa54a395b9423c878d8ec69",
+      "bytes": 7581,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r5.log",
+      "sha256": "75b49af7ea4aa055ec924e870e161986a26d1caf8e23c6c0c4121c88f295b2f2",
+      "bytes": 8570,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval.log",
+      "sha256": "487b45a4504c033dc28f82a634b2851150ec1bd115aacaf2f86dc4db4fdc970c",
+      "bytes": 7229,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r2.json",
+      "sha256": "5bb3b34a7edc5e54db60394069a65e18073681a70691ab541245e4b9085f2e25",
+      "bytes": 1928,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r3.json",
+      "sha256": "3c5dc167886451ec96e4771ed44214ac3d0b5fc77d727ea80950985d017ea361",
+      "bytes": 2595,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r4-final.json",
+      "sha256": "627e56b031a9cd581b9da252364362024e54c128f93da5adf63d14ff8c258031",
+      "bytes": 14235,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r4.json",
+      "sha256": "4aa2770a79160426f56f30ef4db6e6374a61493c1f50491a54006d3112de0034",
+      "bytes": 14235,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r5-final.json",
+      "sha256": "acc33fd98cb1dbb5eaa9f006b3d724c09cd968a74d8ce62dfa369439101bbe8e",
+      "bytes": 1640,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r5-first-failure.log",
+      "sha256": "c7b7da5088d7f8e327e61a30221d868c4da06c789c39b09e06224d5d4944fe57",
+      "bytes": 42,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r5-prevalidation.json",
+      "sha256": "43aedc79d0e2c44b3f81959b1768911751c0840e765a14a66a1ca79678b78a00",
+      "bytes": 1640,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r2.json",
+      "sha256": "afc68b4300ed01bb79cee6338e8e2dd7b9e601846c7981454dc12871ea073080",
+      "bytes": 1784,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r3.json",
+      "sha256": "007cf621a0785bf25038f4394a33770a6efbdabcb41dd66b541e427b9c7632d9",
+      "bytes": 1592,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r4.json",
+      "sha256": "2f7dcc3be5ee150019381c51846667964baeeb507e5957ffccbdb88f31cf7419",
+      "bytes": 3426,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r5.json",
+      "sha256": "fe3540e63bb5b6955c313a083c98057235f7b64774be1ab65f534d531db66712",
+      "bytes": 3841,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence.json",
+      "sha256": "fd8123aedfdf344e3bcb31d818de4edd0ff1856fd77149825d6c28898eaf216d",
+      "bytes": 1373,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r10.json",
+      "sha256": "3fe08ebce1d661746b25929ea9bbf70afc590c9e9be0de1495edfa29428af2ec",
+      "bytes": 18618,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r11.json",
+      "sha256": "0ebfae671b55218013bc32b29aa506c6034bdfe687f325017459fafe18e9b562",
+      "bytes": 41614,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r12.json",
+      "sha256": "793ed5ce79b428e7d824b9554b72a05deaaf893e49ab837fa468ddadf90a380e",
+      "bytes": 31529,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r2.json",
+      "sha256": "d0783c3de6e6b9a68f31348c7d37095302e3f4b69823c29be1541c72d631f144",
+      "bytes": 10757,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r3.json",
+      "sha256": "38403615477552e3e0de2b6878208ff76a60985d5f4dd5b1e7b07802db7c6330",
+      "bytes": 12806,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r4.json",
+      "sha256": "4bcc1b98725834c66db5338274d2faf87b0bf10d9be901acc0c76387fb8c0ee8",
+      "bytes": 13579,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r5.json",
+      "sha256": "7eefc19953bb61c4cc8dec2b090c4818077772edf333422c7683b4c8789f2399",
+      "bytes": 13993,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r6.json",
+      "sha256": "6d05c5095ea9db85e884aa8b8dcea1ddb1a8c97e755c1d75a985ddcbb36b1c44",
+      "bytes": 14276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json",
+      "sha256": "f3634b5577b2e277603d830a4f49e70983406ed71ffa188453a6e27febdd2d3e",
+      "bytes": 21881,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r8.json",
+      "sha256": "de0d9380676375bd88c5e57fe1a3d1f8039555ab7772153af6948e10ce5922e2",
+      "bytes": 18039,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r9.json",
+      "sha256": "a351601adbd9b097f3425578d6304b268df654d19632ef260c03b11e6df0c06c",
+      "bytes": 18330,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence.json",
+      "sha256": "5f42aa3a68e77a3e9e784fb02963b57ebc1bd363f2473104eefbdfd366f5b12d",
+      "bytes": 10279,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-r9-failure.log",
+      "sha256": "d86d94a417adc806a1355b5d28dec03900b391e97d628d67a713de4224e9e26f",
+      "bytes": 30,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r10.json",
+      "sha256": "bd316a30723a24ec503db1500092fe684ff6c703fe26e7e7268ed49df1d2abc8",
+      "bytes": 52520,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r11.json",
+      "sha256": "45c712fe9414987501a1d037e834dd08d2f7620ae4c0ada0db9e6931ec0f278d",
+      "bytes": 37523,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r12.json",
+      "sha256": "febba102af5cd48d93258ee7a0aacda47266aea12605bb6c51f8f9dfc575a5b1",
+      "bytes": 42596,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r2.json",
+      "sha256": "214a34b3c687c8a3f27c71f0d6e8292483ba8a76d4e92529b94ddf2d32920f68",
+      "bytes": 32330,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r3.json",
+      "sha256": "7d377f8da5a13ee5eee0410fb629507304519c664161ce8229ff8e1efd40b660",
+      "bytes": 37432,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r4.json",
+      "sha256": "7fa486502462a3e7b6ca915211ec6a8933c544e4f6f7965d766dfe7b0ae2c160",
+      "bytes": 37421,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r5.json",
+      "sha256": "7dffdb02f72ff89f0dbe99652ebf962e7cc57de9d03b303175bf62f966920f26",
+      "bytes": 45937,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r6.json",
+      "sha256": "aee393e98806b7fda75d390e654f61e70659733bfc33fa622706ed1d6751e59a",
+      "bytes": 45937,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r7.json",
+      "sha256": "da8ebc8ac79354d5a1ba6b5cc3f12f9c7f3f569be8c546bde61e4e0b5a06c4a5",
+      "bytes": 39699,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r8.json",
+      "sha256": "03c0e6bb3e703f2efcd45aa0540ec0b95a2ee1cf63971b54f158df69d0acdf5e",
+      "bytes": 49041,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r9.json",
+      "sha256": "229445e19594759c50c515d01b81713c89a515c6fe3a89cbef1a86dd22cbe7a3",
+      "bytes": 53157,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request.json",
+      "sha256": "25482ef8423465dd3dfbba000f668e0ce4b0e9d1bad681ae7c9f9bbb342bce14",
+      "bytes": 32164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r2.json",
+      "sha256": "c15d8c082f09d6c6b078def15f55d4b76ad3af83b006a7abe32afbfee67a7fd8",
+      "bytes": 1500,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r3.json",
+      "sha256": "7854b7bb8932043729b79942ce13838359ff611a0706df37cb2427ee99607fe4",
+      "bytes": 2276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r4.json",
+      "sha256": "1e359857a9819fdf368b852357efd0152d580b6e1273b02f8a8d766517779e85",
+      "bytes": 2276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r5.json",
+      "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components.json",
+      "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r2.json",
+      "sha256": "815675b9f0af251bde391ae034ee3dbf12bf588e134f16d611854761e8ab01e4",
+      "bytes": 2144,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r3.json",
+      "sha256": "6399c03a7759571f15b4354dc3b7dc042f78b767c75695caaab65bfbe69674c1",
+      "bytes": 2315,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r4.json",
+      "sha256": "7054a5e791d732d16e4dc6b9f07832133d4e7c58d4b8ad39ebd423bd9049f247",
+      "bytes": 3665,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r5.json",
+      "sha256": "94568b027a7b2d037ac34ecf6b8b6d96f6a004b5a44d93cf6c7c5abddf5d2ae6",
+      "bytes": 3148,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification.json",
+      "sha256": "b45728f8ad81b4a6bb61b01fc4581b2ef3ddebb021eefcf91cd509100fa4f171",
+      "bytes": 4926,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-metadata-before-refresh.json",
+      "sha256": "0313c08c96f194f9cfd7f0e33ef509f268f97a9e54af8afad9dd717fa5d7db71",
+      "bytes": 82908,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-final.json",
+      "sha256": "c9187fd4c693b77223f730c31d09a7c7253f1f84de43be1a3ad25792be43fe8d",
+      "bytes": 1538,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-probe-r4.txt",
+      "sha256": "8b08cb1c26e9cf6fe0bbb19058155978144d44542f721e40b5e033d1d7df59cc",
+      "bytes": 4743,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r2.json",
+      "sha256": "4b728bc6ae33dbd97268718955b0c4c6894ae0a96cc54e705069733689758004",
+      "bytes": 1537,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r3.json",
+      "sha256": "8b2326d5b7ed4a4bc4f3c3e8246c3a122e17b7243c5a63b3966f1732198abe3b",
+      "bytes": 1537,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r4-line.json",
+      "sha256": "586d1701a6f3a36956284ff10b010854c5b6d22ad085492d8331066de889ef19",
+      "bytes": 1629,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r4.json",
+      "sha256": "cf6f3687c4bd4373f5ce488292619aab6af5a4894d89fcc6824c2753f6041e6b",
+      "bytes": 2573,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r5.json",
+      "sha256": "a9452f7af50d5da45eaa6463d6c6ab482ca19548e016433cd9a66dd61d186709",
+      "bytes": 1777,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-transport.json",
+      "sha256": "5a7b42dbab1742ce56ce41d75efec272591e6dbc4558c573b820e03d1ea4338c",
+      "bytes": 1313,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r2-eval-input-tasks.md",
+      "sha256": "b48ebb444a7a92bbd0a3cc3d9c61fb9e50dd608d314a566c2037e7c3f98fc1a8",
+      "bytes": 3727,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r2-reference-profile-diagnosis.json",
+      "sha256": "8df8b48d2ba8e3f254d0323453f194157c1d0df4e37b6053ad0c1b7188fa97df",
+      "bytes": 1488,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-eval-input-tasks.md",
+      "sha256": "b4dd267d8d4c5ea99b15eb9b16eb32fafac856801530874caea17ffa963f2ffd",
+      "bytes": 3945,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-eval-source.json",
+      "sha256": "f189f64583d1dcd82c1f48eb74ac84542b237ca4adda6ca117675b963426b397",
+      "bytes": 31188,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-release-selector-correction.json",
+      "sha256": "39fbadc5046b5b240da563689c12ba7dd74c827d43f3d27c779c28a7c4249912",
+      "bytes": 850,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r4-eval-input-tasks.md",
+      "sha256": "f61b2de67b5f453864309b24ad79c268dab672e70dfafaf21fc705458494ef6b",
+      "bytes": 4136,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r4-eval-source.json",
+      "sha256": "3b7d25c8796e390d12b95b7e48cb78048c4390f6671f9528b5f66363451534e2",
+      "bytes": 34034,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r4-retry-eval-input-tasks.md",
+      "sha256": "b5651376f33d9c74bf88b314f2381e4bd7bf8090a16b863aec341767b871c933",
+      "bytes": 4327,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r4-retry-eval-source.json",
+      "sha256": "8cedb3d5816f69e649966dbe7904f6b7a54e40cb244fce6bb66f9dcce58bc6ef",
+      "bytes": 34237,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-context-domain-diagnosis.json",
+      "sha256": "9675c6728e60dfbaa61cb4cd6fb60d62f7330f7a7fcfb7d3405e0c63b6cb803a",
+      "bytes": 4808,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-domain-guide-check-green.json",
+      "sha256": "cade04f8b48fed4ab7abbc24cabcdb53c84e77e96ed758e4e39dbd1df2e08a88",
+      "bytes": 621,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-domain-guide-check-red.log",
+      "sha256": "55e8d6864a48b5ec606121483abb8487b3249883654aacd03c76a48c751104bd",
+      "bytes": 503,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-eval-input-tasks.md",
+      "sha256": "2fc165873f542106d27add35166f705b19ca74b1704d9b81685be924de0e5718",
+      "bytes": 5164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-eval-source.json",
+      "sha256": "e41c2a66a51bc9d0c6cd796d7c2d0ef6e2f458e5f0d240148dcf43b29f6fe192",
+      "bytes": 31895,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-guide-check-format-equivalence.json",
+      "sha256": "eb35a466612521b24346ecb0642e2884f7d62894c21914f63ee1f1d159265606",
+      "bytes": 320,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-review-fixture-green.log",
+      "sha256": "f1d4ddfa36a61496517df3da83fd9059a894d004735bbaed70519580df6e850f",
+      "bytes": 240,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-review-fixture-red.log",
+      "sha256": "951e42dc14f6534c48de3684c160d0e77180f9855c666122d4d014cfc21d6dc1",
+      "bytes": 2141,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-review-fixture-repair.json",
+      "sha256": "c5d4e7763360a228532adf0e459e1cc814dfaaab8ebfffb9d1f8bb05b297e587",
+      "bytes": 966,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r5-view-validation-first.log",
+      "sha256": "ecbeb2bae28b20ee0d0ceccedf20ff86b5dc6715fb54a67f9ffdd9f74d7f8d23",
+      "bytes": 623,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-repair-observations.json",
+      "sha256": "47e2d8c6f612ffd8f1966665747b7af530891ebb676d675106eb4a88dc90e5f4",
+      "bytes": 2329,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-scope-refinement.json",
+      "sha256": "46e9dfd2567dc5f057c1dbbccc62250f784123b2df6d1b85f4921525cdfac35e",
+      "bytes": 2742,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan-r2.json",
+      "sha256": "e36814d81f796deb682252b55823943cb26022d931797e3a144fcf9c7c3952d4",
+      "bytes": 1111,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan-r3.json",
+      "sha256": "cd76a577ec020d84bbcc5a3da6f7e7add0bfb16e214999a3bf8fe1057dd19e36",
+      "bytes": 858,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan-r4-prereview.json",
+      "sha256": "7579ecd4dfba3d8b9a3ce243e743d4a90b0654a3e85668af2d6df92bc53b1c07",
+      "bytes": 501,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan.json",
+      "sha256": "4e78124e5563fff0eb978955b8e25e66b9fd936e4e21117a7194e583950b1c6a",
+      "bytes": 822,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r2.json",
+      "sha256": "1d4084666567c25c8e3327bc2cd6818df5946c3e907ddf76e599f917cf4ddbe9",
+      "bytes": 6730,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r3.json",
+      "sha256": "3b153e9aec7788a2627cee6cf3af97aa19593cb639086499a5ffbbc460c0668f",
+      "bytes": 7528,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r4.json",
+      "sha256": "6142b8a1ebd9d724f2503c65b910b4e3c5cb64b46e5d8291941019a5233f743c",
+      "bytes": 7668,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r5.json",
+      "sha256": "4d302da5043ded3d0edfc8ab3a2512f4f06a7504eb628fee9dcbf3be0b7a274d",
+      "bytes": 7774,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence.json",
+      "sha256": "310acd25593ffb68d08c03312ee6fbe336428c0f3280e8843c418f24f23960ee",
+      "bytes": 6262,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-canonical-eval.log",
+      "sha256": "da8cf96cb11e1f74bb32a05c78fbdd913dc2b260bf3511e9e1a66e5d5f53dbab",
+      "bytes": 2200,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-control-metadata-red.log",
+      "sha256": "2e7afbc59d072b0f6dab176b06b702b7d899e90c96f7e9fc6b7cd128c7f89b16",
+      "bytes": 1602,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-eval-input-tasks.md",
+      "sha256": "055a828ca9b80e0b922d9d391ec503e2d45c9eb38dc910f6856d9c3a3da35689",
+      "bytes": 13316,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-evidence.json",
+      "sha256": "fe6c2b0a7e5af20abbd643a8acb027243fb98798a2545d475b064152c7e118c8",
+      "bytes": 3845,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-red-control-note.json",
+      "sha256": "f6349c586cf8591c81cb01091af483a9da8ca19905ef217a4255c59964e49257",
+      "bytes": 121,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-red.log",
+      "sha256": "35844347d8eafea7c642d4191e5061ea1c26df9802f8060f2bdf1c84b160e12f",
+      "bytes": 1893,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3-input-tasks.md",
+      "sha256": "6f484c7226d8431d7df5aa0e456a2c3112bb3a2c6c21ecf447bce6e6cb308d80",
+      "bytes": 13801,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3.json",
+      "sha256": "8595ce8e825b1e3ac0e467e912099d7c63e7f616ab598d76aafa203dfd3c77dd",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3.log",
+      "sha256": "68774a049415cfe3cc2920cdb89837baeeff4678a115324f34edcf16cf2bc4da",
+      "bytes": 2284,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-canonical-eval.log",
+      "sha256": "29879c47dc4e3a810e7341ebf933ae084bc83eada694ea88abcc433bdd8d8dea",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-eval-input-tasks.md",
+      "sha256": "4cd6551efa4a67c39ee3fa34cfca55c6ec3aa0bbc7ad64eb67e945c9ed539db6",
+      "bytes": 13219,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-evidence.json",
+      "sha256": "4d971167a9773d1b60a7a54f3a7a114966cff879fb8bd27fee05f741f51d3cd5",
+      "bytes": 3170,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-red.log",
+      "sha256": "49135c90b0a04faf54545f0c3129d39f130a5e54ded0c6070a1aba4758d68309",
+      "bytes": 6726,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3-input-tasks.md",
+      "sha256": "17411c0ab26c5b8253fd4465ec00896f58584893223d7d393c475d3650a0d773",
+      "bytes": 12792,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3.json",
+      "sha256": "a74f14e37a288f58c69a1e5e667e7489b973173767fdd22f74b83bca20e31fd7",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3.log",
+      "sha256": "74fe4cef601d553c26b2f2feec3531db2cbc6582fac64319321842bae5c2436f",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-canonical-eval.log",
+      "sha256": "a3774cfeb51e8ed756029a239f2610df8913506b7de5da1e762d9d6bf889b542",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-eval-input-tasks.md",
+      "sha256": "dc9bed4f6d04095cb74c63aaf9e675b0c26ee09b0430b752aa92d21800f28fa2",
+      "bytes": 13137,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-evidence.json",
+      "sha256": "f87bf5a7b6cdc3a225a7aa35b11288a50fb3922c1538b486a8cc436208bde98c",
+      "bytes": 2638,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-red.log",
+      "sha256": "7cf036fa005706c259dd886a0033a33cb16d8f96c9c152b86b39fa8c4ce19f4c",
+      "bytes": 1314,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3-input-tasks.md",
+      "sha256": "d524bda39ba2f0be8490eacebe3a2edb866f31f13c9941ec0975e7b53ae350f5",
+      "bytes": 11888,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3.json",
+      "sha256": "de9c77d65caecf0ba7cfbcaf9d0f11d287c65bf066d4b749f3e12380f16247de",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3.log",
+      "sha256": "1c6312b357bc7eb493691b33ff20baf613fd6af1ec2c12b697738a932351363b",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-canonical-eval.log",
+      "sha256": "f12a5348ad7ead48fbbe94cf4940a2648b5c147864937bed97759a11971ba81a",
+      "bytes": 2427,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-eval-input-tasks.md",
+      "sha256": "20a1ada54e5ebf96d7670b59b715cb3e0c824a3ef74825f80016d838ea784349",
+      "bytes": 14784,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-evidence.json",
+      "sha256": "00d65d421725c2912f2ace15a61144262f704ce3027c54fdd55eb2d5dba2022f",
+      "bytes": 2954,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-red.json",
+      "sha256": "962dbc8d0770d936f9a9c022b59b4bc64160d54ae1b610216762d6136aff9ed7",
+      "bytes": 2210,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-additional-red.log",
+      "sha256": "3f352b2b36f7397ffdbd1d2dc00dda54ca595252bc38f83f9b1bc4ed3f0bd7f2",
+      "bytes": 1713,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-canonical-eval.log",
+      "sha256": "bac144033b5bef323e4d8cec87ecf15e141ca395d5d761f60693f93397f03cda",
+      "bytes": 2285,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-context.json",
+      "sha256": "dbe0ee7f545e0bc1a0b620ef74e9ed67dbb80dbd41b0f5347cda1b3d8c170654",
+      "bytes": 1880,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-eval-input-tasks.md",
+      "sha256": "17b8b15a186048f862dbf9ac7fb6272f520abd3dee007b137bd3832164111750",
+      "bytes": 14680,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-evidence.json",
+      "sha256": "30738d14e10b8beadbba27d7548a06a2b8868e00e0be0b13275fd07d01ea8be5",
+      "bytes": 3027,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-red.json",
+      "sha256": "f752b74fa142d4b29d563c1778917489c7a81469127ce1a0cbaee280a63aa25e",
+      "bytes": 943,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-red.log",
+      "sha256": "5dd8fa914c9d46b1bae035fd4f7db94084fd69c71a54892565f68920d3130ae8",
+      "bytes": 3369,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-canonical-eval-r5-first-excerpt.log",
+      "sha256": "3f2772194d11c9cde4fd14e953b50ff39661775ff5848ac8ac2d78fca33e555e",
+      "bytes": 27868,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-canonical-eval.log",
+      "sha256": "32df2384962b84f920cb4761c084dcb2f3e0712bbcef60c1c8e1881ba4ad53f9",
+      "bytes": 2412,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-eval-input-tasks.md",
+      "sha256": "2b190e9e925514dd7629deeae8a6ec3aa622d34a8cf5d3d48a213596925a7294",
+      "bytes": 19454,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-evidence.json",
+      "sha256": "1c2ec9df0d5fc304260a3a99b41a6e017d6b6c6f2a44ba8e350527f7d08c0deb",
+      "bytes": 33434,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-r5-first-failure.json",
+      "sha256": "498f6575fe623d03ced84d7568a7a12f1c59105147e2e3c4409869fd14669b31",
+      "bytes": 26585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s14-red.json",
+      "sha256": "7f9a387aebb56d73af6a9cf04292fe8d966a7cbdcc43f9e340d339e8e39002f5",
+      "bytes": 2453,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-canonical-eval.log",
+      "sha256": "f3586cd78995ea4f556141f8255fd3fe86a8c4a16d0de107a828edfc72bb1436",
+      "bytes": 2653,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-context.json",
+      "sha256": "64bd696a1fa697588606db572ea7ddc017f8640a5a8f6320ab2c25e6dc1a0ab7",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-eval-input-tasks.md",
+      "sha256": "c38f986a56363b111fc403d1cee975ffc659056faeba54b22f8b0da16c319945",
+      "bytes": 18561,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-evidence.json",
+      "sha256": "9b62400d5dd8e40c57e89114fd3fc49cbfe3435037d2849d7ed075b50118e35a",
+      "bytes": 34171,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-canonical-eval.log",
+      "sha256": "d15e9096ffd3f9dcc6bc0d446b30b16906198b265b820c71c653cb6890281c64",
+      "bytes": 2691,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-context.json",
+      "sha256": "18960231736ed87e026fb65eaf383ffcd33cf8ced1b91e7afffdedc5f9eed723",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-diagnosis.json",
+      "sha256": "d59febaf13b14747e8776c713cb434e1e33692534af21dc06d4ec5b784242a96",
+      "bytes": 3424,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-eval-input-tasks.md",
+      "sha256": "6684421f2fa4365ba810560d2144a67494fc02b1703ed357fbd709686122852a",
+      "bytes": 18854,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-evidence.json",
+      "sha256": "f5bb19fc7f7ee14e02aae948bf36003d663eae29d15ec61f711d66db5cb7e05b",
+      "bytes": 33302,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-integration-red.log",
+      "sha256": "ee5e029a210543b3d70d8162176f23d9bb3f2be09c99e27ecb21be1436ded629",
+      "bytes": 11540,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-context.json",
+      "sha256": "45e0f8e1ce4f2e3d1b2caf9be9f31b0acffee17ae8aaa2a72821dc100029a817",
+      "bytes": 11973,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-diagnosis.json",
+      "sha256": "858496dde2f9a3cc0af855e2c892834d321132fc99e8ec12423add0f631fb8ac",
+      "bytes": 2303,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-fixture-candidate.log",
+      "sha256": "da7e4b8aeacb73cc457bbfaf278d582f7ae032a171d26ed0dd165e081c95965a",
+      "bytes": 8867,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-fixture-correction.log",
+      "sha256": "7a631830b7b7e4329b45e29d282cfd22f228bebcf941b5c117056367aa742f3e",
+      "bytes": 17530,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-green.log",
+      "sha256": "f1314d7c63fee69709b6a68f4772f3bc673af5d734295318f21040a3627cbfd5",
+      "bytes": 114,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-line-boundary-red.log",
+      "sha256": "d588e040d0908d7ced1cb38944987e0443ad96ffc25aed697ef0c31443824e87",
+      "bytes": 33077,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-red.json",
+      "sha256": "d8de808bbb1bd45feffc97203b0322af5e8f49ec8c2914073e13e8f3462eda64",
+      "bytes": 3809,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s15-red.log",
+      "sha256": "5742a7b8275c2a084c620928c95b75f671b5a811e9e23bb49cc6243a50baca37",
+      "bytes": 53817,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-canonical-eval-first.log",
+      "sha256": "621823f6f49981dd56f6a4950930189bb93c0d9093baed0cdc2f1ec7c1ef3ca5",
+      "bytes": 3296,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-canonical-eval.log",
+      "sha256": "653b8c216d1066d7bdfa04ffc9c1773fd629976e03187c8be19549dabc5f5ba1",
+      "bytes": 2496,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-context-precondition.json",
+      "sha256": "aeaa99b82b71d4fbd1cc446f12108d483eea8b1416d1fc8649343ed6d9d54d91",
+      "bytes": 3068,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-first-eval-source.json",
+      "sha256": "3616f581b1c9bc6dd8f53acdecbaa57f319b47f966256c5d324001f474976e5c",
+      "bytes": 25672,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-local-verification.json",
+      "sha256": "454c329ed360179c58075ac56aac7dbc544eb3f1afa94e20c1a9f063e1ebb796",
+      "bytes": 29599,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s16-regression-red.log",
+      "sha256": "8f023176a5f92d230d48e4835df69ffef368884f353217b957fbda6a358420f7",
+      "bytes": 14160,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-acceptance-phase-refinement.json",
+      "sha256": "c880dbef07169c08a626cdf39bbde58fc8254f18c0f6b9026857e0ea9c60eb4a",
+      "bytes": 25276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-canonical-eval-before-command-sync.log",
+      "sha256": "656a734e077d77cacd35f0436436f734664ef3c4f4627eea4b6141b22ef13b98",
+      "bytes": 2869,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-canonical-eval-before-literals.log",
+      "sha256": "0951ad827eaf01f1e3f8ec59e1abc8ce06f8e5fa0a5a7ee3aa1f3590f989fefb",
+      "bytes": 2785,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-canonical-eval.log",
+      "sha256": "623083d9c55ae63b280470d64867cc01d9e757a8a6c96cb315a5fad3bc821c7d",
+      "bytes": 4138,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-context-before-classification.json",
+      "sha256": "ea1037b3607505b6802f7f90da8fe07989a05199b9d31e0c9c2f021b8a4bec4e",
+      "bytes": 14235,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-dependency-walk-red.log",
+      "sha256": "556791741727f55c3197b12cc64af02d31733bc102ffeef32a46ec5d785cbe76",
+      "bytes": 5748,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-eval-before-literals-source.json",
+      "sha256": "7f3f0bd4ebb4edaf4f49a592efd4bd92da7c2344147c87e56ab3d4239c63e9bd",
+      "bytes": 25868,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-evaluator-command-sync.json",
+      "sha256": "bc7404f931c5c6880619723df393fb842420605655dd59eb1c3ee59ddf1d2dd5",
+      "bytes": 6014,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-first-integration.log",
+      "sha256": "c7ed101bb520efa0c167b869181c21888087c30653e5baa75c140e9fc4a51389",
+      "bytes": 8713,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-local-verification.json",
+      "sha256": "7839889afd88eda000dd1339ee8a3a86d9aebed450f908b317da1225998dc9b7",
+      "bytes": 32795,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-regression-red.log",
+      "sha256": "fd2d7695ce21f23a65120e0b62deba1082c995904863d00f97b7114552c6f312",
+      "bytes": 18688,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-reserved-notation-red.log",
+      "sha256": "89589788184280948bb8a4a8e474259bc4cbab21586cad51c4bce041b19018e2",
+      "bytes": 4666,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s17-source-classification.json",
+      "sha256": "0d49dc1031823d7ff77db4953f129faa4798aea1c2aa048dd2dedd0e6429d5e6",
+      "bytes": 7679,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s18-canonical-eval.log",
+      "sha256": "3a13216a7280a192b491e8fde2151148401834c35d4e814beb5d1c0b9272da80",
+      "bytes": 2857,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s18-local-verification.json",
+      "sha256": "3492c0ebca83db7258b0e2c933433a73f84c40daa0022d863eb41dc34a7a2997",
+      "bytes": 30242,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s18-regression-red.log",
+      "sha256": "4c90ac130782c4b79a89ca935ed8ed2a9d177db37c964e1bbf73de9d81b22042",
+      "bytes": 9803,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/session-checkpoint-r4-line.json",
+      "sha256": "37583cacd378a0e33a4c72f00f8138b36395bcbed1c2bfae85c2fb6e152246a7",
+      "bytes": 3937,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/session-checkpoint-r4-review.json",
+      "sha256": "8fe831ae17b6963f1937cd1a10353cb15d8d6747d7e6cde56d6875fb4868efbc",
+      "bytes": 2782,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/session-checkpoint-r4-s08-retry.json",
+      "sha256": "c1f1efae0c8b03b88b3d69fb272a77c6343ff5b29f764fd8bb3ae68a9f9bedce",
+      "bytes": 5366,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/spec.md",
+      "sha256": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+      "bytes": 13879,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T001.yaml",
+      "sha256": "9abefc4a31991da934b79a46810a6b3beb51dcf25674e05b04d3720a07399339",
+      "bytes": 16805,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T002.yaml",
+      "sha256": "ce7570bde2d627a782354971ae442024f2eff9e3b164c6ff6eea4dbc212cbea6",
+      "bytes": 11065,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T003.yaml",
+      "sha256": "b60fd60324482aae0ee10147f5b60d8570ab3dd02846796f6b90a28316c2e1a5",
+      "bytes": 10917,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T004.yaml",
+      "sha256": "d1f1e1c5f1927bc82f273a4ad07261d14ebc36b45a2d3015c909fbbd5beb3b23",
+      "bytes": 13357,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T005.yaml",
+      "sha256": "4c8d639de15f95ec7d429dd26ccf1df6d20fe34a60b2d77738686db77ca8adf7",
+      "bytes": 13198,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T006.yaml",
+      "sha256": "079de5c1d5f649012a62c9f6643cb01ddaa9ed002b31ce25bc5f7dbff120b3c8",
+      "bytes": 12251,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T007.yaml",
+      "sha256": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+      "bytes": 6409,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T008.yaml",
+      "sha256": "83e4d8b4aaa3e574149caa3ebecfa1035767cc21f2eebe81e8a57ef459c4fc2e",
+      "bytes": 14984,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T009.yaml",
+      "sha256": "16b9a3319cccb84acd1ea28d0d0e874b18e425ff42cf3d58f1f7934e32cae1fa",
+      "bytes": 8596,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T010.yaml",
+      "sha256": "dbb7899e648bad0156e29d0e974a183be34ed034f4b26fd058124ef60792dc22",
+      "bytes": 8689,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T011.yaml",
+      "sha256": "78ff6a5b559d15e89e01053731005dc248785500524c6470e7888bc0534b5021",
+      "bytes": 8134,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T012.yaml",
+      "sha256": "a8985ae730e68ca937fd47ec5e69b233757b172aa0e0beea8665f46d6f2e4485",
+      "bytes": 8868,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T013.yaml",
+      "sha256": "924175f25b90bd702574fa99b297cf0142de47fd5a3514b7d1edfabdeb617d5d",
+      "bytes": 8009,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T014.yaml",
+      "sha256": "2d85396e1f9f98a7c36617f569002e6a824118428bd946df11c74ab4f901d261",
+      "bytes": 7479,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T015.yaml",
+      "sha256": "aaa07e309cc4673aa36b6936f7bbe71c034a6f05a1913589d0d05ce347df3814",
+      "bytes": 11802,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T016.yaml",
+      "sha256": "fadf6b5d5a832aed80ae4c83cfbdf1dae1057b4aeddea8c69f4756f528acbabd",
+      "bytes": 6561,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T017.yaml",
+      "sha256": "d30294fbb112cc2cab5b2ec16a9f2e4338749c6a61019d19c55ab73c3671fb61",
+      "bytes": 9007,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T018.yaml",
+      "sha256": "78eb6999f0055448c39a4c8595decd48620fa6743b7c3e088670966edc78ced4",
+      "bytes": 6791,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/index.yaml",
+      "sha256": "1550c65b0d80c2fae4dc8c1311c117aded9e788a988cc4f742c9892fceb36b75",
+      "bytes": 47797,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/tasks.md",
+      "sha256": "2fc165873f542106d27add35166f705b19ca74b1704d9b81685be924de0e5718",
+      "bytes": 5164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-guide-components.mjs",
+      "sha256": "c8f2c7c5e5908bb87cf57cb7ccf4c8622d7b63dfa840db1cc9e35f40ca748160",
+      "bytes": 4542,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-kit-guide-selection-preformat-r5.txt",
+      "sha256": "35b5ff7e285007b906da1b9d0582c4645a4d27d9afce4b1253b09c5a9b23b1e2",
+      "bytes": 2301,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-traceability.mjs",
+      "sha256": "33b828d007095096d0021a8b750c529db17b7edb368f4430c086e80fc7942f02",
+      "bytes": 3339,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/work-contract.json",
+      "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+      "bytes": 8191,
+      "mode": "644"
+    }
+  ],
+  "verification_binding": {
+    "current_full_source": "s08-r5-eval-source.json",
+    "canonical_result": "s08-local-verification-r5.json",
+    "source_files": 152,
+    "source_drift": [],
+    "post_eval_governing_delta": [
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "before": "bf223a3c488cb4ca4a1ca4823f07dbb779cc8a09459d862a73438551589eb684",
+        "after": "859d403621a36cf56f35ca7429786f4e7f0f4b8bf2daed799845db8093558331"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/acceptance-map.json",
+        "before": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080",
+        "after": "edc316525d47aaddd67c9332cd378cf2ee844b9bf2b2734c4cb1927d6053f7b9"
+      }
+    ],
+    "delta_explanation": "plan.md header and acceptance-map.json status/evidence only; exact originals retained in S08 snapshot and acceptance-map-before-r5-final.json. Contract/spec/tasks/commands/source/package unchanged.",
+    "convergence": "s08-convergence-r5.json",
+    "pre_review_document_validation": {
+      "command": "python3 -B scripts/loopctl.py docs validate specs/012-portable-document-lifecycle",
+      "exit_code": 0,
+      "result": {
+        "dependency_snapshot_hash": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+        "errors": [],
+        "mode": "work",
+        "offline_views": {
+          "checked": 2,
+          "status": "MATCH",
+          "valid": true,
+          "views": [
+            {
+              "code": "MATCH",
+              "input_sha256": "77afe3ee7b67c66e4a9d81077ae113afb9f8ab003b081e9c7192ec825e351bfb",
+              "valid": true
+            },
+            {
+              "code": "MATCH",
+              "input_sha256": "5b8be7851f4702a669854e856d0bfda0c1436baa52c81aa71cf88909f19913a0",
+              "valid": true
+            }
+          ]
+        },
+        "valid": true,
+        "verdict": "RESOLVED"
+      }
+    },
+    "original_requirement_count": 23,
+    "original_case_count": 46,
+    "final_pass_cases_before_review": 0,
+    "scope_note": "W003 local Kit/document lifecycle only. W004 RPM/nginx implementation and unavailable target evidence remain."
+  },
+  "scope_sha256": "8cf0f966f0828e83ebe38089d372c0b5b598bcb18127630a1943b338de4c76f2"
+}

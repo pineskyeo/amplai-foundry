@@ -1,0 +1,2323 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 3,
+  "base_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+  "target_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+  "target_kind": "Exact repaired local Worktree; current2049-test canonical S08 and R3 offline guides, no production activation",
+  "files": [
+    {
+      "path": ".agents/skills/design/SKILL.md",
+      "sha256": "7372b993ee73fa19120bbd1526e2d900790cc822fcace06ac5675f11c3594568",
+      "bytes": 6525,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": ".agents/skills/work/SKILL.md",
+      "sha256": "8facf754f1088f2afdb6d1b96e6b3bde5c367c3d4288866ba65bff04bb93ad1c",
+      "bytes": 19770,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md",
+      "sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "bytes": 13989,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/README.md.amplai.json",
+      "sha256": "b07e1c1b0647fa3949a5593bc3544ba8d4209a5359eb1d42b2d7265493c40285",
+      "bytes": 1174,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/contracts/README.md.amplai.json",
+      "sha256": "4b6f72c029f40caa9ebf3c361bd5e79280ca0b5472763e9be84243b8de3f49be",
+      "bytes": 1179,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/evidence/README.md.amplai.json",
+      "sha256": "a499f40641cbf747ad7af8656adb0b1b00fc34d18b45ac68d29fad037cb8bab5",
+      "bytes": 1183,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md",
+      "sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95",
+      "bytes": 2696,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/README.md.amplai.json",
+      "sha256": "f86271f00700727a63c97f81bcdc362a12db960362259955b7f96327a05a54fe",
+      "bytes": 1188,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/claims.jsonl",
+      "sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+      "bytes": 4257,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/documentation.json",
+      "sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+      "bytes": 14178,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/policy/gardening.json",
+      "sha256": "c6cd1614ce2cac2ee92b37c6df0335ac67939603f5884e92b69f16980156739b",
+      "bytes": 8848,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md.amplai.json",
+      "sha256": "e575ecc2385bcbae6d9d4181e6054c93c4575dbf137be6914d979247a3c55cf9",
+      "bytes": 1250,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md",
+      "sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a",
+      "bytes": 5268,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md.amplai.json",
+      "sha256": "831d49d9242fb0ae941384ab0678c7f15a37dc71f95ed06a9081df167855c9f9",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "bytes": 8172,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md.amplai.json",
+      "sha256": "30a3b8b7e443ba9a01822b9222f59ac3eb29493a5592680fd9227cf26537b8c8",
+      "bytes": 1194,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/escalation.md.amplai.json",
+      "sha256": "14e39a137b25a84a9f9644dc375a3e779273b335a1533a81bf7a66c6b3181310",
+      "bytes": 1189,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/runtime/repository-profile.json",
+      "sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5",
+      "bytes": 723,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/README.md.amplai.json",
+      "sha256": "cb66d94a91fa0615122659de0af44f5e630cefd5ec1465f062c3ec07a1ee2594",
+      "bytes": 1190,
+      "mode": "644"
+    },
+    {
+      "path": ".ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "755"
+    },
+    {
+      "path": ".specify/feature.json",
+      "sha256": "2c1a1e1c59ae58e196dc3034cc922016216e76cb04fba3339b09569c4e00d4aa",
+      "bytes": 67,
+      "mode": "644"
+    },
+    {
+      "path": ".specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "bytes": 7769,
+      "mode": "644"
+    },
+    {
+      "path": "AGENTS.md.amplai.json",
+      "sha256": "bc23e86fa87809568f6c395a713c235c722f31ed5e3184a0dd2592aa344168e5",
+      "bytes": 1124,
+      "mode": "644"
+    },
+    {
+      "path": "CLAUDE.md.amplai.json",
+      "sha256": "b4184174a7706723b657b11a3e3e52898c75bc3694138a9a37408aef27c75f51",
+      "bytes": 1146,
+      "mode": "644"
+    },
+    {
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "bytes": 8470,
+      "mode": "644"
+    },
+    {
+      "path": "README.md.amplai.json",
+      "sha256": "549ec7cbd3d9ca0ff335a47ba9a80d7f22b919fa388e8103710fe4a07d74725d",
+      "bytes": 1122,
+      "mode": "644"
+    },
+    {
+      "path": "docs/KNOWLEDGE-RULES.md.amplai.json",
+      "sha256": "967a44aca92d590f3b0d066ead0e627da29023e664c4e55599b021cfaed99d6f",
+      "bytes": 1165,
+      "mode": "644"
+    },
+    {
+      "path": "docs/LIFECYCLE.md.amplai.json",
+      "sha256": "604deaa9928242942ef101ff8c72f3121418c43431a5e8bf17b9a66bcabeaa9a",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/MEMORY-DOMAIN-MODEL.md.amplai.json",
+      "sha256": "a451ab026a36b774fe4a63f79dc7b27687c95f27442e846ac100a88b36e7c3e3",
+      "bytes": 1181,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "sha256": "03859327a1c7bc759300e2568df7e6f11344c0969120e44e2370ae351f440f43",
+      "bytes": 8633,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md.amplai.json",
+      "sha256": "6432ee7106c32e53a1a10e4f10c21f5b45edd193ce37f307a8bd24642204972b",
+      "bytes": 1201,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md",
+      "sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f",
+      "bytes": 2119,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROJECT-PACK.md.amplai.json",
+      "sha256": "1a24daa46de4a01fc4a907482811700dd4fb522ecf0e6bacb3bf11682edd7f3d",
+      "bytes": 1162,
+      "mode": "644"
+    },
+    {
+      "path": "docs/PROPOSALS.md.amplai.json",
+      "sha256": "53ab97ba47171b4dcfd8e59c21e06659811eb1e0d7eb06ec3450e814ea5b67b9",
+      "bytes": 1141,
+      "mode": "644"
+    },
+    {
+      "path": "docs/RELATIONSHIPS.md.amplai.json",
+      "sha256": "b613068b34851da2badbf95f55563e722fc31983dfdf47ef18cd15902d57e574",
+      "bytes": 1590,
+      "mode": "644"
+    },
+    {
+      "path": "docs/ROADMAP.md.amplai.json",
+      "sha256": "6b6bf3da292dce9e29cd4ffe609c5180683b7ced718c3e83f8a9458865385f35",
+      "bytes": 1140,
+      "mode": "644"
+    },
+    {
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md.amplai.json",
+      "sha256": "7765fa1edcc7ecad69fae7baf57ed5273c2da1cc30acef5af602a6f28de6bfa5",
+      "bytes": 1197,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VERSIONING.md.amplai.json",
+      "sha256": "f2fa0c2fea733bac16ab230f2d48ff683a4701f91f074e47fc39497966f6f00d",
+      "bytes": 1166,
+      "mode": "644"
+    },
+    {
+      "path": "docs/VISION.md.amplai.json",
+      "sha256": "af15e5d078c3b3f0b3650a67fe6d30d6fd20142976cc551cd43283d65cb3cdc8",
+      "bytes": 1129,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/amplai_docs.py",
+      "sha256": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+      "bytes": 189644,
+      "mode": "644"
+    },
+    {
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+      "bytes": 121061,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "755"
+    },
+    {
+      "path": "scripts/loopv2.py",
+      "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+      "bytes": 75668,
+      "mode": "755"
+    },
+    {
+      "path": "tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_governance.py",
+      "sha256": "ea1bd8a6842ba4b0d87c31f456d1806b253dc831fb0a823cdb3fef4d24ba0582",
+      "bytes": 10457,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_html.py",
+      "sha256": "b8f55bdf8505cdba889bc816150a99fbe0a3173b6ea149bd0ef7391d52d3e117",
+      "bytes": 28028,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_integration.py",
+      "sha256": "c38db8b52a16fbb7f887cfcce082e65392532bc5b1363061b4fee6275482a01a",
+      "bytes": 17504,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_lifecycle.py",
+      "sha256": "c65c30b9b71d3d7ac338c90cf8e311e0fd2de70f7d5db72550565df241f42ebd",
+      "bytes": 30649,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_preservation.py",
+      "sha256": "bca77985592fa5244cd322bae0836130e8acb7507d82ee7f06dadcbc0471ce7c",
+      "bytes": 26073,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_references.py",
+      "sha256": "d332ed37716674bd0e9e3a0471a31a84635800b4886a50ebaa3da789a85aa979",
+      "bytes": 15339,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_document_review.py",
+      "sha256": "e559bf12c19eb242d522dd5d9fe25c13c318fa841d0c1fce013351b18e4bf5c6",
+      "bytes": 43249,
+      "mode": "644"
+    },
+    {
+      "path": "tests/ai/test_portable_baseline.py",
+      "sha256": "bd93030f4d703c4bf76a1a5796ceb33dace09d72570632795ecc1e1e88bc9c95",
+      "bytes": 36241,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "sha256": "c05f53fcd0ee3def7737e0991a06f0f5dd75f56d1c48000a2668a6a48882bd53",
+      "bytes": 7887,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md.amplai.json",
+      "sha256": "de3cbd2c128d275c67e43f26c314222c9280385067ef2e04e4e3e856e8254347",
+      "bytes": 1192,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
+      "sha256": "185ba535b22b8a73d9cba5eff643ef516fef7c2ad2449ba09c6807d0ce6788c5",
+      "bytes": 13284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "sha256": "fabcedecd840965ecca21a8bf455ddd61b9acebe464875b825c9556ea5dd5f47",
+      "bytes": 11496,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md.amplai.json",
+      "sha256": "f4bb575f337f2c591900d136103bd8e7c841d0f6ae670112941c9ecd2536e9d9",
+      "bytes": 1205,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/fragments/bootstrap.md",
+      "sha256": "baf153ec7a0d2055ebeaf739e6056d195f7a73887482837e9f9cd34676871f73",
+      "bytes": 881,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/manifest.json",
+      "sha256": "2fc320625d6ca4bfafd513390dded071aa1196451a0d3ef55c7e4b161c450175",
+      "bytes": 15260,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/SKILL.md",
+      "sha256": "a6d1504616486079936dbbe491e7bdcd259327ff8bc886fd55d27dcb20826094",
+      "bytes": 2148,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/code-review/agents/openai.yaml",
+      "sha256": "62c1421aa7c1f80302b4d6148aa89e69ee60922d3d1eee35259b5b628a862fef",
+      "bytes": 158,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/design/SKILL.md",
+      "sha256": "8bf290bc1e52b32d6a1b684cbcc89e58bcfc6aeab2c71ca2fbe4c1cfb43a1b9d",
+      "bytes": 5370,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/SKILL.md",
+      "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+      "bytes": 6749,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/dev-loop/agents/openai.yaml",
+      "sha256": "3992992e7f55d31aea53b46077167c1125e6e708f057e143851c3c0f29c81d71",
+      "bytes": 155,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/SKILL.md",
+      "sha256": "ea5a8b19f6111714b6ec3b73cc8205f193c04bef0fc0dff6bc5bfa5ac1a96814",
+      "bytes": 12608,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-analyze/agents/openai.yaml",
+      "sha256": "0ba5c4c50a1dea8085175f20f521cc5064a44fcb02c7074e20946e81f64dba84",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/SKILL.md",
+      "sha256": "a77b0ef00631bd5cdc8eabbfb3359c09cca3f25c7e31fbb0fa878351621faf3a",
+      "bytes": 19594,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-clarify/agents/openai.yaml",
+      "sha256": "7420eb19ee12df06dd95534e3a8390cd7690714f2eb566f9914c630bfa1990e9",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/SKILL.md",
+      "sha256": "764614d5a15cb3700d0e5f9bd4df4484317546f6810fcc53bfac54876fd2ac60",
+      "bytes": 13648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-converge/agents/openai.yaml",
+      "sha256": "4efdc6c8e8df1a951a17283989c5842f12b9f23b94559b16014b18865dd25fcc",
+      "bytes": 163,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/SKILL.md",
+      "sha256": "200d7b08bb9ff7ab302f92a61b004f1dc9a4722677acfa76a0fa3b507d7296e7",
+      "bytes": 13746,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-implement/agents/openai.yaml",
+      "sha256": "5170148826c067790216b1c5a861c28a5d55a39646faae315537bd2039bcba3b",
+      "bytes": 164,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/SKILL.md",
+      "sha256": "8f79a8c972628da92a4b402bbd8d6fffb6e4e3b56cde3c0faef32b7019fe55de",
+      "bytes": 8240,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-plan/agents/openai.yaml",
+      "sha256": "5710a4dcbe7c5c20b63459a4f19b7356ebd5e6411793ef97e40dfb7ce5d8bb57",
+      "bytes": 159,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/SKILL.md",
+      "sha256": "fd8a7d52cbe12fd2877231d7cae0ec130afed491d783f6ec48d248fd045818af",
+      "bytes": 18647,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/speckit-specify/agents/openai.yaml",
+      "sha256": "b5800d2b12262a1fc772e45494d24ccafbabf72b62c9d1d48259d1336342939a",
+      "bytes": 162,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/SKILL.md",
+      "sha256": "5d8ad29120c9941dd7e30c22526a4e61d5ae9a6271348498ab36b6504963eee2",
+      "bytes": 1805,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/systematic-debugging/agents/openai.yaml",
+      "sha256": "ae7341b55366f997b74a03702565cc7e0ed672235ed627432b79308402122a0e",
+      "bytes": 167,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/SKILL.md",
+      "sha256": "e3230940a8b1031524bd498d0cf9fe19d62a00641bc45f716acc0a06a398314e",
+      "bytes": 8446,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/agents/openai.yaml",
+      "sha256": "33414c79141329f6c923617582678d4f648599dd138d4b88a4b3b1a7239cc9a7",
+      "bytes": 708,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-index.yaml",
+      "sha256": "56b08a4b70f6e431323ad339d1cb643c2d6f8e7efa74d0a29fc4dff419db262f",
+      "bytes": 1133,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/assets/task-manifest.yaml",
+      "sha256": "4fff463594bea84ac19d2abf06995367e2a8b3ac54c4d74eb480477020d25418",
+      "bytes": 2137,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/references/manifest-contract.md",
+      "sha256": "7f8c52536d544420579a358cb5cab36a23f036f85fd86c0ee2d0a2a50ee606e0",
+      "bytes": 5303,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/requirements.txt",
+      "sha256": "b4603b9468ade4d639d2c6f73b89d50e1fa5d227c73ab15be0382cca478513e6",
+      "bytes": 15,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/taskify/scripts/validate_task_manifest.py",
+      "sha256": "d65e48cd32bfd89a4c6b8084aaadbf68b6925221bbf1fe442cf98180f5ab02cd",
+      "bytes": 12033,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.agents/skills/work/SKILL.md",
+      "sha256": "b97e41056463bc7aa1d7a0657b4c37ef2cfb11fd6a148db8a73e57e5e3deaa2e",
+      "bytes": 16575,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/README.md",
+      "sha256": "16ebb7169c3c064fb0a082ffe7bd36b36ccfb3d321e9eb580da176846b9c03bb",
+      "bytes": 2132,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/README.md",
+      "sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9",
+      "bytes": 1296,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.schema.json",
+      "sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+      "bytes": 3895,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/contracts/work-contract.template.json",
+      "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5",
+      "bytes": 1202,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/README.md",
+      "sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93",
+      "bytes": 416,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/evidence/provenance.schema.json",
+      "sha256": "cddc95df7eba67659dbfd6d33888c85abdead4d1ef354dbed09ffa87d6525668",
+      "bytes": 962,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/README.md",
+      "sha256": "ec46a9e5480bd8e3a01dfa736ba35c790de008bf6f61e6240b67376058f4ba1d",
+      "bytes": 819,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/claims.jsonl",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/context-pack.schema.json",
+      "sha256": "30a9e3e95e6f4a82370fe27c53ac76f5118d8f40ca159547f1b3a8b1993acb10",
+      "bytes": 2104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/decisions.index.json",
+      "sha256": "2e127b8ca192b0f5a087109156d9ff604aa4cdd7a1b48b0af031d71b33eef429",
+      "bytes": 47,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/doc-impact.schema.json",
+      "sha256": "9a78e329cbdc451bce7c9d1f3c45822ec10ee78976e93a59a9f49b7f0c8f8960",
+      "bytes": 2666,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/domain-discovery.schema.json",
+      "sha256": "58227506d0d64021af7c7a8bb8f54a121dabdf6bb28dba14751c2510b4431075",
+      "bytes": 1291,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/garden-report.schema.json",
+      "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+      "bytes": 5672,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/handoff.schema.json",
+      "sha256": "3ac0403b77563588b2a8085f02d0b830081b24e6eb5fdfe02f21ddb186766cf8",
+      "bytes": 942,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.schema.json",
+      "sha256": "e9587008b0e648f3196d28ddf543391107811ba2b839c734ab426a6891f26694",
+      "bytes": 2266,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/knowledge-readiness.template.json",
+      "sha256": "32ed5c797525c98bfed3e3577cf30c35161475369a357a8eafc305786ccc27aa",
+      "bytes": 869,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/knowledge/map.json",
+      "sha256": "394d0a82fa5edf51ba138fbfe654165e782c9bb3c8513b50172596491533fc4e",
+      "bytes": 957,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/documentation.json",
+      "sha256": "8e112727eec7143c5fd42d88319bf491f164b1257e6aa4b41730d82d2d27852c",
+      "bytes": 5960,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/gardening.json",
+      "sha256": "a291894eb1efdbf43e3b52ba6037b8d6e21ce30619fe1eb0d798ca73b79b6ab2",
+      "bytes": 6010,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/knowledge-readiness.json",
+      "sha256": "dd780d1f7d194d7a60c2847e3ffa4785d0087927928ba4ebf71b1d5fe0231ba9",
+      "bytes": 910,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/permissions.json",
+      "sha256": "9f41f4091cb1390808e68c89d7354be0ec10d5fb540e2ecae85e0015459da310",
+      "bytes": 1284,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/quadrant.json",
+      "sha256": "b00fa0fdcce2415d5869d30e7ac3bf278b4afc6d90408aa236dd2379faab31c4",
+      "bytes": 908,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/tdd.json",
+      "sha256": "5cdb2b32d065312125a93887680edd1d14c8c25ffce9a91031a8d2964d732592",
+      "bytes": 648,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/WORKFLOW.md",
+      "sha256": "77949082f56975dfb316c9a4b6f00db675971cdfe617cad16947e5c868a0860d",
+      "bytes": 2390,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/escalation.md",
+      "sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6",
+      "bytes": 1433,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/policy.json",
+      "sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "bytes": 5561,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/runtime/repository-profile.json",
+      "sha256": "6b58f760da68bee2cbc7517f05c6f6b13ef51634f1a79c61870d05831fb6afbe",
+      "bytes": 147,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/README.md",
+      "sha256": "b8c9e239e17056c0c33fdee904ffd126ae875b143b7e6911d38a2bcda3f1a874",
+      "bytes": 677,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/portable.py",
+      "sha256": "563132575b4d1cf33fe1cdd5a53b66f2114033bc08df3f42122de6c8ef87ff0c",
+      "bytes": 3191,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/registry.json",
+      "sha256": "0edb0ce10e4d930d08b564e4ca0e1695d00a7f7663cdb0d6829707bf2e4c1c16",
+      "bytes": 1723,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.ai-team/verifiers/run.py",
+      "sha256": "859879538b56a170f3cee38ec138fa6295de8d7674f9d0660d80843969a5377f",
+      "bytes": 12919,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/memory/constitution.md",
+      "sha256": "608fe9c3234f41e1ede918204843e167b24f1c4c64797e7ad1ed4d24611463f8",
+      "bytes": 762,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/check-prerequisites.sh",
+      "sha256": "3a9c76f4c31465f50250b06a7d30d879d137896e2281e9b86e570ced484ea1cb",
+      "bytes": 6707,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/common.sh",
+      "sha256": "6ff86bf39f6b4684b0f80927dc7a1dadec26b4671988a3fe4d6c2523cbd3aa22",
+      "bytes": 29810,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/bash/setup-plan.sh",
+      "sha256": "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+      "bytes": 2493,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/scripts/taskify_to_tasks_md.py",
+      "sha256": "3e0837afbb1b39e9b4959027fca2950960b3db6bc542049bff550676b849c092",
+      "bytes": 16020,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/plan-template.md",
+      "sha256": "474539ac1e69ecb4b0312da5043a72a77a42f722602bd9d65b1073d1156eb4d3",
+      "bytes": 3806,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/.specify/templates/spec-template.md",
+      "sha256": "3945437fc35cd30a5b2bf7beea680337c3516826d3efa5a6b92c4a7eca1ba28e",
+      "bytes": 4556,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py",
+      "sha256": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+      "bytes": 189644,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/eval.sh",
+      "sha256": "ddd333aa9a6e01d4834d833248ad7d08dcd304d49d6e0bc7fc10b7fcf5bd65a8",
+      "bytes": 13218,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/baseline/payload/scripts/loopv2.py",
+      "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+      "bytes": 75668,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/install.py",
+      "sha256": "cb385fc7859cd84b751024fa9bf13164c28364139c85d81fdac8d7cb635206b1",
+      "bytes": 77981,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/manifest.json",
+      "sha256": "38398b3786c854ff82dc12893ebb00a85930a76b392cbacb62ef7f2cc088c62d",
+      "bytes": 7634,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/.ai-team/runtime/INSTALLATION.md",
+      "sha256": "5e380f810ea924a17c7d5492742d7afcc7d56a0d271507974e63d1b72d976b60",
+      "bytes": 6503,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/scripts/amplai_runtime.py",
+      "sha256": "f558c9a929e6272f2291ebc94940df77b18018171c358f2ce6926f137972ed6f",
+      "bytes": 121077,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/payload/tests/ai/test_amplai_async_runtime.py",
+      "sha256": "ec37d374729157dbf962992d110f65cc46587436e1e8212f113a2104d42d76a7",
+      "bytes": 35524,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/reference/TEST_REPORT.md",
+      "sha256": "b1b15e4fc6250a35ee3f3eaa2d251a366b29fa8d55cca8a7f5b344134b254143",
+      "bytes": 3587,
+      "mode": "644"
+    },
+    {
+      "path": "tools/amplai-loop-kit/seal.py",
+      "sha256": "6fa4e100314aa675d1284554f1d2a680d7d428823f3f8e42316eeca74d9765be",
+      "bytes": 8447,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/selftest.py",
+      "sha256": "2f8ee1231e2616c98a475b47c207731ea6a583a8975469a95cdee55b85ff1f1d",
+      "bytes": 10520,
+      "mode": "755"
+    },
+    {
+      "path": "tools/amplai-loop-kit/tests/document-browser.mjs",
+      "sha256": "2840991bc8d6ee5075820266b7bd263dcfbed83ab018eec9cca6cf441036b9b6",
+      "bytes": 10763,
+      "mode": "644"
+    }
+  ],
+  "governing_artifacts": [
+    {
+      "path": ".ai-team/knowledge/document-reviews.json",
+      "sha256": "baf7d94b15366756368a8440c3dc5e8681c912426d47c3132e252c2a35a80dd2",
+      "bytes": 760919,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-validation-r2.json",
+      "sha256": "4a544e76988a3829c2f35a3b45c0c4e24baa24ad00033573c0523c3a1b1d0779",
+      "bytes": 1375,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map-validation.json",
+      "sha256": "325a23877cef4ae5a8a0f0ef42a5ed0a39801997a7287a614829bb12102f117b",
+      "bytes": 1419,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/acceptance-map.json",
+      "sha256": "1b9f3c47e04381562e60e43351b4882d282afb6a1903fbcb7f93c4efc7b840f5",
+      "bytes": 112874,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-before-s08-r3.json",
+      "sha256": "9fef6d5db8b316dabd56a6715e41973f832ef869c945555ff0e40014fae0d53e",
+      "bytes": 3430,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s01-preparation.json",
+      "sha256": "f68bad0738720b9c483005a964f7cd7f2dee58e12f86ee93a5aa22d438076c67",
+      "bytes": 5402,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s02-checkpoint.json",
+      "sha256": "8ee8bf8a67431796b429761ae7e5a37ecb1cac44b1596311bf9e370b62f074d4",
+      "bytes": 6256,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s03-checkpoint.json",
+      "sha256": "b09a2884bf8bc15c30a2cfd3eef91c1a1c766564049358c220630750c38ed70b",
+      "bytes": 6697,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s04-checkpoint.json",
+      "sha256": "a51cf3d7c13cf2ec82abe21a3e7ba71b34bec7e0e7be9ca7bf3821342aaeec7e",
+      "bytes": 7518,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s05-checkpoint.json",
+      "sha256": "57c80a4bb52d4705a35d5ee0b75aad6b4bbd4503b0216a4a379d3927cd1fd3d9",
+      "bytes": 8430,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis-s06-checkpoint.json",
+      "sha256": "c0977c2ac249a422040a0a6678b57d1aef91ffdfcd47d0fb1ea591f8fe9c7532",
+      "bytes": 9223,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis.json",
+      "sha256": "17084bb9269e85e4f05954137fe436ec2cfafe6a13da113710bc0d9108f731e1",
+      "bytes": 3377,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/baseline-inventory.md",
+      "sha256": "b55be49a711eb2ff356d90378ebfea0ed6544ceda422203dffd489285b4cd1f9",
+      "bytes": 3968,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/checklists/requirements.md",
+      "sha256": "cac621b9691db86d2d6e10a7d66c29c94dd5726132bfbf8cf2b0c12149f53aee",
+      "bytes": 1419,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/clarification-coverage.md",
+      "sha256": "1e6297cf62af833e426400d3b4e113a314dcd24d75ea9c991280674a2758d0b0",
+      "bytes": 2028,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/closed-work-discovery.json",
+      "sha256": "005625909e268e1d6f6a541a3ce7d38581ed6bda6ae13e160b76947be558f56b",
+      "bytes": 2969,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s02.json",
+      "sha256": "2e996498d4f9c6acf362fff443bb3e0043778fb2665ac67520682878b537830c",
+      "bytes": 14516,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s03.json",
+      "sha256": "23a7f582b942a5cd96bbc25915e9091abc8323ab9677060622226816e0988752",
+      "bytes": 4124,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s04.json",
+      "sha256": "944c346390d4b7f9fbb06f26ec5241e32ec79d025259373ab93df5f3c65cc7b9",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s06.json",
+      "sha256": "35e8dcd9eb5f2ebff08fbda70e7756f79a90f4670891f44361a8f8f1f6123169",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s07.json",
+      "sha256": "78739335215d51dd9e07d02bcc261a0478c85616b59ba04655b7f13720a5d639",
+      "bytes": 4406,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack-s08-before-guide-review.json",
+      "sha256": "12d88aa393cfa9b2f395fa6f1e88d97dd7f4b9fcaa4a658666960599efd95afa",
+      "bytes": 4708,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack.json",
+      "sha256": "caed438c8ea33561f308ca5613a84cf241bf8b59cee2de189142240af17bf15c",
+      "bytes": 14235,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/contracts/portable-operations.md",
+      "sha256": "c45a4b8cb39934b773ed13bc0afe573cb83a36f4f1f8c6da27bd7e6e036398f7",
+      "bytes": 6830,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/data-model.md",
+      "sha256": "623f59ec49288c3d61bc1d399daac24d71956830ae6166657b9479e4996700e0",
+      "bytes": 6815,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/domain-discovery.json",
+      "sha256": "411d805c8134bc6da50927ab42f4ab1ace8c1fff029cc1b11b6679ddd44a562f",
+      "bytes": 118339,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/environment.json",
+      "sha256": "2187b368de510655101d0065a119ec0ca5e9d4465e3aa7c15feffa554c5beb9e",
+      "bytes": 1360,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/evidence-trace.jsonl",
+      "sha256": "3bf546fa18ec18846ac4d97e93dcd10086d2f61bddfe65eae2bdbf5f7e4cf45f",
+      "bytes": 86599,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "sha256": "d7c08d0a6471e4fd979da8f271962d684909ffa97fddbf50c58cdb2293c5ebf4",
+      "bytes": 1496,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-backend.json",
+      "sha256": "be46b66a0f5f3774a96e1ae037933fe628e08b28957f885f3a5017a828370b59",
+      "bytes": 548,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-contracts.json",
+      "sha256": "5f69e560f99a91d171787a253a680bf005d1c5210496a4e55b516b501540784e",
+      "bytes": 358,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-ontology.json",
+      "sha256": "236ad50d97cfd2213ef8a8a436ac691cd2e924f9b4096361da85cb476c6b1244",
+      "bytes": 455,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-component-ui.json",
+      "sha256": "21c8a28b0c5c7fec70b5033cffccaeb192a594539c0609522b9bc2706938fae4",
+      "bytes": 385,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r2.json",
+      "sha256": "e26df0c093e2ee3ae5b42b80f39d7a20cb821f9dc33409c7d79a81ff5232f0df",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release-r3.json",
+      "sha256": "c83333db1eba68228cd3b2c0788afe93f07ff0424b9ee6419ce859058724e801",
+      "bytes": 2399,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-release.json",
+      "sha256": "63819e6648dc4864682e2fd4b7fbc51aa56792a656cfeec5c33284b14ebc43c2",
+      "bytes": 2390,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r2.json",
+      "sha256": "20461c0c5aeeabe3541724a6cd1f84473b084f9e26212e35da469c50d93410b8",
+      "bytes": 960,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification-r3.json",
+      "sha256": "5eb54fcd0747d6d737b61e299b6bfeff40cd750fcb8ec3da2d55f6f328474fae",
+      "bytes": 960,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/guide-verification.json",
+      "sha256": "6dfaa7c2951b47c0109e0e9218500ae2a201c9d0ae64db80b80f69223dce747d",
+      "bytes": 717,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "3b40b396340b518d7f9dd8700dcb6f9c2dee3812c806783d8ace60e396496182",
+      "bytes": 17436,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "114a117c9f0295a675b97c8dceff1772605486b766460b7b55875c83863bc49a",
+      "bytes": 12158,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/index.html",
+      "sha256": "9afef0a3eb556514886d0903dbb1fff17e36b750e46b6012047e6e6fd4e8a1c5",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r2/manifest.json",
+      "sha256": "800a051c11fe1b691765abcb4e261860ba5d8ef93271bccbe3fa9d9d6eda09a7",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "472394373c3271de3e6e63e9212412bb67a599ff86adf4e158c2cfcf3053a969",
+      "bytes": 18119,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "98a30c6fb08b904af5ca41f2d0a34ca92b5f4b94eb4356d6bf9a7aabe275585e",
+      "bytes": 13156,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/index.html",
+      "sha256": "249fc5d7a243f48e86936caceaebf8c6b0e6f11c079f4eec6b85b1efeeffba5b",
+      "bytes": 5097,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer-r3/manifest.json",
+      "sha256": "f494b1a8fe650e766f1f72d2f5811069de385024421037b322d59a90e379e0e1",
+      "bytes": 1863,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "fe32140dcd56141da608ac755eaa42c8da62e543fae11ef55ee4557fff754501",
+      "bytes": 16615,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "ec1ae8ab02a5232053266f52d687466dce46e79066629b4e7c418c1a3f9fc3e5",
+      "bytes": 10364,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/index.html",
+      "sha256": "f724faf56a606a40d23db2b14e9e7e1a91c9e6288252b3cc62f2316aef3647ff",
+      "bytes": 5091,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-developer/manifest.json",
+      "sha256": "585f1bab851ea9e24ffef99f39c02694ce2c75f46df34791347d0db915593aaa",
+      "bytes": 1860,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "96979732a001d896858da6ad3e427506f12fd2bd7430f5cf4a3b4e2909386bca",
+      "bytes": 17435,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "2c2b44c0a4e75328b512100aacd4a20fb137911fe2796b2dd13c6d7d8daa16e9",
+      "bytes": 12157,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/index.html",
+      "sha256": "5d2a8167111c45139d551041f4ef31c62834243fe7b65cdf8620cad8f5b1d569",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r2/manifest.json",
+      "sha256": "ef14c8305f01e439267e8754626f8328912edae66bbe99d66ed6a89f48c09678",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "2c24a4da379d29304e88b05fe559e7fb67cd13bece5fb8a7f08109f97539044a",
+      "bytes": 18118,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "4019511fe65232a3434d64b33d031bd745d008300f9c2719b753f54c278d45f5",
+      "bytes": 13155,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/index.html",
+      "sha256": "5969f5fc3314cdf99f1f645afd84d44210d6959809ad2563149ac636744dfdac",
+      "bytes": 5096,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator-r3/manifest.json",
+      "sha256": "a5d797d287faaff5e9ee69a683df1de6c1cd2d9ba492ded6553986785e5fd327",
+      "bytes": 1862,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html",
+      "sha256": "db52bde476f29ce9738a22d02bd74c285208808658f0adea10f5d61aab8c13ba",
+      "bytes": 16614,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html",
+      "sha256": "c2e1da2d8a108ec2f0c6d99ef01f7d03f73da4d5d1ce00c1aafa08ab77ed4eff",
+      "bytes": 10363,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/index.html",
+      "sha256": "d6953ac80ec86b871a3b8c03188afc7a3c4e95e1d94f69b4fb78511bc361e37a",
+      "bytes": 5090,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/html-operator/manifest.json",
+      "sha256": "77f587f07785ec56df5964792a384ce18b2fcee255656df818f1aa4404b0543c",
+      "bytes": 1859,
+      "mode": "600"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/knowledge-readiness.json",
+      "sha256": "9cb8f23c00e76a16c977a6aeeadd4a7e97210643051ba4fff28908c137fcea2b",
+      "bytes": 9153,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/knowledge-reconciliation.json",
+      "sha256": "97622a7d33b1edd7e8d7e95b37f22d36a532a8b505096ef8cae6b6354f3fd407",
+      "bytes": 1577,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/plan.md",
+      "sha256": "7fa661d587a2b236ed07479b5204fcc4328bab1b222dab7b0df4a16b388636ae",
+      "bytes": 24328,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/quickstart.md",
+      "sha256": "703a70fd7074467098c8db513be952a64700e796d4451e457dfbca40b434c65b",
+      "bytes": 4752,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/repository-audit.md",
+      "sha256": "87df7f22105fbc67f7afa0b139501c1fcc28841b7099deaf303ff31ff591ff1e",
+      "bytes": 5636,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/research.md",
+      "sha256": "4985110c6d85a070880a0c7a1154454f8f6818ee6e9f4fbd896717696df98ed6",
+      "bytes": 11104,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r3.json",
+      "sha256": "3acbe0da9a8612d324e5ac3065299d02716963ff932fcfff884ea52a411bda91",
+      "bytes": 2274,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r3.json",
+      "sha256": "ecbfad8f6a321d28462bc48af977950be74a93cc04db9c8a5f9336ccf8a39b39",
+      "bytes": 31039,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r1.json",
+      "sha256": "2c03691521d47dc96b898b0d69e35028d1bd23201b9712f6e34d44a9afcd91b2",
+      "bytes": 9208,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-contract.json",
+      "sha256": "7ea9f59f76f8de250fed5580417077c696a895ec7aff63ba1585b0c1e937daed",
+      "bytes": 11775,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-main-diagnostic.json",
+      "sha256": "913b78eddea678d24f0d0900a1a889bf9ff9c5ddf6553e97a59a4b9b21d98a2c",
+      "bytes": 2637,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-recovery.json",
+      "sha256": "1dcf6dbbbefdb6a38242dc1060d98c2ba69a0e4e270a7bf3ff3d60db761d2a34",
+      "bytes": 8607,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2-regression.json",
+      "sha256": "b9c27900f091853a646762d58c4c3e6188e86ae2677521720ce614ac7a512820",
+      "bytes": 13098,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-r2.json",
+      "sha256": "2291852d7c6825bbd8241267893b2c3a3e86e1ce98874b43df22018a3233c52b",
+      "bytes": 3953,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r1.json",
+      "sha256": "4cd8fe4748f6ce7460095069243fe7d38339e4e6890e23f31c2d2a6d98dcb653",
+      "bytes": 53856,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/review-scope-r2.json",
+      "sha256": "2974a23fed8fcce2e6daba4b0f0241d07e473a2948c813baad2be523c192dd04",
+      "bytes": 68652,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-eval-input-tasks.md",
+      "sha256": "12747dd1b27b3f242d21c1dae9da6a0f798c41aa75d1151010f56ce9c1b5045c",
+      "bytes": 3394,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-evidence.json",
+      "sha256": "d2f4a9ce48353f2485bedc74e6b07b95c829d9948ba629819df2db20be629594",
+      "bytes": 5648,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2-tasks.md",
+      "sha256": "d497a4b12db854a5e73052a973b548ef84657d27b6226124356bd4d929577651",
+      "bytes": 12338,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2.json",
+      "sha256": "2bf2243f1fb82560b06da9481bec0e4a8ad54ce96d0141c429a114be5001fd06",
+      "bytes": 1589,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r2.log",
+      "sha256": "7606fa35f89b29c09864f1e98c38f0eceb4738b7f19af86c5ad12c7fc2350ad6",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3-input-tasks.md",
+      "sha256": "06409079da040f0446f50ae62d08842526c7d3167b46ec50344436c93d1e85cd",
+      "bytes": 11065,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3.json",
+      "sha256": "489107d93ae15e49b1c0a43d84aee549863145f3d485e4f64a61828359f97eb0",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3.log",
+      "sha256": "37b1b1c5b228c6292e371ef082b8994e1c1a7bd63712fc36b1a4988151a9505c",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-eval-input-tasks.md",
+      "sha256": "439ac5e7f3c5454d9f25cf1f2c9b132890ed88c41190108caa3b57625e5e34fe",
+      "bytes": 3155,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-evidence.json",
+      "sha256": "f2f62aaa2cec5a3b48132dba50fda6efe7248cf4075133536cc564df9a0620bb",
+      "bytes": 12579,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2-tasks.md",
+      "sha256": "1d27062216989dc7c2637338f8fb2a9c5a2c77b90a0aff636819b946ccb11cb8",
+      "bytes": 10855,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2.json",
+      "sha256": "fb87e6d656dd7056281574e4f25d71ff0e87e7a08876ba5c82e6cf464d3e51c9",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r2.log",
+      "sha256": "713835db06edc7f42dc6b726085ae7a9c8c3cf22fffa6910b033ac0d761b33e5",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3-input-tasks.md",
+      "sha256": "f04abb36d57806796c7f6a0f1b3823956414f0b90c070956b00f7e5ac9a2cc3d",
+      "bytes": 9583,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3.json",
+      "sha256": "c6054406f70dd0d15895047d8c470aab1daa0345e9d80522baac887aca24f308",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3.log",
+      "sha256": "9f4708f398b6131b091990730bb3de7e6a43f0e17dbebba8766df85746144e02",
+      "bytes": 2578,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-consumer-inventory.json",
+      "sha256": "b463fe51a3589c2bd6458634d9162443482ad97302e0f5a370b09b38644c405a",
+      "bytes": 2122,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-eval-input-tasks.md",
+      "sha256": "f66caaf8d666e611d3f16ce52d7d728258b00882269030f695bdd85c6fe686b5",
+      "bytes": 3149,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-evidence.json",
+      "sha256": "dc9365294f53fd7c9411f28fa510baa1b72d96f6f325b23f3e65ed760b40290a",
+      "bytes": 9375,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2-tasks.md",
+      "sha256": "b8d06455c3bd750b1b0ac9da76678ee3e0b5365c6db152c3d106d7d483bd5322",
+      "bytes": 9643,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2.json",
+      "sha256": "e27eb2705968002a18446ea88cdcbfa2496ae66415298d1a7f85448d365aea6c",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r2.log",
+      "sha256": "6925826c17b3a53bdafe739df5c739fc8ca0f4a9e92cf67c554f544395203409",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3-input-tasks.md",
+      "sha256": "f69c6c1db94f54623f3382b2d02d5e7717947bb41299fdc50f8387edc03044a2",
+      "bytes": 8371,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3.json",
+      "sha256": "5243465e67645bf07a2cdc6af2cecd4442b417f5e3949805a04568be299d062d",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3.log",
+      "sha256": "84a2d410a9dd794973d3833307ada685cd0fb66792d076a4b34270e9a9354822",
+      "bytes": 1849,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-eval-input-tasks.md",
+      "sha256": "6f9b855c52b814e5f4e0380c5d1b2c536ffea8a514105aef6b88a611ee280f94",
+      "bytes": 3401,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-evidence.json",
+      "sha256": "52dc67754999dbfae83569d12f5f448672f5b9868a0d801af8ae1085ae3c00a0",
+      "bytes": 13844,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2-tasks.md",
+      "sha256": "41e68e18bc4ffd0854cb8982e7c912f2e486bc9b0f79ed04d4226f25a8e13b6e",
+      "bytes": 8417,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2.json",
+      "sha256": "867396842172dc47d321acbac3c239301845759f020a8bd9918d6feb6df0f409",
+      "bytes": 1658,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r2.log",
+      "sha256": "d7a6ad02a3e44f1e48a34418bc0979b947f1554fe48fba0f8553da5f57a254dc",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3-input-tasks.md",
+      "sha256": "343a16c012edd41fe7c6469c512da724763f0188ffba9aa775d6681294a54936",
+      "bytes": 7139,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3.json",
+      "sha256": "9f7a0ddfb0fcf8788f43d1feee17c970ec7f7f3d034d605d58adb6cfa090bdec",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3.log",
+      "sha256": "c2c7d7a32b97183af6a2e783fa9ac1bd4e68ee81cb825dcc55740ef6c9806fdb",
+      "bytes": 1882,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-eval-input-tasks.md",
+      "sha256": "cd7e1639f6f01ce76afd0d56994673acf8a7e0d4a865239be7da7a355b25c358",
+      "bytes": 3541,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-evidence.json",
+      "sha256": "78e95831d04ec0468115fe5212c9ffd5142bed0d75dba3d387844750a7ff8a00",
+      "bytes": 16149,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2-tasks.md",
+      "sha256": "f7502d89e67da85a41784902539aed5e0c77edec271441c2bda8cb5abb606b33",
+      "bytes": 6847,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2.json",
+      "sha256": "577c930667ec9474d55ccd23fbe93ef16438daa5dd8d40e5197b55c888df37d5",
+      "bytes": 1658,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r2.log",
+      "sha256": "8523bcc941f8bfda89c6d821c15fb65a71c3d7a2190ca495637e567681a0c131",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3-input-tasks.md",
+      "sha256": "d0426cd3f349eda62721473208d9ac35ea74beb2b90975c80d00d0dc807c491f",
+      "bytes": 5563,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3.json",
+      "sha256": "e5bf74b697d6f1012eef67e48e88bc6a1203a26eab480327191a36067fe8ebbb",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3.log",
+      "sha256": "807d747755cc653e9ede66e412cda39f731824a753fa863e725064f600789949",
+      "bytes": 1877,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-eval-input-tasks.md",
+      "sha256": "6cfbc61ce71fba1bbc4cfd203dab70c7e6ec9959598de47823a4b29a563f4f7f",
+      "bytes": 3490,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-evidence.json",
+      "sha256": "57c0936008a45b9fc136d40e324b0b496a142783ba5e10c09d4a73414254ef51",
+      "bytes": 13614,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2-tasks.md",
+      "sha256": "2cf868c60ef98e17888b63cc50b7f9ce8681c76e60ea34af5861c8abc1efc2bd",
+      "bytes": 5246,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2.json",
+      "sha256": "3dd3ec1c292825bb4a89b16761815c04ecede93d389f3809de19f35f24fec50b",
+      "bytes": 1585,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r2.log",
+      "sha256": "7b3136ab6da60d31bcf4baa19530ac0610e68d3c5c1c3a5b895e2536c33aa703",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3-input-tasks.md",
+      "sha256": "4355ffc052935119b57bad75b18da7254f3a1a2f337c3a1116d608b3b03771e1",
+      "bytes": 3962,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3.json",
+      "sha256": "b233c614d01fcfc5041abd53f4efca2ad6205888fae27dab8e4cb08aa07c579d",
+      "bytes": 1060,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3.log",
+      "sha256": "f6c4076549186c2d0a1350ef2469d6741a55f40dfb293c1da78845d19516995e",
+      "bytes": 1768,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s07-eval-input-tasks.md",
+      "sha256": "96deaa0385a943597072d9c1cb01803751b91c79bef54ac27f3e91959ef9f932",
+      "bytes": 2810,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s07-evidence.json",
+      "sha256": "7e3caa497c3a2985b2e42c5be73af4d6d5d9fc9b964730bc0e758f0d5fb65157",
+      "bytes": 6216,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-evaluator-output-repair.json",
+      "sha256": "a0dabcd88a424e6ae41d0d1bc4bdb894f35376e3c333ac75389aef6c77875cf2",
+      "bytes": 63565,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-integration-review.json",
+      "sha256": "ddde73d1d1c35c7c2cd97b347a11f221279a0d7fdbf751e42da5a3fc88e66d71",
+      "bytes": 70546,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-self-reference-repair.json",
+      "sha256": "98aae3d29404d2acaf9d278f1c1a4f9e900e38d3ba0a6c8f2e2b641a2d63fdd4",
+      "bytes": 19172,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-before-store-cycle-repair.json",
+      "sha256": "2326667d30521bfc31e3331fdc3e8eced24ca8de4291d917deb9e79127a2b116",
+      "bytes": 65515,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r2.log",
+      "sha256": "83678b400175ce0cc75064a869b6cb5525dc94e2935bee5485d2191985e16f0c",
+      "bytes": 7317,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval-r3.log",
+      "sha256": "0d6b39245dc31a8e3067250202c54524a8fe5ab8fd214ba16382ef93d21e5b12",
+      "bytes": 7405,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-canonical-eval.log",
+      "sha256": "487b45a4504c033dc28f82a634b2851150ec1bd115aacaf2f86dc4db4fdc970c",
+      "bytes": 7229,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r2.json",
+      "sha256": "5bb3b34a7edc5e54db60394069a65e18073681a70691ab541245e4b9085f2e25",
+      "bytes": 1928,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-context-r3.json",
+      "sha256": "3c5dc167886451ec96e4771ed44214ac3d0b5fc77d727ea80950985d017ea361",
+      "bytes": 2595,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r2.json",
+      "sha256": "afc68b4300ed01bb79cee6338e8e2dd7b9e601846c7981454dc12871ea073080",
+      "bytes": 1784,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence-r3.json",
+      "sha256": "007cf621a0785bf25038f4394a33770a6efbdabcb41dd66b541e427b9c7632d9",
+      "bytes": 1592,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-convergence.json",
+      "sha256": "fd8123aedfdf344e3bcb31d818de4edd0ff1856fd77149825d6c28898eaf216d",
+      "bytes": 1373,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r2.json",
+      "sha256": "d0783c3de6e6b9a68f31348c7d37095302e3f4b69823c29be1541c72d631f144",
+      "bytes": 10757,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r3.json",
+      "sha256": "38403615477552e3e0de2b6878208ff76a60985d5f4dd5b1e7b07802db7c6330",
+      "bytes": 12806,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r4.json",
+      "sha256": "4bcc1b98725834c66db5338274d2faf87b0bf10d9be901acc0c76387fb8c0ee8",
+      "bytes": 13579,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r5.json",
+      "sha256": "7eefc19953bb61c4cc8dec2b090c4818077772edf333422c7683b4c8789f2399",
+      "bytes": 13993,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r6.json",
+      "sha256": "6d05c5095ea9db85e884aa8b8dcea1ddb1a8c97e755c1d75a985ddcbb36b1c44",
+      "bytes": 14276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence.json",
+      "sha256": "5f42aa3a68e77a3e9e784fb02963b57ebc1bd363f2473104eefbdfd366f5b12d",
+      "bytes": 10279,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r2.json",
+      "sha256": "214a34b3c687c8a3f27c71f0d6e8292483ba8a76d4e92529b94ddf2d32920f68",
+      "bytes": 32330,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r3.json",
+      "sha256": "7d377f8da5a13ee5eee0410fb629507304519c664161ce8229ff8e1efd40b660",
+      "bytes": 37432,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r4.json",
+      "sha256": "7fa486502462a3e7b6ca915211ec6a8933c544e4f6f7965d766dfe7b0ae2c160",
+      "bytes": 37421,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r5.json",
+      "sha256": "7dffdb02f72ff89f0dbe99652ebf962e7cc57de9d03b303175bf62f966920f26",
+      "bytes": 45937,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request-r6.json",
+      "sha256": "aee393e98806b7fda75d390e654f61e70659733bfc33fa622706ed1d6751e59a",
+      "bytes": 45937,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-document-review-request.json",
+      "sha256": "25482ef8423465dd3dfbba000f668e0ce4b0e9d1bad681ae7c9f9bbb342bce14",
+      "bytes": 32164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r2.json",
+      "sha256": "c15d8c082f09d6c6b078def15f55d4b76ad3af83b006a7abe32afbfee67a7fd8",
+      "bytes": 1500,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components-r3.json",
+      "sha256": "7854b7bb8932043729b79942ce13838359ff611a0706df37cb2427ee99607fe4",
+      "bytes": 2276,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-guide-components.json",
+      "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c",
+      "bytes": 2040,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r2.json",
+      "sha256": "815675b9f0af251bde391ae034ee3dbf12bf588e134f16d611854761e8ab01e4",
+      "bytes": 2144,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification-r3.json",
+      "sha256": "6399c03a7759571f15b4354dc3b7dc042f78b767c75695caaab65bfbe69674c1",
+      "bytes": 2315,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-local-verification.json",
+      "sha256": "b45728f8ad81b4a6bb61b01fc4581b2ef3ddebb021eefcf91cd509100fa4f171",
+      "bytes": 4926,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-metadata-before-refresh.json",
+      "sha256": "0313c08c96f194f9cfd7f0e33ef509f268f97a9e54af8afad9dd717fa5d7db71",
+      "bytes": 82908,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-final.json",
+      "sha256": "c9187fd4c693b77223f730c31d09a7c7253f1f84de43be1a3ad25792be43fe8d",
+      "bytes": 1538,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r2.json",
+      "sha256": "4b728bc6ae33dbd97268718955b0c4c6894ae0a96cc54e705069733689758004",
+      "bytes": 1537,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-r3.json",
+      "sha256": "8b2326d5b7ed4a4bc4f3c3e8246c3a122e17b7243c5a63b3966f1732198abe3b",
+      "bytes": 1537,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-native-transport.json",
+      "sha256": "5a7b42dbab1742ce56ce41d75efec272591e6dbc4558c573b820e03d1ea4338c",
+      "bytes": 1313,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r2-eval-input-tasks.md",
+      "sha256": "b48ebb444a7a92bbd0a3cc3d9c61fb9e50dd608d314a566c2037e7c3f98fc1a8",
+      "bytes": 3727,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r2-reference-profile-diagnosis.json",
+      "sha256": "8df8b48d2ba8e3f254d0323453f194157c1d0df4e37b6053ad0c1b7188fa97df",
+      "bytes": 1488,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-eval-input-tasks.md",
+      "sha256": "b4dd267d8d4c5ea99b15eb9b16eb32fafac856801530874caea17ffa963f2ffd",
+      "bytes": 3945,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-eval-source.json",
+      "sha256": "f189f64583d1dcd82c1f48eb74ac84542b237ca4adda6ca117675b963426b397",
+      "bytes": 31188,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r3-release-selector-correction.json",
+      "sha256": "39fbadc5046b5b240da563689c12ba7dd74c827d43f3d27c779c28a7c4249912",
+      "bytes": 850,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-repair-observations.json",
+      "sha256": "47e2d8c6f612ffd8f1966665747b7af530891ebb676d675106eb4a88dc90e5f4",
+      "bytes": 2329,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-scope-refinement.json",
+      "sha256": "46e9dfd2567dc5f057c1dbbccc62250f784123b2df6d1b85f4921525cdfac35e",
+      "bytes": 2742,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan-r2.json",
+      "sha256": "e36814d81f796deb682252b55823943cb26022d931797e3a144fcf9c7c3952d4",
+      "bytes": 1111,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan-r3.json",
+      "sha256": "cd76a577ec020d84bbcc5a3da6f7e7add0bfb16e214999a3bf8fe1057dd19e36",
+      "bytes": 858,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-security-scan.json",
+      "sha256": "4e78124e5563fff0eb978955b8e25e66b9fd936e4e21117a7194e583950b1c6a",
+      "bytes": 822,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r2.json",
+      "sha256": "1d4084666567c25c8e3327bc2cd6818df5946c3e907ddf76e599f917cf4ddbe9",
+      "bytes": 6730,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence-r3.json",
+      "sha256": "3b153e9aec7788a2627cee6cf3af97aa19593cb639086499a5ffbbc460c0668f",
+      "bytes": 7528,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-view-evidence.json",
+      "sha256": "310acd25593ffb68d08c03312ee6fbe336428c0f3280e8843c418f24f23960ee",
+      "bytes": 6262,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-canonical-eval.log",
+      "sha256": "da8cf96cb11e1f74bb32a05c78fbdd913dc2b260bf3511e9e1a66e5d5f53dbab",
+      "bytes": 2200,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-control-metadata-red.log",
+      "sha256": "2e7afbc59d072b0f6dab176b06b702b7d899e90c96f7e9fc6b7cd128c7f89b16",
+      "bytes": 1602,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-eval-input-tasks.md",
+      "sha256": "055a828ca9b80e0b922d9d391ec503e2d45c9eb38dc910f6856d9c3a3da35689",
+      "bytes": 13316,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-evidence.json",
+      "sha256": "fe6c2b0a7e5af20abbd643a8acb027243fb98798a2545d475b064152c7e118c8",
+      "bytes": 3845,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-red-control-note.json",
+      "sha256": "f6349c586cf8591c81cb01091af483a9da8ca19905ef217a4255c59964e49257",
+      "bytes": 121,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-red.log",
+      "sha256": "35844347d8eafea7c642d4191e5061ea1c26df9802f8060f2bdf1c84b160e12f",
+      "bytes": 1893,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3-input-tasks.md",
+      "sha256": "6f484c7226d8431d7df5aa0e456a2c3112bb3a2c6c21ecf447bce6e6cb308d80",
+      "bytes": 13801,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3.json",
+      "sha256": "8595ce8e825b1e3ac0e467e912099d7c63e7f616ab598d76aafa203dfd3c77dd",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3.log",
+      "sha256": "68774a049415cfe3cc2920cdb89837baeeff4678a115324f34edcf16cf2bc4da",
+      "bytes": 2284,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-canonical-eval.log",
+      "sha256": "29879c47dc4e3a810e7341ebf933ae084bc83eada694ea88abcc433bdd8d8dea",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-eval-input-tasks.md",
+      "sha256": "4cd6551efa4a67c39ee3fa34cfca55c6ec3aa0bbc7ad64eb67e945c9ed539db6",
+      "bytes": 13219,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-evidence.json",
+      "sha256": "4d971167a9773d1b60a7a54f3a7a114966cff879fb8bd27fee05f741f51d3cd5",
+      "bytes": 3170,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-red.log",
+      "sha256": "49135c90b0a04faf54545f0c3129d39f130a5e54ded0c6070a1aba4758d68309",
+      "bytes": 6726,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3-input-tasks.md",
+      "sha256": "17411c0ab26c5b8253fd4465ec00896f58584893223d7d393c475d3650a0d773",
+      "bytes": 12792,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3.json",
+      "sha256": "a74f14e37a288f58c69a1e5e667e7489b973173767fdd22f74b83bca20e31fd7",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3.log",
+      "sha256": "74fe4cef601d553c26b2f2feec3531db2cbc6582fac64319321842bae5c2436f",
+      "bytes": 2159,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-canonical-eval.log",
+      "sha256": "a3774cfeb51e8ed756029a239f2610df8913506b7de5da1e762d9d6bf889b542",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-eval-input-tasks.md",
+      "sha256": "dc9bed4f6d04095cb74c63aaf9e675b0c26ee09b0430b752aa92d21800f28fa2",
+      "bytes": 13137,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-evidence.json",
+      "sha256": "f87bf5a7b6cdc3a225a7aa35b11288a50fb3922c1538b486a8cc436208bde98c",
+      "bytes": 2638,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-red.log",
+      "sha256": "7cf036fa005706c259dd886a0033a33cb16d8f96c9c152b86b39fa8c4ce19f4c",
+      "bytes": 1314,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3-input-tasks.md",
+      "sha256": "d524bda39ba2f0be8490eacebe3a2edb866f31f13c9941ec0975e7b53ae350f5",
+      "bytes": 11888,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3.json",
+      "sha256": "de9c77d65caecf0ba7cfbcaf9d0f11d287c65bf066d4b749f3e12380f16247de",
+      "bytes": 1061,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3.log",
+      "sha256": "1c6312b357bc7eb493691b33ff20baf613fd6af1ec2c12b697738a932351363b",
+      "bytes": 2164,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-canonical-eval.log",
+      "sha256": "f12a5348ad7ead48fbbe94cf4940a2648b5c147864937bed97759a11971ba81a",
+      "bytes": 2427,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-eval-input-tasks.md",
+      "sha256": "20a1ada54e5ebf96d7670b59b715cb3e0c824a3ef74825f80016d838ea784349",
+      "bytes": 14784,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-evidence.json",
+      "sha256": "00d65d421725c2912f2ace15a61144262f704ce3027c54fdd55eb2d5dba2022f",
+      "bytes": 2954,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-red.json",
+      "sha256": "962dbc8d0770d936f9a9c022b59b4bc64160d54ae1b610216762d6136aff9ed7",
+      "bytes": 2210,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-additional-red.log",
+      "sha256": "3f352b2b36f7397ffdbd1d2dc00dda54ca595252bc38f83f9b1bc4ed3f0bd7f2",
+      "bytes": 1713,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-canonical-eval.log",
+      "sha256": "bac144033b5bef323e4d8cec87ecf15e141ca395d5d761f60693f93397f03cda",
+      "bytes": 2285,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-context.json",
+      "sha256": "dbe0ee7f545e0bc1a0b620ef74e9ed67dbb80dbd41b0f5347cda1b3d8c170654",
+      "bytes": 1880,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-eval-input-tasks.md",
+      "sha256": "17b8b15a186048f862dbf9ac7fb6272f520abd3dee007b137bd3832164111750",
+      "bytes": 14680,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-evidence.json",
+      "sha256": "30738d14e10b8beadbba27d7548a06a2b8868e00e0be0b13275fd07d01ea8be5",
+      "bytes": 3027,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-red.json",
+      "sha256": "f752b74fa142d4b29d563c1778917489c7a81469127ce1a0cbaee280a63aa25e",
+      "bytes": 943,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-red.log",
+      "sha256": "5dd8fa914c9d46b1bae035fd4f7db94084fd69c71a54892565f68920d3130ae8",
+      "bytes": 3369,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/spec.md",
+      "sha256": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+      "bytes": 13879,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T001.yaml",
+      "sha256": "0bdfd4ac9838a94fe4bd5ec852205006eda23489a983d4860edd38a11b3bac94",
+      "bytes": 15272,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T002.yaml",
+      "sha256": "f32de850ef3b3b715fa3d47f06227581e559b1506aa57219d44f43d774ce708b",
+      "bytes": 9532,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T003.yaml",
+      "sha256": "785f12749f0b87c104cfe9a23a21f710702147ca1c917040aa76295e47708b79",
+      "bytes": 9384,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T004.yaml",
+      "sha256": "1ddf0aa3c692a4df324818abac1c2db56cf8f29ec087f31fd756c401ab07db5b",
+      "bytes": 11820,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T005.yaml",
+      "sha256": "9f41e93ae2810669669902d93a93d745e6d7ea5f546765aadadb1cf787e7d330",
+      "bytes": 11661,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T006.yaml",
+      "sha256": "83b97d544a2899fa56d29793eee5b9a4044ce666442a9bbdfcca9c7a0fbe1898",
+      "bytes": 10718,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T007.yaml",
+      "sha256": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+      "bytes": 6409,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T008.yaml",
+      "sha256": "d6aa34ca7f2f2e37a96b805cc89d86fced38101f341c524ca94e7d22933f0cc1",
+      "bytes": 12301,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T009.yaml",
+      "sha256": "09b29c472a36a4a74e2d71b7d40c9d9dbdd6d983b4c3f1a6f5031b6838c7bb13",
+      "bytes": 7067,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T010.yaml",
+      "sha256": "061a58b744ac15ffa80f41cf22e25612159a1e6bad4f18ce9ac07df6db480a90",
+      "bytes": 7160,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T011.yaml",
+      "sha256": "41f85c7f0dea31c026ca2fb8d38ca9eeafba6cc6b22f3990f94f222ea55ac576",
+      "bytes": 6605,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T012.yaml",
+      "sha256": "477a265c8f41c82d298e1c66f774256dbe5fc8d1f30610241e0ebc4c10cdfda3",
+      "bytes": 7282,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T013.yaml",
+      "sha256": "b6d731fb78c3dcebe14a18c85d656a6e2e122f60f579e5f52875bb4e91edbc42",
+      "bytes": 6454,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/index.yaml",
+      "sha256": "be8a78391b6fa046943bbfc690a93ac41ccc09c926d985c9fed1fe95bb063003",
+      "bytes": 35757,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/tasks.md",
+      "sha256": "b4dd267d8d4c5ea99b15eb9b16eb32fafac856801530874caea17ffa963f2ffd",
+      "bytes": 3945,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-guide-components.mjs",
+      "sha256": "c8f2c7c5e5908bb87cf57cb7ccf4c8622d7b63dfa840db1cc9e35f40ca748160",
+      "bytes": 4542,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/verify-traceability.mjs",
+      "sha256": "33b828d007095096d0021a8b750c529db17b7edb368f4430c086e80fc7942f02",
+      "bytes": 3339,
+      "mode": "644"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/work-contract.json",
+      "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+      "bytes": 8191,
+      "mode": "644"
+    }
+  ],
+  "excluded": [
+    {
+      "path": ".specify/eval/history.jsonl",
+      "reason": "Named evaluator projection; exact canonical execution evidence retained separately."
+    },
+    {
+      "path": ".specify/eval/last.json",
+      "reason": "Named evaluator projection; exact canonical execution evidence retained separately."
+    },
+    {
+      "path": ".specify/eval/verifier-last.json",
+      "reason": "Named evaluator projection; exact canonical execution evidence retained separately."
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/doc-impact.json",
+      "reason": "Derived projection regenerated for newly retained Work evidence; underlying semantic snapshot/review/source are fixed."
+    }
+  ],
+  "document_snapshot_sha256": "92fd8514805893ae39bc8629cdad53af2b3797678232506dbf53150f505e8349",
+  "required_commands": [
+    "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S08",
+    "python3 -B scripts/loopctl.py docs validate specs/012-portable-document-lifecycle",
+    "python3 -B scripts/loopctl.py context validate specs/012-portable-document-lifecycle/context-pack.json",
+    "python3 -B scripts/loopctl.py trace verify specs/012-portable-document-lifecycle/evidence-trace.jsonl"
+  ],
+  "review_contract": "Read original contract/spec/plan/tasks/readiness/context/environment/trace and exact evidence; decide independently. Three sequential lenses. No product/guide/governing edits during review.",
+  "post_review_policy": "Only after all lenses: separately record verdicts and report-only gardening; terminal metadata/trace may advance with a preserved reviewed prefix. Any implementation change requires a new frozen round.",
+  "frozen_at": "2026-09-11T15:26:01.529Z",
+  "digest_method": "SHA256 of UTF-8 JSON.stringify(scope with scope_sha256 removed), property order retained",
+  "previous_review": {
+    "round": 2,
+    "scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014",
+    "verdict": "CHANGES_REQUIRED",
+    "findings": "specs/012-portable-document-lifecycle/review-r2.json",
+    "archive_sha256": "4a82c6b7e328c2ce05a80621e058e5b386c5e592ac15ecd0aba7986963a7e815"
+  },
+  "repair_scope": [
+    "S12 bounded full-document reference syntax and literal decoded URI identity",
+    "S13 exact POSIX record mode and concurrent identity/metadata preservation",
+    "All nine affected prior-slice current canonical revalidations",
+    "Current25guide review, complete20source Context,2049test S08 and two offline/browser bundles"
+  ],
+  "scope_sha256": "883bc9e39e7a83739121f3a40c327af99bd3d85399483c100a83db32c6bb9a5c"
+}

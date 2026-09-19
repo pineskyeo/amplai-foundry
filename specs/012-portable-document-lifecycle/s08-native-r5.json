@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "schema_version": 1,
+    "results": [
+      {
+        "host": "claude-code",
+        "exit_code": 0,
+        "timed_out": false,
+        "answer_exact": true,
+        "transport_pass": true,
+        "continuation_id_observed": true,
+        "stdout_sha256": "ae678e420b51862841bb6257b4001bdbb0906daa8de8b2377d28363d15c48320",
+        "stdout_bytes": 1398,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_bytes": 0,
+        "work_entry": "/work",
+        "design_entry": "/design"
+      },
+      {
+        "host": "codex",
+        "exit_code": 0,
+        "timed_out": false,
+        "answer_exact": true,
+        "transport_pass": true,
+        "continuation_id_observed": true,
+        "stdout_sha256": "ec875ce8d4f32642ee5f34424f8e008febeb147ae8ca8b3386d821e11e6a9366",
+        "stdout_bytes": 374,
+        "stderr_sha256": "1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+        "stderr_bytes": 39,
+        "work_entry": "$work",
+        "design_entry": "$design"
+      }
+    ],
+    "repository_content_drift": [],
+    "scope": "Actual installed adapters and native CLI response transport only",
+    "limits": [
+      "No production/native lifecycle/host resume or unattended activation claim",
+      "No model chosen, no persisted permission/trust or central Store modification requested"
+    ]
+  },
+  "kit_sha256": "d994e3c958e7068115b8f6b92010dc38d3eea4eb15ce437d93f445d4901231c0",
+  "observed_at": "2026-09-12 04:49:00 UTC",
+  "source_snapshot": "revalidation-source-r5-line.json",
+  "probe": "s08-native-probe-r4.txt",
+  "probe_reuse": "Exact retained bounded transport probe executed in a new disposable directory; no root, real app, Store or host trust mutation."
+}

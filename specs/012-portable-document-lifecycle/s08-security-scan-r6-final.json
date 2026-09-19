@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12T09:17:39.406Z",
+  "method": "Exact known lease values compared only in memory and high-confidence credential signatures; selected frozen source/governing files plus complete feature tree",
+  "scanned_files": 792,
+  "scanned_bytes": 11076142,
+  "findings": [],
+  "status": "NO_DETECTED_CREDENTIALS",
+  "limits": [
+    "Internal evidence scan, not arbitrary-prose DLP or external publication approval.",
+    "Customer report must exclude internal review trace and receive its own scan."
+  ]
+}

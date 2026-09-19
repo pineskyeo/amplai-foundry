@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "capability": "speckit-analyze under existing work controller",
+  "reviewed_at": "2026-09-12 05:19:33 UTC",
+  "verdict": "PASS",
+  "verdict_scope": "Current S08 contract/plan/task readiness, current25source reviews, real3-guide selection and release-independent authority before full evaluation. Not independent review or completion.",
+  "source_hashes": {
+    "spec.md": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20",
+    "plan.md": "bf223a3c488cb4ca4a1ca4823f07dbb779cc8a09459d862a73438551589eb684",
+    "tasks.md": "2fc165873f542106d27add35166f705b19ca74b1704d9b81685be924de0e5718",
+    "work-contract.json": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90",
+    "acceptance-map.json": "2e2827168d847bed8c5f28a387bc05d156c16d98665c8feec4cf9c987533d080",
+    "knowledge-readiness.json": "75db4bb72cd34c392cff1cf823f07c4160933fa1c17a4125a629ce6438bc81ea",
+    "context-pack.json": "87f05b42d7c33f78202d025053d5b380c5625a01434fb45fd87275a78e0291f9",
+    "task-manifests/PORTABLE-DOC-T001.yaml": "9abefc4a31991da934b79a46810a6b3beb51dcf25674e05b04d3720a07399339",
+    "task-manifests/PORTABLE-DOC-T002.yaml": "ce7570bde2d627a782354971ae442024f2eff9e3b164c6ff6eea4dbc212cbea6",
+    "task-manifests/PORTABLE-DOC-T003.yaml": "b60fd60324482aae0ee10147f5b60d8570ab3dd02846796f6b90a28316c2e1a5",
+    "task-manifests/PORTABLE-DOC-T004.yaml": "d1f1e1c5f1927bc82f273a4ad07261d14ebc36b45a2d3015c909fbbd5beb3b23",
+    "task-manifests/PORTABLE-DOC-T005.yaml": "4c8d639de15f95ec7d429dd26ccf1df6d20fe34a60b2d77738686db77ca8adf7",
+    "task-manifests/PORTABLE-DOC-T006.yaml": "079de5c1d5f649012a62c9f6643cb01ddaa9ed002b31ce25bc5f7dbff120b3c8",
+    "task-manifests/PORTABLE-DOC-T007.yaml": "7ce44449b351cdb8249bd28c6b8c85184ca794de6a05e7b5e9e8a0019d8318ce",
+    "task-manifests/PORTABLE-DOC-T008.yaml": "83e4d8b4aaa3e574149caa3ebecfa1035767cc21f2eebe81e8a57ef459c4fc2e",
+    "task-manifests/PORTABLE-DOC-T009.yaml": "16b9a3319cccb84acd1ea28d0d0e874b18e425ff42cf3d58f1f7934e32cae1fa",
+    "task-manifests/PORTABLE-DOC-T010.yaml": "dbb7899e648bad0156e29d0e974a183be34ed034f4b26fd058124ef60792dc22",
+    "task-manifests/PORTABLE-DOC-T011.yaml": "78ff6a5b559d15e89e01053731005dc248785500524c6470e7888bc0534b5021",
+    "task-manifests/PORTABLE-DOC-T012.yaml": "a8985ae730e68ca937fd47ec5e69b233757b172aa0e0beea8665f46d6f2e4485",
+    "task-manifests/PORTABLE-DOC-T013.yaml": "924175f25b90bd702574fa99b297cf0142de47fd5a3514b7d1edfabdeb617d5d",
+    "task-manifests/PORTABLE-DOC-T014.yaml": "2d85396e1f9f98a7c36617f569002e6a824118428bd946df11c74ab4f901d261",
+    "task-manifests/PORTABLE-DOC-T015.yaml": "aaa07e309cc4673aa36b6936f7bbe71c034a6f05a1913589d0d05ce347df3814",
+    "task-manifests/PORTABLE-DOC-T016.yaml": "fadf6b5d5a832aed80ae4c83cfbdf1dae1057b4aeddea8c69f4756f528acbabd",
+    "task-manifests/PORTABLE-DOC-T017.yaml": "d30294fbb112cc2cab5b2ec16a9f2e4338749c6a61019d19c55ab73c3671fb61",
+    "task-manifests/PORTABLE-DOC-T018.yaml": "78eb6999f0055448c39a4c8595decd48620fa6743b7c3e088670966edc78ced4",
+    "task-manifests/index.yaml": "1550c65b0d80c2fae4dc8c1311c117aded9e788a988cc4f742c9892fceb36b75",
+    "verify-guide-reference-visibility.py": "983ce2ae4f0b65a708803b4ee1f2bac954bf776b32e0e69d30482f79bd7ed0ef",
+    "verify-kit-guide-selection.py": "5a6c8e89b06aaf4cb3c491dbd0f8278dcccfd268c8e1d418d2df06e4a487a971"
+  },
+  "current_context_hash": "bb26498de78e85e68059ee43c1d93650d5a56be9fbcdc561f8e40f4bf03da830",
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "tasks": 18,
+    "open_tasks": 1,
+    "critical": 0,
+    "high": 0,
+    "unmapped_tasks": 0
+  },
+  "executed": [
+    {
+      "id": "contract",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "contract",
+        "validate",
+        "specs/012-portable-document-lifecycle/work-contract.json"
+      ],
+      "exit_code": 0,
+      "stderr": "",
+      "summary": "CONTRACT: PASS"
+    },
+    {
+      "id": "readiness",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/loopctl.py",
+        "readiness",
+        "evaluate",
+        "specs/012-portable-document-lifecycle/knowledge-readiness.json"
+      ],
+      "exit_code": 0,
+      "stderr": "",
+      "summary": {
+        "verdict": "READY"
+      }
+    },
+    {
+      "id": "manifest",
+      "command": [
+        "python3",
+        "-B",
+        ".agents/skills/taskify/scripts/validate_task_manifest.py",
+        "specs/012-portable-document-lifecycle/task-manifests"
+      ],
+      "exit_code": 0,
+      "stderr": "",
+      "summary": "PASS: validated 18 task manifest(s)"
+    },
+    {
+      "id": "prerequisites",
+      "command": [
+        "bash",
+        ".specify/scripts/bash/check-prerequisites.sh",
+        "--json",
+        "--require-tasks",
+        "--include-tasks"
+      ],
+      "exit_code": 0,
+      "stderr": "",
+      "summary": "{\"FEATURE_DIR\":\"/Users/pinesky/workspace/amplai-foundry/specs/012-portable-document-lifecycle\",\"AVAILABLE_DOCS\":[\"research.md\",\"data-model.md\",\"contracts/\",\"quickstart.md\",\"tasks.md\"]}"
+    }
+  ],
+  "additional_executed": [
+    {
+      "id": "current-taskify",
+      "exit_code": 0,
+      "validated_manifests": 18,
+      "commands": "S08 includes all four required commands; manifest/index/generated alignment passed."
+    },
+    {
+      "id": "traceability",
+      "exit_code": 0,
+      "requirements": 23,
+      "cases": 46,
+      "final_passed_cases": 0
+    },
+    {
+      "id": "25-source-review-r12",
+      "exit_code": 0,
+      "verdict": "RESOLVED",
+      "evidence": "s08-document-review-evidence-r12.json"
+    },
+    {
+      "id": "current-kit-selection",
+      "exit_code": 0,
+      "verdict": "PASS_KIT_GUIDE_SELECTION",
+      "evidence": "s08-r5-domain-guide-check-green.json"
+    },
+    {
+      "id": "context",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "evidence": "s08-context-r5-final.json"
+    },
+    {
+      "id": "verification-check-format",
+      "exit_code": 0,
+      "same_ast": true,
+      "evidence": "s08-r5-guide-check-format-equivalence.json"
+    }
+  ],
+  "refinements": [
+    {
+      "source": "s08-r5-context-domain-diagnosis.json",
+      "result": "The Kit candidate contains only its3owning guides. Restore only21own R5 enrollments to exact prior membership. Preserve all25mandatory source reviews, all source/security/authority/lifecycle fields and release-independent governing instructions. No private source classification or visibility guard change."
+    },
+    {
+      "source": "revalidation-r5-line.json",
+      "result": "All13predecessor canonical commands passed on their exact151-file snapshot. Current full S08 covers unchanged product/package/test source with21membership deltas and the new explicit real-guide selection verifier; prior pins are retained, not relabeled current."
+    }
+  ],
+  "prior_analysis": "analysis-before-r5-full.json",
+  "remaining": [
+    "Full current S08 and derived release/HTML/browser evidence",
+    "Convergence, three fresh sequential R5 lenses and report-only gardening",
+    "W004 packaging implementation and separate actual-server evidence"
+  ],
+  "questions": [],
+  "business_scope_changes": []
+}

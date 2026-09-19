@@ -1,7 +1,27 @@
 # Verification Report
 
-This file keeps the historical 2.2.0 evidence below and defines the additional 2.3.2 compatibility gate.
+This file keeps historical evidence and defines compatibility gates for each candidate.
 Do not reinterpret an old target repository result as evidence for a new release.
+
+## 2.5.0 candidate gate
+
+The candidate extends the existing installer and Work/Design controller. A version label,
+checksum alone, or a source-only test is not release verification.
+
+Required local checks include the complete package seal; fresh baseline and existing-app
+installation; repeat, update, rollback and uninstall preservation; source/payload/installed
+capability parity; actual installed Work/Design context and Slice evaluation; document
+selection, full impact and attributed review; a normal code change through offline HTML
+rebuild and drift rejection; lossless source-section preservation and fixture-only
+retirement/recovery; terminal Store read-only views and credential-safe heartbeat output.
+
+Run the repository's full verification profile, the package selftest, and sequential
+contract, failure/recovery and regression reviews. Preserve exact candidate and log hashes.
+The package must not copy source-repository domain rules, private state or host trust.
+
+An available host's constant-answer foreground canary proves response transport only.
+Native full Work lifecycle, oldest supported Python runtime, RHEL7, real fleet installation
+and production activation each need their own evidence. Do not infer them from local tests.
 
 ## 2.3.2 required gate
 

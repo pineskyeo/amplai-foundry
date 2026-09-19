@@ -65,7 +65,11 @@ Canonical project assets는 복사하지 않는다.
 - Work Memory: `specs/<feature>/contract|readiness|context|environment|trace|handoff|doc-impact|garden-report`
 - 실행 evidence: code/test/git/verifier output
 
-`.ai-team`은 문서 내용도, Work별 report 이력도 쌓지 않는다. 정책과 schema만 둔다.
+`.ai-team`은 문서 원문이나 Work별 report 사본을 쌓지 않는다. 정책·schema와 이를
+선택·검증하는 index, 상태, provenance metadata를 둔다. Documentation policy의
+review_store는 문서별 검토와 이전 검토의 단일 metadata 저장소다. 원문은 각 owner
+경로에 남고, Work의 영향 분석은 이 검토에서 생성하는 view다. 검토 이력은 사람의
+승인이나 canonical Vault 지식이 아니다.
 
 > **예외 — AMPLAI Loop Kit 이 설치된 동안 (`D-051`, `D-053`).** kit 이 `.ai-team` 에 다음을
 > 놓는다. 정책·schema 가 아닌 것이 셋이다.
@@ -115,7 +119,7 @@ Gardening이 실제 file/code/config를 바꿨으면 loop로 되돌아간다.
 garden change → verify → converge → documentation freshness → (필요하면) review
 ```
 
-SAFE_AUTO generated garbage 삭제만으로는 heavyweight review를 다시 요구하지 않는다.
+일반 Work와 `garden apply`는 report-only다. safety 분류는 삭제 승인이 아니다.
 
 `design`은 code를 구현하지 않으므로 Repository Gardening을 실행하지 않고 Documentation
 Freshness만 적용한다.
@@ -137,7 +141,9 @@ Freshness만 적용한다.
 project miner)을 이식하지 않았다 (`D-046`). Knowledge Vault와 Proposal 모델이 그 자리를
 대신하고, 그 층의 검사는 verifier registry의 `vault-lint`와 `schema` check가 맡는다.
 
-Query는 read-only다. 새 knowledge는 candidate → RDF/SHACL/CQ/diff validation → explicit promotion으로 처리한다. MCP에는 write/promotion tool을 노출하지 않는다.
+Foundry의 기존 knowledge query는 read-only다. 새 공식 지식은 기존 Proposal 검토와
+governed approval 경계를 따른다. 이 profile은 RDF/SHACL/CQ나 MCP 검증을 실행한 것으로
+보고하지 않는다. Portable 문서 검토는 공식 Vault 승인을 만들지 않는다.
 
 ## Documentation Freshness
 
@@ -159,6 +165,11 @@ append-only이며 뒤집힌 항목에 `Superseded: ... 은 D-MM 이 대체한다
 `docs validate --repo`는 canonical 문서가 존재하지 않는 repository 경로를 선언하는지 본다.
 문서가 실제와 어긋났음을 기계적으로 판정할 수 있는 신호다.
 
+현행 guide는 policy의 명시적 source roots와 단일 metadata owner로 선택한다.
+`document_source_routes`는 설치용 Markdown을 담당 guide의 입력으로 연결하고 과거
+기록은 baseline 원문 그대로 보존한다. 필수 impact rule과 미분류 source 검사는 유지한다.
+이 분류는 지식 승인·삭제 권한이 아니며, source bytes가 바뀌면 담당 guide 검토가 만료된다.
+
 ## Gardening
 
 Gardening은 다섯 영역을 덮는다.
@@ -178,9 +189,19 @@ Repository      dead code / obsolete script / stale config / orphan fixture / ge
 
 | Level | 대상 | 자동 삭제 |
 |---|---|---|
-| `SAFE_AUTO` | git이 추적하지 않는 generated garbage, backup, prunable worktree | 가능 |
+| `SAFE_AUTO` | 호환 label; 소유·재생성·승인·복구 증거는 별도 | 실행 안 함 |
 | `EVIDENCE_REQUIRED` | orphan fixture, obsolete internal script, broken reference | 불가 — reference/build/test/packaging 근거 필요 |
-| `HUMAN_GATED` | public header, plugin/action entry, conditional build, production config, packaging contract | 금지 |
+| `HUMAN_GATED` | tracked 문서, ADR/incident, 사용자 backup, worktree, production/policy/private 자산 | 금지 |
+
+`.bak`와 `.orig`, untracked, 파일 나이와 Git history는 자동 삭제 근거가 아니다.
+scan 한도·Git 오류·접근 불가 범위는 incomplete로 남으며 PASS가 아니다.
+문서 split/merge는 `docs preserve --input <request.json>`으로 원본의 모든 section을
+원문 유지 또는 정확한 목적지에 연결한다. 요약은 보존 증명이 아니다.
+`docs plan-retirement --input <request.json>`은 reference/retention/backup/approval
+필요성을 읽기 전용으로 보고한다. planning 파일을 checkout 밖에 두면 자기 참조를 피한다.
+tracked retirement public CLI는 없다. 별도 trusted authority/verifier adapter를 받는
+internal apply/recovery는 disposable fixture에서만 검증한다. 실제 대상의 승인 생성,
+Git publication, material 삭제와 production 적용은 별도다.
 
 static text reference가 없다는 사실은 dead code 근거가 아니다. entry point는 CLI subcommand
 등록, plugin/provider registry, configuration-driven dispatch로 진입할 수 있고, runner가
@@ -214,12 +235,12 @@ python3 scripts/loopctl.py docs impact specs/<feature>
 python3 scripts/loopctl.py docs validate --repo
 python3 scripts/loopctl.py garden scan
 python3 scripts/loopctl.py garden incremental specs/<feature>
-python3 scripts/loopctl.py garden full --report-only
+python3 scripts/loopctl.py garden full <gardening-feature> --report-only
 python3 .ai-team/verifiers/run.py --profile v2
 ```
 
-`garden full`의 기본은 report-only다. 삭제는 `--apply-safe`를 명시할 때만 하고, 그때도
-SAFE_AUTO만 지운다.
+`garden full`은 high-risk repository_gardening Work를 명시해야 실행된다.
+`--apply-safe`는 승인 없이 차단한다. 어떤 normal gardening command도 파일을 지우지 않는다.
 
 Semantic tools:
 

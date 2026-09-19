@@ -1,0 +1,119 @@
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 43%]
+........................................................................ [ 58%]
+........................................................................ [ 72%]
+........................................................................ [ 87%]
+..................................................F..FFFFFFFFFF.         [100%]
+=================================== FAILURES ===================================
+__________ test_ignored_new_source_asset_invalidates_owner_selection ___________
+tests/ai/test_document_integration.py:344: in test_ignored_new_source_asset_invalidates_owner_selection
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_______ test_work_folder_hint_cannot_depend_on_its_own_review_projection _______
+tests/ai/test_document_integration.py:383: in test_work_folder_hint_cannot_depend_on_its_own_review_projection
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership[file] _
+tests/ai/test_document_integration.py:404: in test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership[directory] _
+tests/ai/test_document_integration.py:404: in test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[last.json] _
+tests/ai/test_document_integration.py:424: in test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[history.jsonl] _
+tests/ai/test_document_integration.py:424: in test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[verifier-last.json] _
+tests/ai/test_document_integration.py:424: in test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/knowledge/document-reviews.json-tree] _
+tests/ai/test_document_integration.py:467: in test_directory_structure_does_not_depend_on_its_own_review_transaction
+    assert engine.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/knowledge/document-reviews.json-required_directory] _
+tests/ai/test_document_integration.py:467: in test_directory_structure_does_not_depend_on_its_own_review_transaction
+    assert engine.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/records/semantic-reviews.json-tree] _
+tests/ai/test_document_integration.py:467: in test_directory_structure_does_not_depend_on_its_own_review_transaction
+    assert engine.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+_ test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/records/semantic-reviews.json-required_directory] _
+tests/ai/test_document_integration.py:467: in test_directory_structure_does_not_depend_on_its_own_review_transaction
+    assert engine.select_documents(root, "release-2")["count"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/amplai_docs.py:1914: in select_documents
+    reference_visibility(
+scripts/amplai_docs.py:1879: in reference_visibility
+    raise DocumentError(error) from None
+E   amplai_docs.DocumentError: CROSS_BOUNDARY_REFERENCE
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_integration.py::test_ignored_new_source_asset_invalidates_owner_selection
+FAILED tests/ai/test_document_integration.py::test_work_folder_hint_cannot_depend_on_its_own_review_projection
+FAILED tests/ai/test_document_integration.py::test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership[file]
+FAILED tests/ai/test_document_integration.py::test_explicit_work_inputs_still_bind_file_bytes_and_full_directory_membership[directory]
+FAILED tests/ai/test_document_integration.py::test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[last.json]
+FAILED tests/ai/test_document_integration.py::test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[history.jsonl]
+FAILED tests/ai/test_document_integration.py::test_named_evaluator_outputs_do_not_change_candidate_but_unknown_files_do[verifier-last.json]
+FAILED tests/ai/test_document_integration.py::test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/knowledge/document-reviews.json-tree]
+FAILED tests/ai/test_document_integration.py::test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/knowledge/document-reviews.json-required_directory]
+FAILED tests/ai/test_document_integration.py::test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/records/semantic-reviews.json-tree]
+FAILED tests/ai/test_document_integration.py::test_directory_structure_does_not_depend_on_its_own_review_transaction[.ai-team/records/semantic-reviews.json-required_directory]

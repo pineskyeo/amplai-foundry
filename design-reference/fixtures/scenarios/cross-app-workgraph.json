@@ -1,0 +1,196 @@
+{
+  "schema_version": "3.0.0",
+  "graph_id": "graph-cross-app-example",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "revision": 1,
+  "contract_ref": {
+    "id": "contract-cross-app-example",
+    "revision": 1,
+    "digest": "sha256:39f9a95f8697e387f7cfa9d9615896552d65d414e223464b3f7c088a68f6b6db"
+  },
+  "previous_graph_ref": null,
+  "replan_reason": null,
+  "nodes": [
+    {
+      "node_id": "cortex-change",
+      "work_id": "work-cortex-change",
+      "target_ref": {
+        "id": "app-cortex",
+        "revision": 1,
+        "digest": "sha256:f8574ac03e800f79a472c0801e5df2dc4586328edcddcabe80027648827c96b5"
+      },
+      "objective": "Synthetic cross-app work: cortex-change",
+      "strategy": "bounded_loop",
+      "depends_on": [],
+      "join": "all_required",
+      "consumes": [],
+      "produces": [
+        {
+          "name": "artifact-cortex-change",
+          "media_type": "application/json",
+          "required": true
+        }
+      ],
+      "acceptance_ids": [
+        "AC-CORTEX"
+      ],
+      "verification_profile_ref": {
+        "id": "verifier-design-integrity",
+        "revision": 1,
+        "digest": "sha256:1c44063a663f9a5db2541b7c62a218bc609e0abff8b0ad290bf8af321625e280"
+      },
+      "capabilities": [
+        {
+          "action": "workspace.code_write",
+          "resource": "sandbox:app-cortex",
+          "effect_class": "sandbox_write"
+        }
+      ],
+      "resource_claims": [
+        {
+          "resource": "sandbox:app-cortex",
+          "mode": "exclusive_write"
+        }
+      ],
+      "budget": {
+        "max_wall_seconds": 3600,
+        "max_attempts": 3,
+        "max_tokens": 100000,
+        "max_cost_microunits": 2000000,
+        "currency": "USD",
+        "max_parallel_works": 4,
+        "max_delegation_depth": 2
+      }
+    },
+    {
+      "node_id": "synapse-change",
+      "work_id": "work-synapse-change",
+      "target_ref": {
+        "id": "app-synapse",
+        "revision": 1,
+        "digest": "sha256:590b6b34a6761f457e7b6bba25ae21f1d02c79c142399eacd900cad05aa7607a"
+      },
+      "objective": "Synthetic cross-app work: synapse-change",
+      "strategy": "bounded_loop",
+      "depends_on": [],
+      "join": "all_required",
+      "consumes": [],
+      "produces": [
+        {
+          "name": "artifact-synapse-change",
+          "media_type": "application/json",
+          "required": true
+        }
+      ],
+      "acceptance_ids": [
+        "AC-SYNAPSE"
+      ],
+      "verification_profile_ref": {
+        "id": "verifier-design-integrity",
+        "revision": 1,
+        "digest": "sha256:1c44063a663f9a5db2541b7c62a218bc609e0abff8b0ad290bf8af321625e280"
+      },
+      "capabilities": [
+        {
+          "action": "workspace.code_write",
+          "resource": "sandbox:app-synapse",
+          "effect_class": "sandbox_write"
+        }
+      ],
+      "resource_claims": [
+        {
+          "resource": "sandbox:app-synapse",
+          "mode": "exclusive_write"
+        }
+      ],
+      "budget": {
+        "max_wall_seconds": 3600,
+        "max_attempts": 3,
+        "max_tokens": 100000,
+        "max_cost_microunits": 2000000,
+        "currency": "USD",
+        "max_parallel_works": 4,
+        "max_delegation_depth": 2
+      }
+    },
+    {
+      "node_id": "integration",
+      "work_id": "work-integration",
+      "target_ref": {
+        "id": "app-test-env",
+        "revision": 1,
+        "digest": "sha256:d3029a93af1ed5b11f449468814f1a17117e87c839351e0273b3e5bd1bd9f654"
+      },
+      "objective": "Synthetic cross-app work: integration",
+      "strategy": "bounded_loop",
+      "depends_on": [
+        "cortex-change",
+        "synapse-change"
+      ],
+      "join": "all_required",
+      "consumes": [
+        {
+          "name": "input-cortex-change",
+          "from_node": "cortex-change",
+          "external_ref": null,
+          "media_type": "application/json",
+          "output_name": "artifact-cortex-change"
+        },
+        {
+          "name": "input-synapse-change",
+          "from_node": "synapse-change",
+          "external_ref": null,
+          "media_type": "application/json",
+          "output_name": "artifact-synapse-change"
+        }
+      ],
+      "produces": [
+        {
+          "name": "artifact-integration",
+          "media_type": "application/json",
+          "required": true
+        }
+      ],
+      "acceptance_ids": [
+        "AC-CROSS-COMPAT"
+      ],
+      "verification_profile_ref": {
+        "id": "verifier-design-integrity",
+        "revision": 1,
+        "digest": "sha256:1c44063a663f9a5db2541b7c62a218bc609e0abff8b0ad290bf8af321625e280"
+      },
+      "capabilities": [
+        {
+          "action": "workspace.code_write",
+          "resource": "sandbox:app-test-env",
+          "effect_class": "sandbox_write"
+        }
+      ],
+      "resource_claims": [
+        {
+          "resource": "sandbox:app-test-env",
+          "mode": "exclusive_write"
+        }
+      ],
+      "budget": {
+        "max_wall_seconds": 3600,
+        "max_attempts": 3,
+        "max_tokens": 100000,
+        "max_cost_microunits": 2000000,
+        "currency": "USD",
+        "max_parallel_works": 4,
+        "max_delegation_depth": 2
+      }
+    }
+  ],
+  "global_verification_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "compiler_version": "design-spec-3.0.0",
+  "created_at": "2026-09-15T13:30:00Z"
+}

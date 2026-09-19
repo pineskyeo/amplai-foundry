@@ -1,0 +1,9 @@
+{
+  "case_id": "rs-001",
+  "title": "External URL drift",
+  "given": "excerpt read on day 1",
+  "when": "resume on day 30",
+  "expected": "pinned snapshot used or stale HOLD (T-020)",
+  "verifier_definition": "research-provenance",
+  "split": "dev"
+}

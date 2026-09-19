@@ -1,0 +1,43 @@
+{
+  "schema_version": "3.0.0",
+  "report_id": "fixture-report-id",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "experiment_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "run_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "analysis_artifact": {
+    "id": "fixture-artifact",
+    "digest": "sha256:dcd22167f3ab965bf7a07fd2dd6a6dda553357bc1810049d35cd223026cb20a5",
+    "media_type": "application/json",
+    "size_bytes": 256
+  },
+  "verdict": "inconclusive",
+  "safety_gate_results": [
+    {
+      "gate_id": "G-01",
+      "outcome": "pass",
+      "evidence_refs": [],
+      "reason": "fixture-reason"
+    }
+  ],
+  "environment_drifted": false,
+  "contamination_findings": [],
+  "limitations": [
+    "Synthetic example; no experiment executed."
+  ],
+  "independent_review_ref": null,
+  "issued_at": "2026-09-15T13:30:00Z",
+  "unexpected_elevated_permission": true
+}

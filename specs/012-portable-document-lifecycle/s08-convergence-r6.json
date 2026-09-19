@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 08:18:52 UTC",
+  "capability": "speckit-converge under the existing Work controller",
+  "outcome": "IMPLEMENTATION_CONVERGED_COMPLETION_GATES_PENDING",
+  "checked": {
+    "feature_requirements": 15,
+    "success_criteria": 5,
+    "original_requirements": 23,
+    "original_cases": 46,
+    "contract_acceptances": 8,
+    "constitution_principles": 5,
+    "task_manifests": 20,
+    "local_done_tasks": 19,
+    "affected_slice_revalidations": 14
+  },
+  "findings": [],
+  "tasks_appended": 0,
+  "unchanged_task_intent": true,
+  "source_assessment": {
+    "FR_001_004": "Current opt-in generic baseline, transactional installer and host adapters have exact source/payload/installed canary evidence, full regression and seal119. Conflict, borrowed mode and recovery invariants remain; no fleet activation.",
+    "FR_005": "Project Store authority/dependency/lease/terminal result semantics remain covered by S07 and current full regression. Current native CLI observations for both hosts are transport-only, not full Work/resume.",
+    "FR_006_010": "S20 validates each optional alias candidate before absence and rejects unsafe branches. S19 independently verifies actual generated/stored Context with3guides+7instructions and exact hashes/MATCH. Current25source reviews resolve the exact semantic snapshot. Security, release and historical roles remain separate.",
+    "FR_011_013": "Current canonical S06 preservation/retention/recovery canaries pass. No real tracked deletion or canonical knowledge mutation. Post-review report-only gardening remains T008.",
+    "FR_014_015": "Two immutable R6 developer/operator bundles derive from current reviewed sources and exact INTERNAL release pins. Offline, no-script, XSS/private, keyboard, desktop/mobile and print browser checks pass on the fresh outputs."
+  },
+  "evidence": [
+    "s19-local-verification.json",
+    "s20-local-verification.json",
+    "s08-predecessor-revalidation-r6.json",
+    "s08-local-verification-r6.json",
+    "s08-document-review-evidence-r13.json",
+    "s08-context-r6-final.json",
+    "s19-actual-guide-verification.json",
+    "s08-guide-components-r6.json",
+    "s08-native-r6.json",
+    "s08-view-evidence-r6.json"
+  ],
+  "remaining_existing_task": {
+    "id": "PORTABLE-DOC-T008",
+    "gates": [
+      "Three fresh sequential independent R6 lenses on one frozen target",
+      "Current derived-document validation after retaining stable evidence membership",
+      "Post-review report-only incremental garden and final security",
+      "Native terminal Work result and same-app checkpoint after gates"
+    ]
+  },
+  "post_eval_documentation_delta": {
+    "meaning": "Additive immutable result/view/evidence files and report-only plan/analysis reconciliation after exact S08 source155/governing46 post-check. No executable, schema, payload, checksum, acceptance procedure, environment or command/threshold change.",
+    "original_acceptance": "All23originalrequirements/46cases remain linked, with zero finalPASS before completion gates."
+  },
+  "limits": [
+    "No additional buildable local W003 implementation gap observed; not independent approval or whole-goal completion.",
+    "SC-002 records unavailable evidence distinctly, never PASS. Historical failures, reviews and exact pins remain retained.",
+    "No RHEL7, Python3.6 execution, full native Work/resume, signing, fleet activation, actual retirement or production deployment proof. W004 local RPM/nginx implementation remains separate."
+  ]
+}

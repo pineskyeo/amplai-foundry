@@ -1,0 +1,100 @@
+{
+  "schema_version": "3.0.0",
+  "goal_id": "goal-v3",
+  "scope": {
+    "tenant_id": "fixture-tenant",
+    "project_id": "fixture-amplai"
+  },
+  "revision": 1,
+  "intent_ref": {
+    "id": "intent-design-v3",
+    "revision": 1,
+    "digest": "sha256:03c36ac1b40d7f184e9ffccb59646b0b21a562b87611b593529f571b29e4e693"
+  },
+  "resolution_ref": {
+    "id": "resolution-v3",
+    "revision": 1,
+    "digest": "sha256:9052d1aafbf70b2b7d102830d7856db96775e1135a66bae6b1c6615b3e8f14f8"
+  },
+  "mode": "design",
+  "objective": "검증 가능한 V3 전체 설계 패키지 제공",
+  "non_goals": [
+    "기존 소스 수정",
+    "실제 배포",
+    "운영 승인 발급"
+  ],
+  "targets": [
+    {
+      "id": "app-amplai",
+      "revision": 1,
+      "digest": "sha256:9f90fa5340d02adcfeb484f5dfe31fffa1f5389314804d96ff98a6535a8cff2e"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "C-DESIGN",
+      "statement": "이번 작업은 설계 산출물만 작성한다.",
+      "source_refs": [
+        {
+          "id": "intent-design-v3",
+          "revision": 1,
+          "digest": "sha256:03c36ac1b40d7f184e9ffccb59646b0b21a562b87611b593529f571b29e4e693"
+        }
+      ],
+      "protected": true
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "AC-DESIGN",
+      "statement": "설계 계약·상태·보안·검증·이전·메타하네스 명세가 연결되어 있다.",
+      "facet": "documentation",
+      "mandatory": true,
+      "verifier_ref": {
+        "id": "verifier-design-integrity",
+        "revision": 1,
+        "digest": "sha256:1c44063a663f9a5db2541b7c62a218bc609e0abff8b0ad290bf8af321625e280"
+      },
+      "required_evidence_types": [
+        "design-integrity-report"
+      ],
+      "success_rule": "All referenced design artifacts exist; runtime execution is explicitly not claimed.",
+      "human_acceptance_required": true
+    }
+  ],
+  "assumptions": [],
+  "open_question_refs": [],
+  "risk": "low",
+  "budget": {
+    "max_wall_seconds": 3600,
+    "max_attempts": 3,
+    "max_tokens": 100000,
+    "max_cost_microunits": 2000000,
+    "currency": "USD",
+    "max_parallel_works": 4,
+    "max_delegation_depth": 2
+  },
+  "requested_capabilities": [
+    {
+      "action": "workspace.design_write",
+      "resource": "sandbox:design-output",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "verification_plan_ref": {
+    "id": "plan-design",
+    "revision": 1,
+    "digest": "sha256:fbdd1a64a11067f52f6e27dc49c8c2f929380f11d36917d5f4017d22971e68b1"
+  },
+  "context_bundle_ref": {
+    "id": "context-precontract",
+    "revision": 1,
+    "digest": "sha256:25e24a44f22b6a1f4863f30b42e84f034f9e328fe23a4d669c893a7d34b0ba99"
+  },
+  "policy_ref": {
+    "id": "policy-design-only",
+    "revision": 1,
+    "digest": "sha256:0e288524247791bd0a3fe6c21111c6d5d735f034992fb0da6bf9261d3c5f3468"
+  },
+  "created_at": "2026-09-15T13:30:00Z"
+}

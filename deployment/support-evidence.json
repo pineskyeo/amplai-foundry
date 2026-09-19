@@ -1,0 +1,27 @@
+{
+  "local-dev": {
+    "status": "pass",
+    "evidence_refs": [
+      "specs/013-amplai-v3/evidence-trace.jsonl",
+      "tests/v3 (557 passed, 2026-09-18)"
+    ],
+    "python_matrix": [
+      "3.11.15 (macOS 25.2, this host)"
+    ]
+  },
+  "onprem": {
+    "status": "disabled"
+  },
+  "hybrid": {
+    "status": "disabled"
+  },
+  "offline": {
+    "status": "disabled"
+  },
+  "legacy-app-client": {
+    "status": "disabled"
+  },
+  "managed-optional": {
+    "status": "disabled"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
+    "topic_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "docs/v3/DEV02_EXECUTION.ko.md"
+    },
+    "title": "AMPLAI V3 DEV-02 — 실행 계층 사용·검증 안내",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/runtime/execution/worker.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/runtime/execution/steering.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/agent_drivers/ports.py",
+        "kind": "code"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

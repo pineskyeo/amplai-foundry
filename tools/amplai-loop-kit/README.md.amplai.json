@@ -1,0 +1,50 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+    "topic_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "tools/amplai-loop-kit/README.md"
+    },
+    "title": "AMPLAI Loop Kit 2.5.0",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "runbook",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "developer",
+      "operator"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/amplai_docs.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/loopctl.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "scripts/loopv2.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "tools/amplai-loop-kit/manifest.json",
+        "kind": "contract"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

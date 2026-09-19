@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "verdict": "PASS",
+  "input_sha256": "74695e8c91c7e7b3708e1dcdc861b9278ef572d230bbe78447a90e82565b52b9",
+  "checks": [
+    {
+      "id": "current-local-canonical-S08",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-local-verification.json",
+        "sha256": "b45728f8ad81b4a6bb61b01fc4581b2ef3ddebb021eefcf91cd509100fa4f171"
+      }
+    },
+    {
+      "id": "retained-immutable-split-reference-pins",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-guide-components.json",
+        "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c"
+      }
+    }
+  ]
+}

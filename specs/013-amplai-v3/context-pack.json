@@ -1,0 +1,235 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-055",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-056",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Adopt the Platform 0.4.0 control plane with its reachable defects closed first",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-057",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make stranded limit an output cap so filtered reads report truncation",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-059",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Keep Hermes at the untrusted work-manager boundary",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-060",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Split conversation and human authority across two Slack Apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-063",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Project authoritative Work status through the AMPLAI Slack App",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "MGC-012",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Messenger governance closure — Slack interaction authority and proposal cards",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "src/amplai_foundry/runtime/",
+    "src/amplai_foundry/evaluation/",
+    "src/amplai_foundry/meta_harness/",
+    "src/amplai_foundry/knowledge_runtime/",
+    "src/amplai_foundry/packs/",
+    "src/amplai_foundry/migration/",
+    "src/amplai_foundry/distribution/",
+    "src/amplai_foundry/agent_drivers/",
+    "src/amplai_foundry/sandbox/",
+    "src/amplai_foundry/tool_broker/",
+    "src/amplai_foundry/control_plane/",
+    "src/amplai_foundry/verification/runtime/",
+    "src/amplai_foundry/governance/",
+    "tests/v3/",
+    "tests/e2e/",
+    "contracts/",
+    "packs/",
+    "integrations/hermes/",
+    "tools/amplai-loop-kit/",
+    "deployment/",
+    "migration/",
+    "release/",
+    "eval/",
+    "docs/v3/",
+    "pyproject.toml",
+    "specs/013-amplai-v3/"
+  ],
+  "content_hash": "7b10f7dbb900fb0c23440d6fcb182814039749a51f04032b4c274f534a963ce3",
+  "generated_from": {
+    "claims_sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+    "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+    "contract_sha256": "74e206129d8f34140e62ca03c6247d3bed7a408ff366b57ed99356ff6f2516be",
+    "decisions_sha256": "8a22d5c739d5a47a7c0dcebfccf0d4fecfaa34da9269b77fa2d432eacc91c50d",
+    "discovery_sha256": "",
+    "document_selection_sha256": "4143ab3d7580758b4378c2271d1caef2fb5462e20ad0373a0ef8752a06828293",
+    "generated_at": "2026-09-18T08:34:55Z",
+    "knowledge_map_sha256": "32c54054154f4513a1ded352b587d8ef1a0aa10dc0084855bfb6324726219eb4",
+    "readiness_sha256": "f00c18de76f38fe4f493aa5ccc2a701f5b4df282e4047632d106261a04f2bf49",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "DEV-03 (3.0.0.dev3) snapshot 을 이 저장소의 품질 게이트에 통과시키고, 승인 설계(AMPLAI V3 Design 1.0, design-reference/) 의 62 task 중 미착수 20 task 를 wave 의존 순서로 구현·검증하여 Intent→Verified Work 파이프라인이 로컬 실행 evidence 로 닫히는 RC 후보를 만든다. 실제 provider/컨테이너/물리 holdout 자격 인증과 production cutover 는 별도 human gate 뒤에 둔다.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:work,gate,runtime",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:work,runtime",
+      "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:work,gate",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:evidence,runtime",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword:governance",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:verification",
+      "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "high-priority-core",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "source_sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_document_governance.py",
+    "tests/test_control_plane.py",
+    "tests/test_governance_events.py",
+    "tests/test_governance_migrations.py",
+    "tests/test_governance_store.py",
+    "tests/test_hermes_integration.py",
+    "tests/test_legacy_migration.py",
+    "tests/test_project_packs.py",
+    "tests/v3/test_core_runtime.py",
+    "tests/v3/test_dev01_contracts_planning.py",
+    "tests/v3/test_dev02_tool_broker.py",
+    "tests/v3/test_dev03_evaluation.py",
+    "tests/v3/test_dev03_meta_harness.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "AMPLAI-V3-RC01"
+}

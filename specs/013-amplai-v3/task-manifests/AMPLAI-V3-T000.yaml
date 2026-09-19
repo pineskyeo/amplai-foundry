@@ -1,0 +1,189 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3-T000",
+  "title": "GATE DEV-03 소스의 ruff/mypy strict 게이트 닫기",
+  "type": "chore",
+  "status": "done",
+  "goal": {
+    "outcome": "DEV-03 가 들여온 ruff 167 / mypy 1216 오류를 의미 변경 없이 0 으로 만들고 v2 verifier 가 PASS 한다",
+    "user_value": "이후 모든 slice 가 프로젝트 완료 게이트 위에서 돈다"
+  },
+  "source": {
+    "feature": "013-amplai-v3",
+    "files": [
+      {
+        "path": "specs/013-amplai-v3/spec.md",
+        "section": "User Story 1"
+      },
+      {
+        "path": "specs/013-amplai-v3/dev03-delivery-evidence.json",
+        "section": "quality_gate_before"
+      }
+    ],
+    "requirements": [
+      "GATE-001",
+      "GATE-002"
+    ],
+    "decisions": [
+      "work-contract.json decisions: 품질 게이트는 설정 완화가 아니라 주석·수정으로 닫는다"
+    ]
+  },
+  "scope": {
+    "include": [
+      "src/amplai_foundry/",
+      "tests/v3/",
+      "pyproject.toml"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "src/amplai_foundry/",
+      "tests/v3/",
+      "pyproject.toml"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "타입 주석 추가, 제네릭 인자 명시, None narrowing 만. type: ignore 는 외부 라이브러리 한계에만 error-code 와 함께",
+      "leaf 모듈(contracts/storage) → drivers → runtime core → sandbox/tool_broker/knowledge/verification → evaluation → meta_harness/distribution → api/cli 순서",
+      "각 batch 후 tests/v3 477 passed 확인"
+    ],
+    "invariants": [
+      "기존 Foundry governance 가 유일 authority 다. LLM self-approval, client-supplied actor 신뢰 금지 (design/02 §4)",
+      "저장 원자 경계와 CAS commit 순서를 지킨다 (design/09 §4, §6)",
+      "설계와 충돌하면 DESIGN_CHANGE_PROPOSAL.md 에 기록하고 임의 선택하지 않는다",
+      "test 삭제·skip 으로 통과시키지 않는다. unavailable 환경은 NOT PASS 다",
+      "mypy strict / ruff 를 유지한다. design-reference/ 는 바꾸지 않는다"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "Canonical Vault mutation",
+      "push/merge/release",
+      "mypy override 로 strict 완화"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "GATE-001-P",
+        "given": "feat/013-amplai-v3 HEAD",
+        "when": ".ai-team/verifiers/run.py --profile v2",
+        "then": "VERIFIER: PASS"
+      },
+      {
+        "id": "GATE-002-P",
+        "given": "같은 HEAD",
+        "when": "pytest tests/v3 와 전체 suite",
+        "then": "477 passed 이상, 2971 passed 이상. skip/xfail 추가 없음"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check .",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff format --check .",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "주석 추가 중 narrowing 이 동작을 바꿀 가능성 — 477 test 로 회귀 확인"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-18T10:52:24Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S00",
+      ".specify/eval/verifier-last.json",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 24db152 is specs/013-amplai-v3/verifier-v2-report.json"
+  },
+  "handoff": {
+    "expected_changes": [
+      "src/amplai_foundry/**",
+      "tests/v3/**",
+      "pyproject.toml"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC01",
+    "slice_id": "S00",
+    "context_pack": "specs/013-amplai-v3/context-pack.json",
+    "environment": "specs/013-amplai-v3/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "5edbb7879ce4793db466371d72340b3fe3c864b3"
+  }
+}

@@ -132,6 +132,12 @@ WAITING ─ dependency DONE ─ READY ─ atomic claim ─ CLAIMED ─ start ─
 - `DONE`: acceptance와 evidence를 갖고 종료했다.
 - `CANCELLED`: 사람이 포기시켰다. `work cancel` / `change cancel`로만 도달한다.
 
+DONE/CANCELLED handoff는 읽기 전용이다. DONE에는 해당 Work의 summary, 완료 시각,
+output과 evidence/decision reference가 표시된다. terminal Work를 재claim하거나 다시
+activate하지 않는다. 다음 구현은 별도로 승인된 READY Work에서 이어 간다.
+`work heartbeat` CLI는 credential과 원본 lease hash가 없는 detached view를 출력한다.
+실제 lease의 token, 갱신, 권한 검사와 retry/backoff는 바뀌지 않는다.
+
 ### 막힌 Work 풀기
 
 `_all_dependencies_done`은 `DONE`만 인정한다. 따라서 죽은 upstream은 downstream을 영구히

@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "round": 6,
+  "status": "PASS",
+  "recorded_at": "2026-09-12T09:09:15Z",
+  "scope_sha256": "61462cceca36c9f4554835729e0ea4a180db6f40e83e8c937358eb16c26a297d",
+  "scope_file_sha256": "31d5050daedbaed4f382f694341ec0d139a39bc575cf11e705e7305734b28a94",
+  "source_snapshot": {
+    "path": "/tmp/synapse-split-resume.t7Jusk/w003-review-scope-r6-source-snapshot.tar.gz",
+    "sha256": "57c486bd01777fd188d19d46409094dede8b3e63599d543f7af3a08d6c918a6e",
+    "source_files": 155,
+    "governing_artifacts": 621,
+    "verified_files": 776,
+    "archive_members": 777,
+    "all_sha_bytes_modes_match": true,
+    "metadata_companions": 0
+  },
+  "reviews": [
+    {
+      "lens": "contract",
+      "verdict": "PASS",
+      "retained_report": "review-r6-contract.md",
+      "sha256": "87cb7e94d091f0688a938721353300951bc469b841f37a674049201021023a96",
+      "counts": {
+        "p0": 0,
+        "p1": 0,
+        "blocking_p2": 0,
+        "advisory": 0
+      }
+    },
+    {
+      "lens": "recovery",
+      "verdict": "PASS",
+      "retained_report": "review-r6-recovery.md",
+      "sha256": "44fc22f3f7794904df27277bb239fb7f8745f2d4edb6b621e891611b92eb9017",
+      "counts": {
+        "p0": 0,
+        "p1": 0,
+        "blocking_p2": 0,
+        "advisory": 0
+      }
+    },
+    {
+      "lens": "regression",
+      "verdict": "PASS",
+      "retained_report": "review-r6-regression.md",
+      "sha256": "cf37fca4b6f9b98e8fccdeeb025f911c9fafb969dc8bc582920ec649b7e8e744",
+      "counts": {
+        "p0": 0,
+        "p1": 0,
+        "blocking_p2": 0,
+        "advisory": 0
+      }
+    }
+  ],
+  "triage": [
+    {
+      "id": "W003-R5-01",
+      "disposition": "CLOSED",
+      "evidence": [
+        "s19-local-verification.json",
+        "review-r6-contract.md",
+        "review-r6-regression.md"
+      ],
+      "reason": "Actual generated and stored Context carries all three exact owning guides plus seven independent instructions; removing delivered-set validation kills existing regression assertions."
+    },
+    {
+      "id": "W003-R5-02",
+      "disposition": "CLOSED",
+      "evidence": [
+        "s20-local-verification.json",
+        "review-r6-recovery.md",
+        "review-r6-regression.md"
+      ],
+      "reason": "Unsafe optional aliases are rejected before absence fallback; focused failure/recovery and assertion-killing regression probes pass on both source and payload."
+    }
+  ],
+  "advisories": [],
+  "gate": {
+    "all_three_sequential_reviews_completed": true,
+    "p0": 0,
+    "p1": 0,
+    "blocking_p2": 0,
+    "advisory": 0,
+    "pass": true,
+    "next": "Post-review report-only gardening, current derived freshness, final security and native scoped completion."
+  },
+  "retention": {
+    "raw_copies": [
+      {
+        "path": "review-r6-contract.md",
+        "bytes": 8081,
+        "sha256": "87cb7e94d091f0688a938721353300951bc469b841f37a674049201021023a96",
+        "credential_detected": false
+      },
+      {
+        "path": "review-r6-recovery.md",
+        "bytes": 9905,
+        "sha256": "44fc22f3f7794904df27277bb239fb7f8745f2d4edb6b621e891611b92eb9017",
+        "credential_detected": false
+      },
+      {
+        "path": "review-r6-regression.md",
+        "bytes": 14309,
+        "sha256": "cf37fca4b6f9b98e8fccdeeb025f911c9fafb969dc8bc582920ec649b7e8e744",
+        "credential_detected": false
+      },
+      {
+        "path": "s08-r6-post-envelope-impact.json",
+        "bytes": 312,
+        "sha256": "beb77386aff1b9c3c9b5416f5d703ed84d23ab1dccf0d024cf18459e297b39cc",
+        "credential_detected": false
+      },
+      {
+        "path": "s08-r6-post-envelope-validation.json",
+        "bytes": 818,
+        "sha256": "ed985923cc3cf2afe436debf8bcbfa0cf051f8a268bcabc36cf7d7126746f917",
+        "credential_detected": false
+      },
+      {
+        "path": "s08-r6-initial-envelope-validation.json",
+        "bytes": 849,
+        "sha256": "1739970732dae32d0523919b268066f0cff15d4319a5f13b055588fadab1effb",
+        "credential_detected": false
+      }
+    ],
+    "verbatim": true,
+    "pre_retention_audit": {
+      "source_files": 155,
+      "governing_files": 621,
+      "archive_members": 777,
+      "failures": []
+    },
+    "security_scan": {
+      "files": 6,
+      "credential_findings": 0,
+      "scope": "Exact current/previous lease comparisons and narrow high-confidence signatures; internal reviewer evidence, not customer publication or general DLP."
+    }
+  },
+  "evidence_limits": [
+    "Independent focused counts overlap and are not summed; regression reran the full suite independently:2494passed/4existing liveSlack exclusions.",
+    "Five regression mutation mechanisms killed by23parameterized intended assertions; all23clean controls passed afterward. No exhaustive mutation score.",
+    "Isolated aggregate documentation freshness cannot reproduce four optional ignored runtime-path reference digests. This is explicitly not waived; actual owning-root docs validation is exit0/RESOLVED, same semantic snapshot, twoMATCHviews, with independently reproduced3guide/7instructionContext.",
+    "No Python3.6 runtime, full native Work/resume, RHEL7, signing, fleet activation, actual retirement or production deployment evidence. Original acceptance closure remains a separate explicit ledger step.",
+    "This PASS covers the exact frozen local W003 source/governing target, not W004 or whole-goal operational readiness."
+  ]
+}

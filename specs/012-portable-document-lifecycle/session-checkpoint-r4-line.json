@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "kind": "session_checkpoint_not_work_authority",
+  "recorded_at": "2026-09-12 01:23:43 UTC",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "authority": {
+    "project_store": "amplai-project",
+    "native_state": "RUNNING",
+    "attempt": 2,
+    "worker": "codex-synapse-split-w003",
+    "local_authorization": "CR-SYNAPSE-APP-SPLIT-E021",
+    "last_heartbeat": "2026-09-12 01:20 UTC",
+    "note": "Read native Work Context before resuming; do not reset attempts or edit canonical Store state. The worker still needs an explicit terminal/wait transition before ending."
+  },
+  "goal": "Complete approved Astra app split including independent apps, shared current documentation and unified deployment preparation; final customer report HTML.",
+  "current": {
+    "implementation": "Physical-line dependency omission repaired in canonical/payload engine;60added regression checks PASS.",
+    "revalidation": "All13affected slices PASS with149source files unchanged before/after.",
+    "docs": "25current guides reviewed via batch r8; full20source/11Decision Context MATCH.",
+    "running": "Canonical full S08; tool session71943. Check completion before polling.",
+    "html": "R4 release core captured but final manifest/HTML not written; full S08 evidence required.",
+    "review": "All three R4 independent lenses not started.",
+    "w004": "DRAFT; no RPM/nginx implementation yet."
+  },
+  "evidence": [
+    "s15-line-boundary-diagnosis.json",
+    "s15-line-boundary-red.log",
+    "s15-line-boundary-green.log",
+    "revalidation-r4-line.json",
+    "revalidation-source-r4-line.json",
+    "s08-native-r4-line.json",
+    "s08-document-review-evidence-r8.json",
+    "s08-context-r4.json",
+    "s08-r4-eval-source.json",
+    "s08-r4-eval-input-tasks.md"
+  ],
+  "native_evidence": [
+    "CR-SYNAPSE-APP-SPLIT-E045",
+    "CR-SYNAPSE-APP-SPLIT-E046"
+  ],
+  "next": [
+    "Collect full S08 log/result and compare all149source+12governing pins; never infer PASS from a still-running process.",
+    "Create current guide verification/release-r4 from actual full evidence; sync two new HTML bundles and validate.",
+    "Run existing tools/amplai-loop-kit/tests/document-browser.mjs with new private evidence directories, inspect screenshots/print, retain exact proof.",
+    "Converge/freeze R4 then run contract,recovery,regression agents sequentially; no shared-tree mutation. Retain raw reports and refresh derived doc-impact after final artifact membership.",
+    "After final independent/security/report-only-gardening closure, finish native W003 correctly and proceed to W004."
+  ],
+  "browser": {
+    "available_connected_browsers": 0,
+    "checked": "Browser skill selection and documented discovery returned no available browser.",
+    "fallback": "Existing isolated headless Chrome acceptance harness; never attach to a user profile or read credentials."
+  },
+  "do_not_touch": [
+    "Existing W001/W002 source/release pins and real UI repos",
+    "Vault/Platform/governed data and host trust",
+    "Actual server/services/signing/deployment",
+    "Git commit/push/remote/tags",
+    "Historical review archives, RED evidence and task completion_history"
+  ],
+  "unknowns": [
+    "Actual approved RHEL7 deployment target/access unavailable",
+    "No Python3.6/RHEL7 execution or full native Work lifecycle proof"
+  ],
+  "execution": "Main existing work/dev-loop; three independent reviewers sequential after docs freshness. No new production controller or other implementation agents.",
+  "git": {
+    "branch": "main",
+    "base": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+    "changes": "Uncommitted scoped W003 changes preserved",
+    "publication": "Not authorized or performed"
+  },
+  "limitations": [
+    "Current local evidence is not whole-goal completion or production deployment certification.",
+    "Checkpoint is a view only; Project Store CR/Work/Decision/Evidence remain authoritative."
+  ]
+}

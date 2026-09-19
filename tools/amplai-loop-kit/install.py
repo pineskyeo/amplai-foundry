@@ -13,20 +13,25 @@ Python 3.6+; standard library only.
 from __future__ import print_function
 
 import argparse
+import base64
 import copy
 import datetime
+import fcntl
 import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import stat
 import sys
 import tempfile
+import uuid
 
 PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
 MANIFEST_PATH = os.path.join(PACKAGE_ROOT, "manifest.json")
 STATE_REL = ".ai-team/install/amplai-loop-kit.json"
+JOURNAL_REL = ".ai-team/install/amplai-loop-kit.transaction.json"
 BACKUP_ROOT_REL = ".ai-team/backups/amplai-loop-kit"
 PROTOCOL = "amplai.async-cross-app.v1"
 
@@ -110,8 +115,7 @@ def atomic_write(path, data, mode):
 
 
 def safe_destination(target, rel):
-    if os.path.isabs(rel) or rel.startswith("../") or "/../" in rel.replace("\\", "/"):
-        raise InstallError("unsafe manifest path: %s" % rel)
+    validate_relative(rel)
     root = os.path.realpath(target)
     path = os.path.abspath(os.path.join(target, rel))
     parent = os.path.realpath(os.path.dirname(path))
@@ -119,7 +123,219 @@ def safe_destination(target, rel):
         raise InstallError("manifest path escapes target: %s" % rel)
     if os.path.lexists(path) and os.path.islink(path):
         raise InstallError("refusing to replace symlink: %s" % rel)
+    current = root
+    for part in rel.split("/")[:-1]:
+        current = os.path.join(current, part)
+        if os.path.islink(current):
+            raise InstallError("refusing symlink parent: %s" % rel)
     return path
+
+
+def validate_relative(rel):
+    if (not isinstance(rel, str) or "\\" in rel or "\x00" in rel
+            or any(part in ("", ".", "..") for part in rel.split("/"))):
+        raise InstallError("unsafe package/target path")
+    return rel
+
+
+class HeldTree(object):
+    """Descriptor-contained reads and writes; no symlink ancestor traversal.
+
+    Cooperating installers serialize on the held root inode. A non-cooperating
+    editor is detected by snapshot comparison; changed content is not rolled back
+    over. Equally privileged post-completion mutation is outside this guarantee.
+    """
+    def __init__(self, root):
+        self.input = os.path.abspath(root)
+        self.root = os.path.realpath(root)
+        self.dirs = {"": os.open(self.root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)}
+        self.bindings = []
+        self.created_dirs = []
+        self.temporary_names = {}
+
+    def close(self):
+        for fd in reversed(list(self.dirs.values())):
+            os.close(fd)
+        self.dirs = {}
+
+    def lock(self):
+        try:
+            fcntl.flock(self.dirs[""], fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise InstallError("another installer holds this target; retry after it finishes")
+
+    @staticmethod
+    def identity(info):
+        return info.st_dev, info.st_ino
+
+    def check(self):
+        if (os.path.realpath(self.input) != self.root
+                or self.identity(os.stat(self.root, follow_symlinks=False))
+                != self.identity(os.fstat(self.dirs[""]))):
+            raise InstallError("target root changed during transaction")
+        for parent, name, fd in self.bindings:
+            info = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            if not stat.S_ISDIR(info.st_mode) or self.identity(info) != self.identity(os.fstat(fd)):
+                raise InstallError("target parent changed during transaction")
+
+    def parent(self, rel, create=False):
+        parts = validate_relative(rel).split("/")
+        prefix = ""
+        fd = self.dirs[""]
+        self.check()
+        for name in parts[:-1]:
+            prefix = prefix + "/" + name if prefix else name
+            if prefix not in self.dirs:
+                try:
+                    child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                except FileNotFoundError:
+                    if not create:
+                        return None, parts[-1]
+                    self.check()
+                    os.mkdir(name, 0o700 if rel.startswith(BACKUP_ROOT_REL + "/") else 0o755, dir_fd=fd)
+                    os.fsync(fd)
+                    child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                    self.created_dirs.append(prefix)
+                self.dirs[prefix] = child
+                self.bindings.append((fd, name, child))
+            fd = self.dirs[prefix]
+        self.check()
+        return fd, parts[-1]
+
+    def snapshot(self, rel):
+        fd, name = self.parent(rel)
+        if fd is None:
+            return {"kind": "absent"}
+        try:
+            info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return {"kind": "absent"}
+        value = {"mode": stat.S_IMODE(info.st_mode), "identity": self.identity(info)}
+        if stat.S_ISLNK(info.st_mode):
+            value.update(kind="symlink", data=os.readlink(name, dir_fd=fd).encode("utf-8"))
+        elif stat.S_ISREG(info.st_mode):
+            source = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=fd)
+            with os.fdopen(source, "rb") as handle:
+                opened = os.fstat(handle.fileno())
+                if self.identity(opened) != self.identity(info):
+                    raise InstallError("target file changed while opening: %s" % rel)
+                data = handle.read(64 * 1024 * 1024 + 1)
+                after = os.fstat(handle.fileno())
+            fields = lambda s: (s.st_size, s.st_mtime_ns, s.st_ctime_ns, s.st_mode)
+            if len(data) > 64 * 1024 * 1024 or fields(opened) != fields(after):
+                raise InstallError("target file changed or exceeds transaction budget: %s" % rel)
+            value.update(kind="file", data=data)
+        elif stat.S_ISDIR(info.st_mode):
+            value.update(kind="directory")
+        else:
+            raise InstallError("unsupported target file type: %s" % rel)
+        final = os.stat(name, dir_fd=fd, follow_symlinks=False)
+        if self.identity(final) != self.identity(info):
+            raise InstallError("target leaf changed during read: %s" % rel)
+        self.check()
+        return value
+
+    @staticmethod
+    def matches(actual, expected, identity=False):
+        keys = ["kind", "data"]
+        if expected.get("kind") == "file":
+            keys.append("mode")
+        if identity and "identity" in expected:
+            keys.append("identity")
+        return all(actual.get(key) == expected.get(key) for key in keys)
+
+    def write(self, rel, desired, expected):
+        if not self.matches(self.snapshot(rel), expected, identity=True):
+            raise InstallError("target changed since preflight: %s" % rel)
+        fd, name = self.parent(rel, create=desired["kind"] != "absent")
+        if fd is None:
+            return
+        temp = self.temporary_names.get(rel) or ".amplai-install-" + uuid.uuid4().hex
+        allocated = False
+        try:
+            if desired["kind"] == "file":
+                handle = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                                 desired["mode"], dir_fd=fd)
+                allocated = True
+                with os.fdopen(handle, "wb") as stream:
+                    stream.write(desired["data"])
+                    stream.flush()
+                    os.fchmod(stream.fileno(), desired["mode"])
+                    os.fsync(stream.fileno())
+            elif desired["kind"] == "symlink":
+                os.symlink(desired["data"].decode("utf-8"), temp, dir_fd=fd)
+                allocated = True
+            elif desired["kind"] != "absent":
+                raise InstallError("unsupported transaction action")
+            self.check()
+            if not self.matches(self.snapshot(rel), expected, identity=True):
+                raise InstallError("target changed at publication boundary: %s" % rel)
+            if desired["kind"] == "absent":
+                if expected["kind"] != "absent":
+                    os.unlink(name, dir_fd=fd)
+            elif expected["kind"] == "absent":
+                os.link(temp, name, src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                os.unlink(temp, dir_fd=fd)
+                allocated = False
+            else:
+                os.replace(temp, name, src_dir_fd=fd, dst_dir_fd=fd)
+                allocated = False
+            os.fsync(fd)
+            self.check()
+            if not self.matches(self.snapshot(rel), desired):
+                raise InstallError("target failed final verification: %s" % rel)
+        finally:
+            if allocated:
+                os.unlink(temp, dir_fd=fd)
+
+
+def package_snapshot():
+    """Read and bind every consumed byte before planning any target mutation.
+
+    Checksums provide integrity, not a signature against an untrusted publisher.
+    Subsequent consumers use only this immutable byte snapshot, including Store files.
+    """
+    files = {}
+    tree = HeldTree(PACKAGE_ROOT)
+    def visit(prefix, fd):
+        for name in sorted(os.listdir(fd)):
+            rel = validate_relative(prefix + name)
+            info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISDIR(info.st_mode):
+                if name != "__pycache__":
+                    child, _ = tree.parent(rel + "/.inventory")
+                    visit(rel + "/", child)
+            elif stat.S_ISREG(info.st_mode):
+                member = tree.snapshot(rel)
+                if member["kind"] != "file":
+                    raise InstallError("package member changed type")
+                files[rel] = member["data"]
+            else:
+                raise InstallError("package member is not a regular file/directory: %s" % rel)
+    try:
+        visit("", tree.dirs[""])
+        tree.check()
+    finally:
+        tree.close()
+    if "CHECKSUMS.sha256" not in files:
+        raise InstallError("package lacks complete checksum inventory")
+    declared = {}
+    try:
+        for line in files["CHECKSUMS.sha256"].decode("utf-8").splitlines():
+            digest, rel = line.split("  ", 1)
+            validate_relative(rel)
+            if (not re.match(r"^[0-9a-f]{64}$", digest) or rel in declared
+                    or rel == "CHECKSUMS.sha256"):
+                raise ValueError("invalid or duplicate checksum")
+            declared[rel] = digest
+    except (ValueError, UnicodeError):
+        raise InstallError("package checksum inventory is malformed")
+    if set(declared) != set(files) - {"CHECKSUMS.sha256"}:
+        raise InstallError("package checksum inventory has missing or unlisted members")
+    for rel, digest in declared.items():
+        if hashlib.sha256(files[rel]).hexdigest() != digest:
+            raise InstallError("package checksum mismatch: %s" % rel)
+    return files
 
 
 def section_from_text(text, begin, end, label):
@@ -295,26 +511,47 @@ def merge_hooks(settings, hooks):
 
 
 class Action(object):
-    def __init__(self, rel, data, mode=0o644, reason="update"):
+    def __init__(self, rel, data, mode=0o644, reason="update", kind="file"):
         self.rel = rel
         self.data = data
         self.mode = mode
         self.reason = reason
+        self.kind = kind
 
     @property
     def new_hash(self):
-        return sha256_bytes(self.data)
+        prefix = b"symlink\x00" if self.kind == "symlink" else b""
+        return sha256_bytes(prefix + self.data)
 
 
 class Installer(object):
     def __init__(self, args):
         self.args = args
         self.target = os.path.abspath(os.path.expanduser(args.target))
-        self.manifest = read_json(MANIFEST_PATH)
+        self.package = package_snapshot()
+        self.manifest = json.loads(self.package["manifest.json"].decode("utf-8"))
         self.state_path = os.path.join(self.target, STATE_REL)
-        self.state = read_json(self.state_path) if os.path.isfile(self.state_path) else {}
+        self.tree = HeldTree(self.target)
+        self.before = {STATE_REL: self.tree.snapshot(STATE_REL)}
+        self.before[JOURNAL_REL] = self.tree.snapshot(JOURNAL_REL)
+        self.journal = None
+        initial_state = self.before[STATE_REL]
+        if initial_state["kind"] not in ("absent", "file"):
+            raise InstallError("install record must be a regular file")
+        self.state = (json.loads(initial_state["data"].decode("utf-8"))
+                      if initial_state["kind"] == "file" else {})
         if self.state:
             verify_seal(self.state, "existing install record")
+        self.bootstrap = bool(getattr(args, "bootstrap_baseline", False) or self.state.get("baseline"))
+        if getattr(args, "repo_profile", None) and not self.bootstrap:
+            raise InstallError("--repo-profile requires --bootstrap-baseline or an installed baseline")
+        self.baseline = (json.loads(self.package["baseline/manifest.json"].decode("utf-8"))
+                         if self.bootstrap else {})
+        self.baseline_receipt = copy.deepcopy(self.state.get("baseline") or {
+            "profile": "generic", "files": {}, "mirrors": {},
+        })
+        self.baseline_paths = set(item["path"] for item in self.baseline.get("files", []))
+        self.baseline_paths.update(self.baseline_receipt.get("files", {}))
         self.actions = []
         self.conflicts = []
         self.notes = []
@@ -324,28 +561,69 @@ class Installer(object):
         self.removals = []
         # Paths this run brings into existence, for a symmetric uninstall.
         self.created_paths = set()
+        self.borrowed_owned = set(self.state.get("borrowed_owned_files") or [])
+        self.borrowed_markers = set(self.state.get("borrowed_marker_sections") or [])
+        self.borrowed_json = copy.deepcopy(self.state.get("borrowed_json") or {})
+        paths = {item["path"] for key in ("owned_files", "markers", "json_merges")
+                 for item in self.manifest.get(key, [])}
+        paths.update(item["path"] for key in ("files", "markers", "mirrors")
+                     for item in self.baseline.get(key, []))
+        paths.update([".claude/settings.json", ".codex/hooks.json", ".ai-team/app.json",
+                      ".ai-team/local/project.json"])
+        paths.update(self.state.get("owned_files") or {})
+        paths.update(self.baseline_receipt.get("files", {}))
+        paths.update(self.baseline_receipt.get("mirrors", {}))
+        for rel in sorted(paths):
+            self.before[rel] = self.tree.snapshot(rel)
+
+    def __del__(self):
+        tree = getattr(self, "tree", None)
+        if tree and tree.dirs:
+            tree.close()
+
+    def package_bytes(self, rel):
+        validate_relative(rel)
+        if rel not in self.package:
+            raise InstallError("package member not in sealed snapshot: %s" % rel)
+        return self.package[rel]
+
+    def marker_items(self):
+        return self.manifest.get("markers", []) + self.baseline.get("markers", [])
+
+    def fragment_bytes(self, item):
+        prefix = "baseline/" if item in self.baseline.get("markers", []) else ""
+        return self.package_bytes(prefix + "fragments/" + item["fragment"])
 
     def validate_package(self):
         if self.manifest.get("runtime_protocol") != PROTOCOL:
             raise InstallError("unsupported package protocol")
         for item in self.manifest.get("owned_files", []):
-            path = os.path.join(PACKAGE_ROOT, "payload", item["path"])
-            if not os.path.isfile(path):
-                raise InstallError("missing payload file: %s" % item["path"])
-            if sha256_file(path) != item["sha256"]:
+            if sha256_bytes(self.package_bytes("payload/" + item["path"])) != item["sha256"]:
                 raise InstallError("payload hash mismatch: %s" % item["path"])
-        for item in self.manifest.get("markers", []):
-            path = os.path.join(PACKAGE_ROOT, "fragments", item["fragment"])
-            if not os.path.isfile(path):
-                raise InstallError("missing fragment: %s" % item["fragment"])
-            if sha256_file(path) != item["sha256"]:
+        for item in self.marker_items():
+            validate_relative(item["path"])
+            if sha256_bytes(self.fragment_bytes(item)) != item["sha256"]:
                 raise InstallError("fragment hash mismatch: %s" % item["fragment"])
         for item in self.manifest.get("json_merges", []):
-            path = os.path.join(PACKAGE_ROOT, "fragments", item["fragment"])
-            if not os.path.isfile(path):
-                raise InstallError("missing JSON merge fragment: %s" % item["fragment"])
-            if sha256_file(path) != item["sha256"]:
+            if sha256_bytes(self.fragment_bytes(item)) != item["sha256"]:
                 raise InstallError("JSON merge fragment hash mismatch: %s" % item["fragment"])
+        if self.bootstrap:
+            if self.baseline.get("profile") != "generic" or self.baseline_receipt.get("profile") != "generic":
+                raise InstallError("unsupported baseline repository profile")
+            declared = [validate_relative(item["path"]) for item in self.baseline["files"]]
+            actual = {rel[len("baseline/payload/"):] for rel in self.package
+                      if rel.startswith("baseline/payload/")}
+            if len(set(declared)) != len(declared) or set(declared) != actual:
+                raise InstallError("package baseline inventory is incomplete or duplicated")
+            for item in self.baseline["files"]:
+                if sha256_bytes(self.package_bytes("baseline/payload/" + item["path"])) != item["sha256"]:
+                    raise InstallError("package baseline hash mismatch")
+            skills = self.baseline.get("required_skills", [])
+            mirrors = self.baseline.get("mirrors", [])
+            expected = {".claude/skills/" + name: "../../.agents/skills/" + name for name in skills}
+            if (len(skills) != 12 or len(set(skills)) != 12 or len(mirrors) != 12
+                    or {item["path"]: item["target"] for item in mirrors} != expected):
+                raise InstallError("package baseline mirror inventory is not exact")
 
     @staticmethod
     def _version_key(value):
@@ -366,7 +644,7 @@ class Installer(object):
                     "use --force to downgrade" % (installed, self.manifest["version"])
                 )
         for rel in self.manifest.get("required_paths", []):
-            if not os.path.exists(os.path.join(self.target, rel)):
+            if rel not in self.baseline_paths and not os.path.exists(os.path.join(self.target, rel)):
                 raise InstallError("target is not an AMPLAI Loop V2 app; missing %s" % rel)
         if self.args.project_home:
             home = os.path.abspath(os.path.expanduser(self.args.project_home))
@@ -381,6 +659,7 @@ class Installer(object):
                     )
 
     def add_action(self, action):
+        validate_relative(action.rel)
         if any(existing.rel == action.rel for existing in self.actions):
             raise InstallError("duplicate install action: %s" % action.rel)
         self.actions.append(action)
@@ -389,12 +668,13 @@ class Installer(object):
         previous = self.state.get("owned_files") or {}
         for item in self.manifest.get("owned_files", []):
             rel = item["path"]
-            src = os.path.join(PACKAGE_ROOT, "payload", rel)
-            data = read_bytes(src)
+            data = self.package_bytes("payload/" + rel)
             dest = safe_destination(self.target, rel)
             if os.path.exists(dest):
                 current = sha256_file(dest)
                 if current == item["sha256"]:
+                    if rel not in previous:
+                        self.borrowed_owned.add(rel)
                     continue
                 old_installed = previous.get(rel)
                 if old_installed and current == old_installed:
@@ -409,10 +689,96 @@ class Installer(object):
             else:
                 self.add_action(Action(rel, data, int(item.get("mode", "644"), 8), "new package file"))
 
+    def composed_baseline(self, item):
+        """Compose whole-file baseline and async extension before scheduling it."""
+        rel = item["path"]
+        original = self.package_bytes("baseline/payload/" + rel)
+        data = original
+        for marker in self.manifest.get("markers", []):
+            if marker["path"] == rel:
+                data = merge_section(data.decode("utf-8"), self.fragment_bytes(marker).decode("utf-8"),
+                                     marker["begin"], marker["end"], rel)[0].encode("utf-8")
+        for merge in self.manifest.get("json_merges", []):
+            if merge["path"] != rel:
+                continue
+            current = json.loads(data.decode("utf-8"))
+            extension = json.loads(self.fragment_bytes(merge).decode("utf-8"))
+            for key in ("path_rules", "forbidden_automatic_actions"):
+                for value in extension.get(key, []):
+                    if value not in current.setdefault(key, []):
+                        current[key].append(value)
+            data = (json.dumps(current, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        return original, data
+
+    def plan_baseline(self):
+        if not self.bootstrap:
+            return
+        for item in self.baseline["files"]:
+            rel = item["path"]
+            original, data = self.composed_baseline(item)
+            dest = safe_destination(self.target, rel)
+            previous = self.baseline_receipt["files"].get(rel)
+            mode = int(item.get("mode", "644"), 8)
+            desired_hash = sha256_bytes(data)
+            if os.path.exists(dest):
+                if not os.path.isfile(dest):
+                    raise InstallError("baseline target is not a regular file: %s" % rel)
+                current = read_bytes(dest)
+                old_mode = stat.S_IMODE(os.stat(dest).st_mode)
+                if previous:
+                    if (sha256_bytes(current) != previous["installed_hash"]
+                            or old_mode != previous["mode"]):
+                        if not self.args.force:
+                            self.conflicts.append("baseline file has local modifications: %s" % rel)
+                            continue
+                    if not previous["created"] and current != data:
+                        self.conflicts.append("borrowed baseline file requires explicit reconciliation: %s" % rel)
+                        continue
+                    receipt = copy.deepcopy(previous)
+                    # Borrowed permissions belong to the local owner, including
+                    # mode drift accepted through the existing explicit force path.
+                    # Only installer-created files adopt package mode updates.
+                    if not previous["created"]:
+                        mode = old_mode
+                elif current == data:
+                    # Identical user files are usable but are never adopted for deletion.
+                    receipt = {"created": False, "restore": None}
+                    mode = old_mode
+                elif current == original:
+                    # Only known public package bytes are stored for restoring the extension.
+                    receipt = {"created": False, "restore": base64.b64encode(original).decode("ascii")}
+                    mode = old_mode
+                else:
+                    self.conflicts.append("unmanaged baseline file has local content: %s" % rel)
+                    continue
+                if current != data or old_mode != mode:
+                    self.add_action(Action(rel, data, mode, "composed baseline update"))
+            else:
+                receipt = {"created": True, "restore": None}
+                self.add_action(Action(rel, data, mode, "composed baseline file"))
+            receipt.update(installed_hash=desired_hash, mode=mode)
+            self.baseline_receipt["files"][rel] = receipt
+        for item in self.baseline["mirrors"]:
+            rel, link = item["path"], item["target"]
+            # The exact target is validated above; parent symlinks remain forbidden.
+            dest = os.path.join(self.target, validate_relative(rel))
+            previous = self.baseline_receipt["mirrors"].get(rel)
+            if os.path.lexists(dest):
+                if not os.path.islink(dest) or os.readlink(dest) != link:
+                    self.conflicts.append("baseline mirror conflicts with local path: %s" % rel)
+                    continue
+                receipt = previous or {"created": False, "target": link}
+            else:
+                receipt = {"created": True, "target": link}
+                self.add_action(Action(rel, link.encode("utf-8"), reason="exact baseline mirror", kind="symlink"))
+            self.baseline_receipt["mirrors"][rel] = receipt
+
     def plan_markers(self):
         previous = self.state.get("marker_sections") or {}
-        for item in self.manifest.get("markers", []):
+        for item in self.marker_items():
             rel = item["path"]
+            if rel in self.baseline_paths:
+                continue
             dest = safe_destination(self.target, rel)
             if not os.path.exists(dest) and item.get("required", False):
                 raise InstallError("required marker target is missing: %s" % rel)
@@ -425,7 +791,7 @@ class Installer(object):
                 read_text(dest) if os.path.exists(dest)
                 else item.get("create_header", "")
             )
-            fragment = read_text(os.path.join(PACKAGE_ROOT, "fragments", item["fragment"]))
+            fragment = self.fragment_bytes(item).decode("utf-8")
             merged, existing, desired = merge_section(
                 current, fragment, item["begin"], item["end"], rel,
             )
@@ -433,6 +799,8 @@ class Installer(object):
             if existing is not None:
                 current_hash = sha256_bytes(existing.encode("utf-8"))
                 old_hash = previous.get(rel)
+                if not old_hash and current_hash == desired_hash:
+                    self.borrowed_markers.add(rel)
                 if current_hash != desired_hash and old_hash and current_hash != old_hash and not self.args.force:
                     self.conflicts.append("managed section was locally modified: %s" % rel)
                     continue
@@ -478,16 +846,19 @@ class Installer(object):
         previous = self.state.get("json_objects") or {}
         for item in self.manifest.get("json_merges", []):
             rel = item["path"]
+            if rel in self.baseline_paths:
+                continue
             dest = safe_destination(self.target, rel)
             if not os.path.isfile(dest):
                 if item.get("required", True):
                     raise InstallError("required JSON merge target is missing: %s" % rel)
                 continue
             current = read_json(dest)
-            extension = read_json(os.path.join(PACKAGE_ROOT, "fragments", item["fragment"]))
+            extension = json.loads(self.fragment_bytes(item).decode("utf-8"))
             merged = copy.deepcopy(current)
             rules = merged.setdefault("path_rules", [])
             previous_path = previous.get(rel) or {}
+            borrowed = self.borrowed_json.setdefault(rel, {"rules": [], "prohibitions": []})
             for desired in extension.get("path_rules", []):
                 rule_id = desired.get("id")
                 if not rule_id:
@@ -500,6 +871,8 @@ class Installer(object):
                 existing = rules[index]
                 existing_hash = sha256_bytes(canonical_json(existing))
                 old_hash = previous_path.get(rule_id)
+                if not old_hash and existing_hash == desired_hash and rule_id not in borrowed["rules"]:
+                    borrowed["rules"].append(rule_id)
                 if existing_hash != desired_hash:
                     if old_hash and existing_hash != old_hash and not self.args.force:
                         self.conflicts.append("managed JSON rule was locally modified: %s#%s" % (rel, rule_id))
@@ -510,6 +883,9 @@ class Installer(object):
                     rules[index] = copy.deepcopy(desired)
             forbidden = merged.setdefault("forbidden_automatic_actions", [])
             for value in extension.get("forbidden_automatic_actions", []):
+                if (value in forbidden and rel not in (self.state.get("json_objects") or {})
+                        and value not in borrowed["prohibitions"]):
+                    borrowed["prohibitions"].append(value)
                 if value not in forbidden:
                     forbidden.append(value)
             if merged == current:
@@ -585,11 +961,13 @@ class Installer(object):
         data = (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
         if os.path.exists(dest):
             existing = read_json(dest)
+            verify_seal(existing, "existing app identity")
             if (existing.get("project_id"), existing.get("app_id")) != (self.args.project_id, self.args.app_id):
                 if not self.args.force:
                     self.conflicts.append("existing .ai-team/app.json belongs to another project/app")
                     return
-            if read_bytes(dest) == data:
+            else:
+                # App-owned identity extension fields and layout are not installer content.
                 return
         self.add_action(Action(rel, data, 0o644, "app identity"))
 
@@ -629,28 +1007,52 @@ class Installer(object):
         return sha256_file(path) if os.path.exists(path) else None
 
     def plan_state(self):
-        owned = {item["path"]: item["sha256"] for item in self.manifest.get("owned_files", [])}
+        owned = dict(self.state.get("owned_files") or {})
+        owned.update({item["path"]: item["sha256"] for item in self.manifest.get("owned_files", [])
+                      if item["path"] not in self.borrowed_owned})
         markers = {}
-        for item in self.manifest.get("markers", []):
-            fragment = read_text(os.path.join(PACKAGE_ROOT, "fragments", item["fragment"]))
+        for item in self.marker_items():
+            if item["path"] in self.borrowed_markers:
+                continue
+            fragment = self.fragment_bytes(item).decode("utf-8")
             desired = section_from_text(fragment, item["begin"], item["end"], item["path"])
             markers[item["path"]] = sha256_bytes(desired.encode("utf-8"))
         json_objects = {}
         for item in self.manifest.get("json_merges", []):
-            extension = read_json(os.path.join(PACKAGE_ROOT, "fragments", item["fragment"]))
+            extension = json.loads(self.fragment_bytes(item).decode("utf-8"))
             json_objects[item["path"]] = {
                 rule["id"]: sha256_bytes(canonical_json(rule))
                 for rule in extension.get("path_rules", [])
+                if rule["id"] not in self.borrowed_json.get(item["path"], {}).get("rules", [])
             }
         previous_installed_at = self.state.get("installed_at")
         # Remember which paths this kit brought into existence.  Without it an
         # uninstall cannot tell "the app had this before" from "we created it",
         # and has to leave both behind.
         created = sorted(set(self.state.get("created_paths") or []) | self.created_paths)
+        directories = set(self.state.get("created_directories") or [])
+        for action in self.actions + [Action(STATE_REL, b"")]:
+            parts = action.rel.split("/")[:-1]
+            for index in range(1, len(parts) + 1):
+                directory = "/".join(parts[:index])
+                if directory not in self.tree.dirs:
+                    directories.add(directory)
+        identities = dict(self.state.get("identity_ownership") or {})
+        for rel in (".ai-team/app.json", ".ai-team/local/project.json"):
+            if rel not in identities:
+                identities[rel] = self.before[rel]["kind"] == "absent"
+        hook_ownership = {}
+        for key, rel in (("claude_hooks", ".claude/settings.json"), ("codex_hooks", ".codex/hooks.json")):
+            before = self.before[rel]
+            settings = json.loads(before["data"].decode("utf-8")) if before["kind"] == "file" else {}
+            previous_hooks = self.state.get(key) or []
+            hook_ownership[key] = [item for item in self.manifest.get(key, [])
+                                   if item in previous_hooks or not hook_present(settings, item["event"], item["command"])]
         state = {
             "schema_version": "1.0",
             "kind": "amplai_loop_kit_install",
             "package_version": self.manifest["version"],
+            "package_sha256": sha256_bytes(self.package["CHECKSUMS.sha256"]),
             "runtime_protocol": PROTOCOL,
             "project_id": self.args.project_id,
             "app_id": self.args.app_id,
@@ -658,10 +1060,17 @@ class Installer(object):
             "owned_files": owned,
             "marker_sections": markers,
             "json_objects": json_objects,
-            "claude_hooks": self.manifest.get("claude_hooks", []),
-            "codex_hooks": self.manifest.get("codex_hooks", []),
+            "claude_hooks": hook_ownership["claude_hooks"],
+            "codex_hooks": hook_ownership["codex_hooks"],
             "created_paths": created,
+            "created_directories": sorted(directories),
+            "identity_ownership": identities,
+            "borrowed_owned_files": sorted(self.borrowed_owned),
+            "borrowed_marker_sections": sorted(self.borrowed_markers),
+            "borrowed_json": self.borrowed_json,
         }
+        if self.bootstrap:
+            state["baseline"] = self.baseline_receipt
         data = (json.dumps(seal(state), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
         self.actions = [action for action in self.actions if action.rel != STATE_REL]
         if not os.path.exists(self.state_path) or read_bytes(self.state_path) != data:
@@ -684,12 +1093,20 @@ class Installer(object):
                 )
                 continue
             removals.append(rel)
-        for item in self.manifest.get("markers", []):
+        for item in self.marker_items():
             rel = item["path"]
+            if rel in self.baseline_paths or rel in self.borrowed_markers:
+                continue
             dest = safe_destination(self.target, rel)
             if not os.path.exists(dest):
                 continue
             current = read_text(dest)
+            section = section_from_text(current, item["begin"], item["end"], rel)
+            installed = (self.state.get("marker_sections") or {}).get(rel)
+            if section is not None and (not installed or sha256_bytes(section.encode("utf-8")) != installed):
+                if not self.args.force:
+                    self.conflicts.append("managed section changed since install: %s" % rel)
+                    continue
             stripped, found = strip_section(current, item["begin"], item["end"])
             if not found or stripped == current:
                 continue
@@ -714,20 +1131,26 @@ class Installer(object):
             self.add_action(Action(rel, stripped.encode("utf-8"), mode, "strip managed section"))
         for item in self.manifest.get("json_merges", []):
             rel = item["path"]
+            if rel in self.baseline_paths:
+                continue
             dest = safe_destination(self.target, rel)
             if not os.path.isfile(dest):
                 continue
             current = read_json(dest)
-            extension = read_json(os.path.join(PACKAGE_ROOT, "fragments", item["fragment"]))
+            extension = json.loads(self.fragment_bytes(item).decode("utf-8"))
             merged = copy.deepcopy(current)
-            owned_ids = set(
-                rule.get("id") for rule in extension.get("path_rules", [])
-            )
+            recorded = (self.state.get("json_objects") or {}).get(rel, {})
+            owned_ids = set(recorded)
+            for rule in current.get("path_rules", []):
+                if rule.get("id") in recorded and sha256_bytes(canonical_json(rule)) != recorded[rule["id"]]:
+                    if not self.args.force:
+                        self.conflicts.append("managed JSON rule changed since install: %s" % rel)
             merged["path_rules"] = [
                 rule for rule in merged.get("path_rules", [])
                 if rule.get("id") not in owned_ids
             ]
-            owned_prohibitions = set(extension.get("forbidden_automatic_actions", []))
+            owned_prohibitions = set(extension.get("forbidden_automatic_actions", [])) - set(
+                self.borrowed_json.get(rel, {}).get("prohibitions", []))
             merged["forbidden_automatic_actions"] = [
                 value for value in merged.get("forbidden_automatic_actions", [])
                 if value not in owned_prohibitions
@@ -772,8 +1195,30 @@ class Installer(object):
                                        "remove AMPLAI Codex hooks"))
         for rel in (".ai-team/app.json", ".ai-team/local/project.json", STATE_REL):
             dest = safe_destination(self.target, rel)
+            if rel != STATE_REL and not self.state.get("identity_ownership", {}).get(rel, True):
+                continue
             if os.path.exists(dest):
                 removals.append(rel)
+        if self.bootstrap:
+            for rel, item in self.baseline_receipt["files"].items():
+                dest = safe_destination(self.target, rel)
+                if not os.path.exists(dest):
+                    continue
+                if (sha256_file(dest) != item["installed_hash"]
+                        or stat.S_IMODE(os.stat(dest).st_mode) != item["mode"]):
+                    self.conflicts.append("baseline file changed since install: %s" % rel)
+                elif item["created"]:
+                    removals.append(rel)
+                elif item.get("restore"):
+                    self.add_action(Action(rel, base64.b64decode(item["restore"]), item["mode"], "restore borrowed baseline"))
+            for rel, item in self.baseline_receipt["mirrors"].items():
+                dest = os.path.join(self.target, validate_relative(rel))
+                if not os.path.lexists(dest):
+                    continue
+                if not os.path.islink(dest) or os.readlink(dest) != item["target"]:
+                    self.conflicts.append("baseline mirror changed since install: %s" % rel)
+                elif item["created"]:
+                    removals.append(rel)
         if self.conflicts:
             raise InstallError("uninstall conflicts:\n- " + "\n- ".join(self.conflicts))
         self.removals = sorted(set(removals))
@@ -786,39 +1231,18 @@ class Installer(object):
         self.validate_package()
         actions, removals = self.plan_uninstall()
         report = {
-            "ok": True,
-            "uninstall": True,
-            "dry_run": bool(self.args.dry_run),
+            "ok": True, "uninstall": True, "dry_run": bool(self.args.dry_run),
             "target": self.target,
             "rewrites": [{"path": a.rel, "reason": a.reason} for a in actions],
-            "removals": removals,
-            "notes": self.notes,
+            "removals": removals, "notes": self.notes,
         }
         if self.args.dry_run:
             return report
-        backup_dir = os.path.join(
-            self.target, BACKUP_ROOT_REL, "%s-%s-uninstall" % (timestamp(), os.getpid())
-        )
-        for rel in [a.rel for a in actions] + removals:
-            src = safe_destination(self.target, rel)
-            if os.path.exists(src):
-                dst = os.path.join(backup_dir, rel)
-                ensure_dir(os.path.dirname(dst))
-                shutil.copy2(src, dst)
-        self.backup_dir = backup_dir
-        for action in actions:
-            atomic_write(safe_destination(self.target, action.rel), action.data, action.mode)
-        emptied = set()
-        for rel in removals:
-            dest = safe_destination(self.target, rel)
-            if os.path.exists(dest):
-                os.unlink(dest)
-                emptied.add(os.path.dirname(dest))
-        # Removing only files leaves the directories this kit created behind.
-        # A target whose convention counts its own top-level directories still
-        # sees them, so an uninstall that stops at files is not an uninstall.
-        report["removed_directories"] = self._prune_empty_dirs(emptied)
-        report["backup_dir"] = backup_dir
+        self.backup_and_apply(removals)
+        self.finish_transaction()
+        report["removed_directories"] = self._prune_empty_dirs(
+            set(os.path.dirname(os.path.join(self.target, rel)) for rel in removals))
+        report["backup_dir"] = self.backup_dir
         return report
 
     @staticmethod
@@ -837,29 +1261,43 @@ class Installer(object):
         return remainder == header.strip()
 
     def _prune_empty_dirs(self, candidates):
-        """Delete directories this uninstall emptied, walking upwards.
-
-        Stops at the target root and never touches a directory that still has
-        anything in it, so a path shared with the application survives.
-        """
+        """Prune only owned empty directories, never traverse substituted parents."""
         removed = []
-        root = os.path.abspath(self.target)
+        owned = set(self.state.get("created_directories") or []) | set(self.tree.created_dirs)
         for start in sorted(candidates, key=len, reverse=True):
             current = os.path.abspath(start)
-            while current.startswith(root) and current != root:
-                try:
-                    if os.listdir(current):
-                        break
-                    os.rmdir(current)
-                except OSError:
+            while current != self.target:
+                rel = os.path.relpath(current, self.target).replace(os.sep, "/")
+                if (rel.startswith("../") or rel == BACKUP_ROOT_REL
+                        or rel.startswith(BACKUP_ROOT_REL + "/")):
                     break
-                removed.append(os.path.relpath(current, root).replace(os.sep, "/"))
+                if "created_directories" in self.state and rel not in owned:
+                    break
+                try:
+                    parent, name = self.tree.parent(rel)
+                    if parent is None:
+                        break
+                    info = os.stat(name, dir_fd=parent, follow_symlinks=False)
+                    if not stat.S_ISDIR(info.st_mode):
+                        break
+                    held = self.tree.dirs.get(rel)
+                    if held is not None and self.tree.identity(info) != self.tree.identity(os.fstat(held)):
+                        break
+                    os.rmdir(name, dir_fd=parent)
+                    if held is not None:
+                        self.tree.bindings = [entry for entry in self.tree.bindings if entry[2] != held]
+                        del self.tree.dirs[rel]
+                        os.close(held)
+                except (OSError, InstallError):
+                    break
+                removed.append(rel)
                 current = os.path.dirname(current)
         return sorted(set(removed))
 
     def plan(self):
         self.validate_package()
         self.validate_target()
+        self.plan_baseline()
         self.plan_owned_files()
         self.plan_markers()
         self.plan_json_merges()
@@ -872,42 +1310,158 @@ class Installer(object):
         self.plan_state()
         return self.actions
 
-    def backup_and_apply(self):
-        existing = []
-        for action in self.actions:
-            dest = safe_destination(self.target, action.rel)
-            if os.path.exists(dest):
-                existing.append(action.rel)
+    def check_before(self):
+        for rel, previous in self.before.items():
+            if not self.tree.matches(self.tree.snapshot(rel), previous, identity=True):
+                raise InstallError("target changed since preflight: %s" % rel)
+
+    def backup_and_apply(self, removals=()):
+        self.check_before()
+        desired = [(a.rel, {"kind": a.kind, "data": a.data, "mode": a.mode})
+                   for a in self.actions]
+        desired.extend((rel, {"kind": "absent"}) for rel in removals)
+        if len({rel for rel, _ in desired}) != len(desired):
+            raise InstallError("transaction has competing actions for one path")
+        if not desired:
+            return []
+        existing = [rel for rel, _ in desired if self.before[rel]["kind"] != "absent"]
+        backup_rel = None
         if existing:
-            self.backup_dir = os.path.join(
-                self.target, BACKUP_ROOT_REL, "%s-%s" % (timestamp(), os.getpid())
-            )
+            backup_rel = BACKUP_ROOT_REL + "/" + timestamp() + "-" + uuid.uuid4().hex
+            self.backup_dir = os.path.join(self.target, backup_rel)
             for rel in existing:
-                src = safe_destination(self.target, rel)
-                dst = os.path.join(self.backup_dir, rel)
-                ensure_dir(os.path.dirname(dst))
-                shutil.copy2(src, dst)
+                self.tree.write(backup_rel + "/" + rel, self.before[rel], {"kind": "absent"})
+        for rel, _ in desired:
+            name = ".amplai-install-" + uuid.uuid4().hex
+            temp_rel = (rel.rsplit("/", 1)[0] + "/" if "/" in rel else "") + name
+            if self.tree.snapshot(temp_rel)["kind"] != "absent":
+                raise InstallError("transaction temporary path collision")
+            self.tree.temporary_names[rel] = name
+        journal = seal({
+            "schema_version": "1.0", "kind": "amplai_loop_kit_transaction",
+            "package_sha256": sha256_bytes(self.package["CHECKSUMS.sha256"]),
+            "created_at": utc_now(), "backup_root": backup_rel,
+            "project_store_requested": bool(self.args.project_home),
+            "entries": [{"path": rel, "before": self.snapshot_receipt(self.before[rel]),
+                         "desired": self.snapshot_receipt(value),
+                         "temporary": self.tree.temporary_names[rel]} for rel, value in desired],
+        })
+        self.journal = {"kind": "file", "mode": 0o600,
+                        "data": (json.dumps(journal, sort_keys=True, indent=2) + "\n").encode("utf-8")}
+        self.tree.write(JOURNAL_REL, self.journal, {"kind": "absent"})
         applied = []
         try:
-            for action in self.actions:
-                dest = safe_destination(self.target, action.rel)
-                existed = os.path.exists(dest)
-                old_mode = stat.S_IMODE(os.stat(dest).st_mode) if existed else None
-                atomic_write(dest, action.data, action.mode)
-                applied.append((action.rel, existed, old_mode))
-        except Exception:
-            for rel, existed, old_mode in reversed(applied):
-                dest = safe_destination(self.target, rel)
-                backup = os.path.join(self.backup_dir or "", rel)
-                if existed and os.path.exists(backup):
-                    ensure_dir(os.path.dirname(dest))
-                    shutil.copy2(backup, dest)
-                    if old_mode is not None:
-                        os.chmod(dest, old_mode)
-                elif not existed and os.path.exists(dest):
-                    os.unlink(dest)
+            for rel, value in desired:
+                before = self.before[rel]
+                applied.append((rel, before, value))
+                self.tree.write(rel, value, before)
+            for rel, _, value in applied:
+                if not self.tree.matches(self.tree.snapshot(rel), value):
+                    raise InstallError("transaction final inventory changed: %s" % rel)
+        except BaseException:
+            self.rollback_applied(applied)
+            self.finish_transaction()
             raise
         return applied
+
+    @staticmethod
+    def snapshot_receipt(snapshot):
+        value = {"kind": snapshot["kind"]}
+        if snapshot["kind"] != "absent":
+            value["sha256"] = sha256_bytes(
+                (b"symlink\x00" if snapshot["kind"] == "symlink" else b"") + snapshot["data"])
+        if snapshot["kind"] == "file":
+            value["mode"] = snapshot["mode"]
+        return value
+
+    def finish_transaction(self):
+        if self.journal is None:
+            return
+        current = self.tree.snapshot(JOURNAL_REL)
+        if not self.tree.matches(current, self.journal):
+            raise InstallError("transaction journal changed; preserved for explicit recovery")
+        self.tree.write(JOURNAL_REL, {"kind": "absent"}, current)
+        self.journal = None
+        self.tree.temporary_names = {}
+
+    def execute_recovery(self):
+        """Restore only hash-bound target paths; never alter the central Store."""
+        current_journal = self.tree.snapshot(JOURNAL_REL)
+        if current_journal["kind"] != "file":
+            raise InstallError("no recoverable transaction journal")
+        journal = json.loads(current_journal["data"].decode("utf-8"))
+        verify_seal(journal, "transaction journal")
+        if journal.get("kind") != "amplai_loop_kit_transaction" or journal.get("schema_version") != "1.0":
+            raise InstallError("unsupported transaction journal")
+        entries = journal.get("entries")
+        if not isinstance(entries, list) or not entries or len(entries) > 10000:
+            raise InstallError("invalid recovery inventory")
+        all_baseline = json.loads(self.package_bytes("baseline/manifest.json").decode("utf-8"))
+        allowed = set(self.before) - {JOURNAL_REL}
+        allowed.update(item["path"] for key in ("files", "markers", "mirrors")
+                       for item in all_baseline.get(key, []))
+        backup_root = journal.get("backup_root")
+        if backup_root is not None:
+            validate_relative(backup_root)
+            if not backup_root.startswith(BACKUP_ROOT_REL + "/") or "/" in backup_root[len(BACKUP_ROOT_REL) + 1:]:
+                raise InstallError("invalid recovery backup location")
+        planned = []
+        temporaries = []
+        seen = set()
+        for entry in entries:
+            rel = validate_relative(entry["path"])
+            if rel not in allowed or rel in seen:
+                raise InstallError("recovery path is outside the declared inventory or duplicated")
+            seen.add(rel)
+            name = entry.get("temporary")
+            if not isinstance(name, str) or not re.match(r"^\.amplai-install-[0-9a-f]{32}$", name):
+                raise InstallError("recovery temporary name is not exact")
+            temp_rel = (rel.rsplit("/", 1)[0] + "/" if "/" in rel else "") + name
+            temporary = self.tree.snapshot(temp_rel)
+            if temporary["kind"] not in ("absent", "file", "symlink"):
+                raise InstallError("recovery preserves unexpected temporary path type")
+            if temporary["kind"] != "absent":
+                temporaries.append((temp_rel, temporary))
+            self.tree.temporary_names[rel] = name
+            current = self.tree.snapshot(rel)
+            before, desired = entry["before"], entry["desired"]
+            if self.snapshot_receipt(current) == before:
+                continue
+            if self.snapshot_receipt(current) != desired:
+                raise InstallError("recovery preserves a concurrently changed path: %s" % rel)
+            if before["kind"] == "absent":
+                restore = {"kind": "absent"}
+            else:
+                if not backup_root:
+                    raise InstallError("recovery lacks required original backup")
+                restore = self.tree.snapshot(backup_root + "/" + rel)
+                if self.snapshot_receipt(restore) != before:
+                    raise InstallError("recovery backup does not match the recorded original: %s" % rel)
+            planned.append((rel, restore, current))
+        report = {"ok": True, "recovery": True, "dry_run": bool(self.args.dry_run),
+                  "restores": [rel for rel, _, _ in planned], "central_store_modified": False,
+                  "staged_temporaries_preserved": len(temporaries)}
+        if journal.get("project_store_requested"):
+            report["note"] = "Target recovery only; inspect the separately requested central Store before retrying registration."
+        if self.args.dry_run:
+            return report
+        # A stopped write may contain only part of its bytes. Keep that exact
+        # inode content in a recoverable backup rather than deleting by a glob.
+        if temporaries:
+            quarantine = BACKUP_ROOT_REL + "/recovery-" + uuid.uuid4().hex
+            for index, (rel, previous) in enumerate(temporaries):
+                self.tree.write(quarantine + "/staged-" + str(index), previous, {"kind": "absent"})
+            for rel, previous in temporaries:
+                self.tree.write(rel, {"kind": "absent"}, previous)
+            report["staged_backup"] = quarantine
+        for rel, restore, previous in reversed(planned):
+            self.tree.write(rel, restore, previous)
+        for entry in entries:
+            if self.snapshot_receipt(self.tree.snapshot(entry["path"])) != entry["before"]:
+                raise InstallError("recovery final inventory changed; journal preserved")
+        self.journal = current_journal
+        self.finish_transaction()
+        return report
 
     def rollback_project_store(self):
         if not (self.project_store_created and self.project_store_home):
@@ -920,16 +1474,23 @@ class Installer(object):
         )
 
     def rollback_applied(self, applied):
-        for rel, existed, old_mode in reversed(applied):
-            dest = safe_destination(self.target, rel)
-            backup = os.path.join(self.backup_dir or "", rel)
-            if existed and os.path.exists(backup):
-                ensure_dir(os.path.dirname(dest))
-                shutil.copy2(backup, dest)
-                if old_mode is not None:
-                    os.chmod(dest, old_mode)
-            elif not existed and os.path.exists(dest):
-                os.unlink(dest)
+        conflicts = []
+        for rel, before, desired in reversed(applied):
+            try:
+                current = self.tree.snapshot(rel)
+                if self.tree.matches(current, before):
+                    continue
+                if not self.tree.matches(current, desired):
+                    conflicts.append(rel)
+                    continue
+                self.tree.write(rel, before, current)
+            except (OSError, InstallError):
+                conflicts.append(rel)
+        if conflicts:
+            raise InstallError("recovery kept concurrently changed paths; inspect preserved backup: %s" %
+                               ", ".join(conflicts))
+        self._prune_empty_dirs(
+            set(os.path.join(self.target, rel) for rel in self.tree.created_dirs))
 
     def configure_project_store(self):
         if not self.args.project_home:
@@ -987,18 +1548,18 @@ class Installer(object):
         and a version marker are copied -- the supervisor itself runs from an
         application's installed copy, which keeps a single implementation.
         """
-        source_dir = os.path.join(PACKAGE_ROOT, "payload", "store", "supervisor")
-        if not os.path.isdir(source_dir):
+        prefix = "payload/store/supervisor/"
+        sources = {rel[len(prefix):]: data for rel, data in self.package.items() if rel.startswith(prefix)}
+        if not sources:
             return {"installed": False, "reason": "package has no store payload"}
         dest_dir = os.path.join(home, "supervisor")
         ensure_dir(dest_dir)
         written = []
-        for name in sorted(os.listdir(source_dir)):
-            src = os.path.join(source_dir, name)
-            if not os.path.isfile(src):
-                continue
+        for name, data in sorted(sources.items()):
+            if "/" in name:
+                raise InstallError("package Store supervisor inventory has unsupported nested member")
             mode = 0o755 if name == "run" else 0o644
-            atomic_write(os.path.join(dest_dir, name), read_bytes(src), mode)
+            atomic_write(os.path.join(dest_dir, name), data, mode)
             written.append(name)
         atomic_write(
             os.path.join(dest_dir, "VERSION"),
@@ -1020,6 +1581,18 @@ class Installer(object):
         return {"installed": True, "path": dest_dir, "files": sorted(set(written))}
 
     def execute(self):
+        try:
+            self.tree.lock()
+            self.check_before()
+            if getattr(self.args, "recover", False):
+                return self.execute_recovery()
+            if self.before[JOURNAL_REL]["kind"] != "absent":
+                raise InstallError("unfinished install transaction; inspect --recover --dry-run, then --recover")
+            return self.execute_plan()
+        finally:
+            self.tree.close()
+
+    def execute_plan(self):
         if self.args.uninstall:
             return self.execute_uninstall()
         actions = self.plan()
@@ -1039,9 +1612,11 @@ class Installer(object):
         except Exception as exc:
             self.rollback_applied(applied)
             self.rollback_project_store()
+            self.finish_transaction()
             report["ok"] = False
             report["project_store_error"] = str(exc)
             raise
+        self.finish_transaction()
         report["backup_dir"] = self.backup_dir
         report["notes"] = self.notes
         return report
@@ -1069,15 +1644,24 @@ def build_parser():
     parser.add_argument("--auto-start", action="store_true")
     parser.add_argument("--no-git", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--bootstrap-baseline", action="store_true",
+                        help="opt in to the complete generic work/design baseline")
+    parser.add_argument("--repo-profile", choices=["generic"],
+                        help="explicit baseline profile; existing baseline choice survives omission")
     parser.add_argument("--uninstall", action="store_true",
                         help="remove kit-owned files, managed sections and hooks")
+    parser.add_argument("--recover", action="store_true",
+                        help="explicitly roll back a stopped, hash-bound target transaction")
     parser.add_argument("--force", action="store_true")
     return parser
 
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
-    if not args.uninstall and not (args.app_id and args.project_id):
+    if args.recover and args.uninstall:
+        print("INSTALL_ERROR: --recover and --uninstall are separate operations", file=sys.stderr)
+        return 2
+    if not (args.uninstall or args.recover) and not (args.app_id and args.project_id):
         print("INSTALL_ERROR: --app-id and --project-id are required to install",
               file=sys.stderr)
         return 2

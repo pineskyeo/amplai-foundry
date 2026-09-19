@@ -1,0 +1,115 @@
+version: 3.0.0
+status: normative field-level design, executable DTO/schema generation is an implementation task
+unknown_fields: reject
+actor_scope_status_times: server-owned; body does not establish authentication or authority
+all_reference_types: contracts/schemas/common.schema.json
+commands:
+  SubmitIntent:
+    mode: enum(work,design)
+    text: string<=32768
+    target_hints: string[]
+    attachment_refs: ArtifactRef[]
+    source_message_id: nullable string
+  ResolveIntent:
+    intent_ref: ObjectRef
+    expected_revision: positive integer
+  ProposeContract:
+    draft: GoalContract minus server fields(goal_id,scope,revision,created_at)
+    resolution_ref: ObjectRef
+    expected_goal_revision: positive integer
+  ActivateGoal:
+    contract_ref: ObjectRef
+    graph_ref: ObjectRef
+    expected_row_version: positive integer
+    grant_ref: ObjectRef
+  SteerGoal:
+    expected_contract_ref: ObjectRef
+    kind: enum(pause,resume,cancel,priority_change,constraint_add,acceptance_change,new_evidence)
+    text: string
+    evidence_refs: ObjectRef[]
+  AnswerQuestion:
+    text: string
+    expected_question_revision: positive integer
+    contract_ref: ObjectRef
+  ProposeGraph:
+    draft: WorkGraph minus server assigned frozen metadata
+    expected_graph_revision: positive integer
+    reason: nullable string
+  ClaimWork:
+    worker_id: ID bound to authenticated service
+    qualification_ref: ObjectRef
+    capability_profile_ref: ObjectRef
+    available_resource_refs: ObjectRef[]
+  Heartbeat:
+    lease_id: ID
+    fencing_token: positive integer
+    expected_run_revision: positive integer
+    last_worker_seq: nonnegative integer
+  WorkerEventBatch:
+    events: 1..256 WorkerEvent(client_event_id,run_id,lease_context,type,payload); only worker allowlisted types
+  ArtifactInit:
+    media_type: string
+    size_bytes: nonnegative safe integer
+    classification: enum(public,internal,confidential,restricted)
+    run_ref: ObjectRef
+  ArtifactCommit:
+    expected_digest: SHA256
+    run_ref: ObjectRef
+    lease_context: LeaseContext
+  RequestEffect:
+    request: EffectRequest with server scope/identity validated and effect ID minted/deduped by service
+  ReconcileEffect:
+    receipt_ref: ObjectRef
+    allowed_probe_ref: ObjectRef
+    grant_ref: ObjectRef
+  Verify:
+    contract_ref: ObjectRef
+    graph_ref: ObjectRef
+    plan_ref: ObjectRef
+    subject_refs: ArtifactRef[]
+    run_ref: ObjectRef
+  SubmitHarnessProposal:
+    draft: HarnessChangeProposal minus proposer/status/scope fields
+    expected_baseline_ref: ObjectRef
+  StartExperiment:
+    plan: EvalExperiment minus frozen_at/scope/server experiment_id
+    approval_ref: ObjectRef
+  PromoteRelease:
+    plan: PromotionPlan with explicit grant and expected_active_release_ref
+  RollbackRelease:
+    expected_active_ref: ObjectRef
+    target_ref: ObjectRef
+    grant_ref: ObjectRef
+    reason: string
+  DryRunMigration:
+    plan: MigrationPlan; destructive execution forbidden
+  ApplyMigration:
+    plan_ref: ObjectRef
+    dry_run_ref: ObjectRef
+    grant_ref: ObjectRef
+    expected_inventory_digest: SHA256
+response_envelope:
+  request_id: ID
+  server_time: UTC Z
+  schema_version: 3.0.0
+  outcome: accepted|completed|hold|rejected|no_work
+  result_refs: ObjectRef[]
+  row_version: nullable positive integer
+  cursor: nullable scoped cursor
+  error: nullable Error(code,message,retryable,retry_after_seconds,current_revision,safe_next_action)
+async_rule: accepted != completed != verified
+errors:
+  scope: 401/403/scoped404
+  conflict: '409'
+  stale: '412'
+  semantic: '422'
+  budget_rate: 429 with distinct typed code
+  dependency_unavailable: '503'
+worker_types:
+- run.started
+- run.progress
+- run.usage
+- artifact.produced
+- tool.pending
+- tool.result
+- run.stopped

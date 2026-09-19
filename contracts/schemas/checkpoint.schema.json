@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/checkpoint.schema.json",
+  "title": "AMPLAI V3 checkpoint",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "checkpoint_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "run_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "contract_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "graph_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "context_bundle_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "workspace_base_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "workspace_diff_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "last_accepted_seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "pending_calls": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/checkpoint_pending"
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "steering_cursor": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "budget_reservation_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "driver_session_handle": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "driver_profile_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "sandbox_recipe_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "created_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    }
+  },
+  "required": [
+    "schema_version",
+    "checkpoint_id",
+    "scope",
+    "run_id",
+    "contract_ref",
+    "graph_ref",
+    "context_bundle_ref",
+    "workspace_base_ref",
+    "workspace_diff_artifact",
+    "last_accepted_seq",
+    "pending_calls",
+    "steering_cursor",
+    "budget_reservation_ref",
+    "driver_session_handle",
+    "driver_profile_ref",
+    "sandbox_recipe_ref",
+    "created_at"
+  ],
+  "additionalProperties": false
+}

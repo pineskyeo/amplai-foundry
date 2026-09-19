@@ -1,0 +1,9 @@
+{
+  "case_id": "doc-001",
+  "title": "Rendered doc font missing",
+  "given": "brand font absent",
+  "when": "render",
+  "expected": "HOLD or explicit approved fallback; missing glyphs are not PASS (T-057)",
+  "verifier_definition": "documents-font",
+  "split": "dev"
+}

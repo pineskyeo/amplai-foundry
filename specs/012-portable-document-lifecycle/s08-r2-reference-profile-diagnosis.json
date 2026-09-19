@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "phase": "R2 integration before final verification",
+  "command": "python3 -B scripts/loopctl.py context build specs/012-portable-document-lifecycle --force",
+  "exit_code": 2,
+  "failure_signature": "CROSS_BOUNDARY_REFERENCE after 25 owner reviews restore current guide selection",
+  "classification": "KNOWLEDGE / repository profile configuration",
+  "first_bad_boundary": "docs/ROADMAP.md link to existing plans/amplai-master-roadmap.yaml has no explicit security route",
+  "reproduction": {
+    "failure_count": 1,
+    "failures": [
+      {
+        "source": "docs/ROADMAP.md",
+        "code": "CROSS_BOUNDARY_REFERENCE",
+        "targets": [
+          {
+            "target": "../plans/amplai-master-roadmap.yaml",
+            "candidates": [
+              "plans/amplai-master-roadmap.yaml"
+            ],
+            "error": "CROSS_BOUNDARY_REFERENCE"
+          }
+        ]
+      }
+    ]
+  },
+  "reviewed_sources": [
+    "docs/ROADMAP.md (68 lines)",
+    "plans/amplai-master-roadmap.yaml (114 lines)"
+  ],
+  "repair": "One exact INTERNAL source_asset route under the existing docs/ROADMAP.md owner. No original source bytes, approval meaning, broad directory classification or generic baseline changes.",
+  "limits": [
+    "Prior r3 semantic batch is retained but invalidated by the policy hash change",
+    "Fresh document review, actual complete Context build/validate and full S08 still required"
+  ]
+}

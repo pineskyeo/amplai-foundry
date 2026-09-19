@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "observed_at": "2026-09-11 15:08:28 UTC",
+  "scope": "R3 guide-metadata integration correction, no engine/authority change",
+  "observation": "Twenty-five guide reviews resolved, but current_release_id still pointed to R2 after active guide sidecars advanced to R3. The valid Context therefore selected only11governing/claim sources instead of restoring ordinary guides.",
+  "cause": ".ai-team/policy/documentation.json current_release_id stale during R3 guide refresh",
+  "change": "Align the existing current candidate selector with kit-2.5.0-candidate-r3. No roots/security/approval/required-reference settings changed.",
+  "next": "Retain r5evidence/history, rereview the now-stale exact candidate with a new r6request, rebuild/validate complete Context, then full S08."
+}

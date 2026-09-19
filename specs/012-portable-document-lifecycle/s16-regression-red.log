@@ -1,0 +1,114 @@
+FF..FF....FFF                                                            [100%]
+=================================== FAILURES ===================================
+_ test_s16_short_reference_classification_is_bounded[scripts/amplai_docs.py-False-read] _
+tests/ai/test_document_reference_resources.py:300: in test_s16_short_reference_classification_is_bounded
+    result = subprocess.run(
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1253: in _check_timeout
+    raise TimeoutExpired(
+E   subprocess.TimeoutExpired: Command '['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '-c', '\nimport importlib.util, json, pathlib, sys\nsource = pathlib.Path(sys.argv[1]).resolve()\nspec = importlib.util.spec_from_file_location("bounded_classification", source)\nengine = importlib.util.module_from_spec(spec)\nexec(compile(source.read_bytes(), str(source), "exec", dont_inherit=True), engine.__dict__)\nassert pathlib.Path(engine.__file__).resolve() == source\nroot, operation = pathlib.Path(sys.argv[2]), sys.argv[3]\nrecord = engine.read_document(root, "docs/guide.md")\nassert "src/api.py" in [row["path"] for row in record["declared_dependencies"]]\nif operation == "select":\n    value = engine.select_documents(root, "release-2", security="PUBLIC", history=True)\n    assert [row["path"] for row in value["documents"]] == ["docs/guide.md"]\nprint(json.dumps({"status": "PASS", "operation": operation}))\n', '/Users/pinesky/workspace/amplai-foundry/scripts/amplai_docs.py', '/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2862/test_s16_short_reference_class0/repository', 'read']' timed out after 3 seconds
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_reference_resources.py:317: in test_s16_short_reference_classification_is_bounded
+    pytest.fail("one short reference exceeded the local 3-second child-process bound")
+E   Failed: one short reference exceeded the local 3-second child-process bound
+_ test_s16_short_reference_classification_is_bounded[scripts/amplai_docs.py-False-select] _
+tests/ai/test_document_reference_resources.py:300: in test_s16_short_reference_classification_is_bounded
+    result = subprocess.run(
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1253: in _check_timeout
+    raise TimeoutExpired(
+E   subprocess.TimeoutExpired: Command '['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '-c', '\nimport importlib.util, json, pathlib, sys\nsource = pathlib.Path(sys.argv[1]).resolve()\nspec = importlib.util.spec_from_file_location("bounded_classification", source)\nengine = importlib.util.module_from_spec(spec)\nexec(compile(source.read_bytes(), str(source), "exec", dont_inherit=True), engine.__dict__)\nassert pathlib.Path(engine.__file__).resolve() == source\nroot, operation = pathlib.Path(sys.argv[2]), sys.argv[3]\nrecord = engine.read_document(root, "docs/guide.md")\nassert "src/api.py" in [row["path"] for row in record["declared_dependencies"]]\nif operation == "select":\n    value = engine.select_documents(root, "release-2", security="PUBLIC", history=True)\n    assert [row["path"] for row in value["documents"]] == ["docs/guide.md"]\nprint(json.dumps({"status": "PASS", "operation": operation}))\n', '/Users/pinesky/workspace/amplai-foundry/scripts/amplai_docs.py', '/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2862/test_s16_short_reference_class1/repository', 'select']' timed out after 3 seconds
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_reference_resources.py:317: in test_s16_short_reference_classification_is_bounded
+    pytest.fail("one short reference exceeded the local 3-second child-process bound")
+E   Failed: one short reference exceeded the local 3-second child-process bound
+_ test_s16_short_reference_classification_is_bounded[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-read] _
+tests/ai/test_document_reference_resources.py:300: in test_s16_short_reference_classification_is_bounded
+    result = subprocess.run(
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1253: in _check_timeout
+    raise TimeoutExpired(
+E   subprocess.TimeoutExpired: Command '['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '-c', '\nimport importlib.util, json, pathlib, sys\nsource = pathlib.Path(sys.argv[1]).resolve()\nspec = importlib.util.spec_from_file_location("bounded_classification", source)\nengine = importlib.util.module_from_spec(spec)\nexec(compile(source.read_bytes(), str(source), "exec", dont_inherit=True), engine.__dict__)\nassert pathlib.Path(engine.__file__).resolve() == source\nroot, operation = pathlib.Path(sys.argv[2]), sys.argv[3]\nrecord = engine.read_document(root, "docs/guide.md")\nassert "src/api.py" in [row["path"] for row in record["declared_dependencies"]]\nif operation == "select":\n    value = engine.select_documents(root, "release-2", security="PUBLIC", history=True)\n    assert [row["path"] for row in value["documents"]] == ["docs/guide.md"]\nprint(json.dumps({"status": "PASS", "operation": operation}))\n', '/Users/pinesky/workspace/amplai-foundry/tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py', '/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2862/test_s16_short_reference_class4/repository', 'read']' timed out after 3 seconds
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_reference_resources.py:317: in test_s16_short_reference_classification_is_bounded
+    pytest.fail("one short reference exceeded the local 3-second child-process bound")
+E   Failed: one short reference exceeded the local 3-second child-process bound
+_ test_s16_short_reference_classification_is_bounded[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-select] _
+tests/ai/test_document_reference_resources.py:300: in test_s16_short_reference_classification_is_bounded
+    result = subprocess.run(
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1253: in _check_timeout
+    raise TimeoutExpired(
+E   subprocess.TimeoutExpired: Command '['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-I', '-S', '-B', '-c', '\nimport importlib.util, json, pathlib, sys\nsource = pathlib.Path(sys.argv[1]).resolve()\nspec = importlib.util.spec_from_file_location("bounded_classification", source)\nengine = importlib.util.module_from_spec(spec)\nexec(compile(source.read_bytes(), str(source), "exec", dont_inherit=True), engine.__dict__)\nassert pathlib.Path(engine.__file__).resolve() == source\nroot, operation = pathlib.Path(sys.argv[2]), sys.argv[3]\nrecord = engine.read_document(root, "docs/guide.md")\nassert "src/api.py" in [row["path"] for row in record["declared_dependencies"]]\nif operation == "select":\n    value = engine.select_documents(root, "release-2", security="PUBLIC", history=True)\n    assert [row["path"] for row in value["documents"]] == ["docs/guide.md"]\nprint(json.dumps({"status": "PASS", "operation": operation}))\n', '/Users/pinesky/workspace/amplai-foundry/tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py', '/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2862/test_s16_short_reference_class5/repository', 'select']' timed out after 3 seconds
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_reference_resources.py:317: in test_s16_short_reference_classification_is_bounded
+    pytest.fail("one short reference exceeded the local 3-second child-process bound")
+E   Failed: one short reference exceeded the local 3-second child-process bound
+_ test_s16_classification_charges_before_prefix_processing[scripts/amplai_docs.py] _
+tests/ai/test_document_reference_resources.py:353: in test_s16_classification_charges_before_prefix_processing
+    bounded_engine.classify_document_reference(item, {"src"}, budget=budget)
+E   TypeError: classify_document_reference() got an unexpected keyword argument 'budget'
+_ test_s16_classification_charges_before_prefix_processing[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py] _
+tests/ai/test_document_reference_resources.py:353: in test_s16_classification_charges_before_prefix_processing
+    bounded_engine.classify_document_reference(item, {"src"}, budget=budget)
+E   TypeError: classify_document_reference() got an unexpected keyword argument 'budget'
+_________ test_s16_installed_inventory_completes_for_near_declaration __________
+tests/ai/test_document_reference_resources.py:387: in test_s16_installed_inventory_completes_for_near_declaration
+    result = subprocess.run(
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+../../.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/subprocess.py:1253: in _check_timeout
+    raise TimeoutExpired(
+E   subprocess.TimeoutExpired: Command '['/Users/pinesky/workspace/amplai-foundry/.venv/bin/python', '-B', '/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2862/test_s16_installed_inventory_c0/installed/scripts/loopctl.py', 'docs', 'inventory', '--release', 'release-2', '--security', 'PUBLIC', '--history']' timed out after 3 seconds
+
+During handling of the above exception, another exception occurred:
+tests/ai/test_document_reference_resources.py:406: in test_s16_installed_inventory_completes_for_near_declaration
+    pytest.fail("installed inventory exceeded the local 3-second child-process bound")
+E   Failed: installed inventory exceeded the local 3-second child-process bound
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_reference_resources.py::test_s16_short_reference_classification_is_bounded[scripts/amplai_docs.py-False-read]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_short_reference_classification_is_bounded[scripts/amplai_docs.py-False-select]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_short_reference_classification_is_bounded[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-read]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_short_reference_classification_is_bounded[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py-False-select]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_classification_charges_before_prefix_processing[scripts/amplai_docs.py]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_classification_charges_before_prefix_processing[tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py]
+FAILED tests/ai/test_document_reference_resources.py::test_s16_installed_inventory_completes_for_near_declaration
+

@@ -1,0 +1,29 @@
+{
+  "pack_id": "documents",
+  "role": "structural/render/visual/readability evidence for DOCX/PPTX/PDF/SVG/HTML final renders",
+  "inputs": [
+    "source documents",
+    "renderer id and exact version",
+    "font availability policy",
+    "layout profile",
+    "golden baseline ref (human approved)"
+  ],
+  "outputs": [
+    "structure report (pages/slides, heading hierarchy, tables, links)",
+    "visual report (missing glyphs, clipping, overlap, reading order, margins, contrast)",
+    "thumbnails then flagged full renders",
+    "freshness verdict"
+  ],
+  "not_core": [
+    "DOCX/PDF renderer dependency inside the core",
+    "silent font substitution counted as success",
+    "sending private documents to an external model automatically"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "required_for_golden",
+    "when": "golden document ingestion: license/provenance → content/style separation → sanitized tokens → human approval"
+  }
+}

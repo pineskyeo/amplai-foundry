@@ -1,0 +1,205 @@
+{
+  "version": "3.0.0",
+  "validators": [
+    {
+      "id": "SEM-01",
+      "name": "AUTH_CONTEXT",
+      "rule": "ActorContext는 server authentication과 input scope/actor attribution 일치; object access project-safe",
+      "gate": "G-01",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-02",
+      "name": "REF_EXISTENCE",
+      "rule": "모든 ref의 owner scope/id/revision/digest/media가 registry와 일치; missing/stale HOLD",
+      "gate": "G-03",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-03",
+      "name": "READINESS_COMPLETENESS",
+      "rule": "8 readiness area가 중복 없이 모두 존재하고 mandatory conflict/missing 미해결 없음",
+      "gate": "G-04",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-04",
+      "name": "CONTRACT_BINDING",
+      "rule": "acceptance ID unique; mandatory verifier/evidence binding complete; protected constraints retained",
+      "gate": "G-03",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-05",
+      "name": "DESIGN_CAPABILITY",
+      "rule": "mode design은 design artifacts만 write하며 source implementation/deploy effects 없음",
+      "gate": "G-03",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-06",
+      "name": "GRAPH_ACYCLIC",
+      "rule": "unique node/work IDs; only existing depends_on; acyclic; stable topological order",
+      "gate": "G-05",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-07",
+      "name": "GRAPH_DATA_TYPES",
+      "rule": "consumes chooses exactly (from_node+output_name) or external_ref; named producer output exists, dominates consumer, type matches; names unique within node",
+      "gate": "G-05",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-08",
+      "name": "GRAPH_COVERAGE",
+      "rule": "criterion IDs exist; mandatory global acceptance covered; join semantics satisfy dependencies",
+      "gate": "G-05",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-09",
+      "name": "CONTRACT_GRAPH_REVISION",
+      "rule": "graph bound contract가 current frozen contract와 일치; changed semantics requires new revision",
+      "gate": "G-05",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-10",
+      "name": "PERMISSION_SUBSET",
+      "rule": "effective capability subset of requested/actor/policy/sandbox/qualified driver; deny precedence",
+      "gate": "G-06",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-11",
+      "name": "GRANT_VALIDITY",
+      "rule": "signature trust, issuer role, scope/digest/action/expiry/generation/max_use 모두 현재 유효",
+      "gate": "G-10",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-12",
+      "name": "FENCE_CURRENT",
+      "rule": "run/work/lease epoch+fence+expiry current; old worker may audit but cannot transition",
+      "gate": "G-09",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-13",
+      "name": "ROOT_BUDGET",
+      "rule": "atomic total reservations+actual/unknown estimates including native child within root ceiling",
+      "gate": "G-08",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-14",
+      "name": "EFFECT_IDEMPOTENCY",
+      "rule": "effect key와 payload digest one binding; unknown outcome requires reconciliation",
+      "gate": "G-10",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-15",
+      "name": "ARTIFACT_TRUST",
+      "rule": "actual bytes hash/media/size/time/environment/producer attestation valid; no forged pass",
+      "gate": "G-11",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-16",
+      "name": "VERDICT_COVERAGE",
+      "rule": "current artifact/contract/graph refs and trusted verdicts; every mandatory acceptance must PASS; optional authorized waiver recorded separately; protected invariant cannot be waived",
+      "gate": "G-13",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-17",
+      "name": "TIME_ORDER",
+      "rule": "UTC canonical times ordered; expiry after not_before; future/stale observations policy checked",
+      "gate": "G-09",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-18",
+      "name": "CONTEXT_CLOSURE",
+      "rule": "governing-set complete; mandatory fresh; source references and supersession checked",
+      "gate": "G-04",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-19",
+      "name": "PACK_RELEASE_TRUST",
+      "rule": "signatures, dependency acyclicity, compatible protocol, owned paths, driver qualified exact version",
+      "gate": "G-15",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-20",
+      "name": "EVAL_FREEZE",
+      "rule": "baseline/candidate/corpus/verifier/env frozen; holdout access isolated; report no drift/unknown hiding",
+      "gate": "G-16",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-21",
+      "name": "PROMOTION_AUTHORITY",
+      "rule": "passed eligible eval/canary, no safety failure, exact grant and expected active pointer",
+      "gate": "G-19",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-22",
+      "name": "MIGRATION_PREFLIGHT",
+      "rule": "expected old digests/owner/live refs/backup/approval/tests and rollback compatibility valid",
+      "gate": "G-20",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-23",
+      "name": "EVENT_OWNERSHIP",
+      "rule": "worker events allowlisted; server-only event forgery rejected; aggregate seq server-generated",
+      "gate": "G-23",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-24",
+      "name": "CANONICAL_HASH",
+      "rule": "JCS golden conformance incl Unicode/numbers; no hash self-cycle/signature inclusion ambiguity",
+      "gate": "G-07",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    },
+    {
+      "id": "SEM-25",
+      "name": "APP_SEPARATION",
+      "rule": "app domain source/build independent from .ai-team/.amplai/host and obsolete legacy refs replaced safely",
+      "gate": "G-24",
+      "on_failure": "reject_or_hold",
+      "runtime_implemented": false
+    }
+  ]
+}

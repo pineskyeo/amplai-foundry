@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0",
+  "kind": "dev03_delivery_evidence",
+  "recorded_at_utc": "2026-09-18",
+  "archive": {
+    "name": "AMPLAI_V3_DEV_03_799a17d8(1).zip",
+    "sha256": "799a17d8227c55e48ece4f985f5f097e09766e578828616cd7f7890d04aa4436",
+    "bytes": 21860374
+  },
+  "build_status": {
+    "stage": "DEV-03",
+    "package_version": "3.0.0.dev3",
+    "schema_version": "3.0.0",
+    "release_status": "development_snapshot",
+    "full_v3_release": false,
+    "parent": {
+      "name": "AMPLAI_V3_DEV_02_3e21c3b2.zip",
+      "sha256": "3e21c3b204e4fad07bf2794805d2806eaa367a9fd85241105ca4d68791496017",
+      "bytes": 21598309
+    },
+    "original": {
+      "name": "amplai-foundry.tar(1).gz",
+      "sha256": "1a9b8e656b5a133087c20d8164dd7ff6276c34d7e74cff59223f71e9ece954ef",
+      "bytes": 56463181
+    },
+    "design": {
+      "name": "AMPLAI_V3_Design_2026-09-15(1).zip",
+      "sha256": "cd245a25a561dc80f9f4de9ecfd111d86b840c9f8c0ca219e08d6c7b3113e56e",
+      "bytes": 625061
+    },
+    "source_tree_sha256": "e92b82d136a5f8878d1b172f49be188c3523831f54cb01b1d6a4ae93cddfed8f",
+    "source_entries": 2052,
+    "changed_vs_original": 372,
+    "changed_vs_previous": 22,
+    "requirements": {
+      "total": 35,
+      "fully_verified": 0,
+      "with_partial_checks": 29
+    },
+    "implementation_tasks": {
+      "total": 62,
+      "fully_accepted": 0
+    },
+    "normative_acceptance_scenarios": {
+      "total": 112,
+      "fully_qualified": 0
+    },
+    "next_stage": "RC-01 — Integration & Migration",
+    "created_at_utc": "2026-09-16T15:46:51.810036+00:00"
+  },
+  "delivery_tests": {
+    "core": {
+      "tests": 477,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 477
+    },
+    "related_regression": {
+      "tests": 132,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 132
+    },
+    "new_dev03_cases": 142,
+    "inherited_cases": 335
+  },
+  "local_reproduction_2026_09_18": {
+    "verify_delivery": {
+      "command": "python tools/verify_delivery.py --root . --patches",
+      "status": "passed",
+      "manifest": "passed",
+      "source_hashes": "passed",
+      "design_hashes": "passed",
+      "baseline_hashes": "passed",
+      "patch_replay": "passed",
+      "source_tree_sha256": "e92b82d136a5f8878d1b172f49be188c3523831f54cb01b1d6a4ae93cddfed8f"
+    },
+    "patch_application": {
+      "base_commit": "e77be5a",
+      "base_blob_match": "README.md blob 1746acc59f6bd8f5e2ddbac3aa64a461a27914a2 found at e77be5a",
+      "applied_on": "3dc6d82 (feat/012 HEAD; fix commits 3a4e0f6/3dc6d82 touch only tools/amplai-loop-kit/{CHECKSUMS.sha256,tests/document-browser.mjs}, disjoint from patch)",
+      "result_commit": "8480cf8",
+      "tree_equivalence": "1965 files identical to DEV_03 source, 0 differ"
+    },
+    "tests_v3": {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest tests/v3",
+      "result": "477 passed"
+    },
+    "related_regression": {
+      "result": "132 passed"
+    },
+    "full_suite": {
+      "command": "pytest tests (not slack_e2e)",
+      "result": "2971 passed, 4 deselected, 601s"
+    },
+    "evolution_demo": {
+      "command": "amplai ops evolution-demo --output <dir>",
+      "verdict": "pass",
+      "actual_pipeline_trials": 50,
+      "distinct_tasks": 24,
+      "promotion": "promoted",
+      "rollback": "rolled_back"
+    },
+    "quality_gate_before": {
+      "ruff_check": 3500,
+      "ruff_format_files": 78,
+      "mypy": 1223,
+      "head_baseline": {
+        "ruff_check": 0,
+        "ruff_format_files": 0,
+        "mypy": 0
+      }
+    },
+    "quality_gate_after_autofix_and_config": {
+      "ruff_check": 167,
+      "mypy": 1216,
+      "commit": "5edbb78"
+    }
+  },
+  "external_qualification_pending": [
+    "Actual Claude/Codex account + exact binary image/model version qualification",
+    "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
+    "Real docker/podman containment, egress, resource and credential isolation",
+    "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
+    "Full 112 normative scenario closure, full legacy regression, migration/upgrade/rollback and platform matrix at RC/FINAL",
+    "Clean dependency resolution: installed package tests explicitly share preinstalled dependencies",
+    "Physical holdout service isolation beyond same-host local ACL, independent production approvers and trusted remote executor qualification",
+    "Actual OTLP exporter/collector integration, bounded service delivery under production load",
+    "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement"
+  ],
+  "not_started_tasks": [
+    "V3-007",
+    "V3-012",
+    "V3-013",
+    "V3-014",
+    "V3-034",
+    "V3-035",
+    "V3-036",
+    "V3-037",
+    "V3-038",
+    "V3-039",
+    "V3-049",
+    "V3-050",
+    "V3-051",
+    "V3-052",
+    "V3-054",
+    "V3-057",
+    "V3-059",
+    "V3-060",
+    "V3-061",
+    "V3-062"
+  ]
+}

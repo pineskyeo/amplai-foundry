@@ -1,0 +1,28 @@
+{
+  "pack_id": "software",
+  "role": "build/test/lint/ABI/compatibility profiles, independent review and failure diagnosis",
+  "inputs": [
+    "intended build tree revision",
+    "change diff",
+    "protected regression corpus ref",
+    "verifier command allowlist"
+  ],
+  "outputs": [
+    "structured test report",
+    "lint/ABI findings",
+    "independent review verdict",
+    "failure signature and root cause"
+  ],
+  "not_core": [
+    "language or repository path hardcoding",
+    "worker-chosen test commands (design/14 §2)",
+    "self-graded PASS"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "optional",
+    "when": "review finds P0/P1 or protected corpus changes"
+  }
+}

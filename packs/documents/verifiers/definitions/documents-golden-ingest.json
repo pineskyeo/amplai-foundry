@@ -1,0 +1,18 @@
+{
+  "definition_id": "documents-golden-ingest",
+  "version": "3.0.0-rc1",
+  "kind": "human",
+  "runner": "human_review",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": true,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "license/source provenance checked before any baseline"
+}

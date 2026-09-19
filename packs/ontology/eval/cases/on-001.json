@@ -1,0 +1,9 @@
+{
+  "case_id": "on-001",
+  "title": "Conflicting invariant",
+  "given": "two active decisions conflict",
+  "when": "assemble context",
+  "expected": "CONTEXT_NOT_READY; disclose conflict (T-016)",
+  "verifier_definition": "ontology-contradictions",
+  "split": "dev"
+}

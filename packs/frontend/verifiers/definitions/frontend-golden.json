@@ -1,0 +1,18 @@
+{
+  "definition_id": "frontend-golden",
+  "version": "3.0.0-rc1",
+  "kind": "artifact_visual",
+  "runner": "artifact_inspection",
+  "allowed_command_ids": [],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": true,
+  "golden_governance": "human_approved_baseline",
+  "optional": false,
+  "notes": "visual diff detects environment change; it does not prove beauty (design/14 §4)"
+}

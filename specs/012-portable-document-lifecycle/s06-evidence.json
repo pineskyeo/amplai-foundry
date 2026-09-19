@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S06",
+  "status": "LOCAL_SLICE_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11T08:28:08Z",
+  "authority": "execution-authorization.json / E021",
+  "contribution_boundary": "Representative exact section preservation and report-only gardening execute through real CLI and sealed installed baseline. Retirement/recovery applications only use disposable Git. Final original-case and independent closure remain S08.",
+  "implementation": {
+    "preservation": "Every original byte, including preamble/fences, maps to revision/path/line/hash-bound sections. Retained original or attributed exact destination is required. Summary/omission, fabricated locator, source/destination/evidence drift and origin mismatch cannot be complete.",
+    "gardening": "Normal incremental/apply are report-only. User backups/worktrees/tracked Markdown remain gated. Filename/untracked status are not deletion authority. Unrelated dirty paths and broad parent directories cannot expand the Work. Full scan requires explicit high-risk repository_gardening Work; NUL reads and incomplete reference scans fail closed.",
+    "retirement": "Read-only proposal binds all tracked/untracked/ignored bytes, HEAD/index, seven reference assessments, exact preservation, retention and evidence. Unknown external/dynamic/build/test/package/config assessment or known reverse reference is HOLD.",
+    "authority": "No destructive CLI or approval JSON interpreter. Internal application requires an existing trusted authority callback and verifier callback; tests supply exact synthetic adapters. Authorization binds plan, targets, root identity and external quarantine path.",
+    "recovery": "Verified source/index backups and prepared journal precede mutation. Stages recheck scope/HEAD/content/references. Git index compare/replace uses its lock and plan-bound before/after hashes. Failure and actual killed-process recovery preserve evidence; foreign files/index/symlinks and corrupt backups are rejected. Tombstone follows passing re-verification.",
+    "read_only_git": "A real fsmonitor side-effect was reproduced. Git reads and alternate-index preparation now disable fsmonitor/hooks. Planning and normal garden pass the side-effect canary.",
+    "packaging": "Actual empty-target sealed installation executes preservation and report-only gardening; root/shared payload scripts match and generic guides retain separate repository ownership.",
+    "source_hashes": {
+      "scripts/amplai_docs.py": {
+        "sha256": "a23ad7704654525d8dbc5917e1d89af8df660624f9cdcf469caef62a25a95461",
+        "bytes": 161707
+      },
+      "scripts/loopctl.py": {
+        "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+        "bytes": 53104
+      },
+      "scripts/loopv2.py": {
+        "sha256": "24e8fef4c81bf300f930296ed4c99384849cf14429fabf991ac9866ccad86694",
+        "bytes": 74454
+      },
+      "tests/ai/test_document_preservation.py": {
+        "sha256": "bca77985592fa5244cd322bae0836130e8acb7507d82ee7f06dadcbc0471ce7c",
+        "bytes": 26073
+      },
+      ".agents/skills/work/SKILL.md": {
+        "sha256": "8facf754f1088f2afdb6d1b96e6b3bde5c367c3d4288866ba65bff04bb93ad1c",
+        "bytes": 19770
+      },
+      ".agents/skills/dev-loop/SKILL.md": {
+        "sha256": "b1c3475093fe1e5e29a0daef14f22e213790178ecdecae7ed03626ec85da9064",
+        "bytes": 6749
+      },
+      ".ai-team/runtime/WORKFLOW.md": {
+        "sha256": "eaaffe242c9510b0cab3375aec8b27e5741cc3185a55bec83a7645bdc2135a31",
+        "bytes": 7487
+      },
+      ".ai-team/README.md": {
+        "sha256": "c90903c186ec6ef1f1fa516bceb3be44419556d6b101f5fd8b1970c821ec20f8",
+        "bytes": 13096
+      },
+      ".ai-team/policy/gardening.json": {
+        "sha256": "c6cd1614ce2cac2ee92b37c6df0335ac67939603f5884e92b69f16980156739b",
+        "bytes": 8848
+      },
+      ".ai-team/knowledge/garden-report.schema.json": {
+        "sha256": "e2c43418f6280cc2c5dc7a41887d817cb9a2aa6a5554216e603067ff4dbce732",
+        "bytes": 5672
+      },
+      "tools/amplai-loop-kit/baseline/manifest.json": {
+        "sha256": "e3c7e83e60e0217eefd832a1e38554251102c16b6976ec000d7be0c21ecfdad5",
+        "bytes": 15260
+      },
+      "tools/amplai-loop-kit/CHECKSUMS.sha256": {
+        "sha256": "dc33bd4241a9d26841b6a91119cb6204e1d03839add868f8da0aa7187cdce901",
+        "bytes": 13105
+      },
+      "specs/012-portable-document-lifecycle/tasks.md": {
+        "sha256": "6cfbc61ce71fba1bbc4cfd203dab70c7e6ec9959598de47823a4b29a563f4f7f",
+        "bytes": 3490
+      }
+    },
+    "package_checksum_rows": 117
+  },
+  "tdd": {
+    "initial": {
+      "log": "w003-s06-red.log",
+      "failed": 19,
+      "cause": "Missing preservation/retirement and unsafe old backup deletion/full scan."
+    },
+    "repair_history": [
+      {
+        "log": "w003-s06-first.log",
+        "passed": 19
+      },
+      {
+        "log": "w003-s06-recovery-red.log",
+        "passed": 30,
+        "failed": 1,
+        "cause": "Post-backup reference drift detected too late.",
+        "green": "w003-s06-recovery-green.log"
+      },
+      {
+        "log": "w003-s06-preservation-red.log",
+        "passed": 2,
+        "failed": 3,
+        "cause": "Read-window drift and fabricated destination range/identity.",
+        "green": "w003-s06-source-green.log"
+      },
+      {
+        "log": "w003-s06-preservation-green.log",
+        "cause": "Shortened destination should retain unresolved section/HOLD rather than claim complete. Corrected stale-range handling and explicit invalid-range negative.",
+        "green": "w003-s06-source-green.log"
+      },
+      {
+        "log": "w003-s06-cli.log",
+        "cause": "Test expected stderr; existing loopctl reports errors on stdout. Assert the existing convention without changing product behavior.",
+        "green": "w003-s06-integrated.log"
+      },
+      {
+        "log": "w003-s06-fsmonitor-red.log",
+        "failed": 1,
+        "cause": "Repository hook executed during a read-only plan.",
+        "green": "w003-s06-fsmonitor-green.log"
+      }
+    ]
+  },
+  "verification": {
+    "canonical": {
+      "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S06",
+      "archived_input": "s06-eval-input-tasks.md",
+      "log": "w003-s06-eval-closure.log",
+      "tests": 39,
+      "exit_code": 0,
+      "verdict": "PASS"
+    },
+    "full": {
+      "profile": "v2",
+      "json_report": "w003-s06-full-v2-closure.json",
+      "tests": 1849,
+      "deselected": 4,
+      "exit_code": 0,
+      "verdict": "PASS",
+      "checks": [
+        {
+          "id": "ruff-check",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "ruff-format",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "mypy",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-runtime-doctor",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "manifest-validator",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "pytest",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "loop-shell-syntax",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "schema",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "vault-lint",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "project-pack",
+          "status": "PASS",
+          "exit_code": 0
+        },
+        {
+          "id": "kit-seal",
+          "status": "PASS",
+          "exit_code": 0
+        }
+      ],
+      "environment": {
+        "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "git": "git version 2.50.1 (Apple Git-155)",
+        "machine": "arm64",
+        "platform": "macOS-26.2-arm64-arm-64bit",
+        "python": "3.11.15",
+        "registry_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+        "system": "Darwin",
+        "target_assumptions": {
+          "not_verified": [
+            "다른 OS·architecture 에서의 동작",
+            "pyproject 의 requires-python 아래 버전에서의 동작"
+          ],
+          "python_requirement": ">=3.11",
+          "verified_on": "macOS-26.2-arm64-arm-64bit",
+          "verifier_interpreter": [
+            ".venv/bin/python",
+            "python3"
+          ]
+        }
+      }
+    },
+    "historical_full": {
+      "json_report": "w003-s06-full-v2.json",
+      "tests": 1848,
+      "exit_code": 0,
+      "note": "Before the fsmonitor safety fix, not final source."
+    },
+    "security_pattern_scan": {
+      "files": 8,
+      "findings": [],
+      "scope": "Targeted source pattern check only; not independent final security approval"
+    },
+    "logs_root": "/tmp/synapse-split-resume.t7Jusk",
+    "logs": [
+      {
+        "path": "w003-s06-cli.log",
+        "bytes": 3030,
+        "sha256": "28f905670aab526145aec585670e4d7c3d6d4d7f1e24638cfad74c9c6525cc7f"
+      },
+      {
+        "path": "w003-s06-eval-closure.log",
+        "bytes": 1768,
+        "sha256": "de09ee820ae2916f49ee1256fdd5a77cf97d9f65ba867534c4afd371b9892292"
+      },
+      {
+        "path": "w003-s06-eval.log",
+        "bytes": 1768,
+        "sha256": "8dd3e57dc58979a4691de023059bef916dcfdc022e78b42fafca5bd0e54c32f6"
+      },
+      {
+        "path": "w003-s06-first.log",
+        "bytes": 80,
+        "sha256": "0caf379acbcb845c31b98bf4efeffb865a66d527d27d5bb4f34018bea0099078"
+      },
+      {
+        "path": "w003-s06-fsmonitor-green.log",
+        "bytes": 80,
+        "sha256": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d"
+      },
+      {
+        "path": "w003-s06-fsmonitor-red.log",
+        "bytes": 1599,
+        "sha256": "272e7ec23a32a0c8d4533c8ba7aa133cfe7a9ee37e85291da8b14e5f52ad9833"
+      },
+      {
+        "path": "w003-s06-full-v2-closure.json",
+        "bytes": 7505,
+        "sha256": "e75af7c8629e106f60fbbe9b5448983e04aab140e528cf3ea7c1625ef02b63f2"
+      },
+      {
+        "path": "w003-s06-full-v2-closure.log",
+        "bytes": 4198,
+        "sha256": "aa36ef527f649988b174b6efc5bfa3589d9acf32f34f123062f1cdcc7244be94"
+      },
+      {
+        "path": "w003-s06-full-v2.json",
+        "bytes": 7504,
+        "sha256": "1bc478a36e069de7f5ea6d972845b44b0d560abb6d608a05167c4e57bca294f0"
+      },
+      {
+        "path": "w003-s06-full-v2.log",
+        "bytes": 4198,
+        "sha256": "2f44f539ae4832d2dc414053e7f485ffaa160e4e6bded2ac11e2d677234735fb"
+      },
+      {
+        "path": "w003-s06-integrated.log",
+        "bytes": 80,
+        "sha256": "8e0dd3e259f68c193f05e3e04acef6407a9ed36e5124438d9f9a04fbd0db33db"
+      },
+      {
+        "path": "w003-s06-preservation-green.log",
+        "bytes": 6579,
+        "sha256": "2b3c7a2d595207f99943554f0e4d5a6c583e810bdcb7094045fdf3dd86926da6"
+      },
+      {
+        "path": "w003-s06-preservation-red.log",
+        "bytes": 4070,
+        "sha256": "ad8d884efec25bbd31924a04698b31c52a77a23a58d95556a1150c2fc5de9fd1"
+      },
+      {
+        "path": "w003-s06-recovery-green.log",
+        "bytes": 80,
+        "sha256": "1b8f208de3636df279448e40805982570c4351601ce5723301928feea7d343cf"
+      },
+      {
+        "path": "w003-s06-recovery-red.log",
+        "bytes": 1604,
+        "sha256": "05306636f91de75bcf137e9b0b3adfbe9ca651a06b463ad2a4e3d4556bca0151"
+      },
+      {
+        "path": "w003-s06-red.log",
+        "bytes": 20914,
+        "sha256": "8ce211a03959fd278befff86b153643b8cdd78cf8608db7239959e47958ce181"
+      },
+      {
+        "path": "w003-s06-source-green.log",
+        "bytes": 80,
+        "sha256": "12a9a4a8915fb8d2bb5b4227220247cde267c1a0620203589fe47280d5be4a7f"
+      }
+    ]
+  },
+  "acceptance_contribution": [
+    "AC-048-P",
+    "AC-048-N",
+    "AC-050-P",
+    "AC-050-N",
+    "AC-051-P",
+    "AC-051-N",
+    "AC-075-P",
+    "AC-075-N"
+  ],
+  "integrated_review_probes": {
+    "scope": "S06 local tests passed, not a final independent quality gate. These code-inspection hypotheses require regression probes before whole W003 closure.",
+    "probes": [
+      "Recovery _exclusive_bytes uses os.open(mode) without fchmod; confirm restored mode0644 under umask077 and fix if reproduced. Ownership/ACL/xattrs are not currently preserved or claimed.",
+      "preservation_ledger observed[source path] overwrites its prior observation for two source revisions sharing one path; inject a between-source mutation and prevent stale retained-section success.",
+      "Exercise the original REQ048 source family REQUEST/SPEC/PLAN/memory together, not only representative docs/legacy.md; final original-case acceptance remains S08."
+    ]
+  },
+  "limits": [
+    "No actual repository retirement, approval creation, Git stage/commit/push, worktree prune, fleet install, publication, Vault/Platform or production mutation.",
+    "Darwin arm64 Python3.11 only; no RHEL7/Python3.6 runtime proof.",
+    "Recoverable staged changes are not globally atomic visibility across paths, nor universal power-loss/noncooperating-writer safety.",
+    "Planning reports inside the checkout conservatively count as references; explicit outside input avoids self-reference.",
+    "Exact bytes are not semantic-summary equivalence or canonical knowledge approval.",
+    "Final original-family integration, independent three-lens/security review, real-owner document adoption and target validation remain separate."
+  ]
+}

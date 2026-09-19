@@ -1,0 +1,2423 @@
+version: 3.0.0
+scope: Entire V3 in this implementation campaign; waves are dependencies, not deferred product generations
+authorization: Design package is not authorization to deploy/delete/call paid providers. Next implementation request and established
+  policies govern execution.
+tasks:
+- id: V3-001
+  title: Baseline freeze / version truth / original regressions
+  wave: 0
+  owner_role: Migration Lead
+  depends_on: []
+  proposed_paths:
+  - audit/
+  - plans/
+  - tests/
+  deliverables:
+  - Archive+git inventory
+  - candidate/release/support facts
+  - current test report incl failures
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - audit/BASELINE_AUDIT.md
+  - design/19_DISTRIBUTION_MIGRATION.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-002
+  title: Governance importer map and invariant parity
+  wave: 0
+  owner_role: Authority Engineer
+  depends_on:
+  - V3-001
+  proposed_paths:
+  - src/amplai_foundry/governance/
+  - tests/governance/
+  deliverables:
+  - legacy call graph
+  - ApplyGrant guard parity matrix
+  - protected surfaces manifest
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/03_INVARIANT_REGISTRY.md
+  - design/10_AUTHORITY_SECURITY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-003
+  title: Normative schema registry and offline JSON validation
+  wave: 1
+  owner_role: Contract Engineer
+  depends_on:
+  - V3-001
+  proposed_paths:
+  - src/amplai_foundry/runtime/contracts/
+  - contracts/
+  deliverables:
+  - 2020-12 registry
+  - provider subset mapping
+  - unknown-field rejection
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  - T-021
+  - T-022
+  - T-023
+  - T-024
+  - T-025
+  - T-026
+  - T-027
+  - T-028
+  - T-029
+  - T-030
+  design_docs:
+  - contracts/README.md
+  - design/18_API_EVENT_PROTOCOL.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-004
+  title: Canonical identity/hash/ref resolver
+  wave: 1
+  owner_role: Contract Engineer
+  depends_on:
+  - V3-003
+  proposed_paths:
+  - src/amplai_foundry/runtime/contracts/identity.py
+  - tests/contracts/
+  deliverables:
+  - JCS conformance
+  - scope/ref digest validator
+  - acyclic definition ownership
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  design_docs:
+  - design/09_STORAGE_TRANSACTIONS.md
+  - design/33_IDENTITY_REFERENCE_LIFECYCLE.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-005
+  title: Gate Engine and semantic validator registry
+  wave: 1
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-002
+  - V3-003
+  - V3-004
+  proposed_paths:
+  - src/amplai_foundry/runtime/contracts/gates.py
+  deliverables:
+  - all invariant/gate IDs enforced
+  - strategy applicability
+  - unknown HOLD
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  design_docs:
+  - design/03_INVARIANT_REGISTRY.md
+  - design/04_GATE_MATRIX.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-006
+  title: Runtime logical schema migrations
+  wave: 1
+  owner_role: Storage Engineer
+  depends_on:
+  - V3-003
+  - V3-004
+  proposed_paths:
+  - src/amplai_foundry/runtime/storage/
+  deliverables:
+  - scoped tables
+  - FK/CAS/indexes
+  - schema-version admission
+  - local SQLite configuration
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/09_STORAGE_TRANSACTIONS.md
+  - contracts/storage-model.json
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-007
+  title: Unit of work, idempotency, inbox/outbox
+  wave: 1
+  owner_role: Storage Engineer
+  depends_on:
+  - V3-006
+  proposed_paths:
+  - src/amplai_foundry/runtime/storage/
+  - tests/runtime_storage/
+  deliverables:
+  - transactional state/event/outbox
+  - dedupe/conflict
+  - bounded dispatch journal
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/09_STORAGE_TRANSACTIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-008
+  title: Authority adapter and project ActorContext
+  wave: 1
+  owner_role: Authority Engineer
+  depends_on:
+  - V3-002
+  - V3-005
+  - V3-007
+  proposed_paths:
+  - src/amplai_foundry/control_plane/authority_adapter.py
+  deliverables:
+  - current grant evaluate/consume/revoke
+  - no LLM issuer
+  - scope-safe ingress
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/10_AUTHORITY_SECURITY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-009
+  title: Immutable CAS and artifact registry
+  wave: 1
+  owner_role: Storage Engineer
+  depends_on:
+  - V3-004
+  - V3-006
+  proposed_paths:
+  - src/amplai_foundry/runtime/evidence/
+  deliverables:
+  - safe staged upload
+  - digest/media/size/secret checks
+  - orphan recovery
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  design_docs:
+  - design/09_STORAGE_TRANSACTIONS.md
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-010
+  title: Event/RunRecord spine and scoped projections
+  wave: 1
+  owner_role: Observability Engineer
+  depends_on:
+  - V3-007
+  - V3-009
+  proposed_paths:
+  - src/amplai_foundry/runtime/events.py
+  - src/amplai_foundry/control_plane/
+  deliverables:
+  - normalized events
+  - cursor/gap recovery
+  - no server event forgery
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/15_EVAL_OBSERVATORY.md
+  - design/18_API_EVENT_PROTOCOL.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-011
+  title: AppBinding registry adapter
+  wave: 2
+  owner_role: Knowledge Engineer
+  depends_on:
+  - V3-005
+  - V3-008
+  proposed_paths:
+  - src/amplai_foundry/projects/
+  deliverables:
+  - verified aliases/repos/owners
+  - allowlisted environments
+  - scope ambiguity HOLD
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  design_docs:
+  - design/13_CAPABILITY_PACKS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-012
+  title: Foundry read/context knowledge adapters
+  wave: 2
+  owner_role: Knowledge Engineer
+  depends_on:
+  - V3-002
+  - V3-004
+  - V3-008
+  proposed_paths:
+  - src/amplai_foundry/knowledge_runtime/
+  deliverables:
+  - 8 kinds preserved
+  - canonical/decision/work/evidence views
+  - governance protected
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  design_docs:
+  - design/12_CONTEXT_KNOWLEDGE_ONTOLOGY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-013
+  title: Readiness and context completeness validator
+  wave: 2
+  owner_role: Knowledge Engineer
+  depends_on:
+  - V3-011
+  - V3-012
+  proposed_paths:
+  - src/amplai_foundry/knowledge_runtime/readiness.py
+  deliverables:
+  - 8 unique areas
+  - current invariants
+  - contradiction HOLD
+  - progressive core/map
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  design_docs:
+  - design/12_CONTEXT_KNOWLEDGE_ONTOLOGY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-014
+  title: Repo facts resolver and source provenance
+  wave: 2
+  owner_role: Knowledge Engineer
+  depends_on:
+  - V3-011
+  - V3-012
+  - V3-013
+  proposed_paths:
+  - src/amplai_foundry/knowledge_runtime/repo_facts.py
+  deliverables:
+  - scoped file/symbol search
+  - source versioning
+  - no external implicit authority
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/05_GOAL_RESOLVER_CONTRACT.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-015
+  title: Goal Resolver and question ledger
+  wave: 2
+  owner_role: Goal Engineer
+  depends_on:
+  - V3-005
+  - V3-011
+  - V3-013
+  - V3-014
+  proposed_paths:
+  - src/amplai_foundry/runtime/goals/
+  deliverables:
+  - rough intent resolution
+  - origin-tagged assumptions
+  - question reuse
+  - target verification
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  design_docs:
+  - design/05_GOAL_RESOLVER_CONTRACT.md
+  - design/17_STEERING_HUMAN_UX.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-016
+  title: Contract compiler/critic with verifiable acceptance
+  wave: 2
+  owner_role: Goal Engineer
+  depends_on:
+  - V3-003
+  - V3-005
+  - V3-015
+  proposed_paths:
+  - src/amplai_foundry/runtime/contracts/
+  deliverables:
+  - criterion/verifier binding
+  - bounded critic
+  - design-only contract
+  - revision freeze
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  design_docs:
+  - design/05_GOAL_RESOLVER_CONTRACT.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-017
+  title: WorkGraph compiler and typed dataflow
+  wave: 2
+  owner_role: Graph Engineer
+  depends_on:
+  - V3-004
+  - V3-005
+  - V3-011
+  - V3-016
+  proposed_paths:
+  - src/amplai_foundry/runtime/graphs/
+  deliverables:
+  - DAG/joins/types/coverage
+  - frozen compiler identity
+  - stable ordering
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-021
+  - T-022
+  - T-023
+  - T-024
+  - T-025
+  - T-026
+  - T-027
+  - T-028
+  - T-029
+  - T-030
+  design_docs:
+  - design/06_WORKGRAPH_REPLAN.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-018
+  title: State machine implementation from registry
+  wave: 2
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-005
+  - V3-006
+  - V3-007
+  proposed_paths:
+  - src/amplai_foundry/runtime/execution/
+  deliverables:
+  - all legal transitions/guards
+  - CAS
+  - new Run per repair
+  - terminal history
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/08_STATE_RECOVERY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-019
+  title: Budget reservations and shared resource claims
+  wave: 2
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-007
+  - V3-018
+  proposed_paths:
+  - src/amplai_foundry/runtime/budgets/
+  deliverables:
+  - root accounting
+  - unknown usage bounds
+  - exclusive repo writes
+  - native child budget
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  design_docs:
+  - design/07_RUNTIME_SCHEDULER.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-020
+  title: Lease/fencing/owner epoch recovery
+  wave: 2
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-007
+  - V3-018
+  - V3-019
+  proposed_paths:
+  - src/amplai_foundry/runtime/execution/leases.py
+  deliverables:
+  - monotonic fencing
+  - expiry
+  - heartbeat
+  - atomic claim dispatch
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/07_RUNTIME_SCHEDULER.md
+  - design/08_STATE_RECOVERY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-021
+  title: Adaptive strategy and fair scheduler
+  wave: 2
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-016
+  - V3-017
+  - V3-018
+  - V3-019
+  - V3-020
+  proposed_paths:
+  - src/amplai_foundry/runtime/execution/scheduler.py
+  deliverables:
+  - direct/loop/deliberative/discovery selection
+  - gates never bypass
+  - queue fairness
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  design_docs:
+  - design/07_RUNTIME_SCHEDULER.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-022
+  title: Sandbox/Secret/Tool ports and containment
+  wave: 2
+  owner_role: Security Engineer
+  depends_on:
+  - V3-008
+  - V3-009
+  - V3-019
+  proposed_paths:
+  - src/amplai_foundry/sandbox/
+  - src/amplai_foundry/tool_broker/
+  deliverables:
+  - UID/worktree/egress bounds
+  - credential handle broker
+  - data policy
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/10_AUTHORITY_SECURITY.md
+  - design/32_TOOL_EFFECT_PROTOCOL.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-023
+  title: Effect prepare/dispatch/reconcile protocol
+  wave: 2
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-007
+  - V3-008
+  - V3-020
+  - V3-022
+  proposed_paths:
+  - src/amplai_foundry/runtime/effects/
+  deliverables:
+  - effect-key binding
+  - authority consumption
+  - UNKNOWN reconciliation
+  - compensations
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-044
+  - T-045
+  - T-046
+  - T-047
+  - T-048
+  - T-049
+  - T-050
+  - T-051
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/32_TOOL_EFFECT_PROTOCOL.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-024
+  title: Driver interface, model profiles, qualification registry
+  wave: 2
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-003
+  - V3-005
+  - V3-010
+  - V3-022
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/
+  deliverables:
+  - declared/observed/qualified/granted separation
+  - version exact profiles
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-025
+  title: ClaudeCode exact-session driver
+  wave: 2
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-020
+  - V3-023
+  - V3-024
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/claude_code/
+  deliverables:
+  - typed decoder
+  - exact resume
+  - process-tree cancel
+  - usage unknown handling
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-026
+  title: Codex CLI qualified baseline driver
+  wave: 2
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-020
+  - V3-023
+  - V3-024
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/codex_cli/
+  deliverables:
+  - JSONL parser
+  - exact session
+  - allowed sandbox
+  - stop/recover conformance
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-027
+  title: OpenCode authenticated optional driver
+  wave: 3
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-020
+  - V3-023
+  - V3-024
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/opencode/
+  deliverables:
+  - HTTP/SSE auth
+  - 204 accepted not done
+  - event recovery
+  - permissions
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-028
+  title: Responses async/steering optional driver
+  wave: 3
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-020
+  - V3-023
+  - V3-024
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/openai_responses/
+  deliverables:
+  - call_id ledger
+  - pending tools
+  - WS steer reconcile
+  - continuation budget
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-044
+  - T-045
+  - T-046
+  - T-047
+  - T-048
+  - T-049
+  - T-050
+  - T-051
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-029
+  title: Managed/API experimental driver boundaries
+  wave: 3
+  owner_role: Driver Engineer
+  depends_on:
+  - V3-024
+  - V3-028
+  proposed_paths:
+  - src/amplai_foundry/agent_drivers/managed/
+  - src/amplai_foundry/agent_drivers/codex_app_server/
+  deliverables:
+  - disabled-by-default adapters
+  - capability manifests
+  - qualification/unsupported outcomes
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/11_DRIVERS_SESSIONS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-030
+  title: Steering/checkpoint/pause/cancel orchestration
+  wave: 3
+  owner_role: Runtime Engineer
+  depends_on:
+  - V3-015
+  - V3-017
+  - V3-020
+  - V3-023
+  - V3-025
+  - V3-026
+  proposed_paths:
+  - src/amplai_foundry/runtime/recovery/
+  deliverables:
+  - durable steering states
+  - native/fallback
+  - effect-aware cancellation
+  - checkpoint restart
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/08_STATE_RECOVERY.md
+  - design/17_STEERING_HUMAN_UX.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-031
+  title: Replan activation and stale-output invalidation
+  wave: 3
+  owner_role: Graph Engineer
+  depends_on:
+  - V3-017
+  - V3-020
+  - V3-023
+  - V3-030
+  proposed_paths:
+  - src/amplai_foundry/runtime/graphs/replan.py
+  deliverables:
+  - CAS activation
+  - old fence invalidation
+  - conservative artifact reuse
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-021
+  - T-022
+  - T-023
+  - T-024
+  - T-025
+  - T-026
+  - T-027
+  - T-028
+  - T-029
+  - T-030
+  design_docs:
+  - design/06_WORKGRAPH_REPLAN.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-032
+  title: Trusted verifier runner and evidence attestation
+  wave: 2
+  owner_role: Verification Engineer
+  depends_on:
+  - V3-008
+  - V3-009
+  - V3-018
+  - V3-022
+  - V3-023
+  proposed_paths:
+  - src/amplai_foundry/verification/runtime/
+  deliverables:
+  - fixed verifier profiles
+  - artifact-bound evidence
+  - test/golden guards
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  design_docs:
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-033
+  title: Global acceptance and doc freshness
+  wave: 3
+  owner_role: Verification Engineer
+  depends_on:
+  - V3-016
+  - V3-017
+  - V3-021
+  - V3-032
+  proposed_paths:
+  - src/amplai_foundry/verification/runtime/global_verify.py
+  deliverables:
+  - integration coverage
+  - no pending effects/questions
+  - optional waiver semantics
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  design_docs:
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-034
+  title: Versioned capability pack registry
+  wave: 3
+  owner_role: Pack Engineer
+  depends_on:
+  - V3-003
+  - V3-005
+  - V3-008
+  - V3-024
+  - V3-032
+  proposed_paths:
+  - packs/
+  - src/amplai_foundry/packs/
+  deliverables:
+  - signed pack/dependency/permission/schema registry
+  - app-independent install boundary
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/13_CAPABILITY_PACKS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-035
+  title: Core work/design host surface and SpecKit internalization
+  wave: 3
+  owner_role: Pack Engineer
+  depends_on:
+  - V3-015
+  - V3-016
+  - V3-021
+  - V3-034
+  proposed_paths:
+  - tools/amplai-loop-kit/payload/.agents/skills/
+  - packs/spec/
+  deliverables:
+  - two public entries
+  - embedded question/plan capabilities
+  - grill/eli12 retirement map
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/13_CAPABILITY_PACKS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-036
+  title: Software/review/debug capability pack
+  wave: 3
+  owner_role: Pack Engineer
+  depends_on:
+  - V3-032
+  - V3-034
+  proposed_paths:
+  - packs/software/
+  deliverables:
+  - build/test/ABI profiles
+  - independent review
+  - failure diagnosis outputs
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  design_docs:
+  - design/13_CAPABILITY_PACKS.md
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-037
+  title: Frontend functional/visual/UX pack
+  wave: 3
+  owner_role: Visual QA Engineer
+  depends_on:
+  - V3-009
+  - V3-032
+  - V3-034
+  proposed_paths:
+  - packs/frontend/
+  deliverables:
+  - pinned browser renders
+  - viewport/interaction/a11y checks
+  - human direction/golden governance
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  design_docs:
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-038
+  title: Document lifecycle/render/golden pack
+  wave: 3
+  owner_role: Visual QA Engineer
+  depends_on:
+  - V3-009
+  - V3-032
+  - V3-034
+  proposed_paths:
+  - packs/documents/
+  deliverables:
+  - extract existing docs lifecycle
+  - SVG/fonts/final render checks
+  - sanitized golden ingestion
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-039
+  title: Research/ontology/domain pack adapters
+  wave: 3
+  owner_role: Knowledge Engineer
+  depends_on:
+  - V3-012
+  - V3-013
+  - V3-014
+  - V3-034
+  proposed_paths:
+  - packs/research/
+  - packs/ontology/
+  - packs/semiconductor-dc/
+  deliverables:
+  - source-date/provenance
+  - optional SHACL adapter
+  - DC domain context not core coupling
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/12_CONTEXT_KNOWLEDGE_ONTOLOGY.md
+  - design/13_CAPABILITY_PACKS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-040
+  title: RunRecord metrics and OTel projection
+  wave: 2
+  owner_role: Observability Engineer
+  depends_on:
+  - V3-010
+  - V3-019
+  - V3-024
+  - V3-032
+  proposed_paths:
+  - src/amplai_foundry/evaluation/telemetry/
+  deliverables:
+  - task-class metrics
+  - usage unknown states
+  - versioned OTel mapping
+  - bounded export spool
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  design_docs:
+  - design/15_EVAL_OBSERVATORY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-041
+  title: Sanitized corpus and protected holdout registry
+  wave: 3
+  owner_role: Evaluation Engineer
+  depends_on:
+  - V3-009
+  - V3-012
+  - V3-032
+  - V3-040
+  proposed_paths:
+  - src/amplai_foundry/evaluation/corpus/
+  - eval/
+  deliverables:
+  - dev/validation/holdout roles
+  - source/privacy/contamination lineage
+  - protected access
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  design_docs:
+  - design/15_EVAL_OBSERVATORY.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-042
+  title: Frozen experiment runner and replay/rerun separation
+  wave: 3
+  owner_role: Evaluation Engineer
+  depends_on:
+  - V3-021
+  - V3-023
+  - V3-032
+  - V3-040
+  - V3-041
+  proposed_paths:
+  - src/amplai_foundry/evaluation/experiments/
+  deliverables:
+  - baseline/candidate manifests
+  - simulated effects
+  - paired run recording
+  - budget freeze
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  - T-084
+  - T-085
+  - T-086
+  design_docs:
+  - design/15_EVAL_OBSERVATORY.md
+  - design/16_META_HARNESS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-043
+  title: Analysis/report criteria and uncertainty
+  wave: 3
+  owner_role: Evaluation Engineer
+  depends_on:
+  - V3-041
+  - V3-042
+  proposed_paths:
+  - src/amplai_foundry/evaluation/analysis/
+  deliverables:
+  - predeclared analysis
+  - inconclusive paths
+  - drift and selection-bias reporting
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  - T-084
+  - T-085
+  - T-086
+  design_docs:
+  - design/15_EVAL_OBSERVATORY.md
+  - design/30_EXPERIMENT_STATISTICS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-044
+  title: Composition federation and routing policies
+  wave: 3
+  owner_role: Meta-Harness Engineer
+  depends_on:
+  - V3-021
+  - V3-024
+  - V3-034
+  - V3-040
+  proposed_paths:
+  - src/amplai_foundry/meta_harness/composition/
+  deliverables:
+  - pinned model/driver/packs/policy selection
+  - data/risk filters
+  - native capability limits
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  design_docs:
+  - design/16_META_HARNESS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-045
+  title: Harness proposal screening and protected surfaces
+  wave: 3
+  owner_role: Meta-Harness Engineer
+  depends_on:
+  - V3-002
+  - V3-005
+  - V3-041
+  - V3-043
+  - V3-044
+  proposed_paths:
+  - src/amplai_foundry/meta_harness/evolution/
+  deliverables:
+  - hypothesis/diff/risk/rollback proposals
+  - A/B/C classes
+  - no self approval
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  design_docs:
+  - design/16_META_HARNESS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-046
+  title: Shadow/canary orchestration and kill switch
+  wave: 3
+  owner_role: Meta-Harness Engineer
+  depends_on:
+  - V3-023
+  - V3-030
+  - V3-042
+  - V3-043
+  - V3-045
+  proposed_paths:
+  - src/amplai_foundry/meta_harness/canary/
+  deliverables:
+  - eligible opt-in traffic
+  - separate sandbox
+  - stop rules
+  - budget
+  - baseline fallback
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  design_docs:
+  - design/16_META_HARNESS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-047
+  title: ReleaseSet signing and promotion/rollback
+  wave: 3
+  owner_role: Release Engineer
+  depends_on:
+  - V3-008
+  - V3-034
+  - V3-043
+  - V3-045
+  - V3-046
+  proposed_paths:
+  - src/amplai_foundry/distribution/
+  deliverables:
+  - signed component set
+  - report-bound grant
+  - CAS active pointer
+  - in-flight pin
+  - rollback receipts
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/16_META_HARNESS.md
+  - design/20_OPERATIONS_RELEASE.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-048
+  title: Public command DTO/API and event streaming
+  wave: 3
+  owner_role: API Engineer
+  depends_on:
+  - V3-007
+  - V3-008
+  - V3-010
+  - V3-015
+  - V3-021
+  - V3-023
+  - V3-030
+  - V3-033
+  - V3-045
+  proposed_paths:
+  - src/amplai_foundry/control_plane/api_v3/
+  deliverables:
+  - complete OpenAPI from contracts
+  - server-owned fields rejected
+  - scoped SSE/snapshot
+  - error mapping
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  design_docs:
+  - design/18_API_EVENT_PROTOCOL.md
+  - contracts/api-catalog.json
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-049
+  title: Hermes intake/status/approval adapter
+  wave: 3
+  owner_role: Integration Engineer
+  depends_on:
+  - V3-008
+  - V3-010
+  - V3-015
+  - V3-030
+  - V3-048
+  proposed_paths:
+  - integrations/hermes/
+  deliverables:
+  - authenticated identity mapping
+  - deduped intake
+  - read projection
+  - approval via authority only
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  design_docs:
+  - design/17_STEERING_HUMAN_UX.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-050
+  title: Kit installer v3 plan/dry-run/apply/receipt
+  wave: 4
+  owner_role: Distribution Engineer
+  depends_on:
+  - V3-001
+  - V3-002
+  - V3-034
+  - V3-035
+  - V3-047
+  proposed_paths:
+  - tools/amplai-loop-kit/
+  deliverables:
+  - owned-path compare
+  - optional markers
+  - signatures
+  - override preservation
+  - rollback receipt
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/19_DISTRIBUTION_MIGRATION.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-051
+  title: Runtime/contract V2 import without authority upgrade
+  wave: 4
+  owner_role: Migration Engineer
+  depends_on:
+  - V3-001
+  - V3-002
+  - V3-003
+  - V3-006
+  - V3-008
+  - V3-009
+  - V3-018
+  - V3-023
+  proposed_paths:
+  - src/amplai_foundry/migration/
+  deliverables:
+  - raw original/digest preserved
+  - drain/reconcile active
+  - legacy evidence trust
+  - new grant required
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/19_DISTRIBUTION_MIGRATION.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-052
+  title: Evidence hot/cold archive and safe gardening
+  wave: 4
+  owner_role: Migration Engineer
+  depends_on:
+  - V3-009
+  - V3-012
+  - V3-013
+  - V3-038
+  - V3-050
+  proposed_paths:
+  - src/amplai_foundry/migration/archive/
+  - specs/
+  deliverables:
+  - live-ref index
+  - hash-preserving move
+  - aliases/tombstones
+  - report-only default
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/12_CONTEXT_KNOWLEDGE_ONTOLOGY.md
+  - design/19_DISTRIBUTION_MIGRATION.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-053
+  title: Roadmap/manifest/skill truth reconciliation
+  wave: 4
+  owner_role: Integration Lead
+  depends_on:
+  - V3-001
+  - V3-035
+  - V3-047
+  - V3-050
+  - V3-051
+  - V3-052
+  proposed_paths:
+  - plans/
+  - docs/
+  - AGENTS.md
+  - CLAUDE.md
+  deliverables:
+  - current implementation/candidate/qualified/deployed states
+  - registry consistency CI
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/25_REPOSITORY_RESTRUCTURE.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-054
+  title: Local/onprem/hybrid/offline/legacy profiles
+  wave: 4
+  owner_role: Operations Engineer
+  depends_on:
+  - V3-008
+  - V3-022
+  - V3-024
+  - V3-040
+  - V3-047
+  - V3-050
+  proposed_paths:
+  - deployment/
+  - tools/amplai-loop-kit/
+  deliverables:
+  - activation prerequisites
+  - no cloud fallback
+  - modern CP vs old client tested matrix
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  - T-107
+  - T-108
+  - T-109
+  - T-110
+  - T-111
+  - T-112
+  design_docs:
+  - design/20_OPERATIONS_RELEASE.md
+  - design/31_DEPLOYMENT_PROFILES.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-055
+  title: Backup/restore and effect recovery drills
+  wave: 4
+  owner_role: Operations Engineer
+  depends_on:
+  - V3-006
+  - V3-007
+  - V3-008
+  - V3-009
+  - V3-020
+  - V3-023
+  - V3-047
+  - V3-051
+  - V3-054
+  proposed_paths:
+  - tests/recovery/
+  - docs/runbooks/
+  deliverables:
+  - consistent DB/CAS backup
+  - new epoch
+  - authority revocation sync
+  - restore evidence
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  design_docs:
+  - design/09_STORAGE_TRANSACTIONS.md
+  - design/20_OPERATIONS_RELEASE.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-056
+  title: Security/adversarial and property conformance suite
+  wave: 4
+  owner_role: Security Reviewer
+  depends_on:
+  - V3-005
+  - V3-008
+  - V3-022
+  - V3-023
+  - V3-032
+  - V3-041
+  - V3-045
+  - V3-048
+  - V3-054
+  proposed_paths:
+  - tests/security/
+  - tests/properties/
+  deliverables:
+  - all gate branches
+  - IDOR/injection/supplychain/eval abuse
+  - state/fault/property tests
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids: &id001
+  - T-001
+  - T-002
+  - T-003
+  - T-004
+  - T-005
+  - T-006
+  - T-007
+  - T-008
+  - T-009
+  - T-010
+  - T-011
+  - T-012
+  - T-013
+  - T-014
+  - T-015
+  - T-016
+  - T-017
+  - T-018
+  - T-019
+  - T-020
+  - T-021
+  - T-022
+  - T-023
+  - T-024
+  - T-025
+  - T-026
+  - T-027
+  - T-028
+  - T-029
+  - T-030
+  - T-031
+  - T-032
+  - T-033
+  - T-034
+  - T-035
+  - T-036
+  - T-037
+  - T-038
+  - T-039
+  - T-040
+  - T-041
+  - T-042
+  - T-043
+  - T-044
+  - T-045
+  - T-046
+  - T-047
+  - T-048
+  - T-049
+  - T-050
+  - T-051
+  - T-052
+  - T-053
+  - T-054
+  - T-055
+  - T-056
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  - T-073
+  - T-074
+  - T-075
+  - T-076
+  - T-077
+  - T-078
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  - T-084
+  - T-085
+  - T-086
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  - T-099
+  - T-100
+  - T-101
+  - T-102
+  - T-103
+  - T-104
+  - T-105
+  - T-106
+  - T-107
+  - T-108
+  - T-109
+  - T-110
+  - T-111
+  - T-112
+  design_docs:
+  - design/21_TEST_ACCEPTANCE.md
+  - design/29_THREAT_MODEL.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-057
+  title: Cross-app end-to-end goal/steer/replan demo
+  wave: 4
+  owner_role: Integration Engineer
+  depends_on:
+  - V3-011
+  - V3-015
+  - V3-016
+  - V3-017
+  - V3-021
+  - V3-025
+  - V3-026
+  - V3-030
+  - V3-031
+  - V3-033
+  - V3-048
+  - V3-054
+  proposed_paths:
+  - tests/e2e/cross_app/
+  deliverables:
+  - rough intent→two sandbox apps→integration evidence
+  - mid-steer old worker fencing
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-021
+  - T-022
+  - T-023
+  - T-024
+  - T-025
+  - T-026
+  - T-027
+  - T-028
+  - T-029
+  - T-030
+  - T-064
+  - T-065
+  - T-066
+  - T-067
+  - T-068
+  - T-069
+  - T-070
+  - T-071
+  - T-072
+  - T-107
+  - T-108
+  - T-109
+  - T-110
+  - T-111
+  - T-112
+  design_docs:
+  - design/27_END_TO_END_SCENARIOS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-058
+  title: Complete meta evolution promote/reject/rollback drill
+  wave: 4
+  owner_role: Meta-Harness Reviewer
+  depends_on:
+  - V3-041
+  - V3-042
+  - V3-043
+  - V3-044
+  - V3-045
+  - V3-046
+  - V3-047
+  - V3-055
+  - V3-056
+  proposed_paths:
+  - tests/e2e/meta_harness/
+  deliverables:
+  - real bounded test pipeline with pass/fail/inconclusive
+  - independent grant
+  - kill/rollback evidence
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-079
+  - T-080
+  - T-081
+  - T-082
+  - T-083
+  - T-084
+  - T-085
+  - T-086
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  - T-107
+  - T-108
+  - T-109
+  - T-110
+  - T-111
+  - T-112
+  design_docs:
+  - design/16_META_HARNESS.md
+  - design/27_END_TO_END_SCENARIOS.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-059
+  title: Frontend/docs actual-render acceptance suite
+  wave: 4
+  owner_role: Visual QA Reviewer
+  depends_on:
+  - V3-037
+  - V3-038
+  - V3-048
+  - V3-054
+  - V3-056
+  proposed_paths:
+  - tests/e2e/artifacts/
+  deliverables:
+  - all final pages/screens rendered and inspected
+  - golden protected
+  - reproducible artifacts
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-057
+  - T-058
+  - T-059
+  - T-060
+  - T-061
+  - T-062
+  - T-063
+  design_docs:
+  - design/14_VERIFICATION_VISUAL_QA.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-060
+  title: Legacy retirement candidates and exact deletion proposal
+  wave: 5
+  owner_role: Migration Lead
+  depends_on:
+  - V3-002
+  - V3-050
+  - V3-051
+  - V3-052
+  - V3-053
+  - V3-055
+  - V3-056
+  - V3-057
+  - V3-058
+  - V3-059
+  proposed_paths:
+  - migration/
+  - src/amplai_foundry/governance/
+  deliverables:
+  - call/ref zero or compat adapter
+  - approved digest list
+  - rollback proven
+  - no automatic delete
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  design_docs:
+  - design/19_DISTRIBUTION_MIGRATION.md
+  - design/25_REPOSITORY_RESTRUCTURE.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-061
+  title: Final V3 conformance and requirement evidence closure
+  wave: 5
+  owner_role: Release Reviewer
+  depends_on:
+  - V3-053
+  - V3-054
+  - V3-055
+  - V3-056
+  - V3-057
+  - V3-058
+  - V3-059
+  - V3-060
+  proposed_paths:
+  - release/
+  - eval/
+  deliverables:
+  - every REQ/task/test evidence tied
+  - remaining blockers explicit
+  - no design check counted as runtime pass
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids: *id001
+  design_docs:
+  - design/21_TEST_ACCEPTANCE.md
+  - design/22_TRACEABILITY.md
+  - design/28_REVIEW_CHECKLIST.md
+  status: not_started
+  implementation_authorized_by_this_package: false
+- id: V3-062
+  title: Authorized cutover and independent release receipts
+  wave: 5
+  owner_role: Release Operator
+  depends_on:
+  - V3-047
+  - V3-049
+  - V3-050
+  - V3-051
+  - V3-054
+  - V3-055
+  - V3-061
+  proposed_paths:
+  - deployment/
+  - release/
+  deliverables:
+  - human approved release set
+  - target-by-target status
+  - safe rollback
+  - Platform/Kit separate version truth
+  acceptance:
+  - Deliverables implemented at exact proposed or reviewed replacement paths
+  - Specified tests run against pinned commit/environment with evidence refs
+  - No existing safety/authority regression weakened
+  test_ids:
+  - T-087
+  - T-088
+  - T-089
+  - T-090
+  - T-091
+  - T-092
+  - T-093
+  - T-094
+  - T-095
+  - T-096
+  - T-097
+  - T-098
+  - T-107
+  - T-108
+  - T-109
+  - T-110
+  - T-111
+  - T-112
+  design_docs:
+  - design/19_DISTRIBUTION_MIGRATION.md
+  - design/20_OPERATIONS_RELEASE.md
+  status: not_started
+  implementation_authorized_by_this_package: false

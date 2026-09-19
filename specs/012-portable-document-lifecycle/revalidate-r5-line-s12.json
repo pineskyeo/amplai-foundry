@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S12",
+  "round": "R5",
+  "status": "LOCAL_PASS",
+  "started_at": "2026-09-12 04:29:54 UTC",
+  "completed_at": "2026-09-12 04:32:21 UTC",
+  "verification": {
+    "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S12 --profile fast",
+    "exit_code": 0,
+    "verdict": "PASS",
+    "required_commands": [
+      ".venv/bin/python -B -m pytest -q tests/ai/test_document_references.py tests/ai/test_document_lifecycle.py tests/ai/test_document_html.py tests/ai/test_document_review.py -k 'not public_atomic_record'",
+      "python3 -B tools/amplai-loop-kit/seal.py --verify"
+    ],
+    "log": "revalidate-r5-line-s12.log",
+    "log_truncated": false,
+    "task_input": "revalidate-r5-line-s12-eval-input-tasks.md"
+  },
+  "source": {
+    "path": "revalidation-source-r5-line.json",
+    "files": 151,
+    "before_drift": [],
+    "after_drift": []
+  },
+  "input_pins": [
+    {
+      "path": "specs/012-portable-document-lifecycle/tasks.md",
+      "sha256": "fc21bbfb2968675886bedeb3f5aa580d1aed3f9ddc3a8298ab2107f6f337e5d0"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/PORTABLE-DOC-T012.yaml",
+      "sha256": "3149a11d827c0b01cb72def551b94c558ddf67aa43bafc09aca8598b66890844"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/task-manifests/index.yaml",
+      "sha256": "2094c0ebf0b200fc462fa262c591f040fbd5fb126849915b5b530999ae1c29e5"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/context-pack.json",
+      "sha256": "2efe1ea763d82dc541b50709a3916d2c480efc5f40d34e098473fc9356728b50"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/work-contract.json",
+      "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/spec.md",
+      "sha256": "f10c2c2d0fbd774e961bdcfb79284d13ff4417af082e36dc259382c6e4ac1e20"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/plan.md",
+      "sha256": "c8b7ee98dfcb47d1cda29244a88d0f698ad7f8de347466d0f0a43bd8c89b9557"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/analysis.json",
+      "sha256": "664052c96a1d905ad4251747f6565bbba2f406e239e4dd26440f015f28072c1e"
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-source-r5-line.json",
+      "sha256": "18bfad0e3ae8d74150fb28416c9e9181da6dba66dcb0a5936b26a6ac2b224921"
+    }
+  ],
+  "input_drift": [],
+  "limits": [
+    "Canonical local slice only; overlapping tests are not summed. Not independent R5 review, full native Work, RHEL7 or deployment approval."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "pack_id": "research",
+  "role": "primary-source retrieval with source date, provenance and explicit uncertainty",
+  "inputs": [
+    "question",
+    "allowed source classes",
+    "as-of date"
+  ],
+  "outputs": [
+    "source list with dates and digests",
+    "claims with provenance and confidence bands",
+    "open uncertainties"
+  ],
+  "not_core": [
+    "automatic promotion of search results to canonical facts",
+    "external URLs assumed unchanged (T-020)"
+  ],
+  "auto_approval": false,
+  "promotes_to_canonical": false,
+  "core_coupling": false,
+  "human_gate": {
+    "kind": "required_for_canonical",
+    "when": "any claim proposed as canonical knowledge goes through Source → Proposal → Decision"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "id": "foundry",
+  "additional_skills": [
+    "eli12", "grill-me", "grilling", "speckit-checklist",
+    "speckit-constitution", "speckit-taskstoissues"
+  ],
+  "public_helpers": ["eli12", "grill-me", "grilling"],
+  "forbidden_paths": [
+    ".ai-team/agents", ".ai-team/analytics", ".ai-team/config", ".ai-team/docs",
+    ".ai-team/evals", ".ai-team/examples", ".ai-team/feedback", ".ai-team/gates",
+    ".ai-team/hooks", ".ai-team/improvements", ".ai-team/monitor", ".ai-team/project",
+    ".ai-team/registry", ".ai-team/skills", ".ai-team/templates", ".ai-team/workflows",
+    ".ai-team/wrappers", ".claude/agents", ".codex/agents", ".opencode/plugins"
+  ],
+  "fixture_refs": ["testdata/"]
+}

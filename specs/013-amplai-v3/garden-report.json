@@ -1,0 +1,4603 @@
+{
+  "applied": false,
+  "applied_paths": [],
+  "candidates": [
+    {
+      "candidate_id": "G-001",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-002",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/cli.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-003",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/http.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-004",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/local.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-005",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/ports.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-006",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/protocol.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-007",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/agent_drivers/__pycache__/sessions.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-008",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-009",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/auth.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-010",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/connectors.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-011",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/errors.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-012",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/events.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-013",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/hermes.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-014",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/http_api.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-015",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/knowledge_intake.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-016",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/models.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-017",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/orchestration.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-018",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/outbox.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-019",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/projections.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-020",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-021",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/store.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-022",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/__pycache__/worker.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-023",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/api_v3/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-024",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/api_v3/__pycache__/client.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-025",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/control_plane/api_v3/__pycache__/server.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-026",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/distribution/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-027",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/distribution/__pycache__/closure.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-028",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/distribution/__pycache__/cutover.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-029",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/distribution/__pycache__/installer.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-030",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/distribution/__pycache__/packs.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-031",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-032",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/analysis.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-033",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/corpus.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-034",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/observatory.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-035",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/receipts.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-036",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-037",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/evaluation/__pycache__/telemetry.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-038",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-039",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/active_proposals.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-040",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/apply_jobs.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-041",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/authority.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-042",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/decisions.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-043",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/definitions.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-044",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/events.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-045",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/filesystem.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-046",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/git_publish.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-047",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/ingress.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-048",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/ingress_ack.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-049",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/ingress_worker.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-050",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/ledger.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-051",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/legacy_gates.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-052",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/legacy_lifecycle.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-053",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/legacy_migration.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-054",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/legacy_recovery.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-055",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/legacy_rollback.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-056",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/migrations.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-057",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/models.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-058",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/object_store.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-059",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/projections.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-060",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/publish.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-061",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/publish_resolution.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-062",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/review_cards.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-063",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/slack.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-064",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/slack_cards.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-065",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/slack_http.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-066",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/slack_projection.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-067",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/slack_work_activation.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-068",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/store.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-069",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/work_activation.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-070",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/work_activation_card_outbox.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-071",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/work_activation_http.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-072",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/governance/__pycache__/work_status_projection.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-073",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/knowledge_runtime/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-074",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/knowledge_runtime/__pycache__/foundry.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-075",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/knowledge_runtime/__pycache__/readiness.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-076",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/knowledge_runtime/__pycache__/repo_facts.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-077",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/knowledge_runtime/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-078",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-079",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/budget.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-080",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/composition.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-081",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/pipeline_reference.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-082",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/reference.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-083",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/meta_harness/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-084",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/migration/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-085",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/migration/__pycache__/retirement.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-086",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/migration/__pycache__/v2.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-087",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/migration/archive/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-088",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/migration/archive/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-089",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/packs/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-090",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/packs/__pycache__/catalog.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-091",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/packs/__pycache__/conformance.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-092",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/packs/__pycache__/spec_surface.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-093",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-094",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/__pycache__/cli.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-095",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/__pycache__/errors.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-096",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/__pycache__/profiles.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-097",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/__pycache__/reference.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-098",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/budgets/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-099",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/budgets/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-100",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-101",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/authority.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-102",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/gates.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-103",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/identity.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-104",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/provider_schema.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-105",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/registry.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-106",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/contracts/__pycache__/semantics.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-107",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/effects/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-108",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/effects/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-109",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/evidence/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-110",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/evidence/__pycache__/cas.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-111",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-112",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/envelope.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-113",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/reference.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-114",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-115",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/steering.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-116",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/strategies.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-117",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/execution/__pycache__/worker.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-118",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/goals/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-119",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/goals/__pycache__/planner.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-120",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/goals/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-121",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/goals/__pycache__/validation.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-122",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/graphs/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-123",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/graphs/__pycache__/compiler.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-124",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/recovery/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-125",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/recovery/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-126",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/storage/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-127",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/runtime/storage/__pycache__/store.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-128",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/sandbox/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-129",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/sandbox/__pycache__/container.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-130",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/sandbox/__pycache__/local.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-131",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/sandbox/__pycache__/workspace.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-132",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/tool_broker/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-133",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/tool_broker/__pycache__/native.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-134",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/tool_broker/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-135",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/verification/runtime/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-136",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/verification/runtime/__pycache__/render_acceptance.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-137",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/verification/runtime/__pycache__/service.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-138",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "gate": "destructive_change",
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "propose",
+      "risk": "high",
+      "safety": "HUMAN_GATED",
+      "status": "candidate",
+      "target": {
+        "path": "src/amplai_foundry/verification/runtime/__pycache__/visual.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-139",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-140",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/__pycache__/conftest.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-141",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/artifacts/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-142",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/artifacts/__pycache__/test_render_acceptance.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-143",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/cross_app/__pycache__/__init__.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-144",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/cross_app/__pycache__/test_goal_steer_replan.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-145",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/conftest.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-146",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_api.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-147",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_core_runtime.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-148",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev01_contracts_planning.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-149",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev01_foundation.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-150",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev02_drivers.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-151",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev02_execution.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-152",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev02_sessions_workspace.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-153",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev02_sessions_workspace.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-154",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev02_tool_broker.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-155",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev03_evaluation.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-156",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev03_meta_harness.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-157",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_dev03_observatory.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-158",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_meta.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-159",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_conformance_closure.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-160",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_cutover.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-161",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_deployment_profiles.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-162",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_e2e_cross_app.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-163",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_e2e_render.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-164",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_evidence_archive.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-165",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_hermes_adapter.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-166",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_host_surface.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-167",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_kit_installer_v3.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-168",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_knowledge_adapters.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-169",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_legacy_retirement.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-170",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_pack_documents.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-171",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_pack_frontend.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-172",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_pack_registry.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-173",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_pack_research_ontology.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-174",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_pack_software.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-175",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_readiness_validator.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-176",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_repo_facts.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-177",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_storage_uow.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-178",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/__pycache__/test_rc01_v2_import.cpython-311-pytest-8.4.2.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-179",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tools/amplai-loop-kit/__pycache__/install.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-180",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git ls-files --others",
+        ".ai-team/policy/gardening.json#safe_auto_patterns"
+      ],
+      "reason": "git 이 추적하지 않는 generated_garbage 패턴 artifact",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tools/amplai-loop-kit/payload/scripts/__pycache__/amplai_runtime.cpython-311.pyc",
+        "symbol": null
+      },
+      "type": "generated_garbage"
+    },
+    {
+      "candidate_id": "G-181",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F conftest.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/e2e/conftest.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-182",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F conftest.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/conftest.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-183",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_api.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_api.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-184",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_core_runtime.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_core_runtime.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-185",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev01_contracts_planning.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev01_contracts_planning.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-186",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev01_foundation.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev01_foundation.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-187",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev02_drivers.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev02_drivers.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-188",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev02_execution.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev02_execution.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-189",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev02_sessions_workspace.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev02_sessions_workspace.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-190",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_dev02_tool_broker.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_dev02_tool_broker.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    },
+    {
+      "candidate_id": "G-191",
+      "classification": {
+        "conditional_build": false,
+        "plugin_entry": false,
+        "production_path": false,
+        "public_api": false
+      },
+      "evidence": [
+        "git grep -F test_rc01_pack_research_ontology.py",
+        ".ai-team/policy/gardening.json#no_static_reference_is_not_dead"
+      ],
+      "reason": "repository 안에서 이 파일 이름을 참조하는 곳이 없다",
+      "recommended_action": "review",
+      "risk": "medium",
+      "safety": "EVIDENCE_REQUIRED",
+      "status": "candidate",
+      "target": {
+        "path": "tests/v3/test_rc01_pack_research_ontology.py",
+        "symbol": null
+      },
+      "type": "orphan_test_fixture"
+    }
+  ],
+  "content_hash": "ca050b34421ed3b00f2942486f8a4817d3cc8969c6ed8316afd3976a13d9c7ea",
+  "generated_from": {
+    "commit": "3ae387981631c0be6b8f62cdb12e2de247ba0c92",
+    "generated_at": "2026-09-18T11:24:39Z",
+    "policy_sha256": "c6cd1614ce2cac2ee92b37c6df0335ac67939603f5884e92b69f16980156739b",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "integrity": {
+    "all_classified": true,
+    "all_have_evidence": true,
+    "no_gated_auto_delete": true,
+    "violations": []
+  },
+  "mode": "incremental",
+  "notes": [
+    "discovery entry 3 개는 orphan 판정에서 제외했다 (runner 가 glob/디렉토리로 수집)",
+    "INCOMPLETE:reference scan 상한 120 개에 도달해 32 개 파일을 검사하지 않았다"
+  ],
+  "pass": false,
+  "report_only": true,
+  "rule": "Normal work is incremental report-only after documentation and review. Full scan requires an explicit high-risk repository_gardening Work. Retirement application has no public CLI and requires separate exact authority and verified recovery.",
+  "scan_complete": false,
+  "schema_version": "1.0",
+  "scope": [
+    "contracts/",
+    "deployment/",
+    "docs/v3/",
+    "eval/",
+    "integrations/hermes/",
+    "migration/",
+    "packs/",
+    "pyproject.toml",
+    "release/",
+    "specs/013-amplai-v3/",
+    "src/amplai_foundry/agent_drivers/",
+    "src/amplai_foundry/control_plane/",
+    "src/amplai_foundry/distribution/",
+    "src/amplai_foundry/evaluation/",
+    "src/amplai_foundry/governance/",
+    "src/amplai_foundry/knowledge_runtime/",
+    "src/amplai_foundry/meta_harness/",
+    "src/amplai_foundry/migration/",
+    "src/amplai_foundry/packs/",
+    "src/amplai_foundry/runtime/",
+    "src/amplai_foundry/sandbox/",
+    "src/amplai_foundry/tool_broker/",
+    "src/amplai_foundry/verification/runtime/",
+    "tests/e2e/",
+    "tests/v3/",
+    "tools/amplai-loop-kit/"
+  ],
+  "summary": {
+    "applied_count": 0,
+    "by_safety": {
+      "EVIDENCE_REQUIRED": 53,
+      "HUMAN_GATED": 138
+    },
+    "by_type": {
+      "generated_garbage": 180,
+      "orphan_test_fixture": 11
+    },
+    "gated_count": 138,
+    "total": 191
+  },
+  "work_id": "AMPLAI-V3-RC01"
+}

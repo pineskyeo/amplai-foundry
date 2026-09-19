@@ -1,0 +1,33 @@
+FFFFFF..                                                                 [100%]
+=================================== FAILURES ===================================
+___ test_public_atomic_record_preserves_mode_with_restrictive_umask[review] ____
+tests/ai/test_document_review.py:139: in test_public_atomic_record_preserves_mode_with_restrictive_umask
+    assert target.stat().st_mode & 0o777 == 0o640
+E   AssertionError: assert (33152 & 511) == 416
+E    +  where 33152 = os.stat_result(st_mode=33152, st_ino=121414597, st_dev=16777233, st_nlink=1, st_uid=501, st_gid=20, st_size=2097, st_atime=1789136597, st_mtime=1789136596, st_ctime=1789136597).st_mode
+E    +    where os.stat_result(st_mode=33152, st_ino=121414597, st_dev=16777233, st_nlink=1, st_uid=501, st_gid=20, st_size=2097, st_atime=1789136597, st_mtime=1789136596, st_ctime=1789136597) = stat()
+E    +      where stat = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2748/test_public_atomic_record_pres0/repository/.ai-team/knowledge/document-reviews.json').stat
+___ test_public_atomic_record_preserves_mode_with_restrictive_umask[impact] ____
+tests/ai/test_document_review.py:139: in test_public_atomic_record_preserves_mode_with_restrictive_umask
+    assert target.stat().st_mode & 0o777 == 0o640
+E   AssertionError: assert (33152 & 511) == 416
+E    +  where 33152 = os.stat_result(st_mode=33152, st_ino=121414777, st_dev=16777233, st_nlink=1, st_uid=501, st_gid=20, st_size=7766, st_atime=1789136599, st_mtime=1789136599, st_ctime=1789136599).st_mode
+E    +    where os.stat_result(st_mode=33152, st_ino=121414777, st_dev=16777233, st_nlink=1, st_uid=501, st_gid=20, st_size=7766, st_atime=1789136599, st_mtime=1789136599, st_ctime=1789136599) = stat()
+E    +      where stat = PosixPath('/private/var/folders/1y/7cgp6w0n4p10n9cqyplr22dw0000gn/T/pytest-of-pinesky/pytest-2748/test_public_atomic_record_pres1/repository/specs/canary/doc-impact.json').stat
+_ test_public_atomic_record_rejects_late_metadata_or_identity_drift[chmod-review] _
+tests/ai/test_document_review.py:187: in test_public_atomic_record_rejects_late_metadata_or_identity_drift
+    with pytest.raises(runtime.amplai_docs.DocumentError, match="SOURCE_DRIFT"):
+E   Failed: DID NOT RAISE <class 'amplai_docs.DocumentError'>
+_ test_public_atomic_record_rejects_late_metadata_or_identity_drift[chmod-impact] _
+tests/ai/test_document_review.py:187: in test_public_atomic_record_rejects_late_metadata_or_identity_drift
+    with pytest.raises(runtime.amplai_docs.DocumentError, match="SOURCE_DRIFT"):
+E   Failed: DID NOT RAISE <class 'amplai_docs.DocumentError'>
+_ test_public_atomic_record_rejects_late_metadata_or_identity_drift[same_bytes_replace-review] _
+tests/ai/test_document_review.py:187: in test_public_atomic_record_rejects_late_metadata_or_identity_drift
+    with pytest.raises(runtime.amplai_docs.DocumentError, match="SOURCE_DRIFT"):
+E   Failed: DID NOT RAISE <class 'amplai_docs.DocumentError'>
+_ test_public_atomic_record_rejects_late_metadata_or_identity_drift[same_bytes_replace-impact] _
+tests/ai/test_document_review.py:187: in test_public_atomic_record_rejects_late_metadata_or_identity_drift
+    with pytest.raises(runtime.amplai_docs.DocumentError, match="SOURCE_DRIFT"):
+E   Failed: DID NOT RAISE <class 'amplai_docs.DocumentError'>
+6 failed, 2 passed, 50 deselected in 25.98s

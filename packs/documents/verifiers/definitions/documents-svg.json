@@ -1,0 +1,20 @@
+{
+  "definition_id": "documents-svg",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "svg-check"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "viewBox/size/font/text anchors/clip path/filter/external asset"
+}

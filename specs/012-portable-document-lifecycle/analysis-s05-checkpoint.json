@@ -1,0 +1,283 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "reviewed_at": "2026-09-11T07:45:08Z",
+  "capability": "speckit-analyze under work controller",
+  "verdict": "PASS",
+  "source_hashes": {
+    "spec.md": "05135ce88ca3c2a603cf8a8c49290af493cbc90d7e6d4b962618035d73eb94ca",
+    "plan.md": "24ee4c0e56fc86390967572708dfa129b7a61853887107dc7fa3d22c7f283dc0",
+    "tasks.md": "6cfbc61ce71fba1bbc4cfd203dab70c7e6ec9959598de47823a4b29a563f4f7f",
+    "work-contract.json": "71fe10c0afe9c5023d4df154016d1690a0cd90a0ae37351de2e3c8f8994270e5",
+    "acceptance-map.json": "12659852b2f935206d06c7c8b6d1ce708db19a0e24e031ca53019654c1743982"
+  },
+  "metrics": {
+    "original_requirements": 23,
+    "original_cases": 46,
+    "feature_requirements": 15,
+    "work_acceptances": 8,
+    "tasks": 8,
+    "unmapped_tasks": 0,
+    "critical": 0,
+    "high": 0
+  },
+  "coverage": [
+    {
+      "task": "PORTABLE-DOC-T001",
+      "requirements": [
+        "REQ-034",
+        "REQ-035",
+        "REQ-037",
+        "REQ-040",
+        "KIT-001"
+      ],
+      "cases": [
+        "AC-034-P",
+        "AC-034-N",
+        "AC-035-P",
+        "AC-035-N",
+        "AC-037-P",
+        "AC-037-N",
+        "AC-040-P",
+        "AC-040-N"
+      ],
+      "depends_on": []
+    },
+    {
+      "task": "PORTABLE-DOC-T002",
+      "requirements": [
+        "REQ-036",
+        "REQ-038",
+        "REQ-039",
+        "KIT-001",
+        "KIT-002"
+      ],
+      "cases": [
+        "AC-036-P",
+        "AC-036-N",
+        "AC-038-P",
+        "AC-038-N",
+        "AC-039-P",
+        "AC-039-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T003",
+      "requirements": [
+        "REQ-043",
+        "REQ-047",
+        "REQ-052",
+        "DOC-002"
+      ],
+      "cases": [
+        "AC-043-P",
+        "AC-043-N",
+        "AC-047-P",
+        "AC-047-N",
+        "AC-052-P",
+        "AC-052-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T004",
+      "requirements": [
+        "REQ-026",
+        "REQ-044",
+        "REQ-045",
+        "REQ-082",
+        "DOC-001",
+        "DOC-002"
+      ],
+      "cases": [
+        "AC-026-P",
+        "AC-026-N",
+        "AC-044-P",
+        "AC-044-N",
+        "AC-045-P",
+        "AC-045-N",
+        "AC-082-P",
+        "AC-082-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T003"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T005",
+      "requirements": [
+        "REQ-042",
+        "REQ-053",
+        "REQ-054",
+        "REQ-055",
+        "DOC-003",
+        "REQ-082"
+      ],
+      "cases": [
+        "AC-042-P",
+        "AC-042-N",
+        "AC-053-P",
+        "AC-053-N",
+        "AC-054-P",
+        "AC-054-N",
+        "AC-055-P",
+        "AC-055-N",
+        "AC-082-P-INTEGRATION"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T003",
+        "PORTABLE-DOC-T004"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T006",
+      "requirements": [
+        "REQ-048",
+        "REQ-050",
+        "REQ-051",
+        "REQ-075",
+        "DOC-004"
+      ],
+      "cases": [
+        "AC-048-P",
+        "AC-048-N",
+        "AC-050-P",
+        "AC-050-N",
+        "AC-051-P",
+        "AC-051-N",
+        "AC-075-P",
+        "AC-075-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T004"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T007",
+      "requirements": [
+        "REQ-041",
+        "WORK-001"
+      ],
+      "cases": [
+        "AC-041-P",
+        "AC-041-N"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T001"
+      ]
+    },
+    {
+      "task": "PORTABLE-DOC-T008",
+      "requirements": [
+        "REQ-026",
+        "REQ-034",
+        "REQ-035",
+        "REQ-036",
+        "REQ-037",
+        "REQ-038",
+        "REQ-039",
+        "REQ-040",
+        "REQ-041",
+        "REQ-042",
+        "REQ-043",
+        "REQ-044",
+        "REQ-045",
+        "REQ-047",
+        "REQ-048",
+        "REQ-050",
+        "REQ-051",
+        "REQ-052",
+        "REQ-053",
+        "REQ-054",
+        "REQ-055",
+        "REQ-075",
+        "REQ-082",
+        "KIT-001",
+        "KIT-002",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "WORK-001",
+        "REG-001"
+      ],
+      "cases": [
+        "PORTABLE-DOC-T008-AC1"
+      ],
+      "depends_on": [
+        "PORTABLE-DOC-T002",
+        "PORTABLE-DOC-T003",
+        "PORTABLE-DOC-T004",
+        "PORTABLE-DOC-T005",
+        "PORTABLE-DOC-T006",
+        "PORTABLE-DOC-T007"
+      ]
+    }
+  ],
+  "resolved": [
+    {
+      "id": "ANALYZE-001",
+      "severity": "HIGH",
+      "boundary": ".specify/scripts/taskify_to_tasks_md.py -> scripts/eval.sh",
+      "observation": "Precondition renderer emitted Phase sections while evaluator reads Slice/Eval",
+      "resolution": "Approved S01 harness seam reused existing generic renderer; JSON-first generator/validator run under -I -S; 15 focused tests PASS; list-slices exposes S01"
+    },
+    {
+      "id": "ANALYZE-002",
+      "severity": "HIGH",
+      "boundary": "complete package -> opt-in installed runtime",
+      "observation": "S01 baseline required an actual transaction consumer, recovery and host parity proof",
+      "resolution": "S02 actual canonical 128 tests, 12 installer selftests, full V2 1680 tests and native host transport PASS. Original cases retain final integration/review obligations."
+    },
+    {
+      "id": "ANALYZE-003",
+      "severity": "HIGH",
+      "boundary": "metadata owner -> all portable current consumers -> context",
+      "observation": "Legacy ACTIVE and source ranking lacked exact current-document eligibility",
+      "resolution": "One owner, separate dimensions and pre-output filter implemented; 44 targeted and full V2 1724 tests PASS. Strict legacy nonpromotion preserved; S04 extends candidate/impact/review publication."
+    },
+    {
+      "id": "ANALYZE-004",
+      "severity": "HIGH",
+      "boundary": "S04 impact/review -> dependent S05 HTML -> S08 original acceptance",
+      "observation": "The original AC-082-P spans normal document review and HTML generation, but copying its complete outcome into predecessor S04 made local completion depend on future S05.",
+      "resolution": "Original AC-082-P and 46-case source unchanged. S04 proves automatic complete impact/review; S05 explicitly owns HTML build/validation in the same work/dev-loop path and S08 closes the original case. 91 canonical and 1771 full tests PASS for S04; no final original-case PASS."
+    },
+    {
+      "id": "ANALYZE-005",
+      "severity": "HIGH",
+      "boundary": "S05 owner source/review -> deterministic HTML -> normal Loop",
+      "observation": "Original AC-082-P requires actual feature-change and HTML integration, not a static successful fixture.",
+      "resolution": "Actual synthetic code version change, executable source check, complete impact, attributed review and rebinding drive existing sync-views/validate CLI. 86 canonical/1810 full tests and isolated browser/installed canaries PASS. Real owner-source adoption and final original-case review remain S08."
+    }
+  ],
+  "notes": [
+    "Generated tasks.md remains a projection, not the acceptance owner.",
+    "New document harness commands are explicit later-slice deliverables, not claimed existing PASS.",
+    "No constitution exception. Native activation occurred under E021. No live install, new controller, private Vault copy, publication or production test.",
+    "Local slice evidence is not final original-case or native Work completion. No independent completion review performed yet; S08 retains it.",
+    "S06 selected manifest matches FR-011/012/013, original eight cases and read-only real-repository boundary. Existing deletion helpers and backup SAFE_AUTO classification are implementation gaps, not new cleanup authority. No new HIGH/CRITICAL artifact inconsistency; 23 requirements and 46 cases remain mapped."
+  ],
+  "checkpoint": "S01-S05 local PASS; S06 ready. Previous analysis preserved in analysis-s04-checkpoint.json.",
+  "execution_checks": {
+    "manifest_validator": {
+      "exit_code": 0,
+      "tasks": 8
+    },
+    "generator": {
+      "exit_code": 0,
+      "selected_slice": "S06"
+    },
+    "contract": "PASS",
+    "readiness": "READY",
+    "context": "MATCH",
+    "native_evidence": "CR-SYNAPSE-APP-SPLIT-E029",
+    "original_source_hashes_unchanged": true,
+    "s05_evidence": "s05-evidence.json"
+  }
+}

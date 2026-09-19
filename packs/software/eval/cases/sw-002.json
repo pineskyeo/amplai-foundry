@@ -1,0 +1,9 @@
+{
+  "case_id": "sw-002",
+  "title": "Tiny still gated",
+  "given": "one-line fix",
+  "when": "verify",
+  "expected": "minimal contract, authority and artifact/verifier evidence retained (T-031)",
+  "verifier_definition": "software-build",
+  "split": "dev"
+}

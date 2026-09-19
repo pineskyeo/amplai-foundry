@@ -1,0 +1,9 @@
+{
+  "case_id": "doc-004",
+  "title": "Golden ingestion provenance",
+  "given": "customer deck",
+  "when": "ingest as golden",
+  "expected": "license/provenance recorded; content separated from style; human approval before baseline",
+  "verifier_definition": "documents-golden-ingest",
+  "split": "validation"
+}

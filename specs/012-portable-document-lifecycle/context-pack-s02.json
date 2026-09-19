@@ -1,0 +1,436 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-046",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Move workflow ordering from the human procedure to the /work controller",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-052",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "The Project Store owns the supervisor's code and its right to run",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-055",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-056",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Adopt the Platform 0.4.0 control plane with its reachable defects closed first",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-057",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make stranded limit an output cap so filtered reads report truncation",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-058",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Define exactly what proposal_sha256 hashes",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-061",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Select one controller and runner per Work and use a managed worktree",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "tools/amplai-loop-kit/",
+    "scripts/loopctl.py",
+    "scripts/loopv2.py",
+    "scripts/amplai.py",
+    "scripts/amplai_runtime.py",
+    "scripts/amplai_docs.py",
+    "scripts/eval.sh",
+    "tests/ai/",
+    ".ai-team/runtime/",
+    ".ai-team/policy/documentation.json",
+    ".ai-team/policy/gardening.json",
+    ".ai-team/verifiers/",
+    ".agents/skills/work/",
+    ".agents/skills/design/",
+    ".agents/skills/dev-loop/",
+    "README.md",
+    "docs/",
+    "specs/012-portable-document-lifecycle/",
+    ".specify/feature.json",
+    ".ai-team/README.md",
+    ".ai-team/contracts/",
+    ".ai-team/knowledge/README.md",
+    ".ai-team/knowledge/map.json",
+    ".ai-team/knowledge/claims.jsonl",
+    ".ai-team/knowledge/doc-impact.schema.json",
+    ".ai-team/knowledge/context-pack.schema.json",
+    ".ai-team/knowledge/garden-report.schema.json",
+    ".agents/skills/taskify/",
+    ".specify/scripts/",
+    ".specify/templates/",
+    "pyproject.toml"
+  ],
+  "content_hash": "8fa2bd814571086ba8e20e6d903b16293b4aa9d21664aa67e7b13c61bb674c21",
+  "generated_from": {
+    "claims_sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+    "commit": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+    "contract_sha256": "71fe10c0afe9c5023d4df154016d1690a0cd90a0ae37351de2e3c8f8994270e5",
+    "discovery_sha256": "411d805c8134bc6da50927ab42f4ab1ace8c1fff029cc1b11b6679ddd44a562f",
+    "generated_at": "2026-09-11T02:43:23Z",
+    "knowledge_map_sha256": "9a7cb461c9ea4a239be2060a29a4caf956049c98609ab1d8d892d1d4c87cc9f4",
+    "readiness_sha256": "c413e7122cfb47debff0646b2aa99affa5659c871b4d90586d3eb8a6b8d64093",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "Preserve work/design and repository-local rules while delivering a runnable portable baseline, dependency-bound versioned documentation and safe offline HTML through the canonical Foundry Kit.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:ai,ai-team,runtime,policy,readme.md,knowledge",
+      "source_sha256": "cc5b44501a0620aedf3a4e7662421a50f597afb15499b3e261fb8d4453df2aaf",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:work,ai,ai-team,runtime,policy",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:work,and,ai,ai-team,runtime",
+      "source_sha256": "1e2dbfe10958900a18722d36e1f52830a9281f9565c1a3cd122f41b240f29b09",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:work,safe,agents,knowledge",
+      "source_sha256": "f79e8de07b76b504f23442762197e3febd14b093a91a574b8b55a0bc5f6c1807",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-adoption-facts",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "reason": "keyword:work,ai,runtime,docs",
+      "source_sha256": "2d4b6a5dc0e67430be3eef37ab8d2d7bc804718176b81921bf0b30c611df169f",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-adoption-port-log",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "reason": "keyword:work,ai,runtime,docs",
+      "source_sha256": "26cccb4194ef30b266825ce5af4dc19427611465cc2e8a70d39265a2f4156b7f",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "keyword:ai,ai-team,verifiers",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "knowledge-rules",
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "reason": "keyword:rules,docs,knowledge",
+      "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "knowledge-intake",
+      "path": "docs/KNOWLEDGE-INTAKE.md",
+      "reason": "keyword:and,docs,knowledge",
+      "source_sha256": "d240b55eaec482cc498b3f06dd80e0579bf8a4a53cf9e69751e6e5107e9224b8",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "canonical-vault",
+      "path": "vault/projects/amplai",
+      "reason": "keyword:canonical,ai",
+      "source_sha256": "",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "mgc-decisions",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "keyword:work,docs",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "lifecycle",
+      "path": "docs/LIFECYCLE.md",
+      "reason": "keyword:lifecycle,docs",
+      "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "memory-domain-model",
+      "path": "docs/MEMORY-DOMAIN-MODEL.md",
+      "reason": "keyword:ai,docs",
+      "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "project-pack",
+      "path": "docs/PROJECT-PACK.md",
+      "reason": "keyword:work,docs",
+      "source_sha256": "1e9d96a194739644aea67a05a96c0e78b8f8abb1abcce465c170bb56e0bfe45c",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "vision",
+      "path": "docs/VISION.md",
+      "reason": "keyword:ai,docs",
+      "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword:specify",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:and",
+      "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "messenger-proposal-control",
+      "path": "docs/MESSENGER-PROPOSAL-CONTROL.md",
+      "reason": "keyword:docs",
+      "source_sha256": "08b4a0b7795a6b3ae57b1e597852bfd294d836ff27398f6521eda5fab42997a0",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "proposals",
+      "path": "docs/PROPOSALS.md",
+      "reason": "keyword:docs",
+      "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "relationships",
+      "path": "docs/RELATIONSHIPS.md",
+      "reason": "keyword:docs",
+      "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "source-ingestion",
+      "path": "docs/SOURCE-INGESTION.md",
+      "reason": "keyword:docs",
+      "source_sha256": "b38f4051c3c062f89f0657b7135bb600b800d94db1a71f9f3779ee41ba6cf5eb",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "versioning",
+      "path": "docs/VERSIONING.md",
+      "reason": "keyword:docs",
+      "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "feature-specs",
+      "path": "specs/",
+      "reason": "keyword:specs",
+      "source_sha256": "",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "roadmap",
+      "path": "docs/ROADMAP.md",
+      "reason": "keyword:docs",
+      "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Runtime Ownership",
+          "path": "AGENTS.md",
+          "type": "doc"
+        },
+        {
+          "path": "vault/projects/amplai",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-canonical-knowledge-in-vault",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "f79e8de07b76b504f23442762197e3febd14b093a91a574b8b55a0bc5f6c1807",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "public_commands",
+          "path": ".ai-team/runtime/policy.json",
+          "type": "policy"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-loop-public-surface",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "active claim",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "What Was Not Ported",
+          "path": "AGENTS.md",
+          "type": "doc"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-semantic-runtime-not-ported",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "f79e8de07b76b504f23442762197e3febd14b093a91a574b8b55a0bc5f6c1807",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "profiles",
+          "path": ".ai-team/verifiers/registry.json",
+          "type": "artifact"
+        },
+        {
+          "locator": "doctor - verifier profile 집합 불일치",
+          "path": "scripts/loopctl.py",
+          "type": "code"
+        }
+      ],
+      "id": "claim-verifier-profile-single-source",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "active claim",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "cc5b44501a0620aedf3a4e7662421a50f597afb15499b3e261fb8d4453df2aaf",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_amplai_federation.py",
+    "tests/ai/test_amplai_host_adapters.py",
+    "tests/ai/test_amplai_kit_installer.py",
+    "tests/ai/test_amplai_kit_regressions.py",
+    "tests/fixtures/codex-workflow/01-new-concept.md",
+    "tests/fixtures/codex-workflow/02-concept-update.md",
+    "tests/fixtures/codex-workflow/03-decision-conflict.md",
+    "tests/fixtures/codex-workflow/04-duplicate.md",
+    "tests/fixtures/codex-workflow/05-open-question.md",
+    "tests/fixtures/codex-workflow/06-mixed-long-response.md",
+    "tests/fixtures/codex-workflow/README.md",
+    "tests/test_work_activation.py",
+    "tests/test_work_status_projection.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003"
+}

@@ -1,0 +1,265 @@
+{
+  "schema_version": "1.0",
+  "kind": "skill_retirement_map",
+  "public_entries": [
+    "work",
+    "design"
+  ],
+  "note": "Dispositions are recommendations for V3-060; nothing here deletes files.",
+  "entries": [
+    {
+      "skill": "grill-me",
+      "path": ".agents/skills/grill-me/SKILL.md",
+      "old_digest": "sha256:6189dfceb7304a6e5558f75d87e68fa3bc7fcf7ba120e44f21f8a61fe01eba54",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        "AGENTS.md:108",
+        "CLAUDE.md:19"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "alias_of_grilling_retire_together",
+      "replacement": "grilling disposition",
+      "default_install": false
+    },
+    {
+      "skill": "grilling",
+      "path": ".agents/skills/grilling/SKILL.md",
+      "old_digest": "sha256:44331dda57f461db4fec3f2efb6ddabe7aaaa0a57ae0f88a883bc61aed8a0587",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        "AGENTS.md:109",
+        "CLAUDE.md:19",
+        ".agents/skills/grill-me/SKILL.md:7"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "merge_questioning_rules_into_design_question_policy",
+      "replacement": "design question policy (design/05 §2, one consolidated question)",
+      "default_install": false
+    },
+    {
+      "skill": "eli12",
+      "path": ".agents/skills/eli12/SKILL.md",
+      "old_digest": "sha256:4d16dfc80912bc6d3165aa1b6b60c01390c0d91a60037e811bf74c4fe47cd5a1",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        "AGENTS.md:109",
+        "CLAUDE.md:19"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "utility_pack_excluded_from_default_install",
+      "replacement": "optional utility pack selected by the user",
+      "default_install": false
+    },
+    {
+      "skill": "speckit-specify",
+      "path": ".agents/skills/speckit-specify/SKILL.md",
+      "old_digest": "sha256:fd8a7d52cbe12fd2877231d7cae0ec130afed491d783f6ec48d248fd045818af",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        ".agents/skills/speckit-analyze/SKILL.md:218",
+        ".agents/skills/speckit-clarify/SKILL.md:73",
+        ".agents/skills/speckit-clarify/SKILL.md:237",
+        ".agents/skills/speckit-constitution/SKILL.md:41",
+        ".agents/skills/speckit-converge/SKILL.md:119"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-specify/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-clarify",
+      "path": ".agents/skills/speckit-clarify/SKILL.md",
+      "old_digest": "sha256:a77b0ef00631bd5cdc8eabbfb3359c09cca3f25c7e31fbb0fa878351621faf3a",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        ".agents/skills/speckit-specify/SKILL.md:187",
+        ".agents/skills/speckit-specify/SKILL.md:282"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-clarify/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-plan",
+      "path": ".agents/skills/speckit-plan/SKILL.md",
+      "old_digest": "sha256:8f79a8c972628da92a4b402bbd8d6fffb6e4e3b56cde3c0faef32b7019fe55de",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        ".agents/skills/speckit-analyze/SKILL.md:218",
+        ".agents/skills/speckit-clarify/SKILL.md:65",
+        ".agents/skills/speckit-clarify/SKILL.md:289",
+        ".agents/skills/speckit-converge/SKILL.md:119",
+        ".agents/skills/speckit-specify/SKILL.md:111",
+        ".agents/skills/speckit-specify/SKILL.md:187",
+        ".agents/skills/speckit-specify/SKILL.md:282"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-plan/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "taskify",
+      "path": ".agents/skills/taskify/SKILL.md",
+      "old_digest": "sha256:3fddc7f574a0ce870347adbb4726fd0d5cd5f1218aafda0d76616b1bfca4ff12",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        "AGENTS.md:69",
+        "CLAUDE.md:16",
+        ".ai-team/README.md:98",
+        ".agents/skills/speckit-analyze/SKILL.md:15",
+        ".agents/skills/speckit-analyze/SKILL.md:66",
+        ".agents/skills/speckit-analyze/SKILL.md:67",
+        ".agents/skills/speckit-checklist/SKILL.md:15",
+        ".agents/skills/speckit-clarify/SKILL.md:15",
+        ".agents/skills/speckit-constitution/SKILL.md:15",
+        ".agents/skills/speckit-converge/SKILL.md:14",
+        ".agents/skills/speckit-converge/SKILL.md:77",
+        ".agents/skills/speckit-converge/SKILL.md:80",
+        ".agents/skills/speckit-converge/SKILL.md:120",
+        ".agents/skills/speckit-implement/SKILL.md:15",
+        ".agents/skills/speckit-implement/SKILL.md:186",
+        ".agents/skills/speckit-implement/SKILL.md:192",
+        ".agents/skills/speckit-implement/SKILL.md:196",
+        ".agents/skills/speckit-implement/SKILL.md:199",
+        ".agents/skills/speckit-implement/SKILL.md:202",
+        ".agents/skills/speckit-plan/SKILL.md:15",
+        ".agents/skills/speckit-specify/SKILL.md:15",
+        ".agents/skills/speckit-taskstoissues/SKILL.md:15",
+        ".agents/skills/work/SKILL.md:146"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/taskify/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-analyze",
+      "path": ".agents/skills/speckit-analyze/SKILL.md",
+      "old_digest": "sha256:9f65d12e168dad1fcb03642032317ca90114123bb82eeb162b6ac5ae01fd70b6",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-analyze/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-converge",
+      "path": ".agents/skills/speckit-converge/SKILL.md",
+      "old_digest": "sha256:b650b75edeaf2589e59c503e966522404960cb9dc138bbf4b44c044b5c72b27f",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        ".agents/skills/dev-loop/SKILL.md:80"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-converge/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-checklist",
+      "path": ".agents/skills/speckit-checklist/SKILL.md",
+      "old_digest": "sha256:d0dcd33e974c500140d9b3e3e51656a11b8ee2a48e43ebb1b4226dba0db40131",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-checklist/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-constitution",
+      "path": ".agents/skills/speckit-constitution/SKILL.md",
+      "old_digest": "sha256:ced1e2bf9d7e2d022a1fccba41c9781a15ea78bdfb3e09addc06f63715934639",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-constitution/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-implement",
+      "path": ".agents/skills/speckit-implement/SKILL.md",
+      "old_digest": "sha256:e213c87e99556f050efbbf9029313b4297243ad053385ef5f1bdf8768adae21f",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [
+        ".agents/skills/speckit-analyze/SKILL.md:216",
+        ".agents/skills/speckit-converge/SKILL.md:73",
+        ".agents/skills/speckit-converge/SKILL.md:74",
+        ".agents/skills/speckit-converge/SKILL.md:98",
+        ".agents/skills/speckit-converge/SKILL.md:251"
+      ],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-implement/SKILL.md",
+      "default_install": true
+    },
+    {
+      "skill": "speckit-taskstoissues",
+      "path": ".agents/skills/speckit-taskstoissues/SKILL.md",
+      "old_digest": "sha256:cc09e3555e84c1f8d22fe103cc476fbf2573f991d5bd43fb08a12ce9e02c13f8",
+      "owner": "Migration Lead (V3-060)",
+      "live_refs": [],
+      "required_test_ids": [
+        "T-092",
+        "T-098"
+      ],
+      "automatic_delete": false,
+      "disposition": "internalized_into_packs_spec",
+      "replacement": "packs/spec/skills/speckit-taskstoissues/SKILL.md",
+      "default_install": true
+    }
+  ]
+}

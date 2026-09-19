@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.0",
+  "id": "PORTABLE-DOC-T020",
+  "title": "Reject unsafe optional aliases before disclosure",
+  "type": "bugfix",
+  "status": "done",
+  "goal": {
+    "outcome": "Reject unsafe optional aliases before disclosure",
+    "user_value": "Independent app developers share a reproducible workflow, current documents and recoverable changes."
+  },
+  "source": {
+    "feature": "012-portable-document-lifecycle",
+    "files": [
+      {
+        "path": "specs/012-portable-document-lifecycle/spec.md",
+        "section": "Existing approved requirements; no new requirement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Review R5 Repair Refinement"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/review-r5.json",
+        "section": "W003-R5-02"
+      }
+    ],
+    "requirements": [
+      "REQ-043",
+      "REQ-044",
+      "REQ-045",
+      "REQ-047",
+      "REQ-052",
+      "REQ-053",
+      "REQ-054",
+      "DOC-001",
+      "DOC-002",
+      "DOC-003",
+      "REG-001"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-055",
+      "D-056",
+      "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "CR-SYNAPSE-APP-SPLIT-E021"
+    ]
+  },
+  "scope": {
+    "include": [
+      "Reject unsafe optional aliases before disclosure"
+    ],
+    "exclude": [
+      "Platform/Vault/governed knowledge mutations",
+      "Live installs, trust changes, Store rebinding, publication or actual tracked deletion"
+    ],
+    "allowed_paths": [
+      "scripts/amplai_docs.py",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_optional_aliases.py",
+      "tests/ai/test_document_typed_visibility.py",
+      "tests/ai/test_document_reference_resources.py",
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "src/amplai_foundry/",
+      "schemas/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other real repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "Preserve unsafe-resolution status instead of discarding an escaping candidate in favor of optional fallback. Add explicit strict resolution for disclosure consumers; keep other callers' missing-reference semantics.",
+      "Check existing logical aliases and path prefixes with bounded metadata operations. Escaping/dangling/cyclic leaf or parent aliases, inaccessible resolution and special files are not ordinary absence. Do not read external content or emit rejected identifiers.",
+      "Preserve genuine optional absence, safe in-repository PUBLIC aliases and absent-child examples, and all restricted/unknown/required/URI/tree/glob guards. No blanket allowlist or security-label change.",
+      "Create the named synthetic harness: source/payload all consumers/current/history, hint/fallback combinations, installed CLI, PUBLIC view-input and bounded/redacted errors. Sync canonical payload and strict seal through existing tools."
+    ],
+    "invariants": [
+      "Existing work/design controller, native Project Store and transaction installer remain authoritative",
+      "Preserve unrelated user content, historical provenance and current host trust",
+      "No synthetic result is native host, Python3.6 or RHEL7 evidence"
+    ],
+    "non_goals": [
+      "New Platform storage/API/auth/ontology service",
+      "Automatic fleet activation or destructive cleanup"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "PORTABLE-DOC-T020-AC1",
+        "given": "An optional inline path has an existing escaping, dangling or cyclic leaf/parent alias and an absent or safe alternative spelling",
+        "when": "Current/history source/payload/installed consumers or view preparation process the reviewed guide, including ignore/known-absent hints",
+        "then": "Reject before snippet/title/view-input output without the identifier; unsafe resolution never becomes ordinary absence."
+      },
+      {
+        "id": "PORTABLE-DOC-T020-AC2",
+        "given": "An optional example is genuinely absent or uses a safe in-repository same-security alias, including an absent child",
+        "when": "The same pre-output selection checks execute",
+        "then": "Existing permitted behavior remains; restricted/unknown, required, structural and literal-URI boundaries remain intact."
+      },
+      {
+        "id": "PORTABLE-DOC-T020-AC3",
+        "given": "Candidate prefixes and directory/glob traversal consume work or resolution fails",
+        "when": "The configured budget or safe-resolution boundary is exceeded",
+        "then": "Fail closed with bounded metadata work, no external content read and no partial output."
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -B -m pytest -q tests/ai/test_document_optional_aliases.py tests/ai/test_document_typed_visibility.py tests/ai/test_document_reference_resources.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "test",
+        "run": "python3 -B tools/amplai-loop-kit/seal.py --verify",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "test",
+        "run": ".venv/bin/python -B specs/012-portable-document-lifecycle/verify-guide-reference-visibility.py",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Installer/document/privacy/lifecycle compatibility within the assigned slice"
+    ],
+    "approvals": [
+      "User local implementation authority in execution-authorization.json and native E021; any external/production/cleanup action remains separate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-12T06:59:00.091Z",
+    "evidence_paths": [
+      "specs/012-portable-document-lifecycle/s20-local-verification.json",
+      "specs/012-portable-document-lifecycle/s20-canonical-eval.log",
+      "specs/012-portable-document-lifecycle/s20-canonical-inputs.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "scripts/amplai_docs.py",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_optional_aliases.py",
+      "tests/ai/test_document_typed_visibility.py",
+      "tests/ai/test_document_reference_resources.py",
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "notes": [
+      "R5 raw reports/archive/full2374PASS and RED controls remain historical. New named test harnesses are explicit deliverables. Affected canonical checks, current25source reviews/Context/immutable R6 HTML and three fresh sequential R6 lenses remain mandatory; no actual server/fleet/publication."
+    ]
+  },
+  "context": {
+    "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+    "slice_id": "S20",
+    "context_pack": "specs/012-portable-document-lifecycle/context-pack.json",
+    "environment": "specs/012-portable-document-lifecycle/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "6e005a5e3035ef05510c403a7cd691d524b733bd"
+  }
+}

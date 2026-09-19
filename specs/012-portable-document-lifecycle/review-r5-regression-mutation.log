@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "mutation": "remove_typed_visibility_0",
+      "status": "KILLED",
+      "assertion": "DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>",
+      "exception": "Failed"
+    },
+    {
+      "mutation": "remove_classification_precharge_0",
+      "status": "KILLED",
+      "assertion": "classification processed a prefix before charging its work budget",
+      "exception": "Failed"
+    },
+    {
+      "mutation": "remove_typed_visibility_1",
+      "status": "KILLED",
+      "assertion": "DID NOT RAISE <class 'typed_visibility_engine.DocumentError'>",
+      "exception": "Failed"
+    },
+    {
+      "mutation": "remove_classification_precharge_1",
+      "status": "KILLED",
+      "assertion": "classification processed a prefix before charging its work budget",
+      "exception": "Failed"
+    },
+    {
+      "mutation": "restore_cache_writing_loader",
+      "status": "KILLED",
+      "assertion": "",
+      "exception": "AssertionError"
+    }
+  ],
+  "killed": 5,
+  "total": 5,
+  "mutation_scope": "in-memory only; synthetic cache outside repo"
+}

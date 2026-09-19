@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS_KIT_GUIDE_SELECTION",
+  "release_id": "kit-2.5.0-candidate-r6",
+  "guides": [
+    "docs/PORTABLE-DEVELOPMENT.md",
+    "tools/amplai-loop-kit/CHANGELOG.md",
+    "tools/amplai-loop-kit/README.md"
+  ],
+  "required_instructions": [
+    ".ai-team/README.md",
+    ".ai-team/runtime/WORKFLOW.md",
+    ".ai-team/runtime/policy.json",
+    ".ai-team/verifiers/registry.json",
+    ".specify/memory/constitution.md",
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "context_delivery": {
+    "guides": [
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "tools/amplai-loop-kit/CHANGELOG.md",
+      "tools/amplai-loop-kit/README.md"
+    ],
+    "required_instructions": [
+      ".ai-team/README.md",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/runtime/policy.json",
+      ".ai-team/verifiers/registry.json",
+      ".specify/memory/constitution.md",
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "unique_paths": [
+      ".ai-team/README.md",
+      ".ai-team/runtime/WORKFLOW.md",
+      ".ai-team/runtime/policy.json",
+      ".ai-team/verifiers/registry.json",
+      ".specify/memory/constitution.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "docs/PORTABLE-DEVELOPMENT.md",
+      "tools/amplai-loop-kit/CHANGELOG.md",
+      "tools/amplai-loop-kit/README.md"
+    ],
+    "generated_records": 14,
+    "stored_records": 14,
+    "source_hashes": "EXACT_CURRENT_BYTES",
+    "context_validation": "MATCH",
+    "context_hash": "a66d9e62b971543b077052dbeef92a9f0533eab7c72808fa3d42689e3ab1ab10"
+  },
+  "retained_product_reference_guard": "BLOCKED_CROSS_BOUNDARY_REFERENCE",
+  "scope": "Actual current Kit selection and generated/stored Context delivery; not HTML or deployment approval."
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "3.0.0",
+  "release_id": "fixture-release-id",
+  "platform_version": "3.0.0-design",
+  "kit_version": "3.0.0-design",
+  "protocol_major": 3,
+  "contract_schema_version": "3.0.0",
+  "source_revision": "fixture-source-revision",
+  "component_refs": [
+    {
+      "id": "fixture-ref",
+      "revision": 1,
+      "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+    }
+  ],
+  "qualification_matrix_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "migration_plan_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "sbom_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "provenance_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "key_id": "TEST-KEY-NOT-TRUSTED",
+    "signed_digest": "sha256:c9a5f8705947462c00d41497f5901f7e87ef00e968c7320cc14a8f34dc26cfd2",
+    "signature_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  },
+  "status": "candidate",
+  "unexpected_elevated_permission": true
+}

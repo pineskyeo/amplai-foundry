@@ -1,0 +1,884 @@
+{
+  "version": "3.0.0",
+  "machines": {
+    "goal": {
+      "states": [
+        "draft",
+        "discovering",
+        "awaiting_decision",
+        "ready",
+        "active",
+        "verifying",
+        "verified",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "initial": "draft",
+      "terminal": [
+        "verified",
+        "failed",
+        "cancelled"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "draft"
+          ],
+          "command": "resolve",
+          "to": "discovering",
+          "guards": [
+            "G-01",
+            "G-02"
+          ],
+          "effect": "persist discovery job"
+        },
+        {
+          "from": [
+            "discovering"
+          ],
+          "command": "question_required",
+          "to": "awaiting_decision",
+          "guards": [
+            "G-03",
+            "G-04"
+          ],
+          "effect": "persist question; read-only discovery may continue"
+        },
+        {
+          "from": [
+            "discovering",
+            "awaiting_decision",
+            "blocked"
+          ],
+          "command": "activate_revision",
+          "to": "ready",
+          "guards": [
+            "G-03",
+            "G-04",
+            "G-05",
+            "G-06"
+          ],
+          "effect": "freeze active refs and increment execution epoch"
+        },
+        {
+          "from": [
+            "ready"
+          ],
+          "command": "dispatch",
+          "to": "active",
+          "guards": [
+            "G-07",
+            "G-08"
+          ],
+          "effect": "claim eligible node"
+        },
+        {
+          "from": [
+            "active"
+          ],
+          "command": "all_required_work_finished",
+          "to": "verifying",
+          "guards": [
+            "G-11",
+            "G-12"
+          ],
+          "effect": "start integration verifier"
+        },
+        {
+          "from": [
+            "verifying"
+          ],
+          "command": "verify_pass",
+          "to": "verified",
+          "guards": [
+            "G-13"
+          ],
+          "effect": "persist goal verdict and event"
+        },
+        {
+          "from": [
+            "verifying"
+          ],
+          "command": "repair_admitted",
+          "to": "active",
+          "guards": [
+            "G-05",
+            "G-08"
+          ],
+          "effect": "create new eligible repair Work attempt"
+        },
+        {
+          "from": [
+            "ready",
+            "active",
+            "verifying",
+            "discovering",
+            "awaiting_decision"
+          ],
+          "command": "block",
+          "to": "blocked",
+          "guards": [
+            "G-01"
+          ],
+          "effect": "typed hold reason, no implicit permission expansion"
+        },
+        {
+          "from": [
+            "draft",
+            "discovering",
+            "awaiting_decision",
+            "ready",
+            "active",
+            "verifying",
+            "blocked"
+          ],
+          "command": "fail",
+          "to": "failed",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "end only after external effects classified"
+        },
+        {
+          "from": [
+            "draft",
+            "discovering",
+            "awaiting_decision",
+            "ready",
+            "active",
+            "verifying",
+            "blocked"
+          ],
+          "command": "cancel_complete",
+          "to": "cancelled",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "stop admission, all required cancellation/effects reconciled"
+        },
+        {
+          "from": [
+            "verified",
+            "failed",
+            "cancelled"
+          ],
+          "command": "activate_new_revision",
+          "to": "ready",
+          "guards": [
+            "G-01",
+            "G-03",
+            "G-04",
+            "G-05",
+            "G-06"
+          ],
+          "effect": "explicit new contract revision; preserve old terminal outcome, increment execution epoch"
+        }
+      ]
+    },
+    "work": {
+      "states": [
+        "pending",
+        "ready",
+        "leased",
+        "running",
+        "verifying",
+        "succeeded",
+        "blocked",
+        "awaiting_human",
+        "failed",
+        "cancelled",
+        "superseded"
+      ],
+      "initial": "pending",
+      "terminal": [
+        "succeeded",
+        "failed",
+        "cancelled",
+        "superseded"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "pending",
+            "blocked"
+          ],
+          "command": "dependencies_ready",
+          "to": "ready",
+          "guards": [
+            "G-05",
+            "G-09"
+          ],
+          "effect": "unblock only if cause resolved"
+        },
+        {
+          "from": [
+            "ready"
+          ],
+          "command": "claim",
+          "to": "leased",
+          "guards": [
+            "G-06",
+            "G-07",
+            "G-08"
+          ],
+          "effect": "atomic run+lease+outbox reservation"
+        },
+        {
+          "from": [
+            "leased"
+          ],
+          "command": "start_ack",
+          "to": "running",
+          "guards": [
+            "G-09"
+          ],
+          "effect": "exact native run correlation"
+        },
+        {
+          "from": [
+            "running"
+          ],
+          "command": "output_ready",
+          "to": "verifying",
+          "guards": [
+            "G-09",
+            "G-11"
+          ],
+          "effect": "enqueue trusted verifier; output is not success"
+        },
+        {
+          "from": [
+            "verifying"
+          ],
+          "command": "verification_pass",
+          "to": "succeeded",
+          "guards": [
+            "G-12"
+          ],
+          "effect": "publish typed output refs"
+        },
+        {
+          "from": [
+            "verifying",
+            "running",
+            "leased"
+          ],
+          "command": "retry_admitted",
+          "to": "ready",
+          "guards": [
+            "G-08",
+            "G-09",
+            "G-21"
+          ],
+          "effect": "prior Run terminal; new Run per verification-repair attempt; command guard requires prior verifier FAIL or confirmed retryable provider failure, known effects, strategy permitting retry, and budget remaining"
+        },
+        {
+          "from": [
+            "pending",
+            "ready",
+            "leased",
+            "running",
+            "verifying"
+          ],
+          "command": "question_required",
+          "to": "awaiting_human",
+          "guards": [
+            "G-01",
+            "G-09"
+          ],
+          "effect": "pause affected actions; no timeout approval"
+        },
+        {
+          "from": [
+            "awaiting_human"
+          ],
+          "command": "answer_applied",
+          "to": "ready",
+          "guards": [
+            "G-03",
+            "G-04",
+            "G-06"
+          ],
+          "effect": "old lease invalidated; resume through new admission"
+        },
+        {
+          "from": [
+            "pending",
+            "ready",
+            "leased",
+            "running",
+            "verifying",
+            "awaiting_human"
+          ],
+          "command": "block",
+          "to": "blocked",
+          "guards": [
+            "G-09"
+          ],
+          "effect": "release compute slot; preserve unknown resource claims"
+        },
+        {
+          "from": [
+            "pending",
+            "ready",
+            "leased",
+            "running",
+            "verifying",
+            "blocked",
+            "awaiting_human"
+          ],
+          "command": "fail",
+          "to": "failed",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "attempt budget/irrecoverable reason; no unknown external effect hidden"
+        },
+        {
+          "from": [
+            "pending",
+            "ready",
+            "leased",
+            "running",
+            "verifying",
+            "blocked",
+            "awaiting_human"
+          ],
+          "command": "cancel_complete",
+          "to": "cancelled",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "end after effect/process reconciliation"
+        },
+        {
+          "from": [
+            "pending",
+            "ready",
+            "leased",
+            "running",
+            "verifying",
+            "succeeded",
+            "blocked",
+            "awaiting_human"
+          ],
+          "command": "supersede",
+          "to": "superseded",
+          "guards": [
+            "G-05",
+            "G-09",
+            "G-21"
+          ],
+          "effect": "new graph revision fences old work; archive old verdict"
+        }
+      ]
+    },
+    "run": {
+      "states": [
+        "created",
+        "running",
+        "pausing",
+        "paused",
+        "verifying",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "lost",
+        "unknown_effect"
+      ],
+      "initial": "created",
+      "terminal": [
+        "succeeded",
+        "failed",
+        "cancelled",
+        "lost"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "created"
+          ],
+          "command": "start_ack",
+          "to": "running",
+          "guards": [
+            "G-09"
+          ],
+          "effect": "bind exact session"
+        },
+        {
+          "from": [
+            "running"
+          ],
+          "command": "pause_request",
+          "to": "pausing",
+          "guards": [
+            "G-01",
+            "G-09"
+          ],
+          "effect": "stop new effects; request provider pause"
+        },
+        {
+          "from": [
+            "pausing"
+          ],
+          "command": "checkpoint_confirmed",
+          "to": "paused",
+          "guards": [
+            "G-09",
+            "G-21"
+          ],
+          "effect": "checkpoint durable; process boundary known"
+        },
+        {
+          "from": [
+            "paused"
+          ],
+          "command": "resume",
+          "to": "running",
+          "guards": [
+            "G-04",
+            "G-06",
+            "G-07",
+            "G-08",
+            "G-09"
+          ],
+          "effect": "same frozen refs or create replacement Run for changed contract"
+        },
+        {
+          "from": [
+            "running"
+          ],
+          "command": "output_ready",
+          "to": "verifying",
+          "guards": [
+            "G-11"
+          ],
+          "effect": "schedule verifier"
+        },
+        {
+          "from": [
+            "verifying"
+          ],
+          "command": "verification_pass",
+          "to": "succeeded",
+          "guards": [
+            "G-12"
+          ],
+          "effect": "trusted verdict"
+        },
+        {
+          "from": [
+            "created",
+            "running",
+            "pausing",
+            "paused",
+            "verifying"
+          ],
+          "command": "failure_confirmed",
+          "to": "failed",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "effects known; failure classification"
+        },
+        {
+          "from": [
+            "created",
+            "running",
+            "pausing",
+            "paused",
+            "verifying"
+          ],
+          "command": "cancel_complete",
+          "to": "cancelled",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "child and effect completion known"
+        },
+        {
+          "from": [
+            "created",
+            "running",
+            "pausing",
+            "paused",
+            "verifying"
+          ],
+          "command": "lease_lost_no_effect",
+          "to": "lost",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "no unresolved external outcome"
+        },
+        {
+          "from": [
+            "created",
+            "running",
+            "pausing",
+            "paused",
+            "verifying"
+          ],
+          "command": "external_outcome_uncertain",
+          "to": "unknown_effect",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "quarantine resource; reconcile first"
+        },
+        {
+          "from": [
+            "unknown_effect"
+          ],
+          "command": "reconciled_failure",
+          "to": "failed",
+          "guards": [
+            "G-10",
+            "G-21"
+          ],
+          "effect": "record applied/not_applied receipts; no automatic verified"
+        },
+        {
+          "from": [
+            "unknown_effect"
+          ],
+          "command": "reconciled_cancel",
+          "to": "cancelled",
+          "guards": [
+            "G-10",
+            "G-21"
+          ],
+          "effect": "new external compensation separately tracked"
+        }
+      ]
+    },
+    "effect": {
+      "states": [
+        "prepared",
+        "dispatched",
+        "applied",
+        "not_applied",
+        "unknown",
+        "reconciled"
+      ],
+      "initial": "prepared",
+      "terminal": [
+        "applied",
+        "not_applied",
+        "reconciled"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "prepared"
+          ],
+          "command": "dispatch",
+          "to": "dispatched",
+          "guards": [
+            "G-10"
+          ],
+          "effect": "exact effect key; grant consumption receipt"
+        },
+        {
+          "from": [
+            "dispatched"
+          ],
+          "command": "remote_applied",
+          "to": "applied",
+          "guards": [
+            "G-10",
+            "G-11"
+          ],
+          "effect": "authenticated remote observation"
+        },
+        {
+          "from": [
+            "prepared",
+            "dispatched"
+          ],
+          "command": "confirmed_not_applied",
+          "to": "not_applied",
+          "guards": [
+            "G-10"
+          ],
+          "effect": "positive proof of non-application"
+        },
+        {
+          "from": [
+            "dispatched"
+          ],
+          "command": "uncertain",
+          "to": "unknown",
+          "guards": [
+            "G-21"
+          ],
+          "effect": "no blind retry"
+        },
+        {
+          "from": [
+            "unknown"
+          ],
+          "command": "reconcile",
+          "to": "reconciled",
+          "guards": [
+            "G-10",
+            "G-21"
+          ],
+          "effect": "resolved_outcome applied/not_applied and evidence mandatory"
+        }
+      ]
+    },
+    "steering": {
+      "states": [
+        "received",
+        "validated",
+        "queued",
+        "applied",
+        "rejected",
+        "superseded"
+      ],
+      "initial": "received",
+      "terminal": [
+        "applied",
+        "rejected",
+        "superseded"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "received"
+          ],
+          "command": "validate",
+          "to": "validated",
+          "guards": [
+            "G-01",
+            "G-03",
+            "G-06"
+          ],
+          "effect": "authenticate actor and classify impact"
+        },
+        {
+          "from": [
+            "received",
+            "validated"
+          ],
+          "command": "reject",
+          "to": "rejected",
+          "guards": [
+            "G-01"
+          ],
+          "effect": "typed reason; unchanged active contract"
+        },
+        {
+          "from": [
+            "validated"
+          ],
+          "command": "queue",
+          "to": "queued",
+          "guards": [
+            "G-09"
+          ],
+          "effect": "durable desired change before native delivery"
+        },
+        {
+          "from": [
+            "queued"
+          ],
+          "command": "apply",
+          "to": "applied",
+          "guards": [
+            "G-03",
+            "G-05",
+            "G-06",
+            "G-09"
+          ],
+          "effect": "revision effective and checkpoint/native applied confirmed"
+        },
+        {
+          "from": [
+            "received",
+            "validated",
+            "queued"
+          ],
+          "command": "supersede",
+          "to": "superseded",
+          "guards": [
+            "G-01",
+            "G-03"
+          ],
+          "effect": "link replacing event"
+        }
+      ]
+    },
+    "evolution": {
+      "states": [
+        "draft",
+        "screened",
+        "experiment_approved",
+        "offline_running",
+        "offline_evaluated",
+        "canary_approved",
+        "canary_running",
+        "promotion_pending",
+        "promoted",
+        "rejected",
+        "rolled_back",
+        "aborted"
+      ],
+      "initial": "draft",
+      "terminal": [
+        "rejected",
+        "rolled_back",
+        "aborted"
+      ],
+      "transitions": [
+        {
+          "from": [
+            "draft"
+          ],
+          "command": "screen",
+          "to": "screened",
+          "guards": [
+            "G-16",
+            "G-22"
+          ],
+          "effect": "protected-surface scan"
+        },
+        {
+          "from": [
+            "screened"
+          ],
+          "command": "approve_experiment",
+          "to": "experiment_approved",
+          "guards": [
+            "G-14",
+            "G-16"
+          ],
+          "effect": "frozen plan and authorized budget"
+        },
+        {
+          "from": [
+            "experiment_approved"
+          ],
+          "command": "start_offline",
+          "to": "offline_running",
+          "guards": [
+            "G-08",
+            "G-16"
+          ],
+          "effect": "development/holdout isolation"
+        },
+        {
+          "from": [
+            "offline_running"
+          ],
+          "command": "evaluate",
+          "to": "offline_evaluated",
+          "guards": [
+            "G-11",
+            "G-16"
+          ],
+          "effect": "store authentic complete report with pass/fail/inconclusive; candidate pass is required only by approve_canary, not by recording a failed result"
+        },
+        {
+          "from": [
+            "offline_evaluated"
+          ],
+          "command": "approve_canary",
+          "to": "canary_approved",
+          "guards": [
+            "G-14",
+            "G-17",
+            "G-18"
+          ],
+          "effect": "only eligible passed comparison; explicit grant"
+        },
+        {
+          "from": [
+            "canary_approved"
+          ],
+          "command": "start_canary",
+          "to": "canary_running",
+          "guards": [
+            "G-08",
+            "G-18"
+          ],
+          "effect": "bounded eligible workload"
+        },
+        {
+          "from": [
+            "canary_running"
+          ],
+          "command": "request_promotion",
+          "to": "promotion_pending",
+          "guards": [
+            "G-17",
+            "G-18"
+          ],
+          "effect": "frozen canary report; safety pass"
+        },
+        {
+          "from": [
+            "promotion_pending"
+          ],
+          "command": "promote",
+          "to": "promoted",
+          "guards": [
+            "G-19"
+          ],
+          "effect": "exact release pointer CAS"
+        },
+        {
+          "from": [
+            "promoted"
+          ],
+          "command": "rollback",
+          "to": "rolled_back",
+          "guards": [
+            "G-19",
+            "G-21"
+          ],
+          "effect": "new admissions previous release; reconcile in-flight"
+        },
+        {
+          "from": [
+            "draft",
+            "screened",
+            "offline_evaluated",
+            "promotion_pending"
+          ],
+          "command": "reject",
+          "to": "rejected",
+          "guards": [
+            "G-16"
+          ],
+          "effect": "preserve failure/inconclusive findings"
+        },
+        {
+          "from": [
+            "experiment_approved",
+            "offline_running",
+            "canary_approved",
+            "canary_running",
+            "promotion_pending"
+          ],
+          "command": "abort",
+          "to": "aborted",
+          "guards": [
+            "G-18",
+            "G-21"
+          ],
+          "effect": "safety or approved stop, no promote"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "terminal means terminal for that execution revision. goal activate_new_revision is the only explicit reopening command, retains old terminal record.",
+    "One Run = one scheduled Work attempt. Internal model/tool steps stay inside it. Verifier-triggered repair closes the prior Run and creates a new Run. Transport retry does not create a new semantic effect.",
+    "paused Run resumes with same frozen contract/graph refs; changed governing contract creates a replacement Run from checkpoint.",
+    "Gate pass is necessary, not sufficient: command-specific field/state/ref guards and transaction isolation also apply.",
+    "Successful guard evaluation is not the same as the candidate outcome being PASS. Failure-report recording and retry transitions must accept their specified failure observation without requiring that failed verification to pass."
+  ]
+}

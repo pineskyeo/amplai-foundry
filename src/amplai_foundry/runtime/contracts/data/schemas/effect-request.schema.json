@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/effect-request.schema.json",
+  "title": "AMPLAI V3 effect-request",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "effect_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "run_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "contract_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "graph_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "lease_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "fencing_token": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "tool_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "effect_class": {
+      "enum": [
+        "pure_read",
+        "sandbox_write",
+        "external_idempotent_write",
+        "external_nonidempotent_write",
+        "production_control"
+      ]
+    },
+    "args_artifact": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+    },
+    "effect_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "grant_ref": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+    },
+    "requested_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    }
+  },
+  "required": [
+    "schema_version",
+    "effect_id",
+    "scope",
+    "run_id",
+    "contract_ref",
+    "graph_ref",
+    "lease_id",
+    "fencing_token",
+    "tool_ref",
+    "effect_class",
+    "args_artifact",
+    "effect_key",
+    "grant_ref",
+    "requested_at"
+  ],
+  "additionalProperties": false
+}

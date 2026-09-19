@@ -1,0 +1,20 @@
+{
+  "definition_id": "research-provenance",
+  "version": "3.0.0-rc1",
+  "kind": "deterministic",
+  "runner": "structured_command",
+  "allowed_command_ids": [
+    "provenance-check"
+  ],
+  "required_capabilities": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    }
+  ],
+  "protected": false,
+  "golden_governance": "none",
+  "optional": false,
+  "notes": "every claim cites a pinned snapshot with fetch date and digest"
+}

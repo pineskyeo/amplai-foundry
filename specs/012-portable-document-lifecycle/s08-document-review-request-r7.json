@@ -1,0 +1,545 @@
+{
+  "snapshot": "247899e154815b60fa72da004d1f7fff898f00f0dcceee97e18f519537be0b1c",
+  "reviews": [
+    {
+      "document": ".ai-team/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged R3 source keeps Vault/Proposal ownership, explicit document roles and environment-backed verification. S14/S15 change parsing and candidate discovery, not the claimed absence of RDF/SHACL/MCP services or authority to promote private sources.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/contracts/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged Work Contract guide still names the existing schema and controller. Parser limits and pre-output URI checks do not alter Work/Foundry domain fields or authorize governed writes.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/evidence/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source keeps provenance as evidence references to the existing Store. Current repair and revalidation artifacts bind commands, source and environment; they are not a second canonical Store or a substitute for target evidence.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Mandatory governing instructions, applicable indexed Decisions, exact review snapshots and preserved history remain unchanged. Candidate-only lean extraction is not Context, required-dependency or visibility approval.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source still separates Project Store paths from app checkout paths and describes read-only terminal results and credential-redacted heartbeat. The document parser repair introduces no Store transition, lease bypass or new authority.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/INSTALLATION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source keeps generic baseline installation opt-in and sealed, with explicit first-document ownership. Candidate parsing changes neither installation ownership nor app trust, Store binding, fleet registration or document approval.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged workflow requires complete governing inputs, indexed Decisions, executable verification and source review before views. S14/S15 retain those gates; a lean origin candidate cannot replace exact validation or make historical knowledge current.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/escalation.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source preserves decision-class and repeated-failure escalation. The retained integration diagnosis records distinct reproduced causes; neither resource limits nor interpreter differences grant retry or destructive-approval bypass.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source leaves verifier registry and environment-aware runner authoritative. Current canonical revalidations bind exact local code; target Python/RHEL7 evidence remains separate instead of being inferred from fast checks.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged R3 instructions keep canonical Vault immutable, one work/design controller, docs freshness before three sequential independent reviewers and report-only gardening. Candidate scan completion does not satisfy final review or deployment authority.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged host guide retains the shared skill source, adapter boundaries and verification commands. Current root/payload compatibility checks do not require new host trust, provider defaults or a second controller.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged R3 source already identifies the local Kit candidate and current human guide. The new parser repair remains local candidate work, with no new claim of publication, automatic fleet installation or RHEL7 readiness.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source keeps atomic knowledge, provenance and governed canonical authority. Candidate-only handling of retained origin URIs reads no external target and does not modify or approve immutable Vault sources.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/LIFECYCLE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source preserves immutable Source ingestion, knowledge statuses and separate Work/Slack projections. Portable guide freshness and fixture-only retirement do not redefine those lifecycles or permit real deletion.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/MEMORY-DOMAIN-MODEL.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged schema/repository guide still defines storage-independent Memory fields and kinds. Parser/candidate changes are confined to portable document tooling and do not introduce a Memory schema or storage-layer change.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PORTABLE-DEVELOPMENT.md",
+      "outcome": "updated",
+      "reason": "Added the actual finite HTML/URI grammar, preallocation and count limits, non-disclosing rejection, and the distinction between lean impact candidates and full-context dependency/visibility validation. Preserved exact URI identity, recovery, offline rendering and separate deployment authority.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source keeps project-root examples explicit and runtime indexes owned by the selected project. Broader local candidate discovery does not turn those external/generated locators into required checkout files or alter project identity.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source retains Source immutability, project-qualified draft scope and governed apply/CAS authority. Portable document reviews and opaque origin candidates neither apply proposals nor approve partial conflict resolution.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/RELATIONSHIPS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source and domain/lint implementations retain seven relation types, qualified ID checks, directed lookups, self-reference rejection and supersession/Source invariants. No relation meaning or field mapping changes in this repair.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/ROADMAP.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged Markdown owner and approved YAML source remain hash-bound under their existing INTERNAL classification. Candidate extraction changes no roadmap phase status, completion claim or approval.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The original source and historical metadata/release remain unchanged. The bridge is still archived provenance, not a current guide; obsolete optional examples remain explicitly historical and do not waive required current dependencies.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/VERSIONING.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged guide keeps schema shape, compatibility and migration ownership separate from Kit packaging. Exact local candidate hashes and parser fixes do not silently advance domain schemas or runtime protocols.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The unchanged source keeps product direction as direction, not implemented proof. No planned semantic/authentication service or production readiness is promoted by document adoption or parser repair.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "outcome": "updated",
+      "reason": "Recorded allocation bounds, finite HTML/URI rejection, intake-versus-renderer XSS checks and real repository candidate-integration repairs in the existing local 2.5.0 candidate. Previous release entries remain unchanged; no distribution or fleet activation is claimed.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "updated",
+      "reason": "Added concise Korean rules for finite HTML attributes, local/unknown URI rejection, bounded reference retention and candidate-only origin/literal compatibility. Existing installation recovery, host trust, Store authority and separate target verification remain unchanged.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": ".amplai/local",
+      "line": 46,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": ".amplai/locks",
+      "line": 46,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "changes/CR-*/change.json",
+      "line": 54,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "changes/CR-*/work/*.json",
+      "line": 55,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "contracts/*.json",
+      "line": 56,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "questions/*.json",
+      "line": 57,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "evidence/*.json",
+      "line": 58,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "decisions/*.json",
+      "line": 59,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": "changes/",
+      "line": 167,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": ".amplai/local",
+      "line": 167,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "reference": ".amplai/locks",
+      "line": 167,
+      "disposition": "external",
+      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": ".amplai/runtime/governance.db",
+      "line": 96,
+      "disposition": "example",
+      "reason": "The selected workspace runtime creates this governance database; cli.py constructs the path. The clean source checkout is not expected to contain runtime state.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "reference": ".amplai/runtime/index/memory-index.json",
+      "line": 34,
+      "disposition": "example",
+      "reason": "ProjectPack service creates the memory index below its configured runtime root; this is a generated project output path, not a required repository file.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "drafts/",
+      "line": 9,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "patches/",
+      "line": 9,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "reference": "drafts/",
+      "line": 19,
+      "disposition": "example",
+      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reference": "ui/dist/",
+      "line": 36,
+      "disposition": "historical",
+      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reference": ".amplai/tasks/tasks.md",
+      "line": 57,
+      "disposition": "historical",
+      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reference": "speckit-tasks/SKILL.md",
+      "line": 96,
+      "disposition": "historical",
+      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reference": ".ai-team/skills/taskify",
+      "line": 107,
+      "disposition": "historical",
+      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "reference": ".ai-team/skills/taskify",
+      "line": 116,
+      "disposition": "historical",
+      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reference": "supervisor/",
+      "line": 81,
+      "disposition": "historical",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 123,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 124,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "codex-implementation-document-review",
+      "method": "Main attributed source review: compare exact R3 guide/source hashes and reference contexts with current S14/S15 repair and all eleven canonical revalidations; bind current dependencies. Not human approval or independent implementation verdict.",
+      "evidence": [
+        "specs/012-portable-document-lifecycle/s08-document-review-evidence-r7.json"
+      ]
+    }
+  ]
+}

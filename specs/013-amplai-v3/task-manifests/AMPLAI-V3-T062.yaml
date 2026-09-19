@@ -1,0 +1,322 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3-T062",
+  "title": "V3-062 Authorized cutover and independent release receipts",
+  "type": "feature",
+  "status": "done",
+  "goal": {
+    "outcome": "Authorized cutover and independent release receipts",
+    "user_value": "Intent→Verified Work 파이프라인의 Release Operator 책임 영역이 evidence 로 닫힌다."
+  },
+  "source": {
+    "feature": "013-amplai-v3",
+    "files": [
+      {
+        "path": "specs/013-amplai-v3/spec.md",
+        "section": "User Stories"
+      },
+      {
+        "path": "specs/013-amplai-v3/plan.md",
+        "section": "Slice S20"
+      },
+      {
+        "path": "design-reference/implementation/tasks.yaml",
+        "section": "V3-062"
+      },
+      {
+        "path": "design-reference/design/19_DISTRIBUTION_MIGRATION.md",
+        "section": "전체"
+      },
+      {
+        "path": "design-reference/design/20_OPERATIONS_RELEASE.md",
+        "section": "전체"
+      }
+    ],
+    "requirements": [
+      "REQ-28"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-056",
+      "AMPLAI V3 Design 1.0 (2026-09-15)",
+      "specs/013-amplai-v3/work-contract.json decisions"
+    ]
+  },
+  "scope": {
+    "include": [
+      "deployment/",
+      "release/",
+      "tests/v3/test_rc01_cutover.py",
+      "specs/013-amplai-v3/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "deployment/",
+      "release/",
+      "tests/v3/test_rc01_cutover.py",
+      "specs/013-amplai-v3/",
+      "pyproject.toml"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "AMPLAI-V3-T049",
+      "AMPLAI-V3-T050",
+      "AMPLAI-V3-T051",
+      "AMPLAI-V3-T054",
+      "AMPLAI-V3-T061"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "산출물: human approved release set",
+      "산출물: target-by-target status",
+      "산출물: safe rollback",
+      "산출물: Platform/Kit separate version truth",
+      "설계 정본: design/19_DISTRIBUTION_MIGRATION.md, design/20_OPERATIONS_RELEASE.md",
+      "선행 task (DEV-02/03 부분 구현, 이 Work 밖): V3-047, V3-055. 의존하는 범위의 test 를 추가해 증거를 쌓는다.",
+      "먼저 acceptance 와 negative test 를 명확히 한 뒤 구현→검증→bounded repair (design-reference/IMPLEMENTATION_START.md)"
+    ],
+    "invariants": [
+      "기존 Foundry governance 가 유일 authority 다. LLM self-approval, client-supplied actor 신뢰 금지 (design/02 §4)",
+      "저장 원자 경계와 CAS commit 순서를 지킨다 (design/09 §4, §6)",
+      "설계와 충돌하면 DESIGN_CHANGE_PROPOSAL.md 에 기록하고 임의 선택하지 않는다",
+      "test 삭제·skip 으로 통과시키지 않는다. unavailable 환경은 NOT PASS 다",
+      "mypy strict / ruff 를 유지한다. design-reference/ 는 바꾸지 않는다"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "Canonical Vault mutation",
+      "push/merge/release"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "T-087",
+        "given": "meta proposer submits its own promotion as authorized human",
+        "when": "promote",
+        "then": "authority rejects forged role [Self-approval denied]"
+      },
+      {
+        "id": "T-089",
+        "given": "two promotions reference same previous active release",
+        "when": "promote concurrently",
+        "then": "one wins, other conflict; no mixed pointer state [Active release CAS]"
+      },
+      {
+        "id": "T-090",
+        "given": "previous release backup contains old grant state",
+        "when": "rollback code/data",
+        "then": "latest revocations retained; no resurrected access [Rollback keeps revocations]"
+      },
+      {
+        "id": "T-092",
+        "given": "legacy_gates imported by current governance",
+        "when": "delete plan",
+        "then": "blocked until replacement equivalence/tests and refs cleared [Legacy import still active]"
+      },
+      {
+        "id": "T-093",
+        "given": "manifest handoff required=false create_if_missing=false",
+        "when": "integrity check",
+        "then": "not blanket corruption failure; report optional omission separately [Optional marker absence]"
+      },
+      {
+        "id": "T-094",
+        "given": "current digest differs installer expected_old_digest",
+        "when": "update/delete",
+        "then": "conflict HOLD and preserve user bytes [Owned file changed by user]"
+      },
+      {
+        "id": "T-095",
+        "given": "active ContextBundle references archived evidence path",
+        "when": "archive/move",
+        "then": "alias/backlink preserved and ref verification; no unapproved purge [Evidence archive live refs]"
+      },
+      {
+        "id": "T-096",
+        "given": "old approval did not cover new action",
+        "when": "migrate grant",
+        "then": "no new authority inferred; reapproval required [Authority import semantics]"
+      },
+      {
+        "id": "T-097",
+        "given": "README candidate version differs VERSION/release receipt",
+        "when": "build release inventory",
+        "then": "explicit discrepancy and chosen authoritative release proof before shipping [Version fact reconciliation]"
+      },
+      {
+        "id": "T-098",
+        "given": "V3 app has kit installed",
+        "when": "uninstall kit and run app build/test",
+        "then": "domain builds without kit/host runtime dependency [Kit removal independent app]"
+      },
+      {
+        "id": "T-107",
+        "given": "isolated test app, qualified baseline driver, frozen authority/policy",
+        "when": "rough intent to contract/graph/run/evidence/global verify",
+        "then": "every required boundary passes with current refs; no fabricated runtime pass [Full V3 representative end-to-end]"
+      },
+      {
+        "id": "T-110",
+        "given": "existing Foundry decision+apply path with new runtime proposal",
+        "when": "try publish with/without valid ApplyGrant",
+        "then": "valid exact grant follows old guard semantics; missing/stale denied [Canonical preserve and governed apply]"
+      },
+      {
+        "id": "T-111",
+        "given": "signed pack set with optional markers and app overrides",
+        "when": "install/upgrade/remove including tampered dependency",
+        "then": "valid pinned install receipt; tamper/ownership conflict rejects; app stays independent [Signed pack compatibility and uninstall]"
+      },
+      {
+        "id": "T-112",
+        "given": "missing signing identity or budget/authority config",
+        "when": "start read-only then enable writes",
+        "then": "read-only status allowed where safe; write activation HOLD until prerequisites supplied [Offline activation prerequisites]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_cutover.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check  tests/v3/test_rc01_cutover.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ],
+    "deferred": [
+      {
+        "id": "T-088",
+        "then": "abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-091",
+        "then": "old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-108",
+        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      },
+      {
+        "id": "T-109",
+        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]",
+        "status": "not_run",
+        "reason": "No executed local case names this catalog id on this tree; recorded as not_run in release/rc01-conformance-closure.json remaining_blockers. Design mapping only, not runtime evidence."
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Release Operator 영역의 authority/storage/effect 경계"
+    ],
+    "approvals": [
+      "2026-09-18 사용자 지시 (work-contract.json decisions). 외부/production/삭제는 별도 human gate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-18T10:51:18Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S20",
+      ".specify/eval/verifier-last.json",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "specs/013-amplai-v3/verifier-v2-report.json",
+      "specs/013-amplai-v3/verifier-v2-report.log"
+    ],
+    "evidence_note": ".specify/eval/verifier-last.json records the fast profile run by eval.sh; the v2 profile PASS on HEAD 24db152 is specs/013-amplai-v3/verifier-v2-report.json"
+  },
+  "handoff": {
+    "expected_changes": [
+      "deployment/",
+      "release/",
+      "tests/v3/test_rc01_cutover.py"
+    ],
+    "notes": [
+      "wave 5 / Release Operator",
+      "test 파일은 task 산출물이며 생성 전까지 check-1 은 실행 불가"
+    ]
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC01",
+    "slice_id": "S20",
+    "context_pack": "specs/013-amplai-v3/context-pack.json",
+    "environment": "specs/013-amplai-v3/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "5edbb7879ce4793db466371d72340b3fe3c864b3"
+  }
+}

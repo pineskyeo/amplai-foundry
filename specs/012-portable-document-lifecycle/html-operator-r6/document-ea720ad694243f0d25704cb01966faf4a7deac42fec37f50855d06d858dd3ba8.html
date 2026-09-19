@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Portable Development Guide</title><style>:root{color-scheme:light;--ink:#203047;--muted:#526176;--paper:#fff;--edge:#d9e2ec}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:#f5f7fa;
+color:var(--ink);font:17px/1.7 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}
+a{color:#075b86;text-underline-offset:.2em}a:focus-visible,summary:focus-visible{
+outline:3px solid #8f3b00;outline-offset:4px}.skip{position:absolute;top:-100px;
+left:1rem;background:white;padding:.6rem 1rem;z-index:3}.skip:focus{top:1rem}
+header{background:#142b43;color:#fff;padding:2rem max(1rem,calc((100vw - 76rem)/2))}
+header a{color:#c0edff}.eyebrow{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+h1{font-size:clamp(1.7rem,5vw,2.8rem);line-height:1.2;margin:.6rem 0}
+h2{font-size:1.55rem;margin-top:2.2rem}h3{font-size:1.2rem;margin-top:1.8rem}
+.layout{max-width:78rem;margin:auto;padding:2rem;display:grid;
+grid-template-columns:minmax(12rem,17rem) minmax(0,1fr);gap:2rem}
+nav{align-self:start}nav ul{padding-left:1.2rem}nav li{margin:.4rem 0}
+main{background:var(--paper);padding:clamp(1rem,3vw,2.5rem);border:1px solid var(--edge);
+border-radius:.7rem;min-width:0}p{margin:.8rem 0}code{font-family:ui-monospace,monospace;
+font-size:.9em;background:#edf2f7;padding:.15rem .3rem;border-radius:.2rem}
+pre{background:#edf2f7;padding:1rem;overflow:auto;border-left:3px solid #18707f}
+pre code{padding:0;white-space:pre-wrap;word-break:break-word}
+blockquote,.notice{border-left:4px solid #8f6500;background:#fff6dc;padding:.75rem 1rem;
+margin:1rem 0}.meta,footer{color:var(--muted);font-size:.85rem}
+.table-scroll{max-width:100%;overflow:auto}table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:.5rem;border-bottom:1px solid var(--edge);vertical-align:top}
+th{font-weight:650}footer{max-width:78rem;margin:auto;padding:1rem 2rem 3rem}
+.release-table{table-layout:fixed;min-width:32rem}
+.release-table th:first-child{width:22%}.release-table th:nth-child(2){width:20%}
+@media(max-width:700px){.layout{display:block;padding:1rem}nav{margin-bottom:1rem}
+main{padding:1rem}header{padding:1.5rem 1rem}footer{padding:1rem}}
+@media print{body{background:white;font-size:11pt;color:#000}.layout{display:block;padding:0}
+header{background:white;color:#000;padding:0;border-bottom:2px solid #000}nav,.skip{display:none}
+main{border:0;padding:0}pre,blockquote,table{break-inside:avoid}a{color:#000}
+h1,h2,h3{break-after:avoid}footer{padding:1rem 0}.table-scroll{overflow:visible}}</style></head><body><a class="skip" href="#content">Skip to content / 본문으로</a><header><div class="eyebrow">Verified documentation · operator</div><h1>Portable Development Guide</h1><p>kit-2.5.0-candidate-r6 · INTERNAL</p></header><div class="layout"><nav aria-label="Document navigation"><p><a href="index.html">All documents / 문서 목록</a></p><ul><li><a href="#section-portable-development-guide">Portable Development Guide</a></li><li><a href="#section-scope">Scope</a></li><li><a href="#section-start-a-work">Start A Work</a></li><li><a href="#section-install-safely">Install Safely</a></li><li><a href="#section-keep-code-and-documents-together">Keep Code And Documents Together</a></li><li><a href="#section-select-and-share-a-version">Select And Share A Version</a></li><li><a href="#section-preserve-and-recover">Preserve And Recover</a></li><li><a href="#section-verify-and-hand-off">Verify And Hand Off</a></li></ul></nav><main id="content" tabindex="-1"><h2 id="section-portable-development-guide">Portable Development Guide</h2>
+<h3 id="section-scope">Scope</h3>
+<p>AMPLAI Loop Kit 2.5.0 is a local integration candidate. Installation, a passing local
+check, and a rendered guide do not publish a release or approve a server deployment.
+The existing repository rules and Project Store remain authoritative.</p>
+<h3 id="section-start-a-work">Start A Work</h3>
+<p>Use the existing work entry point in the app repository: Claude Code /work or Codex
+$work. The controller reads the assigned Work, contract, source evidence and repository
+rules before changing files. Design-only requests use design. A WAITING Work needs its
+actual upstream result; a chat message saying DONE does not release a dependency.</p>
+<p>Governing inputs are the explicitly configured repository instructions and applicable
+active Decisions. They are not release guides: a missing guide review must not erase
+the rules needed to perform that review. The generic baseline requires AGENTS.md, its
+workflow and verifier registry. An app adds only its own approved instruction and
+Decision-ledger paths through the documentation policy&#x27;s governing_inputs list.
+Security and retired-instruction metadata still apply. A historical Decision ledger
+is not selected wholesale; only active indexed Decisions and their typed evidence
+references enter the Context Pack. Validation reconstructs the complete expected set,
+so deleting an input and recalculating the pack&#x27;s hash does not make it valid.</p>
+<p>Owning release guides also need an active source entry in the repository knowledge map.
+Document selection alone does not register that entry. Foundry registers its three Kit
+guides at ordinary high priority; existing release, review and security filters still
+decide eligibility. Its guide check inspects both generated and stored Context records,
+their exact current source hashes and normal Context validation. Guide registration
+does not replace mandatory instructions or import unrelated product knowledge.</p>
+<p>The generated handoff is a view. A terminal Work shows its own result and references,
+without asking another developer to claim or restart it. A lease expiry retains the
+existing retry delay. Heartbeat output hides the credential while renewal still uses
+the same private environment credential.</p>
+<h3 id="section-install-safely">Install Safely</h3>
+<p>Start with the package&#x27;s dry run in a disposable or approved target. The baseline is
+opt-in; existing rules, host trust, local modifications and Store bindings are preserved.
+A conflict requires reconciliation, not an automatic overwrite. Full package checksums
+must pass even when a version label is unchanged.</p>
+<p>A borrowed baseline file keeps its existing local permissions across repeat installs,
+package updates and uninstall. Package permission changes apply only to installer-owned
+files. Local permission drift still requires explicit reconciliation; accepting that drift
+does not grant permission to replace borrowed content.</p>
+<pre><code>python3 tools/amplai-loop-kit/seal.py --verify
+python3 tools/amplai-loop-kit/install.py --target /path/to/app \
+  --app-id app-id --project-id project-id \
+  --bootstrap-baseline --repo-profile generic --dry-run</code></pre>
+<p>Review the reported changes before an explicitly authorized install. Omit Project Store
+registration and auto-start unless they are separately in scope. For interrupted installs,
+inspect the existing recovery journal and verified backup. Do not erase the backup to
+make a retry pass.</p>
+<h3 id="section-keep-code-and-documents-together">Keep Code And Documents Together</h3>
+<p>The normal Work discovers affected guides, updates their owning source, records a
+content-bound review, and builds configured offline views before independent review.
+No separate user request to update documents is required.</p>
+<p>Current guides use one metadata owner: JSON frontmatter or one adjacent .amplai.json
+sidecar. Explicit source roots may identify individual Markdown files. Enrol a legacy
+guide only after reading its ownership, audience, release and security scope; an old ACTIVE
+label is not verification. Preserve original text and history when adopting a sidecar.</p>
+<p>Configured development-source routes bind template and instruction bytes to a current
+owning guide. They do not grant those files canonical guide status. Historical routes
+retain the exact prior revision; changed history requires a preservation review.
+Mandatory guide rules, unknown metadata and inaccessible dependencies still block completion.
+Non-required folder hints exclude generated Work records from their recursive inputs, so a
+review report cannot depend on itself. Structural directories likewise exclude the configured
+review result and its temporary publication stage; each review is verified separately.
+Explicit file references and other required directory members still bind their exact bytes
+and membership, including ignored inputs.
+The evaluator&#x27;s three standard result files retain their evidence role. Other files in
+that directory still affect the candidate; the directory is not a blanket exclusion.</p>
+<pre><code>python3 scripts/loopctl.py docs impact specs/feature
+python3 scripts/loopctl.py docs review-batch specs/feature --input /path/to/review.json
+python3 scripts/loopctl.py docs sync-views specs/feature
+python3 scripts/loopctl.py docs validate specs/feature</code></pre>
+<p>Review evidence binds the current source, dependencies, candidate and method. A code,
+document, policy, ontology pin or evidence change invalidates the previous review.
+An empty offline-view configuration is NOT_CONFIGURED, not an HTML verification result.</p>
+<p>Review history is retained, not automatically pruned. Publication checks the exact
+serialized UTF-8 size before staging or replacing a file. The review store has an
+8 MiB reader limit; an impact projection uses the configured max_file_bytes limit.
+If a result exceeds its limit, the operation fails and leaves the previous readable
+file and its permissions intact. Use concise attributed review reasons and rerun the
+failed operation after resolving the input size. Do not delete history to bypass a limit.</p>
+<p>Atomic review and impact publication retains the existing POSIX owner, group and mode,
+even under a restrictive umask. A new record starts with readable private mode 0600.
+If permissions, identity, metadata or bytes change before the final publication check,
+the operation stops without replacing that changed file. Reinspect the current inputs
+before retrying. This local guarantee does not certify target ACLs, SELinux labels or
+extended attributes; verify those in the separately approved server environment.</p>
+<h3 id="section-select-and-share-a-version">Select And Share A Version</h3>
+<p>Offline HTML is derived from reviewed owner sources and an exact verified release set.
+It works without a network or JavaScript. Generated-only edits fail validation.
+Current and historical release IDs are explicit; latest cannot mean an arbitrary commit.
+User, developer, operator and executive views retain different content needs.</p>
+<p>Keep internal guides inside the approved internal boundary. External HTML generation uses
+a separate finite approved input and digest, not a checkout with private sections hidden.
+Rendering does not approve publication, artifact activation or a new authentication system.</p>
+<p>All document consumers check local references before relevance scoring or title/snippet
+output, for current and historical selection. The bounded full-document scanner covers
+whitespace, multiline definitions and HTML attributes, nested labels and balanced or
+escaped destination parentheses. Literal examples are checked too. Ambiguous syntax or
+scanner limits stop selection; this is not a promise to render every CommonMark feature.</p>
+<p>The same check covers required inline-code and tree references, directory/glob members,
+and optional local targets that actually exist. Ignore or known-absent hints do not grant
+visibility to existing files. Both an alias and its resolved target constrain security.
+Escaping, dangling or cyclic aliases and resolution failures are not absent examples.
+Reject them before optional fallback, including parent aliases. Concrete path prefixes
+share the finite traversal budget. Ordinary absent examples and valid internal aliases
+retain their existing behavior; no outside content is read.
+Unknown targets fail closed. Dependency and visibility traversal have finite work budgets;
+code/tree references do not become hyperlinks or additional release pages.</p>
+<p>The exact bare optional inline-code literals <code>/work</code>, <code>/design</code>, <code>/hooks</code> and <code>/tmp</code>
+denote existing command or standard-location notation, not implicit file dependencies.
+Required declarations, links, tree entries, decorated values and child paths do not use
+this exception. It is not a path-prefix allowlist or permission to read outside the repo.</p>
+<p>HTML uses a finite reference subset. Single destinations such as href, src, poster,
+data, action and xlink:href use the same path/security check, including namespace tags.
+Compound URL lists/srcset, CSS/SVG functional references, srcdoc, refresh, base modifiers,
+active embedded languages and unknown value-bearing attributes are unsupported and stop
+the operation with UNSUPPORTED_PARSER. Inert attributes and data-/aria- metadata remain
+author text. Encode unsupported markup as descriptive text; the tool is not a browser
+parser or arbitrary prose DLP. Escaping at the renderer remains an additional safeguard.</p>
+<p>Only HTTP/HTTPS with explicit authority, protocol-relative URLs and mailto are accepted
+as non-local URIs. Local file, executable/data and unknown schemes stop without exposing
+or reading the destination. All references remain subject to authored security review.
+The scanner and typed extractor charge retained prefixes/labels/paths before allocation,
+with an input-proportional budget and a 10,000-reference limit. Long repetitive lines can
+return SCOPE_INCOMPLETE even below the document byte limit; split the source meaningfully
+and review it again. A limit never produces an empty-success result or partial review.
+Declaration classification also charges its input before scanning. Header and separator
+checks avoid repeated suffix backtracking, including short near-matching declarations.</p>
+<p>Impact candidate discovery applies the existing Work-memory role before parsing retained
+reports. Its bounded lean scan omits repeated declaration context and conservatively
+includes inline-code local names. This is candidate discovery, not required-dependency
+proof: current-guide and public-source validation retain full context and limits. Vault
+sources and unknown document roles are not excluded by this optimization.
+Unknown authority-bearing origin URIs can remain unavailable external candidates without
+being fetched or approved. They remain unsupported in exact dependency and visibility
+validation; a candidate result is not permission to publish an origin or its source.</p>
+<p>URI escapes are interpreted once. Query and fragment delimiters are separated before
+decoding the path, so an encoded hash or a trailing semicolon remains part of the actual
+filename. URI targets are literal paths, not prose globs or editor locators. Unknown or
+higher-security targets stop selection without disclosing the target. A visible
+same-security historical reference does not make that target current. HTML additionally
+requires each local document link to belong to its exact approved bundle; raw HTML is
+escaped, not executed.</p>
+<h3 id="section-preserve-and-recover">Preserve And Recover</h3>
+<p>Incremental gardening runs after review and is report-only. User backups, tracked documents,
+ADRs and incident lessons are not deleted because they are old, untracked or in Git history.
+A full scan requires its own explicit high-risk repository_gardening Work.</p>
+<pre><code>python3 scripts/loopctl.py garden incremental specs/feature
+python3 scripts/loopctl.py garden full specs/gardening-work --report-only
+python3 scripts/loopctl.py docs preserve --input /path/to/preservation-request.json
+python3 scripts/loopctl.py docs plan-retirement --input /path/to/retirement-request.json</code></pre>
+<p>Preservation compares every original section byte with the retained source or an exact
+attributed destination. A summary cannot replace a unique invariant or incident lesson.
+Retirement planning is read-only. No destructive CLI or new approval authority is provided.
+Approved recovery fixtures verify source bytes, permissions, index, backup and failure
+boundaries; real repository retirement remains separately gated.</p>
+<h3 id="section-verify-and-hand-off">Verify And Hand Off</h3>
+<p>Run the selected slice through the existing evaluator, then the repository&#x27;s full verifier.
+Record command, exit code, source hashes and environment. Independent review and current
+document evidence precede completion. Keep unverified host and server checks visible.
+This local macOS validation is not Python 3.6 execution or a RHEL7 deployment test.</p></main></div><footer><p>Owner: amplai-foundry-maintainers · Source SHA256: <code>b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f</code></p><p>Offline document · Source-derived, not a hand-maintained copy.</p></footer></body></html>

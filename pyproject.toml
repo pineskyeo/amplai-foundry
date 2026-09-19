@@ -1,11 +1,11 @@
 [build-system]
-requires = ["hatchling>=1.25"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=75", "wheel>=0.45"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "amplai-foundry"
-version = "0.4.0"
-description = "Deterministic knowledge foundation for the AMPLAI Memory Layer"
+version = "3.0.0.dev3"
+description = "AMPLAI V3: governed intent-to-verified-work runtime and evidence-driven meta-harness"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
@@ -14,25 +14,37 @@ dependencies = [
   "pydantic>=2.8,<3",
   "pyyaml>=6.0.2,<7",
   "typer>=0.12,<1",
+  "jsonschema>=4.23,<5",
+  "cryptography>=43,<47",
+  "httpx>=0.27,<1",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
 ]
 
 [project.optional-dependencies]
+visual = ["playwright>=1.49,<2", "pillow>=10,<13"]
 dev = [
   "mypy>=1.11,<2",
-  "pytest>=8.3,<9",
+  "pytest>=8.3,<10",
   # 상한을 두는 이유: CI 는 매번 최신을 받고 로컬은 설치된 것을 쓴다. 0.16 이 markdown
   # 코드 블록 포맷을 켜면서 로컬 verifier 는 PASS 인데 CI 만 FAIL 인 상태가 됐다.
   # 그 대상에 DECISIONS.md 같은 역사 기록이 들어 있어 포맷터에 맞춰 다시 쓸 수 없다.
   # 올릴 때는 별도 Work 로 diff 를 보고 올린다.
   "ruff>=0.15.21,<0.16",
   "types-pyyaml>=6.0.12.20240808",
+  "types-jsonschema>=4.23",
 ]
 
 [project.scripts]
 amplai-foundry = "amplai_foundry.cli:app"
+amplai = "amplai_foundry.runtime.cli:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/amplai_foundry"]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"amplai_foundry.runtime.contracts" = ["data/*.json", "data/schemas/*.json"]
+"amplai_foundry" = ["packs/**/*.json", "packs/**/*.md"]
 
 [tool.pytest.ini_options]
 # `-m "not slack_e2e"` 가 E2E 를 기본 실행에서 뺀다. `amplai-foundry verify` 는 인자 없이
@@ -82,6 +94,11 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "scripts/loopctl.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 "scripts/loopv2.py" = ["UP031", "SIM115", "B904", "E402", "SIM102"]
 
+# FastAPI 의 `Depends()` 는 인자 기본값에 두는 것이 공식 idiom 이다 (V3 api_v3/server.py).
+# ruff 문서가 권하는 대로 immutable call 로 선언해 B008 에서 뺀다.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends"]
+
 [tool.ruff.format]
 quote-style = "double"
 
@@ -90,3 +107,8 @@ python_version = "3.11"
 strict = true
 packages = ["amplai_foundry"]
 mypy_path = "src"
+
+# `visual` optional extra. 설치하지 않은 환경에서도 strict 검사가 돌아야 한다.
+[[tool.mypy.overrides]]
+module = ["playwright.*", "PIL.*"]
+ignore_missing_imports = true

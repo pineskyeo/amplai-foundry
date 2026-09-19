@@ -1,0 +1,34 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:docs-v3-dev03_research_sources-md",
+    "topic_id": "amplai-foundry:docs-v3-dev03_research_sources-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "docs/v3/DEV03_RESEARCH_SOURCES.md"
+    },
+    "title": "DEV-03 primary-source verification notes",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "internal_guide",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [
+      {
+        "repository": "amplai-foundry",
+        "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+        "kind": "document"
+      }
+    ],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

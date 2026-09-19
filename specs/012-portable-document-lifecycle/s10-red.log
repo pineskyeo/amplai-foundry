@@ -1,0 +1,74 @@
+FFFFFFFFFFFFFF                                                           [100%]
+=================================== FAILURES ===================================
+___ test_private_link_is_blocked_before_any_consumer_output[False-inventory] ___
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_____ test_private_link_is_blocked_before_any_consumer_output[False-query] _____
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_____ test_private_link_is_blocked_before_any_consumer_output[False-index] _____
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_____ test_private_link_is_blocked_before_any_consumer_output[False-view] ______
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_private_link_is_blocked_before_any_consumer_output[False-loop-context] __
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+__ test_private_link_is_blocked_before_any_consumer_output[False-loop-claim] ___
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_private_link_is_blocked_before_any_consumer_output[False-loop-decision] _
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+___ test_private_link_is_blocked_before_any_consumer_output[True-inventory] ____
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_____ test_private_link_is_blocked_before_any_consumer_output[True-query] ______
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_____ test_private_link_is_blocked_before_any_consumer_output[True-index] ______
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+______ test_private_link_is_blocked_before_any_consumer_output[True-view] ______
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+__ test_private_link_is_blocked_before_any_consumer_output[True-loop-context] __
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+___ test_private_link_is_blocked_before_any_consumer_output[True-loop-claim] ___
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+_ test_private_link_is_blocked_before_any_consumer_output[True-loop-decision] __
+tests/ai/test_document_lifecycle.py:688: in test_private_link_is_blocked_before_any_consumer_output
+    with pytest.raises(engine.DocumentError, match="CROSS_BOUNDARY_REFERENCE") as error:
+E   Failed: DID NOT RAISE <class 'document_lifecycle_canary.DocumentError'>
+=========================== short test summary info ============================
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-inventory]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-query]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-index]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-view]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-loop-context]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-loop-claim]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[False-loop-decision]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-inventory]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-query]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-index]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-view]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-loop-context]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-loop-claim]
+FAILED tests/ai/test_document_lifecycle.py::test_private_link_is_blocked_before_any_consumer_output[True-loop-decision]
+14 failed in 0.94s

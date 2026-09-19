@@ -1,0 +1,36 @@
+{
+  "schema_version": "3.0.0",
+  "pack_id": "frontend",
+  "version": "3.0.0-rc1",
+  "publisher": "amplai",
+  "protocol_major": 3,
+  "entry_capabilities": [
+    "frontend.render",
+    "frontend.interact",
+    "frontend.a11y",
+    "frontend.visual_critique"
+  ],
+  "dependencies": [],
+  "permissions": [
+    {
+      "action": "workspace.read",
+      "resource": "sandbox:*",
+      "effect_class": "pure_read"
+    },
+    {
+      "action": "workspace.write",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    },
+    {
+      "action": "process.run",
+      "resource": "sandbox:*",
+      "effect_class": "sandbox_write"
+    }
+  ],
+  "model_requirements": [],
+  "context_refs": [],
+  "verifier_refs": [],
+  "eval_case_ids": [],
+  "license": "Proprietary"
+}

@@ -1,4 +1,6 @@
-# AMPLAI Loop Kit 2.4.0
+# AMPLAI Loop Kit 2.5.0
+
+Local integration candidate. Not yet published, fleet-activated or verified on RHEL7.
 
 AMPLAI Loop V2 앱을 위한 **Decision & Async Cross-App Runtime** 배포 패키지다.
 정본은 `amplai-foundry`가 소유하고 등록된 앱들에 배포한다 (`PROVENANCE.md`).
@@ -31,8 +33,106 @@ AMPLAI Loop V2 앱을 위한 **Decision & Async Cross-App Runtime** 배포 패�
 
 - Python 3.6 이상
 - Git
-- 기존 AMPLAI Loop V2 앱 (`.agents/skills/work/SKILL.md`, `design/SKILL.md`)
+- Bash, Linux/macOS의 descriptor-relative filesystem API
+- 기본 모드는 기존 AMPLAI Loop V2 앱을 확장한다. 새 저장소는 아래 baseline 옵션을 명시한다.
 - 선택한 worker의 CLI: `claude` 또는 `codex`
+
+## Optional Generic Baseline
+
+Baseline은 `work/design`과 실제 계약·문맥·검증 명령을 실행하는 공용 기본 파일 묶음이다.
+개발 저장소용 기능이며 Synapse 서버에 새 daemon을 설치하지 않는다.
+
+```bash
+python3 install.py --target /path/to/new-app \
+  --app-id <app-id> --project-id ai-platform \
+  --bootstrap-baseline --repo-profile generic --dry-run
+```
+
+검토 후 `--dry-run`을 빼고 설치한다. `baseline/manifest.json`이 파일·12개 skill·정확한
+상대 symlink 목록을 선언한다. 기본 파일과 async 확장은 메모리에서 합친 뒤 경로별 한 번 쓴다.
+
+Baseline을 설치한 저장소는 이후 옵션을 생략해도 기존 profile과 소유 기록을 유지한다.
+다른 내용의 기존 기본 파일이나 private profile을 generic 파일로 덮어쓰지 않는다.
+기존 앱은 baseline 없이 확장만 설치하거나, 충돌 파일을 소유자 검토로 먼저 정리한다.
+
+기존 `AGENTS.md`·`CLAUDE.md`의 marker 밖 규칙을 보존한다. 같은 내용의 기존 파일·symlink·hook은
+빌려 쓰며 제거 대상으로 소유권을 가져오지 않는다. 기존 app identity와 Store 연결도 보존한다.
+Host hook trust·sandbox·model·자동 실행 권한을 추가로 승인하지 않는다.
+
+빌려 쓰는 baseline 파일은 재설치·package 갱신·제거에서도 기존 local mode를 유지한다.
+Package의 mode 변경은 installer가 만든 파일에만 적용한다. 사용자가 바꾼 권한은 기존
+명시적 충돌 확인 절차로 처리한다. 그 확인이 비소유 파일의 내용 교체 권한을 주지는 않는다.
+
+Baseline Context는 AGENTS.md·workflow·verifier registry를 필수 governing input으로 읽는다.
+Governing input은 Work를 통제하는 명시적 규칙이며, release guide의 review 상태와 다르다.
+앱의 active Decision은 승인된 exact ledger path와 index로만 연결한다. 과거 ledger 전체나
+private profile을 공용 package에 넣지 않는다. 항목이 빠진 Context는 hash를 다시 만들어도
+검증을 통과하지 못한다.
+
+소유 release guide는 repository knowledge map에도 active source로 등록한다. 검색에서
+선택된 것만으로 Work Context에 자동 등록되지는 않는다. Foundry의 Kit 안내문 세 개는
+일반 high priority로 연결하며 release·review·security 검사를 그대로 따른다. 검증은
+생성된 Context와 저장된 Context의 실제 문서 목록·원문 hash·정상 MATCH를 모두 확인한다.
+이 등록은 필수 governing input이나 다른 제품의 지식을 대체하지 않는다.
+
+문서 검색·공유는 출력 전에 정규화한 참조 경로의 security를 검사한다. 알 수 없거나 더 높은
+보안 등급의 참조는 제목·snippet에도 노출하지 않는다. 검토 기록은 8 MiB, impact 결과는
+설정된 reader 한도를 넘기 전에 거부하며 기존 정상 파일과 history를 보존한다.
+여러 줄 참조·중첩 label·HTML 속성도 같은 전체 문서 검사에 포함한다. URI 경로는 한 번만
+해석하며 파일명에 속한 특수 문자를 prose glob이나 편집기 위치 표기로 바꾸지 않는다.
+해석이 모호하거나 한도를 넘으면 중단한다. 모든 Markdown 표현의 렌더링 지원을 뜻하지 않는다.
+Required inline-code·tree·directory/glob과 실제로 존재하는 optional local target도 검사한다.
+Ignore·known-absent 표기로 기존 파일의 security 검사를 생략하지 않는다. Alias와 실제 target의
+분류를 함께 확인하며 미분류 target은 차단한다. 의존성과 visibility의 경로 순회에도 유한한
+예산을 적용한다. Code/tree 표기를 hyperlink나 release 문서로 자동 승격하지 않는다.
+저장소 밖을 가리키거나 끊어진·순환하는 alias는 없는 예시 파일로 넘기지 않는다.
+부모 alias와 경로 해석 실패도 fallback 전에 거절한다. 실제로 없는 예시와 정상 내부 alias의
+기존 동작은 유지하며, 경로 prefix 검사도 같은 예산 안에서 실행한다. 외부 내용은 읽지 않는다.
+정확한 bare optional inline-code `/work`·`/design`·`/hooks`·`/tmp`는 기존 명령·표준 위치 표기다.
+Required 선언·link·tree·장식된 값·하위 경로에는 이 구분을 적용하지 않는다.
+HTML은 단일 URL 속성과 inert 속성만 유한 목록으로 구분한다. namespace 태그와 poster·data·
+action·xlink:href도 같은 참조 검사를 쓴다. srcset·URL 목록·CSS/SVG 함수·srcdoc·refresh·
+실행 언어·base 변경·알 수 없는 값 속성은 UNSUPPORTED_PARSER로 거부한다. data-/aria- 값은
+작성자 텍스트다. 임의의 본문 전체를 분류하는 DLP나 완전한 브라우저 parser는 아니다.
+외부 URI는 authority가 있는 HTTP(S), protocol-relative URL과 mailto만 지원한다.
+file·실행/data·알 수 없는 scheme은 경로를 읽거나 노출하지 않고 거부한다.
+참조 prefix·label·구조 경로는 복사 전에 입력 비례 예산을 검사하며, 10,000개 참조가 상한이다.
+긴 반복 행은 파일 크기 한도 아래여도 SCOPE_INCOMPLETE가 될 수 있다. 의미 단위로 나누고
+다시 검토한다. 빈 성공 결과나 일부만 기록한 review로 넘기지 않는다.
+Declaration 분류도 검사 전에 입력을 예산에 반영한다. Header와 separator 검사를 분리해
+짧은 near-match 입력에서도 suffix backtracking이 반복되지 않게 한다.
+영향 후보 검색은 기존 Work-memory 분류를 먼저 적용하고 반복 문맥 복사를 생략한다.
+inline-code 로컬 이름은 보수적으로 후보에 넣는다. 필수 의존성의 검증 근거를 대신하지
+않으며, 현재 안내문·공개 원문의 문맥과 검사 한도는 유지한다. Vault와 미분류 문서를
+검사 범위에서 제거하지 않는다.
+보존 원문의 알 수 없는 authority URI는 후보 검색에서만 미확인 외부 출처로 구분한다.
+경로를 읽거나 원문을 공개 승인하지 않는다. 실제 의존성·공개 검증에서는 계속 거부한다.
+Atomic 기록 교체는 제한적인 umask에서도 기존 POSIX 권한·owner·group을 유지한다.
+쓰기 직전 파일의 권한·identity·내용이 바뀌면 교체를 중단하고 입력을 다시 확인하게 한다.
+새 기록은 0600이다. 대상 서버의 ACL·SELinux·extended attribute 검증은 별도다.
+
+## Package Integrity And Recovery
+
+설치기는 `CHECKSUMS.sha256`의 전체 목록과 내용을 검사한 뒤 그 메모리 snapshot만 사용한다.
+누락·추가·중복·symlink·내용 변경은 쓰기 전에 거부한다. 같은 버전명도 hash 검사를 생략하지 않는다.
+Checksum은 전달 무결성 검사이며 배포자 서명이나 외부 배포 승인이 아니다.
+
+동일 target의 설치는 직렬화한다. 로컬 편집이나 부모 경로 교체를 발견하면 중단한다.
+일반 실패는 해당 transaction을 복구한다. 복구 중 달라진 사용자 파일은 덮어쓰지 않는다.
+
+강제 종료 기록이 있으면 다음 설치·제거는 중단한다. 다음 명령으로 복구 범위를 확인한다.
+
+```bash
+python3 install.py --target /path/to/app --recover --dry-run
+python3 install.py --target /path/to/app --recover
+```
+
+복구는 이전 내용 hash와 백업이 일치하는 target 파일만 되돌린다. 쓰다 남은 임시 파일은
+백업 영역에 보존한다. 중앙 Project Store는 되돌리지 않으며, 해당 연결을 명시했던 설치가
+중단됐다면 별도 Store 상태를 확인한다. 실패 기록과 백업을 임의로 지우지 않는다.
+
+이 baseline 변경은 W003의 로컬 구현이다. 현재 macOS의 격리 설치 검증과 실제 native host,
+Python 3.6 interpreter, RHEL7·운영 배포 증거는 구분한다. 최종 기능 묶음과 배포 승인은 별도다.
 
 ### 앱마다 있을 수도, 없을 수도 있는 것
 
@@ -122,10 +222,10 @@ python3 install.py --target /path/to/recipe-studio \
 ## 충돌 정책
 
 - Kit이 소유하는 파일을 사용자가 수정했다면 기본 설치는 중단한다.
-- Skill/policy/workflow는 marker 내부만 Kit이 소유하며 marker 밖 내용은 보존한다.
+- 확장 모드는 skill/policy/workflow의 marker만 소유한다. 새 baseline 파일은 기록된 전체 파일을 소유한다.
 - `.claude/settings.json`과 `.codex/hooks.json`의 기존 필드·permissions·hooks는 보존한다.
 - uninstall은 install record에 적힌 AMPLAI hook만 제거한다.
-- `--force`는 충돌 파일을 `.ai-team/backups/amplai-loop-kit/<timestamp>/`에 백업한 뒤 교체한다.
+- `--force`는 기존 관리 파일의 충돌을 백업 후 교체한다. 비소유 baseline 파일과 symlink 충돌은 수동 검토한다.
 - 모든 preflight가 끝난 뒤 쓰며, 쓰기 실패 시 target repository 변경을 rollback한다.
 
 먼저 확인만 하려면:

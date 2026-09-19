@@ -1,0 +1,282 @@
+{
+  "schema_version": "1.0",
+  "id": "PORTABLE-DOC-T003",
+  "title": "One document authority and filtered current/history selection",
+  "type": "feature",
+  "status": "done",
+  "goal": {
+    "outcome": "One document authority and filtered current/history selection",
+    "user_value": "Independent app developers share a reproducible workflow, current documents and recoverable changes."
+  },
+  "source": {
+    "feature": "012-portable-document-lifecycle",
+    "files": [
+      {
+        "path": "specs/012-portable-document-lifecycle/spec.md",
+        "section": "FR-007, FR-010"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/plan.md",
+        "section": "Slice Strategy S03"
+      },
+      {
+        "path": "specs/012-portable-document-lifecycle/acceptance-map.json",
+        "section": "AC-043-P, AC-043-N, AC-047-P, AC-047-N, AC-052-P, AC-052-N"
+      }
+    ],
+    "requirements": [
+      "REQ-043",
+      "REQ-047",
+      "REQ-052",
+      "DOC-002"
+    ],
+    "decisions": [
+      "D-046",
+      "D-053",
+      "D-055",
+      "D-056",
+      "specs/012-portable-document-lifecycle/execution-authorization.json",
+      "CR-SYNAPSE-APP-SPLIT-E021"
+    ]
+  },
+  "scope": {
+    "include": [
+      "One document authority and filtered current/history selection",
+      "One new JSON frontmatter owner or one legacy sidecar; reject duplicates and unsupported input. Keep review/source hashes outside bytes they attest.",
+      "List every current portable consumer and filter security/release/lifecycle/freshness before ranking/title/snippet/output. Unknown/archived/candidate are not active.",
+      "Qualified canonical uniqueness is topic+release+disclosure scope. Existing Platform/Vault APIs stay untouched."
+    ],
+    "exclude": [
+      "Platform/Vault/governed knowledge mutations",
+      "Live installs, trust changes, Store rebinding, publication or actual tracked deletion"
+    ],
+    "allowed_paths": [
+      "scripts/amplai_docs.py",
+      "scripts/loopctl.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/documentation.json",
+      ".ai-team/knowledge/doc-impact.schema.json",
+      ".ai-team/knowledge/context-pack.schema.json",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_lifecycle.py",
+      "specs/012-portable-document-lifecycle/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "src/amplai_foundry/",
+      "schemas/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "Other real repositories and production configuration"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "PORTABLE-DOC-T001",
+      "PORTABLE-DOC-T010"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "One new JSON frontmatter owner or one legacy sidecar; reject duplicates and unsupported input. Keep review/source hashes outside bytes they attest.",
+      "List every current portable consumer and filter security/release/lifecycle/freshness before ranking/title/snippet/output. Unknown/archived/candidate are not active.",
+      "Qualified canonical uniqueness is topic+release+disclosure scope. Existing Platform/Vault APIs stay untouched."
+    ],
+    "invariants": [
+      "Existing work/design controller, native Project Store and transaction installer remain authoritative",
+      "Preserve unrelated user content, historical provenance and current host trust",
+      "No synthetic result is native host, Python3.6 or RHEL7 evidence"
+    ],
+    "non_goals": [
+      "New Platform storage/API/auth/ontology service",
+      "Automatic fleet activation or destructive cleanup"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "AC-043-P",
+        "given": "The original AC-043-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "canonical-stale, valid historical release and unknown lifecycle retain separate dimensions"
+      },
+      {
+        "id": "AC-043-N",
+        "given": "The original AC-043-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "age alone cannot discard a valid older-version runbook"
+      },
+      {
+        "id": "AC-047-P",
+        "given": "The original AC-047-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "one active canonical per qualified topic/release/security scope; historical releases coexist"
+      },
+      {
+        "id": "AC-047-N",
+        "given": "The original AC-047-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "duplicate active canonical within the same qualified scope is rejected before selection"
+      },
+      {
+        "id": "AC-052-P",
+        "given": "The original AC-052-P fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "every current portable search/context/index consumer excludes superseded canaries before title/snippet creation"
+      },
+      {
+        "id": "AC-052-N",
+        "given": "The original AC-052-N fixture and original requirement procedure referenced by acceptance-map.json",
+        "when": "The actual S03 capability and its positive or fault-injected path execute",
+        "then": "folder moves cannot leave stale derived chunks, snippets, indexes or caches selected"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -m pytest -q tests/ai/test_document_lifecycle.py",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "high",
+    "concerns": [
+      "Installer/document/privacy/lifecycle compatibility within the assigned slice"
+    ],
+    "approvals": [
+      "User local implementation authority in execution-authorization.json and native E021; any external/production/cleanup action remains separate"
+    ]
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "acceptance_conflicts_with_approved_spec",
+      "required_external_dependency_missing",
+      "scope_boundary_must_expand",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-12 07:46:15 UTC",
+    "evidence_paths": [
+      "specs/012-portable-document-lifecycle/revalidate-r6-s03.json",
+      "specs/012-portable-document-lifecycle/revalidate-r6-s03.log"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "scripts/amplai_docs.py",
+      "scripts/loopctl.py",
+      "scripts/loopv2.py",
+      ".ai-team/policy/documentation.json",
+      ".ai-team/knowledge/doc-impact.schema.json",
+      ".ai-team/knowledge/context-pack.schema.json",
+      "tools/amplai-loop-kit/",
+      "tests/ai/test_document_lifecycle.py"
+    ],
+    "notes": [
+      "New harness tests/ai/test_document_lifecycle.py is a required task deliverable. It does not exist at task creation; its command becomes executable only with the test implementation.",
+      "Tasks in later slices are draft until their dependencies and execution inputs are validated; no parallel write ownership is implied."
+    ]
+  },
+  "context": {
+    "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+    "slice_id": "S03",
+    "context_pack": "specs/012-portable-document-lifecycle/context-pack.json",
+    "environment": "specs/012-portable-document-lifecycle/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "6e005a5e3035ef05510c403a7cd691d524b733bd"
+  },
+  "completion_history": [
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11T05:25:09Z",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s03-evidence.json"
+      ],
+      "preserved_for": "R1 frozen source",
+      "review_scope_sha256": "decd68ff01c42c0ce8393c1337f1ad0e832814342d4e5a579d19bbfc316e8d59"
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-11 12:15:54 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/s03-evidence.json",
+        "specs/012-portable-document-lifecycle/s03-revalidation-r2.json"
+      ],
+      "preserved_for": "R2 frozen source",
+      "review_scope_sha256": "a83e0eac15823b566e75b6e24a62832abc746ac3fadfd6882139aac2659af014"
+    },
+    {
+      "recorded_at": "2026-09-11 23:10:19 UTC",
+      "reason": "R3 engine/payload repair requires current-target revalidation; original evidence retained.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-11 14:55:00 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/s03-evidence.json",
+          "specs/012-portable-document-lifecycle/s03-revalidation-r2.json",
+          "specs/012-portable-document-lifecycle/s03-revalidation-r3.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 00:52:57 UTC",
+      "reason": "Revalidate after demonstrated physical-line/Unicode split mismatch in shared typed references; earlier evidence preserved, not current source proof.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 00:31:56 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-s03.json"
+        ]
+      }
+    },
+    {
+      "recorded_at": "2026-09-12 02:53:17 UTC",
+      "reason": "R4 confirmed classifier/typed-reference/borrowed-mode defects require current-source revalidation; original completion remains historical.",
+      "completion": {
+        "all_acceptance_passed": true,
+        "required_evidence_present": true,
+        "completed_at": "2026-09-12 01:13:52 UTC",
+        "evidence_paths": [
+          "specs/012-portable-document-lifecycle/revalidate-r4-line-s03.json"
+        ]
+      }
+    },
+    {
+      "all_acceptance_passed": true,
+      "required_evidence_present": true,
+      "completed_at": "2026-09-12 04:40:17 UTC",
+      "evidence_paths": [
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s03.json",
+        "specs/012-portable-document-lifecycle/revalidate-r5-line-s03.log"
+      ]
+    }
+  ],
+  "revalidation": {
+    "reason": "R2 full-document reference/URI and atomic metadata repairs require current-target acceptance; prior completion retained",
+    "review": "review-r2.json",
+    "previous_status": "done",
+    "status": "LOCAL_PASS",
+    "evidence": "s03-revalidation-r3.json"
+  }
+}

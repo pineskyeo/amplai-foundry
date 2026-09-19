@@ -2,6 +2,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -71,6 +72,23 @@ class AmplaiRuntimeTest(unittest.TestCase):
         write_json_atomic(path, value)
         with self.assertRaises(ValidationError):
             self.store.get_work(work["work_id"])
+
+    def test_request_ref_creates_one_pinned_work(self):
+        base_ref = "a" * 40
+        first = self.store.create_work(
+            self.change["change_id"], "cortex", "Bridge request",
+            acceptance=["one draft work"], controller="work",
+            runner_profile="codex", base_ref=base_ref, request_ref="REQ-001",
+        )
+        second = self.store.create_work(
+            self.change["change_id"], "cortex", "Bridge retry",
+            acceptance=["one draft work"], controller="work",
+            runner_profile="codex", base_ref=base_ref, request_ref="REQ-001",
+        )
+        self.assertEqual(first["work_id"], second["work_id"])
+        self.assertEqual(first["controller"], "work")
+        self.assertEqual(first["runner_profile"], "codex")
+        self.assertEqual(first["base_ref"], base_ref)
 
     def test_auto_decision_requires_evidence(self):
         work = self.make_work()
@@ -255,6 +273,187 @@ class AmplaiRuntimeTest(unittest.TestCase):
         self.assertIn("Assigned Work", rendered)
         self.assertFalse(os.path.exists(os.path.join(self.store.change_dir("CR-0001"), "handoffs")))
 
+    def _store_bytes(self):
+        result = {}
+        for parent, _, names in os.walk(self.project_home):
+            for name in names:
+                path = os.path.join(parent, name)
+                with open(path, "rb") as stream:
+                    result[os.path.relpath(path, self.project_home)] = stream.read()
+        return result
+
+    def test_done_handoff_shows_own_result_without_restarting_work(self):
+        work = self.make_work("synapse")
+        _, token = self.activate_claim_start(work)
+        evidence = self.add_evidence(work)
+        question = self.store.create_question(work["work_id"], "Keep existing contract?")
+        decision = self.store.record_decision(
+            question["question_id"], "Keep existing contract", "Fixture evidence",
+            [evidence["evidence_id"]],
+        )
+        done = self.store.complete_work(
+            work["work_id"], token, "Fixture contract delivered", [evidence["evidence_id"]],
+            decision_refs=[decision["decision_id"]], outputs=["fixture://contract-v1"],
+        )
+        before = self._store_bytes()
+        context = self.store.build_work_context(work["work_id"])
+        rendered = self.store.render_handoff(work["work_id"])
+        self.assertEqual(self._store_bytes(), before)
+        self.assertTrue(context["instructions"]["read_only"])
+        self.assertIsNone(context["instructions"]["entry_point"])
+        self.assertEqual(context["work"]["result"], done["result"])
+        for value in (
+            "Fixture contract delivered", "fixture://contract-v1", evidence["evidence_id"],
+            decision["decision_id"], done["result"]["completed_at"], "## Recorded Result",
+            "read-only", "Do not claim or restart this Work",
+        ):
+            self.assertIn(value, rendered)
+        self.assertNotIn("## Resume", rendered)
+        self.assertNotIn("update the same Work object", rendered)
+
+    def test_cancelled_handoff_is_not_success_or_resume(self):
+        work = self.make_work("synapse")
+        self.store.cancel_work(work["work_id"], "Fixture request withdrawn")
+        before = self._store_bytes()
+        context = self.store.build_work_context(work["work_id"])
+        rendered = self.store.render_handoff(work["work_id"])
+        self.assertEqual(self._store_bytes(), before)
+        self.assertTrue(context["instructions"]["read_only"])
+        self.assertIsNone(context["instructions"]["entry_point"])
+        self.assertIsNone(context["work"]["result"])
+        self.assertIn("CANCELLED", rendered)
+        self.assertIn("not a successful completion", rendered)
+        self.assertNotIn("## Resume", rendered)
+        self.assertNotIn("## Recorded Result", rendered)
+
+    def test_nonterminal_work_keeps_existing_controller_entry(self):
+        work = self.make_work("synapse")
+        self.store.activate_work(work["work_id"])
+        for start in (False, True):
+            if start:
+                _, token = self.store.claim_work(work["work_id"], "fixture-worker")
+                self.store.start_work(work["work_id"], token)
+            before = self._store_bytes()
+            context = self.store.build_work_context(work["work_id"])
+            rendered = self.store.render_handoff(work["work_id"])
+            self.assertEqual(self._store_bytes(), before)
+            self.assertFalse(context["instructions"]["read_only"])
+            self.assertEqual(context["instructions"]["entry_point"], "/work")
+            self.assertIn("## Resume", rendered)
+
+    def test_handoff_dependency_chat_only_done_and_expired_claim_recovery(self):
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from amplai_runtime import parse_time
+
+        upstream = self.make_work("cortex", goal="Produce fixture contract")
+        downstream = self.make_work("synapse", [upstream["work_id"]], "Use fixture contract")
+        self.store.activate_work(downstream["work_id"])
+        self.assertIn("WAITING", self.store.render_handoff(downstream["work_id"]))
+        # A rendered/chat artifact is not a second Work store or transition command.
+        with open(os.path.join(self.synapse_repo, "handoff.md"), "w") as stream:
+            stream.write("# " + upstream["work_id"] + "\nDONE: chat-only claim\n")
+        self.store.reconcile()
+        self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "WAITING")
+        with self.assertRaises(ConflictError):
+            self.store.claim_work(downstream["work_id"], "cannot-claim-waiting")
+        _, upstream_token = self.activate_claim_start(upstream)
+        evidence = self.add_evidence(upstream)
+        self.store.complete_work(
+            upstream["work_id"], upstream_token, "Contract actually recorded",
+            [evidence["evidence_id"]], outputs=["fixture://dependency-contract"],
+        )
+        self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "READY")
+        context = self.store.build_work_context(downstream["work_id"])
+        self.assertEqual(context["dependencies"][0]["result"]["summary"], "Contract actually recorded")
+        _, expired_token = self.store.claim_work(downstream["work_id"], "expired-worker")
+        lease_path = self.store._lease_path(downstream["work_id"])
+        lease = read_json(lease_path)
+        lease["expires_at"] = "2000-01-01T00:00:00Z"
+        write_json_atomic(lease_path, seal(lease), mode=0o600)
+        self.store.reconcile()
+        self.assertEqual(self.store.get_work(downstream["work_id"])["status"], "READY")
+        recovered = self.store.get_work(downstream["work_id"])
+        with self.assertRaisesRegex(ConflictError, "retry backoff"):
+            self.store.claim_work(downstream["work_id"], "too-early-worker")
+        # Advance only the isolated clock; preserve the production backoff policy.
+        ready_time = parse_time(recovered["retry_not_before"]) + timedelta(seconds=1)
+        with patch("amplai_runtime.utc_naive_now", return_value=ready_time):
+            _, token = self.store.claim_work(downstream["work_id"], "replacement-worker")
+        self.assertNotEqual(token, expired_token)
+        self.store.start_work(downstream["work_id"], token)
+        evidence = self.add_evidence(downstream)
+        self.store.complete_work(
+            downstream["work_id"], token, "Downstream delivered", [evidence["evidence_id"]],
+        )
+        before = self._store_bytes()
+        rendered = self.store.render_handoff(downstream["work_id"])
+        self.assertEqual(self._store_bytes(), before)
+        self.assertIn("Downstream delivered", rendered)
+        self.assertIn("Contract actually recorded", rendered)
+        self.assertNotIn("## Resume", rendered)
+        self.assertFalse(os.path.exists(os.path.join(self.store.change_dir("CR-0001"), "handoffs")))
+        with self.assertRaises(ConflictError):
+            self.store.claim_work(downstream["work_id"], "cannot-reclaim-done")
+        with self.assertRaises(ConflictError):
+            self.store.activate_work(downstream["work_id"])
+
+    def test_heartbeat_cli_redacts_json_and_default_without_changing_auth(self):
+        for as_json in (False, True):
+            work = self.make_work("synapse")
+            _, token = self.activate_claim_start(work)
+            lease_path = self.store._lease_path(work["work_id"])
+            lease = read_json(lease_path)
+            lease["heartbeat_at"] = "2000-01-01T00:00:00Z"
+            lease["expires_at"] = "2099-01-01T00:00:00Z"
+            write_json_atomic(lease_path, seal(lease), mode=0o600)
+            command = [sys.executable, "-B", os.path.join(SCRIPTS, "amplai.py"),
+                       "--project-home", self.project_home]
+            if as_json:
+                command.append("--json")
+            command += ["work", "heartbeat", "--id", work["work_id"]]
+            env = dict(os.environ, AMPLAI_LEASE_TOKEN=token)
+            result = subprocess.run(command, env=env, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, universal_newlines=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn(token, result.stdout + result.stderr)
+            view = json.loads(result.stdout)
+            self.assertEqual(view["token"], "<redacted>")
+            self.assertEqual(view["kind"], "lease_view")
+            self.assertTrue(view["view_only"])
+            self.assertNotIn("content_hash", view)
+            stored = self.store._read_lease(work["work_id"])
+            self.assertEqual(stored["token"], token)
+            self.assertEqual(stored["kind"], "lease")
+            self.assertNotEqual(stored["expires_at"], lease["expires_at"])
+            self.assertNotEqual(stored["heartbeat_at"], lease["heartbeat_at"])
+            self.assertEqual(view["expires_at"], stored["expires_at"])
+            self.assertEqual(os.stat(lease_path).st_mode & 0o777, 0o600)
+            evidence = self.add_evidence(work)
+            self.assertEqual(self.store.complete_work(
+                work["work_id"], token, "Same-token completion", [evidence["evidence_id"]],
+            )["status"], "DONE")
+
+    def test_heartbeat_output_is_detached_allowlisted_view(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        import amplai
+
+        lease = {"schema_version": "1.0", "kind": "lease", "token": "fixture-credential",
+                 "content_hash": "stale", "work_id": "W-fixture",
+                 "future_private_field": "not-output", "expires_at": "2099-01-01T00:00:00Z"}
+        before = dict(lease)
+        with patch.object(amplai, "store_from_args") as store, patch.object(amplai, "lease_token"):
+            store.return_value.heartbeat.return_value = lease
+            view = amplai.cmd_work(SimpleNamespace(work_action="heartbeat", id="W-fixture", actor="test"))
+        self.assertEqual(lease, before)
+        self.assertIsNot(view, lease)
+        self.assertNotIn("future_private_field", view)
+        self.assertNotIn("content_hash", view)
+        self.assertEqual(view["token"], "<redacted>")
+
     def test_claude_command_masks_prompt_and_can_resume(self):
         work = self.make_work("cortex")
         self.store.activate_work(work["work_id"])
@@ -297,6 +496,55 @@ class AmplaiRuntimeTest(unittest.TestCase):
             handle.write('{"type":"turn.started"}\n')
             handle.write('{"type":"turn.completed","usage":{}}\n')
         self.assertEqual(session_id_from_output(path), "thread-jsonl")
+
+    def test_profiled_work_uses_controller_entry_and_managed_worktree(self):
+        subprocess.check_call(["git", "init"], cwd=self.cortex_repo, stdout=subprocess.DEVNULL)
+        subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=self.cortex_repo)
+        subprocess.check_call(["git", "config", "user.name", "Test"], cwd=self.cortex_repo)
+        with open(os.path.join(self.cortex_repo, "README.md"), "w") as handle:
+            handle.write("fixture\n")
+        subprocess.check_call(["git", "add", "README.md"], cwd=self.cortex_repo)
+        subprocess.check_call(["git", "commit", "-m", "fixture"], cwd=self.cortex_repo, stdout=subprocess.DEVNULL)
+        base_ref = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=self.cortex_repo
+        ).decode("utf-8").strip()
+        work = self.store.create_work(
+            self.change["change_id"], "cortex", "Design a fixture",
+            acceptance=["isolated workspace"], controller="design", runner_profile="codex",
+            base_ref=base_ref, request_ref="REQ-PROFILED",
+        )
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="claude-code",
+            runner_profiles={"codex": {"command": "codex", "args": ["--sandbox", "workspace-write"]}},
+            default_runner_profile="codex",
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        runner.workspace_path = runner._prepare_workspace()
+        self.assertNotEqual(runner.workspace_path, self.cortex_repo)
+        self.assertIn("$design", runner._command()[-1])
+        self.assertEqual(
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=runner.workspace_path)
+            .decode("utf-8").strip(),
+            base_ref,
+        )
+        with open(os.path.join(runner.workspace_path, "README.md"), "a") as handle:
+            handle.write("uncommitted\n")
+        with self.assertRaisesRegex(ValidationError, "managed workspace is dirty"):
+            runner._prepare_workspace()
+
+    def test_new_binding_default_profile_is_used_for_legacy_work(self):
+        work = self.make_work("cortex")
+        self.store.activate_work(work["work_id"])
+        self.store.register_app(
+            "cortex", repo_path=self.cortex_repo, runner_type="claude-code",
+            runner_profiles={"codex": {"command": "codex", "args": ["--sandbox", "workspace-write"]}},
+            default_runner_profile="codex",
+        )
+        claimed, token = self.store.claim_work(work["work_id"], "runner-test")
+        runner = WorkerRunner(self.store, claimed, token, "runner-test")
+        self.assertEqual(runner.runner["type"], "codex")
 
 
 class AmplaiSupervisorGoldenTest(unittest.TestCase):

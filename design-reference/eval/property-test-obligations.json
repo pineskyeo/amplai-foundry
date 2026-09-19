@@ -1,0 +1,78 @@
+{
+  "version": "3.0.0",
+  "properties": [
+    {
+      "id": "PROP-01",
+      "scope": "every listed state transition",
+      "generate": [
+        "allowed source + valid guards",
+        "wrong source",
+        "stale expected_revision",
+        "wrong actor",
+        "duplicate command",
+        "unknown mandatory gate"
+      ],
+      "expected": "only allowed+guarded case transitions; same command idempotent; denied case leaves aggregate unchanged"
+    },
+    {
+      "id": "PROP-02",
+      "scope": "all object references",
+      "generate": [
+        "wrong scope",
+        "missing id",
+        "wrong revision",
+        "wrong digest",
+        "redacted/missing bytes"
+      ],
+      "expected": "reject/hold; no substitution by latest or same filename"
+    },
+    {
+      "id": "PROP-03",
+      "scope": "every external effect crash point",
+      "generate": [
+        "before prepare commit",
+        "after prepare before dispatch",
+        "after dispatch before receipt",
+        "after receipt before ack"
+      ],
+      "expected": "no untracked duplicate; unknown classified and reconciled"
+    },
+    {
+      "id": "PROP-04",
+      "scope": "all budgets and resource claims",
+      "generate": [
+        "concurrent claims",
+        "native child usage",
+        "unknown cost",
+        "cancel/retry",
+        "root exhaustion"
+      ],
+      "expected": "atomic root bounds; no early release of unknown usage"
+    },
+    {
+      "id": "PROP-05",
+      "scope": "JCS and serialization",
+      "generate": [
+        "Unicode keys/non-ASCII text",
+        "unsafe integers",
+        "NaN/Infinity",
+        "timestamp offset",
+        "signature exclusion",
+        "recursive ref cycles"
+      ],
+      "expected": "canonical accepted input only; identical canonical content gives identical digest; no self-cycle"
+    },
+    {
+      "id": "PROP-06",
+      "scope": "source disposition plan",
+      "generate": [
+        "modified owned file",
+        "unowned override",
+        "active reference",
+        "missing backup",
+        "invalid grant"
+      ],
+      "expected": "no destructive apply; actionable conflict receipt"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S08",
+  "status": "LOCAL_CANONICAL_PASS_PENDING_R5_REVIEW",
+  "recorded_at": "2026-09-12 05:31:24 UTC",
+  "started_at": "2026-09-12 05:19:33 UTC",
+  "command": "bash scripts/eval.sh --feature specs/012-portable-document-lifecycle --slice S08 --profile fast",
+  "exit_code": 0,
+  "tests": {
+    "passed": 2374,
+    "deselected": 4,
+    "seconds": 462.35,
+    "deselected_scope": "Four live Slack integration tests excluded by the existing v2 profile; not live Slack evidence."
+  },
+  "verifier": {
+    "profile": "v2",
+    "checks": 11,
+    "status": "PASS"
+  },
+  "outer_verifier": {
+    "profile": "fast",
+    "checks": 5,
+    "status": "PASS"
+  },
+  "package": {
+    "version": "2.5.0",
+    "checksum_rows": 119,
+    "selftests": 12,
+    "status": "PASS"
+  },
+  "kit_guide_selection": {
+    "status": "PASS_KIT_GUIDE_SELECTION",
+    "current_guides": 3,
+    "required_instructions": 7,
+    "retained_product_reference_guard": "BLOCKED_CROSS_BOUNDARY_REFERENCE"
+  },
+  "log": "s08-canonical-eval-r5.log",
+  "log_complete": true,
+  "tasks": "s08-r5-eval-input-tasks.md",
+  "source_snapshot": "s08-r5-eval-source.json",
+  "source_files_verified": 152,
+  "governing_files_verified": 32,
+  "source_drift": [],
+  "governing_drift": [],
+  "context": "s08-context-r5-final.json",
+  "context_validation": {
+    "status": "MATCH",
+    "source_mappings": 11,
+    "expected_hash": "bb26498de78e85e68059ee43c1d93650d5a56be9fbcdc561f8e40f4bf03da830",
+    "kit_source_selection": "Separately executed by canonical S08 fourth command; Context validation is not substituted for guide selection."
+  },
+  "native_transport": "s08-native-r5.json",
+  "semantic_document_review": "s08-document-review-evidence-r12.json",
+  "predecessor_revalidation": {
+    "path": "revalidation-r5-line.json",
+    "passed_slices": 13,
+    "source_pins": "revalidation-source-r5-line.json",
+    "limit": "Counts overlap. These exact snapshots precede the 21 non-Kit sidecar release-membership restorations and new read-only Kit-selection verifier. Existing product/package/test bytes are unchanged; full S08 includes all predecessor tests and the new selection check."
+  },
+  "repair_evidence": [
+    "s16-local-verification.json",
+    "s17-local-verification.json",
+    "s18-local-verification.json",
+    "s08-r5-review-fixture-repair.json",
+    "s08-r5-context-domain-diagnosis.json",
+    "s08-r5-guide-check-format-equivalence.json"
+  ],
+  "limits": [
+    "Current local candidate only; fresh R5 HTML/browser evidence, three sequential independent reviews and post-review report-only gardening remain.",
+    "No actual RHEL7, Python3.6, full native Work/resume, signing, fleet activation or production deployment proof.",
+    "Historical failures and reviews are retained without rewriting their exact source pins or outcomes.",
+    "Guide component pins identify reference sources/catalog, not deployable backend binary or runtime compatibility approval.",
+    "Original W003 23 requirements and 46 cases retain zero final PASS until completion gates; W004 implementation remains separate."
+  ]
+}
+

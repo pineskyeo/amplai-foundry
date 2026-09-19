@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "recorded_at": "2026-09-12 02:00:52 UTC",
+  "capability": "speckit-converge assessment under existing Work controller",
+  "outcome": "IMPLEMENTATION_CONVERGED_COMPLETION_GATES_PENDING",
+  "checked": {
+    "feature_requirements": 15,
+    "success_criteria": 5,
+    "original_requirements": 23,
+    "original_cases": 46,
+    "contract_acceptances": 8,
+    "constitution_principles": 5,
+    "task_manifests": 15,
+    "repair_tasks": 7,
+    "affected_slice_revalidations": 13
+  },
+  "evidence": [
+    "s14-evidence.json",
+    "s15-integration-evidence.json",
+    "s15-line-boundary-diagnosis.json",
+    "revalidation-r4-line.json",
+    "s08-bytecode-final-diagnosis.json",
+    "s08-bytecode-order-regression.log",
+    "s07-evidence.json",
+    "s08-local-verification-r4.json",
+    "s08-context-r4-final.json",
+    "s08-view-evidence-r4.json",
+    "s08-native-r4-line.json"
+  ],
+  "findings": [],
+  "tasks_appended": 0,
+  "unchanged_task_intent": true,
+  "source_assessment": {
+    "FR_001_004": "Generic baseline and composed transactional installer are exercised in source, payload and installed canaries; current strict seal and package selftests pass.",
+    "FR_005": "Existing native Store authority and terminal/lease presentation remain covered by original S07 plus current full regression; native observations are transport-only.",
+    "FR_006_010": "Document metadata, current/history/release/security and exact-snapshot selection share bounded finite extraction and tested physical-line identity; current impact and20sourceContext remain required.",
+    "FR_011_013": "Preservation ledger, report-only scope and exact approved fixture retirement keep real Vault/backups/cleanup unchanged; post-review gardening remains an existing T008 gate.",
+    "FR_014_015": "Two immutable R4 source-derived bundles bind current attributed review and verified reference pins; isolated offline, keyboard,375px,print and XSS/private controls passed."
+  },
+  "remaining_existing_task": {
+    "id": "PORTABLE-DOC-T008",
+    "gates": [
+      "Three fresh sequential independent R4 lenses on one frozen target",
+      "Final derived documentation membership refresh after retained review artifacts",
+      "Post-review report-only incremental gardening and final security",
+      "Native Work result and same-app session checkpoint after all gates"
+    ]
+  },
+  "post_eval_documentation_delta": {
+    "paths": [
+      "plan.md",
+      "acceptance-map.json",
+      "s08-view-evidence-r4.json",
+      "s08-convergence-r4.json"
+    ],
+    "meaning": "Report-only current evidence reconciliation and additive generated/view artifacts after exact S08 post-run pin check. No source, executable command, acceptance intent, payload, checksum or verification threshold changed.",
+    "plan_correction": "Replace historical no-native-smoke statement with current transport-only observation and unchanged full-lifecycle/target limits."
+  },
+  "limits": [
+    "No new missing buildable local requirement observed in existing W003 scope; not independent approval or whole-goal completion.",
+    "SC-002 permits explicit unavailable evidence but prohibits counting it PASS; original46cases remain zero finalPASS until completion gates.",
+    "No RHEL7, Python3.6 runtime, full nativeWork/resume, signing, production activation, actual retirement or fleet update is claimed."
+  ]
+}

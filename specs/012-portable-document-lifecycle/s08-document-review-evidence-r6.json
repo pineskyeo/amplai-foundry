@@ -1,0 +1,386 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "review_scope": "Attributed implementation-document review for R3 local candidate; not independent review or human authority",
+  "reviewed_at": "2026-09-11 15:09:09 UTC",
+  "release_id": "kit-2.5.0-candidate-r3",
+  "guide_sources": [
+    {
+      "path": ".ai-team/README.md",
+      "sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "bytes": 13989,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/contracts/README.md",
+      "sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9",
+      "bytes": 1296,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/evidence/README.md",
+      "sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93",
+      "bytes": 416,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/knowledge/README.md",
+      "sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95",
+      "bytes": 2696,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
+      "sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925",
+      "bytes": 11358,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/runtime/INSTALLATION.md",
+      "sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a",
+      "bytes": 5268,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "bytes": 8172,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/runtime/escalation.md",
+      "sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6",
+      "bytes": 1433,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": ".ai-team/verifiers/README.md",
+      "sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189",
+      "bytes": 1358,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "bytes": 7769,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "bytes": 1542,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "README.md",
+      "sha256": "55985195ea642213fd17459c276be90381d1d305d11fd70444d797d45ca13b3a",
+      "bytes": 8470,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/KNOWLEDGE-RULES.md",
+      "sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93",
+      "bytes": 1257,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/LIFECYCLE.md",
+      "sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e",
+      "bytes": 3070,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/MEMORY-DOMAIN-MODEL.md",
+      "sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20",
+      "bytes": 1842,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "sha256": "03859327a1c7bc759300e2568df7e6f11344c0969120e44e2370ae351f440f43",
+      "bytes": 8633,
+      "unchanged_from_r2": false
+    },
+    {
+      "path": "docs/PROJECT-PACK.md",
+      "sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f",
+      "bytes": 2119,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/PROPOSALS.md",
+      "sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
+      "bytes": 3864,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/RELATIONSHIPS.md",
+      "sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829",
+      "bytes": 1161,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a",
+      "bytes": 2955,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
+      "sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574",
+      "bytes": 6446,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/VERSIONING.md",
+      "sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8",
+      "bytes": 2330,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "docs/VISION.md",
+      "sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e",
+      "bytes": 941,
+      "unchanged_from_r2": true
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "sha256": "c05f53fcd0ee3def7737e0991a06f0f5dd75f56d1c48000a2668a6a48882bd53",
+      "bytes": 7887,
+      "unchanged_from_r2": false
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "sha256": "fabcedecd840965ecca21a8bf455ddd61b9acebe464875b825c9556ea5dd5f47",
+      "bytes": 11496,
+      "unchanged_from_r2": false
+    }
+  ],
+  "source_checks": [
+    {
+      "path": "scripts/amplai_docs.py",
+      "sha256": "dd8b1ac42632136db71da10646267a71187650949ed1b8664ccb4b4196e362d9",
+      "bytes": 189644
+    },
+    {
+      "path": "scripts/loopctl.py",
+      "sha256": "2bd5759626428efb71c03642f184c62a76ef3d0b1e9f840eaac28c067e404750",
+      "bytes": 53104
+    },
+    {
+      "path": "scripts/loopv2.py",
+      "sha256": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+      "bytes": 75668
+    },
+    {
+      "path": "scripts/amplai.py",
+      "sha256": "3bb752431a87e9147d0d345597e10a83a14cdba611ba6e944276a59daf01a135",
+      "bytes": 29229
+    },
+    {
+      "path": "scripts/amplai_runtime.py",
+      "sha256": "02d111cc833da80c7a56d276702f091bfb1f04b18d1058004079cf63b120989b",
+      "bytes": 121061
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
+      "sha256": "185ba535b22b8a73d9cba5eff643ef516fef7c2ad2449ba09c6807d0ce6788c5",
+      "bytes": 13284
+    },
+    {
+      "path": ".ai-team/policy/documentation.json",
+      "sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+      "bytes": 14178
+    },
+    {
+      "path": "src/amplai_foundry/domain/enums.py",
+      "sha256": "5c91bbbd49a08d15705bac17e71d7b20b971a9239ea533c9292b10969047cc8b",
+      "bytes": 941
+    },
+    {
+      "path": "src/amplai_foundry/domain/models.py",
+      "sha256": "2efd52db3fa760a78773a31bc74b36cc3ea0b28dc62e5e27013bbedc04823d44",
+      "bytes": 3507
+    },
+    {
+      "path": "src/amplai_foundry/lint/rules/links.py",
+      "sha256": "0efb2aa11d4216f446f76bb7583c912f99f8b6a243e23e6b9b2084930da6a9d7",
+      "bytes": 5031
+    },
+    {
+      "path": "src/amplai_foundry/lint/rules/identifiers.py",
+      "sha256": "6ec380429a8511f614751f303322757af7e148215896832729ef4fe7f922d3d0",
+      "bytes": 2118
+    },
+    {
+      "path": "src/amplai_foundry/repositories/base.py",
+      "sha256": "4ba41d18233b48149442a757bc553fddb09153568fc1ea3c2eb98539fec767e6",
+      "bytes": 980
+    },
+    {
+      "path": "src/amplai_foundry/proposals/paths.py",
+      "sha256": "73dcfee8776a6e5c2d7f6a192bed741e570930ec153052b6a0ab6d061230e01f",
+      "bytes": 1267
+    },
+    {
+      "path": "src/amplai_foundry/projects/service.py",
+      "sha256": "256e2dbbd62b012efe1335d947e2b80131d1d624a69dc4f5590a375e5f29049d",
+      "bytes": 13640
+    },
+    {
+      "path": "src/amplai_foundry/cli.py",
+      "sha256": "e158579c96712a9231878f29b6ef71f3a66ef0f7cd2695dcf3ae0c6c6a502d5c",
+      "bytes": 49046
+    },
+    {
+      "path": "tests/ai/test_document_governance.py",
+      "sha256": "ea1bd8a6842ba4b0d87c31f456d1806b253dc831fb0a823cdb3fef4d24ba0582",
+      "bytes": 10457
+    },
+    {
+      "path": "tests/ai/test_document_lifecycle.py",
+      "sha256": "c65c30b9b71d3d7ac338c90cf8e311e0fd2de70f7d5db72550565df241f42ebd",
+      "bytes": 30649
+    },
+    {
+      "path": "tests/ai/test_document_review.py",
+      "sha256": "e559bf12c19eb242d522dd5d9fe25c13c318fa841d0c1fce013351b18e4bf5c6",
+      "bytes": 43249
+    },
+    {
+      "path": "tests/ai/test_document_html.py",
+      "sha256": "b8f55bdf8505cdba889bc816150a99fbe0a3173b6ea149bd0ef7391d52d3e117",
+      "bytes": 28028
+    },
+    {
+      "path": "tests/ai/test_portable_baseline.py",
+      "sha256": "bd93030f4d703c4bf76a1a5796ceb33dace09d72570632795ecc1e1e88bc9c95",
+      "bytes": 36241
+    },
+    {
+      "path": "plans/amplai-master-roadmap.yaml",
+      "sha256": "fc9a5675be540f099822d994c26d62b65d801fabe443fd5d19cd08c6e7d3c255",
+      "bytes": 3301
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s08-r2-reference-profile-diagnosis.json",
+      "sha256": "8df8b48d2ba8e3f254d0323453f194157c1d0df4e37b6053ad0c1b7188fa97df",
+      "bytes": 1488
+    },
+    {
+      "path": "tests/ai/test_document_references.py",
+      "sha256": "d332ed37716674bd0e9e3a0471a31a84635800b4886a50ebaa3da789a85aa979",
+      "bytes": 15339
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/contracts/portable-operations.md",
+      "sha256": "c45a4b8cb39934b773ed13bc0afe573cb83a36f4f1f8c6da27bd7e6e036398f7",
+      "bytes": 6830
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-evidence.json",
+      "sha256": "00d65d421725c2912f2ace15a61144262f704ce3027c54fdd55eb2d5dba2022f",
+      "bytes": 2954
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-evidence.json",
+      "sha256": "30738d14e10b8beadbba27d7548a06a2b8868e00e0be0b13275fd07d01ea8be5",
+      "bytes": 3027
+    }
+  ],
+  "local_verification": [
+    {
+      "path": "specs/012-portable-document-lifecycle/s12-evidence.json",
+      "sha256": "00d65d421725c2912f2ace15a61144262f704ce3027c54fdd55eb2d5dba2022f",
+      "bytes": 2954
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s13-evidence.json",
+      "sha256": "30738d14e10b8beadbba27d7548a06a2b8868e00e0be0b13275fd07d01ea8be5",
+      "bytes": 3027
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/revalidation-r3.json",
+      "sha256": "3acbe0da9a8612d324e5ac3065299d02716963ff932fcfff884ea52a411bda91",
+      "bytes": 2274
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s09-revalidation-r3.json",
+      "sha256": "8595ce8e825b1e3ac0e467e912099d7c63e7f616ab598d76aafa203dfd3c77dd",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s10-revalidation-r3.json",
+      "sha256": "a74f14e37a288f58c69a1e5e667e7489b973173767fdd22f74b83bca20e31fd7",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s11-revalidation-r3.json",
+      "sha256": "de9c77d65caecf0ba7cfbcaf9d0f11d287c65bf066d4b749f3e12380f16247de",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s01-revalidation-r3.json",
+      "sha256": "489107d93ae15e49b1c0a43d84aee549863145f3d485e4f64a61828359f97eb0",
+      "bytes": 1060
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s02-revalidation-r3.json",
+      "sha256": "c6054406f70dd0d15895047d8c470aab1daa0345e9d80522baac887aca24f308",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s03-revalidation-r3.json",
+      "sha256": "5243465e67645bf07a2cdc6af2cecd4442b417f5e3949805a04568be299d062d",
+      "bytes": 1060
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s04-revalidation-r3.json",
+      "sha256": "9f7a0ddfb0fcf8788f43d1feee17c970ec7f7f3d034d605d58adb6cfa090bdec",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s05-revalidation-r3.json",
+      "sha256": "e5bf74b697d6f1012eef67e48e88bc6a1203a26eab480327191a36067fe8ebbb",
+      "bytes": 1061
+    },
+    {
+      "path": "specs/012-portable-document-lifecycle/s06-revalidation-r3.json",
+      "sha256": "b233c614d01fcfc5041abd53f4efca2ad6205888fae27dab8e4cb08aa07c579d",
+      "bytes": 1060
+    }
+  ],
+  "semantic_snapshot": "92fd8514805893ae39bc8629cdad53af2b3797678232506dbf53150f505e8349",
+  "reviewed_changes": [
+    {
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "reason": "Explained bounded full-document reference syntax, literal URI path identity, pre-output denial, retained raw-HTML escaping, restrictive-umask mode/owner preservation and concurrent identity/metadata rejection. Local POSIX evidence is not ACL/SELinux/xattr or RHEL7 qualification."
+    },
+    {
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "Added concise Korean guidance for multiline/nested reference coverage, single URI interpretation, ambiguous-syntax rejection and atomic POSIX publication. Existing Store/trust/installation/deployment approval remains unchanged."
+    },
+    {
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "Added the two reproduced R2 repair behaviors to the existing local2.5.0 candidate. Older release entries are byte-preserved; no publication or fleet activation claimed."
+    }
+  ],
+  "reference_review": {
+    "count": 24,
+    "scope": "Same24optional examples/external Store locators/archived references, refreshed exact lines. All still optional and disposition-eligible; no required waiver."
+  },
+  "preservation": {
+    "r2_source_archive_sha256": "4a82c6b7e328c2ce05a80621e058e5b386c5e592ac15ecd0aba7986963a7e815",
+    "old_html": "R1 and R2 bundles retained unchanged",
+    "archived_guide_metadata": "history-2026-08-03 unchanged",
+    "active_guide_metadata": "24active owners refer to the new local R3 candidate; owner/security/authority and original body meanings preserved",
+    "review_history": "Append attributed current review; no pruning"
+  },
+  "limits": [
+    "S12/S13 and prior slices are local repair evidence; current full S08 follows guide review",
+    "R2 CHANGES_REQUIRED retained until three fresh sequential independent R3 lenses",
+    "No actual RHEL7/Python3.6/full-native Work/fleet/retirement/trust or production activation"
+  ],
+  "integration_correction": "s08-r3-release-selector-correction.json",
+  "supersedes_current_review": "s08-document-review-evidence-r5.json remains retained. Aligning the current candidate selector invalidated those exact-snapshot reviews; this r6batch binds the corrected policy."
+}

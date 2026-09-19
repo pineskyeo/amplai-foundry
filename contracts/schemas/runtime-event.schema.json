@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.amplai.invalid/v3/runtime-event.schema.json",
+  "title": "AMPLAI V3 runtime-event",
+  "description": "Normative design contract. Structural validation does not establish authorization or runtime correctness.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "event_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "scope": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/scope"
+    },
+    "aggregate_type": {
+      "enum": [
+        "goal",
+        "work",
+        "run",
+        "effect",
+        "grant",
+        "release"
+      ]
+    },
+    "aggregate_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "aggregate_seq": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "producer": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/actor"
+    },
+    "causal_command_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "correlation_id": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+    },
+    "occurred_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "ingested_at": {
+      "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/utc"
+    },
+    "lease_context": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "lease_id": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+            },
+            "fencing_token": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "contract_ref": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+            },
+            "graph_ref": {
+              "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+            }
+          },
+          "required": [
+            "lease_id",
+            "fencing_token",
+            "contract_ref",
+            "graph_ref"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "event_type": {
+      "enum": [
+        "run.started",
+        "run.progress",
+        "run.usage",
+        "artifact.produced",
+        "tool.pending",
+        "tool.result",
+        "run.stopped",
+        "contract.activated",
+        "work.state_changed",
+        "goal.verified",
+        "grant.revoked",
+        "release.promoted"
+      ]
+    },
+    "payload": {}
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "scope",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_seq",
+    "producer",
+    "causal_command_id",
+    "correlation_id",
+    "occurred_at",
+    "ingested_at",
+    "lease_context",
+    "event_type",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "run.started"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "native_session_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "native_session_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "run.progress"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              }
+            },
+            "required": [
+              "summary"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "run.usage"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/usage"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "artifact.produced"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "artifact": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+              },
+              "output_name": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/id"
+              }
+            },
+            "required": [
+              "artifact",
+              "output_name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "tool.pending"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "effect_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "provider_call_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "effect_ref",
+              "provider_call_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "tool.result"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "receipt_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "provider_call_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "receipt_ref",
+              "provider_call_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "run.stopped"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "enum": [
+                  "completed_output",
+                  "error",
+                  "cancelled"
+                ]
+              },
+              "output_refs": {
+                "type": "array",
+                "items": {
+                  "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/artifact"
+                },
+                "minItems": 0,
+                "maxItems": 256
+              }
+            },
+            "required": [
+              "reason",
+              "output_refs"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "contract.activated"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "contract_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "graph_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              }
+            },
+            "required": [
+              "contract_ref",
+              "graph_ref"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "work.state_changed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "from_state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "to_state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "from_state",
+              "to_state",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "goal.verified"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "contract_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "verdict_refs": {
+                "type": "array",
+                "items": {
+                  "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+                },
+                "minItems": 1,
+                "maxItems": 256
+              }
+            },
+            "required": [
+              "contract_ref",
+              "verdict_refs"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "grant.revoked"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "grant_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "generation": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "grant_ref",
+              "generation"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "release.promoted"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "previous_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              },
+              "active_ref": {
+                "$ref": "https://schemas.amplai.invalid/v3/common.schema.json#/$defs/ref"
+              }
+            },
+            "required": [
+              "previous_ref",
+              "active_ref"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

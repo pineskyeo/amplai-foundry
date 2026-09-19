@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "work_id": "CR-SYNAPSE-APP-SPLIT-W003",
+  "slice": "S09",
+  "task": "PORTABLE-DOC-T009",
+  "status": "LOCAL_PASS_PENDING_INTEGRATED_REVIEW",
+  "recorded_at": "2026-09-11 11:43:12 UTC",
+  "review_finding": "review-r1.json#W003-R1-01",
+  "canonical": {
+    "command": "bash scripts/eval.sh --tasks specs/012-portable-document-lifecycle/tasks.md --slice S09",
+    "exit_code": 0,
+    "log": "s09-canonical-eval.log",
+    "tasks": "s09-eval-input-tasks.md",
+    "tests": 121,
+    "verifier_checks": 5,
+    "seal": "PASS"
+  },
+  "red": {
+    "command": "Targeted baseline mandatory equality and self-consistent omitted active Decision",
+    "exit_code": 1,
+    "failures": 2,
+    "evidence": "s09-red.log"
+  },
+  "additional_red": {
+    "reason": "Do not let explicit control roles override newly restrictive source metadata or retired instructions",
+    "exit_code": 1,
+    "failures": 2,
+    "evidence": "s09-control-metadata-red.log"
+  },
+  "repair_iteration_notes": [
+    "Initial matrix had test fixture errors: DOC-CANARY Work ID matched too-broad assertion; established LOOPCTL input-error exit is 2, validation mismatch exit 1. Assertions corrected without relaxing behavior.",
+    "First canonical evaluation failed only ruff-format (signature de628b917159); canonical root/payload formatted together and all checks rerun.",
+    "A subsequent boundary probe reproduced metadata security/retirement bypass; governing_source now intersects explicit metadata and policy constraints."
+  ],
+  "observed": {
+    "installed_canary": "Real sealed test_s02_real_installed_baseline_runs_the_complete_controller_canary consumes exact three-source mandatory assertion",
+    "foundry_context": "Actual Context build selected all eleven applicable indexed active Decisions plus governing rules and active typed claims",
+    "governing_authority": "Exact classified policy paths; release-independent only for governing role, with source/index/security/lifecycle constraints preserved",
+    "history": "Historical Decision ledger never appears wholesale in required_knowledge; only applicable active index records and exact typed claim references",
+    "completeness": "Missing/forged/deleted Context records, insufficient relevance limit and unavailable mandatory source cannot validate",
+    "parity": "Root and canonical baseline engine/runtime exact byte equality"
+  },
+  "source_hashes": {
+    "scripts/amplai_docs.py": "ebf58162f345b02f272e42ea8a5c9b3ad32266673cece5f399875d441509be7a",
+    "scripts/loopv2.py": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+    ".ai-team/policy/documentation.json": "e10b231142f8aeb4319521cdac9300e8d918d2b93e2536302bdfedc072a6cace",
+    "tests/ai/test_document_governance.py": "ea1bd8a6842ba4b0d87c31f456d1806b253dc831fb0a823cdb3fef4d24ba0582",
+    "tests/ai/test_portable_baseline.py": "bd93030f4d703c4bf76a1a5796ceb33dace09d72570632795ecc1e1e88bc9c95",
+    "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py": "ebf58162f345b02f272e42ea8a5c9b3ad32266673cece5f399875d441509be7a",
+    "tools/amplai-loop-kit/baseline/payload/scripts/loopv2.py": "62a99882b5c7592fbff95f8c0e826ef498fd86e3ab7975bf87eff9c186176243",
+    "tools/amplai-loop-kit/baseline/payload/.ai-team/policy/documentation.json": "8e112727eec7143c5fd42d88319bf491f164b1257e6aa4b41730d82d2d27852c",
+    "tools/amplai-loop-kit/CHECKSUMS.sha256": "12b9f795cd4dd34393492dd81f78944ad6fc0d6703b99a66789c708a5e80496b",
+    "specs/012-portable-document-lifecycle/tasks.md": "055a828ca9b80e0b922d9d391ec503e2d45c9eb38dc910f6856d9c3a3da35689"
+  },
+  "limits": [
+    "No full V2 or new independent review yet",
+    "Other R1 findings remain open; T001-T006 need revalidation; W003 not complete",
+    "No Python3.6/RHEL7/full native Work/production result"
+  ],
+  "authority": "Existing E021 only"
+}

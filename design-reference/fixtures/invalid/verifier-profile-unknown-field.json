@@ -1,0 +1,19 @@
+{
+  "schema_version": "3.0.0",
+  "profile_id": "fixture-profile-id",
+  "version": "fixture-version",
+  "kind": "schema",
+  "tool_refs": [],
+  "allowed_command_ids": [],
+  "required_capabilities": [],
+  "environment_ref": {
+    "id": "fixture-ref",
+    "revision": 1,
+    "digest": "sha256:bc87b130fe6e2fb0156bdda50d7d14562db83b58199490694266def47b41773d"
+  },
+  "rubric_ref": null,
+  "golden_refs": [],
+  "protected": false,
+  "owner_subject_id": "fixture-owner-subject-id",
+  "unexpected_elevated_permission": true
+}
