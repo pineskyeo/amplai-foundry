@@ -2765,7 +2765,10 @@ def test_the_e2e_marker_is_registered() -> None:
 # **정확 일치로 본다.** 부분 문자열로 보면 `not slack_e2ee` 같은 오타가 이 검사를 통과한다
 # (regression lens M21). 그 오타는 아무것도 deselect 하지 않는다.
 def test_the_default_options_deselect_the_marker() -> None:
-    assert '-m "not slack_e2e"' in str(_pytest_ini()["addopts"])
+    # The marker expression may carry other default deselections (e.g. `visual`), so this
+    # asserts that slack_e2e is deselected, not the exact spelling of the whole option.
+    addopts = str(_pytest_ini()["addopts"])
+    assert "-m " in addopts and "not slack_e2e" in addopts
 
 
 # W2-pytest-import-mode — tests/ 를 sys.path 에 넣는 것을 import mode 의 부수효과가 아니라
