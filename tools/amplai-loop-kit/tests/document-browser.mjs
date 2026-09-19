@@ -191,6 +191,8 @@ try {
     if (!attempt.exited) { attempt.child.kill("SIGKILL"); await attempt.exit; }
     // Only this process's newly-created disposable browser profiles are removed.
     assert.ok(attempt.profile.startsWith(path.join(os.tmpdir(), "amplai-document-browser-")));
-    await fs.rm(attempt.profile, { recursive: true, force: true });
+    // Chrome may still flush profile files for a moment after exit; retry ENOTEMPTY/EBUSY
+    // instead of failing a passed run on cleanup (CI runs 35419947357/35436783874/35438254976).
+    await fs.rm(attempt.profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 }
