@@ -1,0 +1,18 @@
+{
+  "probe_ok": {
+    "health": {
+      "healthy": true,
+      "version": "1.17.13"
+    },
+    "transport": "http_poll",
+    "native_steering": false,
+    "native_delegation": false,
+    "health_probe_ok": true
+  },
+  "version_pin": "OPENCODE_VERSION",
+  "auth": "PROVIDER_HTTP",
+  "empty_password": "OPENCODE_AUTH",
+  "child_terminated": true,
+  "probe_after_kill": "Hold",
+  "note": "health_probe_ok mirrors OpenCodeDriver.probe()['qualified'] (expected_version pinned); it is not the QualificationRunner verdict, which is 'fail' because model-turn probes were not run"
+}

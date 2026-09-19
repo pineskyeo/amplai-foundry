@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "kind": "driver_qualification_real_binaries",
+  "checked_at": "2026-09-19T12:36:10Z",
+  "method": "QualificationRunner.run (src/amplai_foundry/agent_drivers/qualification.py) with the 9 MANDATORY probes; every outcome carries a CAS-admitted artifact; anything not executable on this host is inconclusive, never pass; status is 'fail' unless all nine pass",
+  "cost": "1 successful claude -p turn (2 in / 4 out tokens, claude-sonnet-5), 1 bare claude turn (not logged in), 3 codex exec attempts (all 400 model-not-supported), 0 opencode model turns",
+  "reports": {
+    "claude-cli": {
+      "status": "fail",
+      "driver_version": "2.1.267",
+      "native_delegation_qualified": false,
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "fail",
+          "reason": "CliDriver runs `claude --bare`, which ignores the claude.ai login; ANTHROPIC_API_KEY is unset so the bare run answered 'Not logged in'",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        }
+      ]
+    },
+    "codex-cli": {
+      "status": "fail",
+      "driver_version": "0.154.0",
+      "native_delegation_qualified": false,
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "inconclusive",
+          "reason": "ChatGPT-account auth; not exercised inside a sandbox",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "fail",
+          "reason": "every pinned model (gpt-5.3-codex-spark default, gpt-5-codex, gpt-5.3-codex) returned 400 'not supported when using Codex with a ChatGPT account'; no successful turn, usage unknown",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "inconclusive",
+          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "artifacts": 1
+        }
+      ]
+    },
+    "opencode-http": {
+      "status": "fail",
+      "driver_version": "1.17.13",
+      "native_delegation_qualified": false,
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "inconclusive",
+          "reason": "no model turn executed (no provider credentials configured for this probe)",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "inconclusive",
+          "reason": "no model turn executed",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "inconclusive",
+          "reason": "server workspace boundary probe not run",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "inconclusive",
+          "reason": "no egress control on this host",
+          "artifacts": 1
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "pass",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "inconclusive",
+          "reason": "no model turn executed",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "inconclusive",
+          "reason": "not exercised",
+          "artifacts": 1
+        }
+      ]
+    }
+  },
+  "findings": [
+    "claude-cli: real stream-json output of Claude Code 2.1.267 (system hook_started/hook_response, system init, assistant, rate_limit_event, result) is fully accepted by EventNormalizer('claude'); exact session binding and measured usage work on real output.",
+    "claude-cli: CliDriver invokes `claude --bare`, which bypasses the claude.ai login; without ANTHROPIC_API_KEY the driver cannot obtain a turn. Account qualification needs an API key or a driver decision to allow login-mode; recorded, not patched.",
+    "codex-cli: JSONL protocol conformance passes on real 0.154.0 output (thread.started, item.completed, turn.started, error, turn.failed) and failure is flagged; the ChatGPT-account plan rejects every codex model tried, so no successful turn.",
+    "opencode-http: real server 1.17.13 answers global/health; the driver enforces the version pin (OPENCODE_VERSION), rejects an empty password (OPENCODE_AUTH) and a wrong one (PROVIDER_HTTP); the child process exits on SIGTERM and probe fails afterwards. No model turn was run.",
+    "all three: cancel_tree / filesystem / egress / crash probes need a container runtime that this host lacks; they stay inconclusive by construction."
+  ],
+  "artifacts_dir": "specs/015-external-qualification/artifacts"
+}

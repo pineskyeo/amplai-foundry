@@ -61,7 +61,32 @@ def test_design_check_is_never_a_runtime_pass_and_status_is_rc_not_final():
         assert req["design_status"] == "designed_not_implemented", (
             "design status is carried, not upgraded"
         )
-    assert len(ledger["remaining_blockers"]["external_qualification_pending"]) == 9
+    status = json.loads(
+        (
+            REPO / "specs" / "015-external-qualification" / "external-qualification-status.json"
+        ).read_text()
+    )
+    # R801: the status file must name exactly the DEV-03 items, not merely nine of something.
+    dev03 = json.loads(
+        (REPO / "specs" / "013-amplai-v3" / "dev03-delivery-evidence.json").read_text()
+    )["external_qualification_pending"]
+    assert {x["item"] for x in status["items"]} == set(dev03)
+    assert len(status["items"]) == 9, "every DEV-03 external item is accounted for"
+    # R702/R802: evidence must support the claimed status; checked before the ledger
+    # comparison so a stale ledger cannot shadow these assertions.
+    for x in status["items"]:
+        evidence_path = REPO / x["evidence"]
+        assert evidence_path.is_file(), x["item"]
+        ev = json.loads(evidence_path.read_text())
+        if x["status"] == "resolved":
+            assert ev.get("outcome") in {"pass", "pass_with_known_failures"}, x["item"]
+        if evidence_path.name == "unavailable.json":
+            assert x["status"] in {"unavailable", "not_a_local_check"}, x["item"]
+            assert any(e["item"] == x["item"] for e in ev["items"]), x["item"]
+        if x["status"] == "partial":
+            assert evidence_path.name != "unavailable.json", x["item"]
+    unresolved = [x for x in status["items"] if x["status"] != "resolved"]
+    assert len(ledger["remaining_blockers"]["external_qualification_pending"]) == len(unresolved)
 
 
 def test_shipped_ledger_matches_current_tree_and_junit():

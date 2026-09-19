@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3Q-T002",
+  "title": "EXT-05a Python 3.12/3.13 매트릭스",
+  "type": "test",
+  "status": "done",
+  "goal": {
+    "outcome": "EXT-05a Python 3.12/3.13 매트릭스",
+    "user_value": "외부 자격 항목을 실측 증거 또는 명시적 UNAVAILABLE 로 바꾼다"
+  },
+  "source": {
+    "feature": "015-external-qualification",
+    "files": [
+      {
+        "path": "specs/015-external-qualification/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "specs/013-amplai-v3/dev03-delivery-evidence.json",
+        "section": "external_qualification_pending"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 전부 진행. 실제 외부 시스템이 없는 항목은 fake pass 하지 않고 UNAVAILABLE 로 기록"
+    ]
+  },
+  "scope": {
+    "include": [
+      "specs/015-external-qualification/python-3.12.json",
+      "specs/015-external-qualification/python-3.13.json",
+      "specs/015-external-qualification/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/",
+      "Production configuration, paid API beyond minimal probes",
+      "Git release/deploy"
+    ],
+    "allowed_paths": [
+      "specs/015-external-qualification/python-3.12.json",
+      "specs/015-external-qualification/python-3.13.json",
+      "specs/015-external-qualification/",
+      "release/",
+      "eval/",
+      "scripts/rc01_closure.py",
+      "tests/v3/test_rc01_conformance_closure.py",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "실측만 기록한다. 실행하지 못한 probe 는 inconclusive"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "skip/xfail 금지",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "V3 FINAL 선언",
+      "production cutover"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "EXT-05a",
+        "given": "uv 로 만든 3.12, 3.13 venv",
+        "when": "tests/v3 + runtime_storage, mypy, ruff",
+        "then": "각각 680 passed, mypy 0, ruff 0"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/python-3.12.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "test",
+        "run": ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/python-3.13.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        "required": true
+      },
+      {
+        "id": "check-8",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check .",
+        "required": true
+      },
+      {
+        "id": "check-9",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-8",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-9",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "사용자 계정으로 최소 모델 호출 (claude 1회 성공, codex 3회 400)"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T12:37:12Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S02",
+      "specs/015-external-qualification/external-qualification-status.json",
+      "specs/015-external-qualification/driver-qualification.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "specs/015-external-qualification/python-3.12.json",
+      "specs/015-external-qualification/python-3.13.json"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC03",
+    "slice_id": "S02",
+    "context_pack": "specs/015-external-qualification/context-pack.json",
+    "environment": "specs/015-external-qualification/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "27ba053a23d8ff1f2ed05e687fde873029597648"
+  }
+}

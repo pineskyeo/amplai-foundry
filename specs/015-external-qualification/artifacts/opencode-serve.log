@@ -1,0 +1,4 @@
+timestamp=2026-09-19T12:29:32.357Z level=INFO run=bfb3c947 message=loading path=/Users/pinesky/.config/opencode/config.json
+timestamp=2026-09-19T12:29:32.359Z level=INFO run=bfb3c947 message=loading path=/Users/pinesky/.config/opencode/opencode.json
+timestamp=2026-09-19T12:29:32.360Z level=INFO run=bfb3c947 message=loading path=/Users/pinesky/.config/opencode/opencode.jsonc
+opencode server listening on http://127.0.0.1:47832

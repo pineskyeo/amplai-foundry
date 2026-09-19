@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "kind": "ci_platform_matrix",
+  "checked_at": "2026-09-19T12:30:36Z",
+  "github_actions": {
+    "runs_failed": [
+      "35419947357",
+      "35436783874",
+      "35438254976"
+    ],
+    "cause": "tools/amplai-loop-kit/tests/document-browser.mjs cleanup: fs.rm ENOTEMPTY on the Chrome profile dir after a PASS verdict (Linux runner, Chrome/152)",
+    "fix": "fs.rm(..., maxRetries: 10, retryDelay: 200); kit CHECKSUMS resealed (seal.py); local reproduction tests/ai/test_document_html.py::test_isolated_browser_offline_noscript_keyboard_mobile_and_print 1 passed"
+  },
+  "local_matrix": {
+    "python-3.11": "repo .venv: 680 passed (default markers), 682 with visual",
+    "python-3.12": "specs/015-external-qualification/python-3.12.json",
+    "python-3.13": "specs/015-external-qualification/python-3.13.json",
+    "installed_package": "specs/015-external-qualification/installed-package.json"
+  },
+  "not_covered": [
+    "Linux/Windows local runs (CI covers ubuntu 3.11 only)",
+    "migration/upgrade/rollback drills beyond the V3 test tier (T-105 restore epoch, cutover rollback tests) were not re-run against a real prior release"
+  ]
+}

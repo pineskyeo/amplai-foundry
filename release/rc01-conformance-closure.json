@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0.0",
   "kind": "v3_conformance_closure",
-  "implementation_revision": "219e2cef2e760174ee572fdc31bce16bda901bb1",
+  "implementation_revision": "98bd9ba9e6d1ec4e2adf72fb64b3f4841376f455",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],
@@ -1852,15 +1852,14 @@
   ],
   "remaining_blockers": {
     "external_qualification_pending": [
-      "Actual Claude/Codex account + exact binary image/model version qualification",
-      "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
-      "Real docker/podman containment, egress, resource and credential isolation",
-      "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
-      "Full 112 normative scenario closure, full legacy regression, migration/upgrade/rollback and platform matrix at RC/FINAL",
-      "Clean dependency resolution: installed package tests explicitly share preinstalled dependencies",
-      "Physical holdout service isolation beyond same-host local ACL, independent production approvers and trusted remote executor qualification",
-      "Actual OTLP exporter/collector integration, bounded service delivery under production load",
-      "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement"
+      "Actual Claude/Codex account + exact binary image/model version qualification [partial: claude-cli: exact_version/exact_session/ordered_events/budget_accounting pass on real 2.1.267 output; secret_isolation fail (--bare needs ANTHROPIC_API_KEY); codex-cli: protocol pass, account plan rejects all codex models; container probes inconclusive]",
+      "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary [partial: opencode 1.17.13 server: health/version pin/auth gates and child termination pass; no model turn, workspace boundary probe not run]",
+      "Real docker/podman containment, egress, resource and credential isolation [unavailable: no docker/podman/colima on this host]",
+      "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified [unavailable: OPENAI_API_KEY unset; ResponsesDriver verified with MockTransport only]",
+      "Full 112 normative scenario closure, full legacy regression, migration/upgrade/rollback and platform matrix at RC/FINAL [partial: 112/112 catalog closure and full legacy regression (3174 passed) done locally; Python 3.11/3.12/3.13 matrix pass on macOS; Linux CI blocked by a kit fixture cleanup race fixed in this Work (awaiting CI); migration/upgrade/rollback drills against a real prior release not run]",
+      "Physical holdout service isolation beyond same-host local ACL, independent production approvers and trusted remote executor qualification [unavailable: single workstation; no second host or independent approver]",
+      "Actual OTLP exporter/collector integration, bounded service delivery under production load [unavailable: no OTLP collector; OTEL_EXPORTER_OTLP_ENDPOINT unset]",
+      "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement [not_a_local_check: needs a real task population; analysis.py enforces minimum_tasks and inconclusive verdicts]"
     ],
     "tests_not_run": [],
     "note": "not_run means no executed local evidence names this catalog id; a mention in prose or a design fixture does not count"

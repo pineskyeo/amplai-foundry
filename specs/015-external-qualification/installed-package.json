@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "item": "installed_package_dependency_resolution",
+  "wheel": {
+    "file": "amplai_foundry-3.0.0.dev3-py3-none-any.whl",
+    "sha256": "1a6707f4f3d3a108edcb16d1cf36d2ad544c91949e27f9f1a408e404e6a2f966"
+  },
+  "python": "3.11.15",
+  "resolution": "ok",
+  "dependencies": [
+    "annotated-doc==0.0.5",
+    "annotated-types==0.8.0",
+    "anyio==4.15.1",
+    "attrs==26.1.0",
+    "certifi==2026.7.22",
+    "cffi==2.1.1",
+    "click==8.5.0",
+    "cryptography==46.0.7",
+    "fastapi==0.141.1",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "idna==3.20",
+    "iniconfig==2.3.0",
+    "jsonschema==4.26.0",
+    "jsonschema-specifications==2025.9.1",
+    "librt==0.15.0",
+    "markdown-it-py==4.2.0",
+    "mdurl==0.1.2",
+    "mypy==1.20.2",
+    "mypy-extensions==1.1.0",
+    "packaging==26.3",
+    "pathspec==1.1.1",
+    "pluggy==1.6.0",
+    "pycparser==3.0",
+    "pydantic==2.13.5",
+    "pydantic-core==2.46.5",
+    "pygments==2.21.0",
+    "pytest==9.1.1",
+    "pyyaml==6.0.3",
+    "referencing==0.37.0",
+    "rich==15.0.0",
+    "rpds-py==2026.6.3",
+    "ruff==0.15.22",
+    "shellingham==1.5.4",
+    "starlette==1.6.0",
+    "typer==0.27.2",
+    "types-jsonschema==4.26.0.20260518",
+    "types-pyyaml==6.0.12.20260906",
+    "typing-extensions==4.16.0",
+    "typing-inspection==0.4.4",
+    "uvicorn==0.53.0"
+  ],
+  "import_path": "/Users/pinesky/.claude/jobs/f783bc6b/tmp/pkg-qual/venv/lib/python3.11/site-packages/amplai_foundry/__init__.py",
+  "tests": {
+    "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 <venv>/bin/python -m pytest -p no:cacheprovider tests/v3 tests/runtime_storage",
+    "summary": "4 failed, 676 passed, 2 deselected, 2 warnings in 62.73s (0:01:02)"
+  },
+  "non_package_files_needed": [
+    "contracts/",
+    "design-reference/",
+    "eval/",
+    "release/",
+    "deployment/",
+    "packs/",
+    "tools/",
+    "migration/",
+    ".agents/",
+    "specs/012-portable-document-lifecycle/",
+    "specs/013-amplai-v3/",
+    "src/amplai_foundry/governance/legacy_gates.py"
+  ],
+  "outcome": "pass",
+  "known_failures": [
+    {
+      "test": "tests/v3/test_rc01_host_surface.py::test_exactly_two_public_entries_in_this_repository",
+      "reason": "Hold: Claude mirror must be an exact symlink mirror of .agents/skills; run dir has .agents/ but no .claude/skills mirror (not copied — out of scope for package/dependency check)."
+    },
+    {
+      "test": "tests/v3/test_rc01_legacy_retirement.py::test_t092_legacy_gates_with_live_import_chain_is_blocked_not_deleted",
+      "reason": "Repo-wide static-reference scan over src/ tree; only legacy_gates.py was copied (copying full src/ would risk pytest importing amplai_foundry from the copied tree instead of the venv site-packages install, defeating the isolation check)."
+    },
+    {
+      "test": "tests/v3/test_rc01_legacy_retirement.py::test_dynamic_entry_points_count_as_live_refs",
+      "reason": "Same cause: retirement planner needs the full src/ tree to classify dynamic_entry_refs; only legacy_gates.py present."
+    },
+    {
+      "test": "tests/v3/test_rc01_legacy_retirement.py::test_shipped_proposal_matches_current_tree_and_design_dispositions",
+      "reason": "Digest of src/amplai_foundry/governance/legacy_migration.py compared against shipped proposal; that file was not copied (same full-src concern as above)."
+    }
+  ],
+  "limits": [
+    "macOS arm64 only; Linux/Windows not exercised",
+    "Only tests/v3 and tests/runtime_storage were run (default markers); full suite not run",
+    "4 repo-hygiene/legacy-retirement tests fail in the isolated run dir because they audit the full src/ tree and a .claude mirror directory that were deliberately not copied to preserve installed-package import isolation; these failures are about repo-tree completeness, not about the wheel's dependency resolution or installability",
+    "Dependency resolution and import-path checks (the qualified item) both succeeded"
+  ],
+  "checked_at": "2026-09-19T12:25:30Z"
+}

@@ -2,11 +2,11 @@
   "schema_version": "1.0",
   "work_id": "AMPLAI-V3-RC01",
   "feature": "specs/013-amplai-v3",
-  "reviewed_at": "2026-09-19 05:24:01 UTC",
+  "reviewed_at": "2026-09-19 12:39:37 UTC",
   "review_scope": "Attributed implementation-document review after S00-S20 slice PASS; not independent review, human gate or publication.",
-  "implementation_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+  "implementation_revision": "a231b0ff43d3329d00930746302f394e0e0b0e21",
   "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
-  "semantic_snapshot": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
+  "semantic_snapshot": "b11d7867fca0fe1c35f5006dc54beeaa4f5e26397d3533fd85c555f09cd1f9cb",
   "guide_sources": [
     {
       "path": ".ai-team/README.md",
@@ -130,8 +130,8 @@
     },
     {
       "path": "release/README.md",
-      "sha256": "334413d74bdd0c919afc26ff3606c39375fd256f252aa7e7c6f701bd6a4f5dc2",
-      "bytes": 1344
+      "sha256": "4cd3c329ff3f8a4865095a3d52afc1bb3bffbd1578ffc77744e7e5b114821b02",
+      "bytes": 1558
     },
     {
       "path": "tests/e2e/artifacts/README.md",
@@ -205,7 +205,8 @@
     "round 2 failure lens PASS; R101/R103/R104/R105 fixed (bb70203); R102/R106/R107/R108 deferred",
     "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)",
     "Work 014 catalog closure: 63 new catalog tests (rounds 1-3), S08 fixes R102/R106/R107/R108, new Effects.dispatch_batch/ingest_callback and runtime/execution/reuse.py; ledger 111/112 local_pass",
-    "Work 014 review rounds: contract PASS; failure R401-R403 fixed (01c5eb4); regression R501 test + R502 comment (d5546c1)"
+    "Work 014 review rounds: contract PASS; failure R401-R403 fixed (01c5eb4); regression R501 test + R502 comment (d5546c1)",
+    "Work 015 external qualification: kit test fixture cleanup retry (tools/amplai-loop-kit/tests/document-browser.mjs + CHECKSUMS reseal; installable payload unchanged), scripts/rc01_closure.py reads external-qualification-status.json; 3174 passed on 44732a4, verifier v2 PASS"
   ],
-  "rebind_note": "Re-bound after Work 014: no guide describes dispatch_batch/ingest_callback/reuse internals or the S08 guard changes; release/README.md already states rc_candidate_not_final and cites the ledger file rather than numbers."
+  "rebind_note": "Re-bound after Work 015. tools/amplai-loop-kit diff since 9ef30a8 is only tests/document-browser.mjs (fs.rm retry) and CHECKSUMS.sha256; no guide describes that fixture. release/README.md's regeneration command is unchanged; the ledger's pending source moved to specs/015 which the README does not enumerate."
 }
