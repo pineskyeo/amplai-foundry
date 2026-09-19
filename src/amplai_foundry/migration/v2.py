@@ -98,7 +98,7 @@ class V2Importer:
                         "v3_grant": "reapproval_required",
                     }
                 )
-        return {
+        plan: dict[str, Any] = {
             "schema_version": "3.0.0",
             "migration_id": new_id("migration"),
             "source_root": str(root_path),
@@ -112,13 +112,18 @@ class V2Importer:
             "dry_run_required": True,
             "created_at": now(),
         }
+        plan["plan_digest"] = digest(plan)
+        return plan
 
     # -- apply --------------------------------------------------------------------
     def apply(
         self, actor: Actor, plan: dict[str, Any], *, dry_run_receipt: Ref | None = None
     ) -> dict[str, Any]:
         actor.require("migration.apply")
-        if plan.get("dry_run_required") and dry_run_receipt is None:
+        # R107: the digest is checked unconditionally, not only when a dry-run receipt exists.
+        if plan.get("plan_digest") != digest({k: v for k, v in plan.items() if k != "plan_digest"}):
+            raise Hold("MIGRATION_PLAN_DIGEST", "Plan was altered after planning")
+        if dry_run_receipt is None:
             raise Hold("MIGRATION_DRY_RUN", "Apply needs the dry-run receipt of this exact plan")
         if dry_run_receipt is not None and dry_run_receipt.get("plan_digest") != digest(
             {k: v for k, v in plan.items() if k != "plan_digest"}

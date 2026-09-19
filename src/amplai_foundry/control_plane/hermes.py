@@ -79,6 +79,12 @@ class HermesIdentityMap:
             raise Hold(
                 "IDENTITY_SCOPE", "A binding may not cross the operator's authenticated scope"
             )
+        if not actor.permissions <= operator.permissions:
+            raise Hold(
+                "IDENTITY_PERMISSION_SUBSET",
+                "An operator cannot bind more permissions than it holds",
+                details={"excess": sorted(actor.permissions - operator.permissions)},
+            )
         key = self._key(channel, external_user_id)
         record = {
             "channel": channel,

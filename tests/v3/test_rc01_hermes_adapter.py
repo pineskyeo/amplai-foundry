@@ -19,7 +19,11 @@ from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 @pytest.fixture
 def hermes(deployment):
     d = deployment
-    operator = replace(d.actor, permissions=d.actor.permissions | {"runtime.admin"})
+    operator = replace(
+        d.actor,
+        permissions=d.actor.permissions
+        | {"runtime.admin", "runtime.read", "harness.propose", "grant.issue"},
+    )
     identities = HermesIdentityMap(d.store)
     adapter = HermesAdapter(d.store, d.goals, d.authority, identities)
     return d, operator, identities, adapter

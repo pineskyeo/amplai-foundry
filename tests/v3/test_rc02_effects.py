@@ -227,3 +227,80 @@ def test_t049_compensation_is_a_new_effect_original_not_erased(deployment):
     assert still_original["data"]["receipt"] == original_receipt
     assert still_original["state"] == "applied"
     assert len(calls) == 2 and len(external) == 2
+
+
+def test_t050_partial_batch_keeps_item_receipts_and_partial_state(deployment):
+    # given: some external items applied, others unknown  # when: aggregate result
+    # expected: item receipts + partial/unknown state; not all succeeded
+    d = deployment
+    envelope, effects, tool_ref, tool, _calls, _external = _setup(d, timeout=1)
+    flaky_ref = d.put(
+        "tool-definition", "demo-flaky", {"id": "demo-flaky", "effect_class": "sandbox_write"}
+    )
+
+    def explode(args, key, limit):
+        raise RuntimeError("remote hung after commit")
+
+    flaky = Tool(
+        "demo-flaky",
+        flaky_ref,
+        tool.action,
+        tool.resource,
+        tool.effect_class,
+        tool.input_schema,
+        tool.output_schema,
+        explode,
+        None,
+        1,
+    )
+    effects.tools.register(flaky)
+    a = _request(d, envelope, tool_ref, tool, effect_key="t050-a", value=1)
+    b = _request(d, envelope, flaky_ref, flaky, effect_key="t050-b", value=2)
+    effects.prepare(d.worker, a)
+    effects.prepare(d.worker, b)
+    batch = effects.dispatch_batch(d.scope, [a["effect_id"], b["effect_id"]])
+    assert batch["atomic"] is False and batch["all_succeeded"] is False
+    assert batch["state"] == "partial"
+    assert [i["state"] for i in batch["items"]] == ["applied", "unknown"]
+    assert d.store.head(d.scope, "effect", a["effect_id"])["state"] == "applied"
+    assert d.store.head(d.scope, "effect", b["effect_id"])["state"] == "unknown"
+
+
+def test_t051_remote_callback_spoof_is_rejected_and_pending_request_unchanged(deployment):
+    # given: callback with valid run ID but wrong project/call_id  # when: ingest callback
+    # expected: reject, original pending request unchanged
+    from amplai_foundry.runtime.storage.store import Scope
+
+    d = deployment
+    envelope, effects, tool_ref, tool, _calls, _external = _setup(d, timeout=0.02, delay=0.08)
+    req = _request(d, envelope, tool_ref, tool, effect_key="t051-key")
+    effects.prepare(d.worker, req)
+    with pytest.raises(Hold):
+        effects.dispatch(d.scope, req["effect_id"])  # times out -> unknown, pending reconcile
+    before = d.store.head(d.scope, "effect", req["effect_id"])
+    assert before["state"] == "unknown"
+    payload = {"outcome": "applied", "note": "trust me"}
+    # wrong call id, right run
+    with pytest.raises(Hold) as wrong_call:
+        effects.ingest_callback(
+            d.scope,
+            run_id=envelope["run_id"],
+            effect_id=req["effect_id"],
+            call_id="operation-forged",
+            payload=payload,
+        )
+    assert wrong_call.value.code == "CALLBACK_REJECTED"
+    # wrong project, right run id and effect id
+    other = Scope(tenant_id=d.scope.tenant_id, project_id="other-project")
+    with pytest.raises(Hold) as wrong_project:
+        effects.ingest_callback(
+            other,
+            run_id=envelope["run_id"],
+            effect_id=req["effect_id"],
+            call_id="operation-t051-key",
+            payload=payload,
+        )
+    assert wrong_project.value.code == "CALLBACK_REJECTED"
+    after = d.store.head(d.scope, "effect", req["effect_id"])
+    assert after == before  # pending request untouched, no callback object written
+    assert d.store.list_objects(d.scope, "effect-callback") == []

@@ -173,6 +173,37 @@ def test_t026_unsafe_any_success_join(deployment, prepared):
     assert after == before  # no graph activation
 
 
+def test_t028_conservative_output_reuse_rejects_changed_verifier_or_env(deployment, prepared):
+    # given: upstream artifact digest matches but verifier/env changed
+    # when: reuse prior node success  # expected: reuse rejected or reverify, no stale pass
+    from amplai_foundry.runtime.execution.reuse import require_reusable, reuse_decision
+
+    d = deployment
+    prior = {
+        "node_digest": "sha256:node",
+        "input_artifact_digests": ["sha256:a"],
+        "acceptance_subset_digest": "sha256:acc",
+        "verifier_version": "v2",
+        "policy_epoch": 3,
+        "environment_fingerprint": "env-1",
+        "knowledge_pin": "pin-1",
+        "receipt_kind": "compute",
+    }
+    same = dict(prior)
+    assert reuse_decision(prior, same) == {"decision": "reuse", "mismatched": []}
+    changed = {**prior, "verifier_version": "v3", "environment_fingerprint": "env-2"}
+    verdict = reuse_decision(prior, changed)
+    assert verdict["decision"] == "reverify"
+    assert verdict["mismatched"] == ["verifier_version", "environment_fingerprint"]
+    works_before = d.store.list_objects(d.scope, "work")
+    with pytest.raises(Hold) as exc:
+        require_reusable(prior, changed)
+    assert exc.value.code == "REUSE_REVERIFY"
+    assert d.store.list_objects(d.scope, "work") == works_before  # no stale pass recorded
+    # deploy/publish receipts are never reused even with identical identity
+    assert reuse_decision({**prior, "receipt_kind": "deploy"}, same)["decision"] == "reverify"
+
+
 def test_t030_graph_node_budget_limit(deployment, prepared):
     # given: draft exceeds configured max nodes / when: compile
     # expected: bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out.

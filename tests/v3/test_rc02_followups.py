@@ -1,0 +1,125 @@
+"""Review round 2 follow-ups R102 R106 R107 R108 (failure lens, specs/013 trace round 2)."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+
+import pytest
+
+from amplai_foundry.control_plane.hermes import HermesIdentityMap
+from amplai_foundry.distribution.cutover import CutoverService
+from amplai_foundry.meta_harness.reference import MetaReference
+from amplai_foundry.migration.v2 import V2Importer
+from amplai_foundry.runtime.contracts.identity import digest
+from amplai_foundry.runtime.errors import Hold
+
+
+@pytest.fixture
+def meta(tmp_path):
+    m = MetaReference(tmp_path / "meta")
+    try:
+        yield m
+    finally:
+        m.close()
+
+
+class _ExplodingInstaller:
+    def plan(self, root, bundle):
+        return {"plan_id": "p1"}
+
+    def apply(self, actor, root, bundle, plan):
+        raise OSError(28, "No space left on device")
+
+
+def test_r102_cutover_receipt_commits_with_pointer_switch_even_when_install_io_fails(meta):
+    m = meta
+    p = m.prepare()
+    svc = CutoverService(
+        m.d.store,
+        m.d.contracts,
+        approval_check=m.check,
+        trusted_release_keys=m.meta.keys,
+        installer=_ExplodingInstaller(),
+    )
+    active = m.d.store.head(m.d.scope, "release-pointer", "active")["data"]["release_ref"]
+    targets = [
+        {
+            "id": "alpha",
+            "binding_ref": m.canary_target(p["cases"][0]["case_id"]),
+            "root": "/tmp/never-used",
+            "bundle": {},
+        }
+    ]
+    subject = digest(
+        {
+            "release_ref": p["candidate_release_ref"],
+            "targets": targets,
+            "expected_active_ref": active,
+        }
+    )
+    ok = m.approve("release.cutover", subject)
+    receipt = svc.cutover(
+        m.reviewer,
+        p["candidate_release_ref"],
+        targets=targets,
+        human_decision_ref=ok,
+        expected_active_ref=active,
+    )
+    assert receipt["overall"] == "partial"
+    assert receipt["targets"][0]["code"] == "INSTALL_IO"
+    reader = replace(m.reviewer, permissions=m.reviewer.permissions | {"runtime.read"})
+    status = svc.status(reader)
+    assert status["active_release_ref"] == p["candidate_release_ref"]
+    assert status["cutovers"] == 1 and status["last"]["overall"] == "partial"
+    revisions = [r["revision"] for r, _ in m.d.store.list_objects(m.d.scope, "cutover-receipt")]
+    assert sorted(revisions) == [1, 2]  # draft (with the pointer tx) then final
+
+
+def test_r106_recover_removes_mkstemp_residue_and_reports_it(deployment, tmp_path):
+    from amplai_foundry.distribution.installer import KitInstaller
+    from amplai_foundry.distribution.packs import PackRegistry
+
+    d = deployment
+    installer = KitInstaller(PackRegistry(d.store, d.contracts, {}))
+    root = tmp_path / "app"
+    meta = root / ".ai-team" / "install-v3"
+    meta.mkdir(parents=True)
+    (meta / ".v3-abc123").write_bytes(b"half written")
+    actor = replace(d.actor, permissions=d.actor.permissions | {"pack.install"})
+    result = installer.recover(actor, root)
+    assert result["status"] == "clean"
+    assert result["temp_removed"] == [".ai-team/install-v3/.v3-abc123"]
+    assert not (meta / ".v3-abc123").exists()
+
+
+def test_r107_v2_apply_verifies_plan_digest_even_without_dry_run_flag(deployment, tmp_path):
+    d = deployment
+    src = tmp_path / "legacy"
+    src.mkdir()
+    (src / "note.json").write_text('{"kind": "note", "text": "hi"}')
+    actor = replace(d.actor, permissions=d.actor.permissions | {"migration.apply"})
+    importer = V2Importer(d.store, d.artifacts)
+    plan = importer.plan(src)
+    assert plan["plan_digest"] == digest({k: v for k, v in plan.items() if k != "plan_digest"})
+    tampered = {k: v for k, v in plan.items() if k != "dry_run_required"}
+    with pytest.raises(Hold) as exc:
+        importer.apply(actor, tampered)
+    assert exc.value.code == "MIGRATION_PLAN_DIGEST"
+    assert d.store.list_objects(d.scope, "legacy-import") == []
+
+
+def test_r108_hermes_bind_rejects_permissions_the_operator_does_not_hold(deployment):
+    d = deployment
+    identities = HermesIdentityMap(d.store)
+    operator = replace(d.actor, permissions=frozenset({"runtime.admin", "goal.submit"}))
+    escalated = replace(
+        d.actor, permissions=frozenset({"goal.submit", "runtime.admin", "pack.install"})
+    )
+    with pytest.raises(Hold) as exc:
+        identities.bind(operator, "slack", "U9", escalated)
+    assert exc.value.code == "IDENTITY_PERMISSION_SUBSET"
+    assert exc.value.details == {"excess": ["pack.install"]}
+    assert d.store.list_objects(d.scope, "hermes-identity") == []
+    subset = replace(d.actor, permissions=frozenset({"goal.submit"}))
+    ref = identities.bind(operator, "slack", "U9", subset)
+    assert ref["revision"] == 1

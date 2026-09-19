@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from amplai_foundry.migration.v2 import V2Importer
+from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 
@@ -190,6 +191,7 @@ def test_symlink_and_escape_are_rejected(importer, tmp_path):
             "schema_version": "1.0",
         }
     )
+    plan["plan_digest"] = digest({k: v for k, v in plan.items() if k != "plan_digest"})
     with pytest.raises(Hold) as exc:
         v2.apply(actor, plan, dry_run_receipt=v2.dry_run(plan))
     assert exc.value.code == "MIGRATION_PATH"
