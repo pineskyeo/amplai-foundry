@@ -38,7 +38,17 @@ def test_design_check_is_never_a_runtime_pass_and_status_is_rc_not_final():
     ledger = json.loads(LEDGER.read_text())
     assert ledger["release_status"] == "rc_candidate_not_final"
     assert ledger["summary"]["tests"]["fail"] == 0
-    assert ledger["summary"]["tests"]["not_run"] > 0, "unexecuted catalog ids stay visible"
+    # Every local_pass must come from an executed junit case, never from a design mention.
+    # (This used to assert not_run > 0; all 112 ids now have executed evidence, so the
+    # invariant is stated directly instead of through that proxy.)
+    executed = executed_cases([JUNIT])
+    assert executed, "the shipped junit really ran"
+    for tid, entry in ledger["tests"].items():
+        if entry["status"] == "local_pass":
+            assert all(case in executed for case in entry["executed_cases"]), tid
+    assert ledger["summary"]["tests"]["not_run"] == len(
+        ledger["remaining_blockers"]["tests_not_run"]
+    )
     for tid, entry in ledger["tests"].items():
         if entry["status"] == "local_pass":
             assert entry["executed_cases"], tid

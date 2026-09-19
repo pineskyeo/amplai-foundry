@@ -12,10 +12,14 @@ import pytest
 
 from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.gates import GateEngine, Observation
-from amplai_foundry.runtime.contracts.identity import digest, new_id
+from amplai_foundry.runtime.contracts.identity import digest, digest_bytes, new_id
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.tool_broker.service import SecretBroker
-from amplai_foundry.verification.runtime.visual import VisualVerifier
+from amplai_foundry.verification.runtime.visual import (
+    BrowserPolicy,
+    BrowserRenderer,
+    VisualVerifier,
+)
 
 
 class FakeRenderer:
@@ -286,3 +290,57 @@ def test_t109_meta_rejection_and_rollback_path_complete(tmp_path):
         assert exc.value.code == "DRAIN_REQUIRED"
     finally:
         m.close()
+
+
+def _clip_fixture(container_width: int) -> bytes:
+    """Valid SVG whose embedding clips a critical text element when the box is too narrow."""
+    return (
+        "<html lang='en'><head><title>Quarterly report</title></head><body>"
+        f"<div id='headline' data-amplai-critical "
+        f"style='width:{container_width}px;height:40px;overflow:hidden'>"
+        "<svg width='600' height='40' role='img' aria-label='Quarterly revenue summary'>"
+        "<text x='0' y='28' font-size='24'>Quarterly revenue summary</text>"
+        "</svg></div></body></html>"
+    ).encode()
+
+
+def _render(html: bytes, destination):
+    policy = BrowserPolicy(isolated_test_fixture_digest=digest_bytes(html))
+    return BrowserRenderer(policy).render(html, destination, width=1280, height=900)
+
+
+@pytest.mark.visual
+def test_t058_svg_clip_finding_names_page_region_then_bounded_rerender_clears(tmp_path):
+    # given: source SVG syntactically valid but final embedding clips a critical text element
+    # when: render the final output  # expected: visual finding with page/region,
+    # then a bounded rerender after repair clears it (no golden overwrite)
+    clipped = _clip_fixture(120)
+    first = _render(clipped, tmp_path / "before")
+    # expected: a finding that names the page region, not a pixel score
+    assert first["outcome"] == "fail"
+    assert first["details"]["clipped_critical"] == ["headline"]
+    assert first["viewport"] == {"width": 1280, "height": 900}
+    assert first["aesthetic_acceptance"] == "not_assessed"
+    assert first["production_qualification"] is False
+    assert first["browser_version"], "a real browser reported its version"
+    assert Path(first["screenshot_path"]).is_file()
+
+    # when: a bounded repair widens the embedding and the page is rendered again
+    repaired = _clip_fixture(640)
+    second = _render(repaired, tmp_path / "after")
+    assert second["outcome"] == "pass"
+    assert second["details"]["clipped_critical"] == []
+    assert second["details"]["horizontal_overflow"] is False
+    # the repair is a new render, not an edit of the first evidence
+    assert second["source_digest"] != first["source_digest"]
+    assert second["screenshot_digest"] != first["screenshot_digest"]
+    assert Path(first["screenshot_path"]).is_file()
+
+
+@pytest.mark.visual
+def test_t058_renderer_refuses_bytes_other_than_the_reviewed_fixture(tmp_path):
+    # the sandbox exception is bound to exact reviewed bytes, never a global switch
+    policy = BrowserPolicy(isolated_test_fixture_digest=digest_bytes(_clip_fixture(120)))
+    with pytest.raises(Hold) as exc:
+        BrowserRenderer(policy).render(_clip_fixture(640), tmp_path / "other")
+    assert exc.value.code == "TEST_FIXTURE_BINDING"

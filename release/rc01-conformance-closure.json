@@ -1,28 +1,28 @@
 {
   "schema_version": "3.0.0",
   "kind": "v3_conformance_closure",
-  "implementation_revision": "d5546c155caaf6ebbe413b2f7bf4f9561e4c3b0b",
+  "implementation_revision": "219e2cef2e760174ee572fdc31bce16bda901bb1",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],
-  "executed_case_count": 680,
+  "executed_case_count": 682,
   "summary": {
     "tests": {
       "total": 112,
-      "local_pass": 111,
-      "not_run": 1,
+      "local_pass": 112,
+      "not_run": 0,
       "fail": 0
     },
     "requirements": {
       "total": 35,
-      "fully_verified": 32,
-      "partial": 3,
+      "fully_verified": 35,
+      "partial": 0,
       "not_run": 0
     },
     "tasks": {
       "total": 62,
-      "fully_accepted": 54,
-      "partial": 8,
+      "fully_accepted": 62,
+      "partial": 0,
       "not_started": 0
     }
   },
@@ -500,8 +500,11 @@
     },
     "T-058": {
       "name": "SVG clipping and overlap",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_boundary::test_t058_renderer_refuses_bytes_other_than_the_reviewed_fixture",
+        "tests.v3.test_rc02_boundary::test_t058_svg_clip_finding_names_page_region_then_bounded_rerender_clears"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-059": {
@@ -1132,10 +1135,10 @@
       "id": "REQ-16",
       "requirement": "frontend UX/UI/visual render 품질",
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "tests_not_run": 1,
+      "tests_local_pass": 7,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1143,10 +1146,10 @@
       "id": "REQ-17",
       "requirement": "documents/SVG/fonts/golden lifecycle",
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "tests_not_run": 1,
+      "tests_local_pass": 7,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1154,10 +1157,10 @@
       "id": "REQ-18",
       "requirement": "trusted evidence/verdict/global verify",
       "tests_total": 13,
-      "tests_local_pass": 12,
-      "tests_not_run": 1,
+      "tests_local_pass": 13,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1603,16 +1606,16 @@
       "title": "Trusted verifier runner and evidence attestation",
       "wave": 2,
       "tests_total": 12,
-      "tests_local_pass": 11,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-033",
       "title": "Global acceptance and doc freshness",
       "wave": 3,
       "tests_total": 12,
-      "tests_local_pass": 11,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-034",
@@ -1635,24 +1638,24 @@
       "title": "Software/review/debug capability pack",
       "wave": 3,
       "tests_total": 15,
-      "tests_local_pass": 14,
-      "status": "partial"
+      "tests_local_pass": 15,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-037",
       "title": "Frontend functional/visual/UX pack",
       "wave": 3,
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 7,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-038",
       "title": "Document lifecycle/render/golden pack",
       "wave": 3,
       "tests_total": 14,
-      "tests_local_pass": 13,
-      "status": "partial"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-039",
@@ -1795,8 +1798,8 @@
       "title": "Security/adversarial and property conformance suite",
       "wave": 4,
       "tests_total": 112,
-      "tests_local_pass": 111,
-      "status": "partial"
+      "tests_local_pass": 112,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-057",
@@ -1819,8 +1822,8 @@
       "title": "Frontend/docs actual-render acceptance suite",
       "wave": 4,
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 7,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-060",
@@ -1835,8 +1838,8 @@
       "title": "Final V3 conformance and requirement evidence closure",
       "wave": 5,
       "tests_total": 112,
-      "tests_local_pass": 111,
-      "status": "partial"
+      "tests_local_pass": 112,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-062",
@@ -1859,9 +1862,7 @@
       "Actual OTLP exporter/collector integration, bounded service delivery under production load",
       "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement"
     ],
-    "tests_not_run": [
-      "T-058"
-    ],
+    "tests_not_run": [],
     "note": "not_run means no executed local evidence names this catalog id; a mention in prose or a design fixture does not count"
   },
   "release_status": "rc_candidate_not_final"

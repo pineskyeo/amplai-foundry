@@ -51,10 +51,11 @@ where = ["src"]
 # `python -m pytest` 를 부르므로 (verification/runner.py:37) 이 한 줄이 verify 를 network
 # 없이 유지한다 — verify 에 stage 를 더하지 않는다 (FR-020, SC-014).
 # 명령줄의 `-m` 이 이것을 이긴다. `python -m pytest -m slack_e2e` 로 E2E 만 돌린다.
-addopts = "-q -m \"not slack_e2e\""
+addopts = "-q -m \"not slack_e2e and not visual\""
 testpaths = ["tests"]
 markers = [
   "slack_e2e: 실제 Slack workspace 를 치는 test. 기본 실행에서 deselect 된다 (contracts H-5.1)",
+  "visual: 실제 qualified 브라우저를 띄우는 test. 기본 실행에서 deselect 된다. `visual` extra 와\n   설치된 browser 가 있는 host 에서만 선택한다 (design/14 §4: 미설치는 skipped PASS 가 아니라 not_run)",
 ]
 # tests/test_slack_projection.py 가 test_governance_events 를 top-level 로 import 한다.
 # 이것 없이는 pytest 의 prepend import mode 가 tests/ 를 sys.path 에 넣어 주는 것에 의존하고,

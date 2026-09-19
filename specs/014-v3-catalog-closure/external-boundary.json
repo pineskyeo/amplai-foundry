@@ -58,9 +58,15 @@
     },
     {
       "id": "T-058",
-      "status": "EXTERNAL",
-      "needs": "A real qualified headless browser (Playwright/Chromium, verification/runtime/visual.py:BrowserRenderer.render) to actually lay out the page and measure clipping/overlap (scrollWidth/clientWidth, getBoundingClientRect) via the in-page _GEOMETRY_JS probe. Not available/qualified in this environment (see tests/v3/test_rc01_e2e_render.py, which records BROWSER_UNAVAILABLE and stays inconclusive on this host).",
-      "local_part_covered": "test_visual_clip_finding_local_part_browser_layer_external (tests/v3/test_rc02_boundary.py): VisualVerifier aggregation and bounded rerender with a fake renderer; the browser geometry layer itself is not executed, so the catalog id is deliberately kept out of the test name and the ledger keeps T-058 as not_run"
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t058_svg_clip_finding_names_page_region_then_bounded_rerender_clears (tests/v3/test_rc02_boundary.py): real Chromium 151 via playwright 1.62 measures the clipped critical element and a bounded rerender clears it. Marked @pytest.mark.visual and deselected by default, so hosts without the qualified renderer record not_run instead of a skipped PASS; the shipped ledger comes from a qualified local run.",
+      "qualification": {
+        "browser_version": "151.0.7922.34",
+        "playwright": "1.62.0",
+        "browser_cache": "~/Library/Caches/ms-playwright/chromium-1234 (pre-existing, no download)",
+        "select_with": "pytest -m \"not slack_e2e\" (visual marker is deselected by default)"
+      }
     },
     {
       "id": "T-076",

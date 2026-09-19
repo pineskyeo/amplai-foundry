@@ -1,0 +1,31 @@
+{
+  "source_digest": "sha256:cebe28b11413e9bd79dc0d5acd8dac20d8e4dcb5a9a30c812a44194c9c438599",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "browser_version": "151.0.7922.34",
+  "details": {
+    "horizontal_overflow": false,
+    "clipped_critical": [],
+    "outside_critical": [],
+    "critical_overlaps": [],
+    "broken_images": [],
+    "font_status": "loaded",
+    "font_failures": [],
+    "title": "Documentation / 문서 안내",
+    "language": "ko",
+    "visible_text": "Skip to content / 본문으로\nVERIFIED DOCUMENTATION · OPERATOR\nDocumentation / 문서 안내\n\nkit-2.5.0-candidate-r6 · INTERNAL\n\nPortable Development Guide\nAMPLAI Loop Kit 2.5.0\nDocuments / 문서\nPortable Development Guide\nAMPLAI Loop Kit 2.5.0\nVerified release set / 검증 버전\nComponent versions bound to this document set\nComponent\tRevision\tSHA256\nui\t51deabe0b4dad6881837f8cfbe414da22ba6a2e23bb86f32b206802b254c01bd\t21c8a28b0c5c7fec70b5033cffccaeb192a594539c0609522b9bc2706938fae4\nbackend\tcatalog-21ae3865ab6fcf59f242e553ec38c33ff8fb5f31fa9605626291116bc5175b2b\tbe46b66a0f5f3774a96e1ae037933fe628e08b28957f885f3a5017a828370b59\ncontracts\te83fc34fe1a683ca4a2d3e71a1e82b6fd72a1e86a1223ea0cf27f7a1ee176113\t5f69e560f99a91d171787a253a680bf005d1c5210496a4e55b516b501540784e\nontology\t7863f885de43258b399f62d9e0a02f068b703308\t236ad50d97cfd2213ef8a8a436ac691cd2e924f9b4096361da85cb476c6b1244\nkit\tkit-2.5.0-candidate-r6\t5dc1ee1f2580ed2f41bc2de269ab73c46f186dec5e6a758f3e428b523a92cd3c\n\nOffline document · Source-derived, not a hand-maintained copy.",
+    "invalid_buttons": 0,
+    "unlabelled_inputs": 0
+  },
+  "page_errors": [],
+  "blocked_requests_count": 0,
+  "missing_selectors": [],
+  "screenshot_digest": "sha256:b0da8b0016b308d4882fb88217caf624b063d216148d3dff1f989bc61a342aa8",
+  "screenshot_path": "/Users/pinesky/workspace/amplai-foundry-013-amplai-v3/specs/012-portable-document-lifecycle/html-operator-r6-render/index/1280x900/render.png",
+  "execution_boundary": "browser sandbox",
+  "production_qualification": false,
+  "aesthetic_acceptance": "not_assessed",
+  "outcome": "pass"
+}
