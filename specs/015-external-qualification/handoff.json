@@ -1,0 +1,32 @@
+{
+  "blockers": [
+    "EXTERNAL 8건 (external-qualification-status.json: partial 3, unavailable 4, not_a_local_check 1)",
+    "offline_views: main 의 guide-release-r6.json kit checksum drift (kit release r7 별도 Work; 이번 kit fixture 수정으로 drift 는 더 커졌다)"
+  ],
+  "completed_slices": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07"
+  ],
+  "context_pack_hash": "926c581ab638e9473302f0f146d9aa3b94ee8830d332f85db903f24ff961433e",
+  "current_slice": null,
+  "git_checkpoint": "bec7ecf58694b0db7ccd8433b464ce9b0c579625",
+  "last_verification": {
+    "check_count": 0,
+    "environment": {},
+    "exit_code": null,
+    "failed_checks": [],
+    "profile": "fast",
+    "source": ".specify/eval/last.json",
+    "verdict": "PASS"
+  },
+  "next_action": "남은 8건은 이 호스트 밖의 결정이다: (1) ANTHROPIC_API_KEY 또는 driver 의 login-mode 허용 결정 후 claude-cli 재자격, (2) ChatGPT 플랜이 지원하는 codex 모델 확인, (3) docker/podman 설치 후 컨테이너 probe, (4) OTLP collector, (5) 물리 holdout + 독립 승인자, (6) OPENAI_API_KEY 로 Responses 자격, (7) 통계 모집단, (8) Linux CI 는 kit 수정으로 녹색 — main 머지 후 재확인. FINAL 선언은 specs/015-external-qualification/human-gate-package.md 의 3단계(사람 결정 → authority link → cutover) 뒤다. 코드 후속: amplai ops 에 cutover 명령 추가.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "done",
+  "work_id": "AMPLAI-V3-RC03"
+}
