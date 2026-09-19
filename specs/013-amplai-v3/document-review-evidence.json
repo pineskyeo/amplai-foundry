@@ -2,11 +2,11 @@
   "schema_version": "1.0",
   "work_id": "AMPLAI-V3-RC01",
   "feature": "specs/013-amplai-v3",
-  "reviewed_at": "2026-09-18 15:56:49 UTC",
+  "reviewed_at": "2026-09-19 05:07:52 UTC",
   "review_scope": "Attributed implementation-document review after S00-S20 slice PASS; not independent review, human gate or publication.",
-  "implementation_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
+  "implementation_revision": "97695d89723f34c9ae701866ea9f62748b052ecc",
   "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
-  "semantic_snapshot": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+  "semantic_snapshot": "b08d0ea88df93e43c9dbca58e26e2cc36fd4292bb1d550d60d42a5777dcc94d8",
   "guide_sources": [
     {
       "path": ".ai-team/README.md",
@@ -164,7 +164,7 @@
     },
     {
       "check": "pytest tests/v3 tests/runtime_storage",
-      "result": "605 passed, 0 skipped",
+      "result": "676 passed, 0 skipped",
       "junit": "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
     },
     {
@@ -203,7 +203,8 @@
   "review_rounds": [
     "round 1 contract lens CHANGES_REQUIRED -> R001-R004, R006 fixed (29044c4)",
     "round 2 failure lens PASS; R101/R103/R104/R105 fixed (bb70203); R102/R106/R107/R108 deferred",
-    "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)"
+    "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)",
+    "Work 014 catalog closure: 63 new catalog tests (rounds 1-3), S08 fixes R102/R106/R107/R108, new Effects.dispatch_batch/ingest_callback and runtime/execution/reuse.py; ledger 111/112 local_pass"
   ],
-  "rebind_note": "Re-bound after review rounds 2-3 changed installer.py, archive/service.py, store.py (guards only: PACK_ID_RESERVED, tombstone approval_check, owner-lock release, backups exist_ok). No guide describes those internals; guide text unchanged."
+  "rebind_note": "Re-bound after Work 014: no guide describes dispatch_batch/ingest_callback/reuse internals or the S08 guard changes; release/README.md already states rc_candidate_not_final and cites the ledger file rather than numbers."
 }
