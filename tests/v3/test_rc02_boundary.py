@@ -1,4 +1,4 @@
-"""V3 test-catalog boundary cases: T058 (EXTERNAL: real browser) (visual, local part), T-076 (security),
+"""V3 test-catalog boundary cases: T058 (visual, local part), T-076 (security),
 T-108/T-109 (release conformance). See specs/014-v3-catalog-closure/external-boundary.json
 for the EXTERNAL/GREEN classification and evidence for each id.
 """
@@ -21,7 +21,7 @@ from amplai_foundry.verification.runtime.visual import VisualVerifier
 class FakeRenderer:
     """Stands in for the real qualified headless browser (external boundary).
 
-    T058 (EXTERNAL: real browser) needs actual page layout/geometry (a real Chromium via Playwright) to prove
+    T058 needs actual page layout/geometry (a real Chromium via Playwright) to prove
     an SVG clips text; that layer is EXTERNAL (see external-boundary.json). What is
     tested here, with real code, is the local part: VisualVerifier's own aggregation
     of a renderer's geometry findings into pass/fail with page/region detail, across a
@@ -57,7 +57,7 @@ class FakeRenderer:
             "blocked_requests_count": 0,
             "missing_selectors": [],
             "screenshot_path": str(shot),
-            "execution_boundary": "fake fixture (external browser boundary, see T058 (EXTERNAL: real browser) EXTERNAL)",
+            "execution_boundary": "fake fixture (external browser boundary, see T058 EXTERNAL)",
             "production_qualification": False,
             "aesthetic_acceptance": "not_assessed",
             "outcome": outcome,
