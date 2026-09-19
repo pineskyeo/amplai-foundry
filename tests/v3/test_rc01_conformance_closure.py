@@ -61,7 +61,16 @@ def test_design_check_is_never_a_runtime_pass_and_status_is_rc_not_final():
         assert req["design_status"] == "designed_not_implemented", (
             "design status is carried, not upgraded"
         )
-    assert len(ledger["remaining_blockers"]["external_qualification_pending"]) == 9
+    status = json.loads(
+        (
+            REPO / "specs" / "015-external-qualification" / "external-qualification-status.json"
+        ).read_text()
+    )
+    unresolved = [x for x in status["items"] if x["status"] != "resolved"]
+    assert len(status["items"]) == 9, "every DEV-03 external item is accounted for"
+    assert len(ledger["remaining_blockers"]["external_qualification_pending"]) == len(unresolved)
+    for x in status["items"]:
+        assert (REPO / x["evidence"]).is_file(), x["item"]  # a resolved/partial claim needs a file
 
 
 def test_shipped_ledger_matches_current_tree_and_junit():

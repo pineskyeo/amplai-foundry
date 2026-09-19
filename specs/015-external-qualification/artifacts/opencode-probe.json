@@ -1,0 +1,17 @@
+{
+  "probe_ok": {
+    "health": {
+      "healthy": true,
+      "version": "1.17.13"
+    },
+    "qualified": true,
+    "transport": "http_poll",
+    "native_steering": false,
+    "native_delegation": false
+  },
+  "version_pin": "OPENCODE_VERSION",
+  "auth": "PROVIDER_HTTP",
+  "empty_password": "OPENCODE_AUTH",
+  "child_terminated": true,
+  "probe_after_kill": "Hold"
+}

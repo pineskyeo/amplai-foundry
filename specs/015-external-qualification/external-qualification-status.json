@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "kind": "external_qualification_status",
+  "checked_at": "2026-09-19T12:36:54Z",
+  "host": "macOS arm64 workstation",
+  "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
+  "status_values": {
+    "resolved": "verified on this host with evidence",
+    "partial": "some mandatory probes pass with evidence; the rest are recorded fail/inconclusive",
+    "unavailable": "the external system does not exist on this host; probe recorded",
+    "not_a_local_check": "requires production data/population; never provable locally"
+  },
+  "items": [
+    {
+      "item": "Actual Claude/Codex account + exact binary image/model version qualification",
+      "status": "partial",
+      "evidence": "specs/015-external-qualification/driver-qualification.json",
+      "note": "claude-cli: exact_version/exact_session/ordered_events/budget_accounting pass on real 2.1.267 output; secret_isolation fail (--bare needs ANTHROPIC_API_KEY); codex-cli: protocol pass, account plan rejects all codex models; container probes inconclusive"
+    },
+    {
+      "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
+      "status": "partial",
+      "evidence": "specs/015-external-qualification/driver-qualification.json",
+      "note": "opencode 1.17.13 server: health/version pin/auth gates and child termination pass; no model turn, workspace boundary probe not run"
+    },
+    {
+      "item": "Real docker/podman containment, egress, resource and credential isolation",
+      "status": "unavailable",
+      "evidence": "specs/015-external-qualification/unavailable.json",
+      "note": "no docker/podman/colima on this host"
+    },
+    {
+      "item": "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
+      "status": "unavailable",
+      "evidence": "specs/015-external-qualification/unavailable.json",
+      "note": "OPENAI_API_KEY unset; ResponsesDriver verified with MockTransport only"
+    },
+    {
+      "item": "Full 112 normative scenario closure, full legacy regression, migration/upgrade/rollback and platform matrix at RC/FINAL",
+      "status": "partial",
+      "evidence": "specs/015-external-qualification/ci-platform-matrix.json",
+      "note": "112/112 catalog closure and full legacy regression (3174 passed) done locally; Python 3.11/3.12/3.13 matrix pass on macOS; Linux CI blocked by a kit fixture cleanup race fixed in this Work (awaiting CI); migration/upgrade/rollback drills against a real prior release not run"
+    },
+    {
+      "item": "Clean dependency resolution: installed package tests explicitly share preinstalled dependencies",
+      "status": "resolved",
+      "evidence": "specs/015-external-qualification/installed-package.json",
+      "note": "wheel 3.0.0.dev3 + [dev] resolved in a clean venv; 676/680 tests pass from site-packages; the 4 excluded tests audit the repository tree, not the package"
+    },
+    {
+      "item": "Physical holdout service isolation beyond same-host local ACL, independent production approvers and trusted remote executor qualification",
+      "status": "unavailable",
+      "evidence": "specs/015-external-qualification/unavailable.json",
+      "note": "single workstation; no second host or independent approver"
+    },
+    {
+      "item": "Actual OTLP exporter/collector integration, bounded service delivery under production load",
+      "status": "unavailable",
+      "evidence": "specs/015-external-qualification/unavailable.json",
+      "note": "no OTLP collector; OTEL_EXPORTER_OTLP_ENDPOINT unset"
+    },
+    {
+      "item": "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement",
+      "status": "not_a_local_check",
+      "evidence": "specs/015-external-qualification/unavailable.json",
+      "note": "needs a real task population; analysis.py enforces minimum_tasks and inconclusive verdicts"
+    }
+  ],
+  "summary": {
+    "resolved": 1,
+    "partial": 3,
+    "unavailable": 4,
+    "not_a_local_check": 1
+  }
+}

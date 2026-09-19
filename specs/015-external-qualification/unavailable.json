@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "kind": "external_qualification_unavailable",
+  "checked_at": "2026-09-19T12:30:36Z",
+  "host": "macOS arm64 (this workstation)",
+  "items": [
+    {
+      "item": "Real docker/podman containment, egress, resource and credential isolation",
+      "status": "UNAVAILABLE",
+      "probe": "command -v docker podman colima",
+      "observed": "/bin/sh: docker: command not found | docker info: /bin/sh: docker: command not found",
+      "consequence": "CliDriver requires ContainerSandbox; container_escape/egress/cancel_tree probes stay inconclusive"
+    },
+    {
+      "item": "Actual OTLP exporter/collector integration, bounded service delivery under production load",
+      "status": "UNAVAILABLE",
+      "probe": "command -v otelcol otelcol-contrib; env OTEL_EXPORTER_OTLP_ENDPOINT",
+      "observed": "no collector binary; OTEL_EXPORTER_OTLP_ENDPOINT unset",
+      "consequence": "telemetry export verified only against the in-process bounded queue (evaluation/telemetry.py tests)"
+    },
+    {
+      "item": "Physical holdout service isolation beyond same-host local ACL, independent production approvers and trusted remote executor qualification",
+      "status": "UNAVAILABLE",
+      "probe": "single workstation; no second host, no independent approver identity",
+      "observed": "n/a",
+      "consequence": "holdout isolation proven only by same-host ACL (T-080) and local approval fixtures"
+    },
+    {
+      "item": "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
+      "status": "UNAVAILABLE",
+      "probe": "env OPENAI_API_KEY",
+      "observed": "unset; Codex CLI uses a ChatGPT account (see driver-qualification.json)",
+      "consequence": "ResponsesDriver verified with MockTransport only (T-067); app-server stays experimental/unqualified (T-070)"
+    },
+    {
+      "item": "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement",
+      "status": "NOT_A_LOCAL_CHECK",
+      "probe": "design/30_EXPERIMENT_STATISTICS.md",
+      "observed": "requires a real task population and production trials",
+      "consequence": "analysis.py enforces minimum_tasks and inconclusive verdicts (T-084, T-086); the adequacy of the population itself is an operations decision"
+    }
+  ]
+}

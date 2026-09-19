@@ -23,9 +23,20 @@ def main() -> None:
     evidence = json.loads(
         (REPO / "specs" / "013-amplai-v3" / "dev03-delivery-evidence.json").read_text()
     )
-    ledger = ClosureLedger(REPO).build(
-        [JUNIT], external_pending=evidence["external_qualification_pending"]
+    status_path = (
+        REPO / "specs" / "015-external-qualification" / "external-qualification-status.json"
     )
+    if status_path.is_file():
+        # Work 015 measured each item on this host; only unresolved ones stay pending.
+        status = json.loads(status_path.read_text())
+        pending = [
+            f"{x['item']} [{x['status']}: {x['note']}]"
+            for x in status["items"]
+            if x["status"] != "resolved"
+        ]
+    else:
+        pending = evidence["external_qualification_pending"]
+    ledger = ClosureLedger(REPO).build([JUNIT], external_pending=pending)
     ClosureLedger.write(ledger, LEDGER)
     view = {
         "schema_version": ledger["schema_version"],

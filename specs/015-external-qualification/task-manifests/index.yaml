@@ -1,0 +1,255 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "id": "015-external-qualification",
+    "title": "AMPLAI V3 RC-03 — External Qualification",
+    "source_status": "approved_design_local_implementation"
+  },
+  "source": {
+    "files": [
+      {
+        "path": "specs/015-external-qualification/spec.md",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "specs/015-external-qualification/work-contract.json",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "specs/013-amplai-v3/dev03-delivery-evidence.json",
+        "revision": "27ba053"
+      }
+    ],
+    "generated_from": [
+      "spec",
+      "work-contract",
+      "dev03 external_qualification_pending"
+    ],
+    "generated_at": "2026-09-19"
+  },
+  "tasks": [
+    {
+      "id": "AMPLAI-V3Q-T001",
+      "title": "EXT-06 설치 패키지 의존성 해소 검증",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T002",
+      "title": "EXT-05a Python 3.12/3.13 매트릭스",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T003",
+      "title": "EXT-01 실제 claude/codex 바이너리 driver 자격 probe",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T004",
+      "title": "EXT-02 OpenCode 서버 경계 probe",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T005",
+      "title": "EXT-05b CI 브라우저 fixture 경합 수정",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T006",
+      "title": "EXT-03/04/07/08/09 UNAVAILABLE 장부",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3Q-T007",
+      "title": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "status": "done",
+      "depends_on": [
+        "AMPLAI-V3Q-T001",
+        "AMPLAI-V3Q-T002",
+        "AMPLAI-V3Q-T003",
+        "AMPLAI-V3Q-T004",
+        "AMPLAI-V3Q-T005",
+        "AMPLAI-V3Q-T006"
+      ],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    }
+  ],
+  "slices": [
+    {
+      "id": "S01",
+      "title": "EXT-06 설치 패키지 의존성 해소 검증",
+      "goal": "EXT-06 설치 패키지 의존성 해소 검증",
+      "tasks": [
+        "AMPLAI-V3Q-T001"
+      ],
+      "acceptance": [
+        "EXT-06 의존성 해소 성공, import 경로가 site-packages, repo-hygiene 감사 4건 외 통과"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/installed-package.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S02",
+      "title": "EXT-05a Python 3.12/3.13 매트릭스",
+      "goal": "EXT-05a Python 3.12/3.13 매트릭스",
+      "tasks": [
+        "AMPLAI-V3Q-T002"
+      ],
+      "acceptance": [
+        "EXT-05a 각각 680 passed, mypy 0, ruff 0"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/python-3.12.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/python-3.13.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S03",
+      "title": "EXT-01 실제 claude/codex 바이너리 driver 자격 probe",
+      "goal": "EXT-01 실제 claude/codex 바이너리 driver 자격 probe",
+      "tasks": [
+        "AMPLAI-V3Q-T003"
+      ],
+      "acceptance": [
+        "EXT-01 protocol 확인 항목은 pass, 컨테이너 필요 항목은 inconclusive, 계정 제한은 fail 로 정직 기록"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/driver-qualification.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S04",
+      "title": "EXT-02 OpenCode 서버 경계 probe",
+      "goal": "EXT-02 OpenCode 서버 경계 probe",
+      "tasks": [
+        "AMPLAI-V3Q-T004"
+      ],
+      "acceptance": [
+        "EXT-02 health/version pin/auth gate 동작, 자식 프로세스 종료 확인, 모델 turn 은 미실행(inconclusive)"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/driver-qualification.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S05",
+      "title": "EXT-05b CI 브라우저 fixture 경합 수정",
+      "goal": "EXT-05b CI 브라우저 fixture 경합 수정",
+      "tasks": [
+        "AMPLAI-V3Q-T005"
+      ],
+      "acceptance": [
+        "EXT-05b 로컬 재현 test 통과, kit-seal verify ok"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/ai/test_document_html.py::test_isolated_browser_offline_noscript_keyboard_mobile_and_print",
+        "python3 -B tools/amplai-loop-kit/seal.py --verify",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S06",
+      "title": "EXT-03/04/07/08/09 UNAVAILABLE 장부",
+      "goal": "EXT-03/04/07/08/09 UNAVAILABLE 장부",
+      "tasks": [
+        "AMPLAI-V3Q-T006"
+      ],
+      "acceptance": [
+        "EXT-UNAVAIL 각 항목이 probe 명령·관측·결과를 갖는다"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/015-external-qualification/unavailable.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_failures') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S07",
+      "title": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "goal": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "tasks": [
+        "AMPLAI-V3Q-T007"
+      ],
+      "acceptance": [
+        "CLOSURE-002 remaining_blockers 가 실측 상태를 반영하고 release_status 는 rc_candidate_not_final 유지"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_conformance_closure.py",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    }
+  ],
+  "execution": {
+    "waves": [
+      {
+        "wave": 1,
+        "tasks": [
+          "AMPLAI-V3Q-T001",
+          "AMPLAI-V3Q-T002"
+        ],
+        "note": "병렬 sonnet 3"
+      },
+      {
+        "wave": 2,
+        "tasks": [
+          "AMPLAI-V3Q-T003",
+          "AMPLAI-V3Q-T004",
+          "AMPLAI-V3Q-T005",
+          "AMPLAI-V3Q-T006"
+        ],
+        "note": "오케스트레이터 직접"
+      },
+      {
+        "wave": 3,
+        "tasks": [
+          "AMPLAI-V3Q-T007"
+        ],
+        "note": "closure"
+      }
+    ]
+  }
+}
