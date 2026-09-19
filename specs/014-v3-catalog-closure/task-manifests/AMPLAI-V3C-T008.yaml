@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3C-T008",
+  "title": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
+  "type": "fix",
+  "status": "done",
+  "goal": {
+    "outcome": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
+    "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
+  },
+  "source": {
+    "feature": "014-v3-catalog-closure",
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "section": "R102, R106, R107, R108"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "section": "remaining_blockers.tests_not_run"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 오케스트레이션 + 병렬 서브에이전트로 완성. src 는 서브에이전트에 읽기 전용, 테스트 파일만 소유"
+    ]
+  },
+  "scope": {
+    "include": [
+      "src/amplai_foundry/distribution/cutover.py",
+      "src/amplai_foundry/distribution/installer.py",
+      "src/amplai_foundry/migration/v2.py",
+      "src/amplai_foundry/control_plane/hermes.py",
+      "tests/v3/test_rc02_followups.py",
+      "specs/014-v3-catalog-closure/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "src/amplai_foundry/distribution/cutover.py",
+      "src/amplai_foundry/distribution/installer.py",
+      "src/amplai_foundry/migration/v2.py",
+      "src/amplai_foundry/control_plane/hermes.py",
+      "tests/v3/test_rc02_followups.py",
+      "specs/014-v3-catalog-closure/",
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "failure lens 보고서 (specs/013-amplai-v3/evidence-trace.jsonl review_round 2) 의 finding 을 그대로 따른다",
+      "각 fix 는 RED test 를 먼저 만든다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "test 삭제·skip 으로 통과시키지 않는다",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "R102",
+        "given": "cutover 가 release pointer 를 바꾼 직후 installer IO 가 OSError 로 죽는다",
+        "when": "cutover()",
+        "then": "pointer switch 와 cutover-receipt 초안이 같은 tx 에 기록돼 status() 가 partial 을 보인다 [Cutover receipt atomicity]"
+      },
+      {
+        "id": "R106",
+        "given": "apply 도중 hard crash 로 .v3-* temp 가 남았다",
+        "when": "recover()",
+        "then": "소유 디렉토리의 temp 잔여를 보고하거나 정리한다 [Temp residue]"
+      },
+      {
+        "id": "R107",
+        "given": "migration.apply 권한자가 dry_run 필드를 뺀 plan 을 넘긴다",
+        "when": "V2Importer.apply()",
+        "then": "plan_digest 를 무조건 검증해 Hold 한다 [Plan digest always]"
+      },
+      {
+        "id": "R108",
+        "given": "operator 가 자기 권한 밖의 permission 을 담아 hermes bind 를 호출한다",
+        "when": "HermesIdentityMap.bind()",
+        "then": "subset 이 아니면 거부한다 [Bind permission subset]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_followups.py tests/v3/test_rc01_cutover.py tests/v3/test_rc01_kit_installer_v3.py tests/v3/test_rc01_v2_import.py tests/v3/test_rc01_hermes_adapter.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check tests/v3/test_rc02_followups.py tests/v3/test_rc01_cutover.py tests/v3/test_rc01_kit_installer_v3.py tests/v3/test_rc01_v2_import.py tests/v3/test_rc01_hermes_adapter.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "서브에이전트가 src 를 건드리지 않도록 프롬프트 절대 규칙으로 통제"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T05:04:13Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S08",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "release/rc01-conformance-closure.json",
+      "specs/014-v3-catalog-closure/external-boundary.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "src/amplai_foundry/distribution/cutover.py",
+      "src/amplai_foundry/distribution/installer.py",
+      "src/amplai_foundry/migration/v2.py",
+      "src/amplai_foundry/control_plane/hermes.py",
+      "tests/v3/test_rc02_followups.py"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC02",
+    "slice_id": "S08",
+    "context_pack": "specs/014-v3-catalog-closure/context-pack.json",
+    "environment": "specs/014-v3-catalog-closure/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "7c996603c1503c04fcee8f644e616aa22b16bc1c"
+  }
+}

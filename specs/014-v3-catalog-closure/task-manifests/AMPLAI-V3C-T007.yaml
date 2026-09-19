@@ -1,0 +1,261 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3C-T007",
+  "title": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
+  "type": "test",
+  "status": "done",
+  "goal": {
+    "outcome": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
+    "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
+  },
+  "source": {
+    "feature": "014-v3-catalog-closure",
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "section": "T-064, T-065, T-066, T-067, T-068, T-069, T-070, T-071, T-072, T-058, T-076, T-108, T-109"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "section": "remaining_blockers.tests_not_run"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 오케스트레이션 + 병렬 서브에이전트로 완성. src 는 서브에이전트에 읽기 전용, 테스트 파일만 소유"
+    ]
+  },
+  "scope": {
+    "include": [
+      "tests/v3/test_rc02_driver.py",
+      "tests/v3/test_rc02_boundary.py",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/verification/runtime/",
+      "src/amplai_foundry/distribution/",
+      "specs/014-v3-catalog-closure/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "tests/v3/test_rc02_driver.py",
+      "tests/v3/test_rc02_boundary.py",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/verification/runtime/",
+      "src/amplai_foundry/distribution/",
+      "specs/014-v3-catalog-closure/",
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "catalog id 를 test 함수 이름에 넣는다 (test_tNNN_...). ledger scanner 가 그 이름으로 증거를 묶는다",
+      "expected 의 negative effect (state unchanged, no second effect) 까지 assert 한다",
+      "실제 외부 시스템이 필요한 케이스는 fake pass 하지 않고 EXTERNAL 로 남긴다",
+      "skip/xfail 금지. 구현 결함은 BLOCKED 로 보고한다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "test 삭제·skip 으로 통과시키지 않는다",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "T-064",
+        "given": "two CLI sessions exist",
+        "when": "resume Work A",
+        "then": "exact A session used; no continue latest heuristic [Exact session resume]"
+      },
+      {
+        "id": "T-065",
+        "given": "provider event JSON split across chunks",
+        "when": "decode input",
+        "then": "buffer until complete, typed event validation, no heuristic session pollution [Partial JSONL stream]"
+      },
+      {
+        "id": "T-066",
+        "given": "SDK upgrade adds unsupported event type",
+        "when": "ingest",
+        "then": "quarantine/unsupported with version finding, no guessed success [Unknown provider event]"
+      },
+      {
+        "id": "T-067",
+        "given": "tool result references different provider_call_id",
+        "when": "forward result",
+        "then": "reject mapping; correct pending call unchanged [Async result call mismatch]"
+      },
+      {
+        "id": "T-068",
+        "given": "provider ack queued but connection dies before application",
+        "when": "reconnect",
+        "then": "ledger reconciles unresolved steering; no false applied status [Steering queued disconnect]"
+      },
+      {
+        "id": "T-069",
+        "given": "driver lacks steer capability",
+        "when": "user changes constraints",
+        "then": "safe checkpoint/restart fallback; no text injection hack [Native steering absent]"
+      },
+      {
+        "id": "T-070",
+        "given": "Codex app-server profile unqualified",
+        "when": "production dispatch",
+        "then": "CAPABILITY_UNQUALIFIED; qualified CLI fallback only if policy permits [Experimental transport]"
+      },
+      {
+        "id": "T-071",
+        "given": "prompt_async responds204",
+        "when": "status projection",
+        "then": "accepted/running only, not completed [OpenCode 204]"
+      },
+      {
+        "id": "T-072",
+        "given": "worker submits goal.verified or grant.revoked",
+        "when": "event ingress",
+        "then": "forbidden event; only server authority emits transition [Server-only event forgery]"
+      },
+      {
+        "id": "T-058",
+        "given": "source SVG syntactically valid but final embedding clips text",
+        "when": "render final output",
+        "then": "visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]"
+      },
+      {
+        "id": "T-076",
+        "given": "worker prompt/tool asks for production token",
+        "when": "secret access",
+        "then": "broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]"
+      },
+      {
+        "id": "T-108",
+        "given": "direct/discovery/deliberative/bounded profiles",
+        "when": "reach a mandatory boundary under fast/tiny flag",
+        "then": "same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]"
+      },
+      {
+        "id": "T-109",
+        "given": "eligible experiment and controlled nonproduction canary",
+        "when": "exercise pass/fail/inconclusive/promote/rollback branches",
+        "then": "frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_driver.py tests/v3/test_rc02_boundary.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check tests/v3/test_rc02_driver.py tests/v3/test_rc02_boundary.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "서브에이전트가 src 를 건드리지 않도록 프롬프트 절대 규칙으로 통제"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T05:03:04Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S07",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "release/rc01-conformance-closure.json",
+      "specs/014-v3-catalog-closure/external-boundary.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "tests/v3/test_rc02_driver.py",
+      "tests/v3/test_rc02_boundary.py"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC02",
+    "slice_id": "S07",
+    "context_pack": "specs/014-v3-catalog-closure/context-pack.json",
+    "environment": "specs/014-v3-catalog-closure/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "7c996603c1503c04fcee8f644e616aa22b16bc1c"
+  }
+}

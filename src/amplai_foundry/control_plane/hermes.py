@@ -79,6 +79,12 @@ class HermesIdentityMap:
             raise Hold(
                 "IDENTITY_SCOPE", "A binding may not cross the operator's authenticated scope"
             )
+        if not actor.permissions <= operator.permissions:
+            raise Hold(
+                "IDENTITY_PERMISSION_SUBSET",
+                "An operator cannot bind more permissions than it holds",
+                details={"excess": sorted(actor.permissions - operator.permissions)},
+            )
         key = self._key(channel, external_user_id)
         record = {
             "channel": channel,
@@ -86,6 +92,7 @@ class HermesIdentityMap:
             "subject_id": actor.subject_id,
             "kind": actor.kind,
             "permissions": sorted(actor.permissions),
+            "operator_permissions": sorted(operator.permissions),
             "authn_context_ref": actor.authn_context_ref,
             "verified_by": operator.subject_id,
             "bound_at": now(),
@@ -120,10 +127,18 @@ class HermesIdentityMap:
                 details={"channel": channel},
             )
         value = latest[1]
+        if "operator_permissions" not in value:
+            raise Hold(
+                "IDENTITY_REBIND_REQUIRED",
+                "Binding predates the permission-subset rule; an operator must re-bind it",
+                details={"channel": channel},
+            )
+        # R402: a stored binding can never mint more than its operator held at bind time.
+        permissions = frozenset(value["permissions"]) & frozenset(value["operator_permissions"])
         actor = Actor(
             value["subject_id"],
             scope,
-            frozenset(value["permissions"]),
+            permissions,
             value["kind"],
             value["authn_context_ref"],
         )

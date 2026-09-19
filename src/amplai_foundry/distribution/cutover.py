@@ -141,6 +141,23 @@ class CutoverService:
                 "release.cutover",
                 {"release_ref": release_ref, "decision_ref": human_decision_ref},
             )
+            # R102: the receipt draft commits with the pointer switch, so a crash or IO error
+            # during target installation leaves a visible "pointer_switched" partial receipt.
+            receipt_id = new_id("cutover")
+            draft = {
+                "schema_version": "3.0.0",
+                "receipt_id": receipt_id,
+                "release_ref": release_ref,
+                "previous_active_ref": expected_active_ref,
+                "decision_ref": human_decision_ref,
+                "targets": [{"target": t.get("id"), "status": "pending"} for t in targets],
+                "overall": "pointer_switched",
+                "issued_by": actor.subject_id,
+                "issued_at": now(),
+                "authority_changed": False,
+                "rollback": "meta-harness rollback keeps latest revocations; not a backup restore",
+            }
+            self.store.put(db, actor.scope, "cutover-receipt", receipt_id, 1, draft)
         per_target: list[dict[str, Any]] = []
         for target in targets:
             item: dict[str, Any] = {"target": target.get("id"), "status": "pointer_switched"}
@@ -155,23 +172,18 @@ class CutoverService:
                     item.update(status="installed", receipt_id=receipt["receipt_id"])
                 except (Hold, RuntimeFault) as exc:
                     item.update(status="failed", code=exc.code, message=exc.message)
+                except Exception as exc:  # OSError and friends: IO failure, never hidden
+                    item.update(status="failed", code="INSTALL_IO", message=type(exc).__name__)
             per_target.append(item)
         failed = [t for t in per_target if t["status"] == "failed"]
         receipt = {
-            "schema_version": "3.0.0",
-            "receipt_id": new_id("cutover"),
-            "release_ref": release_ref,
-            "previous_active_ref": expected_active_ref,
-            "decision_ref": human_decision_ref,
+            **draft,
             "targets": per_target,
             "overall": "partial" if failed else "complete",
-            "issued_by": actor.subject_id,
-            "issued_at": now(),
-            "authority_changed": False,
-            "rollback": "meta-harness rollback keeps latest revocations; not a backup restore",
+            "completed_at": now(),
         }
         with self.store.tx() as db:
-            self.store.put(db, actor.scope, "cutover-receipt", receipt["receipt_id"], 1, receipt)
+            self.store.put(db, actor.scope, "cutover-receipt", receipt_id, 2, receipt)
         return receipt
 
     def status(self, actor: Actor) -> dict[str, Any]:
@@ -180,7 +192,10 @@ class CutoverService:
             active = self.store.head(actor.scope, "release-pointer", "active")["data"]
         except RuntimeFault:
             active = {"release_ref": None}
-        receipts = [v for _, v in self.store.list_objects(actor.scope, "cutover-receipt")]
+        latest: dict[str, dict[str, Any]] = {}
+        for ref, value in self.store.list_objects(actor.scope, "cutover-receipt"):
+            latest[ref["id"]] = value  # ordered by id,revision: last write is the newest
+        receipts = list(latest.values())
         return {
             "active_release_ref": active.get("release_ref"),
             "cutovers": len(receipts),

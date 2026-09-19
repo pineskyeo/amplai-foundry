@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-19T04:53:23Z",
+  "cases": [
+    {
+      "id": "T-064",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t064_exact_session_resume (tests/v3/test_rc02_driver.py) — real CliDriver.resume/exact_session against src/amplai_foundry/agent_drivers/cli.py:425-451, with only the native subprocess faked."
+    },
+    {
+      "id": "T-065",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t065_partial_jsonl_stream_buffers_until_complete — real JsonlDecoder.feed (src/amplai_foundry/agent_drivers/protocol.py:26-59) and EventNormalizer.accept, no fakes."
+    },
+    {
+      "id": "T-066",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t066_unknown_provider_event_is_quarantined — real EventNormalizer.accept raising Hold UNKNOWN_PROVIDER_EVENT (src/amplai_foundry/agent_drivers/protocol.py:100-103), no fakes."
+    },
+    {
+      "id": "T-067",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t067_async_result_call_mismatch_rejected_pending_call_unchanged — real ResponsesDriver.tool_outputs mapping check (src/amplai_foundry/agent_drivers/http.py:522-533), only the Responses HTTP endpoint is faked via httpx.MockTransport."
+    },
+    {
+      "id": "T-068",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t068_steering_queued_disconnect_reconciles_without_false_applied — real SteeringService.native_ack (src/amplai_foundry/runtime/execution/steering.py:163-181, status stays queued/applied False) and .quiesce reconciliation, driven through the ReferenceDeployment fixture, no fakes."
+    },
+    {
+      "id": "T-069",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t069_native_steering_absent_falls_back_to_checkpoint_no_text_injection — real CliDriver.steer (src/amplai_foundry/agent_drivers/cli.py:362-368) returning checkpoint_required/native_applied False, and asserts the already-spawned process argv is untouched (no text-injection hack)."
+    },
+    {
+      "id": "T-070",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t070_experimental_transport_unqualified_blocks_dispatch_qualified_cli_fallback_ok — real CodexAppServerDriver.prepare raising Hold DRIVER_UNQUALIFIED for an unqualified profile (src/amplai_foundry/agent_drivers/codex_app_server.py:206-209), and DriverRegistry.register/resolve (src/amplai_foundry/agent_drivers/ports.py:70-105) admitting only a qualified port as the fallback."
+    },
+    {
+      "id": "T-071",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t071_opencode_204_is_accepted_or_running_never_completed — real OpenCodeDriver.start/poll status projection against an httpx.MockTransport fake OpenCode server (external side only)."
+    },
+    {
+      "id": "T-072",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t072_server_only_event_forgery_is_forbidden — real Actor.require capability gate (src/amplai_foundry/runtime/contracts/authority.py:31-32) blocking a worker-only actor from VerificationService.finish_goal (src/amplai_foundry/verification/runtime/service.py:591-597), which is the sole emitter of goal.verified. grant.revoked was not located as a separate code path in this tree (확인 필요: no `def revoke` / `grant.revoke` in src/amplai_foundry/runtime/); the test covers the identical actor.require capability-gate mechanism via goal.verified only."
+    },
+    {
+      "id": "T-058",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t058_svg_clip_finding_names_page_region_then_bounded_rerender_clears (tests/v3/test_rc02_boundary.py): real Chromium 151 via playwright 1.62 measures the clipped critical element and a bounded rerender clears it. Marked @pytest.mark.visual and deselected by default, so hosts without the qualified renderer record not_run instead of a skipped PASS; the shipped ledger comes from a qualified local run.",
+      "qualification": {
+        "browser_version": "151.0.7922.34",
+        "playwright": "1.62.0",
+        "browser_cache": "~/Library/Caches/ms-playwright/chromium-1234 (pre-existing, no download)",
+        "select_with": "pytest -m \"not slack_e2e\" (visual marker is deselected by default)"
+      }
+    },
+    {
+      "id": "T-076",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t076_credential_isolation_broker_handle_only_no_raw_secret_leak — real SecretBroker.issue_handle/with_secret/revoke (src/amplai_foundry/tool_broker/service.py:89-133): handle-only issuance, HTTPS+host-scope enforcement, raw value delivered only inside the broker-owned callback, revocation invalidates replay, __repr__ redacts. No fakes needed; fully local."
+    },
+    {
+      "id": "T-108",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t108_gate_applicability_cannot_bypass_under_fast_tiny_flag (parametrized over direct/discovery/deliberative/bounded_loop) — real GateEngine.evaluate (src/amplai_foundry/runtime/contracts/gates.py:29-63): a hard-protected gate (G-03) can never be marked not_applicable regardless of caller-claimed profile/fast-tiny flag; an unversioned/unreasoned N/A on a non-protected gate is coerced to hold; only a fully legitimate versioned+reasoned N/A on a non-protected gate is accepted."
+    },
+    {
+      "id": "T-109",
+      "status": "GREEN",
+      "needs": null,
+      "local_part_covered": "test_t109_meta_rejection_and_rollback_path_complete — real MetaReference/MetaHarnessService flow (src/amplai_foundry/meta_harness/reference.py, service.py) exercising: offline-fail rejection (never reaches promotion), full pass->canary->promote->rollback with independent reviewer-only grants (proposer never self-approves), frozen/content-addressed eval-report evidence, and promotion blocked with Hold DRAIN_REQUIRED while an old in-flight Run is still bound to the prior composition (src/amplai_foundry/meta_harness/service.py:813 promote, DRAIN_REQUIRED path). No fakes; local deterministic reference harness only (all inputs are the repo's own reference compositions, not a real production canary population)."
+    }
+  ]
+}

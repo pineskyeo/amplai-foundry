@@ -1,0 +1,402 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "id": "014-v3-catalog-closure",
+    "title": "AMPLAI V3 RC-02 — Catalog Closure",
+    "source_status": "approved_design_local_implementation"
+  },
+  "source": {
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "specs/014-v3-catalog-closure/plan.md",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "specs/014-v3-catalog-closure/work-contract.json",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "revision": "AMPLAI V3 Design 1.0"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "revision": "7c99660"
+      }
+    ],
+    "generated_from": [
+      "spec",
+      "plan",
+      "work-contract",
+      "design test-catalog",
+      "rc01 ledger"
+    ],
+    "generated_at": "2026-09-19"
+  },
+  "tasks": [
+    {
+      "id": "AMPLAI-V3C-T001",
+      "title": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T002",
+      "title": "CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T003",
+      "title": "CAT-EFFECTS tool/effect protocol 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T004",
+      "title": "CAT-GOAL goal resolver/contract critic 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T005",
+      "title": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T006",
+      "title": "CAT-META observatory/meta-harness/canary 케이스 실행 증거",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T007",
+      "title": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T008",
+      "title": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3C-T009",
+      "title": "CLOSURE ledger 재생성과 release truth 갱신",
+      "status": "done",
+      "depends_on": [
+        "AMPLAI-V3C-T001",
+        "AMPLAI-V3C-T002",
+        "AMPLAI-V3C-T003",
+        "AMPLAI-V3C-T004",
+        "AMPLAI-V3C-T005",
+        "AMPLAI-V3C-T006",
+        "AMPLAI-V3C-T007",
+        "AMPLAI-V3C-T008"
+      ],
+      "requirements": [
+        "W5-CLOSURE"
+      ]
+    }
+  ],
+  "slices": [
+    {
+      "id": "S01",
+      "title": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
+      "goal": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T001"
+      ],
+      "acceptance": [
+        "T-021 GRAPH_INVALID; no graph activation [Cycle rejection]",
+        "T-022 same canonical DAG content digest and stable topological order [Stable compiler output]",
+        "T-023 GRAPH_DATA_TYPES reject with exact edge finding [Typed artifact mismatch]",
+        "T-024 reject; source must be exactly one [Input XOR]",
+        "T-025 coverage failure; add global verifier or blocking finding [Missing global acceptance]",
+        "T-026 unsafe join rejected [Unsafe any-success join]",
+        "T-028 reuse rejected or reverify, no stale pass [Conservative output reuse]",
+        "T-030 bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out [Graph node budget limit]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_graph.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_graph.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S02",
+      "title": "CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거",
+      "goal": "CAT-RUNTIME scheduler/strategy/budget 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T002"
+      ],
+      "acceptance": [
+        "T-031 minimal contract, authority, artifact/verifier evidence retained [Tiny still gated]",
+        "T-032 only one exclusive writer; other remains ready/blocked [Exclusive workspace claim]",
+        "T-033 BUDGET_EXHAUSTED before extra work; full usage accounted [Root budget children]",
+        "T-034 unknown upper-bound held/reconciled, not zero cost [Unknown usage]",
+        "T-035 old Runs terminal, no more auto repair; typed failure/HOLD [Attempt budget]",
+        "T-036 escalate instead of fruitless retries [Repeated failure signature]",
+        "T-037 per-root cap and project fairness prevent starvation within defined scheduler policy [Fairness under large goal]",
+        "T-038 DB transaction not held by provider call; heartbeat commit possible [No long IO in transaction]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_runtime.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_runtime.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S03",
+      "title": "CAT-EFFECTS tool/effect protocol 케이스 실행 증거",
+      "goal": "CAT-EFFECTS tool/effect protocol 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T003"
+      ],
+      "acceptance": [
+        "T-044 UNKNOWN receipt; query/reconcile before any resend [Timeout may have applied]",
+        "T-045 IDEMPOTENCY_CONFLICT [Same effect key new args]",
+        "T-046 deny new send; record not applied only if positively unsent [Revoke before dispatch]",
+        "T-047 do not claim rollback; receipt/reconcile reveals outcome [Revoke after dispatch]",
+        "T-048 human reconciliation HOLD, no blind retry [Non-idempotent endpoint]",
+        "T-049 new grant/effect receipt linked to original; original not erased [Compensation is new effect]",
+        "T-050 item receipts + partial/unknown state; not all succeeded [Partial batch]",
+        "T-051 reject, original pending request unchanged [Remote callback spoof]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_effects.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_effects.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S04",
+      "title": "CAT-GOAL goal resolver/contract critic 케이스 실행 증거",
+      "goal": "CAT-GOAL goal resolver/contract critic 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T004"
+      ],
+      "acceptance": [
+        "T-007 hold + one consolidated question; no write dispatch [Ambiguous target hold]",
+        "T-008 read sources, do not ask already-answerable technical questions [Existing fact avoids question]",
+        "T-009 ACCEPTANCE_UNBOUND or critic blocking findings [Unverifiable goal rejected]",
+        "T-011 origin=inferred with evidence/unknown status; no invented authorization [Assumption disclosed]",
+        "T-012 HOLD with unresolved issue, no indefinite negotiation [Critic budget bounded]",
+        "T-013 reject duplicate criterion IDs [Criteria ID collision]",
+        "T-014 GRANT_STALE; reauthorization required [Contract revision invalidates grant]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_goal.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_goal.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S05",
+      "title": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
+      "goal": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T005"
+      ],
+      "acceptance": [
+        "T-039 STALE_LEASE; no renewed authority [Expired fence rejected]",
+        "T-040 fencing token never reused or decreases [Monotonic fence restart]",
+        "T-041 validation HOLD, not immediate retry-ready [Malformed time fail closed]",
+        "T-042 reject same-run ref mutation; new Run from checkpoint with new contract [Pause revision mismatch]",
+        "T-043 server time and current lease decide, worker cannot extend arbitrarily [Worker time skew]",
+        "T-052 reject/quarantine mismatched digest [Forged digest]",
+        "T-053 inconclusive/fail; no verified goal [Exit zero not pass]",
+        "T-054 not accepted toward active coverage [Old revision pass]",
+        "T-055 legacy_imported preserved; no automatic server_verified [Legacy evidence trust]",
+        "T-056 verified orphan attach or retention GC; no invalid artifact ref exposure [Artifact orphan crash]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_lease.py tests/v3/test_rc02_evidence.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_lease.py tests/v3/test_rc02_evidence.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S06",
+      "title": "CAT-META observatory/meta-harness/canary 케이스 실행 증거",
+      "goal": "CAT-META observatory/meta-harness/canary 케이스 실행 증거",
+      "tasks": [
+        "AMPLAI-V3C-T006"
+      ],
+      "acceptance": [
+        "T-079 class C separate governed work; no same experiment pass [Protected evaluator change]",
+        "T-080 access denied and contamination/security finding [Holdout leakage]",
+        "T-081 new experiment revision required, original preserved [Immutable experiment]",
+        "T-082 environment_drifted with limits; no harness-only improvement claim [Provider alias drift]",
+        "T-083 marked replay; not evidence of real-world success improvement [Replay vs rerun]",
+        "T-084 inconclusive; no manufactured performance guarantee [Insufficient evidence]",
+        "T-085 fail regardless of aggregate score [Failed safety test]",
+        "T-086 holdout reuse policy enforced; exploratory result not automatic promote [Multiple candidate selection]",
+        "T-088 abort new admission, cancel/reconcile active runs, baseline fallback [Canary kill switch]",
+        "T-091 old Run uses old composition or explicit checkpoint; no file overwrite mutation [In-flight composition pinned]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_meta.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_meta.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S07",
+      "title": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
+      "goal": "CAT-DRIVER/VISUAL/SECURITY/RELEASE 로컬 증명 가능 부분과 EXTERNAL 경계 명시",
+      "tasks": [
+        "AMPLAI-V3C-T007"
+      ],
+      "acceptance": [
+        "T-064 exact A session used; no continue latest heuristic [Exact session resume]",
+        "T-065 buffer until complete, typed event validation, no heuristic session pollution [Partial JSONL stream]",
+        "T-066 quarantine/unsupported with version finding, no guessed success [Unknown provider event]",
+        "T-067 reject mapping; correct pending call unchanged [Async result call mismatch]",
+        "T-068 ledger reconciles unresolved steering; no false applied status [Steering queued disconnect]",
+        "T-069 safe checkpoint/restart fallback; no text injection hack [Native steering absent]",
+        "T-070 CAPABILITY_UNQUALIFIED; qualified CLI fallback only if policy permits [Experimental transport]",
+        "T-071 accepted/running only, not completed [OpenCode 204]",
+        "T-072 forbidden event; only server authority emits transition [Server-only event forgery]",
+        "T-058 visual findings with page/region; bounded repair then rerender [SVG clipping and overlap]",
+        "T-076 broker handle only or deny; no raw long-lived secret in context/log [Credential isolation]",
+        "T-108 same invariant enforcement; only legitimate N/A rule accepted [Gate applicability cannot bypass]",
+        "T-109 frozen report evidence, independent grants, no self-promote, old in-flight work pinned [Complete meta rejection and rollback path]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_driver.py tests/v3/test_rc02_boundary.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_driver.py tests/v3/test_rc02_boundary.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S08",
+      "title": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
+      "goal": "FOLLOWUP review round 2 should-fix R102/R106/R107/R108",
+      "tasks": [
+        "AMPLAI-V3C-T008"
+      ],
+      "acceptance": [
+        "R102 pointer switch 와 cutover-receipt 초안이 같은 tx 에 기록돼 status() 가 partial 을 보인다 [Cutover receipt atomicity]",
+        "R106 소유 디렉토리의 temp 잔여를 보고하거나 정리한다 [Temp residue]",
+        "R107 plan_digest 를 무조건 검증해 Hold 한다 [Plan digest always]",
+        "R108 subset 이 아니면 거부한다 [Bind permission subset]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_followups.py tests/v3/test_rc01_cutover.py tests/v3/test_rc01_kit_installer_v3.py tests/v3/test_rc01_v2_import.py tests/v3/test_rc01_hermes_adapter.py",
+        ".venv/bin/python -m ruff check tests/v3/test_rc02_followups.py tests/v3/test_rc01_cutover.py tests/v3/test_rc01_kit_installer_v3.py tests/v3/test_rc01_v2_import.py tests/v3/test_rc01_hermes_adapter.py",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S09",
+      "title": "CLOSURE ledger 재생성과 release truth 갱신",
+      "goal": "CLOSURE ledger 재생성과 release truth 갱신",
+      "tasks": [
+        "AMPLAI-V3C-T009"
+      ],
+      "acceptance": [
+        "CLOSURE-001 ledger 의 not_run 이 로컬 증명 가능 범위에서 0 에 수렴하고 남은 항목은 전부 EXTERNAL 사유를 갖는다 [Ledger closure]"
+      ],
+      "eval": [
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_conformance_closure.py",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3"
+      ],
+      "depends_on": [
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "S07",
+        "S08"
+      ]
+    }
+  ],
+  "execution": {
+    "waves": [
+      {
+        "wave": 1,
+        "tasks": [
+          "AMPLAI-V3C-T001",
+          "AMPLAI-V3C-T002",
+          "AMPLAI-V3C-T003"
+        ],
+        "note": "병렬 round 1"
+      },
+      {
+        "wave": 2,
+        "tasks": [
+          "AMPLAI-V3C-T004",
+          "AMPLAI-V3C-T005",
+          "AMPLAI-V3C-T006"
+        ],
+        "note": "병렬 round 2"
+      },
+      {
+        "wave": 3,
+        "tasks": [
+          "AMPLAI-V3C-T007",
+          "AMPLAI-V3C-T008"
+        ],
+        "note": "round 3 + follow-ups"
+      },
+      {
+        "wave": 4,
+        "tasks": [
+          "AMPLAI-V3C-T009"
+        ],
+        "note": "closure (직렬)"
+      }
+    ]
+  }
+}

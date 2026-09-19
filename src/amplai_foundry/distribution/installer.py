@@ -368,13 +368,20 @@ class KitInstaller:
         actor.require("pack.install")
         root_path, meta = self._metadata(root)
         pending = meta / "pending.json"
-        if not pending.exists():
-            return {"status": "clean"}
         with open(meta / "owner.lock", "a+b") as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise Hold("INSTALL_BUSY", "Installer is active") from exc
+            # R106/R401: mkstemp residue is removed only while holding the owner lock, so a
+            # concurrent apply() can never lose the temp file it is about to os.replace().
+            residue = sorted(
+                str(x.relative_to(root_path)) for x in meta.glob(".v3-*") if x.is_file()
+            )
+            for name in residue:
+                (root_path / name).unlink()
+            if not pending.exists():
+                return {"status": "clean", **({"temp_removed": residue} if residue else {})}
             journal = json.loads(pending.read_bytes())
             plan = journal["plan"]
             backups = root_path / journal["backup_dir"]
@@ -382,7 +389,10 @@ class KitInstaller:
                 raise Hold("INSTALL_BACKUP", "Unsafe recovery backup path")
             if journal["status"] == "committed":
                 pending.unlink()
-                return {"status": "committed_receipt_preserved"}
+                return {
+                    "status": "committed_receipt_preserved",
+                    **({"temp_removed": residue} if residue else {}),
+                }
             for i, change in reversed(list(enumerate(plan["changes"]))):
                 path = self._path(root_path, change["path"])
                 actual = file_digest(path) if path.exists() else None
@@ -421,6 +431,7 @@ class KitInstaller:
                 "status": "rolled_back_to_preimages",
                 "plan_id": plan["plan_id"],
                 "receipt": rollback,
+                **({"temp_removed": residue} if residue else {}),
             }
 
 

@@ -1,0 +1,193 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3C-T009",
+  "title": "CLOSURE ledger 재생성과 release truth 갱신",
+  "type": "test",
+  "status": "done",
+  "goal": {
+    "outcome": "CLOSURE ledger 재생성과 release truth 갱신",
+    "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
+  },
+  "source": {
+    "feature": "014-v3-catalog-closure",
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "section": "CLOSURE-001"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "section": "remaining_blockers.tests_not_run"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 오케스트레이션 + 병렬 서브에이전트로 완성. src 는 서브에이전트에 읽기 전용, 테스트 파일만 소유"
+    ]
+  },
+  "scope": {
+    "include": [
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/",
+      "specs/014-v3-catalog-closure/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/",
+      "specs/014-v3-catalog-closure/",
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "AMPLAI-V3C-T001",
+      "AMPLAI-V3C-T002",
+      "AMPLAI-V3C-T003",
+      "AMPLAI-V3C-T004",
+      "AMPLAI-V3C-T005",
+      "AMPLAI-V3C-T006",
+      "AMPLAI-V3C-T007",
+      "AMPLAI-V3C-T008"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "junit 은 tests/v3 + tests/runtime_storage 한 번으로 만든다",
+      "release_status 는 external pending 이 남는 한 rc_candidate_not_final 을 유지한다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "test 삭제·skip 으로 통과시키지 않는다",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "CLOSURE-001",
+        "given": "S01-S08 PASS",
+        "when": "pytest tests/v3 tests/runtime_storage --junitxml + scripts/rc01_closure.py",
+        "then": "ledger 의 not_run 이 로컬 증명 가능 범위에서 0 에 수렴하고 남은 항목은 전부 EXTERNAL 사유를 갖는다 [Ledger closure]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc01_conformance_closure.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check .",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "서브에이전트가 src 를 건드리지 않도록 프롬프트 절대 규칙으로 통제"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T05:06:41Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S09",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "release/rc01-conformance-closure.json",
+      "specs/014-v3-catalog-closure/external-boundary.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC02",
+    "slice_id": "S09",
+    "context_pack": "specs/014-v3-catalog-closure/context-pack.json",
+    "environment": "specs/014-v3-catalog-closure/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "7c996603c1503c04fcee8f644e616aa22b16bc1c"
+  }
+}

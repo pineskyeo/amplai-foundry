@@ -1,0 +1,34 @@
+{
+  "blockers": [
+    "EXTERNAL_QUALIFICATION_PENDING 9건 (live provider account, docker/podman 실제 격리, physical holdout, OTLP collector 등) 은 로컬에서 판정 불가하며 ledger 의 remaining_blockers 에 남아 있다.",
+    "offline_views: main 의 guide-release-r6.json kit checksum drift (kit release r7 별도 Work)."
+  ],
+  "completed_slices": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09"
+  ],
+  "context_pack_hash": "ba7d320f42a9ab4c6dd42fc5bd026953c18c62e5cb7e9168b96aae4f44e429c4",
+  "current_slice": null,
+  "git_checkpoint": "44732a492d0b6cdcc3a0195cd149db1d092e540e",
+  "last_verification": {
+    "check_count": 0,
+    "environment": {},
+    "exit_code": null,
+    "failed_checks": [],
+    "profile": "fast",
+    "source": ".specify/eval/last.json",
+    "verdict": "PASS"
+  },
+  "next_action": "V3-062 human gate: release_status 를 FINAL 로 올리려면 cutover 승인이 필요하다. 그 전까지는 rc_candidate_not_final 을 유지한다. 코드 후속: R404 cutover receipt resume verb, runtime/execution/reuse.py 를 scheduler 의 실제 reuse 지점에 wiring.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "done",
+  "work_id": "AMPLAI-V3-RC02"
+}

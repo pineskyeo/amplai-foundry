@@ -284,6 +284,86 @@ class Effects:
         receipt: dict[str, Any] = self.store.head(scope, "effect", effect_id)["data"]["receipt"]
         return receipt
 
+    def dispatch_batch(self, scope: Scope, effect_ids: list[str]) -> dict[str, Any]:
+        """Dispatch several prepared effects; the aggregate is never claimed atomic (T-050).
+
+        Each item keeps its own receipt. An item whose outcome is unknown makes the batch
+        ``partial`` even when every other item applied; no endpoint promised all-or-nothing.
+        A ``Conflict``/``RuntimeFault`` on one item (race, unknown id) is recorded on that item
+        as ``error`` and never discards the receipts of items already dispatched.
+        """
+        self.store.assert_outside_tx()
+        items: list[dict[str, Any]] = []
+        for effect_id in effect_ids:
+            try:
+                receipt = self.dispatch(scope, effect_id)
+                items.append({"effect_id": effect_id, "state": receipt["state"]})
+            except Hold as exc:
+                current = self.store.head(scope, "effect", effect_id)
+                items.append({"effect_id": effect_id, "state": current["state"], "code": exc.code})
+            except RuntimeFault as exc:  # Conflict is a RuntimeFault: race or unknown id
+                items.append({"effect_id": effect_id, "state": "error", "code": exc.code})
+        states = {item["state"] for item in items}
+        if states <= {"applied"}:
+            aggregate = "applied"
+        elif "applied" in states or "reconciled" in states:
+            aggregate = "partial"
+        elif "unknown" in states:
+            aggregate = "unknown"
+        else:
+            aggregate = "error" if "error" in states else "not_applied"
+        return {
+            "batch_id": new_id("batch"),
+            "items": items,
+            "state": aggregate,
+            "all_succeeded": aggregate == "applied",
+            "atomic": False,
+        }
+
+    def ingest_callback(
+        self, scope: Scope, *, run_id: str, effect_id: str, call_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Record an external callback only when it names the exact pending effect (T-051).
+
+        A callback is untrusted data: it never settles the receipt. It is stored as an
+        observation for the trusted reconciler. Wrong project, run, or call id is rejected
+        before any write, so the pending request stays unchanged.
+        """
+        try:
+            head = self.store.head(scope, "effect", effect_id)
+        except RuntimeFault as exc:
+            raise Hold("CALLBACK_REJECTED", "Callback names no effect in this project") from exc
+        request = head["data"]["request"]
+        receipt = head["data"]["receipt"]
+        # store.head() is already scoped, so the request-scope comparison is defense in depth
+        # against a stored request that lies about its scope; it is not the primary gate.
+        if (
+            request["run_id"] != run_id
+            or request["scope"] != scope.wire()
+            or receipt.get("external_operation_id") != call_id
+            or head["state"] not in {"dispatched", "unknown"}
+        ):
+            raise Hold(
+                "CALLBACK_REJECTED",
+                "Callback does not match the pending effect's run, project, and call id",
+            )
+        observation = {
+            "callback_id": new_id("callback"),
+            "effect_id": effect_id,
+            "call_id": call_id,
+            "payload_digest": digest(payload),
+            "received_at": now(),
+            "trust": "untrusted_callback",
+        }
+        with self.store.tx() as db:
+            ref = self.store.put(
+                db, scope, "effect-callback", observation["callback_id"], 1, observation
+            )
+            self.store.event(
+                db, scope, "effect", effect_id, "effect.callback_observed", {"ref": ref}
+            )
+        return ref
+
     def reconcile(self, actor: Actor, effect_id: str) -> dict[str, Any]:
         actor.require("effect.reconcile")
         scope = actor.scope

@@ -379,6 +379,7 @@
     "src/amplai_foundry/runtime/evidence/cas.py",
     "src/amplai_foundry/runtime/execution/envelope.py",
     "src/amplai_foundry/runtime/execution/reference.py",
+    "src/amplai_foundry/runtime/execution/reuse.py",
     "src/amplai_foundry/runtime/execution/service.py",
     "src/amplai_foundry/runtime/execution/steering.py",
     "src/amplai_foundry/runtime/execution/strategies.py",
@@ -439,7 +440,17 @@
     "tests/v3/test_rc01_readiness_validator.py",
     "tests/v3/test_rc01_repo_facts.py",
     "tests/v3/test_rc01_storage_uow.py",
-    "tests/v3/test_rc01_v2_import.py"
+    "tests/v3/test_rc01_v2_import.py",
+    "tests/v3/test_rc02_boundary.py",
+    "tests/v3/test_rc02_driver.py",
+    "tests/v3/test_rc02_effects.py",
+    "tests/v3/test_rc02_evidence.py",
+    "tests/v3/test_rc02_followups.py",
+    "tests/v3/test_rc02_goal.py",
+    "tests/v3/test_rc02_graph.py",
+    "tests/v3/test_rc02_lease.py",
+    "tests/v3/test_rc02_meta.py",
+    "tests/v3/test_rc02_runtime.py"
   ],
   "completeness": {
     "excluded": {
@@ -451,6 +462,7 @@
       "specs/013-amplai-v3/environment.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/evidence-trace.jsonl": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/garden-report.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/013-amplai-v3/handoff.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/junit/rc01-v3-e2e.xml": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/knowledge-readiness.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/plan.md": "per-Work contract/plan/evidence; active contract independently bound",
@@ -480,7 +492,26 @@
       "specs/013-amplai-v3/tasks.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/verifier-v2-report.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/013-amplai-v3/verifier-v2-report.log": "per-Work contract/plan/evidence; active contract independently bound",
-      "specs/013-amplai-v3/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound"
+      "specs/013-amplai-v3/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/context-pack.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/environment.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/evidence-trace.jsonl": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/external-boundary.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/knowledge-readiness.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/plan.md": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/spec.md": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T001.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T002.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T003.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T004.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T005.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T006.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T007.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T008.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T009.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/task-manifests/index.yaml": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/tasks.md": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/014-v3-catalog-closure/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound"
     },
     "expected": [
       ".ai-team/knowledge/document-reviews.json",
@@ -587,6 +618,7 @@
       "specs/013-amplai-v3/environment.json",
       "specs/013-amplai-v3/evidence-trace.jsonl",
       "specs/013-amplai-v3/garden-report.json",
+      "specs/013-amplai-v3/handoff.json",
       "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
       "specs/013-amplai-v3/knowledge-readiness.json",
       "specs/013-amplai-v3/plan.md",
@@ -617,6 +649,25 @@
       "specs/013-amplai-v3/verifier-v2-report.json",
       "specs/013-amplai-v3/verifier-v2-report.log",
       "specs/013-amplai-v3/work-contract.json",
+      "specs/014-v3-catalog-closure/context-pack.json",
+      "specs/014-v3-catalog-closure/environment.json",
+      "specs/014-v3-catalog-closure/evidence-trace.jsonl",
+      "specs/014-v3-catalog-closure/external-boundary.json",
+      "specs/014-v3-catalog-closure/knowledge-readiness.json",
+      "specs/014-v3-catalog-closure/plan.md",
+      "specs/014-v3-catalog-closure/spec.md",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T001.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T002.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T003.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T004.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T005.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T006.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T007.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T008.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/AMPLAI-V3C-T009.yaml",
+      "specs/014-v3-catalog-closure/task-manifests/index.yaml",
+      "specs/014-v3-catalog-closure/tasks.md",
+      "specs/014-v3-catalog-closure/work-contract.json",
       "src/amplai_foundry/_vendor/rfc8785.py",
       "src/amplai_foundry/agent_drivers/cli.py",
       "src/amplai_foundry/agent_drivers/codex_app_server.py",
@@ -672,6 +723,7 @@
       "src/amplai_foundry/runtime/evidence/cas.py",
       "src/amplai_foundry/runtime/execution/envelope.py",
       "src/amplai_foundry/runtime/execution/reference.py",
+      "src/amplai_foundry/runtime/execution/reuse.py",
       "src/amplai_foundry/runtime/execution/service.py",
       "src/amplai_foundry/runtime/execution/steering.py",
       "src/amplai_foundry/runtime/execution/strategies.py",
@@ -732,7 +784,17 @@
       "tests/v3/test_rc01_readiness_validator.py",
       "tests/v3/test_rc01_repo_facts.py",
       "tests/v3/test_rc01_storage_uow.py",
-      "tests/v3/test_rc01_v2_import.py"
+      "tests/v3/test_rc01_v2_import.py",
+      "tests/v3/test_rc02_boundary.py",
+      "tests/v3/test_rc02_driver.py",
+      "tests/v3/test_rc02_effects.py",
+      "tests/v3/test_rc02_evidence.py",
+      "tests/v3/test_rc02_followups.py",
+      "tests/v3/test_rc02_goal.py",
+      "tests/v3/test_rc02_graph.py",
+      "tests/v3/test_rc02_lease.py",
+      "tests/v3/test_rc02_meta.py",
+      "tests/v3/test_rc02_runtime.py"
     ],
     "processed": [
       ".ai-team/policy/documentation.json",
@@ -886,6 +948,7 @@
       "src/amplai_foundry/runtime/evidence/cas.py",
       "src/amplai_foundry/runtime/execution/envelope.py",
       "src/amplai_foundry/runtime/execution/reference.py",
+      "src/amplai_foundry/runtime/execution/reuse.py",
       "src/amplai_foundry/runtime/execution/service.py",
       "src/amplai_foundry/runtime/execution/steering.py",
       "src/amplai_foundry/runtime/execution/strategies.py",
@@ -946,27 +1009,37 @@
       "tests/v3/test_rc01_readiness_validator.py",
       "tests/v3/test_rc01_repo_facts.py",
       "tests/v3/test_rc01_storage_uow.py",
-      "tests/v3/test_rc01_v2_import.py"
+      "tests/v3/test_rc01_v2_import.py",
+      "tests/v3/test_rc02_boundary.py",
+      "tests/v3/test_rc02_driver.py",
+      "tests/v3/test_rc02_effects.py",
+      "tests/v3/test_rc02_evidence.py",
+      "tests/v3/test_rc02_followups.py",
+      "tests/v3/test_rc02_goal.py",
+      "tests/v3/test_rc02_graph.py",
+      "tests/v3/test_rc02_lease.py",
+      "tests/v3/test_rc02_meta.py",
+      "tests/v3/test_rc02_runtime.py"
     ],
     "rule_sha256": "8f7cd891e1122d6321e4804ba528bd0b4285f0fcb016bb6877e9fedbcae7bafd",
     "unprocessed": []
   },
-  "content_hash": "40d8eced3367b2163fa0e92bdbda45dd4ee6d4c329c04f13ed0d782b96df0e11",
+  "content_hash": "c8147b4575d1ddad93ce916808e3fbff78f7267479ac0d33cc0d35b1f1ecb604",
   "dependency_snapshot": {
     "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
     "candidate": {
-      "commit": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
+      "commit": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
       "complete": true,
       "mode": "git",
-      "sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2"
+      "sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95"
     },
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "6f09c68f21d88a267e42c3cce1dd69c1d0f0aabc16ddfae600b4f965b6f8c2c0",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -985,8 +1058,8 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "3f0c9e269a6fc13677126addc24e8941804bef01ba91c115e85c2f04bacc966b",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1005,8 +1078,8 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1025,8 +1098,8 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1045,8 +1118,8 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "39ef595415dd1f2ed1567dbf3a7dc5140b4d95274fd32a871d0eab03a99e4e9f",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1065,8 +1138,8 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1085,9 +1158,9 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -1105,8 +1178,8 @@
       {
         "path": "deployment/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
           "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
           "metadata_owner": "sidecar",
@@ -1125,8 +1198,8 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1145,8 +1218,8 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1165,8 +1238,8 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1185,8 +1258,8 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1205,8 +1278,8 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1225,8 +1298,8 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "cac3428462ac89ce472ef94d4bc92753deef3a1100977e3447de354958c0ad8e",
           "metadata_owner": "sidecar",
@@ -1245,9 +1318,9 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "09d27497e2fc6480bf06bd401a9bf4c923b2c933efb4ed5a4698dc761692a812",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
           "metadata_sha256": "536a8d073799ae92827c66529fc8c3b65e71ef66ddc91740ffcbb666db27e802",
@@ -1265,8 +1338,8 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1285,8 +1358,8 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1305,9 +1378,9 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "63fb71d98222456d1d0a78f748cee891f478f196712cb1b87ac14d7a4ec59fc5",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "bfcfe683e141b6cdcbd37fa5c9c94c511212b702b0a13e30b5ef15d1270eb1b6",
           "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
           "metadata_owner": "sidecar",
           "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -1325,8 +1398,8 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "7959911f87067368cb0b474a4d2589b13fb2bc2ca3558375a552e71c64bc65d3",
           "metadata_owner": "sidecar",
@@ -1345,9 +1418,9 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
           "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -1365,8 +1438,8 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
           "metadata_owner": "sidecar",
@@ -1385,10 +1458,10 @@
       {
         "path": "integrations/hermes/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "6bb70208cb9150ecf449b087dc427dc14df51b787bd7edb86fbb3e92718a9418",
-          "dependency_snapshot_sha256": "ec7d643dd991ee657273289f61942985bd3ddaa20b07dd6bff4bb89973b38a6c",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
+          "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
           "metadata_owner": "sidecar",
           "metadata_sha256": "2f35aa8a659825713529077123480a66d699b5dd6a6fa5beff34bdba85df85b2",
           "rules": {
@@ -1405,8 +1478,8 @@
       {
         "path": "migration/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
           "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
           "metadata_owner": "sidecar",
@@ -1425,8 +1498,8 @@
       {
         "path": "packs/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
           "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
           "metadata_owner": "sidecar",
@@ -1445,10 +1518,10 @@
       {
         "path": "release/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-          "declared_reference_sha256": "70a4e050d44b0df8751645950742486e0974e6c1a3794fb005cbb71d8c98303f",
-          "dependency_snapshot_sha256": "227af2afa31713649e491ae4ae52cb3dff5bc39f6291176a299121f7197dd5c3",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+          "declared_reference_sha256": "d0d73e5c4bc7e31e337dd5f74d6ae9f41eee56b2ea5ac07f8c4fc842d0d75eb0",
+          "dependency_snapshot_sha256": "adfe0b5f0a26f9cc750b91a626d9ecb2e3537e7bff63b93bdfd6f708b93dee6e",
           "metadata_owner": "sidecar",
           "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
           "rules": {
@@ -1465,8 +1538,8 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "4a11affad203d3667c120b7379bf71449e233ac853ddb0600e88f28bc9dbad00",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1485,8 +1558,8 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "dd0062bb162e0d9d246d14bb6e842d90a752c1d9e20d6c40cc7095c2c9c29c2f",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1505,8 +1578,8 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-          "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+          "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+          "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
           "declared_reference_sha256": "dfea078c284eb4b7b9efd04df3fc997c2f9e5028b5a98897a59207ccac19d0b8",
           "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
           "metadata_owner": "sidecar",
@@ -1951,7 +2024,7 @@
       {
         "mode": 420,
         "path": "eval/test-catalog-status.json",
-        "sha256": "3ed45cdd413272947b0d885b21f64ed8e7450f440e5ed83f7f5bbebfc0afd80a",
+        "sha256": "00603f762d6d9b7cdc223cbed128650b199e206ed9cdad6bf47372fe9c64fa96",
         "state": "PRESENT"
       },
       {
@@ -2443,7 +2516,7 @@
       {
         "mode": 420,
         "path": "release/rc01-conformance-closure.json",
-        "sha256": "e75146f6e6d445a1827709397e439d2c7d3056fb8b629efbedf9d49a949832c6",
+        "sha256": "03ffca0fe9cc1652d0fc2da68379c0249547472bab145da723122b0dd24c84a5",
         "state": "PRESENT"
       },
       {
@@ -2527,7 +2600,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/control_plane/hermes.py",
-        "sha256": "f75f434ad9a16fae315ba7e35eb42fa0829aa931c5e115d56d0604d2908561a8",
+        "sha256": "87c7af7e8382ea67ca7cefd8bc9369a67fbe9701d51d5b8215c989d7e9ab6fb6",
         "state": "PRESENT"
       },
       {
@@ -2539,13 +2612,13 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/distribution/cutover.py",
-        "sha256": "86eb1cf85e42b4c1509e5ff99e0a49d0299d28456afb659f0ede8def705d1110",
+        "sha256": "ed4cc01729bdd3f6a5d9dea6d7a7a9406d76f57910f497237068c8703abca8fc",
         "state": "PRESENT"
       },
       {
         "mode": 420,
         "path": "src/amplai_foundry/distribution/installer.py",
-        "sha256": "8b46ac9dc2cdedd0ffaf626dba9659bd954a18c3879fdd6a18337c712114ce5b",
+        "sha256": "e66eb41e3f56ed0d8468c470515240bad7b91cfe224f671b679f40de9d95e725",
         "state": "PRESENT"
       },
       {
@@ -2665,7 +2738,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/migration/v2.py",
-        "sha256": "fa7629c4d642b27094ce57b93a8c5d0493c76640be033a0344b6202c56ffb4c5",
+        "sha256": "e0f5348d0bf962030786b3a681fa52bae69dc2d50f7c35c8a3d1153b297dac1c",
         "state": "PRESENT"
       },
       {
@@ -2749,7 +2822,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/runtime/effects/service.py",
-        "sha256": "8fab521b6d082aa7edf4c10b018545f80e489f5bd2b34328d54529a8db6c637d",
+        "sha256": "7cdb9292b248adc71975a09254360003c685119f79880df3c5206a6d97ce07f3",
         "state": "PRESENT"
       },
       {
@@ -2780,6 +2853,12 @@
         "mode": 420,
         "path": "src/amplai_foundry/runtime/execution/reference.py",
         "sha256": "f55689414333f887a6fd8edc87c69d83f2079048b717485d687c317805dcfd7a",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/execution/reuse.py",
+        "sha256": "8522d86a97a1b2c0811e59700ffe756d4f0869d12ab4e9d95282966ef21e3ee0",
         "state": "PRESENT"
       },
       {
@@ -3067,7 +3146,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_rc01_hermes_adapter.py",
-        "sha256": "16720a6854a6b86eb4c9ae29f01be911f51388efa6537c0a27ee1408c102f34b",
+        "sha256": "c6352c4878a275a5a43790a872cbdbcf70363587fa8d8888794816d4864e35a6",
         "state": "PRESENT"
       },
       {
@@ -3145,12 +3224,72 @@
       {
         "mode": 420,
         "path": "tests/v3/test_rc01_v2_import.py",
-        "sha256": "d37e3970f90d9065c2256d41df1dc7c09e1bd3c26f834a51f17f750d2ceb99e0",
+        "sha256": "57e5b226f4d65dacaeb1eb8cc22059f2e88af900dcd48cc5726f2135e5bf8d38",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_boundary.py",
+        "sha256": "8082f4c1c87ce29a97847fbde7c44447083d02e397a0436ec926bbcc1f9e4400",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_driver.py",
+        "sha256": "50908ea79f862aca55246d1acc9885386e8bf9250bb544ce2e659e7993855fd1",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_effects.py",
+        "sha256": "4890f31586b5f6088bd1d8d266ac04a6ec93268f444557280465a39cacd01549",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_evidence.py",
+        "sha256": "0a1f5efddb6849500312942f2d2899683b3927ec1a267af1a9db7d05072380a0",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_followups.py",
+        "sha256": "c2990813e935b8a71f6f9eb3753aa4ed3529bfd3c64ad5e799efb12f04df6648",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_goal.py",
+        "sha256": "0cfa0747072bba5019551080edb10ef473ca7f747bf84f6c7ad818066bc9f58b",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_graph.py",
+        "sha256": "1a2ba1ae0ba158d10582c235f2bebcc7f43ff3d1e7bf3f95d77711e637b02ca5",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_lease.py",
+        "sha256": "f2087f81ea48e19ce928f02e095243f5a43ce05b15e7835110ceffdcaebaf042",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_meta.py",
+        "sha256": "7dd8f34b81b374189f5c07b6dce7da003ad31d17e7c183b82cfc7b83372ee39e",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/v3/test_rc02_runtime.py",
+        "sha256": "6a50bbf74c2d4c33d9694ae685bf9e23813151565473afd05f70965a50fb389c",
         "state": "PRESENT"
       }
     ]
   },
-  "dependency_snapshot_hash": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+  "dependency_snapshot_hash": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -3158,7 +3297,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
+    "commit": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "policy_sha256": "8f7cd891e1122d6321e4804ba528bd0b4285f0fcb016bb6877e9fedbcae7bafd"
   },
@@ -3188,8 +3327,8 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword evidence,knowledge,plane; 문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "6f09c68f21d88a267e42c3cce1dd69c1d0f0aabc16ddfae600b4f965b6f8c2c0",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3204,7 +3343,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "07b45857a1030f3cf0d0c8af8410e2a7620ad84367d72139cf9bd8fb2a9be1c5",
+      "review_hash": "0a07d8a09c719415df3e2e0598a3e9e468ddf0b3774979f744de5b9dd4008f95",
       "state": "ACTIVE"
     },
     {
@@ -3222,8 +3361,8 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "3f0c9e269a6fc13677126addc24e8941804bef01ba91c115e85c2f04bacc966b",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3238,7 +3377,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "d13150acd71d1b0a62b82b68505d138c9e8be345654a0948b17ff8a777da17f6",
+      "review_hash": "ea29c9051829a57251c6c7085e107c2443d003d2831335b00002e0ab77f2f43b",
       "state": "ACTIVE"
     },
     {
@@ -3261,8 +3400,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword converge,review; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3277,7 +3416,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "84e306f02265327270697b23e29d5f342e08bd54d95331768fd493fed3d51f22",
+      "review_hash": "dbf3fa3272030d762eaf783718844346f7413ee95cf025f879025a811cee6d7b",
       "state": "ACTIVE"
     },
     {
@@ -3295,8 +3434,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3311,7 +3450,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "edda5a9f27a3c3a804ef945c082af023f889845790eeef020163909606247154",
+      "review_hash": "675093a7418a5ec3ce0b8ceaedb5ae1aeffed9b9fe52ad151db28aaddd22c462",
       "state": "ACTIVE"
     },
     {
@@ -3331,8 +3470,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "39ef595415dd1f2ed1567dbf3a7dc5140b4d95274fd32a871d0eab03a99e4e9f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3347,7 +3486,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "c06fdb1d8c529753c78ff85e77c43249cdc4f498836424cd94936bfda23d4919",
+      "review_hash": "29381f51a7ef98c8a601fcb7ab789d89d5c3f34a2815a7dd3a8065ac6cc0361e",
       "state": "ACTIVE"
     },
     {
@@ -3367,8 +3506,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,skill,verification",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3383,7 +3522,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "76fb1f5ce680728b966cef0189517eb9391051969df6d77d603e083cebbce121",
+      "review_hash": "0537c6c777abf904b5e38c36171293ba8475f1e69d0bef0952f7c510b45bfdb9",
       "state": "ACTIVE"
     },
     {
@@ -3406,9 +3545,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -3422,7 +3561,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "f5d9018d86e9d9c5bf1ffc892a6dc3e5630307526fc18920796e6e6f66064323"
       },
-      "review_hash": "0c0a5efbd54a69b02ec46747c5cac3315cf4caf5ae80d13ca610b1ab7c5b3d0a",
+      "review_hash": "f0c7be49886007785c6dd7b5ffb3629acbf3128888d04c54177bc2dfe9659eda",
       "state": "ACTIVE"
     },
     {
@@ -3442,8 +3581,8 @@
       "path": "deployment/README.md",
       "reason": "문서가 deployment/support-evidence.json, deployment/support-matrix.json, src/amplai_foundry/runtime/profiles.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -3458,7 +3597,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "f33457765bcda2cf4ecb77e5925640d53c13eca4ad83d5b1e294590348b13092"
       },
-      "review_hash": "81d409baf5674c44c778d7c1eeab2a1b0210f4d10035c17dd97e5032da9b7b07",
+      "review_hash": "04b7e443af615b7daf2ee19ef9e88db3358df15b78412ed4c82a64ee292e8da5",
       "state": "ACTIVE"
     },
     {
@@ -3476,8 +3615,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge,lint",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3492,7 +3631,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "5d683cef2a785b1f2d0a83604171c082d97257f4f6df2e4d27657892769e17d6",
+      "review_hash": "3e0df6eb32c4d6ddb56c1ba9c1c6b6e85cc4ca9cfb9422cb7457fa1359af95c9",
       "state": "ACTIVE"
     },
     {
@@ -3510,8 +3649,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "keyword status",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3526,7 +3665,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "60d2c6348274b00901158dc32837abf0d7db9648de996d220a915ed36569b915",
+      "review_hash": "b32551da438bdb254fcb49d7e27570ddf48cdd691a6ae61ac658548219e577be",
       "state": "ACTIVE"
     },
     {
@@ -3544,8 +3683,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword kit,release",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3560,7 +3699,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "32adfb3d2a8e1c84be0939560b2b7397bf7871330e05cc7110412f1838c0c0c1",
+      "review_hash": "aa4ccf20662a360cfbf7af40353d6682fc1e486d0fbdc9dbc7c455e5cad89401",
       "state": "ACTIVE"
     },
     {
@@ -3578,8 +3717,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword pack,workspace",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3594,7 +3733,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "a0b423ede4c68409bd5e715ad16e8de046d8a7015e547a57cf3d85eb2b28983b",
+      "review_hash": "b4fc5c8a8a2035d5bdee63cd65ccbb8851dd0d59360d6a1eb543ee11886d98bc",
       "state": "ACTIVE"
     },
     {
@@ -3612,8 +3751,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "keyword proposal,validate",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3628,7 +3767,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "bc406f542c5e45454bf1a5cbd27b716ece0e7d89b890308dc089b99afe86a14f",
+      "review_hash": "2891948e7cd84da3eb4b8fb5f2a2eef1e7b94cea88edf77f81e088d6bd870bc8",
       "state": "ACTIVE"
     },
     {
@@ -3644,10 +3783,10 @@
       ],
       "handled": true,
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "keyword reference",
+      "reason": "keyword graph,reference",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "cac3428462ac89ce472ef94d4bc92753deef3a1100977e3447de354958c0ad8e",
         "metadata_owner": "sidecar",
@@ -3662,7 +3801,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "e6cb6ff06d6b1c8eacffcdd46c772585a139ab4dfd01e8febe68c81b4e9e5ebf",
+      "review_hash": "c38d1c2fdce8b6f7a019bb9ce631714f3d201d9a9f78bd401e1b5834ca63797c",
       "state": "ACTIVE"
     },
     {
@@ -3682,9 +3821,9 @@
       "path": "docs/ROADMAP.md",
       "reason": "keyword plan; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "09d27497e2fc6480bf06bd401a9bf4c923b2c933efb4ed5a4698dc761692a812",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "536a8d073799ae92827c66529fc8c3b65e71ef66ddc91740ffcbb666db27e802",
@@ -3698,7 +3837,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "a9c221489f490ee707d20320e4fd57dc1efcdbd6e0a8c9762655edf621bb0f6a",
+      "review_hash": "869005aa2a9defd5a475b729e9af955059533b3ce822cff762e948ba389fca1b",
       "state": "ACTIVE"
     },
     {
@@ -3718,8 +3857,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "keyword compatibility,migration,schema; 문서가 pyproject.toml 를 직접 언급",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3734,7 +3873,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "39b8632c6b59a57edf5e96a63a95d4b0ea726e2f430505588fd3c370d818bef8",
+      "review_hash": "8c6d943bcfa3904251db8410a0530a24d68b24631ffe4d6db848db8407a766f2",
       "state": "ACTIVE"
     },
     {
@@ -3750,10 +3889,10 @@
       ],
       "handled": true,
       "path": "docs/VISION.md",
-      "reason": "keyword amplai",
+      "reason": "keyword amplai,goal",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -3768,7 +3907,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "53b4b20ff18922ae41d2d2cac9ca6b9b32f73ecb3819d45bbbe0485dbbf8d33d",
+      "review_hash": "773bfb9db4092ed07d177f24d2fcc43c44709ed272f14fb1ffe314d548c95526",
       "state": "ACTIVE"
     },
     {
@@ -3788,9 +3927,9 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 src/amplai_foundry/agent_drivers/cli.py, src/amplai_foundry/agent_drivers/http.py, src/amplai_foundry/agent_drivers/ports.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "63fb71d98222456d1d0a78f748cee891f478f196712cb1b87ac14d7a4ec59fc5",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "bfcfe683e141b6cdcbd37fa5c9c94c511212b702b0a13e30b5ef15d1270eb1b6",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -3804,7 +3943,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "244e72084ce5da3b31d9e3cd3d448ac64c54a7117fc3b94730fe653dea639e0e"
       },
-      "review_hash": "9d719623518e86ed35b1c4dce7615c29251ee8a38584c682d96a0765aab353ef",
+      "review_hash": "c213ba5cf9db87303e0ace7ec171255977d00c2eae8adb900d10b70ef9b2a504",
       "state": "ACTIVE"
     },
     {
@@ -3822,8 +3961,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "7959911f87067368cb0b474a4d2589b13fb2bc2ca3558375a552e71c64bc65d3",
         "metadata_owner": "sidecar",
@@ -3838,7 +3977,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a124a4790f581cf03ee4a66b0b853e6be2ad68fab225e29b0882528ee18264aa"
       },
-      "review_hash": "ac2ff19a830d9d1154491a5af7b71a54076c74a07c2cefdf7ea4fef9f0dfebc4",
+      "review_hash": "8c01aa09d16e2afcab05587482785e82acb1d76d6baf2db93177cd29bb17bc65",
       "state": "ACTIVE"
     },
     {
@@ -3858,9 +3997,9 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/corpus.py, src/amplai_foundry/evaluation/observatory.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -3874,7 +4013,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771"
       },
-      "review_hash": "f9684133b3c598298f080f11033e894ea28b9e2536e8af13231750c8ae69ae78",
+      "review_hash": "d48222be36be78f6814a1f0dc8ea1dda8952ce3f7edb90c2ffde721ba39909d5",
       "state": "ACTIVE"
     },
     {
@@ -3892,8 +4031,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -3908,7 +4047,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "550d1695f8fba6fd5c8e6073aa253ff1ffe8244cccbb4d32fec7c9ed4f699508",
+      "review_hash": "63e67b62c6d4a45da826212fed6467d061952515c641a9a765c0f550cb7d2b27",
       "state": "ACTIVE"
     },
     {
@@ -3928,10 +4067,10 @@
       "path": "integrations/hermes/README.md",
       "reason": "문서가 src/amplai_foundry/control_plane/hermes.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "6bb70208cb9150ecf449b087dc427dc14df51b787bd7edb86fbb3e92718a9418",
-        "dependency_snapshot_sha256": "ec7d643dd991ee657273289f61942985bd3ddaa20b07dd6bff4bb89973b38a6c",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
+        "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
         "metadata_sha256": "2f35aa8a659825713529077123480a66d699b5dd6a6fa5beff34bdba85df85b2",
         "rules": {
@@ -3944,7 +4083,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8e47d43ec0e236ce875069c882b12c4af3f6d14b7fb397d886b34daa8da8e6c2"
       },
-      "review_hash": "d7f14f209d37c0bd2b4b69170381f3f91516d0962882e0d97069b7d0202f8397",
+      "review_hash": "6ddd76b2428ed1bfac9a24ef759216dd2757754e891cb59f66f8fca7ee12ca30",
       "state": "ACTIVE"
     },
     {
@@ -3964,8 +4103,8 @@
       "path": "migration/README.md",
       "reason": "문서가 migration/retirement-proposal.json, src/amplai_foundry/migration/retirement.py, tests/v3/test_rc01_legacy_retirement.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -3980,7 +4119,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "fe389d391e27c2fcc75b3d97ac9e1eb3a585370e9a6ec7a7b38274f92babc9dd"
       },
-      "review_hash": "d41e82e4ae8ec4a7e4e17a620ed169e475571db8f38a2e3333e2989ca9bc9c8d",
+      "review_hash": "70800e67e56ed535f9ae789f278346563fcfaa980726265a4b514e429ae6b508",
       "state": "ACTIVE"
     },
     {
@@ -4000,8 +4139,8 @@
       "path": "packs/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -4016,7 +4155,7 @@
         "source_assets_sha256": "292cbb3f874f0b7aeca0c02c5ca02f321259bb32f367dbbb8a9f40446992b30d",
         "source_sha256": "9398b113211cdc957180d288ad8fab60b6d4a360368be12682049ab7a436f9d7"
       },
-      "review_hash": "3aa5ad5fce89688a7514955306b9596bfd83456ff701d3ec5b60498ad139b54a",
+      "review_hash": "76605bc976c8fdd4bf4c8a12261149dc13af3c8ff2d1768b1fa84d78cd7e5e65",
       "state": "ACTIVE"
     },
     {
@@ -4036,10 +4175,10 @@
       "path": "release/README.md",
       "reason": "문서가 eval/test-catalog-status.json, release/rc01-conformance-closure.json, scripts/rc01_closure.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "70a4e050d44b0df8751645950742486e0974e6c1a3794fb005cbb71d8c98303f",
-        "dependency_snapshot_sha256": "227af2afa31713649e491ae4ae52cb3dff5bc39f6291176a299121f7197dd5c3",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "d0d73e5c4bc7e31e337dd5f74d6ae9f41eee56b2ea5ac07f8c4fc842d0d75eb0",
+        "dependency_snapshot_sha256": "adfe0b5f0a26f9cc750b91a626d9ecb2e3537e7bff63b93bdfd6f708b93dee6e",
         "metadata_owner": "sidecar",
         "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
         "rules": {
@@ -4052,7 +4191,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "334413d74bdd0c919afc26ff3606c39375fd256f252aa7e7c6f701bd6a4f5dc2"
       },
-      "review_hash": "c8bbac03d0af6752c2611bc094557f0eae59d3ade8fc3d244a0248184ef5ac23",
+      "review_hash": "1c118d10f256c4efdc96305a6047d919851638f5a1ff37b068ed4180802a7674",
       "state": "ACTIVE"
     },
     {
@@ -4072,8 +4211,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json, tests/e2e/artifacts/golden-registry.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4a11affad203d3667c120b7379bf71449e233ac853ddb0600e88f28bc9dbad00",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -4088,7 +4227,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "0d5e7ed6f2c25d57165a45f9be161ef5c07e3d740a90de14cb665881cee9b61c",
+      "review_hash": "ef9a3148c326c65919c040c940718279203745e7169d58690f61c0d7909305fa",
       "state": "ACTIVE"
     },
     {
@@ -4106,8 +4245,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword kit,release",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dd0062bb162e0d9d246d14bb6e842d90a752c1d9e20d6c40cc7095c2c9c29c2f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4122,7 +4261,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "7d1baa57c21dec4d457139d746bfc376f0eebbcda7a529d7c1ef76f7e3a080b7",
+      "review_hash": "95c6761b9b010440a5e7765068abf5a4b6154b2186195970133dc0dd2a7ee468",
       "state": "ACTIVE"
     },
     {
@@ -4143,8 +4282,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword kit,release; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dfea078c284eb4b7b9efd04df3fc997c2f9e5028b5a98897a59207ccac19d0b8",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4159,7 +4298,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "f96998be97b174f9182c287051fa4e4d01d97ccf196a8065e755daa39740fbce",
+      "review_hash": "67ec039dfbdb1955e355542943c22d7b3fe3e5e5903463c9ed6b37ea8737fbb8",
       "state": "ACTIVE"
     }
   ],
@@ -4182,10 +4321,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 41,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4195,8 +4334,8 @@
       "reference_hash": "3dbb8ab273efb9bfe9b19cc5c76e74904fa15274ef42f0a1fdab6377266501c8",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "39ef595415dd1f2ed1567dbf3a7dc5140b4d95274fd32a871d0eab03a99e4e9f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4223,10 +4362,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 34,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4236,8 +4375,8 @@
       "reference_hash": "402e9b17b282dc05d8f21ccc9aa9dd08b16e731b0167757302bcd886ae3bdaa4",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4264,10 +4403,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 9,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4277,8 +4416,8 @@
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4305,10 +4444,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 19,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4318,8 +4457,8 @@
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4346,10 +4485,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 9,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4359,8 +4498,8 @@
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -4387,10 +4526,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 7,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4400,9 +4539,9 @@
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "63fb71d98222456d1d0a78f748cee891f478f196712cb1b87ac14d7a4ec59fc5",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "bfcfe683e141b6cdcbd37fa5c9c94c511212b702b0a13e30b5ef15d1270eb1b6",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -4428,10 +4567,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 119,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4441,9 +4580,9 @@
       "reference_hash": "984ebe49144cb4d6e1c0ce4bb88879ee0c638df3c2df957fd9d1ab7a6543b22a",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4469,10 +4608,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 3,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4482,9 +4621,9 @@
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4510,10 +4649,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 119,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4523,9 +4662,9 @@
       "reference_hash": "a73b9b42b25743be5311818a241572daef8a96d12524e656b3492da9cda8a0c5",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4551,10 +4690,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 196,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4564,9 +4703,9 @@
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4592,10 +4731,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 196,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4605,9 +4744,9 @@
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4633,10 +4772,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 96,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4646,9 +4785,9 @@
       "reference_hash": "a6354da311efb0306561a0aba0dd987a75891c26f76d66b9f42cf8fb8c9d8454",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4756,10 +4895,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 86,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -4769,8 +4908,8 @@
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dd0062bb162e0d9d246d14bb6e842d90a752c1d9e20d6c40cc7095c2c9c29c2f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5084,10 +5223,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 145,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5097,8 +5236,8 @@
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dfea078c284eb4b7b9efd04df3fc997c2f9e5028b5a98897a59207ccac19d0b8",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5207,10 +5346,10 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "line": 144,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5220,8 +5359,8 @@
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dfea078c284eb4b7b9efd04df3fc997c2f9e5028b5a98897a59207ccac19d0b8",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5414,18 +5553,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
-      "reason": "Repository rules are unchanged; the documentation policy edit adds guides to the governed set and does not alter any rule stated here. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Repository rules are unchanged; the documentation policy edit adds guides to the governed set and does not alter any rule stated here. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "39ef595415dd1f2ed1567dbf3a7dc5140b4d95274fd32a871d0eab03a99e4e9f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5451,18 +5590,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
-      "reason": "Knowledge store layout and review-store role are unchanged; its declared dependency (documentation.json) only gained roots and routes. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Knowledge store layout and review-store role are unchanged; its declared dependency (documentation.json) only gained roots and routes. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "3f0c9e269a6fc13677126addc24e8941804bef01ba91c115e85c2f04bacc966b",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5488,18 +5627,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
-      "reason": "The only .ai-team change in this Work is documentation.json registering V3 guides and three source routes. Loop layout, /work and /design entry points, verifier registry and knowledge rules described here are unchanged (git diff shows no other .ai-team file). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "The only .ai-team change in this Work is documentation.json registering V3 guides and three source routes. Loop layout, /work and /design entry points, verifier registry and knowledge rules described here are unchanged (git diff shows no other .ai-team file). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "6f09c68f21d88a267e42c3cce1dd69c1d0f0aabc16ddfae600b4f965b6f8c2c0",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5525,18 +5664,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "Controller workflow, converge and review steps are unchanged; no skill under .agents/skills changed in this Work (packs/spec/skills is a read-only projection). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Controller workflow, converge and review steps are unchanged; no skill under .agents/skills changed in this Work (packs/spec/skills is a read-only projection). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5562,18 +5701,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
-      "reason": "registry.json and run.py are unchanged; profile v2 ran and passed on this tree. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "registry.json and run.py are unchanged; profile v2 ran and passed on this tree. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5599,18 +5738,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
-      "reason": "Claude adapter instructions are unchanged; commands, skill layout and verification commands still match the tree. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Claude adapter instructions are unchanged; commands, skill layout and verification commands still match the tree. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5636,18 +5775,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "deployment/README.md",
-      "reason": "New guide for V3-054 deployment profiles: describes runtime/profiles.py, the support matrix and support evidence; matches the current code (only local-dev is supported, others fail closed) as exercised by tests/v3/test_rc01_profiles.py. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for V3-054 deployment profiles: describes runtime/profiles.py, the support matrix and support evidence; matches the current code (only local-dev is supported, others fail closed) as exercised by tests/v3/test_rc01_profiles.py. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -5673,18 +5812,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "Knowledge lint rules are unchanged; vault-lint passed (0 errors) in the verifier run. V3 code adds knowledge_runtime adapters that read the vault and do not alter its rules. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Knowledge lint rules are unchanged; vault-lint passed (0 errors) in the verifier run. V3 code adds knowledge_runtime adapters that read the vault and do not alter its rules. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5710,18 +5849,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
-      "reason": "Memory lifecycle states are unchanged; src/amplai_foundry/domain and schemas are untouched since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Memory lifecycle states are unchanged; src/amplai_foundry/domain and schemas are untouched since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5747,18 +5886,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
-      "reason": "Kit and portable-development flow are unchanged; tools/amplai-loop-kit has no diff since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Kit and portable-development flow are unchanged; tools/amplai-loop-kit has no diff since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5784,18 +5923,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
-      "reason": "Project pack format and commands are unchanged; project-pack verifier passed (OK amplai). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Project pack format and commands are unchanged; project-pack verifier passed (OK amplai). Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5821,18 +5960,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
-      "reason": "Proposal workflow is unchanged; governance/store.py gained two lines without changing proposal semantics, and domain/schemas are untouched. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Proposal workflow is unchanged; governance/store.py gained two lines without changing proposal semantics, and domain/schemas are untouched. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -5858,18 +5997,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "Relationship model is unchanged; domain and schemas are untouched since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Relationship model is unchanged; domain and schemas are untouched since the base commit. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "cac3428462ac89ce472ef94d4bc92753deef3a1100977e3447de354958c0ad8e",
         "metadata_owner": "sidecar",
@@ -5895,19 +6034,19 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
-      "reason": "Roadmap content and its planning source are unchanged; the dependency snapshot was re-bound only because the shared documentation policy changed. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Roadmap content and its planning source are unchanged; the dependency snapshot was re-bound only because the shared documentation policy changed. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "09d27497e2fc6480bf06bd401a9bf4c923b2c933efb4ed5a4698dc761692a812",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "536a8d073799ae92827c66529fc8c3b65e71ef66ddc91740ffcbb666db27e802",
@@ -5932,19 +6071,19 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "DEV-02 execution-layer guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ that exist on this tree (all 17 files verified present). Content otherwise unchanged from the delivery. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "DEV-02 execution-layer guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ that exist on this tree (all 17 files verified present). Content otherwise unchanged from the delivery. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "63fb71d98222456d1d0a78f748cee891f478f196712cb1b87ac14d7a4ec59fc5",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "bfcfe683e141b6cdcbd37fa5c9c94c511212b702b0a13e30b5ef15d1270eb1b6",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -5969,18 +6108,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "reason": "Unchanged since the Work base; primary-source notes for the DEV-02 transport layer whose only declared dependency is the DEV-02 guide, which this review updated for repository paths only. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Unchanged since the Work base; primary-source notes for the DEV-02 transport layer whose only declared dependency is the DEV-02 guide, which this review updated for repository paths only. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "7959911f87067368cb0b474a4d2589b13fb2bc2ca3558375a552e71c64bc65d3",
         "metadata_owner": "sidecar",
@@ -6006,19 +6145,19 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "DEV-03 observatory/meta-harness guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ (9 files verified present). The 477/132 test counts describe the DEV-03 delivery state; the current tree runs 601 V3 cases (release/README.md, closure ledger). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "DEV-03 observatory/meta-harness guide imported from the delivery zip; module table now cites repository paths under src/amplai_foundry/ (9 files verified present). The 477/132 test counts describe the DEV-03 delivery state; the current tree runs 601 V3 cases (release/README.md, closure ledger). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "8692fb5b83ccf96c3120021d12ce657f59dcf9a572e01b8aa9a2cb90e0a3ad73",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "69dea8fc9c8f3ed4a0f1b8b6f44fdc5373354eb7bca3e755f1477e57ae6692d1",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6043,18 +6182,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "reason": "Unchanged since the Work base; primary-source notes for DEV-03 whose only declared dependency is the DEV-03 guide, which this review updated for repository paths only. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Unchanged since the Work base; primary-source notes for DEV-03 whose only declared dependency is the DEV-03 guide, which this review updated for repository paths only. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -6080,18 +6219,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
-      "reason": "The version axes and rules are unchanged. The package version value moved from 0.4.0 to 3.0.0.dev3 with the DEV-03 import while schema_version stays 3.0.0, which is exactly the split this policy describes. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "The version axes and rules are unchanged. The package version value moved from 0.4.0 to 3.0.0.dev3 with the DEV-03 import while schema_version stays 3.0.0, which is exactly the split this policy describes. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -6117,18 +6256,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
-      "reason": "Vision text is unchanged; matched only by the keyword 'amplai'. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Vision text is unchanged; matched only by the keyword 'amplai'. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -6154,20 +6293,20 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "integrations/hermes/README.md",
-      "reason": "New guide for V3-049 Hermes adapter: intake/status/approve through control_plane/hermes.py with channel identity mapping; no new auth or central server, as the code and tests/v3/test_rc01_hermes.py show. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for V3-049 Hermes adapter: intake/status/approve through control_plane/hermes.py with channel identity mapping; no new auth or central server, as the code and tests/v3/test_rc01_hermes.py show. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "6bb70208cb9150ecf449b087dc427dc14df51b787bd7edb86fbb3e92718a9418",
-        "dependency_snapshot_sha256": "ec7d643dd991ee657273289f61942985bd3ddaa20b07dd6bff4bb89973b38a6c",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
+        "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
         "metadata_sha256": "2f35aa8a659825713529077123480a66d699b5dd6a6fa5beff34bdba85df85b2",
         "rules": {
@@ -6191,18 +6330,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "migration/README.md",
-      "reason": "New guide for V3-060 legacy retirement: retirement-proposal.json is proposal-only (7 blocked / 0 proposed / 0 deleted) as produced by migration/retirement.py; no deletion is performed. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for V3-060 legacy retirement: retirement-proposal.json is proposal-only (7 blocked / 0 proposed / 0 deleted) as produced by migration/retirement.py; no deletion is performed. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -6228,18 +6367,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "packs/README.md",
-      "reason": "New guide for V3-034..039 capability packs: catalog, conformance runners, spec host surface; packs/spec/skills is the projection of .agents/skills bound as this guide's source asset. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for V3-034..039 capability packs: catalog, conformance runners, spec host surface; packs/spec/skills is the projection of .agents/skills bound as this guide's source asset. (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -6265,19 +6404,19 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
-      "reason": "Unchanged since the Work base (5edbb78, post DEV-03 import). The DEV-03 snapshot section (package 3.0.0.dev3, wire schema 3.0.0, links to the two docs/v3 guides, evolution-demo command) still matches the tree, and the Foundry governance, ingest and memory sections are untouched by V3. README now also owns design-reference/ and docs/SOURCE-INGESTION.md as bound source inputs. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "Unchanged since the Work base (5edbb78, post DEV-03 import). The DEV-03 snapshot section (package 3.0.0.dev3, wire schema 3.0.0, links to the two docs/v3 guides, evolution-demo command) still matches the tree, and the Foundry governance, ingest and memory sections are untouched by V3. README now also owns design-reference/ and docs/SOURCE-INGESTION.md as bound source inputs. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "7f68f306984cd09e4b288eac7881a0b951930980d729f595237470d3098474c9",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "5b6d489489bbf8001532a26731a49dd54ce4846b0d1e1aa49482c4c6da7beb4d",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6302,20 +6441,20 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "release/README.md",
-      "reason": "New guide for V3-061 conformance closure; regeneration path now names tests/runtime_storage and scripts/rc01_closure.py, matching the committed ledger (local_pass 48/112, rc_candidate_not_final). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for V3-061 conformance closure; regeneration path now names tests/runtime_storage and scripts/rc01_closure.py, matching the committed ledger (local_pass 48/112, rc_candidate_not_final). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
-        "declared_reference_sha256": "70a4e050d44b0df8751645950742486e0974e6c1a3794fb005cbb71d8c98303f",
-        "dependency_snapshot_sha256": "227af2afa31713649e491ae4ae52cb3dff5bc39f6291176a299121f7197dd5c3",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
+        "declared_reference_sha256": "d0d73e5c4bc7e31e337dd5f74d6ae9f41eee56b2ea5ac07f8c4fc842d0d75eb0",
+        "dependency_snapshot_sha256": "adfe0b5f0a26f9cc750b91a626d9ecb2e3537e7bff63b93bdfd6f708b93dee6e",
         "metadata_owner": "sidecar",
         "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
         "rules": {
@@ -6339,18 +6478,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
-      "reason": "New guide for the V3-059 golden registry; policy locator wording corrected and the executable suite now lives at tests/v3/test_rc01_e2e_render.py (moved for the slice eval path). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "New guide for the V3-059 golden registry; policy locator wording corrected and the executable suite now lives at tests/v3/test_rc01_e2e_render.py (moved for the slice eval path). (Already committed at 3ae3879; unchanged since.) Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "4a11affad203d3667c120b7379bf71449e233ac853ddb0600e88f28bc9dbad00",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -6376,18 +6515,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reason": "The kit is unchanged in this Work (no diff under tools/amplai-loop-kit); matched only by keywords kit/release from V3 release artifacts. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "The kit is unchanged in this Work (no diff under tools/amplai-loop-kit); matched only by keywords kit/release from V3 release artifacts. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dd0062bb162e0d9d246d14bb6e842d90a752c1d9e20d6c40cc7095c2c9c29c2f",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",
@@ -6413,18 +6552,18 @@
       "evidence": [
         {
           "path": "specs/013-amplai-v3/document-review-evidence.json",
-          "sha256": "d8600c73687d77593cbf0648da14fb983397ed5ac856939c92c8dd2f80731f35"
+          "sha256": "9d288358394a1dde85ebcf8ee8cb397f49eab846f8fcd5fb31601d703b6615f6"
         }
       ],
-      "impact_snapshot_sha256": "64456ac4dd79ac15c449cfd989cbbadc36a4a3406266b3db0a041181fbf06bf4",
+      "impact_snapshot_sha256": "dd3393d9374e71da61927c63fbc838c23cd410b195525be7b184d6edc418d68c",
       "method": "Attributed implementation review by the implementing session: compared each guide against the exact V3 sources it names (git diff 3dc6d82..HEAD), the recorded gate results (ruff 0, mypy 0, verifier v2 PASS, pytest 601 + 3095 passed, slice evals S00-S20 PASS) and the documentation policy change. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
-      "reason": "The kit is unchanged in this Work; kit-seal verify passed. Matched only by keywords kit/release. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe.",
+      "reason": "The kit is unchanged in this Work; kit-seal verify passed. Matched only by keywords kit/release. Re-bound to the post-review snapshot: rounds 2-3 changed only installer/archive/store guard code that this guide does not describe. Re-bound after Work 014 (catalog closure tests + S08 guards); the guide text is unchanged and describes no changed internal.",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "24db152ade1ba5abf25ec9a39919846ab1cbbcbf",
-        "candidate_sha256": "ce80077e113acaaef1e6493e2532beb92d1f18add15906cea654a0ed057a96e2",
+        "candidate_revision": "45e6739033d0d69e41c9032486ae607e0d9f8bc6",
+        "candidate_sha256": "2523ae29ec3fd8f937743e7b65ae3ffd5ee3a90feb6736b0cd8ff733a94b8f95",
         "declared_reference_sha256": "dfea078c284eb4b7b9efd04df3fc997c2f9e5028b5a98897a59207ccac19d0b8",
         "dependency_snapshot_sha256": "123a5193282068668e5b4feab630ab9895c42e174432c19af282b9c2ad1a3e41",
         "metadata_owner": "sidecar",

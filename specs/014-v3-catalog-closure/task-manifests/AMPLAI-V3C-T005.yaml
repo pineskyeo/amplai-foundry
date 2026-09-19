@@ -1,0 +1,241 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3C-T005",
+  "title": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
+  "type": "test",
+  "status": "done",
+  "goal": {
+    "outcome": "CAT-LEASE/EVIDENCE lease·fence·CAS 케이스 실행 증거",
+    "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
+  },
+  "source": {
+    "feature": "014-v3-catalog-closure",
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "section": "T-039, T-040, T-041, T-042, T-043, T-052, T-053, T-054, T-055, T-056"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "section": "remaining_blockers.tests_not_run"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 오케스트레이션 + 병렬 서브에이전트로 완성. src 는 서브에이전트에 읽기 전용, 테스트 파일만 소유"
+    ]
+  },
+  "scope": {
+    "include": [
+      "tests/v3/test_rc02_lease.py",
+      "tests/v3/test_rc02_evidence.py",
+      "src/amplai_foundry/runtime/execution/",
+      "src/amplai_foundry/runtime/evidence/",
+      "specs/014-v3-catalog-closure/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "tests/v3/test_rc02_lease.py",
+      "tests/v3/test_rc02_evidence.py",
+      "src/amplai_foundry/runtime/execution/",
+      "src/amplai_foundry/runtime/evidence/",
+      "specs/014-v3-catalog-closure/",
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "catalog id 를 test 함수 이름에 넣는다 (test_tNNN_...). ledger scanner 가 그 이름으로 증거를 묶는다",
+      "expected 의 negative effect (state unchanged, no second effect) 까지 assert 한다",
+      "실제 외부 시스템이 필요한 케이스는 fake pass 하지 않고 EXTERNAL 로 남긴다",
+      "skip/xfail 금지. 구현 결함은 BLOCKED 로 보고한다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "test 삭제·skip 으로 통과시키지 않는다",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "T-039",
+        "given": "worker holds old lease after recovery",
+        "when": "heartbeat/event/effect",
+        "then": "STALE_LEASE; no renewed authority [Expired fence rejected]"
+      },
+      {
+        "id": "T-040",
+        "given": "CP owner epoch advances after crash",
+        "when": "worker claims same Work again",
+        "then": "fencing token never reused or decreases [Monotonic fence restart]"
+      },
+      {
+        "id": "T-041",
+        "given": "not_before or expiry field malformed",
+        "when": "schedule/resume",
+        "then": "validation HOLD, not immediate retry-ready [Malformed time fail closed]"
+      },
+      {
+        "id": "T-042",
+        "given": "paused Run bound v1; desired contract becomes v2",
+        "when": "resume same Run",
+        "then": "reject same-run ref mutation; new Run from checkpoint with new contract [Pause revision mismatch]"
+      },
+      {
+        "id": "T-043",
+        "given": "worker claims expiry differs from server",
+        "when": "heartbeat",
+        "then": "server time and current lease decide, worker cannot extend arbitrarily [Worker time skew]"
+      },
+      {
+        "id": "T-052",
+        "given": "agent declares artifact hash not matching uploaded bytes",
+        "when": "commit artifact",
+        "then": "reject/quarantine mismatched digest [Forged digest]"
+      },
+      {
+        "id": "T-053",
+        "given": "worker exits0 without required evidence",
+        "when": "global verify",
+        "then": "inconclusive/fail; no verified goal [Exit zero not pass]"
+      },
+      {
+        "id": "T-054",
+        "given": "v1 tests passed but contract/artifact v2 active",
+        "when": "submit verdict for active goal",
+        "then": "not accepted toward active coverage [Old revision pass]"
+      },
+      {
+        "id": "T-055",
+        "given": "V2 imported log says PASS",
+        "when": "migrate to V3",
+        "then": "legacy_imported preserved; no automatic server_verified [Legacy evidence trust]"
+      },
+      {
+        "id": "T-056",
+        "given": "CAS rename completed, registry commit crashed",
+        "when": "recovery/GC",
+        "then": "verified orphan attach or retention GC; no invalid artifact ref exposure [Artifact orphan crash]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_lease.py tests/v3/test_rc02_evidence.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check tests/v3/test_rc02_lease.py tests/v3/test_rc02_evidence.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "서브에이전트가 src 를 건드리지 않도록 프롬프트 절대 규칙으로 통제"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-19T05:00:49Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S05",
+      "specs/013-amplai-v3/junit/rc01-v3-e2e.xml",
+      "release/rc01-conformance-closure.json",
+      "specs/014-v3-catalog-closure/external-boundary.json"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "tests/v3/test_rc02_lease.py",
+      "tests/v3/test_rc02_evidence.py"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC02",
+    "slice_id": "S05",
+    "context_pack": "specs/014-v3-catalog-closure/context-pack.json",
+    "environment": "specs/014-v3-catalog-closure/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "7c996603c1503c04fcee8f644e616aa22b16bc1c"
+  }
+}

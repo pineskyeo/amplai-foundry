@@ -12,6 +12,8 @@
 - `release_status` 는 `rc_candidate_not_final` 이다. FINAL 선언은 V3-062 human gate 뒤다.
 
 `eval/test-catalog-status.json` 은 같은 ledger 의 test 축만 뽑은 view 다. 재생성:
-`pytest tests/v3 tests/runtime_storage --junitxml=specs/013-amplai-v3/junit/rc01-v3-e2e.xml` 후
+`pytest -m "not slack_e2e" tests/v3 tests/runtime_storage --junitxml=specs/013-amplai-v3/junit/rc01-v3-e2e.xml` 후
+(`-m` 는 기본 deselect 되는 `visual` marker 를 포함시킨다. 자격 있는 browser 가 없는 host 에서는
+그 case 들이 not_run 으로 남으며 skipped PASS 가 되지 않는다.)
 `.venv/bin/python scripts/rc01_closure.py` 로 ledger 와 view 를 다시 쓰고,
 `tests/v3/test_rc01_conformance_closure.py` 가 파일과 현재 계산을 대조한다.

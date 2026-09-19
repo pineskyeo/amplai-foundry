@@ -1,29 +1,29 @@
 {
   "schema_version": "3.0.0",
   "kind": "v3_conformance_closure",
-  "implementation_revision": "bb702030ad0a40cfe900e0ccd72c79f7df4c3629",
+  "implementation_revision": "219e2cef2e760174ee572fdc31bce16bda901bb1",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],
-  "executed_case_count": 605,
+  "executed_case_count": 682,
   "summary": {
     "tests": {
       "total": 112,
-      "local_pass": 48,
-      "not_run": 64,
+      "local_pass": 112,
+      "not_run": 0,
       "fail": 0
     },
     "requirements": {
       "total": 35,
-      "fully_verified": 8,
-      "partial": 22,
-      "not_run": 5
+      "fully_verified": 35,
+      "partial": 0,
+      "not_run": 0
     },
     "tasks": {
       "total": 62,
-      "fully_accepted": 11,
-      "partial": 40,
-      "not_started": 11
+      "fully_accepted": 62,
+      "partial": 0,
+      "not_started": 0
     }
   },
   "tests": {
@@ -81,20 +81,26 @@
     },
     "T-007": {
       "name": "Ambiguous target hold",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t007_ambiguous_target_hold"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-008": {
       "name": "Existing fact avoids question",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t008_existing_fact_avoids_question"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-009": {
       "name": "Unverifiable goal rejected",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t009_unverifiable_goal_rejected"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-010": {
@@ -107,26 +113,34 @@
     },
     "T-011": {
       "name": "Assumption disclosed",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t011_assumption_disclosed"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-012": {
       "name": "Critic budget bounded",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t012_critic_budget_bounded"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-013": {
       "name": "Criteria ID collision",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t013_criteria_id_collision"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-014": {
       "name": "Contract revision invalidates grant",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_goal::test_t014_contract_revision_invalidates_grant"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-015": {
@@ -180,38 +194,50 @@
     },
     "T-021": {
       "name": "Cycle rejection",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t021_cycle_rejection"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-022": {
       "name": "Stable compiler output",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t022_stable_compiler_output"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-023": {
       "name": "Typed artifact mismatch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t023_typed_artifact_mismatch"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-024": {
       "name": "Input XOR",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t024_input_xor"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-025": {
       "name": "Missing global acceptance",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t025_missing_global_acceptance"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-026": {
       "name": "Unsafe any-success join",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t026_unsafe_any_success_join"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-027": {
@@ -225,8 +251,10 @@
     },
     "T-028": {
       "name": "Conservative output reuse",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t028_conservative_output_reuse_rejects_changed_verifier_or_env"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-029": {
@@ -240,164 +268,226 @@
     },
     "T-030": {
       "name": "Graph node budget limit",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_graph::test_t030_graph_node_budget_limit"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-031": {
       "name": "Tiny still gated",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t031_tiny_still_gated"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-032": {
       "name": "Exclusive workspace claim",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t032_exclusive_workspace_claim"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-033": {
       "name": "Root budget children",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t033_root_budget_children"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-034": {
       "name": "Unknown usage",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t034_unknown_usage"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-035": {
       "name": "Attempt budget",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t035_attempt_budget"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-036": {
       "name": "Repeated failure signature",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t036_repeated_failure_signature"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-037": {
       "name": "Fairness under large goal",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t037_fairness_under_large_goal"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-038": {
       "name": "No long IO in transaction",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_runtime::test_t038_no_long_io_in_transaction"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-039": {
       "name": "Expired fence rejected",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_lease::test_t039_expired_lease_rejects_heartbeat_with_no_renewed_authority"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-040": {
       "name": "Monotonic fence restart",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_lease::test_t039_expired_lease_rejects_heartbeat_with_no_renewed_authority",
+        "tests.v3.test_rc02_lease::test_t040_monotonic_fence_never_reused_or_decreased_after_restart"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-041": {
       "name": "Malformed time fail closed",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_lease::test_t040_monotonic_fence_never_reused_or_decreased_after_restart",
+        "tests.v3.test_rc02_lease::test_t041_malformed_grant_time_fails_closed_not_retry_ready"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-042": {
       "name": "Pause revision mismatch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_lease::test_t041_malformed_grant_time_fails_closed_not_retry_ready",
+        "tests.v3.test_rc02_lease::test_t042_pause_revision_mismatch_rejects_same_run_resume"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-043": {
       "name": "Worker time skew",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_lease::test_t042_pause_revision_mismatch_rejects_same_run_resume",
+        "tests.v3.test_rc02_lease::test_t043_heartbeat_expiry_is_server_clock_not_worker_claimed"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-044": {
       "name": "Timeout may have applied",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t044_timeout_may_have_applied_requires_reconcile_before_resend"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-045": {
       "name": "Same effect key new args",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t045_same_effect_key_new_args_is_idempotency_conflict"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-046": {
       "name": "Revoke before dispatch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t046_revoke_before_dispatch_denies_send_and_stays_unsent"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-047": {
       "name": "Revoke after dispatch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t047_revoke_after_dispatch_does_not_claim_rollback"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-048": {
       "name": "Non-idempotent endpoint",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t048_non_idempotent_endpoint_timeout_holds_for_human_reconciliation"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-049": {
       "name": "Compensation is new effect",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t049_compensation_is_a_new_effect_original_not_erased"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-050": {
       "name": "Partial batch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t050_partial_batch_keeps_item_receipts_and_partial_state"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-051": {
       "name": "Remote callback spoof",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_effects::test_t051_remote_callback_spoof_is_rejected_and_pending_request_unchanged"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-052": {
       "name": "Forged digest",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_evidence::test_t052_forged_digest_rejected_with_no_registry_entry"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-053": {
       "name": "Exit zero not pass",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_evidence::test_t052_forged_digest_rejected_with_no_registry_entry",
+        "tests.v3.test_rc02_evidence::test_t053_exit_zero_without_evidence_is_not_accepted_as_pass"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-054": {
       "name": "Old revision pass",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_evidence::test_t053_exit_zero_without_evidence_is_not_accepted_as_pass",
+        "tests.v3.test_rc02_evidence::test_t054_old_revision_verdict_not_accepted_toward_active_coverage"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-055": {
       "name": "Legacy evidence trust",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_evidence::test_t054_old_revision_verdict_not_accepted_toward_active_coverage",
+        "tests.v3.test_rc02_evidence::test_t055_legacy_imported_evidence_stays_untrusted_not_auto_server_verified"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-056": {
       "name": "Artifact orphan crash",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_evidence::test_t055_legacy_imported_evidence_stays_untrusted_not_auto_server_verified",
+        "tests.v3.test_rc02_evidence::test_t056_cas_rename_without_registry_commit_is_orphan_not_exposed"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-057": {
@@ -410,8 +500,11 @@
     },
     "T-058": {
       "name": "SVG clipping and overlap",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_boundary::test_t058_renderer_refuses_bytes_other_than_the_reviewed_fixture",
+        "tests.v3.test_rc02_boundary::test_t058_svg_clip_finding_names_page_region_then_bounded_rerender_clears"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-059": {
@@ -459,56 +552,74 @@
     },
     "T-064": {
       "name": "Exact session resume",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t064_exact_session_resume"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-065": {
       "name": "Partial JSONL stream",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t065_partial_jsonl_stream_buffers_until_complete"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-066": {
       "name": "Unknown provider event",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t066_unknown_provider_event_is_quarantined"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-067": {
       "name": "Async result call mismatch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t067_async_result_call_mismatch_rejected_pending_call_unchanged"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-068": {
       "name": "Steering queued disconnect",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t068_steering_queued_disconnect_reconciles_without_false_applied"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-069": {
       "name": "Native steering absent",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t069_native_steering_absent_falls_back_to_checkpoint_no_text_injection"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-070": {
       "name": "Experimental transport",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t070_experimental_transport_unqualified_blocks_dispatch_qualified_cli_fallback_ok"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-071": {
       "name": "OpenCode 204",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t071_opencode_204_is_accepted_or_running_never_completed"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-072": {
       "name": "Server-only event forgery",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_driver::test_t072_server_only_event_forgery_is_forbidden"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-073": {
@@ -537,8 +648,10 @@
     },
     "T-076": {
       "name": "Credential isolation",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_boundary::test_t076_credential_isolation_broker_handle_only_no_raw_secret_leak"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-077": {
@@ -559,50 +672,66 @@
     },
     "T-079": {
       "name": "Protected evaluator change",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t079_protected_evaluator_change_blocks_screen"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-080": {
       "name": "Holdout leakage",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t080_holdout_leakage_denied_to_proposer"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-081": {
       "name": "Immutable experiment",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t081_immutable_experiment_rejects_corpus_change"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-082": {
       "name": "Provider alias drift",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t082_provider_alias_drift_marks_inconclusive_and_blocks_promotion"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-083": {
       "name": "Replay vs rerun",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t083_replay_mode_never_claims_causal_promotion"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-084": {
       "name": "Insufficient evidence",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t084_insufficient_evidence_small_noisy_sample_is_inconclusive"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-085": {
       "name": "Failed safety test",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t085_failed_safety_gate_dominates_cost_benefit"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-086": {
       "name": "Multiple candidate selection",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t086_exploratory_purpose_cannot_auto_promote"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-087": {
@@ -615,8 +744,10 @@
     },
     "T-088": {
       "name": "Canary kill switch",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t088_canary_kill_switch_on_unknown_effect_aborts_admission"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-089": {
@@ -637,8 +768,10 @@
     },
     "T-091": {
       "name": "In-flight composition pinned",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_meta::test_t091_in_flight_run_composition_pinned_against_promotion"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-092": {
@@ -790,14 +923,21 @@
     },
     "T-108": {
       "name": "Gate applicability cannot bypass",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_boundary::test_t108_gate_applicability_cannot_bypass_under_fast_tiny_flag[bounded_loop]",
+        "tests.v3.test_rc02_boundary::test_t108_gate_applicability_cannot_bypass_under_fast_tiny_flag[deliberative]",
+        "tests.v3.test_rc02_boundary::test_t108_gate_applicability_cannot_bypass_under_fast_tiny_flag[direct]",
+        "tests.v3.test_rc02_boundary::test_t108_gate_applicability_cannot_bypass_under_fast_tiny_flag[discovery]"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-109": {
       "name": "Complete meta rejection and rollback path",
-      "status": "not_run",
-      "executed_cases": [],
+      "status": "local_pass",
+      "executed_cases": [
+        "tests.v3.test_rc02_boundary::test_t109_meta_rejection_and_rollback_path_complete"
+      ],
       "qualification": "local automated evidence; not live provider/container/holdout qualification"
     },
     "T-110": {
@@ -830,10 +970,10 @@
       "id": "REQ-01",
       "requirement": "전체 V3 단일 목표와 design-only 경계",
       "tests_total": 10,
-      "tests_local_pass": 2,
-      "tests_not_run": 8,
+      "tests_local_pass": 10,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -852,10 +992,10 @@
       "id": "REQ-03",
       "requirement": "자연어 의도에서 검증된 target·goal 구성",
       "tests_total": 11,
-      "tests_local_pass": 3,
-      "tests_not_run": 8,
+      "tests_local_pass": 11,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -863,10 +1003,10 @@
       "id": "REQ-04",
       "requirement": "질문·가정·부족한 목표 자동 정리",
       "tests_total": 17,
-      "tests_local_pass": 9,
-      "tests_not_run": 8,
+      "tests_local_pass": 17,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -874,10 +1014,10 @@
       "id": "REQ-05",
       "requirement": "불변조건·강제 Gate",
       "tests_total": 11,
-      "tests_local_pass": 8,
-      "tests_not_run": 3,
+      "tests_local_pass": 11,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -885,10 +1025,10 @@
       "id": "REQ-06",
       "requirement": "기존 DAG 승격·typed WorkGraph",
       "tests_total": 10,
-      "tests_local_pass": 2,
-      "tests_not_run": 8,
+      "tests_local_pass": 10,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -896,10 +1036,10 @@
       "id": "REQ-07",
       "requirement": "adaptive direct/loop/deliberative/discovery",
       "tests_total": 8,
-      "tests_local_pass": 0,
-      "tests_not_run": 8,
+      "tests_local_pass": 8,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "not_run",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -907,10 +1047,10 @@
       "id": "REQ-08",
       "requirement": "lease/fence/crash/cancel 정합성",
       "tests_total": 13,
-      "tests_local_pass": 8,
-      "tests_not_run": 5,
+      "tests_local_pass": 13,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -929,10 +1069,10 @@
       "id": "REQ-10",
       "requirement": "authority/capability/secret/containment",
       "tests_total": 16,
-      "tests_local_pass": 6,
-      "tests_not_run": 10,
+      "tests_local_pass": 16,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -940,10 +1080,10 @@
       "id": "REQ-11",
       "requirement": "driver/model/session/sandbox 분리",
       "tests_total": 12,
-      "tests_local_pass": 3,
-      "tests_not_run": 9,
+      "tests_local_pass": 12,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -951,10 +1091,10 @@
       "id": "REQ-12",
       "requirement": "Astra async/steering와 선택 API transport",
       "tests_total": 9,
-      "tests_local_pass": 0,
-      "tests_not_run": 9,
+      "tests_local_pass": 9,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "not_run",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -973,10 +1113,10 @@
       "id": "REQ-14",
       "requirement": "Ontology/KnowledgeGraph vs WorkGraph 분리",
       "tests_total": 17,
-      "tests_local_pass": 9,
-      "tests_not_run": 8,
+      "tests_local_pass": 17,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -995,10 +1135,10 @@
       "id": "REQ-16",
       "requirement": "frontend UX/UI/visual render 품질",
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "tests_not_run": 1,
+      "tests_local_pass": 7,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1006,10 +1146,10 @@
       "id": "REQ-17",
       "requirement": "documents/SVG/fonts/golden lifecycle",
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "tests_not_run": 1,
+      "tests_local_pass": 7,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1017,10 +1157,10 @@
       "id": "REQ-18",
       "requirement": "trusted evidence/verdict/global verify",
       "tests_total": 13,
-      "tests_local_pass": 7,
-      "tests_not_run": 6,
+      "tests_local_pass": 13,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1028,10 +1168,10 @@
       "id": "REQ-19",
       "requirement": "Observatory를 V3 초기부터 구축",
       "tests_total": 10,
-      "tests_local_pass": 3,
-      "tests_not_run": 7,
+      "tests_local_pass": 10,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1039,10 +1179,10 @@
       "id": "REQ-20",
       "requirement": "dataset/holdout/실험 품질",
       "tests_total": 9,
-      "tests_local_pass": 0,
-      "tests_not_run": 9,
+      "tests_local_pass": 9,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "not_run",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1050,10 +1190,10 @@
       "id": "REQ-21",
       "requirement": "Meta federation/composition",
       "tests_total": 9,
-      "tests_local_pass": 3,
-      "tests_not_run": 6,
+      "tests_local_pass": 9,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1061,10 +1201,10 @@
       "id": "REQ-22",
       "requirement": "Meta hypothesis/diff/protected surfaces",
       "tests_total": 9,
-      "tests_local_pass": 2,
-      "tests_not_run": 7,
+      "tests_local_pass": 9,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1072,10 +1212,10 @@
       "id": "REQ-23",
       "requirement": "Replay/shadow/canary/promote/rollback",
       "tests_total": 10,
-      "tests_local_pass": 3,
-      "tests_not_run": 7,
+      "tests_local_pass": 10,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1083,10 +1223,10 @@
       "id": "REQ-24",
       "requirement": "중간 요구 변경·append-only revision",
       "tests_total": 14,
-      "tests_local_pass": 0,
-      "tests_not_run": 14,
+      "tests_local_pass": 14,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "not_run",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1094,10 +1234,10 @@
       "id": "REQ-25",
       "requirement": "API/command/event/SSE",
       "tests_total": 14,
-      "tests_local_pass": 5,
-      "tests_not_run": 9,
+      "tests_local_pass": 14,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1127,10 +1267,10 @@
       "id": "REQ-28",
       "requirement": "배포/오프라인/RHEL 기존 client 경계",
       "tests_total": 5,
-      "tests_local_pass": 3,
-      "tests_not_run": 2,
+      "tests_local_pass": 5,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1138,10 +1278,10 @@
       "id": "REQ-29",
       "requirement": "검증가능한 구현 백로그·인수 기준",
       "tests_total": 5,
-      "tests_local_pass": 3,
-      "tests_not_run": 2,
+      "tests_local_pass": 5,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1171,10 +1311,10 @@
       "id": "REQ-32",
       "requirement": "tool effect unknown/idempotency/compensation",
       "tests_total": 16,
-      "tests_local_pass": 8,
-      "tests_not_run": 8,
+      "tests_local_pass": 16,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1182,10 +1322,10 @@
       "id": "REQ-33",
       "requirement": "통계적 불확실성/효과 과장 방지",
       "tests_total": 4,
-      "tests_local_pass": 0,
-      "tests_not_run": 4,
+      "tests_local_pass": 4,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "not_run",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1193,10 +1333,10 @@
       "id": "REQ-34",
       "requirement": "정본·hash·참조 cycle 방지",
       "tests_total": 8,
-      "tests_local_pass": 3,
-      "tests_not_run": 5,
+      "tests_local_pass": 8,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     },
@@ -1204,10 +1344,10 @@
       "id": "REQ-35",
       "requirement": "공식 최신자료와 검증된 선택/제외",
       "tests_total": 5,
-      "tests_local_pass": 3,
-      "tests_not_run": 2,
+      "tests_local_pass": 5,
+      "tests_not_run": 0,
       "tests_fail": 0,
-      "status": "partial",
+      "status": "fully_verified",
       "design_status": "designed_not_implemented",
       "note": "design check is not a runtime pass; fully_verified requires every listed test to have local executed evidence"
     }
@@ -1234,24 +1374,24 @@
       "title": "Normative schema registry and offline JSON validation",
       "wave": 1,
       "tests_total": 19,
-      "tests_local_pass": 4,
-      "status": "partial"
+      "tests_local_pass": 19,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-004",
       "title": "Canonical identity/hash/ref resolver",
       "wave": 1,
       "tests_total": 11,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 11,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-005",
       "title": "Gate Engine and semantic validator registry",
       "wave": 1,
       "tests_total": 20,
-      "tests_local_pass": 13,
-      "status": "partial"
+      "tests_local_pass": 20,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-006",
@@ -1274,32 +1414,32 @@
       "title": "Authority adapter and project ActorContext",
       "wave": 1,
       "tests_total": 11,
-      "tests_local_pass": 10,
-      "status": "partial"
+      "tests_local_pass": 11,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-009",
       "title": "Immutable CAS and artifact registry",
       "wave": 1,
       "tests_total": 5,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 5,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-010",
       "title": "Event/RunRecord spine and scoped projections",
       "wave": 1,
       "tests_total": 14,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-011",
       "title": "AppBinding registry adapter",
       "wave": 2,
       "tests_total": 9,
-      "tests_local_pass": 2,
-      "status": "partial"
+      "tests_local_pass": 9,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-012",
@@ -1322,288 +1462,288 @@
       "title": "Repo facts resolver and source provenance",
       "wave": 2,
       "tests_total": 12,
-      "tests_local_pass": 11,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-015",
       "title": "Goal Resolver and question ledger",
       "wave": 2,
       "tests_total": 9,
-      "tests_local_pass": 2,
-      "status": "partial"
+      "tests_local_pass": 9,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-016",
       "title": "Contract compiler/critic with verifiable acceptance",
       "wave": 2,
       "tests_total": 9,
-      "tests_local_pass": 2,
-      "status": "partial"
+      "tests_local_pass": 9,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-017",
       "title": "WorkGraph compiler and typed dataflow",
       "wave": 2,
       "tests_total": 10,
-      "tests_local_pass": 2,
-      "status": "partial"
+      "tests_local_pass": 10,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-018",
       "title": "State machine implementation from registry",
       "wave": 2,
       "tests_total": 21,
-      "tests_local_pass": 8,
-      "status": "partial"
+      "tests_local_pass": 21,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-019",
       "title": "Budget reservations and shared resource claims",
       "wave": 2,
       "tests_total": 8,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 8,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-020",
       "title": "Lease/fencing/owner epoch recovery",
       "wave": 2,
       "tests_total": 13,
-      "tests_local_pass": 8,
-      "status": "partial"
+      "tests_local_pass": 13,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-021",
       "title": "Adaptive strategy and fair scheduler",
       "wave": 2,
       "tests_total": 8,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 8,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-022",
       "title": "Sandbox/Secret/Tool ports and containment",
       "wave": 2,
       "tests_total": 6,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 6,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-023",
       "title": "Effect prepare/dispatch/reconcile protocol",
       "wave": 2,
       "tests_total": 16,
-      "tests_local_pass": 8,
-      "status": "partial"
+      "tests_local_pass": 16,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-024",
       "title": "Driver interface, model profiles, qualification registry",
       "wave": 2,
       "tests_total": 9,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 9,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-025",
       "title": "ClaudeCode exact-session driver",
       "wave": 2,
       "tests_total": 14,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-026",
       "title": "Codex CLI qualified baseline driver",
       "wave": 2,
       "tests_total": 14,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-027",
       "title": "OpenCode authenticated optional driver",
       "wave": 3,
       "tests_total": 14,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-028",
       "title": "Responses async/steering optional driver",
       "wave": 3,
       "tests_total": 17,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 17,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-029",
       "title": "Managed/API experimental driver boundaries",
       "wave": 3,
       "tests_total": 15,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 15,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-030",
       "title": "Steering/checkpoint/pause/cancel orchestration",
       "wave": 3,
       "tests_total": 22,
-      "tests_local_pass": 8,
-      "status": "partial"
+      "tests_local_pass": 22,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-031",
       "title": "Replan activation and stale-output invalidation",
       "wave": 3,
       "tests_total": 10,
-      "tests_local_pass": 2,
-      "status": "partial"
+      "tests_local_pass": 10,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-032",
       "title": "Trusted verifier runner and evidence attestation",
       "wave": 2,
       "tests_total": 12,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-033",
       "title": "Global acceptance and doc freshness",
       "wave": 3,
       "tests_total": 12,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-034",
       "title": "Versioned capability pack registry",
       "wave": 3,
       "tests_total": 13,
-      "tests_local_pass": 12,
-      "status": "partial"
+      "tests_local_pass": 13,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-035",
       "title": "Core work/design host surface and SpecKit internalization",
       "wave": 3,
       "tests_total": 16,
-      "tests_local_pass": 9,
-      "status": "partial"
+      "tests_local_pass": 16,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-036",
       "title": "Software/review/debug capability pack",
       "wave": 3,
       "tests_total": 15,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 15,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-037",
       "title": "Frontend functional/visual/UX pack",
       "wave": 3,
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 7,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-038",
       "title": "Document lifecycle/render/golden pack",
       "wave": 3,
       "tests_total": 14,
-      "tests_local_pass": 13,
-      "status": "partial"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-039",
       "title": "Research/ontology/domain pack adapters",
       "wave": 3,
       "tests_total": 12,
-      "tests_local_pass": 11,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-040",
       "title": "RunRecord metrics and OTel projection",
       "wave": 2,
       "tests_total": 13,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 13,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-041",
       "title": "Sanitized corpus and protected holdout registry",
       "wave": 3,
       "tests_total": 5,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 5,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-042",
       "title": "Frozen experiment runner and replay/rerun separation",
       "wave": 3,
       "tests_total": 8,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 8,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-043",
       "title": "Analysis/report criteria and uncertainty",
       "wave": 3,
       "tests_total": 8,
-      "tests_local_pass": 0,
-      "status": "not_started"
+      "tests_local_pass": 8,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-044",
       "title": "Composition federation and routing policies",
       "wave": 3,
       "tests_total": 15,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 15,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-045",
       "title": "Harness proposal screening and protected surfaces",
       "wave": 3,
       "tests_total": 10,
-      "tests_local_pass": 3,
-      "status": "partial"
+      "tests_local_pass": 10,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-046",
       "title": "Shadow/canary orchestration and kill switch",
       "wave": 3,
       "tests_total": 5,
-      "tests_local_pass": 3,
-      "status": "partial"
+      "tests_local_pass": 5,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-047",
       "title": "ReleaseSet signing and promotion/rollback",
       "wave": 3,
       "tests_total": 12,
-      "tests_local_pass": 10,
-      "status": "partial"
+      "tests_local_pass": 12,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-048",
       "title": "Public command DTO/API and event streaming",
       "wave": 3,
       "tests_total": 14,
-      "tests_local_pass": 5,
-      "status": "partial"
+      "tests_local_pass": 14,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-049",
       "title": "Hermes intake/status/approval adapter",
       "wave": 3,
       "tests_total": 19,
-      "tests_local_pass": 10,
-      "status": "partial"
+      "tests_local_pass": 19,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-050",
@@ -1642,48 +1782,48 @@
       "title": "Local/onprem/hybrid/offline/legacy profiles",
       "wave": 4,
       "tests_total": 20,
-      "tests_local_pass": 17,
-      "status": "partial"
+      "tests_local_pass": 20,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-055",
       "title": "Backup/restore and effect recovery drills",
       "wave": 4,
       "tests_total": 13,
-      "tests_local_pass": 11,
-      "status": "partial"
+      "tests_local_pass": 13,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-056",
       "title": "Security/adversarial and property conformance suite",
       "wave": 4,
       "tests_total": 112,
-      "tests_local_pass": 48,
-      "status": "partial"
+      "tests_local_pass": 112,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-057",
       "title": "Cross-app end-to-end goal/steer/replan demo",
       "wave": 4,
       "tests_total": 25,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 25,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-058",
       "title": "Complete meta evolution promote/reject/rollback drill",
       "wave": 4,
       "tests_total": 19,
-      "tests_local_pass": 7,
-      "status": "partial"
+      "tests_local_pass": 19,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-059",
       "title": "Frontend/docs actual-render acceptance suite",
       "wave": 4,
       "tests_total": 7,
-      "tests_local_pass": 6,
-      "status": "partial"
+      "tests_local_pass": 7,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-060",
@@ -1698,16 +1838,16 @@
       "title": "Final V3 conformance and requirement evidence closure",
       "wave": 5,
       "tests_total": 112,
-      "tests_local_pass": 48,
-      "status": "partial"
+      "tests_local_pass": 112,
+      "status": "fully_accepted"
     },
     {
       "id": "V3-062",
       "title": "Authorized cutover and independent release receipts",
       "wave": 5,
       "tests_total": 18,
-      "tests_local_pass": 14,
-      "status": "partial"
+      "tests_local_pass": 18,
+      "status": "fully_accepted"
     }
   ],
   "remaining_blockers": {
@@ -1722,72 +1862,7 @@
       "Actual OTLP exporter/collector integration, bounded service delivery under production load",
       "Statistical power/sample-size adequacy for the target task population; local arithmetic lifecycle is not LLM quality improvement"
     ],
-    "tests_not_run": [
-      "T-007",
-      "T-008",
-      "T-009",
-      "T-011",
-      "T-012",
-      "T-013",
-      "T-014",
-      "T-021",
-      "T-022",
-      "T-023",
-      "T-024",
-      "T-025",
-      "T-026",
-      "T-028",
-      "T-030",
-      "T-031",
-      "T-032",
-      "T-033",
-      "T-034",
-      "T-035",
-      "T-036",
-      "T-037",
-      "T-038",
-      "T-039",
-      "T-040",
-      "T-041",
-      "T-042",
-      "T-043",
-      "T-044",
-      "T-045",
-      "T-046",
-      "T-047",
-      "T-048",
-      "T-049",
-      "T-050",
-      "T-051",
-      "T-052",
-      "T-053",
-      "T-054",
-      "T-055",
-      "T-056",
-      "T-058",
-      "T-064",
-      "T-065",
-      "T-066",
-      "T-067",
-      "T-068",
-      "T-069",
-      "T-070",
-      "T-071",
-      "T-072",
-      "T-076",
-      "T-079",
-      "T-080",
-      "T-081",
-      "T-082",
-      "T-083",
-      "T-084",
-      "T-085",
-      "T-086",
-      "T-088",
-      "T-091",
-      "T-108",
-      "T-109"
-    ],
+    "tests_not_run": [],
     "note": "not_run means no executed local evidence names this catalog id; a mention in prose or a design fixture does not count"
   },
   "release_status": "rc_candidate_not_final"
