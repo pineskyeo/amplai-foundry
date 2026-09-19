@@ -70,7 +70,17 @@ def test_design_check_is_never_a_runtime_pass_and_status_is_rc_not_final():
     assert len(status["items"]) == 9, "every DEV-03 external item is accounted for"
     assert len(ledger["remaining_blockers"]["external_qualification_pending"]) == len(unresolved)
     for x in status["items"]:
-        assert (REPO / x["evidence"]).is_file(), x["item"]  # a resolved/partial claim needs a file
+        evidence_path = REPO / x["evidence"]
+        assert evidence_path.is_file(), x["item"]
+        # R702: the evidence file must support the claimed status, not merely exist.
+        ev = json.loads(evidence_path.read_text())
+        if x["status"] == "resolved":
+            assert ev.get("outcome") in {"pass", "pass_with_known_failures"}, x["item"]
+        if evidence_path.name == "unavailable.json":
+            assert x["status"] in {"unavailable", "not_a_local_check"}, x["item"]
+            assert any(e["item"] == x["item"] for e in ev["items"]), x["item"]
+        if x["status"] == "partial":
+            assert evidence_path.name != "unavailable.json", x["item"]
 
 
 def test_shipped_ledger_matches_current_tree_and_junit():
