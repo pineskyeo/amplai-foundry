@@ -289,6 +289,8 @@ class Effects:
 
         Each item keeps its own receipt. An item whose outcome is unknown makes the batch
         ``partial`` even when every other item applied; no endpoint promised all-or-nothing.
+        A ``Conflict``/``RuntimeFault`` on one item (race, unknown id) is recorded on that item
+        as ``error`` and never discards the receipts of items already dispatched.
         """
         self.store.assert_outside_tx()
         items: list[dict[str, Any]] = []
@@ -299,13 +301,17 @@ class Effects:
             except Hold as exc:
                 current = self.store.head(scope, "effect", effect_id)
                 items.append({"effect_id": effect_id, "state": current["state"], "code": exc.code})
+            except RuntimeFault as exc:  # Conflict is a RuntimeFault: race or unknown id
+                items.append({"effect_id": effect_id, "state": "error", "code": exc.code})
         states = {item["state"] for item in items}
         if states <= {"applied"}:
             aggregate = "applied"
         elif "applied" in states or "reconciled" in states:
             aggregate = "partial"
+        elif "unknown" in states:
+            aggregate = "unknown"
         else:
-            aggregate = "unknown" if "unknown" in states else "not_applied"
+            aggregate = "error" if "error" in states else "not_applied"
         return {
             "batch_id": new_id("batch"),
             "items": items,

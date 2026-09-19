@@ -304,3 +304,15 @@ def test_t051_remote_callback_spoof_is_rejected_and_pending_request_unchanged(de
     after = d.store.head(d.scope, "effect", req["effect_id"])
     assert after == before  # pending request untouched, no callback object written
     assert d.store.list_objects(d.scope, "effect-callback") == []
+
+
+def test_r403_batch_records_non_hold_faults_per_item_and_keeps_aggregating(deployment):
+    d = deployment
+    envelope, effects, tool_ref, tool, _calls, _external = _setup(d, timeout=1)
+    a = _request(d, envelope, tool_ref, tool, effect_key="r403-a", value=1)
+    effects.prepare(d.worker, a)
+    batch = effects.dispatch_batch(d.scope, [a["effect_id"], "effect-does-not-exist"])
+    assert [i["state"] for i in batch["items"]] == ["applied", "error"]
+    assert batch["items"][1]["code"] == "NOT_FOUND"
+    assert batch["state"] == "partial" and batch["all_succeeded"] is False
+    assert d.store.head(d.scope, "effect", a["effect_id"])["state"] == "applied"

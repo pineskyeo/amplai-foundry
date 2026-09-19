@@ -123,3 +123,55 @@ def test_r108_hermes_bind_rejects_permissions_the_operator_does_not_hold(deploym
     subset = replace(d.actor, permissions=frozenset({"goal.submit"}))
     ref = identities.bind(operator, "slack", "U9", subset)
     assert ref["revision"] == 1
+
+
+def test_r401_recover_takes_owner_lock_before_removing_residue(deployment, tmp_path):
+    import fcntl
+
+    from amplai_foundry.distribution.installer import KitInstaller
+    from amplai_foundry.distribution.packs import PackRegistry
+
+    d = deployment
+    installer = KitInstaller(PackRegistry(d.store, d.contracts, {}))
+    root = tmp_path / "app"
+    meta = root / ".ai-team" / "install-v3"
+    meta.mkdir(parents=True)
+    temp = meta / ".v3-inflight"
+    temp.write_bytes(b"about to be os.replace()d by a running apply()")
+    actor = replace(d.actor, permissions=d.actor.permissions | {"pack.install"})
+    with open(meta / "owner.lock", "a+b") as held:
+        fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)  # simulate the running apply()
+        with pytest.raises(Hold) as exc:
+            installer.recover(actor, root)
+        assert exc.value.code == "INSTALL_BUSY"
+        assert temp.exists()  # nothing was removed while another owner held the lock
+    result = installer.recover(actor, root)
+    assert result["temp_removed"] == [".ai-team/install-v3/.v3-inflight"]
+    assert not temp.exists()
+
+
+def test_r402_resolve_never_mints_more_than_the_binding_operator_held(deployment):
+    from amplai_foundry.runtime.contracts.identity import now
+
+    d = deployment
+    identities = HermesIdentityMap(d.store)
+    operator = replace(d.actor, permissions=frozenset({"runtime.admin", "goal.submit"}))
+    bound = replace(d.actor, permissions=frozenset({"goal.submit"}))
+    identities.bind(operator, "slack", "U-ok", bound)
+    assert identities.resolve(d.scope, "slack", "U-ok").actor.permissions == {"goal.submit"}
+    # a legacy record written before the rule (no operator_permissions) fails closed
+    legacy = {
+        "channel": "slack",
+        "external_user_id": "U-old",
+        "subject_id": "old",
+        "kind": "human",
+        "permissions": ["goal.submit", "pack.install"],
+        "authn_context_ref": None,
+        "verified_by": "someone",
+        "bound_at": now(),
+    }
+    with d.store.tx() as db:
+        d.store.put(db, d.scope, HermesIdentityMap.KIND, "slack:U-old", 1, legacy)
+    with pytest.raises(Hold) as exc:
+        identities.resolve(d.scope, "slack", "U-old")
+    assert exc.value.code == "IDENTITY_REBIND_REQUIRED"
