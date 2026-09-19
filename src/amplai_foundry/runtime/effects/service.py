@@ -335,6 +335,8 @@ class Effects:
             raise Hold("CALLBACK_REJECTED", "Callback names no effect in this project") from exc
         request = head["data"]["request"]
         receipt = head["data"]["receipt"]
+        # store.head() is already scoped, so the request-scope comparison is defense in depth
+        # against a stored request that lies about its scope; it is not the primary gate.
         if (
             request["run_id"] != run_id
             or request["scope"] != scope.wire()

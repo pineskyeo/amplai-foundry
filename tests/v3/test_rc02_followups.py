@@ -175,3 +175,28 @@ def test_r402_resolve_never_mints_more_than_the_binding_operator_held(deployment
     with pytest.raises(Hold) as exc:
         identities.resolve(d.scope, "slack", "U-old")
     assert exc.value.code == "IDENTITY_REBIND_REQUIRED"
+
+
+def test_r501_resolve_clamps_stored_permissions_wider_than_the_operator_held(deployment):
+    """A tampered or widened record never mints beyond operator_permissions (mutation R501)."""
+    from amplai_foundry.runtime.contracts.identity import now
+
+    d = deployment
+    identities = HermesIdentityMap(d.store)
+    widened = {
+        "channel": "slack",
+        "external_user_id": "U-wide",
+        "subject_id": "wide",
+        "kind": "human",
+        "permissions": ["goal.submit", "pack.install", "runtime.admin"],
+        "operator_permissions": ["goal.submit"],
+        "authn_context_ref": None,
+        "verified_by": "someone",
+        "bound_at": now(),
+    }
+    with d.store.tx() as db:
+        d.store.put(db, d.scope, HermesIdentityMap.KIND, "slack:U-wide", 1, widened)
+    resolved = identities.resolve(d.scope, "slack", "U-wide")
+    assert resolved.actor.permissions == frozenset({"goal.submit"})
+    assert "pack.install" not in resolved.actor.permissions
+    assert "runtime.admin" not in resolved.actor.permissions
