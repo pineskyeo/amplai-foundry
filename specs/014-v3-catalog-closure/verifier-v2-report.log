@@ -6,13 +6,13 @@ platform: darwin
 
 --- ruff-check [block]
     All checks passed!
-    PASS (exit 0, 0.065s)
+    PASS (exit 0, 0.080s)
 --- ruff-format [block]
     318 files already formatted
-    PASS (exit 0, 0.029s)
+    PASS (exit 0, 0.030s)
 --- mypy [block]
     Success: no issues found in 221 source files(B
-    PASS (exit 0, 0.187s)
+    PASS (exit 0, 0.199s)
 --- loop-runtime-doctor [block]
     LOOP DOCTOR: PASS
     - public entry points: Claude /work,/design | Codex $work,$design
@@ -30,7 +30,7 @@ platform: darwin
     PASS (exit 0, 0.043s)
 --- manifest-validator [warn]
     PASS: validated 48 task manifest(s)
-    PASS (exit 0, 0.199s)
+    PASS (exit 0, 0.202s)
 --- pytest [block]
     ........................................................................ [  2%]
     ........................................................................ [  4%]
@@ -87,19 +87,19 @@ platform: darwin
         _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
     
     -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-    3174 passed, 4 deselected, 2 warnings in 612.39s (0:10:12)
-    PASS (exit 0, 612.755s)
+    3174 passed, 6 deselected, 2 warnings in 592.94s (0:09:52)
+    PASS (exit 0, 593.341s)
 --- loop-shell-syntax [warn]
-    PASS (exit 0, 0.005s)
+    PASS (exit 0, 0.004s)
 --- schema [block]
     OK schemas are current
-    PASS (exit 0, 0.336s)
+    PASS (exit 0, 0.295s)
 --- vault-lint [block]
     0 errors, 0 warnings, 56 notes scanned
-    PASS (exit 0, 0.283s)
+    PASS (exit 0, 0.273s)
 --- project-pack [block]
     OK amplai
-    PASS (exit 0, 0.647s)
+    PASS (exit 0, 0.652s)
 --- kit-seal [block]
     {
       "baseline_stale": [],
@@ -110,6 +110,6 @@ platform: darwin
       "not_in_checksums": [],
       "ok": true
     }
-    PASS (exit 0, 0.062s)
+    PASS (exit 0, 0.051s)
 
 VERIFIER: PASS
