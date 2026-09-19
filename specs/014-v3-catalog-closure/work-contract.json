@@ -1,0 +1,144 @@
+{
+  "schema_version": "2.0",
+  "id": "AMPLAI-V3-RC02",
+  "title": "AMPLAI V3 RC-02 — Catalog Closure",
+  "goal": "RC-01 ledger 의 not_run 64 케이스 중 로컬에서 증명 가능한 것을 실행 증거로 묶고, review round 2 의 should-fix 4건을 닫아 release ledger 를 FINAL 직전까지 끌어올린다. live provider/컨테이너/holdout 이 필요한 케이스는 EXTERNAL 사유와 함께 not_run 으로 남긴다.",
+  "source": [
+    "spec.md",
+    "plan.md",
+    "../../design-reference/eval/test-catalog.json",
+    "../../release/rc01-conformance-closure.json",
+    "../013-amplai-v3/handoff.json"
+  ],
+  "work_type": "architecture",
+  "risk": "normal",
+  "scope": {
+    "include": [
+      "contracts/",
+      "deployment/",
+      "docs/v3/",
+      "eval/",
+      "integrations/hermes/",
+      "migration/",
+      "packs/",
+      "pyproject.toml",
+      "release/",
+      "scripts/rc01_closure.py",
+      "specs/013-amplai-v3/",
+      "specs/014-v3-catalog-closure/",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/control_plane/",
+      "src/amplai_foundry/distribution/",
+      "src/amplai_foundry/evaluation/",
+      "src/amplai_foundry/governance/",
+      "src/amplai_foundry/knowledge_runtime/",
+      "src/amplai_foundry/meta_harness/",
+      "src/amplai_foundry/migration/",
+      "src/amplai_foundry/packs/",
+      "src/amplai_foundry/runtime/",
+      "src/amplai_foundry/sandbox/",
+      "src/amplai_foundry/tool_broker/",
+      "src/amplai_foundry/verification/runtime/",
+      "tests/e2e/",
+      "tests/runtime_storage/",
+      "tests/v3/",
+      "tools/amplai-loop-kit/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경. 충돌은 DESIGN_CHANGE_PROPOSAL 로 기록)",
+      "Canonical Vault 와 governed knowledge mutation",
+      "Production configuration, live provider account, paid API call",
+      "Git push/merge/release/deploy",
+      "실제 Slack/Hermes workspace 활성화",
+      "다른 저장소 (synapse, cortex) 의 실제 설치·변경"
+    ]
+  },
+  "non_goals": [
+    "Live Claude/Codex/OpenCode/Responses provider qualification (credential 필요, EXTERNAL_QUALIFICATION_PENDING 9건)",
+    "docker/podman 실제 격리, 물리 holdout 서비스 분리",
+    "모델 가중치 변경, 무인 production 제어",
+    "V2 API 의 파괴적 변경, 기존 Foundry governance 약화",
+    "V3 FINAL 선언 — 이 Work 의 산출물은 RC 후보이며 cutover 는 V3-062 human gate 뒤",
+    "human gate 매핑: destructive_change=V3-060 실제 삭제, production_operation=V3-062 cutover 및 external qualification, git_publish=push/PR/merge/release"
+  ],
+  "acceptance": [
+    {
+      "id": "CLOSE-001",
+      "statement": "로컬 실행 가능한 catalog 케이스가 test 함수 이름으로 ledger 에 묶여 local_pass 로 기록된다.",
+      "evidence": [
+        "release/rc01-conformance-closure.json tests[*].status",
+        "specs/013-amplai-v3/junit/rc01-v3-e2e.xml"
+      ]
+    },
+    {
+      "id": "CLOSE-002",
+      "statement": "남은 not_run 은 전부 EXTERNAL 사유 (실제 provider/컨테이너/holdout/브라우저) 를 갖는다.",
+      "evidence": [
+        "specs/014-v3-catalog-closure/external-boundary.json"
+      ]
+    },
+    {
+      "id": "CLOSE-003",
+      "statement": "review round 2 의 R102/R106/R107/R108 이 RED→GREEN test 와 함께 닫힌다.",
+      "evidence": [
+        "tests/v3/test_rc02_followups.py"
+      ]
+    },
+    {
+      "id": "GATE-001",
+      "statement": "verifier profile v2 PASS, ruff 0, mypy 0, skip/xfail 추가 없음.",
+      "evidence": [
+        ".ai-team/verifiers/run.py --profile v2"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "Live provider/컨테이너/holdout 자격은 NOT PASS 로 남긴다 (EXTERNAL_QUALIFICATION_PENDING)",
+      "evolution-demo 는 산술 recipe 이며 LLM 품질 개선 근거가 아니다",
+      "design-reference/ 는 무변경. 설계 충돌은 DESIGN_CHANGE_PROPOSAL.md 에 기록"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "production_operation",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "Existing D-046: controller/V2 유지, semantic runtime 미이식",
+    "Existing D-053: canonical Kit 은 tools/amplai-loop-kit",
+    "Existing D-056: Kit Python 3.6 호환, implicit Store rebinding/supervisor activation 없음",
+    "AMPLAI V3 Design 1.0 (2026-09-15, design-reference/, CHECKSUMS digest 5f9e4044f9a1a174…) 은 승인 설계이며 이 Work 는 그것을 변경하지 않는다",
+    "DEV-03 parent: AMPLAI_V3_DEV_02_3e21c3b2 (sha256 3e21c3b2…), DEV-03 source tree sha256 e92b82d1…; 검증기 verify_delivery --patches passed (2026-09-18 로컬 재현)",
+    "2026-09-18 사용자 지시: '위 amplai V3 컨셉대로 실제로 만들어달라' — 로컬 브랜치 feat/013-amplai-v3 에서 구현·검증. push/merge/release 는 포함하지 않는다",
+    "품질 게이트 (ruff/mypy) 는 설정 완화가 아니라 주석·수정으로 닫는다. 예외는 FastAPI Depends immutable-call 선언과 optional visual extra (playwright/PIL) missing-import 뿐이며 둘 다 우리 코드 검사를 약화하지 않는다",
+    "2026-09-18 review R002/R003: S16/S17 실행 case 는 slice eval 이 지정한 tests/v3/test_rc01_e2e_*.py 로 옮겼고, ledger 재생성기 scripts/rc01_closure.py 와 storage tier test tests/runtime_storage/ 를 scope 에 추가했다. 기능 계약은 바뀌지 않았다",
+    "2026-09-18 review R001: task manifest acceptance.behaviors 는 ledger 가 local_pass 로 기록한 catalog id 만 남기고, 나머지는 acceptance.deferred 로 명시한다. design mapping 은 runtime evidence 가 아니다 (W5-CLOSURE)",
+    "2026-09-19 사용자 지시: '너가 오케스트레이션하고 병렬로 진행해서 완성해줘' — sonnet 서브에이전트가 test 파일만 소유하고 src 는 읽기 전용. 동시 3개 상한 (run-review-lenses-sequentially 교훈)"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

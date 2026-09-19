@@ -1,0 +1,278 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-046",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Move workflow ordering from the human procedure to the /work controller",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-052",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "The Project Store owns the supervisor's code and its right to run",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-055",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-056",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Adopt the Platform 0.4.0 control plane with its reachable defects closed first",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-057",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make stranded limit an output cap so filtered reads report truncation",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-059",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Keep Hermes at the untrusted work-manager boundary",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-060",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Split conversation and human authority across two Slack Apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-063",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Project authoritative Work status through the AMPLAI Slack App",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "MGC-012",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Messenger governance closure — Slack interaction authority and proposal cards",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "contracts/",
+    "deployment/",
+    "docs/v3/",
+    "eval/",
+    "integrations/hermes/",
+    "migration/",
+    "packs/",
+    "pyproject.toml",
+    "release/",
+    "scripts/rc01_closure.py",
+    "specs/013-amplai-v3/",
+    "specs/014-v3-catalog-closure/",
+    "src/amplai_foundry/agent_drivers/",
+    "src/amplai_foundry/control_plane/",
+    "src/amplai_foundry/distribution/",
+    "src/amplai_foundry/evaluation/",
+    "src/amplai_foundry/governance/",
+    "src/amplai_foundry/knowledge_runtime/",
+    "src/amplai_foundry/meta_harness/",
+    "src/amplai_foundry/migration/",
+    "src/amplai_foundry/packs/",
+    "src/amplai_foundry/runtime/",
+    "src/amplai_foundry/sandbox/",
+    "src/amplai_foundry/tool_broker/",
+    "src/amplai_foundry/verification/runtime/",
+    "tests/e2e/",
+    "tests/runtime_storage/",
+    "tests/v3/",
+    "tools/amplai-loop-kit/"
+  ],
+  "content_hash": "ba7d320f42a9ab4c6dd42fc5bd026953c18c62e5cb7e9168b96aae4f44e429c4",
+  "generated_from": {
+    "claims_sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+    "commit": "7c996603c1503c04fcee8f644e616aa22b16bc1c",
+    "contract_sha256": "f4985b546e5941c38fb7e780d2be79c8df7865fc0db803fe3be402790298d0aa",
+    "decisions_sha256": "8a22d5c739d5a47a7c0dcebfccf0d4fecfaa34da9269b77fa2d432eacc91c50d",
+    "discovery_sha256": "",
+    "document_selection_sha256": "fef835536d3f443818ef0dac7fbc4926cc11420b823b4721cfc350747c3425d8",
+    "generated_at": "2026-09-19T04:23:24Z",
+    "knowledge_map_sha256": "32c54054154f4513a1ded352b587d8ef1a0aa10dc0084855bfb6324726219eb4",
+    "readiness_sha256": "9dcc90d21b0f3a63d6252122dab2ad1498909ca28776056b6f76df16121d11be",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "RC-01 ledger 의 not_run 64 케이스 중 로컬에서 증명 가능한 것을 실행 증거로 묶고, review round 2 의 should-fix 4건을 닫아 release ledger 를 FINAL 직전까지 끌어올린다. live provider/컨테이너/holdout 이 필요한 케이스는 EXTERNAL 사유와 함께 not_run 으로 남긴다.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:review,runtime",
+      "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:runtime",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword:governance",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:runtime",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:verification",
+      "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "high-priority-core",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "high-priority-core",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "What Was Not Ported",
+          "path": "AGENTS.md",
+          "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+          "type": "doc"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-semantic-runtime-not-ported",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "source_sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/ai/test_amplai_async_runtime.py",
+    "tests/ai/test_document_governance.py",
+    "tests/runtime_storage/test_store_migration.py",
+    "tests/test_control_plane.py",
+    "tests/test_governance_events.py",
+    "tests/test_governance_migrations.py",
+    "tests/test_governance_store.py",
+    "tests/test_hermes_integration.py",
+    "tests/test_legacy_migration.py",
+    "tests/test_project_packs.py",
+    "tests/v3/test_core_runtime.py",
+    "tests/v3/test_dev01_contracts_planning.py",
+    "tests/v3/test_dev02_tool_broker.py",
+    "tests/v3/test_dev03_evaluation.py",
+    "tests/v3/test_dev03_meta_harness.py",
+    "tests/v3/test_rc01_deployment_profiles.py",
+    "tests/v3/test_rc01_hermes_adapter.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "AMPLAI-V3-RC02"
+}

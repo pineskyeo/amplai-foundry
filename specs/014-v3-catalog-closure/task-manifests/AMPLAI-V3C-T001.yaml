@@ -1,0 +1,221 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3C-T001",
+  "title": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
+  "type": "test",
+  "status": "ready",
+  "goal": {
+    "outcome": "CAT-GRAPH WorkGraph compile/replan/reuse 케이스 실행 증거",
+    "user_value": "release ledger 의 not_run 을 실행 증거로 바꿔 V3 FINAL 에 다가간다"
+  },
+  "source": {
+    "feature": "014-v3-catalog-closure",
+    "files": [
+      {
+        "path": "specs/014-v3-catalog-closure/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/eval/test-catalog.json",
+        "section": "T-021, T-022, T-023, T-024, T-025, T-026, T-028, T-030"
+      },
+      {
+        "path": "release/rc01-conformance-closure.json",
+        "section": "remaining_blockers.tests_not_run"
+      }
+    ],
+    "requirements": [
+      "W5-CLOSURE"
+    ],
+    "decisions": [
+      "2026-09-19 사용자 지시: 오케스트레이션 + 병렬 서브에이전트로 완성. src 는 서브에이전트에 읽기 전용, 테스트 파일만 소유"
+    ]
+  },
+  "scope": {
+    "include": [
+      "tests/v3/test_rc02_graph.py",
+      "src/amplai_foundry/runtime/graphs/",
+      "src/amplai_foundry/runtime/execution/",
+      "specs/014-v3-catalog-closure/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경)",
+      "Production configuration, live provider, paid API",
+      "Git push/merge/release/deploy"
+    ],
+    "allowed_paths": [
+      "tests/v3/test_rc02_graph.py",
+      "src/amplai_foundry/runtime/graphs/",
+      "src/amplai_foundry/runtime/execution/",
+      "specs/014-v3-catalog-closure/",
+      "release/",
+      "eval/",
+      "specs/013-amplai-v3/junit/"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl"
+    ]
+  },
+  "dependencies": {
+    "tasks": [],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "catalog id 를 test 함수 이름에 넣는다 (test_tNNN_...). ledger scanner 가 그 이름으로 증거를 묶는다",
+      "expected 의 negative effect (state unchanged, no second effect) 까지 assert 한다",
+      "실제 외부 시스템이 필요한 케이스는 fake pass 하지 않고 EXTERNAL 로 남긴다",
+      "skip/xfail 금지. 구현 결함은 BLOCKED 로 보고한다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "test 삭제·skip 으로 통과시키지 않는다",
+      "mypy strict / ruff 유지"
+    ],
+    "non_goals": [
+      "Live provider/컨테이너/holdout 자격 인증",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "T-021",
+        "given": "A depends B and B depends A",
+        "when": "compile",
+        "then": "GRAPH_INVALID; no graph activation [Cycle rejection]"
+      },
+      {
+        "id": "T-022",
+        "given": "same frozen plan contract registry snapshot",
+        "when": "compile twice in different input iteration order",
+        "then": "same canonical DAG content digest and stable topological order [Stable compiler output]"
+      },
+      {
+        "id": "T-023",
+        "given": "producer outputs JSON; consumer requires binary ABI artifact",
+        "when": "compile",
+        "then": "GRAPH_DATA_TYPES reject with exact edge finding [Typed artifact mismatch]"
+      },
+      {
+        "id": "T-024",
+        "given": "consumes supplies both from_node and external_ref",
+        "when": "semantic validate",
+        "then": "reject; source must be exactly one [Input XOR]"
+      },
+      {
+        "id": "T-025",
+        "given": "nodes cover unit tests but no cross-app integration criterion",
+        "when": "compile/activate",
+        "then": "coverage failure; add global verifier or blocking finding [Missing global acceptance]"
+      },
+      {
+        "id": "T-026",
+        "given": "write node joins either of two required approvals",
+        "when": "compile",
+        "then": "unsafe join rejected [Unsafe any-success join]"
+      },
+      {
+        "id": "T-028",
+        "given": "upstream artifact digest matches but verifier/env changed",
+        "when": "reuse prior node success",
+        "then": "reuse rejected or reverify, no stale pass [Conservative output reuse]"
+      },
+      {
+        "id": "T-030",
+        "given": "draft exceeds configured max nodes",
+        "when": "compile",
+        "then": "bounded GRAPH_INVALID/GRAPH_LIMIT; no unbounded fan-out [Graph node budget limit]"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3/test_rc02_graph.py",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check tests/v3/test_rc02_graph.py",
+        "required": true
+      },
+      {
+        "id": "check-3",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      },
+      {
+        "id": "check-4",
+        "kind": "test",
+        "run": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q tests/v3",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-3",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-4",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "서브에이전트가 src 를 건드리지 않도록 프롬프트 절대 규칙으로 통제"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing",
+      "same_failure_class_reaches_replan_threshold"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": false,
+    "required_evidence_present": false,
+    "completed_at": "",
+    "evidence_paths": []
+  },
+  "handoff": {
+    "expected_changes": [
+      "tests/v3/test_rc02_graph.py"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC02",
+    "slice_id": "S01",
+    "context_pack": "specs/014-v3-catalog-closure/context-pack.json",
+    "environment": "specs/014-v3-catalog-closure/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "7c996603c1503c04fcee8f644e616aa22b16bc1c"
+  }
+}
