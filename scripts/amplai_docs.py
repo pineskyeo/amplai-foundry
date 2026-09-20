@@ -1433,8 +1433,24 @@ def reviews(tree, config):
     return review_store(tree, config)["reviews"]
 
 
+# A review stays bound to the repository content it saw: source, metadata, declared inputs
+# and the whole candidate index, so a new tool, a staged edit or an unknown file still
+# invalidates it. candidate_revision is only the commit id. Recording a review and then
+# committing it must not invalidate the review it just recorded, so the commit id is kept
+# as provenance and left out of the match.
+REVIEW_PROVENANCE_ONLY_KEYS = ("candidate_revision",)
+
+
+def review_snapshot_match_view(snapshot):
+    if not isinstance(snapshot, dict):
+        return None
+    return {k: v for k, v in snapshot.items() if k not in REVIEW_PROVENANCE_ONLY_KEYS}
+
+
 def review_matches(tree, record, review, config):
-    if review.get("snapshot") != record["snapshot"] or review.get("outcome") not in (
+    if review_snapshot_match_view(review.get("snapshot")) != review_snapshot_match_view(
+        record["snapshot"]
+    ) or review.get("outcome") not in (
         "updated",
         "reviewed_unchanged",
     ):

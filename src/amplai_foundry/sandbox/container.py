@@ -79,6 +79,9 @@ class ContainerSandbox:
         args = [
             self.engine,
             "run",
+            # A minimal init as PID 1 forwards SIGTERM to the agent process tree; without it
+            # a shell/agent as PID 1 ignores the signal and cancel never terminates the run.
+            "--init",
             "--name",
             run_name,
             "--read-only",

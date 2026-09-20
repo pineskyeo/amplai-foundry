@@ -1,0 +1,42 @@
+{
+  "snapshot": "2ff49d72a6907c07a051127fc07075a2f1421790b23c620821fcc2d7b131ff28",
+  "reviews": [],
+  "reference_reviews": [
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reference": "supervisor/",
+      "line": 86,
+      "disposition": "historical",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only, no required dependency waived.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    }
+  ]
+}

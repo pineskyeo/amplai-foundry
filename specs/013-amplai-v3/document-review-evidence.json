@@ -2,11 +2,11 @@
   "schema_version": "1.0",
   "work_id": "AMPLAI-V3-RC01",
   "feature": "specs/013-amplai-v3",
-  "reviewed_at": "2026-09-19 12:39:37 UTC",
+  "reviewed_at": "2026-09-20 00:26:47 UTC",
   "review_scope": "Attributed implementation-document review after S00-S20 slice PASS; not independent review, human gate or publication.",
-  "implementation_revision": "a231b0ff43d3329d00930746302f394e0e0b0e21",
+  "implementation_revision": "5a440432da0c499a46297569bb64165f83e129b8",
   "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
-  "semantic_snapshot": "b11d7867fca0fe1c35f5006dc54beeaa4f5e26397d3533fd85c555f09cd1f9cb",
+  "semantic_snapshot": "38a3c5565ef1c2c07530100527f7a077ebafadd66e8d1ca7612ed9cb90a349bd",
   "guide_sources": [
     {
       "path": ".ai-team/README.md",
@@ -206,7 +206,8 @@
     "round 3 regression lens 13 mutants / 12 killed; R201 test added (24db152)",
     "Work 014 catalog closure: 63 new catalog tests (rounds 1-3), S08 fixes R102/R106/R107/R108, new Effects.dispatch_batch/ingest_callback and runtime/execution/reuse.py; ledger 111/112 local_pass",
     "Work 014 review rounds: contract PASS; failure R401-R403 fixed (01c5eb4); regression R501 test + R502 comment (d5546c1)",
-    "Work 015 external qualification: kit test fixture cleanup retry (tools/amplai-loop-kit/tests/document-browser.mjs + CHECKSUMS reseal; installable payload unchanged), scripts/rc01_closure.py reads external-qualification-status.json; 3174 passed on 44732a4, verifier v2 PASS"
+    "Work 015 external qualification: kit test fixture cleanup retry (tools/amplai-loop-kit/tests/document-browser.mjs + CHECKSUMS reseal; installable payload unchanged), scripts/rc01_closure.py reads external-qualification-status.json; 3174 passed on 44732a4, verifier v2 PASS",
+    "Kit release r7: review_matches keeps candidate_revision as provenance only (scripts/amplai_docs.py + payload), sandbox --init, offline_views -> r7 manifest and html-*-r7 views; guides re-reviewed at the r7 snapshot"
   ],
   "rebind_note": "Re-bound after Work 015. tools/amplai-loop-kit diff since 9ef30a8 is only tests/document-browser.mjs (fs.rm retry) and CHECKSUMS.sha256; no guide describes that fixture. release/README.md's regeneration command is unchanged; the ledger's pending source moved to specs/015 which the README does not enumerate."
 }

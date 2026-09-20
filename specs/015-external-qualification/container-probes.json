@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "kind": "container_containment_probes",
+  "checked_at": "2026-09-20T00:30:52Z",
+  "runtime": {
+    "schema_version": "1.0",
+    "engine": "docker",
+    "runtime": "colima (lima VM) on macOS",
+    "image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
+    "uid": 65534,
+    "gid": 65534,
+    "memory": "1g",
+    "cpus": 1.0,
+    "pids": 128,
+    "network": "none",
+    "tools": {
+      "claude": "2.1.278 (Claude Code)",
+      "codex": "codex-cli 0.155.1"
+    },
+    "built_at": "2026-09-20T00:15:10Z",
+    "qualification": "local development profile; not a production qualification"
+  },
+  "test": "tests/v3/test_rc03_container_sandbox.py (pytest -m container)",
+  "result": "5 passed",
+  "probes": {
+    "unprivileged_uid": "pass",
+    "filesystem_containment": "pass",
+    "egress_containment": "pass",
+    "cancel_tree": "pass (after adding --init to ContainerSandbox)",
+    "agent_binaries": "pass"
+  },
+  "not_measured": [
+    "memory/pids limits under load",
+    "real agent turn inside the container (needs CLAUDE_CODE_OAUTH_TOKEN)"
+  ],
+  "outcome": "pass_with_known_gaps"
+}

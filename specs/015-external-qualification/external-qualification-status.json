@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "external_qualification_status",
-  "checked_at": "2026-09-19T12:36:54Z",
+  "checked_at": "2026-09-20T00:30:52Z",
   "host": "macOS arm64 workstation",
   "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
   "status_values": {
@@ -25,9 +25,9 @@
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",
-      "status": "unavailable",
-      "evidence": "specs/015-external-qualification/unavailable.json",
-      "note": "no docker/podman/colima on this host"
+      "status": "partial",
+      "evidence": "specs/015-external-qualification/container-probes.json",
+      "note": "colima (lima VM) + docker 29.5 on this Mac; worker image pinned by registry digest (deployment/local-container.json). Real probes pass: unprivileged uid 65534, read-only root with /workspace as the only writable bind, network none blocks egress, SIGTERM terminates the container and its children (needed --init), claude/codex binaries present. Not measured: memory/pids limits under load, credential isolation of a real agent turn (needs CLAUDE_CODE_OAUTH_TOKEN)."
     },
     {
       "item": "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
@@ -68,8 +68,8 @@
   ],
   "summary": {
     "resolved": 1,
-    "partial": 3,
-    "unavailable": 4,
+    "partial": 4,
+    "unavailable": 3,
     "not_a_local_check": 1
   }
 }
