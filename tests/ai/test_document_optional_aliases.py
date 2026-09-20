@@ -143,7 +143,7 @@ def bind_release(engine, root, release_path):
     release["documents"][0] = {
         "doc_id": "canary:guide",
         "source_sha256": record["source_sha256"],
-        "snapshot_sha256": engine.object_digest(record["snapshot"]),
+        "snapshot_sha256": engine.release_snapshot_digest(record),
         "review_sha256": engine.object_digest(review),
     }
     verification = release.pop("verification")
