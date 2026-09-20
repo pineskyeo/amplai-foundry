@@ -31,25 +31,25 @@
     "kit": {
       "revision": "kit-2.5.0-candidate-r6",
       "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
-      "sha256": "2fa01acd968a6067e5c89a433c1f01c177eb29a51312a08a99e985a33c3f902a"
+      "sha256": "fd0fc5b60bce190e31845a6a91e56810462501a68c0d783ed6132c11125620b4"
     }
   },
   "documents": [
     {
       "doc_id": "amplai-foundry:docs-portable-development-md",
       "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f",
-      "snapshot_sha256": "b06b788da6bcf5f47f226f14debd7e5765436842e50a238a8a89b320bd204413",
-      "review_sha256": "364c7d94609a54e02aabbb06bb96d7c9960694a0ba2a13103e8716389d954f41"
+      "snapshot_sha256": "9e72aa0a9366f348eac5ca3a3ac81eb3c9dae1b9288d41670c9878b905d0e932",
+      "review_sha256": "4041ba03115cb17d53f1f1dd688b58021a5b39f97793defad9a4004c0b85a0c5"
     },
     {
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
       "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd",
-      "snapshot_sha256": "2e14bc35f515eea58b692ed5386dc02bd6587f7fea38150460628afd8138c8a4",
-      "review_sha256": "301e06cf958278065d9ac7021b39d1f5b7848ca5f964486a5c13e5e1e7ef58a8"
+      "snapshot_sha256": "1db6317179b8a27d4c37cd62b98311fbf3daca2e04bbb53ef63765edfe1d6dcb",
+      "review_sha256": "fa8f1b346f561581703aec2c2630222dbdf2566f66e904619dda4b34b0bbd3c3"
     }
   ],
   "verification": {
     "path": "specs/012-portable-document-lifecycle/guide-verification-r7.json",
-    "sha256": "58d0f1e2b6c218b7f2d09fb09d168b40819c4406cd67dbaf29e96bf90c76f2d3"
+    "sha256": "4f9ebdfab32ccaf16f61aa2155f4cc856e2dcce1f9e34197330117c5324a6197"
   }
 }
