@@ -1364,6 +1364,15 @@ def dependency_snapshot(tree, metadata, config):
     return sorted(result, key=lambda x: (x["repository"], x["path"], x["kind"]))
 
 
+def candidate_content_digest(candidate):
+    """Digest of the candidate CONTENT (index entries and working changes).
+
+    The commit id is recorded separately as ``candidate_revision``; keeping it out of the
+    content digest means committing already-reviewed content does not change the digest.
+    """
+    return object_digest({k: v for k, v in candidate.items() if k != "commit"})
+
+
 def candidate_revision(root):
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     try:
@@ -1608,7 +1617,8 @@ def _document(tree, path, config, rules, review_records, revision, candidate_has
         "declared_reference_sha256": object_digest(declared),
         "source_assets_sha256": object_digest(source_assets),
         "candidate_revision": revision,
-        "candidate_sha256": candidate_hash or object_digest(candidate_snapshot(tree, config)),
+        "candidate_sha256": candidate_hash
+        or candidate_content_digest(candidate_snapshot(tree, config)),
         "rules": rules,
     }
     record = {
@@ -1671,7 +1681,7 @@ def _catalog(tree, config, rules):
     review_records = reviews(tree, config)
     revision = candidate_revision(tree.root)
     candidate = candidate_snapshot(tree, config)
-    candidate_hash = object_digest(candidate)
+    candidate_hash = candidate_content_digest(candidate)
     records = []
     ids = set()
     total_bytes = 0
