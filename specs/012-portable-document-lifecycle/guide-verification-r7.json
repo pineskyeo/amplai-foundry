@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "verdict": "PASS",
+  "input_sha256": "b80787dbee2f8824182adee195ea5fa03e611d3c7e5caeff37675a880b8ce8ce",
+  "checks": [
+    {
+      "id": "s08-local-verification-r7",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-local-verification-r7.json",
+        "sha256": "00c54f0664f079318006b784d3d380f9b5573b7f647f3eea338b61d55dabe455"
+      }
+    },
+    {
+      "id": "s08-kit-seal-r7",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-kit-seal-r7.json",
+        "sha256": "26fbc63182330f9a61047a2fe2281ed6a3c329169610e653cb3052aa06760e77"
+      }
+    },
+    {
+      "id": "s08-guide-components-r6",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s08-guide-components-r6.json",
+        "sha256": "0609dad9b092ad380b15cc909833fb77eadf4e45701bb2162ba829a285d62c0c"
+      }
+    },
+    {
+      "id": "s19-actual-guide-verification",
+      "exit_code": 0,
+      "evidence": {
+        "path": "specs/012-portable-document-lifecycle/s19-actual-guide-verification.json",
+        "sha256": "d3a694e704df010a070d0576c05cc6a60df37440d0dbaa13e3e81cbed9756cf3"
+      }
+    }
+  ]
+}
