@@ -2,7 +2,8 @@
 """Re-run the CLI driver qualification once real API credentials exist.
 
 Work 015 measured what this host could reach: the Claude Code login works but the driver's
-``--bare`` mode skips the keychain, and the Codex ChatGPT plan rejects codex-branded model ids (use the TUI's general models, e.g. gpt-5.6-sol).
+``--bare`` mode skips the keychain, and the Codex ChatGPT plan rejects codex-branded model ids
+(use the TUI's general models, e.g. gpt-5.6-sol).
 Set the keys below and run this to replace
 ``specs/015-external-qualification/driver-qualification.json`` with a fresh measurement.
 
