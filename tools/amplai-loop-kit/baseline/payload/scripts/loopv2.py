@@ -1490,11 +1490,30 @@ def docs_validate(root, feature_raw=None, repo=False):
             errors.append("SOURCE_DRIFT")
 
         def comparable(value):
-            return {
-                key: item
-                for key, item in value.items()
-                if key not in ("content_hash", "acknowledged")
-            }
+            # Commit ids are provenance: the shipped report must not drift merely because
+            # its own commit moved HEAD. Content digests still drive SOURCE_DRIFT above.
+            result = {}
+            for key, item in value.items():
+                if key in ("content_hash", "acknowledged"):
+                    continue
+                if key == "generated_from" and isinstance(item, dict):
+                    item = {k: v for k, v in item.items() if k != "commit"}
+                if key == "impacted_documents" and isinstance(item, list):
+                    item = [
+                        {
+                            **doc,
+                            "record_snapshot": {
+                                k: v
+                                for k, v in (doc.get("record_snapshot") or {}).items()
+                                if k != "candidate_revision"
+                            },
+                        }
+                        if isinstance(doc, dict)
+                        else doc
+                        for doc in item
+                    ]
+                result[key] = item
+            return result
 
         if comparable(previous) != comparable(current):
             errors.append("DERIVED_REPORT_DRIFT")
