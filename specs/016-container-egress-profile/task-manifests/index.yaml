@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0",
+  "feature": {
+    "id": "016-container-egress-profile",
+    "title": "AMPLAI V3 RC-04 — Container Egress Profile",
+    "source_status": "approved_design_local_implementation"
+  },
+  "source": {
+    "files": [
+      {
+        "path": "specs/016-container-egress-profile/spec.md",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "specs/016-container-egress-profile/work-contract.json",
+        "revision": "WORKTREE"
+      },
+      {
+        "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+        "revision": "43dbafe"
+      }
+    ],
+    "generated_from": [
+      "spec",
+      "work-contract",
+      "REQ-10 containment"
+    ],
+    "generated_at": "2026-09-20"
+  },
+  "tasks": [
+    {
+      "id": "AMPLAI-V3E-T001",
+      "title": "EGR-01 EgressProfile 계약과 ContainerSandbox 통합",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "REQ-10"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3E-T002",
+      "title": "EGR-02 로컬 egress sidecar 배포와 실측 자격",
+      "status": "done",
+      "depends_on": [
+        "AMPLAI-V3E-T001"
+      ],
+      "requirements": [
+        "REQ-10"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3E-T003",
+      "title": "EGR-03 컨테이너 안 실제 driver turn 으로 남은 probe 실측",
+      "status": "done",
+      "depends_on": [
+        "AMPLAI-V3E-T002"
+      ],
+      "requirements": [
+        "REQ-10"
+      ]
+    },
+    {
+      "id": "AMPLAI-V3E-T004",
+      "title": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "status": "done",
+      "depends_on": [
+        "AMPLAI-V3E-T003"
+      ],
+      "requirements": [
+        "REQ-10"
+      ]
+    }
+  ],
+  "slices": [
+    {
+      "id": "S01",
+      "title": "EGR-01 EgressProfile 계약과 ContainerSandbox 통합",
+      "goal": "EGR-01 EgressProfile 계약과 ContainerSandbox 통합",
+      "tasks": [
+        "AMPLAI-V3E-T001"
+      ],
+      "acceptance": [
+        "EGR-01 qualification ref 가 profile digest 와 pass outcome 을 갖출 때만 허용되고 argv 에 HTTPS_PROXY/HTTP_PROXY/NO_PROXY 가 붙는다. 그 외는 EGRESS_UNQUALIFIED"
+      ],
+      "eval": [
+        ".venv/bin/python -m pytest -q tests/v3/test_rc04_egress_profile.py tests/v3/test_dev02_drivers.py tests/v3/test_rc02_driver.py",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S02",
+      "title": "EGR-02 로컬 egress sidecar 배포와 실측 자격",
+      "goal": "EGR-02 로컬 egress sidecar 배포와 실측 자격",
+      "tasks": [
+        "AMPLAI-V3E-T002"
+      ],
+      "acceptance": [
+        "EGR-02 직접 egress 실패, allowlist CONNECT 200, 비허용 CONNECT 403 이 실측돼 deployment/local-egress-qualification.json 이 pass 로 남고 container 마커 테스트가 통과한다"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('deployment/local-egress-qualification.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_gaps') or d.get('kind')\"",
+        ".venv/bin/python -m pytest -q -m container tests/v3/test_rc04_egress_container.py",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S03",
+      "title": "EGR-03 컨테이너 안 실제 driver turn 으로 남은 probe 실측",
+      "goal": "EGR-03 컨테이너 안 실제 driver turn 으로 남은 probe 실측",
+      "tasks": [
+        "AMPLAI-V3E-T003"
+      ],
+      "acceptance": [
+        "EGR-03 QualificationRunner 로 9 probe 가 기록되고 secret 값은 어떤 artifact 에도 없다. 실행 못 한 probe 는 inconclusive"
+      ],
+      "eval": [
+        ".venv/bin/python -c \"import json; d=json.load(open('specs/016-container-egress-profile/driver-qualification.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_gaps') or d.get('kind')\"",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "S04",
+      "title": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "goal": "CLOSURE 외부 자격 상태 갱신과 ledger 재생성",
+      "tasks": [
+        "AMPLAI-V3E-T004"
+      ],
+      "acceptance": [
+        "EGR-04 ledger remaining_blockers 가 실측 상태를 반영하고 closure test 가 통과한다"
+      ],
+      "eval": [
+        ".venv/bin/python -m pytest -q tests/v3/test_rc01_conformance_closure.py",
+        ".venv/bin/python -m ruff check .",
+        ".venv/bin/python -m mypy"
+      ],
+      "depends_on": []
+    }
+  ],
+  "execution": {
+    "waves": [
+      {
+        "wave": 1,
+        "tasks": [
+          "AMPLAI-V3E-T001"
+        ],
+        "note": "src 오케스트레이터, tests sonnet"
+      },
+      {
+        "wave": 2,
+        "tasks": [
+          "AMPLAI-V3E-T002"
+        ],
+        "note": "sidecar + container tests sonnet"
+      },
+      {
+        "wave": 3,
+        "tasks": [
+          "AMPLAI-V3E-T003",
+          "AMPLAI-V3E-T004"
+        ],
+        "note": "사용자 계정 turn, 오케스트레이터 직접"
+      }
+    ]
+  }
+}

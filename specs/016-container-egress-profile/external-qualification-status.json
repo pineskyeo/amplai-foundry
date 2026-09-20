@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "kind": "external_qualification_delta",
+  "work_id": "AMPLAI-V3-RC04",
+  "ledger_source": "specs/015-external-qualification/external-qualification-status.json (updated in place; rc01_closure.py reads it)",
+  "changes": [
+    {
+      "item": "Actual Claude/Codex account + exact binary image/model version qualification",
+      "from": "claude 5/9, codex 4/9 (host-side)",
+      "to": "claude 9/9 in container; codex 4/9 host-side, container run pending user sandbox home",
+      "status": "partial"
+    },
+    {
+      "item": "Real docker/podman containment, egress, resource and credential isolation",
+      "from": "network=none only",
+      "to": "deny-by-default internal network + allowlist sidecar, qualified; real-turn credential isolation measured",
+      "status": "partial"
+    }
+  ],
+  "still_unavailable": [
+    "OTLP collector",
+    "physical holdout + independent approver",
+    "OPENAI_API_KEY (Responses)",
+    "statistical population (not a local check)"
+  ],
+  "note": "Delta only. The full DEV-03 ledger source stays specs/015-external-qualification/external-qualification-status.json; this file records what Work 016 changed there."
+}

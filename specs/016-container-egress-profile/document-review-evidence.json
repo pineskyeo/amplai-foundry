@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-RC04",
+  "kind": "document_review_evidence",
+  "gates": {
+    "verifier_v2": "PASS 3214 passed, 18 deselected (tmp verifier-016b.log)",
+    "slice_evals": {
+      "S01": "PASS",
+      "S02": "PASS",
+      "S03": "PASS",
+      "S04": "PASS"
+    },
+    "ruff": 0,
+    "mypy": 0,
+    "container_tests": "tests/v3/test_rc04_egress_container.py 7 + test_rc03_container_sandbox.py 5 passed (-m container)",
+    "closure_test": "tests/v3/test_rc01_conformance_closure.py 4 passed",
+    "driver_qualification": "claude-cli 9/9 pass in container (specs/016-container-egress-profile/driver-qualification.json)"
+  },
+  "review_lenses": [
+    "contract PASS-with-minors (fixed)",
+    "failure PASS-with-minors (fixed)",
+    "regression PASS-with-minors (fixed)"
+  ],
+  "changed_sources": [
+    "src/amplai_foundry/sandbox/egress.py",
+    "src/amplai_foundry/sandbox/container.py",
+    "deployment/egress/egress_proxy.py",
+    "deployment/local-egress.json",
+    "deployment/local-egress-qualification.json",
+    "scripts/sandbox_up.sh",
+    "scripts/egress_qualify.py",
+    "scripts/container_qualify.py",
+    "scripts/requalify_drivers.py",
+    "docs/v3/DEV02_EXECUTION.ko.md",
+    "release/README.md"
+  ]
+}

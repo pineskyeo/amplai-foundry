@@ -93,7 +93,7 @@ SecretBroker는 scope·host·HTTPS endpoint·TTL에 묶인 handle을 사용한�
 | Responses | HTTP fixture로 store=false·bounded tokens·native call ID·structured plan·idempotency | 실제 계정·정확한 모델·배포 도구 정책; 모든 async/steering API가 지원된다는 뜻 아님 |
 | Managed/API/app-server 확장 | 미승인 경로가 fail-closed인 경계 | 공개 API/배포 qualification 후 별도 profile |
 
-컨테이너 레시피는 digest-pinned image, non-root, cap-drop, read-only root, pids/memory/cpu 제한, 기본 network=none이다. 이 빌드 환경에는 docker/podman이 없어 실제 격리를 인수시험하지 않았다. CLI 테스트의 FakeContainer는 프로토콜을 검사하는 신뢰된 subprocess fixture이며 보안 sandbox가 아니다. qualification이 없을 때 host shell로 대체하지 않는다.
+컨테이너 레시피는 digest-pinned image, non-root, cap-drop, read-only root, pids/memory/cpu 제한, 기본 network=none이다. network 를 붙이려면 실측 pass 로 만든 egress qualification ref 가 있어야 한다 (`src/amplai_foundry/sandbox/egress.py`: `--internal` network + allowlist CONNECT sidecar, deny-by-default). 로컬 colima/docker 에서 `scripts/sandbox_up.sh --egress` 로 sidecar 를 올리고 `scripts/container_qualify.py` 로 컨테이너 안 실제 turn 을 자격화한다 (Work 016). 초기 빌드 환경에는 docker/podman이 없어 실제 격리를 인수시험하지 않았다. CLI 테스트의 FakeContainer는 프로토콜을 검사하는 신뢰된 subprocess fixture이며 보안 sandbox가 아니다. qualification이 없을 때 host shell로 대체하지 않는다.
 
 ## 시험·재현과 다음 단계
 

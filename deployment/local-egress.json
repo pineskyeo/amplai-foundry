@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "name": "local-colima",
+  "network": "amplai-internal",
+  "proxy": "amplai-egress-proxy:3128",
+  "allow": [
+    "api.anthropic.com:443",
+    "api.openai.com:443",
+    "auth.openai.com:443",
+    "chatgpt.com:443"
+  ],
+  "sidecar": "amplai-egress-proxy (deployment/egress/egress_proxy.py)",
+  "qualification": "local development egress profile; not a production qualification"
+}

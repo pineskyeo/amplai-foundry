@@ -1,0 +1,9 @@
+{"ts": 1789909625.717, "target": "example.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789909625.985, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909625.988, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909626.446, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909626.87, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909626.872, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909626.897, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789909628.076, "target": "http-intake.logs.us5.datadoghq.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789909628.112, "target": "api.anthropic.com:443", "decision": "allow", "reason": "connect"}

@@ -1,0 +1,119 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        {
+          "path": "specs/016-container-egress-profile/work-contract.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/016-container-egress-profile/spec.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "EGR-001..004 + GATE-001 (work-contract.json). 컨테이너 안 turn 은 spike 로 실현 가능 확인 (claude PONG via proxy, datadog 거부).",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        {
+          "path": "design-reference/implementation/requirements-traceability.csv",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "없음. 설계에 'egress profile' 문구는 없고 'egress allowlist/host+port' 로 적혀 있다. 이 Work 의 이름은 구현 용어다.",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/sandbox/container.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "scripts/requalify_drivers.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/015-external-qualification/driver-qualification.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "ContainerSandbox 는 network!=none 이고 network_qualification_ref 가 없으면 EGRESS_UNQUALIFIED (container.py:41-44). ref 를 채우는 코드는 없다. env_names 는 이름만 전달(값 리터럴 없음). requalify_drivers.py 는 host 에서만 돈다.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        {
+          "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/sandbox/container.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "deny 가 allow 보다 우선, 이미지 digest pin, uid 65534, read-only root, --init. secret 값은 artifact/log 에 남기지 않는다.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/agent_drivers/qualification.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "allowlist: deployment/local-egress.json. 자격: deployment/local-egress-qualification.json. driver 자격: QualificationRunner 가 store 에 기록, spec 016 driver-qualification.json 은 그 사본.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        {
+          "path": "deployment/worker/Dockerfile",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "scripts/sandbox_up.sh",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "agent 컨테이너 ↔ sidecar 는 docker internal network. sidecar ↔ 외부는 bridge. host docker socket/privileged/user HOME mount 없음. codex 자격 파일 복사는 사용자 작업.",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        {
+          "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/29_THREAT_MODEL.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "egress profile = internal docker network + allowlist CONNECT proxy sidecar. qualification ref = 실측 probe 3건(direct deny / allow 200 / deny 403) 의 pass 기록. 설계 용어는 'egress allowlist', 'egress host+port'.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        {
+          "path": ".ai-team/verifiers/registry.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "v2 profile + slice eval (pytest 파일, container 마커, ruff, mypy).",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "43dbafed07a5ec07a0e6338561929b99f1050cc5",
+    "contract": "specs/016-container-egress-profile/work-contract.json"
+  },
+  "risk": "normal",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "AMPLAI-V3-RC04",
+  "work_type": "new_feature"
+}

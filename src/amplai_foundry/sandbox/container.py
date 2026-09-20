@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.sandbox.egress import PROXY_ENV, EgressProfile, require_qualified
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class ContainerProfile:
     pids: int = 128
     network: str = "none"
     network_qualification_ref: dict[str, Any] | None = None
+    egress: EgressProfile | None = None
 
 
 class ContainerSandbox:
@@ -38,10 +40,17 @@ class ContainerSandbox:
             or not 1 <= profile.pids <= 4096
         ):
             raise RuntimeFault("CONTAINER_PRIVILEGE", "Non-root bounded container profile required")
-        if profile.network != "none" and not profile.network_qualification_ref:
-            raise Hold(
-                "EGRESS_UNQUALIFIED", "Network access requires a qualified enforced egress profile"
-            )
+        if profile.network != "none":
+            # Only a measured egress profile (deny-by-default + allowlist sidecar) may attach a
+            # network, and it must be the network that profile was qualified on.
+            if profile.egress is None or profile.egress.network != profile.network:
+                raise Hold(
+                    "EGRESS_UNQUALIFIED",
+                    "Network access requires a qualified enforced egress profile",
+                )
+            require_qualified(profile.egress, profile.network_qualification_ref)
+        elif profile.egress is not None:
+            raise RuntimeFault("EGRESS_PROFILE", "An egress profile needs its network attached")
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", profile.network):
             raise RuntimeFault("NETWORK_NAME", "Invalid container network")
         if engine not in {"docker", "podman"}:
@@ -108,6 +117,9 @@ class ContainerSandbox:
             "--workdir",
             "/workspace",
         ]
+        if p.egress is not None:
+            for key, value in p.egress.env().items():
+                args += ["--env", f"{key}={value}"]
         if interactive:
             args.append("-i")
         if native_home is not None:
@@ -146,6 +158,8 @@ class ContainerSandbox:
                 "DOCKER_CONTEXT",
             }:
                 raise Hold("ENV_AUTHORITY", "Environment cannot override the sandbox runtime")
+            if name in PROXY_ENV:
+                raise Hold("ENV_AUTHORITY", "Proxy variables come from the egress profile only")
             if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", name):
                 raise RuntimeFault("ENV_NAME", "Invalid injected environment key")
             args += ["--env", name]

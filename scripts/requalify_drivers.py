@@ -11,6 +11,10 @@ Set the keys below and run this to replace
 
 Nothing is faked: a probe that cannot run is recorded ``inconclusive``, and the report
 status is ``fail`` unless all nine mandatory probes pass.
+
+This script measures host-side turns only. The container-side probes (cancel, filesystem,
+egress, secret isolation, crash recovery) are measured by ``scripts/container_qualify.py`` on
+the qualified egress profile (Work 016).
 """
 
 from __future__ import annotations
