@@ -1,14 +1,15 @@
 {
   "schema_version": "1.0",
   "kind": "driver_qualification_real_binaries",
-  "checked_at": "2026-09-19T12:36:10Z",
+  "checked_at": "2026-09-20T07:07:34Z",
   "method": "QualificationRunner.run (src/amplai_foundry/agent_drivers/qualification.py) with the 9 MANDATORY probes; every outcome carries a CAS-admitted artifact; anything not executable on this host is inconclusive, never pass; status is 'fail' unless all nine pass",
-  "cost": "1 successful claude -p turn (2 in / 4 out tokens, claude-sonnet-5), 1 bare claude turn (not logged in), 3 codex exec attempts (all 400 model-not-supported), 0 opencode model turns",
+  "cost": "1 successful claude -p turn (2 in / 4 out tokens, claude-sonnet-5), 1 bare claude turn (not logged in), 3 codex exec attempts (all 400 model-not-supported), 0 opencode model turns; +1 oauth_token turn (4 output tokens, keychain excluded)",
   "reports": {
     "claude-cli": {
       "status": "fail",
       "driver_version": "2.1.267",
       "native_delegation_qualified": false,
+      "auth": "oauth_token",
       "checks": [
         {
           "name": "exact_version",
@@ -28,25 +29,24 @@
         {
           "name": "cancel_tree",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "container image is pinned and containment probes pass (container-probes.json), but an agent turn inside the container was not run: the sandbox profile is network=none and no egress profile is qualified yet",
           "artifacts": 1
         },
         {
           "name": "filesystem_containment",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "container image is pinned and containment probes pass (container-probes.json), but an agent turn inside the container was not run: the sandbox profile is network=none and no egress profile is qualified yet",
           "artifacts": 1
         },
         {
           "name": "egress_containment",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "container image is pinned and containment probes pass (container-probes.json), but an agent turn inside the container was not run: the sandbox profile is network=none and no egress profile is qualified yet",
           "artifacts": 1
         },
         {
           "name": "secret_isolation",
-          "outcome": "fail",
-          "reason": "CliDriver runs `claude --bare`, which ignores the claude.ai login; ANTHROPIC_API_KEY is unset so the bare run answered 'Not logged in'",
+          "outcome": "pass",
           "artifacts": 1
         },
         {
@@ -57,7 +57,7 @@
         {
           "name": "crash_recovery",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "container image is pinned and containment probes pass (container-probes.json), but an agent turn inside the container was not run: the sandbox profile is network=none and no egress profile is qualified yet",
           "artifacts": 1
         }
       ]
@@ -180,11 +180,11 @@
     }
   },
   "findings": [
-    "claude-cli: real stream-json output of Claude Code 2.1.267 (system hook_started/hook_response, system init, assistant, rate_limit_event, result) is fully accepted by EventNormalizer('claude'); exact session binding and measured usage work on real output.",
-    "claude-cli: CliDriver invokes `claude --bare`, which bypasses the claude.ai login; without ANTHROPIC_API_KEY the driver cannot obtain a turn. Account qualification needs an API key or a driver decision to allow login-mode; recorded, not patched.",
     "codex-cli: JSONL protocol conformance passes on real 0.154.0 output (thread.started, item.completed, turn.started, error, turn.failed) and failure is flagged; the ChatGPT-account plan rejects every codex model tried, so no successful turn.",
     "opencode-http: real server 1.17.13 answers global/health; the driver enforces the version pin (OPENCODE_VERSION), rejects an empty password (OPENCODE_AUTH) and a wrong one (PROVIDER_HTTP); the child process exits on SIGTERM and probe fails afterwards. No model turn was run.",
-    "all three: cancel_tree / filesystem / egress / crash probes need a container runtime that this host lacks; they stay inconclusive by construction."
+    "all three: cancel_tree / filesystem / egress / crash probes need a container runtime that this host lacks; they stay inconclusive by construction.",
+    "claude-cli (oauth_token): a subscription token from `claude setup-token`, injected only as CLAUDE_CODE_OAUTH_TOKEN, completes a real turn with the keychain excluded; exact session, ordered events, measured usage and secret isolation (token absent from argv, workspace, stream and stderr) pass. --bare cannot use it by design, so CliDriver(auth=\"oauth_token\") builds the non-bare argv with explicit isolation flags.",
+    "claude-cli: the remaining inconclusive probes need an agent turn inside the pinned container, which needs a qualified egress profile (network=none today)."
   ],
   "artifacts_dir": "specs/015-external-qualification/artifacts"
 }

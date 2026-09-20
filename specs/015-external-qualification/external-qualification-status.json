@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "external_qualification_status",
-  "checked_at": "2026-09-20T00:30:52Z",
+  "checked_at": "2026-09-20T07:07:34Z",
   "host": "macOS arm64 workstation",
   "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
   "status_values": {
@@ -15,7 +15,7 @@
       "item": "Actual Claude/Codex account + exact binary image/model version qualification",
       "status": "partial",
       "evidence": "specs/015-external-qualification/driver-qualification.json",
-      "note": "claude-cli: exact_version/exact_session/ordered_events/budget_accounting pass on real 2.1.267 output; secret_isolation fail (--bare needs ANTHROPIC_API_KEY); codex-cli: protocol pass, account plan rejects all codex models; container probes inconclusive"
+      "note": "claude-cli: 5 of 9 mandatory probes pass with the subscription OAuth token (exact_version, exact_session, ordered_events, budget_accounting, secret_isolation); cancel/filesystem/egress/crash need a turn inside the container (egress profile pending). codex-cli: protocol passes, but the ChatGPT plan rejects every codex model tried; model name pending from the user."
     },
     {
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
