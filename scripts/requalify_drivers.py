@@ -100,7 +100,7 @@ def main() -> None:
         "\nNext: fold these into",
         OUT / "driver-qualification.json",
         "through QualificationRunner with CAS-admitted artifacts, then rerun",
-        "scripts/rc01_closure.py and specs/015-external-qualification/external-qualification-status.json.",
+        "scripts/rc01_closure.py plus the external-qualification-status.json entries.",
     )
 
 
