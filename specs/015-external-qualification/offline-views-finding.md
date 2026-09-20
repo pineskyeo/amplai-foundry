@@ -50,3 +50,29 @@ review → build → commit 순서로 진행해도, 그 commit 자체가 HEAD �
 
 r7 manifest 와 verification 은 커밋해 둔다. 위 1번이나 2번을 택하면 그대로 쓸 수 있다.
 HTML view 는 만들지 않았다 — 만들 수 없었다.
+
+## 해결 (2026-09-20, 정석 적용)
+
+선택지 1 을 택했고, 실제로는 커밋 id 가 네 곳에 숨어 있었다. 전부 같은 규칙으로 바꿨다:
+**내용 digest 는 내용만, 커밋 id 는 provenance.**
+
+| 위치 | 전 | 후 |
+|---|---|---|
+| `review_matches` | snapshot 전체 비교 (`candidate_revision` 포함) | `candidate_revision` 제외, 나머지 전부 비교 |
+| `candidate_sha256` | `candidate_snapshot` 전체 digest (`commit` 필드 포함) | `candidate_content_digest`: index + working changes 만 |
+| work impact `dependency_snapshot` | `candidate.commit`, 문서 snapshot 원본 | commit 제거, 문서 snapshot 은 match view |
+| release manifest / view builder | `object_digest(record.snapshot)` | `release_snapshot_digest(record)` (match view) |
+| `docs validate` 파생 보고서 비교 | `generated_from.commit`, `record_snapshot.candidate_revision` 포함 | 둘 다 비교에서 제외 |
+
+drift 감지는 그대로다: 새 tool, staged 변경, unknown 파일은 `candidate_content_digest` 가 잡는다
+(`tests/ai/test_document_review.py`, `test_document_integration.py` 98 passed, `test_document_html.py` 포함 148 passed).
+
+### 정석 순서
+
+1. 내용(코드·문서·policy·sidecar)을 먼저 커밋한다.
+2. 깨끗한 tree 에서 `docs impact` → `docs review-batch` → release manifest 재계산 → `docs build`.
+3. 리뷰 산출물만 커밋한다. 전부 candidate 제외 경로다 (`.ai-team/knowledge/document-reviews.json`, `specs/**`).
+4. 커밋 뒤 `docs validate` 가 그대로 녹색이다.
+
+실측: fa2772f 에서 `docs validate specs/013-amplai-v3` → `valid true, RESOLVED, offline_views valid true`.
+r6 이후 처음이다.
