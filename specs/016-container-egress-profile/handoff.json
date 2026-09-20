@@ -3,7 +3,7 @@
   "completed_slices": [],
   "context_pack_hash": "bf6e0d9e82206ec7ccf02d9df7550e188333a2b1f4455cb575524b6f5921d2be",
   "current_slice": null,
-  "git_checkpoint": "50bd04724c6d682b5608cf52c1aff1455591bd88",
+  "git_checkpoint": "87cde5d9ee20fd2836667535e06e5653844790d8",
   "last_verification": {
     "check_count": 0,
     "environment": {},
@@ -13,7 +13,7 @@
     "source": ".specify/eval/last.json",
     "verdict": "PASS"
   },
-  "next_action": "main b7ace4d 에 merge·push 완료. 사용자 작업: (1) scripts/sandbox_up.sh --codex-home DIR 로 codex 자격 사본 생성 후 .venv/bin/python scripts/container_qualify.py --driver codex --codex-home DIR. (2) V3-062 human cutover gate (specs/015-external-qualification/human-gate-package.md). 남은 external: OTLP, physical holdout, OPENAI key, statistics.",
+  "next_action": "claude-cli 9/9, codex-cli 9/9 in container. 남은 것: V3-062 human cutover gate (human-gate-package.md), external OTLP/physical holdout/OPENAI key/statistics, podman --init 확인, memory/pids under load. codex 자격 사본 ~/.amplai-sandbox-probes/codex-home 은 자격 후 삭제 권장.",
   "open_slices": [],
   "schema_version": "1.0",
   "status": "executing",

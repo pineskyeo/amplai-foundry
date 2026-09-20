@@ -205,14 +205,19 @@ class ContainerTurns:
         )
         state = json.loads(inspect.stdout)[0]["State"] if inspect.returncode == 0 else {}
         self._cleanup(name)
+        out = b"".join(chunks)
+        completed = any(
+            kind in out for kind in (b'"type":"result"', b'"type": "result"', b"turn.completed")
+        )
         return {
             "saw_event": saw_event,
+            "completed": completed,  # a completion event means the turn finished on its own
             "signal": signal,
             "stopped_in_s": stopped_in,
             "running_after": state.get("Running"),
             "exit_code": state.get("ExitCode"),
             "oom": state.get("OOMKilled"),
-            "stdout": b"".join(chunks),
+            "stdout": out,
             "stderr": b"".join(errs),
         }
 
@@ -435,12 +440,16 @@ def measure(t: ContainerTurns, version: str) -> dict[str, Probe]:
     p["cancel_tree"].record(
         "pass"
         if cancel["saw_event"]
+        and not cancel["completed"]
         and cancel["running_after"] is False
         and cancel["stopped_in_s"] < 10
-        and cancel["exit_code"] == 143  # SIGTERM honoured by the tree, not SIGKILL after grace
+        # SIGTERM honoured by the tree: claude exits 143, codex shuts down gracefully with 0.
+        # A completion event would mean the turn ended on its own, not by the signal.
+        and cancel["exit_code"] in (0, 143)
         else "fail",
         f"SIGTERM via docker stop after first event: stopped_in={cancel['stopped_in_s']}s"
-        f" exit={cancel['exit_code']} running_after={cancel['running_after']}",
+        f" exit={cancel['exit_code']} ({'graceful' if cancel['exit_code'] == 0 else 'signal'})"
+        f" completed={cancel['completed']} running_after={cancel['running_after']}",
         state=json.dumps(
             {k: v for k, v in cancel.items() if k not in {"stdout", "stderr"}}
         ).encode(),

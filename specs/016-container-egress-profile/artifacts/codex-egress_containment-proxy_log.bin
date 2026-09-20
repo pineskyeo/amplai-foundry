@@ -1,0 +1,16 @@
+{"ts": 1789913454.364, "target": "example.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.176, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.177, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.453, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913455.626, "target": "sdmntprsouthcentralus.oaiusercontent.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789913455.63, "target": "sdmntprsouthcentralus.oaiusercontent.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789913455.635, "target": "sdmntprsouthcentralus.oaiusercontent.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1789913456.722, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913459.468, "target": "chatgpt.com:443", "decision": "allow", "reason": "connect"}
+{"ts": 1789913459.771, "target": "ab.chatgpt.com:443", "decision": "deny", "reason": "allowlist"}

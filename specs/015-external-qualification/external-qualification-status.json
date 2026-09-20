@@ -13,9 +13,9 @@
   "items": [
     {
       "item": "Actual Claude/Codex account + exact binary image/model version qualification",
-      "status": "partial",
+      "status": "resolved",
       "evidence": "specs/016-container-egress-profile/driver-qualification.json",
-      "note": "claude-cli: 9/9 mandatory probes pass with real turns inside the pinned container over the qualified egress profile (Work 016; subscription OAuth token). codex-cli: 4/9 pass host-side with the ChatGPT account and gpt-5.6-sol (Work 015); the in-container run waits for a user-prepared sandbox home (scripts/sandbox_up.sh --codex-home DIR) because the agent does not copy credentials. Host-side 015 record: specs/015-external-qualification/driver-qualification.json."
+      "note": "claude-cli (subscription OAuth token) and codex-cli (ChatGPT account, gpt-5.6-sol): 9/9 mandatory probes each, measured with real turns inside the pinned worker image on the qualified egress profile (Work 016). Accounts are the user's subscriptions, not a production account; opencode is tracked by its own item. Host-side 015 record: specs/015-external-qualification/driver-qualification.json."
     },
     {
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
