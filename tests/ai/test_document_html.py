@@ -96,7 +96,7 @@ def fixture(engine, tmp_path, *, security="INTERNAL", body=None, linked=None, **
             {
                 "doc_id": "canary:guide",
                 "source_sha256": record["source_sha256"],
-                "snapshot_sha256": engine.object_digest(record["snapshot"]),
+                "snapshot_sha256": engine.release_snapshot_digest(record),
                 "review_sha256": engine.object_digest(review),
             }
         ],
@@ -577,7 +577,7 @@ def refresh_release(engine, root, release):
         {
             "doc_id": "canary:guide",
             "source_sha256": record["source_sha256"],
-            "snapshot_sha256": engine.object_digest(record["snapshot"]),
+            "snapshot_sha256": engine.release_snapshot_digest(record),
             "review_sha256": engine.object_digest(review),
         }
     ]
@@ -600,7 +600,9 @@ def synthetic_browser_environment(directory):
         hasher = hashlib.sha256()
         for path in sorted(directory.iterdir()):
             if path.is_file() and not path.is_symlink():
-                hasher.update(path.name.encode()); hasher.update(b"\0"); hasher.update(path.read_bytes())
+                hasher.update(path.name.encode())
+                hasher.update(b"\0")
+                hasher.update(path.read_bytes())
         environment["AMPLAI_TEST_BROWSER_FIXTURE_SHA256"] = hasher.hexdigest()
     return environment
 

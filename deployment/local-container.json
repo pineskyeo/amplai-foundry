@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "engine": "docker",
+  "runtime": "colima (lima VM) on macOS",
+  "image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
+  "uid": 65534,
+  "gid": 65534,
+  "memory": "1g",
+  "cpus": 1.0,
+  "pids": 128,
+  "network": "none",
+  "tools": {
+    "claude": "2.1.278 (Claude Code)",
+    "codex": "codex-cli 0.155.1"
+  },
+  "built_at": "2026-09-20T00:15:10Z",
+  "qualification": "local development profile; not a production qualification"
+}

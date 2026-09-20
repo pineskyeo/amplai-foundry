@@ -1,0 +1,73 @@
+{
+  "snapshot": "8a40c018e6843e5a90637e656f6df7306387f94cf411e0bcf9f81d37f373146a",
+  "reviews": [
+    {
+      "document": "docs/PORTABLE-DEVELOPMENT.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Kit release r7: sidecar release_ids gains kit-2.5.0-candidate-r7; the only kit changes since r6 are the browser test fixture cleanup retry and the review-match provenance rule mirrored into the payload. The installable payload behaviour this guide documents is unchanged.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Compared the guide against git diff 9ef30a8..HEAD -- tools/amplai-loop-kit and the resealed kit (seal.py --verify ok); no documented behaviour changed.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Kit release r7: sidecar release_ids gains kit-2.5.0-candidate-r7; the only kit changes since r6 are the browser test fixture cleanup retry and the review-match provenance rule mirrored into the payload. The installable payload behaviour this guide documents is unchanged.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Compared the guide against git diff 9ef30a8..HEAD -- tools/amplai-loop-kit and the resealed kit (seal.py --verify ok); no documented behaviour changed.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Kit release r7: sidecar release_ids gains kit-2.5.0-candidate-r7; the only kit changes since r6 are the browser test fixture cleanup retry and the review-match provenance rule mirrored into the payload. The installable payload behaviour this guide documents is unchanged.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Compared the guide against git diff 9ef30a8..HEAD -- tools/amplai-loop-kit and the resealed kit (seal.py --verify ok); no documented behaviour changed.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reference": "supervisor/",
+      "line": 86,
+      "disposition": "historical",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-fable-5.1-implementation-document-review",
+      "method": "Rechecked the current physical line and the kit manifest; optional inline locator only.",
+      "evidence": [
+        "specs/013-amplai-v3/document-review-evidence.json"
+      ]
+    }
+  ]
+}

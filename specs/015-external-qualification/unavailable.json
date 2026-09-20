@@ -5,13 +5,6 @@
   "host": "macOS arm64 (this workstation)",
   "items": [
     {
-      "item": "Real docker/podman containment, egress, resource and credential isolation",
-      "status": "UNAVAILABLE",
-      "probe": "command -v docker podman colima",
-      "observed": "/bin/sh: docker: command not found | docker info: /bin/sh: docker: command not found",
-      "consequence": "CliDriver requires ContainerSandbox; container_escape/egress/cancel_tree probes stay inconclusive"
-    },
-    {
       "item": "Actual OTLP exporter/collector integration, bounded service delivery under production load",
       "status": "UNAVAILABLE",
       "probe": "command -v otelcol otelcol-contrib; env OTEL_EXPORTER_OTLP_ENDPOINT",
@@ -39,5 +32,6 @@
       "observed": "requires a real task population and production trials",
       "consequence": "analysis.py enforces minimum_tasks and inconclusive verdicts (T-084, T-086); the adequacy of the population itself is an operations decision"
     }
-  ]
+  ],
+  "note": "docker/podman moved to container-probes.json after colima was installed on this host"
 }

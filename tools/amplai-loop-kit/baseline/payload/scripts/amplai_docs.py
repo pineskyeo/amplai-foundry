@@ -1364,6 +1364,15 @@ def dependency_snapshot(tree, metadata, config):
     return sorted(result, key=lambda x: (x["repository"], x["path"], x["kind"]))
 
 
+def candidate_content_digest(candidate):
+    """Digest of the candidate CONTENT (index entries and working changes).
+
+    The commit id is recorded separately as ``candidate_revision``; keeping it out of the
+    content digest means committing already-reviewed content does not change the digest.
+    """
+    return object_digest({k: v for k, v in candidate.items() if k != "commit"})
+
+
 def candidate_revision(root):
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     try:
@@ -1433,8 +1442,33 @@ def reviews(tree, config):
     return review_store(tree, config)["reviews"]
 
 
+# A review stays bound to the repository content it saw: source, metadata, declared inputs
+# and the whole candidate index, so a new tool, a staged edit or an unknown file still
+# invalidates it. candidate_revision is only the commit id. Recording a review and then
+# committing it must not invalidate the review it just recorded, so the commit id is kept
+# as provenance and left out of the match.
+REVIEW_PROVENANCE_ONLY_KEYS = ("candidate_revision",)
+
+
+def review_snapshot_match_view(snapshot):
+    if not isinstance(snapshot, dict):
+        return None
+    return {k: v for k, v in snapshot.items() if k not in REVIEW_PROVENANCE_ONLY_KEYS}
+
+
+def release_snapshot_digest(record):
+    """Digest of a document's snapshot as a release manifest and a view builder must see it.
+
+    Uses the review match view, so the commit id (provenance) never makes a shipped
+    release manifest drift from the tree it was built on.
+    """
+    return object_digest(review_snapshot_match_view(record["snapshot"]))
+
+
 def review_matches(tree, record, review, config):
-    if review.get("snapshot") != record["snapshot"] or review.get("outcome") not in (
+    if review_snapshot_match_view(review.get("snapshot")) != review_snapshot_match_view(
+        record["snapshot"]
+    ) or review.get("outcome") not in (
         "updated",
         "reviewed_unchanged",
     ):
@@ -1592,7 +1626,8 @@ def _document(tree, path, config, rules, review_records, revision, candidate_has
         "declared_reference_sha256": object_digest(declared),
         "source_assets_sha256": object_digest(source_assets),
         "candidate_revision": revision,
-        "candidate_sha256": candidate_hash or object_digest(candidate_snapshot(tree, config)),
+        "candidate_sha256": candidate_hash
+        or candidate_content_digest(candidate_snapshot(tree, config)),
         "rules": rules,
     }
     record = {
@@ -1655,7 +1690,7 @@ def _catalog(tree, config, rules):
     review_records = reviews(tree, config)
     revision = candidate_revision(tree.root)
     candidate = candidate_snapshot(tree, config)
-    candidate_hash = object_digest(candidate)
+    candidate_hash = candidate_content_digest(candidate)
     records = []
     ids = set()
     total_bytes = 0
@@ -1941,7 +1976,7 @@ def select_documents(
                     "security": meta["security"],
                     "release_id": release_id,
                     "source_sha256": record["source_sha256"],
-                    "snapshot_sha256": object_digest(record["snapshot"]),
+                    "snapshot_sha256": release_snapshot_digest(record),
                     "score": score,
                 }
             )
@@ -2333,15 +2368,17 @@ def impact(root, feature, adapter, changed=None, write=True, acknowledged=None):
             "source_role_records": routed_sources,
             "contract_sha256": digest(contract_bytes),
             "rules": rules,
+            # Content only: the commit id is provenance (candidate_revision on each record),
+            # so committing reviewed content does not move this hash.
             "candidate": {
                 "mode": candidate["mode"],
-                "commit": candidate["commit"],
-                "sha256": object_digest(candidate),
+                "sha256": candidate_content_digest(candidate),
                 "complete": candidate["complete"],
             },
             "sources": [source_record(tree, p, config) for p in sources],
             "documents": [
-                {"path": p, "snapshot": by_path[p]["snapshot"]} for p in sorted(discovered)
+                {"path": p, "snapshot": review_snapshot_match_view(by_path[p]["snapshot"])}
+                for p in sorted(discovered)
             ],
         }
         snapshot_hash = object_digest(snapshot)
@@ -4171,7 +4208,7 @@ def prepare_view_input(root, release_path, audience, security="INTERNAL", histor
             current = {
                 "doc_id": meta["doc_id"],
                 "source_sha256": record["source_sha256"],
-                "snapshot_sha256": object_digest(record["snapshot"]),
+                "snapshot_sha256": release_snapshot_digest(record),
                 "review_sha256": object_digest(review),
             }
             if current != reference or record["freshness"] != "verified":
