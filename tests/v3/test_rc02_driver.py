@@ -283,3 +283,45 @@ def test_t072_server_only_event_forgery_is_forbidden(deployment):
         d.verification.finish_goal(d.worker, p["goal_id"])
     # expected: forbidden — only the server-owned verifier authority may emit this transition
     assert exc.value.code == "FORBIDDEN"
+
+
+def test_subscription_oauth_auth_drops_bare_and_keeps_isolation_flags(tmp_path):
+    """claude --bare never reads OAuth (claude --help); oauth_token auth uses explicit flags."""
+    from amplai_foundry.agent_drivers.protocol import SessionJournal
+    from amplai_foundry.runtime.errors import Hold
+
+    journal = SessionJournal(tmp_path / "j")
+    with pytest.raises(Hold) as exc:
+        CliDriver(
+            "claude",
+            "claude",
+            "2.1.278",
+            None,
+            journal,
+            model="claude-sonnet-5",
+            auth="oauth_token",
+        )
+    assert exc.value.code == "AUTH_TOKEN_REQUIRED"
+    driver = CliDriver(
+        "claude",
+        "claude",
+        "2.1.278",
+        None,
+        journal,
+        model="claude-sonnet-5",
+        auth="oauth_token",
+        environment={"CLAUDE_CODE_OAUTH_TOKEN": "sk-ant-oat01-test"},
+    )
+    argv = driver.argv("hi")
+    assert "--bare" not in argv
+    for flag in (
+        "--setting-sources",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--no-chrome",
+    ):
+        assert flag in argv
+    assert argv[argv.index("--setting-sources") + 1] == ""
+    assert driver.probe()["auth"] == "oauth_token"
+    bare = CliDriver("claude", "claude", "2.1.278", None, journal, model="claude-sonnet-5")
+    assert "--bare" in bare.argv("hi") and bare.probe()["auth"] == "api_key"

@@ -40,9 +40,18 @@ class CliDriver:
         qualified: bool = False,
         environment: dict[str, str] | None = None,
         max_seconds: float = 3600,
+        auth: str = "api_key",
     ) -> None:
         if provider not in {"claude", "codex"}:
             raise RuntimeFault("DRIVER_KIND", "Unknown CLI provider")
+        if auth not in {"api_key", "oauth_token"}:
+            raise RuntimeFault("DRIVER_AUTH", "auth must be api_key or oauth_token")
+        # Claude Code's --bare never reads OAuth; a subscription token (claude setup-token,
+        # CLAUDE_CODE_OAUTH_TOKEN) therefore needs the non-bare argv with explicit isolation
+        # flags. The sandbox (tmpfs HOME, clean workspace) supplies the rest of bare's intent.
+        if auth == "oauth_token" and "CLAUDE_CODE_OAUTH_TOKEN" not in (environment or {}):
+            raise Hold("AUTH_TOKEN_REQUIRED", "oauth_token auth needs CLAUDE_CODE_OAUTH_TOKEN")
+        self.auth = auth
         if not model or model in {"latest", "default", "auto"}:
             raise Hold("MODEL_UNPINNED", "An explicit model profile is required")
         if not version or not 0 < max_seconds <= 86400:
@@ -96,9 +105,20 @@ class CliDriver:
         if not isinstance(prompt, str) or len(prompt.encode()) > 1024 * 1024:
             raise Hold("PROMPT_LIMIT", "Driver prompt exceeds its configured budget")
         if self.provider == "claude":
+            isolation = (
+                ["--bare"]
+                if self.auth == "api_key"
+                else [
+                    "--setting-sources",
+                    "",
+                    "--strict-mcp-config",
+                    "--disable-slash-commands",
+                    "--no-chrome",
+                ]
+            )
             args = [
                 self.binary,
-                "--bare",
+                *isolation,
                 "-p",
                 prompt,
                 "--output-format",
@@ -128,6 +148,7 @@ class CliDriver:
         return {
             "driver_id": self.provider + "-cli",
             "configured_version": self.version,
+            "auth": self.auth,
             "maturity": "qualified" if self.qualified else "disabled",
             "transport": "cli",
             "exact_sessions": True,
