@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0",
+  "kind": "driver_qualification_in_container",
+  "reports": {
+    "claude-cli": {
+      "status": "pass",
+      "driver_version": "2.1.278",
+      "host_version": "2.1.267 (Claude Code)",
+      "model": "claude-sonnet-5",
+      "auth": "oauth_token",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-47896e1fdb204c438b21addb64061c2d",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "container reports '2.1.278 (Claude Code)'; pinned '2.1.278'",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "session bound=True rc=0 text='PONG'",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "4/4 events normalized, fault=None",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.53s exit=143 running_after=False",
+          "artifacts": 2
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "probe: root_write_rc=1 | ws_write_ok | absent=/Users | absent=/var/run/docker.sock | root_home=readonly | root_home_entries=0 | uid=65534; turn wrote only ['.probe']",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "pass",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['api.anthropic.com:443']; sidecar denied ['example.com:443', 'http-intake.logs.us5.datadoghq.com:443']",
+          "artifacts": 2
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "pass",
+          "reason": "secret absent from stream, stderr, workspace, sidecar log and argv; absent from session home",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "usage=measured",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "pass",
+          "reason": "SIGKILL mid-turn (exit=137), then exact-session resume: same_session=True rc=0 text='PONG'",
+          "artifacts": 2
+        }
+      ]
+    }
+  },
+  "cost": {
+    "claude-cli": [
+      {
+        "turn": "pong",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 30873,
+          "output_tokens": 5,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 5,
+              "cache_read_input_tokens": 30873,
+              "cache_creation_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard"
+        },
+        "seconds": 2.7
+      },
+      {
+        "turn": "resume",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 30944,
+          "output_tokens": 5,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 5,
+              "cache_read_input_tokens": 30944,
+              "cache_creation_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard"
+        },
+        "seconds": 2.4
+      }
+    ]
+  },
+  "findings": [
+    "claude-cli (oauth_token, in container): all nine mandatory probes pass on the pinned image sha256:f642e03d19ba… over the qualified egress profile. The turn reached only api.anthropic.com:443; the sidecar refused the CLI's telemetry target (http-intake.logs.us5.datadoghq.com:443) and example.com:443, and a direct attempt without the proxy failed at DNS.",
+    "cancel_tree: docker stop (SIGTERM through --init) ended a running Bash turn in under a second with exit 143. crash_recovery: SIGKILL (exit 137) mid-turn, then --resume with the exact prior session id answered from that session's history.",
+    "filesystem_containment: root read-only, /workspace the only writable bind, no /Users, no docker socket, /root read-only and empty, uid 65534; the turn wrote only .probe (the probe's own file).",
+    "codex-cli: not run in the container. The ChatGPT-account credential lives in ~/.codex on the host and the agent does not copy it; the user runs scripts/sandbox_up.sh --codex-home DIR, then scripts/container_qualify.py --driver codex --codex-home DIR. Until then the Work 015 host-side result (4/9) stands.",
+    "container image tools are newer than the host binaries (claude 2.1.278 vs host 2.1.267); the pin that matters is the image digest.",
+    "secret_isolation: the OAuth token is absent from the stream, stderr, workspace, sidecar log, argv and the worker-owned session home. It is present in the container's environment by construction (the CLI needs it); docker inspect on the host can read it, which is host authority, not agent-visible output. A credential broker (V3-022) remains the production answer.",
+    "trust class: artifacts are admitted as operator trust (this session measured and graded them). They are not an independent verifier result; the human cutover gate (V3-062) still applies.",
+    "review R1 (contract lens): cancel_tree now also requires exit code 143 (SIGTERM honoured) so a container that died for another reason within the window cannot pass."
+  ],
+  "checked_at": "2026-09-20T13:07:12Z",
+  "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
+  "container_image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
+  "egress_profile": {
+    "schema_version": "1.0",
+    "name": "local-colima",
+    "network": "amplai-internal",
+    "proxy": "amplai-egress-proxy:3128",
+    "allow": [
+      "api.anthropic.com:443",
+      "api.openai.com:443",
+      "auth.openai.com:443",
+      "chatgpt.com:443"
+    ],
+    "digest": "f48ef78636c17b8bd4f03d8e5cf98d76eee40cd7fc3d51f39b01ed8c4a1c077f"
+  },
+  "artifacts_dir": "specs/016-container-egress-profile/artifacts",
+  "pending": {
+    "codex-cli": "needs user-prepared sandbox home (scripts/sandbox_up.sh --codex-home DIR)"
+  },
+  "cost_summary": {
+    "claude-cli": "2 completed turns + 2 interrupted turns per run; last run pong=5 out tokens"
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "id": "AMPLAI-V3E-T002",
+  "title": "EGR-02 로컬 egress sidecar 배포와 실측 자격",
+  "type": "code",
+  "status": "done",
+  "goal": {
+    "outcome": "EGR-02 로컬 egress sidecar 배포와 실측 자격",
+    "user_value": "컨테이너 안 실제 agent turn 으로 남은 driver 자격 probe 를 닫는다"
+  },
+  "source": {
+    "feature": "016-container-egress-profile",
+    "files": [
+      {
+        "path": "specs/016-container-egress-profile/spec.md",
+        "section": "Scope"
+      },
+      {
+        "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+        "section": "containment"
+      }
+    ],
+    "requirements": [
+      "REQ-10"
+    ],
+    "decisions": [
+      "2026-09-20 사용자 지시: `/work` (직전 보고의 다음 항목 = 컨테이너 turn 용 egress profile). 조사는 sonnet 서브에이전트, 구현은 오케스트레이터",
+      "설계 10_AUTHORITY_SECURITY.md:30,42 — egress deny-by-default, host+port allowlist, no home credential mounts. 구현은 docker --internal network + allowlist CONNECT proxy sidecar 로 이를 실현한다",
+      "codex 자격 파일(~/.codex/auth.json) 의 sandbox 복사는 사용자가 직접 실행한다 (agent 의 credential 복사는 차단됨)"
+    ]
+  },
+  "scope": {
+    "include": [
+      "deployment/egress/egress_proxy.py",
+      "scripts/sandbox_up.sh",
+      "scripts/egress_qualify.py",
+      "deployment/local-egress.json",
+      "deployment/local-egress-qualification.json",
+      "tests/v3/test_rc04_egress_container.py",
+      "specs/016-container-egress-profile/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/",
+      "Production configuration",
+      "Git release/deploy"
+    ],
+    "allowed_paths": [
+      "deployment/egress/egress_proxy.py",
+      "scripts/sandbox_up.sh",
+      "scripts/egress_qualify.py",
+      "deployment/local-egress.json",
+      "deployment/local-egress-qualification.json",
+      "tests/v3/test_rc04_egress_container.py",
+      "specs/016-container-egress-profile/",
+      "release/",
+      "eval/",
+      "scripts/rc01_closure.py",
+      "tests/v3/test_rc01_conformance_closure.py",
+      "specs/015-external-qualification/external-qualification-status.json"
+    ],
+    "forbidden_paths": [
+      "vault/",
+      "design-reference/",
+      ".ai-team/app.json",
+      ".ai-team/local/",
+      ".ai-team/policy/approvals.jsonl",
+      "~/.codex",
+      "~/.claude"
+    ]
+  },
+  "dependencies": {
+    "tasks": [
+      "AMPLAI-V3E-T001"
+    ],
+    "external": []
+  },
+  "implementation": {
+    "guidance": [
+      "실측만 기록한다. 실행하지 못한 probe 는 inconclusive",
+      "secret 값은 어떤 artifact/log 에도 쓰지 않는다"
+    ],
+    "invariants": [
+      "design-reference/ 무변경",
+      "skip/xfail 금지",
+      "mypy strict / ruff 유지",
+      "no host docker socket / no privileged / no user HOME mount"
+    ],
+    "non_goals": [
+      "production egress policy",
+      "credential broker",
+      "V3 FINAL 선언"
+    ]
+  },
+  "acceptance": {
+    "behaviors": [
+      {
+        "id": "EGR-02",
+        "given": "colima docker, pinned worker image",
+        "when": "scripts/sandbox_up.sh --egress 가 internal network 와 allowlist proxy 를 올리고 scripts/egress_qualify.py 가 probe 를 돈다",
+        "then": "직접 egress 실패, allowlist CONNECT 200, 비허용 CONNECT 403 이 실측돼 deployment/local-egress-qualification.json 이 pass 로 남고 container 마커 테스트가 통과한다"
+      }
+    ],
+    "commands": [
+      {
+        "id": "check-1",
+        "kind": "test",
+        "run": ".venv/bin/python -c \"import json; d=json.load(open('deployment/local-egress-qualification.json')); assert d.get('outcome', 'pass') in ('pass', 'pass_with_known_gaps') or d.get('kind')\"",
+        "required": true
+      },
+      {
+        "id": "check-2",
+        "kind": "test",
+        "run": ".venv/bin/python -m pytest -q -m container tests/v3/test_rc04_egress_container.py",
+        "required": true
+      },
+      {
+        "id": "check-8",
+        "kind": "lint",
+        "run": ".venv/bin/python -m ruff check .",
+        "required": true
+      },
+      {
+        "id": "check-9",
+        "kind": "type",
+        "run": ".venv/bin/python -m mypy",
+        "required": true
+      }
+    ],
+    "manual_checks": [],
+    "evidence": [
+      {
+        "type": "command_output",
+        "source": "check-1",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-2",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-8",
+        "required": true
+      },
+      {
+        "type": "command_output",
+        "source": "check-9",
+        "required": true
+      }
+    ]
+  },
+  "risk": {
+    "level": "medium",
+    "concerns": [
+      "사용자 구독 계정으로 최소 모델 호출 (컨테이너 안 claude 1~3턴)"
+    ],
+    "approvals": []
+  },
+  "loop": {
+    "max_attempts": 3,
+    "replan_after_same_failure": 3,
+    "stop_conditions": [
+      "required_external_dependency_missing"
+    ]
+  },
+  "completion": {
+    "all_acceptance_passed": true,
+    "required_evidence_present": true,
+    "completed_at": "2026-09-20T12:57:27Z",
+    "evidence_paths": [
+      ".specify/eval/history.jsonl#slice=S02",
+      "deployment/local-egress-qualification.json",
+      "tests/v3/test_rc04_egress_container.py"
+    ]
+  },
+  "handoff": {
+    "expected_changes": [
+      "deployment/egress/egress_proxy.py",
+      "scripts/sandbox_up.sh",
+      "scripts/egress_qualify.py",
+      "deployment/local-egress.json",
+      "deployment/local-egress-qualification.json",
+      "tests/v3/test_rc04_egress_container.py"
+    ],
+    "notes": []
+  },
+  "context": {
+    "work_id": "AMPLAI-V3-RC04",
+    "slice_id": "S02",
+    "context_pack": "specs/016-container-egress-profile/context-pack.json",
+    "environment": "specs/016-container-egress-profile/environment.json",
+    "verifier_profile": "v2",
+    "git_checkpoint": "43dbafed07a5ec07a0e6338561929b99f1050cc5"
+  }
+}

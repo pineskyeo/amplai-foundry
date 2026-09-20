@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-RC04",
+  "method": "sonnet Explore 서브에이전트 (read-only) + 오케스트레이터 spike",
+  "spike": {
+    "date": "2026-09-20",
+    "result": "docker --internal network: DNS 실패(rc 6). proxy 경유 api.anthropic.com 404 rc 0. example.com CONNECT 403 rc 56. 컨테이너 안 claude -p → result success 'PONG'. proxy 가 http-intake.logs.us5.datadoghq.com:443 거부.",
+    "codex": "auth.json 의 sandbox 복사는 agent 가 수행하지 않는다 (차단). 사용자 작업으로 남긴다."
+  },
+  "findings": [
+    "design 10_AUTHORITY_SECURITY.md:30 정책 필드에 egress host+port, :42 egress deny-by-default, :44 credential 은 agent env 장기 노출 금지",
+    "container.py:41-44 EGRESS_UNQUALIFIED gate, :137-151 env_names 이름만 전달",
+    "qualification.py:16-26 MANDATORY 9 probe; claude 4/codex 5 inconclusive 이유 = 컨테이너 안 turn 미실행",
+    "Dockerfile:11 image 에 claude/codex/python3/curl 포함 → sidecar 도 같은 image 로 돌릴 수 있다",
+    "policy/permissions.json 에 network/container 항목 없음 → 이 Work 는 read/edit/run_test 범위, commit 은 git_publish gate"
+  ]
+}

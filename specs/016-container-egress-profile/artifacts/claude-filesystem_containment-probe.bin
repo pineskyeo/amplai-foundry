@@ -1,0 +1,7 @@
+root_write_rc=1
+ws_write_ok
+absent=/Users
+absent=/var/run/docker.sock
+root_home=readonly
+root_home_entries=0
+uid=65534
