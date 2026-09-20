@@ -25,12 +25,21 @@ WORK = Path(os.environ.get("REQUALIFY_WORKDIR", "/tmp/amplai-requalify"))
 
 
 def probe_claude() -> dict[str, object]:
-    """One minimal turn. --bare needs ANTHROPIC_API_KEY; without it the login is skipped."""
+    """One minimal turn.
+
+    --bare never reads OAuth (claude --help), so with CLAUDE_CODE_OAUTH_TOKEN the probe uses the
+    driver's non-bare isolation flags; with ANTHROPIC_API_KEY it uses --bare.
+    """
     ws = WORK / "claude"
     ws.mkdir(parents=True, exist_ok=True)
+    isolation = (
+        ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands", "--no-chrome"]
+        if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+        else ["--bare"]
+    )
     args = [
         "claude",
-        "--bare",
+        *isolation,
         "-p",
         "Reply with exactly the two letters: OK",
         "--output-format",
@@ -46,7 +55,8 @@ def probe_claude() -> dict[str, object]:
     result = next((e for e in reversed(events) if e.get("type") == "result"), None)
     return {
         "binary": "claude",
-        "key_present": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "api_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "oauth_token": bool(os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")),
         "exit_code": run.returncode,
         "events": len(events),
         "is_error": result and result.get("is_error"),
