@@ -236,6 +236,8 @@ def test_dev02_container_command_has_no_host_escape_mount(tmp_path):
     assert cmd[cmd.index("--network") + 1] == "none"
     assert "--privileged" not in cmd and "/var/run/docker.sock" not in str(cmd)
     assert cmd[cmd.index("--user") + 1] == "65534:65534"
+    # --init installs a minimal PID 1 so SIGTERM reaches the agent tree (cancel_tree probe).
+    assert cmd.index("--init") < cmd.index("--name")
     with pytest.raises(Hold):
         box.command(["true"], ws, "run-one", env_names=["HOME"])
     with pytest.raises(Hold):
