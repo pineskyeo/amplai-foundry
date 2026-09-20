@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "kind": "driver_qualification_real_binaries",
-  "checked_at": "2026-09-20T07:07:34Z",
+  "checked_at": "2026-09-20T09:14:51Z",
   "method": "QualificationRunner.run (src/amplai_foundry/agent_drivers/qualification.py) with the 9 MANDATORY probes; every outcome carries a CAS-admitted artifact; anything not executable on this host is inconclusive, never pass; status is 'fail' unless all nine pass",
-  "cost": "1 successful claude -p turn (2 in / 4 out tokens, claude-sonnet-5), 1 bare claude turn (not logged in), 3 codex exec attempts (all 400 model-not-supported), 0 opencode model turns; +1 oauth_token turn (4 output tokens, keychain excluded)",
+  "cost": "1 successful claude -p turn (2 in / 4 out tokens, claude-sonnet-5), 1 bare claude turn (not logged in), 3 codex exec attempts (all 400 model-not-supported), 0 opencode model turns; +1 oauth_token turn (4 output tokens, keychain excluded); +1 codex exec turn with gpt-5.6-sol (40054 in / 138 out tokens, 25472 cached)",
   "reports": {
     "claude-cli": {
       "status": "fail",
@@ -66,6 +66,7 @@
       "status": "fail",
       "driver_version": "0.154.0",
       "native_delegation_qualified": false,
+      "model": "gpt-5.6-sol",
       "checks": [
         {
           "name": "exact_version",
@@ -85,37 +86,36 @@
         {
           "name": "cancel_tree",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "an agent turn inside the pinned container was not run (sandbox profile network=none; egress profile pending)",
           "artifacts": 1
         },
         {
           "name": "filesystem_containment",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "an agent turn inside the pinned container was not run (sandbox profile network=none; egress profile pending)",
           "artifacts": 1
         },
         {
           "name": "egress_containment",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "an agent turn inside the pinned container was not run (sandbox profile network=none; egress profile pending)",
           "artifacts": 1
         },
         {
           "name": "secret_isolation",
           "outcome": "inconclusive",
-          "reason": "ChatGPT-account auth; not exercised inside a sandbox",
+          "reason": "ChatGPT-account auth lives in ~/.codex on the host; not exercised inside a sandbox",
           "artifacts": 1
         },
         {
           "name": "budget_accounting",
-          "outcome": "fail",
-          "reason": "every pinned model (gpt-5.3-codex-spark default, gpt-5-codex, gpt-5.3-codex) returned 400 'not supported when using Codex with a ChatGPT account'; no successful turn, usage unknown",
+          "outcome": "pass",
           "artifacts": 1
         },
         {
           "name": "crash_recovery",
           "outcome": "inconclusive",
-          "reason": "no docker/podman on this host; CliDriver ContainerSandbox probe not executable (see unavailable.json)",
+          "reason": "an agent turn inside the pinned container was not run (sandbox profile network=none; egress profile pending)",
           "artifacts": 1
         }
       ]
@@ -180,11 +180,12 @@
     }
   },
   "findings": [
-    "codex-cli: JSONL protocol conformance passes on real 0.154.0 output (thread.started, item.completed, turn.started, error, turn.failed) and failure is flagged; the ChatGPT-account plan rejects every codex model tried, so no successful turn.",
     "opencode-http: real server 1.17.13 answers global/health; the driver enforces the version pin (OPENCODE_VERSION), rejects an empty password (OPENCODE_AUTH) and a wrong one (PROVIDER_HTTP); the child process exits on SIGTERM and probe fails afterwards. No model turn was run.",
     "all three: cancel_tree / filesystem / egress / crash probes need a container runtime that this host lacks; they stay inconclusive by construction.",
     "claude-cli (oauth_token): a subscription token from `claude setup-token`, injected only as CLAUDE_CODE_OAUTH_TOKEN, completes a real turn with the keychain excluded; exact session, ordered events, measured usage and secret isolation (token absent from argv, workspace, stream and stderr) pass. --bare cannot use it by design, so CliDriver(auth=\"oauth_token\") builds the non-bare argv with explicit isolation flags.",
-    "claude-cli: the remaining inconclusive probes need an agent turn inside the pinned container, which needs a qualified egress profile (network=none today)."
+    "claude-cli: the remaining inconclusive probes need an agent turn inside the pinned container, which needs a qualified egress profile (network=none today).",
+    "codex-cli (ChatGPT account): the plan rejects the codex-branded identifiers (gpt-5.3-codex-spark, gpt-5-codex, gpt-5.3-codex) but accepts the general models the TUI lists (gpt-6-astra, gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5). A real turn with gpt-5.6-sol completes: thread bound, 6/6 events normalized, usage measured. The model executed one read-only shell command (sed on a user skill file) for a trivial prompt, which the sandbox policy must bound.",
+    "codex-cli: remaining inconclusive probes need a turn inside the pinned container (egress profile pending) and a sandboxed auth path."
   ],
   "artifacts_dir": "specs/015-external-qualification/artifacts"
 }
