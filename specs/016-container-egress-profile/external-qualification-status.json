@@ -7,8 +7,8 @@
     {
       "item": "Actual Claude/Codex account + exact binary image/model version qualification",
       "from": "claude 5/9, codex 4/9 (host-side)",
-      "to": "claude 9/9 in container; codex 4/9 host-side, container run pending user sandbox home",
-      "status": "partial"
+      "to": "claude 9/9 and codex 9/9 in container",
+      "status": "resolved"
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",

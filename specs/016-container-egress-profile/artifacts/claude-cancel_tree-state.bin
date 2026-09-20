@@ -1,1 +1,1 @@
-{"saw_event": true, "signal": "SIGTERM", "stopped_in_s": 0.53, "running_after": false, "exit_code": 143, "oom": false}
+{"saw_event": true, "completed": false, "signal": "SIGTERM", "stopped_in_s": 0.6, "running_after": false, "exit_code": 143, "oom": false}
