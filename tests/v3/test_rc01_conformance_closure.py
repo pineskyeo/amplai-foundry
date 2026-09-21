@@ -36,7 +36,12 @@ def test_ledger_ties_ids_only_to_executed_cases_in_function_bodies(tmp_path):
 
 def test_design_check_is_never_a_runtime_pass_and_status_is_rc_not_final():
     ledger = json.loads(LEDGER.read_text())
-    assert ledger["release_status"] == "rc_candidate_not_final"
+    # FINAL only through a committed human approval bound to the gate package (V3-062);
+    # the shipped status must equal what the committed tree yields, never a hand edit.
+    declared = ClosureLedger(REPO).final_declaration()
+    expected = "final_declared" if declared else "rc_candidate_not_final"
+    assert ledger["release_status"] == expected
+    assert ledger["final_declaration"] == declared
     assert ledger["summary"]["tests"]["fail"] == 0
     # Every local_pass must come from an executed junit case, never from a design mention.
     # (This used to assert not_run > 0; all 112 ids now have executed evidence, so the
@@ -93,9 +98,14 @@ def test_shipped_ledger_matches_current_tree_and_junit():
     ext = json.loads(
         (REPO / "specs" / "013-amplai-v3" / "dev03-delivery-evidence.json").read_text()
     )["external_qualification_pending"]
-    fresh = ClosureLedger(REPO).build([JUNIT], external_pending=ext)
+    closure = ClosureLedger(REPO)
+    fresh = closure.build(
+        [JUNIT], external_pending=ext, final_declaration=closure.final_declaration()
+    )
     shipped = json.loads(LEDGER.read_text())
     assert fresh["summary"] == shipped["summary"]
+    assert fresh["release_status"] == shipped["release_status"]
+    assert fresh["final_declaration"] == shipped["final_declaration"]
     assert fresh["executed_case_count"] == shipped["executed_case_count"]
     assert {k: v["status"] for k, v in fresh["tests"].items()} == {
         k: v["status"] for k, v in shipped["tests"].items()
@@ -123,3 +133,50 @@ def test_every_catalog_requirement_and_task_id_is_present():
         + counts["requirements"]["not_run"]
         == 35
     )
+
+
+def _git(cwd, *args):
+    import subprocess
+
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+
+def test_final_declaration_counts_only_a_committed_approval_bound_to_the_package(tmp_path):
+    import hashlib
+
+    repo = tmp_path / "repo"
+    (repo / ".ai-team" / "policy").mkdir(parents=True)
+    (repo / "specs" / "015-external-qualification").mkdir(parents=True)
+    package = repo / "specs" / "015-external-qualification" / "human-gate-package.md"
+    package.write_text("# gate\n")
+    digest = hashlib.sha256(package.read_bytes()).hexdigest()
+    approvals = repo / ".ai-team" / "policy" / "approvals.jsonl"
+    approvals.write_text("")
+    _git(repo, "init", "-q")
+    _git(repo, "-c", "user.name=t", "-c", "user.email=t@x", "add", "-A")
+    _git(repo, "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-q", "-m", "base")
+    closure = ClosureLedger(repo, design_dir=str(REPO / "design-reference"))
+    assert closure.final_declaration() is None
+    line = json.dumps(
+        {
+            "gate": "production_operation",
+            "proposal_id": "V3-062",
+            "approved_by": "human",
+            "approved_at": "2026-09-21T00:00:00Z",
+            "proposal_sha256": digest,
+        }
+    )
+    approvals.write_text(line + "\n")
+    assert closure.final_declaration() is None  # working tree only: not an approval
+    _git(repo, "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-qam", "approve")
+    declared = closure.final_declaration()
+    assert declared is not None and declared["approved_by"] == "human"
+    # the binding is to the committed package bytes: a changed package voids it
+    package.write_text("# gate v2\n")
+    _git(repo, "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-qam", "edit")
+    assert closure.final_declaration() is None
+    ledger = ClosureLedger(REPO).build([JUNIT], external_pending=[], final_declaration=None)
+    assert ledger["release_status"] == "rc_candidate_not_final"
+    ledger = ClosureLedger(REPO).build([JUNIT], external_pending=["x"], final_declaration=declared)
+    assert ledger["release_status"] == "final_declared"
+    assert ledger["remaining_blockers"]["external_qualification_pending"] == ["x"]

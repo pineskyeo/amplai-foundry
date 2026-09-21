@@ -45,7 +45,10 @@ def main() -> None:
         ]
     else:
         pending = evidence["external_qualification_pending"]
-    ledger = ClosureLedger(REPO).build([JUNIT], external_pending=pending)
+    closure = ClosureLedger(REPO)
+    ledger = closure.build(
+        [JUNIT], external_pending=pending, final_declaration=closure.final_declaration()
+    )
     ClosureLedger.write(ledger, LEDGER)
     view = {
         "schema_version": ledger["schema_version"],

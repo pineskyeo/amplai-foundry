@@ -8,6 +8,7 @@ never counted as a runtime pass (design/21 §1, §4). Remaining blockers stay ex
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import subprocess
@@ -89,7 +90,68 @@ class ClosureLedger:
         except (OSError, subprocess.SubprocessError):
             return "unknown"
 
-    def build(self, junit_paths: list[Path], *, external_pending: list[str]) -> dict[str, Any]:
+    def final_declaration(
+        self,
+        *,
+        gate: str = "production_operation",
+        proposal_id: str = "V3-062",
+        package: str = "specs/015-external-qualification/human-gate-package.md",
+    ) -> dict[str, Any] | None:
+        """The committed human approval that declares the RC ledger FINAL, or None.
+
+        Only the HEAD copy of ``.ai-team/policy/approvals.jsonl`` counts (the ledger says a
+        working-tree line is not an approval), and the entry must bind the exact committed
+        gate package by sha256. Nothing here creates or infers an approval.
+        """
+
+        def committed(path: str) -> bytes | None:
+            try:
+                return subprocess.run(
+                    ["git", "show", f"HEAD:{path}"],
+                    cwd=self.root,
+                    capture_output=True,
+                    timeout=10,
+                    check=True,
+                ).stdout
+            except (OSError, subprocess.SubprocessError):
+                return None
+
+        ledger, package_bytes = committed(".ai-team/policy/approvals.jsonl"), committed(package)
+        if ledger is None or package_bytes is None:
+            return None
+        expected = hashlib.sha256(package_bytes).hexdigest()
+        for line in ledger.decode("utf-8", errors="replace").splitlines():
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if (
+                isinstance(entry, dict)
+                and entry.get("gate") == gate
+                and entry.get("proposal_id") == proposal_id
+                and entry.get("proposal_sha256") == expected
+                and entry.get("approved_by")
+                and entry.get("approved_at")
+            ):
+                return {
+                    "gate": gate,
+                    "proposal_id": proposal_id,
+                    "approved_by": entry["approved_by"],
+                    "approved_at": entry["approved_at"],
+                    "proposal_sha256": expected,
+                    "package": package,
+                    "note": entry.get("note", ""),
+                    "source": ".ai-team/policy/approvals.jsonl@HEAD",
+                }
+        return None
+
+    def build(
+        self,
+        junit_paths: list[Path],
+        *,
+        external_pending: list[str],
+        final_declaration: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         executed = executed_cases(junit_paths)
         mentions = catalog_mentions(
             [
@@ -207,7 +269,10 @@ class ClosureLedger:
                     "a mention in prose or a design fixture does not count"
                 ),
             },
-            "release_status": "rc_candidate_not_final",
+            # FINAL is a human declaration bound to the committed gate package (V3-062); the
+            # external items it accepted stay listed above, they are not erased by the status.
+            "release_status": "final_declared" if final_declaration else "rc_candidate_not_final",
+            "final_declaration": final_declaration,
         }
 
     @staticmethod
