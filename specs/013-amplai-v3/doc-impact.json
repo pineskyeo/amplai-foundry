@@ -453,6 +453,7 @@
     }
   ],
   "changed_sources": [
+    ".ai-team/policy/approvals.jsonl",
     ".ai-team/policy/documentation.json",
     ".specify/feature.json",
     "deployment/README.md",
@@ -887,6 +888,7 @@
     },
     "expected": [
       ".ai-team/knowledge/document-reviews.json",
+      ".ai-team/policy/approvals.jsonl",
       ".ai-team/policy/documentation.json",
       ".gitignore",
       ".specify/feature.json",
@@ -1317,6 +1319,7 @@
       "tools/amplai-loop-kit/tests/document-browser.mjs"
     ],
     "processed": [
+      ".ai-team/policy/approvals.jsonl",
       ".ai-team/policy/documentation.json",
       ".gitignore",
       ".specify/feature.json",
@@ -1571,21 +1574,21 @@
     "rule_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c",
     "unprocessed": []
   },
-  "content_hash": "fd3117d0651a9a4ae1199118cb470f26e18bdcd7c5fe88084840dafc7fbb9117",
+  "content_hash": "015c2daeb60d81619ad06d231bffa83ca0c1c09e3e0b9971c69bb071de95aa52",
   "dependency_snapshot": {
     "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220"
+      "sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302"
     },
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-          "declared_reference_sha256": "b3d073a8497584a535b6ed1ef97a6cfa0bbbf94976aa7a1de5acbece45d85e10",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+          "declared_reference_sha256": "782fdc31ab37326ab97006d2241a48be5f20f723227de32bc23c09a21d7bbcc4",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -1603,7 +1606,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1622,7 +1625,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1641,7 +1644,7 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "f8168f0725e3364a847e8fad49cf5a5f0c993d7c3bdac1f9e999f49aced98a5f",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1660,7 +1663,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1679,7 +1682,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1698,7 +1701,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1717,7 +1720,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1736,7 +1739,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1755,8 +1758,8 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-          "declared_reference_sha256": "1a2b380b0e0f1ff55d327debd5244184e43519a095ae50b4a7933e2f8194800e",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+          "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -1774,7 +1777,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1793,8 +1796,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-          "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+          "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -1812,7 +1815,7 @@
       {
         "path": "deployment/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
           "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
           "metadata_owner": "sidecar",
@@ -1831,7 +1834,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1850,7 +1853,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1869,7 +1872,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1888,7 +1891,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1907,7 +1910,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1926,7 +1929,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1945,7 +1948,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
           "metadata_owner": "sidecar",
@@ -1964,7 +1967,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1983,7 +1986,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2002,7 +2005,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2021,7 +2024,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2040,7 +2043,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "5580c8a6a983a4b046f9e68a93edb5fdffb697df354914b4fcb40cfe51a31e0c",
           "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
           "metadata_owner": "sidecar",
@@ -2059,7 +2062,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "91ece72c46d53699ddfa8dd2047c2ba74672e42467ae0ade06a644d10fa10064",
           "metadata_owner": "sidecar",
@@ -2078,8 +2081,8 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-          "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+          "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
           "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -2097,7 +2100,7 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
           "metadata_owner": "sidecar",
@@ -2116,7 +2119,7 @@
       {
         "path": "integrations/hermes/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
           "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
           "metadata_owner": "sidecar",
@@ -2135,7 +2138,7 @@
       {
         "path": "migration/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
           "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
           "metadata_owner": "sidecar",
@@ -2154,7 +2157,7 @@
       {
         "path": "packs/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
           "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
           "metadata_owner": "sidecar",
@@ -2173,9 +2176,9 @@
       {
         "path": "release/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-          "declared_reference_sha256": "871f5e40f0551c0a48d80424d0e91a862a0c107c461db72fa2d20aed08870eb9",
-          "dependency_snapshot_sha256": "e41db0fe1ae625d04f13671a70d7d8ca055a17630ad58899ccadc4a40ca8cdcb",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+          "declared_reference_sha256": "53a7d121e390a9d7107c171e1479d1015b65d293cb7aa7dc3b6ce5220cc3980f",
+          "dependency_snapshot_sha256": "c96d217a43bff5c71ddf34526f5ed9e0be85dd7294a208e4bf9838ac7f86e904",
           "metadata_owner": "sidecar",
           "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
           "rules": {
@@ -2186,13 +2189,13 @@
           },
           "sidecar_sha256": "032eb4b416863d3f7059448ce71cd2377d161c4f728d780a898e2bc5217aaefe",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "cfad85a71164e902a69998047238e88bd88c60ad0f89813380be4f2200bfc7c6"
+          "source_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7"
         }
       },
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -2211,7 +2214,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "0cc4333fee8b93ba43db12f2c0a23703643f23aae5c6c48911eaea860ca3e74e",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2230,7 +2233,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+          "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
           "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2386,6 +2389,23 @@
       {
         "current_guide": false,
         "kind": "historical",
+        "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+          "sha256": "461551253909be937814e3560586581133d976ea2bff9f31d461b7f0ae97b2e3"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+          "sha256": "461551253909be937814e3560586581133d976ea2bff9f31d461b7f0ae97b2e3",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
         "path": "docs/workstreams/HANDOFF_2026-08-30.md",
         "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
         "retained_baseline": {
@@ -2397,6 +2417,23 @@
           "mode": 420,
           "path": "docs/workstreams/HANDOFF_2026-08-30.md",
           "sha256": "9f0b4b16ea57b935517c0d864d50d9804b91c79258172753de8196b2ee6c2efa",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
+        "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+          "sha256": "3ce7c95c69a35bc52001a171ea5c00ca097551820be39c5048fabed6807d5c61"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+          "sha256": "3ce7c95c69a35bc52001a171ea5c00ca097551820be39c5048fabed6807d5c61",
           "state": "PRESENT"
         }
       },
@@ -2590,6 +2627,23 @@
       {
         "current_guide": false,
         "kind": "historical",
+        "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+          "sha256": "70ed738c1b06742f04543475ccedcb4de1bc67ed44f227c3966e718ed7e4c512"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+          "sha256": "70ed738c1b06742f04543475ccedcb4de1bc67ed44f227c3966e718ed7e4c512",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
         "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
         "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
         "retained_baseline": {
@@ -2679,6 +2733,12 @@
       }
     ],
     "sources": [
+      {
+        "mode": 420,
+        "path": ".ai-team/policy/approvals.jsonl",
+        "sha256": "16c5e9205aded3e7616317a56d8c83614d897781fc27d3d3adf4bcd628c401ce",
+        "state": "PRESENT"
+      },
       {
         "mode": 420,
         "path": ".ai-team/policy/documentation.json",
@@ -2796,7 +2856,7 @@
       {
         "mode": 420,
         "path": "eval/test-catalog-status.json",
-        "sha256": "fee369abd8b121bf60f6b2c8a22d56aabc835bb89859e5ce1738dd3931cbf896",
+        "sha256": "6d179808558d3f34d7941e725283337fc23fb8b2db2801b5d8d335db58fb896d",
         "state": "PRESENT"
       },
       {
@@ -3276,7 +3336,7 @@
       {
         "mode": 420,
         "path": "release/README.md",
-        "sha256": "cfad85a71164e902a69998047238e88bd88c60ad0f89813380be4f2200bfc7c6",
+        "sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7",
         "state": "PRESENT"
       },
       {
@@ -3288,7 +3348,7 @@
       {
         "mode": 420,
         "path": "release/rc01-conformance-closure.json",
-        "sha256": "c4af610a897a604328c6492cb545e6fcc4fa014daed588360dc09f0c11410337",
+        "sha256": "1d6fefc7b78311d509d0f50401782ab02082e37f4e7f1103627826bb8296b81d",
         "state": "PRESENT"
       },
       {
@@ -3318,7 +3378,7 @@
       {
         "mode": 420,
         "path": "scripts/rc01_closure.py",
-        "sha256": "6cc30fab57ad0d29b0cb93de9b495ea46684a8dcded71cdf6db65b6f86400044",
+        "sha256": "e844f00c46da8ae6df49e4bffb9fd249d28d870bdcfb6ea2213fb290a49abb70",
         "state": "PRESENT"
       },
       {
@@ -3414,7 +3474,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/distribution/closure.py",
-        "sha256": "c90a23936b73d849e31cfd273b0a8e4b6fa6bc3750e8180ad39ee3c52ac00b10",
+        "sha256": "7ee818bee2730627d7f1096be84c5981c4959543d8e8fd7aeea76aff755b84c7",
         "state": "PRESENT"
       },
       {
@@ -3942,7 +4002,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_rc01_conformance_closure.py",
-        "sha256": "2abae44b1e6d20e85388140dda5d1e3afcc8ba020785d998a9735abfaf99661a",
+        "sha256": "622641cdb3ffa1c5d9a632f04406f84fbec62c301584824091aba2507f6b8234",
         "state": "PRESENT"
       },
       {
@@ -4181,7 +4241,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+  "dependency_snapshot_hash": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -4189,7 +4249,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
+    "commit": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "policy_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c"
   },
@@ -4219,9 +4279,9 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword evidence,knowledge,plane; 문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "b3d073a8497584a535b6ed1ef97a6cfa0bbbf94976aa7a1de5acbece45d85e10",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "782fdc31ab37326ab97006d2241a48be5f20f723227de32bc23c09a21d7bbcc4",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -4235,7 +4295,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "f79cb2d88e8ea7fef0330bee2ec764336643edc19cd2d1fcf553917320bbcedf",
+      "review_hash": "b053da868a842e1ca51fbe9c8b4a9f96044929fc4cf36870206cb4811202e725",
       "state": "ACTIVE"
     },
     {
@@ -4253,8 +4313,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4269,7 +4329,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "c70b7cc1158903fa519eb0e025ad7fd20d5adc0361a8502fb86ef15dddee60cb",
+      "review_hash": "3c53c694b1617b50b480c598c35535d90b8b5996db67c42bc20c946738f451d5",
       "state": "ACTIVE"
     },
     {
@@ -4287,8 +4347,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4303,7 +4363,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "3846b831d28778635a1f9161d64098955d8ad3623e4724e31170a0938f20f2f0",
+      "review_hash": "aca065c8c4754702ace408793b1e9fd7b78e2fefe81001f6f5c55747051ccef0",
       "state": "ACTIVE"
     },
     {
@@ -4321,8 +4381,8 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "f8168f0725e3364a847e8fad49cf5a5f0c993d7c3bdac1f9e999f49aced98a5f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4337,7 +4397,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "64f12af97e94b93961f5f919ac97faf04dc570ba3986af3d87d28ef2021c7e4b",
+      "review_hash": "3662f0b6152dd04d0c14c8a53b01d7b9c47609cb88cb2f9a739e4593e2c67354",
       "state": "ACTIVE"
     },
     {
@@ -4355,8 +4415,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4371,7 +4431,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "7f52ee77d8aa41aca8ce9fdbc77d15b2ff8ce72c3f4ad48145a5791f7ef2a4d5",
+      "review_hash": "e46d6aa0eed9952b20e2f0f56e6ed5dba0cda5ee4d780b53f3435c4052c8cd2a",
       "state": "ACTIVE"
     },
     {
@@ -4389,8 +4449,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4405,7 +4465,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "c6519e9e68e905740c12251fd88d0ecbbe7ebf18018080f96d4a51347a91cf64",
+      "review_hash": "f878c790b1d72ad044a6dfa288d0569036ef258a8c61794356b4b56e94ac329d",
       "state": "ACTIVE"
     },
     {
@@ -4430,8 +4490,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword converge,review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4446,7 +4506,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "f9b76ea6213e1357d3d8890ed5ad95f202b50e60c98c69492f8df6ab2724cb01",
+      "review_hash": "7d9f430500610c316c2249bc1d7547928399f06425851c2988b7476214263476",
       "state": "ACTIVE"
     },
     {
@@ -4464,8 +4524,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4480,7 +4540,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "f06665eb7a53dc53b2b7d38c90484d7a31cc35c03b62a19b45ade4b32e87ae46",
+      "review_hash": "bf0843b72dd2b7c8af7b9b891a5138590abfa93c7cfa4f7061856d54dcd19896",
       "state": "ACTIVE"
     },
     {
@@ -4500,8 +4560,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4516,7 +4576,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "7d7c98cd049174d43c78e395ab0ff8c3c2cf1c7d91815df21417aed4875ce5a1",
+      "review_hash": "2015992b0a58d10095effded0008be9b398a919932cf2b3e4af447fcf9a112fe",
       "state": "ACTIVE"
     },
     {
@@ -4536,9 +4596,9 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "1a2b380b0e0f1ff55d327debd5244184e43519a095ae50b4a7933e2f8194800e",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -4552,7 +4612,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "74c5d9c11de620fead57386682e518c3cf81cfaff25ad831d1ce6eec050565d0",
+      "review_hash": "70b1051e2ca7b4b8387a1699c02c17e2744f2db8b5b00fad82d095f002977728",
       "state": "ACTIVE"
     },
     {
@@ -4574,8 +4634,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,skill,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4590,7 +4650,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "7c97829e0b056e0ed6dec312c10072a3dfb8550ba120cbb443cc3652b9c17282",
+      "review_hash": "6cebd7ccff35be71314978f0c5d7022745dc902b7419ce98d413bccc1dec0c44",
       "state": "ACTIVE"
     },
     {
@@ -4613,9 +4673,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4629,7 +4689,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "f5d9018d86e9d9c5bf1ffc892a6dc3e5630307526fc18920796e6e6f66064323"
       },
-      "review_hash": "9b2c8cfff52f1f974e51aa1ad65ca949d5e84bb9fbd716783a377e5d8342a533",
+      "review_hash": "607829b4bb3ce5922c6c3f781809fc62535f297c34082bae1cd92081d4a4347e",
       "state": "ACTIVE"
     },
     {
@@ -4649,8 +4709,8 @@
       "path": "deployment/README.md",
       "reason": "문서가 deployment/support-evidence.json, deployment/support-matrix.json, src/amplai_foundry/runtime/profiles.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -4665,7 +4725,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "f33457765bcda2cf4ecb77e5925640d53c13eca4ad83d5b1e294590348b13092"
       },
-      "review_hash": "843b6322fce5155956dd631e49b5a678464b6a3ecd887cad1b8e4c7741220f78",
+      "review_hash": "7dcade2fe16a293cc7638f9360c6b50e379705c6337448133a8d58753501f079",
       "state": "ACTIVE"
     },
     {
@@ -4685,8 +4745,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge,lint; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4701,7 +4761,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "747cc993ebbb07c273383ab885300352b4e3b0aa6c80ba0a2adbee9e14c81e1d",
+      "review_hash": "3423a44ad22e188968224600bf780078aa798e330acbff629a217f9fac7e2bbc",
       "state": "ACTIVE"
     },
     {
@@ -4721,8 +4781,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "keyword status; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4737,7 +4797,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "15634bd99bbb04abf392ef67822b0ca487f32cd92c8717ce8e16b45a68fe8981",
+      "review_hash": "dd1c9f073323e806042cc0a0b3253cbf3276998fd0b852bcf055b5be5cd8a86d",
       "state": "ACTIVE"
     },
     {
@@ -4755,8 +4815,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4771,7 +4831,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "ad80a09be228add0e484c2e0ee996690b39ff962a42f2fa854d2e7388b5e99da",
+      "review_hash": "17a4dfd7d8d3c95126b1d9f5fd12c50b22976674b7a53d01bd979ceff6fd7ca3",
       "state": "ACTIVE"
     },
     {
@@ -4791,8 +4851,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4807,7 +4867,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "be28d4c02e5284e97b2856eb9ef5dc0cff49f53cfed82409cd814b3b7b886925",
+      "review_hash": "c6fc7e19280bb5b0bac2fdba105e3c46107845970c5c98398f71e1cdcbf4d064",
       "state": "ACTIVE"
     },
     {
@@ -4827,8 +4887,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,pack,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4843,7 +4903,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "268de296da76c8097845f10dbbcad45c21a32f3fd843c39e8d43943fcb74e572",
+      "review_hash": "c950f8e33132ff7aca5dfcab8dac4eb3d7f716da6d138f97fd13898be2b12412",
       "state": "ACTIVE"
     },
     {
@@ -4865,8 +4925,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "keyword proposal,validate; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4881,7 +4941,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "3abf9f0228766acec6e195aadeb7bca952fff4294d0456636012d3a9295897be",
+      "review_hash": "57332f4f3961cf8b2e07919d6150763c44d921baf5c17b88a27423bda3adb2ff",
       "state": "ACTIVE"
     },
     {
@@ -4901,8 +4961,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "keyword graph,reference; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -4917,7 +4977,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "ee0e80945a3cda4384dcdc25a4c1be2da1265944ffa62cc694820eec51073aac",
+      "review_hash": "07f0d9780f50e19697eff9c63985d9201eebcb2cca419075f682381b06f83e60",
       "state": "ACTIVE"
     },
     {
@@ -4937,8 +4997,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "keyword plan; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4953,7 +5013,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "f258d115dc81c7cfd52d32a61630d16e66d2256aa6a5f33ed9334988dc77c327",
+      "review_hash": "0c7a3639b0a81a6f03034d869eded71264394340d6cfc3e7881bb19430608495",
       "state": "ACTIVE"
     },
     {
@@ -4971,8 +5031,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4987,7 +5047,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "873b93d7ea0a21bc5642aa30aa118f729b8b9b44e3c11fdae580def9673100f7",
+      "review_hash": "4580a6bf3e61e5835a66a88cc3aed043705a35d1954186f64518209d5630ada6",
       "state": "ACTIVE"
     },
     {
@@ -5009,8 +5069,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "keyword compatibility,migration,schema; 문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5025,7 +5085,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "c784bf9dd703ec0379185aa2d81e16de3be0d2ccd7bc4dc35a9232b72d97abf3",
+      "review_hash": "14f5ad86d9d9c1b9fd1d3ac3400c06d0bea6fc64e4977771a9c6da434b4530d0",
       "state": "ACTIVE"
     },
     {
@@ -5045,8 +5105,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai,goal; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5061,7 +5121,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "79d328110e754852a0a2e747f58100f77fa406e504f32ecc937ce11271d27f47",
+      "review_hash": "930a1af876b559de2ee42f90b44daf5cd7b27dc4a8228200e003e96391fe1c16",
       "state": "ACTIVE"
     },
     {
@@ -5081,8 +5141,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh, src/amplai_foundry/agent_drivers/cli.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "5580c8a6a983a4b046f9e68a93edb5fdffb697df354914b4fcb40cfe51a31e0c",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
@@ -5097,7 +5157,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ca22a68575ab24b6c09cfe98be0148143b17490c9ee8abf5e29d612010299a66"
       },
-      "review_hash": "89d8016601664e6b7ca08ecacc89e6bfbe2f62fb84d41b922bdd7d52b73db1b8",
+      "review_hash": "f102be62ae40b5274ec9b61e3b4f79eb966ff39ade2d0fb938e6bb04194005a2",
       "state": "ACTIVE"
     },
     {
@@ -5115,8 +5175,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "91ece72c46d53699ddfa8dd2047c2ba74672e42467ae0ade06a644d10fa10064",
         "metadata_owner": "sidecar",
@@ -5131,7 +5191,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a124a4790f581cf03ee4a66b0b853e6be2ad68fab225e29b0882528ee18264aa"
       },
-      "review_hash": "21ca2e925c8d6fd0bd6b6e4d4a638be4dd93c8117e03c49e664a17d4bd7ab55b",
+      "review_hash": "c715e23cdc5cf98ee5d36c7567db57a7d22557c14b089dd9df4ff4279f0f801e",
       "state": "ACTIVE"
     },
     {
@@ -5151,9 +5211,9 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/corpus.py, src/amplai_foundry/evaluation/observatory.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -5167,7 +5227,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771"
       },
-      "review_hash": "3ab6f46a59b9b9d0bce374e53045003c646d793585bf19368bcdfadd4d264d51",
+      "review_hash": "d6734627ea7365bbafd0ca8a719e13e65d04cb4953475630661d54340f1028a1",
       "state": "ACTIVE"
     },
     {
@@ -5185,8 +5245,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -5201,7 +5261,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "9759502bd87a892f60ae8cc96793c1198ff48f752feaded77305329a6155112e",
+      "review_hash": "a3b840787972c2e6951311deca51708228d1eda37663108e50157003908b3fb5",
       "state": "ACTIVE"
     },
     {
@@ -5221,8 +5281,8 @@
       "path": "integrations/hermes/README.md",
       "reason": "문서가 src/amplai_foundry/control_plane/hermes.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -5237,7 +5297,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8e47d43ec0e236ce875069c882b12c4af3f6d14b7fb397d886b34daa8da8e6c2"
       },
-      "review_hash": "401bd43b02cbbf2f184f580c17decf192c00776136f245ec6059c974eadc6eba",
+      "review_hash": "4d2c58bef07af1ba1b4261fa47d5724dfb90ed37179715a84a3aaf2573a88785",
       "state": "ACTIVE"
     },
     {
@@ -5257,8 +5317,8 @@
       "path": "migration/README.md",
       "reason": "문서가 migration/retirement-proposal.json, src/amplai_foundry/migration/retirement.py, tests/v3/test_rc01_legacy_retirement.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -5273,7 +5333,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "fe389d391e27c2fcc75b3d97ac9e1eb3a585370e9a6ec7a7b38274f92babc9dd"
       },
-      "review_hash": "4c7655db8f3b3ea0a91bf74008586addd957f83c41784c1deef442980ab8b1dd",
+      "review_hash": "ce049d5a19d815cb7272c76ac4bcc1ca0b855ee22cb25674a95c2fc092499e76",
       "state": "ACTIVE"
     },
     {
@@ -5293,8 +5353,8 @@
       "path": "packs/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -5309,7 +5369,7 @@
         "source_assets_sha256": "292cbb3f874f0b7aeca0c02c5ca02f321259bb32f367dbbb8a9f40446992b30d",
         "source_sha256": "9398b113211cdc957180d288ad8fab60b6d4a360368be12682049ab7a436f9d7"
       },
-      "review_hash": "1c468f9a4558192e44127019b53bad4d44264bfc3f7a5d74a38f18b31ca0acf2",
+      "review_hash": "e1ae181b53f6e4976c1bb6d2f03811d3c0488afe37421fa92c7eabe425a0a381",
       "state": "ACTIVE"
     },
     {
@@ -5320,19 +5380,19 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:release-readme-md",
-      "document_sha256": "cfad85a71164e902a69998047238e88bd88c60ad0f89813380be4f2200bfc7c6",
+      "document_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7",
       "evidence": [
-        "git grep -F eval/test-catalog-status.json",
+        "git grep -F .ai-team/policy/approvals.jsonl",
         "release/README.md"
       ],
       "handled": true,
       "path": "release/README.md",
-      "reason": "문서가 eval/test-catalog-status.json, release/rc01-conformance-closure.json, scripts/rc01_closure.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
+      "reason": "문서가 .ai-team/policy/approvals.jsonl, eval/test-catalog-status.json, release/rc01-conformance-closure.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "871f5e40f0551c0a48d80424d0e91a862a0c107c461db72fa2d20aed08870eb9",
-        "dependency_snapshot_sha256": "e41db0fe1ae625d04f13671a70d7d8ca055a17630ad58899ccadc4a40ca8cdcb",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "53a7d121e390a9d7107c171e1479d1015b65d293cb7aa7dc3b6ce5220cc3980f",
+        "dependency_snapshot_sha256": "c96d217a43bff5c71ddf34526f5ed9e0be85dd7294a208e4bf9838ac7f86e904",
         "metadata_owner": "sidecar",
         "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
         "rules": {
@@ -5343,9 +5403,9 @@
         },
         "sidecar_sha256": "032eb4b416863d3f7059448ce71cd2377d161c4f728d780a898e2bc5217aaefe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "cfad85a71164e902a69998047238e88bd88c60ad0f89813380be4f2200bfc7c6"
+        "source_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7"
       },
-      "review_hash": "3f20b49a75a017544264a6d6904fdd07d25a0bd68761398db79f98bf234be50c",
+      "review_hash": "41489293973d151fec261f4532bd9eda639180a9710116df2804e8af94b8656f",
       "state": "ACTIVE"
     },
     {
@@ -5365,8 +5425,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json, tests/e2e/artifacts/golden-registry.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -5381,7 +5441,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "ad80041e61c43f6238ad6f0af880cc92f22ac92d3448774cfd6c50a794820280",
+      "review_hash": "1507ab77f590b9c848bde19e09bc61caf13f9df32d95d1578957d9446ca6fe1d",
       "state": "ACTIVE"
     },
     {
@@ -5401,8 +5461,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "0cc4333fee8b93ba43db12f2c0a23703643f23aae5c6c48911eaea860ca3e74e",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5417,7 +5477,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "7a19d128464f6b372b63f10843a7a6304c5135770d90414a20b9609adb71d6b0",
+      "review_hash": "f46c4793f18a6ef7bf994248b2ef0581b71c53302b312b354a56c1a6e695f428",
       "state": "ACTIVE"
     },
     {
@@ -5443,8 +5503,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5459,7 +5519,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "a2f71deb05292bc2822f0a2f215a73fff3677ca0f731bec503abb2e32a74c12d",
+      "review_hash": "8f5f9b63d4cd37e89b0b941bb6921f75dd1f7210f0142338ba3f65b329587d63",
       "state": "ACTIVE"
     }
   ],
@@ -5487,7 +5547,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 41,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5497,9 +5557,9 @@
       "reference_hash": "3dbb8ab273efb9bfe9b19cc5c76e74904fa15274ef42f0a1fdab6377266501c8",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "1a2b380b0e0f1ff55d327debd5244184e43519a095ae50b4a7933e2f8194800e",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -5569,7 +5629,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 58,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5579,8 +5639,8 @@
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5610,7 +5670,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 46,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5620,8 +5680,8 @@
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5651,7 +5711,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 54,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5661,8 +5721,8 @@
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5692,7 +5752,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 46,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5702,8 +5762,8 @@
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5733,7 +5793,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 167,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5743,8 +5803,8 @@
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5774,7 +5834,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 55,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5784,8 +5844,8 @@
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5815,7 +5875,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 59,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5825,8 +5885,8 @@
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5856,7 +5916,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 57,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5866,8 +5926,8 @@
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5897,7 +5957,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 167,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5907,8 +5967,8 @@
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5938,7 +5998,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 167,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5948,8 +6008,8 @@
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5979,7 +6039,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 34,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -5989,8 +6049,8 @@
       "reference_hash": "402e9b17b282dc05d8f21ccc9aa9dd08b16e731b0167757302bcd886ae3bdaa4",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6020,7 +6080,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 9,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6030,8 +6090,8 @@
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6061,7 +6121,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 19,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6071,8 +6131,8 @@
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6102,7 +6162,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 9,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6112,8 +6172,8 @@
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6143,7 +6203,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 116,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6153,8 +6213,8 @@
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6184,7 +6244,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 96,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6194,8 +6254,8 @@
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6225,7 +6285,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 107,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6235,8 +6295,8 @@
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6266,7 +6326,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 57,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6276,8 +6336,8 @@
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6307,7 +6367,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 36,
       "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6317,8 +6377,8 @@
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6348,7 +6408,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 7,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6358,8 +6418,8 @@
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "5580c8a6a983a4b046f9e68a93edb5fdffb697df354914b4fcb40cfe51a31e0c",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
@@ -6389,7 +6449,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 119,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6399,9 +6459,9 @@
       "reference_hash": "984ebe49144cb4d6e1c0ce4bb88879ee0c638df3c2df957fd9d1ab7a6543b22a",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6430,7 +6490,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 3,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6440,9 +6500,9 @@
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6471,7 +6531,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 119,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6481,9 +6541,9 @@
       "reference_hash": "a73b9b42b25743be5311818a241572daef8a96d12524e656b3492da9cda8a0c5",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6512,7 +6572,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 196,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6522,9 +6582,9 @@
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6553,7 +6613,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 196,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6563,9 +6623,9 @@
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6594,7 +6654,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 96,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6604,9 +6664,9 @@
       "reference_hash": "a6354da311efb0306561a0aba0dd987a75891c26f76d66b9f42cf8fb8c9d8454",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6717,7 +6777,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 86,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -6727,8 +6787,8 @@
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "0cc4333fee8b93ba43db12f2c0a23703643f23aae5c6c48911eaea860ca3e74e",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7045,7 +7105,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 145,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -7055,8 +7115,8 @@
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7168,7 +7228,7 @@
           "sha256": "374ffd9017505be354a2cab7a3a95c8ddeafeee5d98a9c6f6094cf7c2be2ae9e"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "line": 144,
       "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
       "outcome": "reviewed_unchanged",
@@ -7178,8 +7238,8 @@
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
       "reviewer": "claude-fable-5.1-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7375,16 +7435,16 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "1a2b380b0e0f1ff55d327debd5244184e43519a095ae50b4a7933e2f8194800e",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -7412,15 +7472,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7449,15 +7509,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7486,15 +7546,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "f8168f0725e3364a847e8fad49cf5a5f0c993d7c3bdac1f9e999f49aced98a5f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7523,16 +7583,16 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
       "reason": "Loop Runtime 설명은 controller/verifier/document lifecycle 을 다루며 sandbox egress 구현과 무관하다. 새 script 는 loop 명령이 아니다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "b3d073a8497584a535b6ed1ef97a6cfa0bbbf94976aa7a1de5acbece45d85e10",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "782fdc31ab37326ab97006d2241a48be5f20f723227de32bc23c09a21d7bbcc4",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -7560,15 +7620,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7597,15 +7657,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7634,15 +7694,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7671,15 +7731,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7708,15 +7768,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7745,15 +7805,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7782,15 +7842,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "deployment/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -7819,15 +7879,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7856,15 +7916,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
       "reason": "keyword 'status' 일치뿐이다. knowledge lifecycle 상태와 driver qualification status 는 다른 개념이며 본문이 sandbox 를 다루지 않는다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7893,15 +7953,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7930,15 +7990,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword 'release' 일치뿐이다. portable document release 절차는 바뀌지 않았고 egress profile 은 문서 release 와 무관하다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7967,15 +8027,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8004,15 +8064,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8041,15 +8101,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -8078,15 +8138,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8115,15 +8175,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8152,15 +8212,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "updated",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "§컨테이너 레시피 문단이 'network=none 만 있고 docker 가 없어 격리를 인수시험하지 않았다' 고 적혀 있었다. egress qualification ref 요구, --internal network + allowlist sidecar, sandbox_up.sh --egress / container_qualify.py 로 최소 patch 했다. 표의 파일 소유 행은 그대로 유효하다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "5580c8a6a983a4b046f9e68a93edb5fdffb697df354914b4fcb40cfe51a31e0c",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
@@ -8189,15 +8249,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "91ece72c46d53699ddfa8dd2047c2ba74672e42467ae0ade06a644d10fa10064",
         "metadata_owner": "sidecar",
@@ -8226,16 +8286,16 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "관측/meta-harness 설명은 driver qualification 의 9 probe 의미를 바꾸지 않는다. 컨테이너 안 실측은 QualificationRunner 의 기존 계약(전부 pass 아니면 fail) 그대로다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "0361dcc762932fec97cd6a4a5e07999d1a4345fd6a864542200fa7667483a75b",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "75aff38426fba5f5ffb65659ace65fa7e49489e9e61bc474d1ca3d935287de0d",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -8263,15 +8323,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -8300,15 +8360,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8337,15 +8397,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
       "reason": "keyword 'amplai' 일치뿐이다. 비전 문서는 구현 세부(egress sidecar)를 서술하지 않는다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8374,15 +8434,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "integrations/hermes/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -8411,15 +8471,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "migration/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -8448,15 +8508,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "packs/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -8485,16 +8545,16 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "저장소 개요는 V3 sandbox 의 network 정책을 서술하지 않는다. 새 파일은 deployment/scripts/src/sandbox 아래에 있고 개요의 구조 설명을 바꾸지 않는다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "a47e112bee3ac8bf23d25cd35871a12be58bd43ff04be3369ca5cdfef31e46a6",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "bf9db7b80d0f3d2ce557f3cc116d9ed4ad4fdf1d05bc384c03dc3f3684e0f37f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -8522,17 +8582,17 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "updated",
       "path": "release/README.md",
       "reason": "remaining_blockers 설명이 'EXTERNAL_QUALIFICATION_PENDING 9건이 그대로' 라고 적혀 있었다. 015 status 파일이 9건을 resolved/partial/unavailable 로 정제하고 resolved 가 아닌 것만 pending 으로 실린다는 현재 규칙으로 최소 patch 했다. 나머지 규칙(catalog id 연결, local_pass 의미, release_status)은 scripts/rc01_closure.py 와 일치한다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
-        "declared_reference_sha256": "871f5e40f0551c0a48d80424d0e91a862a0c107c461db72fa2d20aed08870eb9",
-        "dependency_snapshot_sha256": "e41db0fe1ae625d04f13671a70d7d8ca055a17630ad58899ccadc4a40ca8cdcb",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
+        "declared_reference_sha256": "53a7d121e390a9d7107c171e1479d1015b65d293cb7aa7dc3b6ce5220cc3980f",
+        "dependency_snapshot_sha256": "c96d217a43bff5c71ddf34526f5ed9e0be85dd7294a208e4bf9838ac7f86e904",
         "metadata_owner": "sidecar",
         "metadata_sha256": "3aef407791c2abf595acfa2522c1179d05513b4ba25f4a13a1ffd8cf919c842d",
         "rules": {
@@ -8543,7 +8603,7 @@
         },
         "sidecar_sha256": "032eb4b416863d3f7059448ce71cd2377d161c4f728d780a898e2bc5217aaefe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "cfad85a71164e902a69998047238e88bd88c60ad0f89813380be4f2200bfc7c6"
+        "source_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7"
       }
     },
     {
@@ -8559,15 +8619,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
       "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -8596,15 +8656,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword 'release' 일치뿐이다. kit 은 이 Work 에서 바뀌지 않았고 CHECKSUMS 도 그대로다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "0cc4333fee8b93ba43db12f2c0a23703643f23aae5c6c48911eaea860ca3e74e",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8633,15 +8693,15 @@
           "sha256": "d3c49c3da45690661c3206303e6240d176e656a902d89c04fab7021088debbc0"
         }
       ],
-      "impact_snapshot_sha256": "51a53da4b7ba6d9fa5ddbb695707592a80369e860de586cb5b54e7dbff48d4e6",
+      "impact_snapshot_sha256": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
       "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword 'release' 일치뿐이다. kit 설치/사용 절차는 sandbox egress 와 무관하다.",
       "reviewer": "claude-implementation-document-review",
       "snapshot": {
-        "candidate_revision": "c1e96553e8cd3dbaf7623d22d46cb15660a79dd9",
-        "candidate_sha256": "88fde02041f4bdbac5f613c98d8a366c0c236454d4637480c0c61f3c1f54c220",
+        "candidate_revision": "e0478f6c6681b765e4fb77ee89436c0ecc06d896",
+        "candidate_sha256": "db51d24f774b98279f1fb2731805e3889fa6663655a202fbd9ca869ec2cd4302",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8794,6 +8854,23 @@
     {
       "current_guide": false,
       "kind": "historical",
+      "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+        "sha256": "461551253909be937814e3560586581133d976ea2bff9f31d461b7f0ae97b2e3"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/HANDOFF_2026-08-29.md",
+        "sha256": "461551253909be937814e3560586581133d976ea2bff9f31d461b7f0ae97b2e3",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
       "path": "docs/workstreams/HANDOFF_2026-08-30.md",
       "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
       "retained_baseline": {
@@ -8805,6 +8882,23 @@
         "mode": 420,
         "path": "docs/workstreams/HANDOFF_2026-08-30.md",
         "sha256": "9f0b4b16ea57b935517c0d864d50d9804b91c79258172753de8196b2ee6c2efa",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
+      "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+        "sha256": "3ce7c95c69a35bc52001a171ea5c00ca097551820be39c5048fabed6807d5c61"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/HANDOFF_2026-09-02.md",
+        "sha256": "3ce7c95c69a35bc52001a171ea5c00ca097551820be39c5048fabed6807d5c61",
         "state": "PRESENT"
       }
     },
@@ -8992,6 +9086,23 @@
         "mode": 420,
         "path": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
         "sha256": "982ebb5ccaaedde758c34a410be2b81e98b9527f8000d8834489c89c7d8fb21e",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
+      "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
+        "sha256": "70ed738c1b06742f04543475ccedcb4de1bc67ed44f227c3966e718ed7e4c512"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/messenger-governance-closure-v3/CURRENT_ITEM.md",
+        "sha256": "70ed738c1b06742f04543475ccedcb4de1bc67ed44f227c3966e718ed7e4c512",
         "state": "PRESENT"
       }
     },

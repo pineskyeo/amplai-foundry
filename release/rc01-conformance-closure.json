@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0.0",
   "kind": "v3_conformance_closure",
-  "implementation_revision": "87cde5d9ee20fd2836667535e06e5653844790d8",
+  "implementation_revision": "a750aebd0e7df03248358594a982659b41c1a894",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],
@@ -1863,5 +1863,15 @@
     "tests_not_run": [],
     "note": "not_run means no executed local evidence names this catalog id; a mention in prose or a design fixture does not count"
   },
-  "release_status": "rc_candidate_not_final"
+  "release_status": "final_declared",
+  "final_declaration": {
+    "gate": "production_operation",
+    "proposal_id": "V3-062",
+    "approved_by": "pinesky",
+    "approved_at": "2026-09-21T04:53:18Z",
+    "proposal_sha256": "15413262a648ae386b05a90dfb70b17829549acb75d4250d2af88a67ebcc1262",
+    "package": "specs/015-external-qualification/human-gate-package.md",
+    "note": "AMPLAI V3 RC ledger 를 FINAL 로 선언한다. external 7건은 수용하고 ledger 에 남긴다.",
+    "source": ".ai-team/policy/approvals.jsonl@HEAD"
+  }
 }
