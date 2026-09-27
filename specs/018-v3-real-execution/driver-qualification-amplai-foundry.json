@@ -9,7 +9,7 @@
       "model": "gpt-5.6-sol",
       "auth": "chatgpt_account_sandbox_home",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-cf4a8498e3f74281a807347826ad4a27",
+      "qualification_id": "qualification-8f441782b265469d800708fa6eadd07f",
       "checks": [
         {
           "name": "exact_version",
@@ -32,7 +32,7 @@
         {
           "name": "cancel_tree",
           "outcome": "pass",
-          "reason": "SIGTERM via docker stop after first event: stopped_in=0.09s exit=0 (graceful) completed=False running_after=False",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.1s exit=0 (graceful) completed=False running_after=False",
           "artifacts": 2
         },
         {
@@ -44,7 +44,7 @@
         {
           "name": "egress_containment",
           "outcome": "pass",
-          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['chatgpt.com:443']; sidecar denied ['ab.chatgpt.com:443', 'example.com:443', 'sdmntprsouthcentralus.oaiusercontent.com:443']",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['chatgpt.com:443']; sidecar denied ['ab.chatgpt.com:443', 'sdmntprsouthcentralus.oaiusercontent.com:443']",
           "artifacts": 2
         },
         {
@@ -65,7 +65,19 @@
           "reason": "SIGKILL mid-turn (exit=137), then exact-session resume: same_session=True rc=0 text='PONG'",
           "artifacts": 2
         }
-      ]
+      ],
+      "tool_use": {
+        "outcome": "pass",
+        "commands": [
+          {
+            "command": "/usr/bin/bash -lc 'python --version'",
+            "exit": 0,
+            "output": "Python 3.11.2\n"
+          }
+        ],
+        "file": "Python 3.11.2",
+        "rc": 0
+      }
     }
   },
   "cost": {
@@ -73,31 +85,42 @@
       {
         "turn": "pong",
         "usage": {
-          "input_tokens": 13058,
+          "input_tokens": 13048,
           "cached_input_tokens": 11136,
           "cache_write_input_tokens": 0,
           "output_tokens": 6,
           "reasoning_output_tokens": 0
         },
-        "seconds": 6.1
+        "seconds": 5.2
       },
       {
         "turn": "resume",
         "usage": {
-          "input_tokens": 26421,
+          "input_tokens": 26126,
           "cached_input_tokens": 22272,
           "cache_write_input_tokens": 0,
           "output_tokens": 12,
           "reasoning_output_tokens": 0
         },
-        "seconds": 5.2
+        "seconds": 6.0
+      },
+      {
+        "turn": "tool_use",
+        "usage": {
+          "input_tokens": 39492,
+          "cached_input_tokens": 37120,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 127,
+          "reasoning_output_tokens": 0
+        },
+        "seconds": 12.6
       }
     ]
   },
   "findings": [],
-  "checked_at": "2026-09-27T18:59:45Z",
+  "checked_at": "2026-09-27T19:19:17Z",
   "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
-  "container_image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:9d66c11461a85ef6f34c2a8fc0584f16d94b4b8dc5bf36acc9adf183d8a33cff",
+  "container_image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:9e09cc67510fd8e5e95ee73739ebd03188550addf8e6b23f9805bac131e89052",
   "egress_profile": {
     "schema_version": "1.0",
     "name": "local-colima",
