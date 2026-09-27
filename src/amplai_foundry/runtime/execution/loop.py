@@ -72,9 +72,57 @@ class ExecutionLoop:
         return {**plan, "status": "cancelling"}
 
     # -- the loop --------------------------------------------------------------------------------
+    def reconcile(self) -> list[dict[str, Any]]:
+        """Bring runtime state in line with plan records (startup; after a crash or old bugs).
+
+        - a stopped plan whose runtime goal is still open: end it (releases its claims)
+        - a plan left ``running`` by a dead process: the attempt is lost; end it failed
+        - a plan ``held`` before any attempt with a valid approval: back to ``approved``
+        """
+        actions: list[dict[str, Any]] = []
+        with self.store._lock:
+            rows = self.store.conn.execute(
+                "SELECT id, state FROM heads WHERE tenant=? AND project=? AND kind=?",
+                (*self.scope.keys(), "execution-plan"),
+            ).fetchall()
+        for row in rows:
+            goal_id, status = row["id"], row["state"]
+            try:
+                goal_state = self.store.head(self.scope, "goal", goal_id)["state"]
+            except RuntimeFault:
+                continue
+            plan = self.service.plan_record(goal_id)
+            if status == "running":
+                self._stop_goal(
+                    goal_id, "failed", "interrupted by a server restart", plan.get("attempts") or []
+                )
+                actions.append({"goal_id": goal_id, "action": "ended_interrupted"})
+            elif status == "held" and not plan.get("attempts") and self._approval_valid(plan):
+                self._update(goal_id, status="approved", reason=None)
+                actions.append({"goal_id": goal_id, "action": "requeued"})
+            elif status in {"failed", "held", "timed_out", "cancelled"} and goal_state not in {
+                "verified",
+                "failed",
+                "cancelled",
+            }:
+                self._end(goal_id, "cancelled" if status == "cancelled" else "failed", status)
+                actions.append({"goal_id": goal_id, "action": "ended_" + status})
+        return actions
+
+    def _approval_valid(self, plan: dict[str, Any]) -> bool:
+        ref = plan.get("decision_ref")
+        if not ref:
+            return False
+        try:
+            decision = self.service.authority.resolver(self.scope, ref)
+        except (Hold, RuntimeFault):
+            return False
+        return decision.get("status") == "approved" and not decision.get("revoked")
+
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
             return
+        self.reconcile()
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, name="amplai-execution", daemon=True)
         self._thread.start()
@@ -124,9 +172,17 @@ class ExecutionLoop:
             remaining = deadline - self.clock()
             if remaining <= 0:
                 return self._stop_goal(goal_id, "timed_out", "wall-clock budget spent", attempts)
-            dispatch = self.service.runtime.claim(worker, goal_id=goal_id)
+            try:
+                dispatch = self.service.runtime.claim(worker, goal_id=goal_id)
+            except Hold as exc:
+                dispatch, why = None, f"{exc.code}: {exc.details}"
+            else:
+                why = "no claimable work (resource held elsewhere?)"
             if dispatch is None:
-                raise Hold("NO_WORK", "Approved goal has no claimable work")
+                if attempts:
+                    return self._stop_goal(goal_id, "held", "claim failed: " + why, attempts)
+                # nothing ran: keep the approval, park the goal for reconcile to requeue
+                return self._finish(goal_id, "held", reason="claim failed: " + why, attempts=[])
             started = self.clock()
             prompt = self.prompt(contract, plan, feedback)
             self.coordinator.max_seconds = max(1, int(remaining))

@@ -106,6 +106,29 @@ def test_stopped_goals_end_in_runtime_state_and_count_in_the_observatory(
     assert summary["eligible_terminated_goals"] == 1 and summary["verified_goal_rate"] == 0.0
 
 
+def test_startup_reconcile_frees_stale_claims_and_requeues_untried_goals(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # found by the real run: a goal cancelled before the end_goal fix kept its run 'running'
+    # and its exclusive sandbox claim, so the next approved goals were never claimable
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    d = rig.d
+    stale = approved(rig)
+    assert d.runtime.claim(d.worker, goal_id=stale) is not None  # run leased, never executed
+    rig.service._save_plan(stale, {**rig.service.plan_record(stale), "status": "cancelled"})
+    waiting = submit(rig, "second goal")
+    rig.service.plan(waiting)
+    rig.service.approve(rig.operator, waiting)
+    assert d.runtime.claim(d.worker, goal_id=waiting) is None  # blocked by the stale claim
+    rig.service._save_plan(
+        waiting, {**rig.service.plan_record(waiting), "status": "held", "attempts": []}
+    )
+    loop.reconcile()
+    assert d.store.head(d.scope, "goal", stale)["state"] == "cancelled"
+    assert rig.service.plan_record(waiting)["status"] == "approved"
+    assert loop.run_goal(waiting)["status"] == "published"
+
+
 def test_the_background_loop_picks_up_approved_goals(deployment: Any, tmp_path: Path) -> None:
     import time
 
