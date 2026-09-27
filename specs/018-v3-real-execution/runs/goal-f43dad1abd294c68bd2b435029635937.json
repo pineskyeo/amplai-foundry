@@ -1,0 +1,158 @@
+{
+  "app": "amplai-foundry",
+  "approved_at": "2026-09-27T20:25:23.611051Z",
+  "attempts": [
+    {
+      "change": {
+        "digest": "sha256:23b861bc8b8df0731d471693add8e26fe6cdfdd1fbb320738ef69833736c8d95",
+        "id": "artifact-300544e9b9514c1499953961da57e9d7",
+        "media_type": "application/vnd.amplai.change+json",
+        "size_bytes": 370
+      },
+      "outcome": "pass",
+      "run_id": "run-88fe37bafaa7470c9a93aaf9ef96cc97",
+      "seconds": 191.2,
+      "verdicts": [
+        {
+          "acceptance": "AC-1",
+          "outcome": "pass",
+          "reason": "All suite commands succeeded"
+        },
+        {
+          "acceptance": "AC-2",
+          "outcome": "pass",
+          "reason": "All suite commands succeeded"
+        },
+        {
+          "acceptance": "AC-3",
+          "outcome": "pass",
+          "reason": "All suite commands succeeded"
+        }
+      ]
+    }
+  ],
+  "base": {
+    "digest": "sha256:f5051c33b7b847342b68635f3b39682bdabcea6e0fcded94b9736484662c3cef",
+    "id": "artifact-c2762c76ebc94260b79414c6fe14dccd",
+    "media_type": "application/vnd.amplai.git-base+json",
+    "size_bytes": 157
+  },
+  "base_check": {
+    "commands": [
+      {
+        "command_id": "unit",
+        "exit_code": 0,
+        "seconds": 64.6
+      },
+      {
+        "command_id": "lint",
+        "exit_code": 0,
+        "seconds": 0.2
+      },
+      {
+        "command_id": "types",
+        "exit_code": 0,
+        "seconds": 4
+      }
+    ],
+    "commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+    "outcome": "pass",
+    "reason": "All suite commands succeeded",
+    "tail": ""
+  },
+  "base_commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+  "contract_ref": {
+    "digest": "sha256:437c58be2207c03a63c5b98dedabf90491a2dadc6d05a8a2367a585ff87cadda",
+    "id": "goal-f43dad1abd294c68bd2b435029635937",
+    "revision": 1
+  },
+  "created_at": "2026-09-27T19:55:16.688529Z",
+  "decision_ref": {
+    "digest": "sha256:fbc3f4617d9d15df5557e532eff161e69f4819f6f5961413476171ec4c139a9e",
+    "id": "approval-5f60411429c34dd6bc02f6ae41a48aa7",
+    "revision": 1
+  },
+  "draft": {
+    "acceptance": [
+      {
+        "statement": "`tests/v3` 시험이 `amplai ops version`을 호출한 JSON에 `python_version` 필드가 존재하고 그 값이 시험 프로세스의 `platform.python_version()`과 같음을 증명한다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "변경된 Python 코드가 Ruff lint 검사를 오류 없이 통과한다.",
+        "verifier": "lint"
+      },
+      {
+        "statement": "변경된 코드가 strict mypy 타입 검사를 오류 없이 통과한다.",
+        "verifier": "types"
+      }
+    ],
+    "assumptions": [
+      "CLI 시험은 명령과 같은 프로세스에서 실행되므로 시험의 `platform.python_version()`이 명령이 보고해야 할 런타임 버전과 동일하다.",
+      "기존 CLI 계약 시험이 위치한 `tests/v3/test_dev01_contracts_planning.py`가 이 필드의 회귀 검증을 추가할 적절한 파일이다."
+    ],
+    "constraints": [
+      "출력은 계속 유효한 JSON이어야 하며 기존 필드를 보존하는 하위 호환적인 필드 추가여야 한다.",
+      "`python_version`은 명령을 실행하는 현재 Python 인터프리터에서 `platform.python_version()`으로 산출한다.",
+      "시험은 실제 Typer `CliRunner` 호출 결과를 JSON으로 파싱해 검증한다.",
+      "구현 완료 시 설치된 lint, types, unit 검증을 각각 실행하며 실패를 숨기지 않는다."
+    ],
+    "in_scope": [
+      "src/amplai_foundry/runtime/cli.py: `ops version` 출력 객체에 `python_version` 필드 추가",
+      "tests/v3/test_dev01_contracts_planning.py: 기존 `test_dev01_cli_reports_development_not_final` 시험에 `platform` 사용 및 `python_version` 존재·값 검증 추가"
+    ],
+    "non_goals": [
+      "기존 `package_version`, `stage`, `schema_version`, `release_status`, `production_release` 필드나 의미 변경",
+      "다른 CLI 명령, API 응답 또는 패키지 버전 정책 변경",
+      "문서, Vault, 스키마 또는 배포 설정 변경"
+    ],
+    "objective": "`amplai ops version`의 JSON 출력에 `platform.python_version()` 값인 `python_version` 필드를 추가하고, `tests/v3`에서 해당 필드의 존재와 값의 일치를 검증한다.",
+    "questions": [],
+    "risk": "low",
+    "summary": "`amplai ops version` JSON에 실행 중인 Python 버전을 추가하고 기존 V3 CLI 시험으로 검증하는 소규모 변경입니다."
+  },
+  "finished_at": "2026-09-27T20:30:48.867007Z",
+  "goal_id": "goal-f43dad1abd294c68bd2b435029635937",
+  "grant_ref": {
+    "digest": "sha256:cdf1a8cf5867374f41bbd4d8e69b1f6822ad5bb0a02c6ba12cc7289031384e72",
+    "id": "grant-75eb758754704bf3b1842d7fdd48ff2c",
+    "revision": 1
+  },
+  "graph_ref": {
+    "digest": "sha256:d6f0c340a748f434c2e9cb6d4088e2287a580de0dbca11776e2d16830d7ee03e",
+    "id": "graph-eec2125b652547949e21285839416b39",
+    "revision": 1
+  },
+  "planner_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 96640,
+    "input_tokens": 123356,
+    "output_tokens": 1581,
+    "reasoning_output_tokens": 351
+  },
+  "publication": {
+    "base_branch": "main",
+    "branch": "amplai/goal-f43dad1abd294c68bd2b435029635937",
+    "commit": "d2c17971b58f4b90001ed2354b7b0f05395e0596",
+    "done_at": "2026-09-27T20:30:57.240286Z",
+    "effect_key": "sha256:292ba7505c78e6dc9d4e21619bb2c449262f1c388173a8347967d1259a671971",
+    "goal_id": "goal-f43dad1abd294c68bd2b435029635937",
+    "mode": "draft_pr",
+    "pr_url": "https://github.com/pineskyeo/amplai-foundry/pull/12",
+    "prepared_at": "2026-09-27T20:30:48.961410Z",
+    "pushed_at": "2026-09-27T20:30:54.431128Z",
+    "remote": "origin"
+  },
+  "reason": null,
+  "scope": {
+    "project_id": "amplai-foundry",
+    "tenant_id": "local"
+  },
+  "status": "published",
+  "updated_at": "2026-09-27T20:30:57.243289Z",
+  "verification": {
+    "digest": "sha256:ecd598b324048d44a40b65e9af08d9d44050f6b7d49772e59e527a03834bb7b0",
+    "id": "goalcheck-d28356baf78048a5a11264cfd50725dc",
+    "revision": 1
+  }
+}

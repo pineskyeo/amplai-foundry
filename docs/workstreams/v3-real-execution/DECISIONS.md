@@ -144,3 +144,22 @@
   고쳐 쓰지 않고 `run_state_mismatch` finding 으로 보고한다.
 - Open: task class 로 나눠 보기(`task_class`)는 workgraph/goal-contract/run-record schema 에 칸이 없다
   (`additionalProperties: false`). 계약 변경이라 운영자 결정 전에는 구현하지 않는다.
+
+## D-075 — Re-Judgement Of T-107, V3-026 And V3-057 After Real Runs (D-065)
+
+- Status: accepted
+- Date: 2026-09-28
+- Decision: D-065 가 정한 대로 실제 run evidence 로 세 항목을 다시 본다. 판정 범위는 evidence 가 실제로 덮는
+  부분으로 한정한다.
+  - V3-026 "Codex CLI qualified baseline driver": 실제 evidence 로 닫힌다. codex-cli 0.155.1(`gpt-5.6-sol`)이
+    app image `9e09cc67…` 에서 9 probe 와 `tool_use` 를 pass 했다
+    (`specs/018-v3-real-execution/driver-qualification-amplai-foundry.json`). production 과 같은 argv 로 실제
+    goal 두 개가 첫 시도에 검증돼 draft PR 이 됐다 (`specs/018-v3-real-execution/runs/`).
+  - V3-057 "Cross-app end-to-end goal/steer/replan", T-107 "rough intent → two sandbox apps": 실제 evidence 로
+    닫히지 않는다. Work 018 의 실제 경로는 app 하나이고 steer/replan 을 쓰지 않는다. 두 항목의 cross-app·
+    steer·replan 부분은 지금도 fixture evidence 뿐이다. closure ledger 는 이미 이 둘을 "local automated
+    evidence; not live provider/container/holdout qualification" 으로 표시한다
+    (`release/rc01-conformance-closure.json`).
+- Reason: 단일 app 실제 run 을 cross-app 완료의 근거로 세면 D-065 가 막으려던 과장이 반복된다.
+- Consequence: 남은 일은 실제 driver 로 두 app 이상과 steer/replan 을 거치는 run 이다. 이 Work 범위(Mac, 단일
+  app)가 아니다. claude-cli 는 Work 016 의 9 probe 만 있고 container 안 `tool_use` 는 측정하지 않았다.

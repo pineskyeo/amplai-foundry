@@ -33,7 +33,10 @@
 - 완료 조건 coverage는 현재 계약의 mandatory acceptance와 attested verdict를 대조한다.
 - 비용은 measured / estimated / unknown 및 currency별로 분리한다. 미보고를 0원으로 합치거나 서로 다른 통화를 더하지 않는다. 전체 확정 비용이 아닌 경우 그 한계를 노출한다.
 - 시간을 보고하지 않은 곳은 측정됐다고 가정하지 않는다. RunRecord의 wall time은 queue/compute/wait의 개별 실측값이 아니다.
-- 실제 task_class가 없는 과거 기록은 `unreported`다. 실행 전략을 작업 종류라고 이름만 바꾸지 않는다.
+- `human_wait_ms`와 `queue_ms`는 goal audit event에서 잰다 (D-074). human wait는 `approval.requested`에서 `approval.granted`까지, queue는 `approval.granted`에서 그 goal의 첫 run 생성까지의 중앙값이다. `*_samples`가 표본 수다. 양 끝이 없으면 표본이 아니고, 표본이 없으면 `null`이다. `compute_ms`는 측정하지 않으므로 `null`이다.
+- 사람 개입은 `question.*`, `steering.*`, `approval.*` event 수다. 로컬 실행 흐름의 loop가 스스로 멈추며 하는 승인 철회는 사람 개입이 아니므로 기록하지 않는다.
+- `failure_reasons`는 failure signature(hash)를 그 run의 attested verdict 이유로 풀어 보인다. `ended_run_reasons`는 멈춘 run의 종료 이유다. run head와 RunRecord 상태가 다르면 어느 쪽도 고르지 않고 `run_state_mismatch` integrity finding을 낸다.
+- 실제 task_class가 없는 과거 기록은 `unreported`다. 실행 전략을 작업 종류라고 이름만 바꾸지 않는다. 현재 workgraph schema에는 task_class 칸이 없어 모든 run이 `unreported`다.
 - 시간 필터는 timezone이 있는 ISO-8601, `[since, until)`를 쓴다. 잘못된 범위나 시간대 없는 값은 거절한다.
 - metadata event export에는 scope, sequence, event identity/type/time만 포함한다. 원문 prompt, tool payload, credentials, chain-of-thought를 내보내지 않는다.
 

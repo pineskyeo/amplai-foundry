@@ -39,6 +39,16 @@
         "repository": "amplai-foundry",
         "path": "src/amplai_foundry/runtime/execution/publish.py",
         "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/runtime/execution/product.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/evaluation/observatory.py",
+        "kind": "code"
       }
     ],
     "retention": {

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "external_qualification_status",
-  "checked_at": "2026-09-27T00:00:00Z",
+  "checked_at": "2026-09-28T00:00:00Z",
   "host": "macOS arm64 workstation",
   "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
   "status_values": {
@@ -15,7 +15,7 @@
       "item": "Actual Claude/Codex account + exact binary image/model version qualification",
       "status": "resolved",
       "evidence": "specs/016-container-egress-profile/driver-qualification.json",
-      "note": "claude-cli (subscription OAuth token) and codex-cli (ChatGPT account, gpt-5.6-sol): 9/9 mandatory probes each, measured with real turns inside the pinned worker image on the qualified egress profile (Work 016). Accounts are the user's subscriptions, not a production account; opencode is tracked by its own item. Host-side 015 record: specs/015-external-qualification/driver-qualification.json."
+      "note": "claude-cli (subscription OAuth token) and codex-cli (ChatGPT account, gpt-5.6-sol): 9/9 mandatory probes each, measured with real turns inside the pinned worker image on the qualified egress profile (Work 016). Accounts are the user's subscriptions, not a production account; opencode is tracked by its own item. Host-side 015 record: specs/015-external-qualification/driver-qualification.json. Work 018 (D-073): the 016 probes used PONG turns and never exercised tools; inside the container Codex's own bwrap sandbox failed every shell command and file write. codex-cli was requalified in the amplai-foundry app image with the production argv and a measured tool_use turn (9/9 + tool_use pass, specs/018-v3-real-execution/driver-qualification-amplai-foundry.json) and ran real goals to draft PRs (specs/018-v3-real-execution/runs/). claude-cli tool use inside the container has not been measured."
     },
     {
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
@@ -72,5 +72,5 @@
     "unavailable": 3,
     "not_a_local_check": 1
   },
-  "updated_by": "Work 017 (2026-09-27): OpenCode 6/9 host, 8/9 in the sandbox; container resource limits; Linux CI green"
+  "updated_by": "Work 018 (2026-09-28): codex requalified with a measured tool_use turn (D-073)"
 }

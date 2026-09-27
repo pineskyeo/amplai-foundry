@@ -293,6 +293,17 @@
         "src/amplai_foundry/runtime/execution",
         "specs/018-v3-real-execution"
       ]
+    },
+    {
+      "id": "D-075",
+      "status": "active",
+      "title": "Re-judgement of T-107, V3-026 and V3-057 after real runs",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "release",
+        "eval",
+        "specs/018-v3-real-execution"
+      ]
     }
   ]
 }

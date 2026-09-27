@@ -1,0 +1,193 @@
+{
+  "app": "amplai-foundry",
+  "approved_at": "2026-09-27T19:28:47.858119Z",
+  "attempts": [
+    {
+      "change": {
+        "digest": "sha256:5227868a8ea8602d4989cfb7dd2e3720592141fb4caa2ff5b242bd9b21313840",
+        "id": "artifact-875a9dca32804a0699c83fe62f6aaca5",
+        "media_type": "application/vnd.amplai.change+json",
+        "size_bytes": 368
+      },
+      "outcome": "fail",
+      "run_id": "run-cb89930071614f90acb9c8fba7d6bf32",
+      "seconds": 152,
+      "verdicts": [
+        {
+          "acceptance": "AC-1",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-2",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-3",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-4",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-5",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-6",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        }
+      ]
+    },
+    {
+      "change": {
+        "digest": "sha256:e71bc717c9de8528824c78b360d0b723561b37e34dba2c6d40b2815530bd32a6",
+        "id": "artifact-704a265d3d414008af71e30e6fc62311",
+        "media_type": "application/vnd.amplai.change+json",
+        "size_bytes": 370
+      },
+      "outcome": "fail",
+      "run_id": "run-f45f00d1ab234f70b05e8c5b00d98c92",
+      "seconds": 229.6,
+      "verdicts": [
+        {
+          "acceptance": "AC-1",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-2",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-3",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-4",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-5",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        },
+        {
+          "acceptance": "AC-6",
+          "outcome": "fail",
+          "reason": "unit exited 1"
+        }
+      ]
+    },
+    {
+      "outcome": "driver_failed",
+      "reason": "AUTHORITY_DENIED",
+      "run_id": "run-572b4b014729475a89654b3d31fec12b",
+      "seconds": 65.2
+    }
+  ],
+  "base": {
+    "digest": "sha256:f5051c33b7b847342b68635f3b39682bdabcea6e0fcded94b9736484662c3cef",
+    "id": "artifact-d95529aeca9b4a5c855d870f091302fe",
+    "media_type": "application/vnd.amplai.git-base+json",
+    "size_bytes": 157
+  },
+  "base_commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+  "contract_ref": {
+    "digest": "sha256:b97221946db665a3ba9521fa2a0c176a2a2b67906362a55f299d8d3c4abeebdf",
+    "id": "goal-5ea4a8e80a574556bf7e5c3a9ef2ad2a",
+    "revision": 1
+  },
+  "created_at": "2026-09-27T19:21:11.210141Z",
+  "decision_ref": {
+    "digest": "sha256:f63a0fb36b22797d4be2abdd5f7a5b40f7ae6d5e242d8b7821cc9670e941da44",
+    "id": "approval-6b996fbc9b434853be32bcaca7a16786",
+    "revision": 1
+  },
+  "draft": {
+    "acceptance": [
+      {
+        "statement": "절대경로와 `..` 세그먼트를 포함한 경로가 `WorkspaceManager.path`에서 `Hold`로 거부됨을 tests/v3가 입증한다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "경로의 어느 세그먼트든 점으로 시작하는 숨김 경로가 `Hold`로 거부됨을 tests/v3가 입증한다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "`.pem` 또는 `.key`로 끝나는 경로가 `Hold`로 거부됨을 tests/v3가 입증한다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "정상 상대경로 `a/b.txt`가 변경 없이 그대로 반환됨을 tests/v3가 입증한다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "테스트 변경 후 Ruff lint가 깨끗하다.",
+        "verifier": "lint"
+      },
+      {
+        "statement": "테스트 변경 후 mypy strict type check가 깨끗하다.",
+        "verifier": "types"
+      }
+    ],
+    "assumptions": [
+      "기존 `tests/v3/test_dev02_sessions_workspace.py`가 `WorkspaceManager` 경로 계약 테스트의 적절한 소유 파일이다.",
+      "현재 구현에서 `Hold`는 `RuntimeFault`의 하위 클래스이므로 기존 `pytest.raises(RuntimeFault)` 검사는 요구된 구체적 계약을 충분히 고정하지 못한다."
+    ],
+    "constraints": [
+      "제품 코드는 수정하지 않고 tests/v3의 관련 테스트만 변경",
+      "거부 사례는 상위 예외인 `RuntimeFault`가 아니라 구체적인 `Hold` 발생을 검증",
+      "기존 테스트 파일의 pytest 관례와 import를 재사용",
+      "완료 전 lint, strict type check, tests/v3 검증을 각각 실행하고 실패를 숨기지 않음"
+    ],
+    "in_scope": [
+      "tests/v3/test_dev02_sessions_workspace.py의 기존 `test_dev02_workspace_paths_reject_control_and_secrets`를 `Hold` 계약에 맞게 수정",
+      "tests/v3/test_dev02_sessions_workspace.py에 `WorkspaceManager.path(\"a/b.txt\") == \"a/b.txt\"` 성공 사례 추가"
+    ],
+    "non_goals": [
+      "src/amplai_foundry/sandbox/workspace.py의 구현 또는 경로 정책 변경",
+      "요청에 없는 확장자나 경로 형식의 동작 변경",
+      "다른 sandbox·workspace 기능 테스트의 재구성"
+    ],
+    "objective": "`WorkspaceManager.path`가 절대경로, `..` 세그먼트 포함 경로, 점으로 시작하는 숨김 경로, `.pem`·`.key` 경로를 `Hold`로 거부하고 정상 상대경로 `a/b.txt`는 변경 없이 반환하는지 `tests/v3`에서 검증합니다.",
+    "questions": [],
+    "risk": "low",
+    "summary": "기존 workspace 경로 테스트를 정확한 Hold 계약과 정상 반환 사례까지 보강합니다."
+  },
+  "finished_at": "2026-09-27T19:43:40.213000Z",
+  "goal_id": "goal-5ea4a8e80a574556bf7e5c3a9ef2ad2a",
+  "grant_ref": {
+    "digest": "sha256:f35d9f9f8c11e435a753d9dc0d5f4b813b9e6165b1d5f679457fcb344788be26",
+    "id": "grant-1bd9bc63174849ca91b9330f451cbd8e",
+    "revision": 1
+  },
+  "graph_ref": {
+    "digest": "sha256:3c7a1d6c16b2f686c2c02364e7f1ab27a9f8d51d1c3af8327fa2ab490258a668",
+    "id": "graph-b6200d0eb0c54cafa838d2930ecd43ce",
+    "revision": 1
+  },
+  "planner_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 92800,
+    "input_tokens": 108577,
+    "output_tokens": 1675,
+    "reasoning_output_tokens": 412
+  },
+  "reason": "cancelled by the operator",
+  "scope": {
+    "project_id": "amplai-foundry",
+    "tenant_id": "local"
+  },
+  "status": "cancelled",
+  "updated_at": "2026-09-27T19:43:40.213030Z"
+}
