@@ -105,6 +105,11 @@
         "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
         "role": "decision_ledger",
         "security": "INTERNAL"
+      },
+      {
+        "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+        "role": "decision_ledger",
+        "security": "INTERNAL"
       }
     ]
   },
