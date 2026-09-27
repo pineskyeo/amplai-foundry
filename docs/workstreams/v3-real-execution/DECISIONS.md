@@ -167,6 +167,7 @@
 ## D-076 — Task Class On Workgraph Nodes; Active Ledger As A Catalog Document
 
 - Status: APPROVED (운영자 선택 2026-09-28: 두 추천안)
+- Superseded (Decision 1 의 저장 위치만): D-077 이 대체한다. Decision 2 는 유효하다.
 - Date: 2026-09-28
 - Decision 1: workgraph node schema 에 선택 항목 `task_class` 를 추가한다. 값은 이 repo 의 Work type
   (`tiny_change`, `bug_fix`, `logic_change`, `refactor`, `new_feature`, `domain_heavy`, `architecture`,
@@ -181,3 +182,19 @@
   이력으로 봐서 `docs impact` 가 `HISTORICAL_SOURCE_CHANGED` 로 멈췄다.
 - Rejected: task_class 를 자가개선 Work 로 미룬다. 문서 도구가 append-only 이력을 받도록 고친다(kit release
   필요). 결정을 `specs/018` 로 옮긴다(절차와 어긋남).
+
+## D-077 — Task Class Is Recorded Beside The Graph, Not In The 3.0.0 Workgraph Schema
+
+- Status: accepted (D-076 Decision 1 의 목적은 그대로, 저장 위치만 바꾼다)
+- Date: 2026-09-28
+- Decision: `task_class` 는 workgraph node 에 넣지 않는다. 로컬 실행 흐름이 계약을 만들 때 work 마다
+  `task-class` 기록(`work_id`, `graph_ref`, `task_class`, `source: planner`)을 따로 저장한다. Observatory 는 그
+  기록으로 run 을 나눠 본다. 어휘, planner 제안, 승인 화면 `class:`, `--task-class` 필터는 D-076 그대로다.
+- Reason: 실측(verifier v2): workgraph schema 는 structured output 에도 쓰인다. 그래서 모든 속성이 required
+  (값이 없으면 null)여야 한다 (`src/amplai_foundry/runtime/contracts/provider_schema.py:55-62`). 선택
+  항목은 이 규칙을 어겨 DEV-01 critic 시험 3건이 실패했다. required + nullable 로 바꾸면 승인된 V3 Design 1.0
+  fixture(`design-reference/fixtures/valid/workgraph.json`)가 실패한다. design-reference 는 다시 쓰지 않는
+  원본이고 wire schema 는 3.0.0 으로 고정이다. 두 조건을 모두 지키는 schema 변경은 없다.
+- Rejected: design-reference fixture 를 고친다 (승인 원본 변경). structured-output 규칙에 예외를 둔다.
+- Consequence: workgraph schema 두 사본은 main 과 같다. `task-class` 는 V3 wire 계약이 아닌 로컬 제품 기록이다.
+  wire schema 에 넣으려면 schema version 을 올리는 별도 설계가 필요하다.

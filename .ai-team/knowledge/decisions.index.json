@@ -308,12 +308,22 @@
     {
       "id": "D-076",
       "status": "active",
-      "title": "Task class on workgraph nodes; active ledger as a catalog document",
+      "title": "Task class for local execution; active ledger as a catalog document",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "scope": [
-        "contracts/schemas",
         "src/amplai_foundry/runtime/execution",
         ".ai-team/policy/documentation.json",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-077",
+      "status": "active",
+      "title": "Task class recorded beside the graph, not in the 3.0.0 workgraph schema",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/evaluation",
         "specs/018-v3-real-execution"
       ]
     }

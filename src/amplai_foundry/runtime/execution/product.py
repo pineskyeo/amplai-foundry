@@ -41,6 +41,7 @@ READINESS_AREAS = (
 )
 APPROVAL_KIND = "operator-approval"
 PLAN_KIND = "execution-plan"
+TASK_CLASS_KIND = "task-class"
 PORT = "change"
 
 
@@ -553,12 +554,6 @@ class LocalExecutionService:
             "target_ref": installed.binding_ref,
             "objective": draft["objective"],
             "strategy": "bounded_loop",
-            # the planner's label; shown at approval, used by the Observatory slices
-            **(
-                {"task_class": draft["task_class"]}
-                if draft.get("task_class") in TASK_CLASSES
-                else {}
-            ),
             "depends_on": [],
             "join": "all_required",
             "consumes": [],
@@ -585,6 +580,15 @@ class LocalExecutionService:
             "created_at": t,
         }
         graph_ref = self.runtime.save_graph(service, graph, contract_ref)
+        if draft.get("task_class") in TASK_CLASSES:
+            # The planner's label, beside the graph: the approved 3.0.0 workgraph schema has no
+            # task_class slot and cannot take one (D-077). Shown at approval; Observatory slices.
+            self._put(
+                TASK_CLASS_KIND,
+                node["work_id"],
+                {"scope": scope.wire(), "work_id": node["work_id"], "graph_ref": graph_ref,
+                 "task_class": draft["task_class"], "source": "planner"},
+            )  # fmt: skip
         return contract_ref, graph_ref
 
     def _save_plan(

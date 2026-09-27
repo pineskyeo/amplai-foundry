@@ -92,4 +92,4 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - 실패 이유(`failure_reasons`)
 
 모르는 값은 0 이 아니라 `null` 이다. Codex 는 금액을 보고하지 않으므로 cost 는 unknown 이다. 초안의
-`class:` 가 작업 종류(`task_class`, D-076)이고 `--task-class` 필터로 종류별로 볼 수 있다.
+`class:` 가 작업 종류(`task_class`, D-076·D-077)이고 `--task-class` 필터로 종류별로 볼 수 있다.

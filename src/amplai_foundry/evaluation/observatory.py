@@ -63,7 +63,7 @@ class Observatory:
             objects = self.store.conn.execute(
                 "SELECT kind,id,revision,digest,data FROM objects WHERE tenant=? AND project=? "
                 "AND kind IN ('goal-contract','workgraph','app-binding',"
-                "'verdict','goal-verification')",
+                "'verdict','goal-verification','task-class')",
                 scope.keys(),
             ).fetchall()
             events = self.store.conn.execute(
@@ -82,6 +82,11 @@ class Observatory:
             found = obj.get((kind, ref.get("id"), ref.get("revision"), ref.get("digest")))
             return found if isinstance(found, dict) else None
 
+        # task class is recorded beside the graph per work (D-077); the latest revision wins
+        task_classes: dict[str, tuple[int, str]] = {}
+        for (kind, object_id, revision, _), value in obj.items():
+            if kind == "task-class" and revision >= task_classes.get(object_id, (0, ""))[0]:
+                task_classes[object_id] = (revision, value["task_class"])
         decoded = [{**dict(r), "data": json.loads(r["data"])} for r in heads]
         runs = [r["data"]["record"] for r in decoded if r["kind"] == "run"]
         run_heads = {r["id"]: r for r in decoded if r["kind"] == "run"}
@@ -97,7 +102,7 @@ class Observatory:
                 "composition": r["composition_ref"]["digest"],
                 "model": r["model_profile_ref"]["digest"],
                 "driver": r["driver_profile_ref"]["digest"],
-                "task_class": node.get("task_class", "unreported"),
+                "task_class": task_classes.get(r["work_id"], (0, "unreported"))[1],
                 "risk": (contract or {}).get(
                     "risk_class", (contract or {}).get("risk", "unreported")
                 ),
