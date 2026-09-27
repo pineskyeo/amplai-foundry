@@ -24,7 +24,8 @@ def ascending_message_id(dispatch_id: str) -> str:
     The server orders a session's messages by ID. An ID that sorts after the replies it mints
     leaves the user turn looking unanswered, and the server keeps generating replies (measured
     on 1.17.13, Work 017). The ID is persisted in the journal before the send, so a replayed
-    dispatch reuses it instead of minting another.
+    dispatch reuses it instead of minting another. The ordering assumes the server clock is
+    not behind this host; only a host-local server is qualified (a remote server is not).
     """
     ms = time.time_ns() // 1_000_000
     tail = digest({"dispatch": dispatch_id, "ns": str(time.time_ns())})[7:]

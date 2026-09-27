@@ -68,7 +68,8 @@ def test_start_sends_a_message_id_in_the_server_ascending_form(tmp_path: Path) -
     # expected: the ID sorts between server IDs minted just before and just after the send
     (sent,) = f.sent
     assert ASCENDING.fullmatch(sent), sent
-    assert server_style_id(before) <= sent <= server_style_id(after, 0xFFF)
+    # before - 1: a send in the same ms as `before` would otherwise compare on the random tail
+    assert server_style_id(before - 1, 0xFFF) <= sent <= server_style_id(after, 0xFFF)
     assert d.journal.read("dispatch-one")["request_message_id"] == sent
 
 

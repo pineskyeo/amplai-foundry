@@ -49,6 +49,14 @@ ReleaseSet 생성과 migration drill, push/merge.
 두 항목과 egress 는 OpenCode 를 container egress profile 위에서 돌리는 것이 다음 단계다 (추정:
 container 종료가 process tree 를 함께 끝내고 env 는 profile 이 통제한다 — 측정 전).
 
+## Review
+
+독립 review 1회 (PASS-with-minors, P0 없음). 반영: crash_recovery 의 resume turn 은 raw HTTP
+prompt 이며 `OpenCodeDriver.resume` 이 아니라고 reason 에 명시(P1, claim 축소 — `resume` 경로는
+실제 server 로 아직 측정 안 됨), filesystem_containment 는 차단 증거(pending permission 또는
+error/denied tool) 없으면 inconclusive, message ID test 하한을 `before - 1` ms 로. 수용한 한계:
+ascending ID 는 server 시계가 host 보다 늦지 않다고 가정한다 — host-local server 만 자격 범위다.
+
 ## Remaining (outside this Work)
 
 OpenCode in-container run, CPU throttling under load, podman, ReleaseSet 기반

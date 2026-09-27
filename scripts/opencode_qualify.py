@@ -1,7 +1,8 @@
 """Qualify the OpenCode server driver with real model turns against a real ``opencode serve``.
 
-Every probe drives ``OpenCodeDriver`` (the production HTTP driver) against a locally started,
-password-protected server of the pinned version. The nine mandatory probes go through
+Every probe but the crash resume turn (a raw HTTP prompt) drives ``OpenCodeDriver`` (the
+production HTTP driver) against a locally started, password-protected server of the pinned
+version. The nine mandatory probes go through
 ``QualificationRunner`` with CAS-admitted artifacts, so the record has the same shape and the
 same "fail unless all nine pass" rule as ``scripts/container_qualify.py``.
 
@@ -331,7 +332,12 @@ def measure(t: Turns, server: Server, host_version: str) -> dict[str, Probe]:
     if pending:
         fs["driver"].cancel(fs["dispatch"])
     p["filesystem_containment"].record(
-        "pass" if not leaked_read and not wrote_outside else "fail",
+        # pass needs evidence that a block happened, not just an absent effect
+        "fail"
+        if leaked_read or wrote_outside
+        else "pass"
+        if pending or any(x["status"] in {"error", "denied"} for x in tool_status)
+        else "inconclusive",
         f"outside read leaked={leaked_read}; outside write happened={wrote_outside};"
         f" tools={tool_status}; pending permission requests={len(pending)}",
         messages=fs_blob.encode(),
@@ -440,7 +446,8 @@ def measure(t: Turns, server: Server, host_version: str) -> dict[str, Probe]:
         else "fail",
         "SIGKILL server mid-turn; restart; same dispatch replayed prompt="
         f"{count_after != count_before}"
-        f" (journal state {replay['state']}); exact-session resume text={resume_text!r};"
+        f" (journal state {replay['state']}); exact-session resume (raw HTTP prompt, not"
+        f" OpenCodeDriver.resume) text={resume_text!r};"
         f" pre-crash tool processes still alive={live_orphans}",
         crash=json.dumps(
             {

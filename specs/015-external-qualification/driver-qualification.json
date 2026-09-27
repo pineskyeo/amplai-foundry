@@ -185,9 +185,9 @@
       "model": "opencode-go/glm-5.3-flash",
       "auth": "server_basic_auth; provider login read by the server from the operator data dir",
       "method": "scripts/opencode_qualify.py: OpenCodeDriver against a real opencode serve; QualificationRunner with CAS-admitted artifacts (operator trust)",
-      "checked_at": "2026-09-27T03:28:19Z",
+      "checked_at": "2026-09-27T03:48:51Z",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-0c6275716d5f4e0bbbe6a107f9184d8a",
+      "qualification_id": "qualification-8ed318ea980f44bf9e5333dc5a99d2b7",
       "checks": [
         {
           "name": "exact_version",
@@ -198,7 +198,7 @@
         {
           "name": "exact_session",
           "outcome": "pass",
-          "reason": "state=completed process_stopped=True session=ses_f1f1b55c5ffeVl6GUIYJThCNOY replies_to_request=1 text='OK'",
+          "reason": "state=completed process_stopped=True session=ses_f1f08d6f3ffea3LqM5jdoaMuUt replies_to_request=1 text='OK'",
           "artifacts": 2
         },
         {
@@ -234,13 +234,13 @@
         {
           "name": "budget_accounting",
           "outcome": "pass",
-          "reason": "output tokens=3, cost=[0.0011265]",
+          "reason": "output tokens=39, cost=[0.0011445]",
           "artifacts": 1
         },
         {
           "name": "crash_recovery",
           "outcome": "fail",
-          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume text='RESUMED'; pre-crash tool processes still alive=[81150]",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[87900]",
           "artifacts": 2
         }
       ]
@@ -261,19 +261,19 @@
       "usage": [
         {
           "tokens": {
-            "total": 7503,
+            "total": 7539,
             "input": 7500,
-            "output": 3,
+            "output": 39,
             "reasoning": 0,
             "cache": {
               "read": 0,
               "write": 0
             }
           },
-          "cost": 0.0011265
+          "cost": 0.0011445
         }
       ],
-      "seconds": 4.28
+      "seconds": 4.29
     }
   ]
 }
