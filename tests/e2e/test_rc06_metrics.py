@@ -181,3 +181,21 @@ def test_failure_reasons_keep_the_most_complete_evidence(deployment: Any, tmp_pa
     v = summary(rig)
     (signature,) = v["failure_reasons"]
     assert v["failure_reasons"][signature] == {"AC-1": "fail: check exited 1"}
+
+
+def test_the_planners_task_class_reaches_the_observatory_slices(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # gap 4 (D-076): the workgraph node carries task_class; an unknown label is not guessed
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    rig.planner.draft_value = {**DRAFT, "task_class": "bug_fix"}
+    loop.run_goal(approved(rig))
+    rig.planner.draft_value = {**DRAFT, "task_class": "made_up"}
+    other = submit(rig, "second goal")
+    rig.service.plan(other)
+    rig.service.approve(rig.operator, other)
+    loop.run_goal(other)
+    v = summary(rig)
+    assert v["slices"]["task_class"] == {"bug_fix": 1, "unreported": 1}
+    only = Observatory(rig.d.store).summary(rig.d.scope, filters={"task_class": "bug_fix"})
+    assert only["run_count"] == 1 and only["verified_goals"] == 1

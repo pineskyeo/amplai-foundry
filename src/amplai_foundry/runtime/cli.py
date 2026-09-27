@@ -124,7 +124,8 @@ def render_plan(record: dict[str, Any]) -> str:
         for i, a in enumerate(draft.get("acceptance") or [], start=1):
             lines.append(f"  AC-{i:<7}: {a['statement']}  [{a['verifier']}]")
         lines.append(
-            f"  risk      : {draft.get('risk', '')}   base: {record.get('base_commit', '')[:12]}"
+            f"  risk      : {draft.get('risk', '')}   class: {draft.get('task_class', '-')}"
+            f"   base: {record.get('base_commit', '')[:12]}"
         )
         for q in draft.get("questions") or []:
             lines.append(f"  QUESTION  : {q}")
@@ -300,6 +301,7 @@ def observatory(
     driver: str | None = None,
     repo: str | None = None,
     risk: str | None = None,
+    task_class: str | None = None,
     since: str | None = None,
     until: str | None = None,
 ) -> None:
@@ -315,6 +317,7 @@ def observatory(
                 "driver": driver,
                 "repo": repo,
                 "risk": risk,
+                "task_class": task_class,
                 "since": since,
                 "until": until,
             }.items()

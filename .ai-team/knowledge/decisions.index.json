@@ -304,6 +304,18 @@
         "eval",
         "specs/018-v3-real-execution"
       ]
+    },
+    {
+      "id": "D-076",
+      "status": "active",
+      "title": "Task class on workgraph nodes; active ledger as a catalog document",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "contracts/schemas",
+        "src/amplai_foundry/runtime/execution",
+        ".ai-team/policy/documentation.json",
+        "specs/018-v3-real-execution"
+      ]
     }
   ]
 }

@@ -24,6 +24,18 @@ from ..contracts.identity import new_id
 from ..errors import Hold
 from .codex import ScopedCredential
 
+# The workgraph node's task_class vocabulary (the repository's Work types, D-076).
+TASK_CLASSES = (
+    "tiny_change",
+    "bug_fix",
+    "logic_change",
+    "refactor",
+    "new_feature",
+    "domain_heavy",
+    "architecture",
+    "operations",
+)
+
 
 def plan_schema(verifier_ids: list[str]) -> dict[str, Any]:
     strings = {"type": "array", "items": {"type": "string"}}
@@ -38,6 +50,7 @@ def plan_schema(verifier_ids: list[str]) -> dict[str, Any]:
             "constraints",
             "acceptance",
             "risk",
+            "task_class",
             "assumptions",
             "questions",
         ],
@@ -60,6 +73,7 @@ def plan_schema(verifier_ids: list[str]) -> dict[str, Any]:
                 },
             },
             "risk": {"type": "string", "enum": ["low", "medium", "high"]},
+            "task_class": {"type": "string", "enum": list(TASK_CLASSES)},
             "assumptions": strings,
             "questions": strings,
         },
@@ -76,6 +90,9 @@ Rules:
 - Every acceptance statement must be provable by exactly one of the installed verifier commands
   listed below; choose that command's id as "verifier". Do not invent thresholds.
 - risk: low (small local change), medium, or high (security, data, broad refactor).
+- task_class: the kind of work — tiny_change (wording/local edit), bug_fix, logic_change,
+  refactor, new_feature, domain_heavy (needs domain ownership/invariants), architecture,
+  operations. Tests added for existing behaviour are tiny_change or logic_change.
 - If the goal is ambiguous in a way the repository cannot answer, put the question in
   "questions" instead of guessing. Otherwise questions is an empty list.
 - summary is one short sentence for the operator.

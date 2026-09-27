@@ -58,7 +58,8 @@
       "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "docs/v3/USING_AMPLAI_WORK.ko.md"
+      "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "docs/workstreams/v3-real-execution/DECISIONS.md"
     ],
     "review_store": ".ai-team/knowledge/document-reviews.json",
     "default_security": "INTERNAL",

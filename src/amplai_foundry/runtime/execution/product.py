@@ -27,6 +27,7 @@ from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from .codex import put_record
+from .planner_codex import TASK_CLASSES
 
 READINESS_AREAS = (
     "terminology",
@@ -552,6 +553,12 @@ class LocalExecutionService:
             "target_ref": installed.binding_ref,
             "objective": draft["objective"],
             "strategy": "bounded_loop",
+            # the planner's label; shown at approval, used by the Observatory slices
+            **(
+                {"task_class": draft["task_class"]}
+                if draft.get("task_class") in TASK_CLASSES
+                else {}
+            ),
             "depends_on": [],
             "join": "all_required",
             "consumes": [],

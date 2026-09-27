@@ -88,6 +88,7 @@ DRAFT = {
     "constraints": ["keep the function name"],
     "acceptance": [{"statement": "value() returns 2", "verifier": "check"}],
     "risk": "low",
+    "task_class": "logic_change",
     "assumptions": [],
     "questions": [],
 }

@@ -71,6 +71,18 @@
               "discovery"
             ]
           },
+          "task_class": {
+            "enum": [
+              "tiny_change",
+              "bug_fix",
+              "logic_change",
+              "refactor",
+              "new_feature",
+              "domain_heavy",
+              "architecture",
+              "operations"
+            ]
+          },
           "depends_on": {
             "type": "array",
             "items": {
