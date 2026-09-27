@@ -13,12 +13,17 @@ from amplai_foundry.runtime.contracts.identity import canonical
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.sandbox.git_workspace import (
     BASE_MEDIA,
+    CHANGE_MEDIA,
     PATCH_BINDING,
-    PATCH_MEDIA,
     GitWorkspaceManager,
 )
 
-NODE = {"produces": [{"name": "change", "media_type": PATCH_MEDIA, "required": True}]}
+NODE = {"produces": [{"name": "change", "media_type": CHANGE_MEDIA, "required": True}]}
+
+
+def patch_of(deployment: Any, mgr: GitWorkspaceManager, out: dict[str, Any]) -> bytes:
+    raw = deployment.artifacts.read(deployment.scope, out["change"])
+    return mgr.read_change(deployment.scope, raw)[1]
 
 
 def git(repo: Path, *args: str) -> str:
@@ -87,7 +92,7 @@ def test_patch_carries_edits_adds_deletes_binary_and_skips_ignored(
     (ws / "build").mkdir()
     (ws / "build" / "out.txt").write_text("ignored\n")
     out = mgr.collect(deployment.scope, ws, {"change": PATCH_BINDING}, NODE, process_stopped=True)
-    patch = deployment.artifacts.read(deployment.scope, out["change"])
+    patch = patch_of(deployment, mgr, out)
     assert b"return 'hello'" in patch and b"src/new.py" in patch and b"GIT binary patch" in patch
     assert b".github/ci.yml" in patch and b"build/out.txt" not in patch
     # the same patch rebuilds the same tree on a fresh copy of the base
@@ -108,7 +113,7 @@ def test_an_agent_symlink_never_leaks_its_target(
     ws = mgr.materialize(deployment.scope, "run-1", base)
     os.symlink(secret, ws / "leak")
     out = mgr.collect(deployment.scope, ws, {"change": PATCH_BINDING}, NODE, process_stopped=True)
-    patch = deployment.artifacts.read(deployment.scope, out["change"])
+    patch = patch_of(deployment, mgr, out)
     assert b"TOP-SECRET-VALUE" not in patch and b"new file mode 120000" in patch
 
 

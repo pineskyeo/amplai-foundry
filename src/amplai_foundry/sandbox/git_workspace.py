@@ -32,6 +32,7 @@ from ..runtime.storage.store import Scope
 Ref = dict[str, Any]
 BASE_MEDIA = "application/vnd.amplai.git-base+json"
 PATCH_MEDIA = "text/x-diff"
+CHANGE_MEDIA = "application/vnd.amplai.change+json"
 PATCH_BINDING = "amplai:patch"
 _SHA = re.compile(r"[0-9a-f]{40}")
 _REPO_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,99}")
@@ -269,12 +270,51 @@ class GitWorkspaceManager:
             set(bindings) - set(ports)
             or any(p["required"] and n not in bindings for n, p in ports.items())
             or any(v != PATCH_BINDING for v in bindings.values())
-            or any(ports[n]["media_type"] != PATCH_MEDIA for n in bindings)
+            or any(ports[n]["media_type"] != CHANGE_MEDIA for n in bindings)
         ):
-            raise Hold("OUTPUT_BINDINGS", "A git workspace produces only its host-computed patch")
+            raise Hold("OUTPUT_BINDINGS", "A git workspace produces only its host-computed change")
         snapshot = base_snapshot or self._base_of(Path(workspace))
+        base = self._descriptor(scope, snapshot)
         patch = self.diff(scope, Path(workspace), snapshot)
-        return {port: self.artifacts.admit(scope, patch, PATCH_MEDIA) for port in bindings}
+        # The patch is its own artifact so the CAS secret scan sees its raw bytes.
+        change = {
+            "format": "amplai.change.v1",
+            "base": {k: base[k] for k in ("repo", "commit", "tree")},
+            "patch": self.artifacts.admit(scope, patch, PATCH_MEDIA),
+            "patch_bytes": len(patch),
+        }
+        ref = self.artifacts.admit(scope, canonical(change), CHANGE_MEDIA)
+        return {port: ref for port in bindings}
+
+    def read_change(self, scope: Scope, raw: bytes) -> tuple[Ref, bytes]:
+        """(base descriptor ref, patch bytes) of a collected change, re-checked against git."""
+        value = strict_json_loads(raw)
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"format", "base", "patch", "patch_bytes"}
+            or value["format"] != "amplai.change.v1"
+            or not isinstance(value["base"], dict)
+            or set(value["base"]) != {"repo", "commit", "tree"}
+        ):
+            raise Hold("CHANGE_FORMAT", "Unknown change artifact")
+        patch = self.artifacts.read(scope, value["patch"])
+        if len(patch) != value["patch_bytes"]:
+            raise Hold("CHANGE_FORMAT", "Change patch size differs from its record")
+        base = {"format": "amplai.git-base.v1", **value["base"]}
+        ref = self.artifacts.admit(scope, canonical(base), BASE_MEDIA)
+        self._descriptor(scope, ref)  # repo registered, commit has the recorded tree
+        return ref, patch
+
+    def materialize_change(self, scope: Scope, run_id: str, raw: bytes) -> tuple[Path, bytes]:
+        """A fresh copy of the change's base with its patch applied (verifier/publish input)."""
+        base, patch = self.read_change(scope, raw)
+        target = self.materialize(scope, run_id, base)
+        try:
+            self._apply(target, patch)
+        except BaseException:
+            self.discard(target)
+            raise
+        return target, patch
 
     def _base_of(self, workspace: Path) -> Ref:
         base = self._bases.get(Path(workspace).absolute())
