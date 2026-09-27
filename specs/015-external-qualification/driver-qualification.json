@@ -177,6 +177,73 @@
           "artifacts": 1
         }
       ]
+    },
+    "opencode-server": {
+      "status": "fail",
+      "driver_version": "1.17.13",
+      "host_version": "1.17.13",
+      "model": "opencode-go/glm-5.3-flash",
+      "auth": "server_basic_auth; provider login read by the server from the operator data dir",
+      "method": "scripts/opencode_qualify.py: OpenCodeDriver against a real opencode serve; QualificationRunner with CAS-admitted artifacts (operator trust)",
+      "checked_at": "2026-09-27T03:28:19Z",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-0c6275716d5f4e0bbbe6a107f9184d8a",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; unauthenticated health -> 401",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "state=completed process_stopped=True session=ses_f1f1b55c5ffeVl6GUIYJThCNOY replies_to_request=1 text='OK'",
+          "artifacts": 2
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "2 messages, roles=['user', 'assistant'], created timestamps monotonic=True",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.03s=True; children after=0 (first poll state cancelled)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}]; pending permission requests=1",
+          "artifacts": 2
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "inconclusive",
+          "reason": "host-side server: outbound network is not restricted. Egress containment is qualified only for the container egress profile (Work 016), where OpenCode has not run yet",
+          "artifacts": 1
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "fail",
+          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=['OPENCODE_SERVER_PASSWORD']",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "output tokens=3, cost=[0.0011265]",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "fail",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume text='RESUMED'; pre-crash tool processes still alive=[81150]",
+          "artifacts": 2
+        }
+      ]
     }
   },
   "findings": [
@@ -187,5 +254,26 @@
     "codex-cli (ChatGPT account): the plan rejects the codex-branded identifiers (gpt-5.3-codex-spark, gpt-5-codex, gpt-5.3-codex) but accepts the general models the TUI lists (gpt-6-astra, gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5). A real turn with gpt-5.6-sol completes: thread bound, 6/6 events normalized, usage measured. The model executed one read-only shell command (sed on a user skill file) for a trivial prompt, which the sandbox policy must bound.",
     "codex-cli: remaining inconclusive probes need a turn inside the pinned container (egress profile pending) and a sandboxed auth path."
   ],
-  "artifacts_dir": "specs/015-external-qualification/artifacts"
+  "artifacts_dir": "specs/015-external-qualification/artifacts",
+  "cost_opencode": [
+    {
+      "turn": "ok",
+      "usage": [
+        {
+          "tokens": {
+            "total": 7503,
+            "input": 7500,
+            "output": 3,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "cost": 0.0011265
+        }
+      ],
+      "seconds": 4.28
+    }
+  ]
 }

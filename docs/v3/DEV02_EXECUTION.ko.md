@@ -89,11 +89,11 @@ SecretBroker는 scope·host·HTTPS endpoint·TTL에 묶인 handle을 사용한�
 |---|---|---|
 | RecipePort | 실제 독립 폴더에서 데이터 작업·증거·통합 검증 | 임의 코드/외부 모델에 사용 금지 |
 | Claude/Codex CLI | 알려진 테스트 subprocess의 JSONL·종료·정확한 resume·credential HOME·timeout·orphan HOLD | 고정된 실제 CLI 버전/계정/모델·container image·egress·정책 |
-| OpenCode | HTTP fixture로 health/version·인증·204 ACK·turn/session correlation·idle/stop boundary·exact resume | 실제 격리 서버, 로그인, workspace probe, child-process boundary probe |
+| OpenCode | HTTP fixture로 health/version·인증·204 ACK·turn/session correlation·idle/stop boundary·exact resume. 실제 `opencode serve` 1.17.13 에 host-side 실제 turn 으로 9 probe 중 6 pass (`scripts/opencode_qualify.py`, Work 017) | server 비밀번호 env 가 bash tool 에 상속됨(secret_isolation fail), server 강제 종료 뒤 tool 고아 process(crash_recovery fail), egress — 컨테이너 egress profile 위 실행이 남음 |
 | Responses | HTTP fixture로 store=false·bounded tokens·native call ID·structured plan·idempotency | 실제 계정·정확한 모델·배포 도구 정책; 모든 async/steering API가 지원된다는 뜻 아님 |
 | Managed/API/app-server 확장 | 미승인 경로가 fail-closed인 경계 | 공개 API/배포 qualification 후 별도 profile |
 
-컨테이너 레시피는 digest-pinned image, non-root, cap-drop, read-only root, pids/memory/cpu 제한, 기본 network=none이다. network 를 붙이려면 실측 pass 로 만든 egress qualification ref 가 있어야 한다 (`src/amplai_foundry/sandbox/egress.py`: `--internal` network + allowlist CONNECT sidecar, deny-by-default). 로컬 colima/docker 에서 `scripts/sandbox_up.sh --egress` 로 sidecar 를 올리고 `scripts/container_qualify.py` 로 컨테이너 안 실제 turn 을 자격화한다 (Work 016). 초기 빌드 환경에는 docker/podman이 없어 실제 격리를 인수시험하지 않았다. CLI 테스트의 FakeContainer는 프로토콜을 검사하는 신뢰된 subprocess fixture이며 보안 sandbox가 아니다. qualification이 없을 때 host shell로 대체하지 않는다.
+컨테이너 레시피는 digest-pinned image, non-root, cap-drop, read-only root, pids/memory/cpu 제한, 기본 network=none이다. network 를 붙이려면 실측 pass 로 만든 egress qualification ref 가 있어야 한다 (`src/amplai_foundry/sandbox/egress.py`: `--internal` network + allowlist CONNECT sidecar, deny-by-default). 로컬 colima/docker 에서 `scripts/sandbox_up.sh --egress` 로 sidecar 를 올리고 `scripts/container_qualify.py` 로 컨테이너 안 실제 turn 을 자격화한다 (Work 016). memory/pids/cpu 제한은 `scripts/limits_qualify.py` 가 같은 argv 로 실측한다 — 제한 초과 할당은 OOMKilled, 제한 초과 fork 는 EAGAIN 으로 거절되고 engine 은 살아 있다 (Work 017, `deployment/local-limits-qualification.json`). 부하 중 CPU throttling 과 podman 은 아직 측정하지 않았다. 초기 빌드 환경에는 docker/podman이 없어 실제 격리를 인수시험하지 않았다. CLI 테스트의 FakeContainer는 프로토콜을 검사하는 신뢰된 subprocess fixture이며 보안 sandbox가 아니다. qualification이 없을 때 host shell로 대체하지 않는다.
 
 ## 시험·재현과 다음 단계
 

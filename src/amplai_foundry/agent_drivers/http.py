@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import string
+import time
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlsplit
@@ -14,6 +16,25 @@ from amplai_foundry.runtime.contracts.registry import strict_json_loads
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 from .protocol import SessionJournal
+
+
+def ascending_message_id(dispatch_id: str) -> str:
+    """A user message ID in OpenCode's ascending form: 12 hex of ``ms * 0x1000`` + 14 chars.
+
+    The server orders a session's messages by ID. An ID that sorts after the replies it mints
+    leaves the user turn looking unanswered, and the server keeps generating replies (measured
+    on 1.17.13, Work 017). The ID is persisted in the journal before the send, so a replayed
+    dispatch reuses it instead of minting another.
+    """
+    ms = time.time_ns() // 1_000_000
+    tail = digest({"dispatch": dispatch_id, "ns": str(time.time_ns())})[7:]
+    alphabet = string.digits + string.ascii_letters
+    value = int(tail, 16)
+    chars = []
+    for _ in range(14):
+        value, index = divmod(value, len(alphabet))
+        chars.append(alphabet[index])
+    return "msg_" + format((ms * 0x1000) & (2**48 - 1), "012x") + "".join(chars)
 
 
 def response_json(response: httpx.Response) -> Any:
@@ -87,9 +108,16 @@ class BoundHttp:
                     if size > 16 * 1024 * 1024:
                         raise Hold("HTTP_BODY_LIMIT", "Provider response exceeded byte budget")
                     chunks.append(chunk)
+                # iter_bytes already decoded the body (the budget counts decoded bytes), so the
+                # rebuilt response must not carry the encoding headers or it decodes twice.
+                headers = [
+                    (k, v)
+                    for k, v in stream.headers.multi_items()
+                    if k.lower() not in {"content-encoding", "content-length", "transfer-encoding"}
+                ]
                 response = httpx.Response(
                     stream.status_code,
-                    headers=stream.headers,
+                    headers=headers,
                     content=b"".join(chunks),
                     request=stream.request,
                 )
@@ -195,7 +223,7 @@ class OpenCodeDriver:
                 self.http.request("POST", "session", json={"title": "AMPLAI " + did})
             )
             session = native_id(created.get("id"))
-            message = "msg_" + digest({"dispatch": did})[7:31]
+            message = ascending_message_id(did)
             self.journal.update(
                 did, session_handle=session, request_message_id=message, process_stopped=False
             )
@@ -367,7 +395,7 @@ class OpenCodeDriver:
         self.journal.transition(
             did, {"prepared"}, "starting", expected_version=record["row_version"]
         )
-        message = "msg_" + digest({"dispatch": did})[7:31]
+        message = ascending_message_id(did)
         self.journal.update(
             did, session_handle=session, request_message_id=message, process_stopped=False
         )
