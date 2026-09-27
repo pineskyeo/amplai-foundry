@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "egress_profile": "local-colima",
-  "egress_profile_digest": "f48ef78636c17b8bd4f03d8e5cf98d76eee40cd7fc3d51f39b01ed8c4a1c077f",
+  "egress_profile_digest": "a80a7959d6de10fbb2138e7401f7c2985988c9083ff81ff83417ef16fd4a2510",
   "outcome": "pass",
   "checks": [
     {
@@ -23,7 +23,7 @@
       "command": "docker run --rm --network amplai-internal --read-only --cap-drop=ALL --security-opt=no-new-privileges --user 65534:65534 --pids-limit 32 --env HTTPS_PROXY=http://amplai-egress-proxy:3128 --env HTTP_PROXY=http://amplai-egress-proxy:3128 --env NO_PROXY=localhost,127.0.0.1 localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144 curl -sS --max-time 10 -o /dev/null -w %{http_code} https://example.com/"
     }
   ],
-  "checked_at": "2026-09-20T13:06:25Z",
+  "checked_at": "2026-09-27T09:31:47Z",
   "evidence": "deployment/local-egress-qualification.json",
   "image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
   "method": "scripts/egress_qualify.py: 3 curl probes in hardened throwaway containers",

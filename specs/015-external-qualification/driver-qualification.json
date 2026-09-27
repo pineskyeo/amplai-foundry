@@ -184,10 +184,10 @@
       "host_version": "1.17.13",
       "model": "opencode-go/glm-5.3-flash",
       "auth": "server_basic_auth; provider login read by the server from the operator data dir",
-      "method": "scripts/opencode_qualify.py: OpenCodeDriver against a real opencode serve; QualificationRunner with CAS-admitted artifacts (operator trust)",
-      "checked_at": "2026-09-27T03:48:51Z",
+      "method": "scripts/opencode_qualify.py: OpenCodeDriver against a real host-side opencode serve; QualificationRunner with CAS-admitted artifacts (operator trust)",
+      "checked_at": "2026-09-27T09:37:39Z",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-8ed318ea980f44bf9e5333dc5a99d2b7",
+      "qualification_id": "qualification-451675cfa2f84989b79ce04cc0c34943",
       "checks": [
         {
           "name": "exact_version",
@@ -198,7 +198,7 @@
         {
           "name": "exact_session",
           "outcome": "pass",
-          "reason": "state=completed process_stopped=True session=ses_f1f08d6f3ffea3LqM5jdoaMuUt replies_to_request=1 text='OK'",
+          "reason": "state=completed process_stopped=True session=ses_f1dc90b20ffemEC85X2LRSe2BF replies_to_request=1 text='OK'",
           "artifacts": 2
         },
         {
@@ -222,7 +222,7 @@
         {
           "name": "egress_containment",
           "outcome": "inconclusive",
-          "reason": "host-side server: outbound network is not restricted. Egress containment is qualified only for the container egress profile (Work 016), where OpenCode has not run yet",
+          "reason": "host-side server: outbound network is not restricted. Egress containment is measured only with --container on the qualified egress profile",
           "artifacts": 1
         },
         {
@@ -234,13 +234,13 @@
         {
           "name": "budget_accounting",
           "outcome": "pass",
-          "reason": "output tokens=39, cost=[0.0011445]",
+          "reason": "output tokens=28, cost=[0.001139]",
           "artifacts": 1
         },
         {
           "name": "crash_recovery",
           "outcome": "fail",
-          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[87900]",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[91476]",
           "artifacts": 2
         }
       ]
@@ -261,19 +261,19 @@
       "usage": [
         {
           "tokens": {
-            "total": 7539,
+            "total": 7528,
             "input": 7500,
-            "output": 39,
+            "output": 28,
             "reasoning": 0,
             "cache": {
               "read": 0,
               "write": 0
             }
           },
-          "cost": 0.0011445
+          "cost": 0.001139
         }
       ],
-      "seconds": 4.29
+      "seconds": 17.49
     }
   ]
 }
