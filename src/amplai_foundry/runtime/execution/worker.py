@@ -259,12 +259,18 @@ class WorkCoordinator:
             self._update(
                 worker, did, "verifying", result=result, driver_receipt_digest=digest(receipt)
             )
+            # Outputs are in the CAS; remove the stopped run's container (never before collect).
+            with contextlib.suppress(Exception):
+                port.destroy(handle)
             return result
         except Exception as exc:
             stopped = False
             if handle is not None:
                 with contextlib.suppress(Exception):
                     stopped = port.cancel(handle).get("process_stopped") is True
+                if stopped:
+                    with contextlib.suppress(Exception):
+                        port.destroy(handle)
             self._update(
                 worker,
                 did,

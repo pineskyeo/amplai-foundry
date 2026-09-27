@@ -645,7 +645,7 @@ def create_app(services: ApiServices) -> FastAPI:
             "app-binding",
             "model-profile",
             "driver-capabilities",
-            "verification-profile",
+            "verifier-profile",
             "context-bundle",
             "harness-composition",
         }

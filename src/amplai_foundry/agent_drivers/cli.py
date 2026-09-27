@@ -137,7 +137,9 @@ class CliDriver:
         args = [self.binary, "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        args += ["--json", "--model", self.model]
+        # --skip-git-repo-check: workspaces are commit copies without .git; this is the argv
+        # Work 016 qualified in the container (scripts/container_qualify.py).
+        args += ["--json", "--model", self.model, "--skip-git-repo-check"]
         if not session:
             args += ["--sandbox", "workspace-write"]
         if output_schema is not None:
