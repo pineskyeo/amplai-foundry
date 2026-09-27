@@ -53,8 +53,13 @@
 
 - Status: APPROVED
 - Date: 2026-09-28
-- Decision: 계약 초안은 read-only container 안의 Codex turn 이 `--output-schema` 로 만든다. 결과는 기존
-  PlanningService 의 스키마·verifier·권한 상한·critic 검증을 그대로 통과해야 한다.
+- Decision: 계약 초안은 read-only container 안의 Codex turn 이 `--output-schema` 로 만든다. 모델은 좁은
+  초안(목표, 범위, 제외, 제약, 설치된 verifier 명령 id 에 묶인 acceptance 문장, 위험도, 질문)만 쓴다.
+  ref·digest·capability·budget 은 결정적 compiler(`runtime/execution/product.py`)가 만들고, 결과는
+  `GoalService.freeze_contract`(스키마 + ContractCritic)와 `Runtime.save_graph`(GraphCompiler,
+  validate_bindings) 검증을 통과해야 한다. 질문이 있으면 계약을 만들지 않고 운영자에게 돌려준다.
+  (2026-09-28 구현 전 정밀화: 모델이 graph node 전체와 verifier digest 를 쓰는 PlanningService schema
+  대신, 모델이 식별자를 지어낼 수 없는 좁은 schema 를 쓴다.)
 - Reason: 기존 planner 는 OpenAI Responses API key 를 요구한다 (`src/amplai_foundry/runtime/deployment.py:326-374`).
   운영자에게 key 가 없다.
 - Rejected: 결정적 template 계약 (acceptance 를 사람이 직접 써야 해서 목표 한 줄 UX 가 깨진다).

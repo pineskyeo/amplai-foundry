@@ -39,7 +39,7 @@ class HostSandbox:
     def __init__(self) -> None:
         self.workspaces: list[Path] = []
 
-    def command(self, argv: list[str], workspace: Path, name: str, **_: Any) -> list[str]:
+    def command(self, argv: list[str], workspace: Path, run_name: str, **_: Any) -> list[str]:
         self.workspaces.append(Path(workspace))
         script = (
             "import os,subprocess,sys;os.chdir(sys.argv[1]);sys.exit(subprocess.call(sys.argv[2:]))"

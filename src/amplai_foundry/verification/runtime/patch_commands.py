@@ -12,16 +12,25 @@ from __future__ import annotations
 
 import subprocess
 import time
-from typing import Any
+from pathlib import Path
+from typing import Any, Protocol
 
 from ...runtime.contracts.identity import new_id
 from ...runtime.errors import Hold, RuntimeFault
 from ...runtime.storage.store import Scope
-from ...sandbox.container import ContainerSandbox
 from ...sandbox.git_workspace import GitWorkspaceManager
 from .service import VerificationObservation
 
 TAIL = 4000
+
+
+class CommandSandbox(Protocol):
+    """What the verifier needs: a profile with ``network`` and an argv builder."""
+
+    @property
+    def profile(self) -> Any: ...
+
+    def command(self, argv: list[str], workspace: Path, run_name: str) -> list[str]: ...
 
 
 class PatchCommandVerifier:
@@ -32,7 +41,7 @@ class PatchCommandVerifier:
         *,
         workspaces: GitWorkspaceManager,
         scope: Scope,
-        sandbox: ContainerSandbox,
+        sandbox: CommandSandbox,
         timeout_seconds: int = 900,
     ) -> None:
         if not command_id or not argv or not 1 <= timeout_seconds <= 3600:

@@ -35,9 +35,15 @@ DRIVER_ID = "codex-cli"
 AUTH = Path(".codex") / "auth.json"
 
 
-class SeededCodexPort(CliPort):
-    def __init__(self, driver: CodexCliDriver, credential_home: Path) -> None:
-        super().__init__(driver)
+class ScopedCredential:
+    """The operator's scoped ChatGPT credential copy, leased into per-run homes.
+
+    ``seed`` puts the current token into a run home; ``release`` writes a refreshed token back
+    atomically (ChatGPT refresh tokens rotate, so a stale copy would stop working) and removes
+    the run's copy. The real ``~/.codex`` is never accepted.
+    """
+
+    def __init__(self, credential_home: Path) -> None:
         home = Path(credential_home).absolute()
         if home.resolve() != home or not (home / AUTH).is_file():
             raise Hold("CODEX_CREDENTIAL", "Scoped credential copy (--codex-home) is required")
@@ -45,8 +51,51 @@ class SeededCodexPort(CliPort):
         if (home / ".codex").resolve() == real or home == Path.home().resolve():
             # design 10_AUTHORITY_SECURITY: no home credential mounts; only a scoped copy
             raise Hold("CODEX_CREDENTIAL", "Use a scoped copy, never the real ~/.codex")
-        self.credential_home = home
+        self.home = home
         self._lock = threading.Lock()
+
+    def seed(self, run_home: Path) -> None:
+        (run_home / ".codex").mkdir(parents=True, exist_ok=True, mode=0o700)
+        with self._lock:
+            data = (self.home / AUTH).read_bytes()
+        target = run_home / AUTH
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(data)
+        # colima maps the bind owner for the container uid; the 0700 parent keeps others out.
+        target.chmod(0o644)
+
+    def release(self, run_home: Path) -> None:
+        target = run_home / AUTH
+        if not target.is_file() or target.is_symlink():
+            return
+        data = target.read_bytes()
+        with self._lock:
+            current = (self.home / AUTH).read_bytes()
+            if data != current:
+                try:
+                    json.loads(data)
+                except ValueError:
+                    data = b""
+                if data:
+                    tmp = self.home / ".codex" / ".auth.json.writeback"
+                    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+                    with os.fdopen(fd, "wb") as out:
+                        out.write(data)
+                        out.flush()
+                        os.fsync(out.fileno())
+                    os.replace(tmp, self.home / AUTH)
+        target.unlink()
+
+
+class SeededCodexPort(CliPort):
+    def __init__(self, driver: CodexCliDriver, credential_home: Path | ScopedCredential) -> None:
+        super().__init__(driver)
+        self.credential = (
+            credential_home
+            if isinstance(credential_home, ScopedCredential)
+            else ScopedCredential(credential_home)
+        )
 
     def _dispatch_home(self, dispatch_id: str) -> Path:
         self.driver.journal._path(dispatch_id)  # validate the id before joining a path
@@ -54,39 +103,11 @@ class SeededCodexPort(CliPort):
 
     def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
         home = self._dispatch_home(dispatch["dispatch_id"])
-        (home / ".codex").mkdir(parents=True, exist_ok=True, mode=0o700)
-        with self._lock:
-            data = (self.credential_home / AUTH).read_bytes()
-        target = home / AUTH
-        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
-        with os.fdopen(fd, "wb") as out:
-            out.write(data)
-        # colima maps the bind owner for the container uid; the 0700 parent keeps others out.
-        target.chmod(0o644)
+        self.credential.seed(home)
         return self.driver.prepare(dispatch, prompt, workspace, native_home=home)
 
     def _release(self, handle: str) -> None:
-        """Write a refreshed token back to the scoped copy, then drop the dispatch credential."""
-        target = self._dispatch_home(handle) / AUTH
-        if not target.is_file() or target.is_symlink():
-            return
-        data = target.read_bytes()
-        with self._lock:
-            current = (self.credential_home / AUTH).read_bytes()
-            if data != current:
-                try:
-                    json.loads(data)
-                except ValueError:
-                    data = b""
-                if data:
-                    tmp = self.credential_home / ".codex" / ".auth.json.writeback"
-                    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
-                    with os.fdopen(fd, "wb") as out:
-                        out.write(data)
-                        out.flush()
-                        os.fsync(out.fileno())
-                    os.replace(tmp, self.credential_home / AUTH)
-        target.unlink()
+        self.credential.release(self._dispatch_home(handle))
 
     def collect(self, handle: str) -> dict[str, Any]:
         receipt = self.driver.collect(handle)
@@ -254,7 +275,7 @@ def install_codex_profile(
 
 
 def build_codex_port(
-    inputs: CodexProfileInputs, journal_root: Path, credential_home: Path
+    inputs: CodexProfileInputs, journal_root: Path, credential_home: Path | ScopedCredential
 ) -> SeededCodexPort:
     measured = measured_qualification(inputs)
     sandbox = ContainerSandbox(container_profile(inputs))
