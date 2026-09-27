@@ -10,15 +10,37 @@ from __future__ import annotations
 import contextlib
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from ...agent_drivers.ports import UNKNOWN_USAGE, DriverRegistry
 from ...agent_drivers.sessions import SessionStore
-from ...sandbox.workspace import WorkspaceManager
 from ..contracts.authority import Actor
 from ..contracts.identity import digest
 from ..errors import Conflict, Hold, RuntimeFault
 from .envelope import assert_execution_live, execution_envelope
+
+
+class Workspaces(Protocol):
+    """What the coordinator needs from a workspace manager (content snapshots or git)."""
+
+    def materialize(self, scope: Any, run_id: str, snapshot: dict[str, Any]) -> Path: ...
+
+    def collect(
+        self,
+        scope: Any,
+        workspace: str | Path,
+        bindings: dict[str, str],
+        node: dict[str, Any],
+        *,
+        process_stopped: bool,
+    ) -> dict[str, dict[str, Any]]: ...
+
+    def snapshot(self, scope: Any, directory: Path) -> dict[str, Any]: ...
+
+    def assert_matches(
+        self, scope: Any, directory: str | Path, snapshot: dict[str, Any]
+    ) -> bool: ...
+
 
 if TYPE_CHECKING:
     from .service import Runtime
@@ -29,7 +51,7 @@ class WorkCoordinator:
         self,
         runtime: Runtime,
         registry: DriverRegistry,
-        workspaces: WorkspaceManager,
+        workspaces: Workspaces,
         *,
         poll_seconds: float = 0.05,
         max_seconds: float = 3600,

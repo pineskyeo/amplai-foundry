@@ -64,7 +64,7 @@ class AppConfig:
 class Budget:
     max_wall_seconds: int = 1800  # operator decision 2026-09-28
     max_attempts: int = 3  # OD-1: design default, first attempt included
-    max_tokens: int = 20_000_000
+    max_tokens: int = 60_000_000  # root; each attempt reserves max_tokens // max_attempts
     max_cost_microunits: int | None = None
 
     def wire(self) -> dict[str, Any]:
@@ -481,7 +481,7 @@ class LocalExecutionService:
             "resource_claims": [
                 {"resource": "sandbox:" + installed.config.app_id, "mode": "exclusive_write"}
             ],
-            "budget": root,
+            "budget": {**root, "max_tokens": root["max_tokens"] // root["max_attempts"]},
         }
         graph = {
             "schema_version": "3.0.0",
@@ -574,7 +574,13 @@ class LocalExecutionService:
             profile,
             expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
         )
-        plan = {**plan, "status": "approved", "decision_ref": decision_ref, "grant_ref": grant_ref}
+        plan = {
+            **plan,
+            "status": "approved",
+            "decision_ref": decision_ref,
+            "grant_ref": grant_ref,
+            "approved_at": now(),
+        }
         self._save_plan(goal_id, plan)
         return plan
 
