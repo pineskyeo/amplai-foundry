@@ -341,7 +341,7 @@ class LocalExecutionService:
         }
         if draft["questions"]:
             record.update(status="needs_answers", contract_ref=None, graph_ref=None)
-            self._save_plan(goal_id, record)
+            self._save_plan(goal_id, record, ("question.asked", {"count": len(draft["questions"])}))
             return record
         facts = self.knowledge.record_observation(
             scope,
@@ -376,7 +376,7 @@ class LocalExecutionService:
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft
         )
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
-        self._save_plan(goal_id, record)
+        self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
 
     def base_check(self, installed: InstalledApp, base_value: dict[str, Any]) -> dict[str, Any]:
@@ -580,13 +580,22 @@ class LocalExecutionService:
         graph_ref = self.runtime.save_graph(service, graph, contract_ref)
         return contract_ref, graph_ref
 
-    def _save_plan(self, goal_id: str, record: dict[str, Any]) -> None:
+    def _save_plan(
+        self, goal_id: str, record: dict[str, Any], event: tuple[str, dict[str, Any]] | None = None
+    ) -> None:
+        """Save the plan record; ``event`` goes on the goal's audit trail in the same tx.
+
+        ``question.*`` and ``approval.*`` events are what the Observatory counts as human
+        intervention and measures human wait and queue time from.
+        """
         with self.store.tx() as db:
             try:
                 version = self.store.head(self.scope, PLAN_KIND, goal_id, db=db)["row_version"]
             except RuntimeFault:
                 version = 0  # cas with expected 0 creates the head
             self.store.cas(db, self.scope, PLAN_KIND, goal_id, version, record["status"], record)
+            if event:
+                self.store.event(db, self.scope, "goal", goal_id, *event)
 
     def plan_record(self, goal_id: str) -> dict[str, Any]:
         value: dict[str, Any] = self.store.head(self.scope, PLAN_KIND, goal_id)["data"]
@@ -667,7 +676,7 @@ class LocalExecutionService:
             "grant_ref": grant_ref,
             "approved_at": now(),
         }
-        self._save_plan(goal_id, plan)
+        self._save_plan(goal_id, plan, ("approval.granted", {"decision_ref": decision_ref}))
         return plan
 
     def revoke(self, operator: Actor, goal_id: str) -> None:
@@ -684,6 +693,10 @@ class LocalExecutionService:
                     db, self.scope, APPROVAL_KIND + "-state", decision["decision_id"], 0,
                     "revoked", state,
                 )  # fmt: skip
+                if operator.kind == "human":  # the loop stopping its own goal is not one
+                    self.store.event(
+                        db, self.scope, "goal", goal_id, "approval.revoked", {"decision_ref": ref}
+                    )
             except Exception as exc:  # already revoked is not an error
                 if getattr(exc, "code", "") != "STALE_VERSION":
                     raise

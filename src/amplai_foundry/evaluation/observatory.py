@@ -84,6 +84,7 @@ class Observatory:
 
         decoded = [{**dict(r), "data": json.loads(r["data"])} for r in heads]
         runs = [r["data"]["record"] for r in decoded if r["kind"] == "run"]
+        run_heads = {r["id"]: r for r in decoded if r["kind"] == "run"}
         selected, dimensions, integrity = [], {}, []
         for r in runs:
             contract = get("goal-contract", r.get("contract_ref"))
@@ -113,6 +114,13 @@ class Observatory:
                 continue
             if not contract or not graph:
                 integrity.append({"run_id": r["run_id"], "finding": "missing_contract_or_graph"})
+            head_state = run_heads[r["run_id"]]["state"]
+            if head_state != r["status"]:
+                # written before end_goal kept them together; report, do not pick one
+                integrity.append(
+                    {"run_id": r["run_id"], "finding": "run_state_mismatch",
+                     "head": head_state, "record": r["status"]}
+                )  # fmt: skip
             selected.append(r)
             dimensions[r["run_id"]] = labels
         ids = {r["root_goal_id"] for r in selected}
@@ -213,12 +221,50 @@ class Observatory:
         grouped = {}
         for dim in sorted(FILTERS):
             grouped[dim] = dict(Counter(dimensions[r["run_id"]][dim] for r in selected))
+        # every represented goal, including one that never ran (a question, a cancel)
+        goal_ids = {h["id"] for h in goals}
         scoped_events = [
             e
             for e in events
-            if e["aggregate_id"] in ids or e["aggregate_id"] in {r["run_id"] for r in selected}
+            if e["aggregate_id"] in goal_ids or e["aggregate_id"] in {r["run_id"] for r in selected}
         ]
         event_counts = Counter(e["event_type"] for e in scoped_events)
+        # human wait: approval requested -> granted; queue: granted -> first run claimed.
+        # Only measured intervals; a goal without both ends is not a sample.
+        requested: dict[str, float] = {}
+        granted: dict[str, float] = {}
+        waits, queued = [], []
+        for e in scoped_events:
+            at = _instant(e["created_at"])
+            if at is None:
+                continue
+            if e["event_type"] == "approval.requested":
+                requested[e["aggregate_id"]] = at
+            elif e["event_type"] == "approval.granted":
+                asked = requested.pop(e["aggregate_id"], None)
+                if asked is not None and at >= asked:
+                    waits.append((at - asked) * 1000)
+                elif asked is not None:
+                    integrity.append(
+                        {"goal_id": e["aggregate_id"], "finding": "negative_human_wait"}
+                    )
+                granted.setdefault(e["aggregate_id"], at)
+        for goal_id, at in granted.items():
+            claimed = [_instant(r["started_at"]) for r in selected if r["root_goal_id"] == goal_id]
+            first = min((c for c in claimed if c is not None), default=None)
+            if first is not None and first >= at:
+                queued.append((first - at) * 1000)
+            elif first is not None:
+                integrity.append({"goal_id": goal_id, "finding": "negative_queue_duration"})
+        failure_reasons: dict[str, dict[str, str]] = {}
+        for r in selected:
+            reasons = {}
+            for ref in r["verdict_refs"]:
+                v = get("verdict", ref)
+                if v and v.get("attestation_ref"):
+                    reasons[v["acceptance_id"]] = f"{v['outcome']}: {v['reason']}"
+            for signature in r["failure_signatures"]:
+                failure_reasons.setdefault(signature, reasons)
         return {
             "scope": scope.wire(),
             "snapshot_event_seq": events[-1]["seq"] if events else 0,
@@ -268,6 +314,14 @@ class Observatory:
             "failure_signatures": dict(
                 Counter(s for r in selected for s in r["failure_signatures"])
             ),
+            "failure_reasons": failure_reasons,
+            "ended_run_reasons": dict(
+                Counter(
+                    run_heads[r["run_id"]]["data"]["end_reason"]
+                    for r in selected
+                    if run_heads[r["run_id"]]["data"].get("end_reason")
+                )
+            ),
             "repair_runs": sum(r["attempt"] > 1 for r in selected),
             "human_intervention_events": {
                 k: v
@@ -280,8 +334,10 @@ class Observatory:
                 "median": median(elapsed) if elapsed else None,
             },
             "compute_ms": None,
-            "queue_ms": None,
-            "human_wait_ms": None,
+            "queue_ms": median(queued) if queued else None,
+            "queue_samples": len(queued),
+            "human_wait_ms": median(waits) if waits else None,
+            "human_wait_samples": len(waits),
             "integrity_findings": integrity,
             "note": "Descriptive counts, not causal effects. "
             "Unknown time breakdowns are not inferred. "

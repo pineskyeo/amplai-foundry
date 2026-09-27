@@ -935,10 +935,10 @@ class Runtime:
                 if run_id:
                     run = self.store.head(scope, "run", run_id, db=db)
                     if run["state"] not in {"succeeded", "failed", "cancelled", "lost"}:
-                        self.store.cas(
-                            db, scope, "run", run_id, run["row_version"], outcome,
-                            {**run["data"], "end_reason": reason},
-                        )  # fmt: skip
+                        # the RunRecord is what metrics read: head and record move together
+                        self._run_state(
+                            db, scope, run_id, run, outcome, {**run["data"], "end_reason": reason}
+                        )
                     db.execute(
                         "DELETE FROM resources WHERE tenant=? AND project=? AND run_id=?",
                         (*scope.keys(), run_id),

@@ -282,6 +282,17 @@
         "deployment",
         "specs/018-v3-real-execution"
       ]
+    },
+    {
+      "id": "D-074",
+      "status": "active",
+      "title": "Local execution metrics from the audit trail",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/evaluation",
+        "src/amplai_foundry/runtime/execution",
+        "specs/018-v3-real-execution"
+      ]
     }
   ]
 }
