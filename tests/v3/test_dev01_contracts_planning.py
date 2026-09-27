@@ -6,6 +6,7 @@ Fixture planners test orchestration only; they are not claims about LLM quality.
 from __future__ import annotations
 
 import json
+import platform
 from copy import deepcopy
 from pathlib import Path
 
@@ -282,4 +283,5 @@ def test_dev01_cli_reports_development_not_final():
     assert result.exit_code == 0
     value = json.loads(result.stdout)
     assert value["package_version"] == __version__ == "3.0.0.dev3"
+    assert value["python_version"] == platform.python_version()
     assert value["stage"] == "DEV-03" and value["production_release"] is False
