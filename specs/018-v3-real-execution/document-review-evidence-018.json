@@ -6,7 +6,6 @@
     ".ai-team/knowledge/decisions.index.json",
     ".ai-team/policy/documentation.json",
     "README.md",
-    "contracts/schemas/workgraph.schema.json",
     "deployment/local-container-app-amplai-foundry.json",
     "deployment/worker-app/Dockerfile",
     "deployment/worker-app/install_deps.py",
@@ -23,7 +22,6 @@
     "src/amplai_foundry/control_plane/api_v3/server.py",
     "src/amplai_foundry/evaluation/observatory.py",
     "src/amplai_foundry/runtime/cli.py",
-    "src/amplai_foundry/runtime/contracts/data/schemas/workgraph.schema.json",
     "src/amplai_foundry/runtime/deployment.py",
     "src/amplai_foundry/runtime/execution/codex.py",
     "src/amplai_foundry/runtime/execution/loop.py",
@@ -52,7 +50,7 @@
     "Local execution product: amplai work -> read-only Codex plan -> operator approve -> Codex in ContainerSandbox -> suite verify on base+patch -> draft PR (src/amplai_foundry/runtime/execution/*, local_deployment.py, cli.py)",
     "Codex runs with the container as its sandbox; tool_use qualification (D-073)",
     "Metrics: approval/question events, human_wait_ms, queue_ms, failure_reasons, run_state_mismatch (D-074)",
-    "workgraph node optional task_class; observatory --task-class (D-076)",
+    "task_class recorded per work beside the graph (task-class record, D-076/D-077); observatory --task-class",
     "V3 real execution decision ledger registered as an owned catalog document"
   ],
   "measurements": {

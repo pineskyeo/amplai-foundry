@@ -1,10 +1,10 @@
 {
-  "snapshot": "5806b2c9527e83598c56ea908ccda901d62f032b9e43262fda0b3d8aaa7a5442",
+  "snapshot": "1a0875c141901b3960f2d2b5c60405fb7cad3f2a5875805d609e044a415e85ca",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -14,7 +14,7 @@
     {
       "document": ".ai-team/contracts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -24,7 +24,7 @@
     {
       "document": ".ai-team/evidence/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -34,7 +34,7 @@
     {
       "document": ".ai-team/knowledge/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -44,7 +44,7 @@
     {
       "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -54,7 +54,7 @@
     {
       "document": ".ai-team/runtime/INSTALLATION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -64,7 +64,7 @@
     {
       "document": ".ai-team/runtime/WORKFLOW.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -74,7 +74,7 @@
     {
       "document": ".ai-team/runtime/escalation.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -84,7 +84,7 @@
     {
       "document": ".ai-team/verifiers/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -94,7 +94,7 @@
     {
       "document": "AGENTS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -104,7 +104,7 @@
     {
       "document": "CLAUDE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -124,7 +124,7 @@
     {
       "document": "deployment/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -134,7 +134,7 @@
     {
       "document": "docs/KNOWLEDGE-RULES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -144,7 +144,7 @@
     {
       "document": "docs/LIFECYCLE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -154,7 +154,7 @@
     {
       "document": "docs/MEMORY-DOMAIN-MODEL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -164,7 +164,7 @@
     {
       "document": "docs/PORTABLE-DEVELOPMENT.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -174,7 +174,7 @@
     {
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -184,7 +184,7 @@
     {
       "document": "docs/PROPOSALS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -194,7 +194,7 @@
     {
       "document": "docs/RELATIONSHIPS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -214,7 +214,7 @@
     {
       "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -224,7 +224,7 @@
     {
       "document": "docs/VERSIONING.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -234,7 +234,7 @@
     {
       "document": "docs/VISION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -254,7 +254,7 @@
     {
       "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -264,7 +264,7 @@
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "updated",
-      "reason": "Metric semantics section updated for human_wait_ms/queue_ms, failure_reasons, run_state_mismatch and task_class (D-074, D-076).",
+      "reason": "Metric semantics section updated for human_wait_ms/queue_ms, failure_reasons, run_state_mismatch and the task-class record (D-074, D-076, D-077).",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -274,7 +274,7 @@
     {
       "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -284,7 +284,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "New usage guide; updated for D-073 tool_use, suite verifier, base check, git copies, reconcile, metrics and task_class.",
+      "reason": "New usage guide; updated for D-073 tool_use, suite verifier, base check, git copies, reconcile, metrics and task_class (D-076, D-077).",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -294,7 +294,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "Decision ledger of this Work; D-073..D-076 appended, earlier entries unchanged.",
+      "reason": "Decision ledger of this Work; D-073..D-077 appended; D-076 gained its superseded marker line, no other earlier entry changed.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -304,7 +304,7 @@
     {
       "document": "integrations/hermes/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -314,7 +314,7 @@
     {
       "document": "migration/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -324,7 +324,7 @@
     {
       "document": "packs/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -334,7 +334,7 @@
     {
       "document": "release/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -344,7 +344,7 @@
     {
       "document": "tests/e2e/artifacts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -354,7 +354,7 @@
     {
       "document": "tools/amplai-loop-kit/CHANGELOG.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -364,7 +364,7 @@
     {
       "document": "tools/amplai-loop-kit/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [

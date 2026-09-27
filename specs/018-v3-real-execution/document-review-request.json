@@ -1,10 +1,10 @@
 {
-  "snapshot": "19182876cc03e1a7018700762af50b60a986190c4ad997139ce2aa48c9459d9e",
+  "snapshot": "7ea5a85d9a906284a9f0ed87e7ba98bdcb2c21e8463aecc382a8d4951f7f5e25",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -14,17 +14,7 @@
     {
       "document": ".ai-team/knowledge/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -34,7 +24,7 @@
     {
       "document": ".ai-team/runtime/WORKFLOW.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -44,7 +34,7 @@
     {
       "document": ".ai-team/verifiers/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -54,7 +44,7 @@
     {
       "document": "AGENTS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -64,7 +54,7 @@
     {
       "document": "CLAUDE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -84,7 +74,7 @@
     {
       "document": "docs/KNOWLEDGE-RULES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -94,7 +84,7 @@
     {
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -112,19 +102,9 @@
       ]
     },
     {
-      "document": "docs/VERSIONING.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
       "document": "docs/VISION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -144,7 +124,7 @@
     {
       "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -154,7 +134,7 @@
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "updated",
-      "reason": "Metric semantics section updated for human_wait_ms/queue_ms, failure_reasons, run_state_mismatch and task_class (D-074, D-076).",
+      "reason": "Metric semantics section updated for human_wait_ms/queue_ms, failure_reasons, run_state_mismatch and the task-class record (D-074, D-076, D-077).",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -164,7 +144,7 @@
     {
       "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -174,7 +154,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "New usage guide; updated for D-073 tool_use, suite verifier, base check, git copies, reconcile, metrics and task_class.",
+      "reason": "New usage guide; updated for D-073 tool_use, suite verifier, base check, git copies, reconcile, metrics and task_class (D-076, D-077).",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -184,7 +164,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "Decision ledger of this Work; D-073..D-076 appended, earlier entries unchanged.",
+      "reason": "Decision ledger of this Work; D-073..D-077 appended; D-076 gained its superseded marker line, no other earlier entry changed.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -194,7 +174,7 @@
     {
       "document": "tests/e2e/artifacts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -204,7 +184,7 @@
     {
       "document": "tools/amplai-loop-kit/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
@@ -213,126 +193,6 @@
     }
   ],
   "reference_reviews": [
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": ".amplai/local",
-      "line": 46,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": ".amplai/locks",
-      "line": 46,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "changes/CR-*/change.json",
-      "line": 54,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "changes/CR-*/work/*.json",
-      "line": 55,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "questions/*.json",
-      "line": 57,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "evidence/*.json",
-      "line": 58,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "decisions/*.json",
-      "line": 59,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": "changes/",
-      "line": 167,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": ".amplai/local",
-      "line": 167,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reference": ".amplai/locks",
-      "line": 167,
-      "disposition": "external",
-      "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-018.json"
-      ]
-    },
     {
       "document": "README.md",
       "reference": "_v3_delivery/",
