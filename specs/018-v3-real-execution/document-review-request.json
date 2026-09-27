@@ -1,5 +1,5 @@
 {
-  "snapshot": "bc02c5014d46da6306c69b1ddec37fe970bbe1a9112ec50d761c6f3635656e4f",
+  "snapshot": "83c4d01ea9bf678aa15b057e9fbe5cf1f3646c6902849811b03b14be68f9b8b4",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -8,27 +8,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": ".ai-team/contracts/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": ".ai-team/evidence/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -38,7 +18,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -48,17 +28,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/INSTALLATION.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -68,17 +38,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/escalation.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -88,7 +48,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -98,7 +58,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -108,7 +68,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -118,17 +78,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "deployment/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -138,37 +88,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/LIFECYCLE.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/MEMORY-DOMAIN-MODEL.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/PORTABLE-DEVELOPMENT.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -178,27 +98,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/PROPOSALS.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/RELATIONSHIPS.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -208,17 +108,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -228,7 +118,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -238,7 +128,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -248,7 +138,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -258,7 +148,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -268,7 +158,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -278,7 +168,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -288,7 +178,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -298,47 +188,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "integrations/hermes/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "migration/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "packs/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "release/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -348,17 +198,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "tools/amplai-loop-kit/CHANGELOG.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 018 adds the local execution product, metrics events and an optional workgraph task_class. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -368,7 +208,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     }
   ],
@@ -382,7 +222,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -394,7 +234,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -406,7 +246,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -418,7 +258,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -430,7 +270,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -442,7 +282,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -454,7 +294,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -466,7 +306,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -478,7 +318,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -490,7 +330,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -502,7 +342,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -514,103 +354,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/PROPOSALS.md",
-      "reference": "drafts/",
-      "line": 9,
-      "disposition": "example",
-      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/PROPOSALS.md",
-      "reference": "patches/",
-      "line": 9,
-      "disposition": "example",
-      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/PROPOSALS.md",
-      "reference": "drafts/",
-      "line": 19,
-      "disposition": "example",
-      "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reference": "ui/dist/",
-      "line": 36,
-      "disposition": "historical",
-      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reference": ".amplai/tasks/tasks.md",
-      "line": 57,
-      "disposition": "historical",
-      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reference": "speckit-tasks/SKILL.md",
-      "line": 96,
-      "disposition": "historical",
-      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reference": ".ai-team/skills/taskify",
-      "line": 107,
-      "disposition": "historical",
-      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reference": ".ai-team/skills/taskify",
-      "line": 116,
-      "disposition": "historical",
-      "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -622,7 +366,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -634,7 +378,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -646,7 +390,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -658,19 +402,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
-      ]
-    },
-    {
-      "document": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reference": "supervisor/",
-      "line": 86,
-      "disposition": "historical",
-      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
-      "reviewer": "claude-opus-5.5-work018-document-review",
-      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
-      "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -682,7 +414,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     },
     {
@@ -694,7 +426,7 @@
       "reviewer": "claude-opus-5.5-work018-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/018-v3-real-execution/document-review-evidence-013.json"
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
       ]
     }
   ]

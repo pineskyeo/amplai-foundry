@@ -191,6 +191,6 @@ amplai-foundry verify
 
 Current Python package: `3.0.0.dev3`; wire schemas remain `3.0.0`.
 
-[DEV-03 Observatory & Meta-Harness 운영·검증 설명](docs/v3/DEV03_OBSERVATORY_META.ko.md) · [Primary-source notes](docs/v3/DEV03_RESEARCH_SOURCES.md).
+[DEV-03 Observatory & Meta-Harness 운영·검증 설명](docs/v3/DEV03_OBSERVATORY_META.ko.md) · [Primary-source notes](docs/v3/DEV03_RESEARCH_SOURCES.md) · [로컬 실행 사용법 (Mac, 단일 운영자)](docs/v3/USING_AMPLAI_WORK.ko.md).
 
 `amplai ops evolution-demo --output <new-empty-directory>` executes local actual V3 paired trials, canary, signed promotion and rollback. It is not a live-provider/production qualification or the final V3 release. Delivery resume state and exact test evidence are in the outer snapshot `_v3_delivery/` and `validation/` directories.

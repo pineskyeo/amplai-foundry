@@ -379,7 +379,13 @@
       "lib/**",
       "lib/",
       "docs/.obsidian/**",
-      "docs/.obsidian/"
+      "docs/.obsidian/",
+      ".amplai/tmp/**",
+      ".amplai/tmp/",
+      ".amplai/jobs/**",
+      ".amplai/jobs/",
+      ".amplai/runtime/**",
+      ".amplai/runtime/"
     ],
     "reason": "문서가 존재하지 않는 repository 경로를 canonical한 것처럼 가리키면 stale이다. 이 검사는 기계적으로 판정 가능한 stale signal이다."
   },
