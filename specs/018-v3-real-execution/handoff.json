@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "completed_slices": [],
+  "context_pack_hash": "7446acde52ce212623fd49978345353b2aaf1d42cc1458ff67ab5d7f3fab5c57",
+  "current_slice": null,
+  "git_checkpoint": "d042765abf325978eeb338b66dcb17c77a9d8221",
+  "last_verification": null,
+  "next_action": "Operator decisions pending: (1) decision-ledger route — docs impact stops with HISTORICAL_SOURCE_CHANGED on docs/workstreams/v3-real-execution/DECISIONS.md (recommended: register it as an owned active catalog document with a sidecar); (2) task_class schema slot (gap 4). Then: docs impact/review-batch/validate on specs/018, operator approves goal-ad9ebe7db6ee45d88d01d36f98ec9e3a for a live human_wait sample, push feat/018 on approval.",
+  "open_slices": [],
+  "schema_version": "1.0",
+  "status": "executing",
+  "work_id": "AMPLAI-V3-EXEC01"
+}
