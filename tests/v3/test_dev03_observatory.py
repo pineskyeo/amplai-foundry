@@ -108,19 +108,27 @@ def test_dev03_scoped_metric_filters(deployment, prepared, dim):
 
 
 @pytest.mark.parametrize(
-    "kwargs",
+    "kwargs,expected_code",
     [
-        {"since": "2026-09-16"},
-        {"until": "bad"},
-        {"since": 1},
-        {"since": "2026-09-16T01:00:00Z", "until": "2026-09-16T00:00:00Z"},
-        {"filters": {"unrecognized": "a"}},
-        {"filters": {"model": ""}},
+        ({"since": "2026-09-16"}, "METRIC_TIME"),
+        ({"until": "bad"}, "METRIC_TIME"),
+        ({"since": 1}, "METRIC_TIME"),
+        (
+            {"since": "2026-09-16T01:00:00Z", "until": "2026-09-16T00:00:00Z"},
+            "METRIC_WINDOW",
+        ),
+        (
+            {"since": "2026-09-16T00:00:00Z", "until": "2026-09-16T00:00:00Z"},
+            "METRIC_WINDOW",
+        ),
+        ({"filters": {"unrecognized": "a"}}, "METRIC_FILTER"),
+        ({"filters": {"model": ""}}, "METRIC_FILTER"),
     ],
 )
-def test_dev03_bad_metric_slice_rejected(deployment, kwargs):
-    with pytest.raises(RuntimeFault):
+def test_dev03_bad_metric_slice_rejected(deployment, kwargs, expected_code):
+    with pytest.raises(RuntimeFault) as exc_info:
         Observatory(deployment.store).summary(deployment.scope, **kwargs)
+    assert exc_info.value.code == expected_code
 
 
 def test_dev03_window_is_half_open_run_start(deployment, prepared):
