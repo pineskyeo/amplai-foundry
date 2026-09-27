@@ -1646,20 +1646,20 @@
     "rule_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c",
     "unprocessed": []
   },
-  "content_hash": "6e084c3515d93c32582c3708b656c10a833d912195ec8d9f62d77971506e44ad",
+  "content_hash": "bc8987fc3cb5fceadfdaced2c4d934f61d16c82b67b1705725ec1760a9e16584",
   "dependency_snapshot": {
     "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49"
+      "sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32"
     },
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "8abdb6e9be9c6fff8f17af4bc7590766f4a9d34249ebb8c57c8d3bc14cf0d1a9",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1678,7 +1678,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1697,7 +1697,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1716,7 +1716,7 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "b269c959d61407556d67069d76d4eff6c79a053db5c94a522998d4a7ea94ff4f",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1735,7 +1735,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1754,7 +1754,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1773,7 +1773,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1792,7 +1792,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1811,7 +1811,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1830,7 +1830,7 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1849,7 +1849,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1868,8 +1868,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-          "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+          "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -1887,7 +1887,7 @@
       {
         "path": "deployment/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
           "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
           "metadata_owner": "sidecar",
@@ -1906,7 +1906,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1925,7 +1925,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1944,7 +1944,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1963,7 +1963,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1982,7 +1982,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2001,7 +2001,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2020,7 +2020,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
           "metadata_owner": "sidecar",
@@ -2039,7 +2039,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2058,7 +2058,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2077,7 +2077,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2096,7 +2096,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2115,8 +2115,8 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-          "declared_reference_sha256": "21ef255c96e5da7f6c46a2596aabd16f47c50596e4e2ee083c387cf96bd8bb63",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+          "declared_reference_sha256": "b548761376606b08a0d5f2fff701fd44693e63b9b74407cb667773cfc2d51a77",
           "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
           "metadata_owner": "sidecar",
           "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -2134,8 +2134,8 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-          "declared_reference_sha256": "c227db8559fcec428808fe035ae5a00318c854c4f74afc89b7a32c4bda784b2d",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+          "declared_reference_sha256": "7b6face79fa245251d937c65189c2b4db5ce9cdb59fe77eef1931692447ef99b",
           "dependency_snapshot_sha256": "26114ef0239f929d7c71fca32a4bcdbec6931cd59b7efc5468aea220dacbe776",
           "metadata_owner": "sidecar",
           "metadata_sha256": "f19bd3ff7ca2122263240563e09fa58e7437a4042ba6b5d531123489769f83e6",
@@ -2153,8 +2153,8 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-          "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+          "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
           "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -2172,7 +2172,7 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
           "metadata_owner": "sidecar",
@@ -2191,7 +2191,7 @@
       {
         "path": "integrations/hermes/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
           "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
           "metadata_owner": "sidecar",
@@ -2210,7 +2210,7 @@
       {
         "path": "migration/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
           "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
           "metadata_owner": "sidecar",
@@ -2229,7 +2229,7 @@
       {
         "path": "packs/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
           "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
           "metadata_owner": "sidecar",
@@ -2248,7 +2248,7 @@
       {
         "path": "release/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "ac71d0141448849ba6a7632f5b65cfe8ed942e3355a4ecd9e2f503251a5d228f",
           "dependency_snapshot_sha256": "31e19bfafb378c7162c492a35836bb695c9528146d0d2ad9f2824b61bedbc801",
           "metadata_owner": "sidecar",
@@ -2267,7 +2267,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -2286,7 +2286,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2305,7 +2305,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+          "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
           "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -3526,7 +3526,7 @@
       {
         "mode": 420,
         "path": "scripts/opencode_qualify.py",
-        "sha256": "16c640ba2f106ff92779b8ef9a6597510c23114df55cc05acacb2946de8d8daf",
+        "sha256": "0f80e54ff5e8a84b69080955254089277d26a260621f2db51b3ab7012e42a43d",
         "state": "PRESENT"
       },
       {
@@ -3568,7 +3568,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/agent_drivers/http.py",
-        "sha256": "c07599d15e1ab25a66c93dedfa5b089e809ed059506d82c522cf7709c3f066d0",
+        "sha256": "c539e51f16ed15f7773c1bcd975f75b3dd776bc3917b2efac9e02082af84341b",
         "state": "PRESENT"
       },
       {
@@ -4366,7 +4366,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_rc05_opencode_message_id.py",
-        "sha256": "944ee35295eb45a45417c31bae0e039bf208f44a1c9f27c045263ccf06c7416c",
+        "sha256": "e0f4e353800484ab3e14587d13dd564586f3254f7ff715cbfc80c7a672d9e254",
         "state": "PRESENT"
       },
       {
@@ -4413,7 +4413,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+  "dependency_snapshot_hash": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -4421,7 +4421,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
+    "commit": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "policy_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c"
   },
@@ -4451,8 +4451,8 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword evidence,knowledge,plane; 문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "8abdb6e9be9c6fff8f17af4bc7590766f4a9d34249ebb8c57c8d3bc14cf0d1a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4467,7 +4467,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "e9470af21543a6fd700f15941ce18203ef1bdf652c3e95f921b5b65a8313afb6",
+      "review_hash": "b0042046e74926f9ab78183ee0f88aafd0a06199f4a01f4ad4bc69650e186834",
       "state": "ACTIVE"
     },
     {
@@ -4485,8 +4485,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4501,7 +4501,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "d31a5f69585ea7fd0d3d06e9941f34a0a12d46009b781b69add34b3587f9de7c",
+      "review_hash": "dfc6d25484cc7a68af4eb3e0c8b01c6cac1d8b93449252894efc43b710df4d6c",
       "state": "ACTIVE"
     },
     {
@@ -4519,8 +4519,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4535,7 +4535,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "0dd368e8edc1eebedf802d0928865f50227a166f99cdd8ea4dc00819af28764b",
+      "review_hash": "6977d641c998f3a790241cb37f6e5f33cf92f1e8fffcb1be712fde2eef446e32",
       "state": "ACTIVE"
     },
     {
@@ -4553,8 +4553,8 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "b269c959d61407556d67069d76d4eff6c79a053db5c94a522998d4a7ea94ff4f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4569,7 +4569,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "67af0d9648e439b066cef96d1e62ec98e1b1055b2e5a95a7ae358282850db8cb",
+      "review_hash": "17d46bb91133fd20c3444fa54c8d658d0487d496d1be17a3a264d4b5c291ddcc",
       "state": "ACTIVE"
     },
     {
@@ -4587,8 +4587,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4603,7 +4603,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "64f3576bb2e38eb812a5e53eac462aef0c71d7868f6af0d7bc56a242d7108bb1",
+      "review_hash": "0c3bcfd594809f032778e8e0c838f8b0892c437bab0541a9bc4a855ba8ce0d5c",
       "state": "ACTIVE"
     },
     {
@@ -4621,8 +4621,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4637,7 +4637,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "b222516f3e6d76a4a33a4b9e0fbbeddc38584e969cb3fa06e03ff1ddc6da7acb",
+      "review_hash": "9770f41aa2203daa35ac7fb47012022961a29e869fa9b4dd398c0b56761c897a",
       "state": "ACTIVE"
     },
     {
@@ -4662,8 +4662,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword converge,review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4678,7 +4678,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "fa371603b86a9a1f90dfab137e862f8b2f0069e289d73d1a66b8d07f05adc3ed",
+      "review_hash": "4487783b3bbf36682eb5280f200302804c1033cc944081b91ccee2097a927725",
       "state": "ACTIVE"
     },
     {
@@ -4696,8 +4696,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4712,7 +4712,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "1c99877b6ca8d323a9745067b23481c9d193b09547acbc298b4baa7f7ace2e16",
+      "review_hash": "0ebb7927383423973d993de7c531c31187d3cc6ed8335904fe36e603b7e04b2f",
       "state": "ACTIVE"
     },
     {
@@ -4732,8 +4732,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4748,7 +4748,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "4dcb51f08947c58196e6c6e8ebcc87b65ad4a85a62c08ebb114f6591acadfbad",
+      "review_hash": "78be7a9037a2e2e46f6ab001500145ccbb4c3bc367154a562dce14f438ac56f3",
       "state": "ACTIVE"
     },
     {
@@ -4768,8 +4768,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4784,7 +4784,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "503e055a22bdc37f8d35e9ca981a56f2816fd01e78ac9b28f1094873a3ce2716",
+      "review_hash": "b7cab0863879c036850f213105f93892839ef06d8f49975082a4bc20c5c910de",
       "state": "ACTIVE"
     },
     {
@@ -4806,8 +4806,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,skill,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4822,7 +4822,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "d0acb5cbd3e9547a05c8256bad6d326715583db6b5bdcef29bf934ad0ed571e4",
+      "review_hash": "418ae28c251fb13522b2037d62a5a7e0bebdfbb73487de9230562f1fe1820126",
       "state": "ACTIVE"
     },
     {
@@ -4845,9 +4845,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4861,7 +4861,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "f5d9018d86e9d9c5bf1ffc892a6dc3e5630307526fc18920796e6e6f66064323"
       },
-      "review_hash": "e9ca8c19f6a85e0b8c62d99d8e11b3e96b8afa8993737b4c83956c8013591492",
+      "review_hash": "720ea65af71010db5701ab71c8fc0c28a5618fa190ac413d8f569351b5ff9faa",
       "state": "ACTIVE"
     },
     {
@@ -4881,8 +4881,8 @@
       "path": "deployment/README.md",
       "reason": "문서가 deployment/support-evidence.json, deployment/support-matrix.json, src/amplai_foundry/runtime/profiles.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -4897,7 +4897,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "f33457765bcda2cf4ecb77e5925640d53c13eca4ad83d5b1e294590348b13092"
       },
-      "review_hash": "779cdc46929e4921f8bcedd2bbc014507e6e3ba5fc5a1bc0154518802c01490a",
+      "review_hash": "a8c24fd7f3350665295f0b2a0cdad6850df34fc180f70a60a34b4805ba7d647b",
       "state": "ACTIVE"
     },
     {
@@ -4917,8 +4917,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge,lint; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4933,7 +4933,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "8ddf7ef8445c399649ed6387308f87dd89adff0573dd888b20ac28345e0b52a1",
+      "review_hash": "a83fbdb3393bc90a57e6a81075f769c44d55a5aa2eff9ca62b1d60489aa5e8a9",
       "state": "ACTIVE"
     },
     {
@@ -4953,8 +4953,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "keyword status; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -4969,7 +4969,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "ff3768e39b79a7882fb3d45133d52974970c1f4ba9e79a883ffaeaacd487d3c4",
+      "review_hash": "85e2309a1247c75a132c94be71a5bd23c8986575f79f723e958feb8c189271d0",
       "state": "ACTIVE"
     },
     {
@@ -4987,8 +4987,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5003,7 +5003,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "400493ac2e01693c57712dfa0313cd9e2df1c1f4ff1acf34d452fa67541451e4",
+      "review_hash": "1d8b3832e2d36d962b9ef90306714d5eafa467978bc3bcb872975f9f521977c9",
       "state": "ACTIVE"
     },
     {
@@ -5023,8 +5023,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5039,7 +5039,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "3dfdd36e51fd5c9e49daa6b9e110d1b3f997defd581c171440903ae7ec64f391",
+      "review_hash": "19da97658f7d7df4c7e807f728110f395a6fdf4bd9ef167b16bd448b26f4f0a4",
       "state": "ACTIVE"
     },
     {
@@ -5059,8 +5059,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,pack,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5075,7 +5075,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "553f4bbb6f89d28419bfac861833faa27feec17a411c881ceace05e7df3166ac",
+      "review_hash": "640ca66f29acb646647aab7f0667382a81df3b2a0d386941ad6b324d35623efd",
       "state": "ACTIVE"
     },
     {
@@ -5097,8 +5097,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "keyword proposal,validate; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5113,7 +5113,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "0a68898e8e0dc1842c184f90bd97f1902b0ab94bdea143e512a3215f2ed5596d",
+      "review_hash": "7886356deb00d6ae20ea64315eb224f17915620463c640cf89d3296b5bca7355",
       "state": "ACTIVE"
     },
     {
@@ -5133,8 +5133,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "keyword graph,reference; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -5149,7 +5149,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "de32279c5d5f2577d65d0525b2587e62be47ce9bcd3f4820a745249f9636e399",
+      "review_hash": "d922282150bd300e7bedff40f359426d7c8fd93bd20108bc11bdae5f6547b4a9",
       "state": "ACTIVE"
     },
     {
@@ -5169,8 +5169,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "keyword plan; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5185,7 +5185,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "01c551f01787fe1a31986810d49a95032c10ac199edb2b4beed9b6f6224d6a1b",
+      "review_hash": "e1662ec3f9c5bc71a218bd9ea8c1686884a08580235982e7a98296a3bcf6b7ad",
       "state": "ACTIVE"
     },
     {
@@ -5203,8 +5203,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5219,7 +5219,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "0c75edee55543832ad22823d6796ba6b7331c6662cb20cc38327160872765b0d",
+      "review_hash": "d6ae447de1d57d06f670e2ced807fba8f7a863b85546012f74e541406750e1ab",
       "state": "ACTIVE"
     },
     {
@@ -5241,8 +5241,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "keyword compatibility,migration,schema; 문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5257,7 +5257,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "f3ff79602853f7f84a38f77a1f12467f568d8d315f887711c5cce9bfd58eea50",
+      "review_hash": "a6fc55b48ab5f7d336c89b0b26e82a511456e26d2c517c5bfaa0700e8de0dc70",
       "state": "ACTIVE"
     },
     {
@@ -5277,8 +5277,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai,goal; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5293,7 +5293,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "9564ebbd1d9478947b39d748adafa8d5832b6dd798c4d7a4a1499768062b9950",
+      "review_hash": "d8d49b29e623e2db347607000e75eb2fc41f26bed17f51c4f40ac588042d5c36",
       "state": "ACTIVE"
     },
     {
@@ -5313,9 +5313,9 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 deployment/local-limits-qualification.json, scripts/container_qualify.py, scripts/limits_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "21ef255c96e5da7f6c46a2596aabd16f47c50596e4e2ee083c387cf96bd8bb63",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "b548761376606b08a0d5f2fff701fd44693e63b9b74407cb667773cfc2d51a77",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -5329,7 +5329,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "5bf479d40e101c408e97eec8cd6c64a0b79b111a089e086ac211c181a40247c3"
       },
-      "review_hash": "e5cd2c304c790836f0f2e8eb2804e7151c260543437eb590c9e2015e0b0817dc",
+      "review_hash": "f975b4548ff69b6a1c413d7077c698418ee0332f38241f0cd8c2b9bfafe62c6d",
       "state": "ACTIVE"
     },
     {
@@ -5349,9 +5349,9 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "문서가 scripts/opencode_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "c227db8559fcec428808fe035ae5a00318c854c4f74afc89b7a32c4bda784b2d",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "7b6face79fa245251d937c65189c2b4db5ce9cdb59fe77eef1931692447ef99b",
         "dependency_snapshot_sha256": "26114ef0239f929d7c71fca32a4bcdbec6931cd59b7efc5468aea220dacbe776",
         "metadata_owner": "sidecar",
         "metadata_sha256": "f19bd3ff7ca2122263240563e09fa58e7437a4042ba6b5d531123489769f83e6",
@@ -5365,7 +5365,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "34a5df46444af8b218a3efbc4d3a2e7fbc504f22d3f740622b4d5faa299bc56b",
+      "review_hash": "a886d190d903201b8638e7faa4afc8ab283ac3c0598da1c3cdf170601a1250db",
       "state": "ACTIVE"
     },
     {
@@ -5385,9 +5385,9 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/corpus.py, src/amplai_foundry/evaluation/observatory.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -5401,7 +5401,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771"
       },
-      "review_hash": "e19ac0f0dd80420a07007b58ec8e205628a655c2d578eb991942fe7214c44737",
+      "review_hash": "1682202bf5c578c7753160a5787587264b1eb88df09ad66a5d4bb06e24f0e71d",
       "state": "ACTIVE"
     },
     {
@@ -5419,8 +5419,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -5435,7 +5435,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "3ae2e7da9bf0c417e5715f8c69a7ce053ad2fa33a5d5b37ceff4e9e9ad6ad5c9",
+      "review_hash": "77ac3188b8b30700ba62339ecf0f551729bf8e083054296ebcd85a86cb0b8243",
       "state": "ACTIVE"
     },
     {
@@ -5455,8 +5455,8 @@
       "path": "integrations/hermes/README.md",
       "reason": "문서가 src/amplai_foundry/control_plane/hermes.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -5471,7 +5471,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8e47d43ec0e236ce875069c882b12c4af3f6d14b7fb397d886b34daa8da8e6c2"
       },
-      "review_hash": "136086a6ed1e4dae2e65ae398cb546dbbe687febd440777d34d131d1979e0608",
+      "review_hash": "9f1e934b4ffad7c6191d64ea15ba05149290d987d9315a1af126a00f63fcc18c",
       "state": "ACTIVE"
     },
     {
@@ -5491,8 +5491,8 @@
       "path": "migration/README.md",
       "reason": "문서가 migration/retirement-proposal.json, src/amplai_foundry/migration/retirement.py, tests/v3/test_rc01_legacy_retirement.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -5507,7 +5507,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "fe389d391e27c2fcc75b3d97ac9e1eb3a585370e9a6ec7a7b38274f92babc9dd"
       },
-      "review_hash": "4cee0a69750cfbf69d71fa85611c51c11ce721082e96ebbc6eb93146dca04231",
+      "review_hash": "abd81d72011865c7faef75146153016716d7a6f30f05c7b7b8df51f124f339e4",
       "state": "ACTIVE"
     },
     {
@@ -5527,8 +5527,8 @@
       "path": "packs/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -5543,7 +5543,7 @@
         "source_assets_sha256": "292cbb3f874f0b7aeca0c02c5ca02f321259bb32f367dbbb8a9f40446992b30d",
         "source_sha256": "9398b113211cdc957180d288ad8fab60b6d4a360368be12682049ab7a436f9d7"
       },
-      "review_hash": "1d0101996dd2ec2fd3268028c45939d6af66475cdf982a29ccd8b0b628b81193",
+      "review_hash": "99e5611285ab599e46df2f74d9cba03df99633e22363aba04d110fc905c6ed21",
       "state": "ACTIVE"
     },
     {
@@ -5563,8 +5563,8 @@
       "path": "release/README.md",
       "reason": "문서가 .ai-team/policy/approvals.jsonl, eval/test-catalog-status.json, release/rc01-conformance-closure.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "ac71d0141448849ba6a7632f5b65cfe8ed942e3355a4ecd9e2f503251a5d228f",
         "dependency_snapshot_sha256": "31e19bfafb378c7162c492a35836bb695c9528146d0d2ad9f2824b61bedbc801",
         "metadata_owner": "sidecar",
@@ -5579,7 +5579,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7"
       },
-      "review_hash": "f9eab2010cc57e3e235e161232ff3efa6259628c81181d494cb782c5808534db",
+      "review_hash": "5e7bfc62abfe34bef79c7a21e3cade87cc839bb0c81c5831693b3d71176dc6a7",
       "state": "ACTIVE"
     },
     {
@@ -5599,8 +5599,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json, tests/e2e/artifacts/golden-registry.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -5615,7 +5615,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "17f40436bf936885908d442a0fecb991ba4f79aa571b38941aa48b55dbbda483",
+      "review_hash": "94609785e1a333b9a66f49e0ffbeca01c31a82c02a2380da85123831c8d8e196",
       "state": "ACTIVE"
     },
     {
@@ -5635,8 +5635,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5651,7 +5651,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "2c32bcc2d794610265c85cbf8bd0a75d2046b0473a8f583a4abb521d9e90ddb3",
+      "review_hash": "a2658b3a0cb6514242cf64c0a239e00232d3e86fa6490ad87796af8554920bcf",
       "state": "ACTIVE"
     },
     {
@@ -5679,8 +5679,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5695,7 +5695,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "bfbbab8748959fff9b69b4cade3210c58fb93b810dfe18578cc00e671f42e5c2",
+      "review_hash": "012de8cec208b90abd1d9c464b1c44d7ded78e2ebd6171fc9fd0a71250a1cc93",
       "state": "ACTIVE"
     }
   ],
@@ -5723,7 +5723,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 41,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5733,8 +5733,8 @@
       "reference_hash": "3dbb8ab273efb9bfe9b19cc5c76e74904fa15274ef42f0a1fdab6377266501c8",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5805,7 +5805,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 58,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5815,8 +5815,8 @@
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5846,7 +5846,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5856,8 +5856,8 @@
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5887,7 +5887,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 54,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5897,8 +5897,8 @@
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5928,7 +5928,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5938,8 +5938,8 @@
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5969,7 +5969,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -5979,8 +5979,8 @@
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6010,7 +6010,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 55,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6020,8 +6020,8 @@
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6051,7 +6051,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 59,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6061,8 +6061,8 @@
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6092,7 +6092,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6102,8 +6102,8 @@
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6133,7 +6133,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6143,8 +6143,8 @@
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6174,7 +6174,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6184,8 +6184,8 @@
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6215,7 +6215,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 34,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6225,8 +6225,8 @@
       "reference_hash": "402e9b17b282dc05d8f21ccc9aa9dd08b16e731b0167757302bcd886ae3bdaa4",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6256,7 +6256,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6266,8 +6266,8 @@
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6297,7 +6297,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 19,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6307,8 +6307,8 @@
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6338,7 +6338,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6348,8 +6348,8 @@
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6379,7 +6379,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 116,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6389,8 +6389,8 @@
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6420,7 +6420,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6430,8 +6430,8 @@
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6461,7 +6461,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 107,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6471,8 +6471,8 @@
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6502,7 +6502,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6512,8 +6512,8 @@
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6543,7 +6543,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 36,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6553,8 +6553,8 @@
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6584,7 +6584,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 7,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6594,9 +6594,9 @@
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "21ef255c96e5da7f6c46a2596aabd16f47c50596e4e2ee083c387cf96bd8bb63",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "b548761376606b08a0d5f2fff701fd44693e63b9b74407cb667773cfc2d51a77",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -6625,7 +6625,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 119,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6635,9 +6635,9 @@
       "reference_hash": "984ebe49144cb4d6e1c0ce4bb88879ee0c638df3c2df957fd9d1ab7a6543b22a",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6666,7 +6666,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 3,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6676,9 +6676,9 @@
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6707,7 +6707,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 119,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6717,9 +6717,9 @@
       "reference_hash": "a73b9b42b25743be5311818a241572daef8a96d12524e656b3492da9cda8a0c5",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6748,7 +6748,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6758,9 +6758,9 @@
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6789,7 +6789,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6799,9 +6799,9 @@
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6830,7 +6830,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6840,9 +6840,9 @@
       "reference_hash": "a6354da311efb0306561a0aba0dd987a75891c26f76d66b9f42cf8fb8c9d8454",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6953,7 +6953,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 86,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -6963,8 +6963,8 @@
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7281,7 +7281,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 145,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -7291,8 +7291,8 @@
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7404,7 +7404,7 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "line": 144,
       "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
       "outcome": "reviewed_unchanged",
@@ -7414,8 +7414,8 @@
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7611,15 +7611,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "0c90e284b70e5b8804f37ec771954ebdcfbeec714a6bc64d1a76b688212ce1c7",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7648,15 +7648,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7685,15 +7685,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7722,15 +7722,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "b269c959d61407556d67069d76d4eff6c79a053db5c94a522998d4a7ea94ff4f",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7759,15 +7759,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "8abdb6e9be9c6fff8f17af4bc7590766f4a9d34249ebb8c57c8d3bc14cf0d1a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7796,15 +7796,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7833,15 +7833,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7870,15 +7870,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7907,15 +7907,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7944,15 +7944,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7981,15 +7981,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8018,15 +8018,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "deployment/README.md",
       "reason": "Support-matrix profiles and their disabled state are unchanged; Work 017 added local-limits-qualification.json beside the egress record without changing any profile.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -8055,15 +8055,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8092,15 +8092,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8129,15 +8129,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8166,15 +8166,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "Kit portable development guide; no kit payload, installer or document tooling changed.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8203,15 +8203,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "ebee8586bc1863a22664d3c1874cba53f6eb35e91251418d7598e6fbf2f0f28b",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8240,15 +8240,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8277,15 +8277,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -8314,15 +8314,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "96f4be894b49b2bd9126653200321dc2445ab6c125ae4b3ad1be0d0886ae1623",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8351,15 +8351,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8388,16 +8388,16 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "updated",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "OpenCode row and container paragraph updated to the Work 017 measurements (6/9 real-server probes with two host-side failures; measured memory/pids/cpu limits).",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "21ef255c96e5da7f6c46a2596aabd16f47c50596e4e2ee083c387cf96bd8bb63",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "b548761376606b08a0d5f2fff701fd44693e63b9b74407cb667773cfc2d51a77",
         "dependency_snapshot_sha256": "0408e0dc45cb7e7fe6e757fd8012deeb35a30f832a3c4bb3558269e8b90d59e9",
         "metadata_owner": "sidecar",
         "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
@@ -8425,16 +8425,16 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "updated",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "OpenCode transport facts added: real-server qualification script, ascending messageID requirement, gzip-encoded bodies.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "c227db8559fcec428808fe035ae5a00318c854c4f74afc89b7a32c4bda784b2d",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "7b6face79fa245251d937c65189c2b4db5ce9cdb59fe77eef1931692447ef99b",
         "dependency_snapshot_sha256": "26114ef0239f929d7c71fca32a4bcdbec6931cd59b7efc5468aea220dacbe776",
         "metadata_owner": "sidecar",
         "metadata_sha256": "f19bd3ff7ca2122263240563e09fa58e7437a4042ba6b5d531123489769f83e6",
@@ -8462,16 +8462,16 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "Line 106 says the arithmetic evolution recipe is not an OpenCode/container qualification; still true. Line 56 (holdout local_acl) is untouched by Work 017.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "197dfb4fa612793281c2948e2701d8550c453216a051297f3c4191541d08e6af",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
         "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -8499,15 +8499,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "0c325666748b5f0c49239c3e5727683862afa079da81610acf91823226e92d77",
         "metadata_owner": "sidecar",
@@ -8536,15 +8536,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8573,15 +8573,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8610,15 +8610,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "integrations/hermes/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -8647,15 +8647,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "migration/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -8684,15 +8684,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "packs/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -8721,16 +8721,16 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
-        "declared_reference_sha256": "ed432eeff8079e8820098bb587bbbf7a531bbccd0f84414859b6b6ff9b12089c",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
+        "declared_reference_sha256": "757618e60b613f22c58197a978c68a76bc5940c25082ff921c5b52506fa174a9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -8758,15 +8758,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "release/README.md",
       "reason": "Describes how the closure ledger reads external-qualification-status.json and keeps non-resolved items as remaining_blockers; Work 017 changed only notes, no status, and the regenerated ledger follows the same rule.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "ac71d0141448849ba6a7632f5b65cfe8ed942e3355a4ecd9e2f503251a5d228f",
         "dependency_snapshot_sha256": "31e19bfafb378c7162c492a35836bb695c9528146d0d2ad9f2824b61bedbc801",
         "metadata_owner": "sidecar",
@@ -8795,15 +8795,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
       "reason": "Work 017 changed the OpenCode HTTP driver (ascending messageID, single gzip decode), added measurement scripts and updated qualification notes; this guide describes none of those (no OpenCode/transport/limits/qualification-status wording) and stays accurate.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "541f52f9f90ce239529614f711f680d46499c1c7914e5230d832b3b3616a90eb",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -8832,15 +8832,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "No kit release: no kit payload file changed; the hardened timing test lives in tests/ai.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8869,15 +8869,15 @@
           "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
         }
       ],
-      "impact_snapshot_sha256": "3dd1ecfaff1b35e36accbe8b4439afd72ce83162f83884206029461a1fe8fa68",
+      "impact_snapshot_sha256": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "No kit behaviour changed; tests/ai timing hardening does not alter a documented guarantee.",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "snapshot": {
-        "candidate_revision": "f933b06309a249ca8c4a923fd3f64ebd57c6d748",
-        "candidate_sha256": "bc6d393826b64662d9657d7ef17fb8ad66c2754b13d0292b23e3334cef6d6d49",
+        "candidate_revision": "27d9207ed95a95e89c776fc2ea0084af48f7034c",
+        "candidate_sha256": "8c03eebcc42fe2f7161092bb81d3d7a18dd0a99615522112fea4d4d3aa7d1a32",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
