@@ -70,9 +70,11 @@ class Probe:
 
 
 class ContainerTurns:
-    def __init__(self, driver: str, model: str, codex_home: Path | None) -> None:
+    def __init__(
+        self, driver: str, model: str, codex_home: Path | None, container_profile: Path
+    ) -> None:
         self.driver, self.model = driver, model
-        container = json.loads((REPO / "deployment" / "local-container.json").read_text())
+        container = json.loads(container_profile.read_text())
         self.egress = EgressProfile.load(REPO / "deployment" / "local-egress.json")
         ref = load_qualification(REPO / "deployment" / "local-egress-qualification.json")
         self.profile = ContainerProfile(
@@ -517,17 +519,22 @@ def main() -> int:
     ap.add_argument("--model")
     ap.add_argument("--codex-home", type=Path)
     ap.add_argument("--out", type=Path, default=SPEC / "driver-qualification.json")
+    # A per-app image (D-072) is a new environment: qualify there before registering the driver.
+    ap.add_argument(
+        "--container-profile", type=Path, default=REPO / "deployment" / "local-container.json"
+    )
+    ap.add_argument("--artifacts", type=Path, default=SPEC / "artifacts")
     a = ap.parse_args()
     model = a.model or ("claude-sonnet-5" if a.driver == "claude" else "gpt-5.6-sol")
     host_version = subprocess.run(
         [a.driver, "--version"], capture_output=True, text=True, check=False
     ).stdout.strip()
-    container = json.loads((REPO / "deployment" / "local-container.json").read_text())
+    container = json.loads(a.container_profile.read_text())
     pinned = re.search(r"\d+\.\d+\.\d+", container["tools"][a.driver])
     version = pinned.group(0) if pinned else ""
-    t = ContainerTurns(a.driver, model, a.codex_home)
+    t = ContainerTurns(a.driver, model, a.codex_home, a.container_profile)
     probes = measure(t, version)
-    report = record(t, probes, version, SPEC / "artifacts")
+    report = record(t, probes, version, a.artifacts)
     checks = [
         {
             "name": c["name"],
@@ -556,7 +563,7 @@ def main() -> int:
     )
     existing["container_image"] = t.profile.image
     existing["egress_profile"] = t.egress.wire()
-    existing["artifacts_dir"] = str((SPEC / "artifacts").relative_to(REPO))
+    existing["artifacts_dir"] = str(a.artifacts.absolute().relative_to(REPO))
     existing["reports"][f"{a.driver}-cli"] = {
         "status": report["status"],
         "driver_version": version,
