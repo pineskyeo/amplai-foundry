@@ -1,5 +1,5 @@
 {
-  "snapshot": "8ac54b762f26b13c266ab7d770a86894e605937f8112591ef14a163381cef297",
+  "snapshot": "207f221ce1bbfdee940a50d8ce74967962e9a7c00a7729aac33fd873318f1049",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -244,7 +244,7 @@
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "updated",
-      "reason": "OpenCode row and container paragraph updated to the Work 017 measurements (6/9 real-server probes with two host-side failures; measured memory/pids/cpu limits).",
+      "reason": "OpenCode row and container paragraph updated to the Work 017 measurements (host 6/9, sandbox 8/9 real-server probes with two host-side failures; measured memory/pids/cpu limits).",
       "reviewer": "claude-opus-5.5-work017-document-review",
       "method": "Attributed implementation review by the implementing session (Work 017): grepped each guide for OpenCode/messageID/gzip/BoundHttp/qualification/limits/pids wording and compared it against git diff 575f51d..HEAD (agent_drivers/http.py, scripts/opencode_qualify.py, scripts/limits_qualify.py, tests/ai timing test, qualification ledger notes) and the recorded measurements.",
       "evidence": [
