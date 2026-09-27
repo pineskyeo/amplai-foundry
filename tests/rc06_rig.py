@@ -10,14 +10,24 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import subprocess
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from amplai_foundry.agent_drivers.cli import CodexCliDriver
+from amplai_foundry.agent_drivers.ports import DriverRegistry
+from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.runtime.contracts.authority import Actor
-from amplai_foundry.runtime.execution.codex import CodexProfileInputs, install_codex_profile
+from amplai_foundry.runtime.execution.codex import (
+    AUTH,
+    CodexProfileInputs,
+    SeededCodexPort,
+    install_codex_profile,
+)
+from amplai_foundry.runtime.execution.loop import ExecutionLoop
 from amplai_foundry.runtime.execution.product import (
     Actors,
     AppConfig,
@@ -26,6 +36,7 @@ from amplai_foundry.runtime.execution.product import (
     VerifierCommand,
     app_capabilities,
 )
+from amplai_foundry.runtime.execution.worker import WorkCoordinator
 from amplai_foundry.runtime.reference import PERMISSIONS
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 from amplai_foundry.verification.runtime.patch_commands import (
@@ -182,3 +193,97 @@ def submit(rig: Rig, text: str = "make value return 2") -> str:
 
 def with_permissions(actor: Actor, *extra: str) -> Actor:
     return replace(actor, permissions=actor.permissions | frozenset(extra))
+
+
+# Decides from the file it finds: base (1) → WRONG_FIRST ? 3 : 2; a repair copy (3) → 2.
+AGENT = r"""
+import json, pathlib, sys
+ws, mode, home = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
+assert (home / ".codex" / "auth.json").is_file(), "credential was not leased"
+src = (ws / "app.py").read_text()
+if mode == "crash":
+    sys.exit(3)
+if mode == "always-wrong":
+    new = 3
+elif mode == "wrong-first":
+    new = 2 if "return 3" in src else 3
+else:
+    new = 2
+(ws / "app.py").write_text("def value():\n    return %d\n" % new)
+(home / ".codex" / "auth.json").write_text('{"tokens": "refreshed"}')
+sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": "thread_" + mode}) + "\n")
+sys.stdout.write(json.dumps({"type": "turn.completed",
+                             "usage": {"input_tokens": 10, "output_tokens": 5}}) + "\n")
+"""
+
+
+class ScriptContainer:
+    """Host-process stand-in for ContainerSandbox; never represented as a sandbox."""
+
+    def __init__(self, mode: str) -> None:
+        self.mode = mode
+        self.driver: Any = None
+        self.prompts: list[str] = []
+
+    def command(self, argv: list[str], workspace: Path, run_name: str, **kw: Any) -> list[str]:
+        self.prompts.append(argv[-1])
+        return [sys.executable, "-c", AGENT, str(workspace), self.mode, str(kw["native_home"])]
+
+    def stop(self, name: str) -> None:
+        p = self.driver.processes.get(name)
+        if p and p.poll() is None:
+            os.killpg(p.pid, signal.SIGKILL)
+            p.wait(timeout=5)
+
+    def stopped(self, name: str) -> bool:
+        p = self.driver.processes.get(name)
+        return p is not None and p.poll() is not None
+
+    def destroy(self, name: str) -> None:
+        return None
+
+
+def rig_with_codex(
+    deployment: Any, tmp_path: Path, mode: str, publisher: Any = None
+) -> tuple[Any, Any, ScriptContainer]:
+    rig = build_rig(deployment, tmp_path)
+    container = ScriptContainer(mode)
+    driver = CodexCliDriver(
+        "0.155.1",
+        container,  # type: ignore[arg-type]  # host stand-in, see module docstring
+        SessionJournal(tmp_path / "journal"),
+        model="gpt-5.6-sol",
+        qualified=True,
+    )
+    container.driver = driver
+    home = tmp_path / "scoped-codex"
+    (home / ".codex").mkdir(parents=True)
+    (home / AUTH).write_text('{"tokens": "original"}')
+    registry = DriverRegistry(deployment.store)
+    registry.register(deployment.actor, rig.codex_refs["driver"], SeededCodexPort(driver, home))
+    coordinator = WorkCoordinator(deployment.runtime, registry, rig.workspaces, poll_seconds=0.05)
+    published: list[str] = []
+
+    def recording(goal_id: str) -> dict[str, Any]:
+        published.append(goal_id)
+        return {"branch": "amplai/" + goal_id}
+
+    loop = ExecutionLoop(rig.service, coordinator, publisher=publisher or recording)
+    rig.published = published  # type: ignore[attr-defined]
+    rig.home = home  # type: ignore[attr-defined]
+    return rig, loop, container
+
+
+def approved(rig: Any) -> str:
+    goal = submit(rig)
+    rig.service.plan(goal)
+    rig.service.approve(rig.operator, goal)
+    return goal
+
+
+def checkout(repo: Path) -> tuple[str, str, str]:
+    return (
+        git(repo, "rev-parse", "HEAD"),
+        git(repo, "status", "--porcelain"),
+        git(repo, "branch", "--list"),
+    )

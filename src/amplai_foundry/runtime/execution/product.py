@@ -57,7 +57,10 @@ class AppConfig:
     repo: Path
     verifiers: tuple[VerifierCommand, ...]
     aliases: tuple[str, ...] = ()
-    base_revision: str = "HEAD"
+    # Plans start from this branch and draft PRs target it; the operator's current checkout
+    # (possibly another branch) is never the implicit base.
+    base_branch: str = "main"
+    remote: str = "origin"
 
 
 @dataclass(frozen=True)
@@ -140,12 +143,16 @@ class LocalExecutionService:
         verifier_factory: Any,
         global_factory: Any,
         budget: Budget | None = None,
+        publish_mode: str = "draft_pr",
     ) -> None:
         self.store, self.runtime, self.goals, self.knowledge = store, runtime, goals, knowledge
         self.authority, self.verification, self.workspaces = authority, verification, workspaces
         self.planner, self.actors, self.codex = planner, actors, codex_refs
         self.verifier_factory, self.global_factory = verifier_factory, global_factory
         self.budget = budget or Budget()
+        if publish_mode not in {"draft_pr", "branch", "none"}:
+            raise RuntimeFault("PUBLISH_MODE", "publish_mode is draft_pr, branch or none")
+        self.publish_mode = publish_mode
         self.apps: dict[str, InstalledApp] = {}
         self._lock = threading.Lock()
 
@@ -284,7 +291,7 @@ class LocalExecutionService:
         intent = self.store.get(scope, "intent-envelope", goal["data"]["intent_ref"])
         installed = self._target(intent)
         app = installed.config
-        base = self.workspaces.base_snapshot(scope, app.app_id, app.base_revision)
+        base = self.workspaces.base_snapshot(scope, app.app_id, app.base_branch)
         base_value = self._base(base)
         workspace = self.workspaces.materialize(scope, new_id("plan-ws"), base)
         try:
@@ -538,6 +545,11 @@ class LocalExecutionService:
             "capabilities": installed.capabilities,
             "approved_by": operator.wire(),
             "approved_at": now(),
+            "publish": {
+                "mode": self.publish_mode,
+                "remote": installed.config.remote,
+                "base_branch": installed.config.base_branch,
+            },
         }
         decision_ref = self._put(APPROVAL_KIND, decision["decision_id"], decision)
         current = datetime.fromtimestamp(self.store.clock(), UTC)
