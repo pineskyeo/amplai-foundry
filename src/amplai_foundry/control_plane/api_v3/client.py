@@ -108,6 +108,9 @@ class AmplaiClient:
     def local_cancel(self, goal_id: str) -> Any:
         return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/cancel")
 
+    def local_pr_sync(self) -> Any:
+        return self.call("POST", "api/v3/local/publications/sync")
+
     def hermes_submit(
         self, text: str, *, workspace_id: str, channel_id: str, message_id: str, mode: str = "work"
     ) -> Any:

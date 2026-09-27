@@ -234,6 +234,15 @@ class Observatory:
             if e["aggregate_id"] in goal_ids or e["aggregate_id"] in {r["run_id"] for r in selected}
         ]
         event_counts = Counter(e["event_type"] for e in scoped_events)
+        # draft PR outcomes (D-078): one set of publication.* transitions per goal
+        published: dict[str, set[str]] = {}
+        for e in scoped_events:
+            if e["event_type"].startswith("publication."):
+                published.setdefault(e["aggregate_id"], set()).add(e["event_type"])
+        opened = sum("publication.opened" in s for s in published.values())
+        merged = sum("publication.merged" in s for s in published.values())
+        closed = sum("publication.closed" in s for s in published.values())
+        revised = sum("publication.revised" in s for s in published.values())
         # human wait: approval requested -> granted; queue: granted -> first run claimed.
         # Only measured intervals; a goal without both ends is not a sample.
         requested: dict[str, float] = {}
@@ -338,6 +347,15 @@ class Observatory:
                     if run_heads[r["run_id"]]["data"].get("end_reason")
                 )
             ),
+            "publication_outcomes": {
+                "opened": opened,
+                "undecided": opened - merged - closed,
+                "merged": merged,
+                "closed": closed,
+                "revised": revised,
+                "acceptance_rate": merged / (merged + closed) if merged + closed else None,
+                "revised_share": revised / opened if opened else None,
+            },
             "repair_runs": sum(r["attempt"] > 1 for r in selected),
             "human_intervention_events": {
                 k: v

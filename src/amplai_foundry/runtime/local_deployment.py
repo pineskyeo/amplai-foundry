@@ -46,6 +46,7 @@ from .execution.codex import (
     install_codex_profile,
 )
 from .execution.loop import ExecutionLoop
+from .execution.outcomes import PullRequestTracker
 from .execution.planner_codex import CodexPlanner
 from .execution.product import (
     PLAN_KIND,
@@ -245,7 +246,10 @@ class LocalProductDeployment:
             )
         )
         publisher = GitPublisher(self.service) if cfg.publish_mode != "none" else None
-        self.loop = ExecutionLoop(self.service, self.coordinator, publisher=publisher)
+        self.tracker = PullRequestTracker(self.service) if publisher is not None else None
+        self.loop = ExecutionLoop(
+            self.service, self.coordinator, publisher=publisher, tracker=self.tracker
+        )
 
     # -- operator authentication -----------------------------------------------------------------
     def operator(self) -> Actor:
@@ -338,6 +342,13 @@ class LocalProductDeployment:
         @router.post("/goals/{goal_id}/cancel")
         def cancel(goal_id: str, a: Actor = Depends(actor)) -> Any:
             return _summary(self.loop.cancel(a, goal_id))
+
+        @router.post("/publications/sync")
+        def pr_sync(a: Actor = Depends(actor)) -> Any:
+            a.require("execution.approve")
+            if self.tracker is None:
+                raise Hold("PUBLISH_DISABLED", "Publication is off in this deployment")
+            return {"recorded": self.tracker.sync()}
 
         app.include_router(router)
         if start_loop:

@@ -45,10 +45,12 @@ class ExecutionLoop:
         coordinator: Any,
         *,
         publisher: Callable[[str], dict[str, Any]] | None = None,
+        tracker: Any = None,
         clock: Callable[[], float] = time.time,
         idle_seconds: float = 2.0,
     ) -> None:
         self.service, self.coordinator, self.publisher = service, coordinator, publisher
+        self.tracker = tracker  # PullRequestTracker: PR outcomes while idle (D-078)
         self.clock, self.idle = clock, idle_seconds
         self.store, self.scope = service.store, service.scope
         self._stop = threading.Event()
@@ -136,12 +138,19 @@ class ExecutionLoop:
         while not self._stop.is_set():
             goal = self.next_goal()
             if goal is None:
+                self.idle_tick()
                 self._stop.wait(self.idle)
                 continue
             try:
                 self.run_goal(goal)
             except Exception as exc:  # recorded, never kills the loop
                 self._finish(goal, "held", reason=f"{type(exc).__name__}: {exc}")
+
+    def idle_tick(self) -> None:
+        """Work done only when no goal is waiting: read draft PR outcomes when due."""
+        if self.tracker is not None and self.tracker.due():
+            with contextlib.suppress(Exception):  # an outage of gh never stops the loop
+                self.tracker.sync()
 
     def next_goal(self) -> str | None:
         with self.store._lock:
@@ -238,7 +247,14 @@ class ExecutionLoop:
         if self.publisher is not None:
             try:
                 published = self.publisher(goal_id)
-                record = self._update(goal_id, status="published", publication=published)
+                opened = (
+                    ("publication.opened", {"pr_url": published["pr_url"]})
+                    if published.get("pr_url")
+                    else None
+                )
+                record = self._update(
+                    goal_id, event=opened, status="published", publication=published
+                )
             except Exception as exc:
                 record = self._update(
                     goal_id, publication={"error": getattr(exc, "code", type(exc).__name__),
@@ -338,9 +354,11 @@ class ExecutionLoop:
             service.authn_context_ref,
         )  # fmt: skip
 
-    def _update(self, goal_id: str, **fields: Any) -> dict[str, Any]:
+    def _update(
+        self, goal_id: str, *, event: tuple[str, dict[str, Any]] | None = None, **fields: Any
+    ) -> dict[str, Any]:
         plan = {**self.service.plan_record(goal_id), **fields, "updated_at": now()}
-        self.service._save_plan(goal_id, plan)
+        self.service._save_plan(goal_id, plan, event)
         return plan
 
     def _finish(self, goal_id: str, status: str, **fields: Any) -> dict[str, Any]:

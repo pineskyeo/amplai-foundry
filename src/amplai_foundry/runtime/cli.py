@@ -149,6 +149,10 @@ def render_plan(record: dict[str, Any]) -> str:
         lines.append(f"  branch    : {publication['branch']}")
     elif publication.get("error"):
         lines.append(f"  publish   : {publication['error']} {publication.get('message', '')}")
+    outcome = record.get("publication_outcome") or {}
+    if outcome:
+        edited = ", changed by a human" if outcome.get("revised") else ""
+        lines.append(f"  PR state  : {outcome['state']}{edited} (checked {outcome['checked_at']})")
     nxt = {
         "awaiting_approval": f"next: amplai approve {goal}   (or amplai cancel {goal})",
         "needs_answers": "next: answer the questions in a refined `amplai work` goal",
@@ -194,6 +198,12 @@ def goal_status(goal_id: Annotated[str | None, typer.Argument()] = None) -> None
 def goal_cancel(goal_id: Annotated[str, typer.Argument()]) -> None:
     """Revoke the approval and stop the goal (a running container is stopped)."""
     _local(lambda c: c.local_cancel(goal_id))
+
+
+@ops.command("pr-sync")
+def pr_sync() -> None:
+    """Read the state of every undecided draft PR now (merged / closed / changed by a human)."""
+    _local(lambda c: c.local_pr_sync(), render=False)
 
 
 @app.command("design")

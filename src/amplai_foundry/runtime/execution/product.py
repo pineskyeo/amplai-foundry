@@ -592,21 +592,27 @@ class LocalExecutionService:
         return contract_ref, graph_ref
 
     def _save_plan(
-        self, goal_id: str, record: dict[str, Any], event: tuple[str, dict[str, Any]] | None = None
+        self,
+        goal_id: str,
+        record: dict[str, Any],
+        event: tuple[str, dict[str, Any]] | list[tuple[str, dict[str, Any]]] | None = None,
     ) -> None:
-        """Save the plan record; ``event`` goes on the goal's audit trail in the same tx.
+        """Save the plan record; ``event`` (one or a list) goes on the goal's audit trail in
+        the same tx.
 
         ``question.*`` and ``approval.*`` events are what the Observatory counts as human
-        intervention and measures human wait and queue time from.
+        intervention and measures human wait and queue time from; ``publication.*`` events are
+        what happened to the draft PR.
         """
+        events = [event] if isinstance(event, tuple) else list(event or [])
         with self.store.tx() as db:
             try:
                 version = self.store.head(self.scope, PLAN_KIND, goal_id, db=db)["row_version"]
             except RuntimeFault:
                 version = 0  # cas with expected 0 creates the head
             self.store.cas(db, self.scope, PLAN_KIND, goal_id, version, record["status"], record)
-            if event:
-                self.store.event(db, self.scope, "goal", goal_id, *event)
+            for event_type, payload in events:
+                self.store.event(db, self.scope, "goal", goal_id, event_type, payload)
 
     def plan_record(self, goal_id: str) -> dict[str, Any]:
         value: dict[str, Any] = self.store.head(self.scope, PLAN_KIND, goal_id)["data"]
