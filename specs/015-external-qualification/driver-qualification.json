@@ -244,6 +244,73 @@
           "artifacts": 2
         }
       ]
+    },
+    "opencode-server-container": {
+      "status": "fail",
+      "driver_version": "1.17.13",
+      "host_version": "1.17.13",
+      "model": "opencode-go/glm-5.3-flash",
+      "auth": "server_basic_auth; provider login from the operator's scoped copy",
+      "method": "scripts/opencode_qualify.py --container: opencode serve in the pinned image on the qualified egress profile (ContainerSandbox argv, detached), HTTP via docker exec curl; QualificationRunner with CAS-admitted artifacts (operator trust)",
+      "checked_at": "2026-09-27T09:59:15Z",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-e9e6a7c452614f91b336a3d09a8169bc",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; unauthenticated health -> 401",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "state=completed process_stopped=True session=ses_f1db52e18ffeZwe2IDv7yTD7cm replies_to_request=1 text='OK'",
+          "artifacts": 2
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "2 messages, roles=['user', 'assistant'], created timestamps monotonic=True",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.14s=True; children after=0 (first poll state cancelled)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}]; pending permission requests=1",
+          "artifacts": 2
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "pass",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turns used only allowlist targets ['opencode.ai:443']; sidecar denied ['example.com:443', 'github.com:443', 'registry.npmjs.org:443']",
+          "artifacts": 2
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "fail",
+          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=['OPENCODE_SERVER_PASSWORD']",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "output tokens=14, cost=[0.00113005]",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "pass",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[]",
+          "artifacts": 2
+        }
+      ]
     }
   },
   "findings": [
@@ -274,6 +341,27 @@
         }
       ],
       "seconds": 17.49
+    }
+  ],
+  "cost_opencode_container": [
+    {
+      "turn": "ok",
+      "usage": [
+        {
+          "tokens": {
+            "total": 7501,
+            "input": 7487,
+            "output": 14,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "cost": 0.00113005
+        }
+      ],
+      "seconds": 9.11
     }
   ]
 }

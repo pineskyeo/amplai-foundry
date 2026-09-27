@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime as dt
+import hashlib
 import json
 import os
 import secrets
@@ -298,6 +299,15 @@ class ContainerServer(Server):
             # design 10_AUTHORITY_SECURITY: no home credential mounts; only a scoped copy
             raise SystemExit("--opencode-home must be a scoped copy, never the real data dir")
         self.home = home
+        # models.dev is not on the allowlist, so seed the public model catalog the host already
+        # cached; without it the server knows no opencode-go model and never starts a turn.
+        catalog = Path.home() / ".cache" / "opencode" / "models.json"
+        if not catalog.is_file():
+            raise SystemExit("no host ~/.cache/opencode/models.json to seed the model catalog")
+        seeded = home / ".cache" / "opencode" / "models.json"
+        seeded.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(catalog, seeded)
+        self.catalog_sha256 = hashlib.sha256(seeded.read_bytes()).hexdigest()
         self.credential_values = [
             v for v in _json_strings(json.loads(auth.read_text())) if len(v) >= 24
         ]
@@ -324,6 +334,7 @@ class ContainerServer(Server):
         self.ws.mkdir(parents=True)
         self.port = self.PORT
         self.transport = DockerExecTransport(self.NAME, self.PORT, auth=(USER, self.password))
+        self.startup_seconds: list[float] = []
 
     @property
     def url(self) -> str:
@@ -347,14 +358,17 @@ class ContainerServer(Server):
         if run.returncode != 0:
             raise SystemExit(f"container start failed: {run.stderr.decode()[-400:]}")
         client = self.client()
-        deadline = time.time() + 60
-        while time.time() < deadline:
+        started = time.time()
+        # Startup waits out blocked npm/models.dev fetches inside the egress profile.
+        while time.time() - started < 180:
             with contextlib.suppress(httpx.HTTPError, ValueError, IndexError):
                 if client.get("/global/health").status_code == 200:
+                    self.startup_seconds.append(round(time.time() - started, 1))
                     return
-            time.sleep(0.5)
+            time.sleep(1)
         logs = subprocess.run(["docker", "logs", self.NAME], capture_output=True, check=False)
-        raise SystemExit(f"opencode serve did not become healthy: {logs.stderr[-400:]!r}")
+        self.kill()
+        raise SystemExit(f"opencode serve did not become healthy: {logs.stdout[-400:]!r}")
 
     def kill(self, sig: int = signal.SIGKILL) -> None:
         name = "KILL" if sig == signal.SIGKILL else "TERM"
@@ -373,6 +387,12 @@ class ContainerServer(Server):
 
     def leak_values(self) -> list[str]:
         return list(self.credential_values)
+
+    def client(self, *, auth: bool = True) -> httpx.Client:
+        # The password lives in the transport's curl config, so the unauthenticated probe needs
+        # a transport without it (an auth-less client on the same transport would still send it).
+        transport = self.transport if auth else DockerExecTransport(self.NAME, self.PORT, auth=None)
+        return httpx.Client(base_url=self.url, transport=transport, timeout=30)
 
     def running(self) -> bool:
         run = subprocess.run(
@@ -796,7 +816,8 @@ def record(t: Turns, probes: dict[str, Probe], version: str, out_dir: Path) -> d
                 {"outcome": probe.outcome, "reason": probe.reason, "artifact_refs": refs}
             )
         env_ref = {
-            "server": "opencode serve in the sandbox, egress profile"
+            "server": "opencode serve in the sandbox, egress profile, seeded catalog sha256:"
+            + getattr(t.server, "catalog_sha256", "")
             if t.server.kind == "container"
             else "opencode serve (host-side, scrubbed env, isolated config/state/cache)",
             "provider": t.provider_id,

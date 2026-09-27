@@ -21,7 +21,7 @@
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
       "status": "partial",
       "evidence": "specs/015-external-qualification/driver-qualification.json",
-      "note": "opencode 1.17.13 server, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py (Work 017): 6/9 pass (exact_version, exact_session, ordered_events, cancel_tree, filesystem_containment, budget_accounting). fail secret_isolation: opencode serve takes its password only from OPENCODE_SERVER_PASSWORD and the bash tool inherits it (name visible to the agent). fail crash_recovery: exact-session resume works after SIGKILL + restart without prompt replay, but the killed server's tool process survives as an orphan. egress inconclusive (host-side server). Both failures are host-side process-model limits; running OpenCode on the container egress profile is the remaining step. Work 017 also fixed two driver defects found only with the real server: non-ascending messageID made the server regenerate replies without end, and gzip bodies were decoded twice."
+      "note": "opencode 1.17.13, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py (Work 017). Host-side server: 6/9. In the sandbox (pinned amplai-worker-opencode image on the qualified egress profile, --container): 8/9 pass; egress used only opencode.ai:443 (github/npm/example.com denied), SIGKILL of the container ends the tool tree and the exact session resumes without prompt replay. Remaining fail secret_isolation: opencode serve takes its password only from OPENCODE_SERVER_PASSWORD and the bash tool inherits it, in the container too. crash resume turn is a raw HTTP prompt, not OpenCodeDriver.resume. The model catalog is seeded because models.dev is not allowlisted. Work 017 also fixed two driver defects found only with the real server (non-ascending messageID caused endless reply regeneration; gzip bodies decoded twice)."
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",
@@ -72,5 +72,5 @@
     "unavailable": 3,
     "not_a_local_check": 1
   },
-  "updated_by": "Work 017 (2026-09-27): OpenCode real-server qualification 6/9, container resource limits, Linux CI green"
+  "updated_by": "Work 017 (2026-09-27): OpenCode 6/9 host, 8/9 in the sandbox; container resource limits; Linux CI green"
 }
