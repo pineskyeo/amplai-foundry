@@ -175,6 +175,7 @@ class LocalExecutionService:
             raise RuntimeFault("PUBLISH_MODE", "publish_mode is draft_pr, branch or none")
         self.publish_mode = publish_mode
         self.apps: dict[str, InstalledApp] = {}
+        self._base_checks: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
     @property
@@ -315,6 +316,7 @@ class LocalExecutionService:
         app = installed.config
         base = self.workspaces.base_snapshot(scope, app.app_id, app.base_branch)
         base_value = self._base(base)
+        base_check = self.base_check(installed, base_value)
         workspace = self.workspaces.materialize(scope, new_id("plan-ws"), base)
         try:
             drafted = self.planner.draft(
@@ -334,6 +336,7 @@ class LocalExecutionService:
             "base_commit": base_value["commit"],
             "draft": draft,
             "planner_usage": drafted.get("usage"),
+            "base_check": base_check,
             "created_at": now(),
         }
         if draft["questions"]:
@@ -375,6 +378,43 @@ class LocalExecutionService:
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record)
         return record
+
+    def base_check(self, installed: InstalledApp, base_value: dict[str, Any]) -> dict[str, Any]:
+        """Run the app suite on the untouched base (cached per commit).
+
+        A red base is shown to the operator before approval, not a block: "fix this failing
+        test" legitimately starts red, but otherwise nothing could ever verify (found by the
+        first real run, where the base failed in a copy without .git).
+        """
+        commit = base_value["commit"]
+        if commit in self._base_checks:
+            return self._base_checks[commit]
+        empty = self.workspaces.artifacts.admit(self.scope, b"", "text/x-diff")
+        change = {
+            "format": "amplai.change.v1",
+            "base": {k: base_value[k] for k in ("repo", "commit", "tree")},
+            "patch": empty,
+            "patch_bytes": 0,
+        }
+        from ..contracts.identity import canonical
+
+        suite = installed.verifier_refs[installed.config.verifiers[0].id]
+        observation = self.verification.runners[digest(suite)](canonical(change))
+        commands = observation.details.get("commands") or []
+        result = {
+            "commit": commit,
+            "outcome": observation.outcome,
+            "reason": observation.reason,
+            "commands": [
+                {k: c.get(k) for k in ("command_id", "exit_code", "seconds")} for c in commands
+            ],
+            "tail": (
+                (observation.details.get("stdout_tail") or "")
+                + (observation.details.get("stderr_tail") or "")
+            )[-1500:],
+        }
+        self._base_checks[commit] = result
+        return result
 
     def _base(self, base: dict[str, Any]) -> dict[str, Any]:
         import json

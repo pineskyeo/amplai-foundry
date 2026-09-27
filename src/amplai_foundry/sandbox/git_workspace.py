@@ -173,10 +173,13 @@ class GitWorkspaceManager:
         stage.mkdir(mode=0o700)
         try:
             self._extract(self._repo(value["repo"]), value["commit"], stage)
+            # A fresh local repository with the base as its only commit: repo tests may read
+            # committed files through git (found by the first real run). No remote, no history.
+            self._commit(stage, "amplai base " + value["commit"])
             if value.get("patch"):
+                # a repair copy: the previous attempt stays visible as uncommitted changes
                 self._apply(stage, self.artifacts.read(scope, value["patch"]))
-            # The container runs as an unprivileged uid; the copy must be writable to it.
-            stage.chmod(0o777)
+            self._open(stage)
             os.rename(stage, target)
             base = {k: v for k, v in value.items() if k != "patch"}
             self._bases[target] = self.artifacts.admit(scope, canonical(base), BASE_MEDIA)
@@ -196,15 +199,47 @@ class GitWorkspaceManager:
                 tar.extractall(target, members=members, filter="data")
             else:
                 tar.extractall(target, members=members)
-        for current, dirs, _names in os.walk(target):
+
+    @staticmethod
+    def _open(target: Path) -> None:
+        """The container runs as an unprivileged uid; the copy (and its .git) must be writable."""
+        target.chmod(0o777)
+        for current, dirs, names in os.walk(target):
             for name in dirs:
                 path = Path(current) / name
                 if not path.is_symlink():
                     path.chmod(0o777)
-            for name in _names:
+            for name in names:
                 path = Path(current) / name
                 if not path.is_symlink():
                     path.chmod(path.stat().st_mode | 0o666)
+
+    @staticmethod
+    def _commit(target: Path, message: str) -> None:
+        env = {
+            **_git_env(),
+            "GIT_AUTHOR_NAME": "AMPLAI",
+            "GIT_AUTHOR_EMAIL": "amplai@localhost",
+            "GIT_COMMITTER_NAME": "AMPLAI",
+            "GIT_COMMITTER_EMAIL": "amplai@localhost",
+        }
+        steps = [["init", "-q", "-b", "amplai"]] if not (target / ".git").exists() else []
+        steps += [["add", "-A"], ["commit", "-q", "--no-verify", "--allow-empty", "-m", message]]
+        for args in steps:
+            run = subprocess.run(
+                ["git", "-c", "core.hooksPath=/dev/null", *args],
+                cwd=target,
+                env=env,
+                capture_output=True,
+                timeout=300,
+                check=False,
+            )
+            if run.returncode != 0:
+                raise Hold(
+                    "GIT_COPY",
+                    "Could not make the workspace a git checkout",
+                    details={"args": args[:1], "stderr": run.stderr.decode()[-400:]},
+                )
 
     @staticmethod
     def _apply(target: Path, patch: bytes) -> None:
@@ -311,6 +346,8 @@ class GitWorkspaceManager:
         target = self.materialize(scope, run_id, base)
         try:
             self._apply(target, patch)
+            self._commit(target, "amplai change")
+            self._open(target)
         except BaseException:
             self.discard(target)
             raise

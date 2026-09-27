@@ -79,6 +79,22 @@ def test_acceptances_naming_different_commands_share_the_app_suite(
     assert refs == {graph["nodes"][0]["verification_profile_ref"]["id"]} == {"app-suite"}
 
 
+def test_the_plan_shows_whether_the_suite_passes_on_the_untouched_base(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig = build_rig(deployment, tmp_path)
+    record = rig.service.plan(submit(rig))
+    # the rig's check needs value() == 2, so the untouched base (value() == 1) is red
+    check = record["base_check"]
+    assert check["outcome"] == "fail" and check["commands"][0]["command_id"] == "check"
+    from amplai_foundry.runtime.cli import render_plan
+
+    assert "WARNING" in render_plan(record)
+    # cached per base commit: a second plan does not rerun the suite
+    again = rig.service.plan(submit(rig, "another goal"))
+    assert again["base_check"] is rig.service._base_checks[check["commit"]]
+
+
 def test_open_questions_stop_before_any_contract(deployment: Any, tmp_path: Path) -> None:
     draft = {**DRAFT, "questions": ["Which module owns value()?"]}
     rig = build_rig(deployment, tmp_path, FixedPlanner(draft))

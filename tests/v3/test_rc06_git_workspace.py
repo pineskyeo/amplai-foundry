@@ -73,7 +73,10 @@ def test_materialize_is_the_commit_with_dotfiles_and_without_git(
     base = mgr.base_snapshot(deployment.scope, "app")
     ws = mgr.materialize(deployment.scope, "run-1", base)
     assert (ws / ".github" / "ci.yml").read_text() == "on: push\n"
-    assert (ws / ".gitignore").exists() and not (ws / ".git").exists()
+    assert (ws / ".gitignore").exists()
+    # the copy's .git is a fresh repository: no remote, one commit, none of the original history
+    assert git(ws, "remote") == "" and git(ws, "rev-list", "--count", "HEAD").strip() == "1"
+    assert git(ws, "rev-parse", "HEAD").strip() != git(repo, "rev-parse", "HEAD").strip()
     # the committed bytes, not the operator's uncommitted edit
     assert (ws / "README.md").read_text() == "app\n"
     assert checkout_state(repo) == before
@@ -181,6 +184,26 @@ def test_checkpoint_roundtrip_and_drift(deployment: Any, mgr: GitWorkspaceManage
     (ws / "src" / "app.py").write_text("changed again\n")
     with pytest.raises(Hold, match="checkpoint"):
         mgr.assert_matches(deployment.scope, ws, checkpoint)
+
+
+def test_copies_are_git_checkouts_whose_head_is_what_is_judged(
+    deployment: Any, tmp_path: Path, repo: Path
+) -> None:
+    # found by the first real run: repo tests read committed files through git, and a copy
+    # without .git made the untouched base fail its own suite
+    mgr = GitWorkspaceManager(tmp_path / "w", deployment.artifacts, {"app": repo})
+    base = mgr.base_snapshot(deployment.scope, "app")
+    ws = mgr.materialize(deployment.scope, "run-1", base)
+    assert git(ws, "show", "HEAD:README.md") == "app\n"
+    assert git(ws, "status", "--porcelain") == ""
+    (ws / "src" / "app.py").write_text("def greet():\n    return 'hello'\n")
+    out = mgr.collect(deployment.scope, ws, {"change": PATCH_BINDING}, NODE, process_stopped=True)
+    patch = patch_of(deployment, mgr, out)
+    assert b".git/" not in patch and b"return 'hello'" in patch
+    raw = deployment.artifacts.read(deployment.scope, out["change"])
+    judged, _ = mgr.materialize_change(deployment.scope, "run-2", raw)
+    assert "return 'hello'" in git(judged, "show", "HEAD:src/app.py")
+    assert git(judged, "status", "--porcelain") == ""
 
 
 def test_registered_repo_must_be_a_real_checkout(deployment: Any, tmp_path: Path) -> None:

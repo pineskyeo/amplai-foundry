@@ -128,6 +128,14 @@ def render_plan(record: dict[str, Any]) -> str:
         )
         for q in draft.get("questions") or []:
             lines.append(f"  QUESTION  : {q}")
+    check = record.get("base_check") or {}
+    if check and check.get("outcome") != "pass":
+        lines.append(
+            "  WARNING   : the acceptance suite already fails on the base "
+            f"({check.get('reason')}); approve only if the goal is to fix that"
+        )
+    elif check:
+        lines.append("  base check: acceptance suite passes on the untouched base")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
     for i, a in enumerate(record.get("attempts") or [], start=1):
