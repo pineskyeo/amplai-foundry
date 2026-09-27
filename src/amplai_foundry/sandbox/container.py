@@ -69,6 +69,7 @@ class ContainerSandbox:
         *,
         env_names: list[str] | None = None,
         interactive: bool = False,
+        workspace_readonly: bool = False,
         native_home: Path | None = None,
         readonly_mounts: dict[str, Path] | None = None,
     ) -> list[str]:
@@ -113,7 +114,8 @@ class ContainerSandbox:
             "--env",
             "HOME=/home/agent",
             "--mount",
-            f"type=bind,src={workspace},dst=/workspace",
+            f"type=bind,src={workspace},dst=/workspace"
+            + (",readonly" if workspace_readonly else ""),
             "--workdir",
             "/workspace",
         ]

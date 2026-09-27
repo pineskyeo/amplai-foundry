@@ -46,6 +46,7 @@ def inputs(tmp_path: Path, **report: Any) -> CodexProfileInputs:
                 "model": "gpt-5.6-sol",
                 "qualification_id": "qualification-codex-test",
                 "checks": [{"name": "exact_version", "outcome": "pass"}],
+                "tool_use": {"outcome": "pass"},
                 **report,
             }
         },
@@ -66,6 +67,7 @@ def inputs(tmp_path: Path, **report: Any) -> CodexProfileInputs:
         {"image": "localhost:5000/other@sha256:" + "b" * 64},
         {"driver_version": "0.154.0"},
         {"model": "some-other-model"},
+        {"tool_use": {"outcome": "fail"}},
     ],
 )
 def test_registration_refuses_anything_but_a_passing_report_for_this_image(

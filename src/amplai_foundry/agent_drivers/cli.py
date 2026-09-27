@@ -137,11 +137,15 @@ class CliDriver:
         args = [self.binary, "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        # --skip-git-repo-check: workspaces are commit copies without .git; this is the argv
-        # Work 016 qualified in the container (scripts/container_qualify.py).
-        args += ["--json", "--model", self.model, "--skip-git-repo-check"]
-        if not session:
-            args += ["--sandbox", "workspace-write"]
+        # --skip-git-repo-check: workspaces are commit copies without .git. This is exactly the
+        # argv scripts/container_qualify.py qualifies in the container.
+        # Codex's own bwrap sandbox cannot create namespaces in the unprivileged container
+        # (measured 2026-09-28: shell and file writes fail), so the qualified container is the
+        # sandbox and Codex's is bypassed (D-073).
+        args += [
+            "--json", "--model", self.model, "--skip-git-repo-check",
+            "--dangerously-bypass-approvals-and-sandbox",
+        ]  # fmt: skip
         if output_schema is not None:
             raise Hold("SCHEMA_FILE_REQUIRED", "Codex needs a pinned read-only schema file")
         return [*args, prompt]

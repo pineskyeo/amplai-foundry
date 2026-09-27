@@ -167,6 +167,9 @@ def measured_qualification(inputs: CodexProfileInputs) -> dict[str, Any]:
         or doc.get("container_image") != container["image"]
         or [report.get("driver_version")] != version
         or report.get("model") != inputs.model
+        # The nine design probes passed on PONG turns while every tool call failed in the
+        # container; real work also needs a measured tool turn (2026-09-28).
+        or (report.get("tool_use") or {}).get("outcome") != "pass"
     ):
         raise Hold(
             "DRIVER_UNQUALIFIED",
@@ -181,6 +184,7 @@ def measured_qualification(inputs: CodexProfileInputs) -> dict[str, Any]:
         "image": container["image"],
         "model": report["model"],
         "checks": {c["name"]: c["outcome"] for c in report["checks"]},
+        "tool_use": report["tool_use"],
         "source": {
             "path": str(inputs.qualification_report),
             "sha256": _sha256(inputs.qualification_report),

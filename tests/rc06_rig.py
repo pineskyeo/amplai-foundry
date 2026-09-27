@@ -136,6 +136,7 @@ def codex_inputs(root: Path) -> CodexProfileInputs:
                 "model": "gpt-5.6-sol",
                 "qualification_id": "qualification-codex-rig",
                 "checks": [{"name": "exact_version", "outcome": "pass"}],
+                "tool_use": {"outcome": "pass"},
             }
         },
     }

@@ -79,14 +79,17 @@ def _codex(tmp_path: Path) -> CliDriver:
 
 
 def test_codex_argv_equals_the_qualified_container_argv(tmp_path: Path) -> None:
-    # given: the argv scripts/container_qualify.py qualified (Work 016, 9/9)
+    # given: the argv scripts/container_qualify.py qualifies. Codex's own bwrap sandbox cannot
+    # create namespaces in the unprivileged container (measured 2026-09-28: shell and file
+    # writes fail), so the container is the sandbox and Codex's is bypassed (D-073).
     qualified = [
         "codex", "--ask-for-approval", "never", "exec", "--json", "--model", "gpt-5.6-sol",
-        "--skip-git-repo-check", "--sandbox", "workspace-write", "do it",
+        "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "do it",
     ]  # fmt: skip
     resumed = [
         "codex", "--ask-for-approval", "never", "exec", "resume", "sess_1", "--json", "--model",
-        "gpt-5.6-sol", "--skip-git-repo-check", "do it",
+        "gpt-5.6-sol", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox",
+        "do it",
     ]  # fmt: skip
     driver = _codex(tmp_path)
     # expected: production builds exactly the same vector (workspaces carry no .git)
@@ -126,3 +129,13 @@ def test_coordinator_destroys_driver_resources_after_a_stopped_run(deployment: A
     )
     # expected: the stopped run's driver resources (container) are removed exactly once
     assert len(port.destroyed) == 1
+
+
+def test_the_sandbox_can_mount_the_workspace_read_only(tmp_path: Path) -> None:
+    from amplai_foundry.sandbox.container import ContainerProfile, ContainerSandbox
+
+    sandbox = ContainerSandbox(ContainerProfile("localhost:5000/x@sha256:" + "d" * 64))
+    rw = sandbox.command(["true"], tmp_path, "rw")
+    ro = sandbox.command(["true"], tmp_path, "ro", workspace_readonly=True)
+    assert f"type=bind,src={tmp_path},dst=/workspace" in rw
+    assert f"type=bind,src={tmp_path},dst=/workspace,readonly" in ro

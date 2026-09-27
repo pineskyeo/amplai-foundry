@@ -139,9 +139,11 @@ class ContainerTurns:
         args = ["codex", "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        args += ["--json", "--model", self.model, "--skip-git-repo-check"]
-        if not session:
-            args += ["--sandbox", "workspace-write" if tools != "Read" else "read-only"]
+        # Same argv as production CliDriver.argv (D-073: the container is the sandbox).
+        args += [
+            "--json", "--model", self.model, "--skip-git-repo-check",
+            "--dangerously-bypass-approvals-and-sandbox",
+        ]  # fmt: skip
         return [*args, prompt]
 
     def command(self, argv: list[str], name: str) -> list[str]:
@@ -482,6 +484,42 @@ def measure(t: ContainerTurns, version: str) -> dict[str, Probe]:
     return p
 
 
+def tool_use(t: ContainerTurns) -> dict[str, Any]:
+    """The agent can run the app's tools and edit files in the container (product gate).
+
+    Not one of the nine design probes: those passed on PONG turns while every shell command
+    and file write failed inside the container (Codex's bwrap sandbox, 2026-09-28). A driver is
+    only registered for real work if this passes too.
+    """
+    marker = t.ws / "tool-use.txt"
+    marker.unlink(missing_ok=True)
+    turn = t.turn(
+        "Run the shell command `python --version` and then create a file named tool-use.txt "
+        "containing exactly the version string it printed. Reply DONE.",
+        tools="Write",
+    )
+    t.cost.append({"turn": "tool_use", "usage": turn["usage"], "seconds": turn["seconds"]})
+    ran = []
+    for line in turn["stdout"].decode(errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        item = event.get("item") or {}
+        if item.get("type") == "command_execution" and item.get("exit_code") is not None:
+            ran.append({"command": item.get("command", "")[:120], "exit": item["exit_code"],
+                        "output": (item.get("aggregated_output") or "")[:120]})  # fmt: skip
+    python_ok = any(r["exit"] == 0 and "Python 3" in r["output"] for r in ran)
+    written = marker.read_text().strip() if marker.is_file() else None
+    ok = turn["ok"] and python_ok and bool(written and written.startswith("Python 3"))
+    return {
+        "outcome": "pass" if ok else "fail",
+        "commands": ran,
+        "file": written,
+        "rc": turn["rc"],
+    }
+
+
 def record(
     t: ContainerTurns, probes: dict[str, Probe], version: str, out_dir: Path
 ) -> dict[str, Any]:
@@ -534,6 +572,7 @@ def main() -> int:
     version = pinned.group(0) if pinned else ""
     t = ContainerTurns(a.driver, model, a.codex_home, a.container_profile)
     probes = measure(t, version)
+    tools = tool_use(t) if a.driver == "codex" else None
     report = record(t, probes, version, a.artifacts)
     checks = [
         {
@@ -573,6 +612,7 @@ def main() -> int:
         "native_delegation_qualified": report["native_delegation_qualified"],
         "qualification_id": report["qualification_id"],
         "checks": checks,
+        **({"tool_use": tools} if tools is not None else {}),
     }
     existing["cost"][f"{a.driver}-cli"] = t.cost
     a.out.parent.mkdir(parents=True, exist_ok=True)

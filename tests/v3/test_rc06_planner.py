@@ -140,7 +140,9 @@ def test_codex_planner_reads_read_only_with_a_pinned_schema(tmp_path: Path) -> N
     out = p.draft("make value return 2", "app", {"check": "value() must return 2"}, ws)
     assert out["draft"] == DRAFT and out["usage"] == {"output_tokens": 7}
     argv = sandbox.calls[0]["argv"]
-    assert argv[argv.index("--sandbox") + 1] == "read-only"
+    # read-only is enforced by the docker mount, not by Codex's own sandbox (D-073)
+    assert "--dangerously-bypass-approvals-and-sandbox" in argv and "--sandbox" not in argv
+    assert sandbox.calls[0]["kw"]["workspace_readonly"] is True
     assert "/amplai-input/plan-schema.json" in sandbox.calls[0]["kw"]["readonly_mounts"]
     # the credential was leased for the run and removed afterwards
     run_home = Path(sandbox.calls[0]["kw"]["native_home"])
@@ -163,3 +165,12 @@ def test_codex_planner_rejects_replies_outside_the_schema(tmp_path: Path, reply:
     with pytest.raises(Hold) as exc:
         p.draft("goal", "app", {"check": "desc"}, ws)
     assert exc.value.code == "PLANNER_OUTPUT"
+
+
+def test_a_questions_only_reply_is_a_valid_draft(tmp_path: Path) -> None:
+    # found by a real vague goal ("성능을 개선해줘"): questions without acceptance are valid
+    reply = {**DRAFT, "acceptance": [], "questions": ["Which command or path is slow?"]}
+    p, _, _ = planner(tmp_path, json.dumps(reply))
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    assert p.draft("성능을 개선해줘", "app", {"check": "d"}, ws)["draft"]["questions"]

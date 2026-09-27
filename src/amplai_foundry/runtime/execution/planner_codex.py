@@ -109,7 +109,7 @@ class CodexPlanner:
     def argv(self, prompt: str) -> list[str]:
         return [
             "codex", "--ask-for-approval", "never", "exec", "--json", "--model", self.model,
-            "--skip-git-repo-check", "--sandbox", "read-only",
+            "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox",
             "--output-schema", "/amplai-input/plan-schema.json", prompt,
         ]  # fmt: skip
 
@@ -132,6 +132,8 @@ class CodexPlanner:
                 name,
                 native_home=home,
                 readonly_mounts={"/amplai-input/plan-schema.json": schema_path},
+                # read-only is the docker mount, not Codex's sandbox (D-073)
+                workspace_readonly=True,
             )
             try:
                 result = subprocess.run(
@@ -164,6 +166,6 @@ class CodexPlanner:
         except ValueError:
             raise Hold("PLANNER_OUTPUT", "Planner reply is not JSON") from None
         errors = list(Draft202012Validator(schema).iter_errors(draft))
-        if errors or not draft["acceptance"]:
+        if errors or not (draft["acceptance"] or draft["questions"]):
             raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
         return {"draft": draft, "usage": usage, "seconds": round(time.time() - started, 1)}
