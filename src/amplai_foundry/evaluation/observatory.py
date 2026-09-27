@@ -249,9 +249,18 @@ class Observatory:
                         {"goal_id": e["aggregate_id"], "finding": "negative_human_wait"}
                     )
                 granted.setdefault(e["aggregate_id"], at)
+        # The goal's first claim, from all its runs: a window may hold only a later attempt.
+        # The local loop claims only after the plan says approved, which is written in the same
+        # tx as approval.granted; a direct Runtime.claim poller could claim between activation
+        # and that event and would show up as negative_queue_duration.
+        first_claim: dict[str, float] = {}
+        for r in runs:
+            claimed_at = _instant(r["started_at"])
+            goal_id = r["root_goal_id"]
+            if claimed_at is not None and claimed_at < first_claim.get(goal_id, float("inf")):
+                first_claim[goal_id] = claimed_at
         for goal_id, at in granted.items():
-            claimed = [_instant(r["started_at"]) for r in selected if r["root_goal_id"] == goal_id]
-            first = min((c for c in claimed if c is not None), default=None)
+            first = first_claim.get(goal_id)
             if first is not None and first >= at:
                 queued.append((first - at) * 1000)
             elif first is not None:
@@ -264,7 +273,9 @@ class Observatory:
                 if v and v.get("attestation_ref"):
                     reasons[v["acceptance_id"]] = f"{v['outcome']}: {v['reason']}"
             for signature in r["failure_signatures"]:
-                failure_reasons.setdefault(signature, reasons)
+                # one signature stands for one reason set; keep the most complete evidence of it
+                if len(reasons) >= len(failure_reasons.get(signature, {})):
+                    failure_reasons[signature] = reasons
         return {
             "scope": scope.wire(),
             "snapshot_event_seq": events[-1]["seq"] if events else 0,

@@ -7,10 +7,11 @@ hard-coded unknown, and a failure signature was only a hash. Same stand-ins as t
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
-from amplai_foundry.evaluation.observatory import Observatory
+from amplai_foundry.evaluation.observatory import Observatory, _instant
 from rc06_rig import DRAFT, approved, rig_with_codex, submit
 
 
@@ -101,3 +102,82 @@ def test_failure_signatures_map_to_readable_reasons(deployment: Any, tmp_path: P
     (signature,) = v["failure_signatures"]
     assert v["failure_signatures"][signature] == 3
     assert v["failure_reasons"] == {signature: {"AC-1": "fail: check exited 1"}}
+
+
+def _runs(rig: Any, goal: str) -> list[dict[str, Any]]:
+    d = rig.d
+    rows = d.store.conn.execute(
+        "SELECT data FROM heads WHERE tenant=? AND project=? AND kind='run'", d.scope.keys()
+    ).fetchall()
+    records = [json.loads(r["data"])["record"] for r in rows]
+    return sorted((r for r in records if r["root_goal_id"] == goal), key=lambda r: r["attempt"])
+
+
+def _granted_at(rig: Any, goal: str) -> float:
+    row = rig.d.store.conn.execute(
+        "SELECT created_at FROM events WHERE event_type='approval.granted' AND aggregate_id=?",
+        (goal,),
+    ).fetchone()
+    value = _instant(row["created_at"])
+    assert value is not None
+    return value
+
+
+def _set_record(rig: Any, run_id: str, **updates: Any) -> None:
+    # controlled fixture for rows the runtime does not produce; never a write path
+    d = rig.d
+    with d.store.tx() as db:
+        head = d.store.head(d.scope, "run", run_id, db=db)
+        data = {**head["data"], "record": {**head["data"]["record"], **updates}}
+        d.store.cas(db, d.scope, "run", run_id, head["row_version"], head["state"], data)
+
+
+def test_queue_time_is_measured_to_the_goals_first_claim_even_outside_the_window(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # found by review: with a window holding only attempt 2, queue_ms used attempt 2's claim
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "wrong-first")
+    goal = approved(rig)
+    loop.run_goal(goal)
+    first, second = _runs(rig, goal)
+    started = _instant(first["started_at"])
+    assert started is not None
+    expected = (started - _granted_at(rig, goal)) * 1000
+    v = Observatory(rig.d.store).summary(rig.d.scope, since=second["started_at"])
+    assert v["run_count"] == 1
+    assert v["queue_samples"] == 1 and v["queue_ms"] == expected
+
+
+def test_a_claim_before_the_approval_is_an_integrity_finding_not_a_sample(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    goal = approved(rig)
+    loop.run_goal(goal)
+    (run,) = _runs(rig, goal)
+    _set_record(rig, run["run_id"], started_at="2000-01-01T00:00:00Z")
+    v = summary(rig)
+    assert v["queue_samples"] == 0 and v["queue_ms"] is None
+    assert {"goal_id": goal, "finding": "negative_queue_duration"} in v["integrity_findings"]
+
+
+def test_a_repeated_human_revoke_is_one_intervention(deployment: Any, tmp_path: Path) -> None:
+    rig, _loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    goal = approved(rig)
+    rig.service.revoke(rig.operator, goal)
+    rig.service.revoke(rig.operator, goal)
+    assert summary(rig)["human_intervention_events"]["approval.revoked"] == 1
+
+
+def test_failure_reasons_keep_the_most_complete_evidence(deployment: Any, tmp_path: Path) -> None:
+    # a first run whose verdicts cannot be resolved must not pin an empty explanation
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "always-wrong")
+    goal = approved(rig)
+    loop.run_goal(goal)
+    # heads are read in id order: leave only the last id complete so an incomplete run comes first
+    *incomplete, _complete = sorted(_runs(rig, goal), key=lambda r: r["run_id"])
+    for run in incomplete:
+        _set_record(rig, run["run_id"], verdict_refs=[])
+    v = summary(rig)
+    (signature,) = v["failure_reasons"]
+    assert v["failure_reasons"][signature] == {"AC-1": "fail: check exited 1"}
