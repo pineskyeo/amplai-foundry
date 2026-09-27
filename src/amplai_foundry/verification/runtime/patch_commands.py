@@ -97,6 +97,105 @@ class PatchCommandVerifier:
             self.workspaces.discard(workspace)
 
 
+class SuiteVerifier:
+    """The app's acceptance suite: every installed command on one base + patch copy.
+
+    A work node carries exactly one verifier profile (``Runtime.save_graph``: NODE_VERIFIER),
+    so each app installs one suite and every acceptance binds to it. A change passes only if
+    all commands exit 0, which also catches regressions outside the claimed acceptance. The
+    last observation is reused for the same change bytes, so N acceptances run the suite once.
+    """
+
+    def __init__(
+        self,
+        commands: list[tuple[str, list[str], int]],
+        *,
+        workspaces: GitWorkspaceManager,
+        scope: Scope,
+        sandbox: CommandSandbox,
+    ) -> None:
+        if not commands:
+            raise RuntimeFault("VERIFIER_COMMAND", "A suite needs at least one command")
+        if getattr(getattr(sandbox, "profile", None), "network", None) != "none":
+            raise RuntimeFault("VERIFIER_NETWORK", "A patch verifier runs with network=none")
+        self.commands, self.workspaces, self.scope, self.sandbox = (
+            commands, workspaces, scope, sandbox,
+        )  # fmt: skip
+        self._last: tuple[str, VerificationObservation] | None = None
+
+    def __call__(self, raw: bytes) -> VerificationObservation:
+        import hashlib
+
+        key = hashlib.sha256(raw).hexdigest()
+        if self._last and self._last[0] == key:
+            return self._last[1]
+        observation = self._run(raw)
+        self._last = (key, observation)
+        return observation
+
+    def _run(self, raw: bytes) -> VerificationObservation:
+        run_id = new_id("verify")
+        try:
+            workspace, patch = self.workspaces.materialize_change(self.scope, run_id, raw)
+        except Hold as exc:
+            if exc.code == "PATCH_APPLY":
+                info = exc.details if isinstance(exc.details, dict) else {}
+                return VerificationObservation(
+                    "fail", "Patch does not apply to its base commit", dict(info), 1
+                )
+            raise
+        results: list[dict[str, Any]] = []
+        try:
+            for command_id, argv, timeout in self.commands:
+                name = "amplai-verify-" + new_id("v")[-20:].replace("_", "-").lower()
+                started = time.time()
+                try:
+                    command = self.sandbox.command(list(argv), workspace, name)
+                    try:
+                        result = subprocess.run(
+                            command, capture_output=True, timeout=timeout, check=False
+                        )
+                    except subprocess.TimeoutExpired:
+                        subprocess.run(["docker", "kill", name], capture_output=True, check=False)
+                        results.append(
+                            {"command_id": command_id, "exit_code": None, "timed_out": True,
+                             "seconds": round(time.time() - started, 1)}
+                        )  # fmt: skip
+                        return VerificationObservation(
+                            "inconclusive",
+                            f"{command_id} exceeded its timeout",
+                            {"patch_bytes": len(patch), "commands": results},
+                            None,
+                        )
+                finally:
+                    subprocess.run(["docker", "rm", "-f", name], capture_output=True, check=False)
+                entry = {
+                    "command_id": command_id,
+                    "argv": list(argv),
+                    "exit_code": result.returncode,
+                    "seconds": round(time.time() - started, 1),
+                    "stdout_tail": result.stdout.decode(errors="replace")[-TAIL:],
+                    "stderr_tail": result.stderr.decode(errors="replace")[-TAIL:],
+                }
+                results.append(entry)
+                if result.returncode != 0:
+                    return VerificationObservation(
+                        "fail",
+                        f"{command_id} exited {result.returncode}",
+                        {"patch_bytes": len(patch), "commands": results,
+                         "stdout_tail": entry["stdout_tail"], "stderr_tail": entry["stderr_tail"]},
+                        result.returncode,
+                    )  # fmt: skip
+            return VerificationObservation(
+                "pass",
+                "All suite commands succeeded",
+                {"patch_bytes": len(patch), "commands": results},
+                0,
+            )
+        finally:
+            self.workspaces.discard(workspace)
+
+
 class NonEmptyChangeCheck:
     """Global check: every node produced a change that is not empty (a no-op is not done)."""
 

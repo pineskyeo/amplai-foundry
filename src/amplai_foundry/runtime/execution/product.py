@@ -213,26 +213,27 @@ class LocalExecutionService:
                 "classification": "internal",
             },
         )
-        verifier_refs = {}
-        for v in app.verifiers:
-            profile = {
-                "schema_version": "3.0.0",
-                "profile_id": f"{a}-{v.id}",
-                "version": "1",
-                "kind": "deterministic",
-                "tool_refs": [],
-                "allowed_command_ids": [v.id],
-                "required_capabilities": [],
-                "environment_ref": env_ref,
-                "rubric_ref": None,
-                "golden_refs": [],
-                "protected": True,
-                "owner_subject_id": self.actors.verifier.subject_id,
-            }
-            ref = self._put("verifier-profile", f"{a}-{v.id}", profile)
-            verifier_refs[v.id] = ref
-            if digest(ref) not in self.verification.runners:
-                self.verification.register(ref, self.verifier_factory(app, v))
+        # One suite profile per app: a node carries exactly one verifier profile
+        # (Runtime.save_graph NODE_VERIFIER), so every acceptance binds to the suite, which runs
+        # all installed commands on base + patch.
+        profile = {
+            "schema_version": "3.0.0",
+            "profile_id": f"{a}-suite",
+            "version": "1",
+            "kind": "deterministic",
+            "tool_refs": [],
+            "allowed_command_ids": [v.id for v in app.verifiers],
+            "required_capabilities": [],
+            "environment_ref": env_ref,
+            "rubric_ref": None,
+            "golden_refs": [],
+            "protected": True,
+            "owner_subject_id": self.actors.verifier.subject_id,
+        }
+        suite_ref = self._put("verifier-profile", f"{a}-suite", profile)
+        if digest(suite_ref) not in self.verification.runners:
+            self.verification.register(suite_ref, self.verifier_factory(app))
+        verifier_refs = {v.id: suite_ref for v in app.verifiers}
         global_ref = self._put(
             "global-verifier",
             f"{a}-global",
@@ -276,7 +277,7 @@ class LocalExecutionService:
             "allowed_roots": [str(self.workspaces.root)],
             "environment_refs": [env_ref],
             "invariant_refs": [invariant_ref],
-            "verifier_profile_refs": list(verifier_refs.values()),
+            "verifier_profile_refs": [suite_ref],
             "data_classification": "internal",
             "requested_capabilities_ceiling": caps,
             "registry_revision": 1,
@@ -419,7 +420,8 @@ class LocalExecutionService:
                     "subject_selector": PORT,
                     "environment_ref": env_ref,
                     "required_evidence_types": ["command-verification"],
-                    "decision_rule": f"verifier command {item['verifier']} exits 0 on base+patch",
+                    "decision_rule": "every installed suite command exits 0 on base + patch; "
+                    + f"{item['verifier']} demonstrates this statement",
                     "independent_review": True,
                     "timeout_seconds": timeout,
                 }
@@ -432,7 +434,7 @@ class LocalExecutionService:
                     "mandatory": True,
                     "verifier_ref": vref,
                     "required_evidence_types": ["command-verification"],
-                    "success_rule": f"{item['verifier']} exits 0 with the patch applied",
+                    "success_rule": f"suite passes ({item['verifier']} shows it) on base + patch",
                     "human_acceptance_required": False,
                 }
             )

@@ -41,7 +41,7 @@ from amplai_foundry.runtime.reference import PERMISSIONS
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 from amplai_foundry.verification.runtime.patch_commands import (
     NonEmptyChangeCheck,
-    PatchCommandVerifier,
+    SuiteVerifier,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -148,7 +148,9 @@ def codex_inputs(root: Path) -> CodexProfileInputs:
     )
 
 
-def build_rig(d: Any, root: Path, planner: FixedPlanner | None = None) -> Rig:
+def build_rig(
+    d: Any, root: Path, planner: FixedPlanner | None = None, *, extra_verifier: bool = False
+) -> Rig:
     repo = make_repo(root)
     codex_refs = install_codex_profile(
         d.store, d.scope, codex_inputs(root), app_capabilities("app")
@@ -174,14 +176,18 @@ def build_rig(d: Any, root: Path, planner: FixedPlanner | None = None) -> Rig:
         planner=planner,
         actors=actors,
         codex_refs=codex_refs,
-        verifier_factory=lambda app, v: PatchCommandVerifier(
-            v.id, list(v.argv), workspaces=workspaces, scope=d.scope, sandbox=HostSandbox()
+        verifier_factory=lambda app: SuiteVerifier(
+            [(v.id, list(v.argv), v.timeout_seconds) for v in app.verifiers],
+            workspaces=workspaces,
+            scope=d.scope,
+            sandbox=HostSandbox(),
         ),
         global_factory=lambda app: NonEmptyChangeCheck(workspaces, d.scope),
     )
-    service.install(
-        AppConfig("app", repo, (VerifierCommand("check", CHECK, "value() must return 2", 60),))
-    )
+    commands = [VerifierCommand("check", CHECK, "value() must return 2", 60)]
+    if extra_verifier:
+        commands.append(VerifierCommand("imports", ("python3", "-c", "import app"), "imports", 60))
+    service.install(AppConfig("app", repo, tuple(commands)))
     return Rig(d, repo, service, workspaces, operator, actors, planner, codex_refs)
 
 

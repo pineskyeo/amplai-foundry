@@ -59,6 +59,26 @@ def test_model_assumptions_become_proposed_inferred_contract_assumptions(
     )
 
 
+def test_acceptances_naming_different_commands_share_the_app_suite(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # found by the first real Codex plan: a node has exactly one verifier profile
+    draft = {
+        **DRAFT,
+        "acceptance": [
+            {"statement": "value() returns 2", "verifier": "check"},
+            {"statement": "module still imports", "verifier": "imports"},
+        ],
+    }
+    rig = build_rig(deployment, tmp_path, FixedPlanner(draft), extra_verifier=True)
+    record = rig.service.plan(submit(rig))
+    assert record["status"] == "awaiting_approval"
+    graph = rig.d.store.get(rig.d.scope, "workgraph", record["graph_ref"])
+    contract = rig.d.store.get(rig.d.scope, "goal-contract", record["contract_ref"])
+    refs = {a["verifier_ref"]["id"] for a in contract["acceptance"]}
+    assert refs == {graph["nodes"][0]["verification_profile_ref"]["id"]} == {"app-suite"}
+
+
 def test_open_questions_stop_before_any_contract(deployment: Any, tmp_path: Path) -> None:
     draft = {**DRAFT, "questions": ["Which module owns value()?"]}
     rig = build_rig(deployment, tmp_path, FixedPlanner(draft))

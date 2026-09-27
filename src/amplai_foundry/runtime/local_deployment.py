@@ -31,7 +31,7 @@ from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, crea
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
 from ..sandbox.git_workspace import GitWorkspaceManager
-from ..verification.runtime.patch_commands import NonEmptyChangeCheck, PatchCommandVerifier
+from ..verification.runtime.patch_commands import NonEmptyChangeCheck, SuiteVerifier
 from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
 from .contracts.registry import Contracts
@@ -224,9 +224,9 @@ class LocalProductDeployment:
             planner=planner,
             actors=self.actors,
             codex_refs=codex_refs,
-            verifier_factory=lambda app, v: PatchCommandVerifier(
-                v.id, list(v.argv), workspaces=self.workspaces, scope=self.scope,
-                sandbox=verify_sandbox, timeout_seconds=v.timeout_seconds,
+            verifier_factory=lambda app: SuiteVerifier(
+                [(v.id, list(v.argv), v.timeout_seconds) for v in app.verifiers],
+                workspaces=self.workspaces, scope=self.scope, sandbox=verify_sandbox,
             ),
             global_factory=lambda app: NonEmptyChangeCheck(self.workspaces, self.scope),
             publish_mode=cfg.publish_mode,
