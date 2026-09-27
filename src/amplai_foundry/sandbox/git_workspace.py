@@ -14,12 +14,13 @@ from __future__ import annotations
 
 import io
 import os
+import posixpath
 import re
 import shutil
 import subprocess
 import tarfile
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from ..runtime.contracts.identity import canonical, new_id
@@ -47,6 +48,27 @@ def _git_env() -> dict[str, str]:
         "GIT_PAGER": "cat",
         "LC_ALL": "C",
     }
+
+
+def _safe_members(tar: tarfile.TarFile) -> list[tarfile.TarInfo]:
+    """Regular files, directories and in-tree symlinks only; no absolute or parent paths.
+
+    Checked here rather than relying on ``extractall(filter=...)``, which Python 3.11 only has
+    from 3.11.4 (the worker image ships 3.11.2).
+    """
+    members = []
+    for m in tar.getmembers():
+        path = PurePosixPath(m.name)
+        if path.is_absolute() or ".." in path.parts:
+            raise Hold("ARCHIVE_PATH", "Archive member escapes the workspace")
+        if m.issym():
+            resolved = posixpath.normpath(posixpath.join(str(path.parent), m.linkname))
+            if PurePosixPath(m.linkname).is_absolute() or resolved.split("/")[0] == "..":
+                raise Hold("ARCHIVE_LINK", "Archive symlink points outside the workspace")
+        elif not (m.isreg() or m.isdir()):
+            raise Hold("ARCHIVE_SPECIAL", "Archive holds a link, device or special file")
+        members.append(m)
+    return members
 
 
 class GitWorkspaceManager:
@@ -167,8 +189,12 @@ class GitWorkspaceManager:
         if len(archive) > self.max_tree_bytes:
             raise Hold("WORKSPACE_QUOTA", "Base tree exceeds the workspace byte budget")
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-            # data filter: no absolute paths, no escaping links, no devices (PEP 706).
-            tar.extractall(target, filter="data")
+            members = _safe_members(tar)
+            if hasattr(tarfile, "data_filter"):
+                # PEP 706 data filter as well where available (Python >= 3.11.4).
+                tar.extractall(target, members=members, filter="data")
+            else:
+                tar.extractall(target, members=members)
         for current, dirs, _names in os.walk(target):
             for name in dirs:
                 path = Path(current) / name

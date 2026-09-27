@@ -184,3 +184,32 @@ def test_registered_repo_must_be_a_real_checkout(deployment: Any, tmp_path: Path
     with pytest.raises(Hold) as exc:
         GitWorkspaceManager(tmp_path / "work", deployment.artifacts, {"x": plain})
     assert exc.value.code == "GIT_REPO"
+
+
+def test_archive_members_are_checked_without_the_311_4_data_filter(
+    monkeypatch: pytest.MonkeyPatch, deployment: Any, mgr: GitWorkspaceManager, repo: Path
+) -> None:
+    import tarfile
+
+    # given: the worker image's Python 3.11.2 has no tarfile.data_filter (found in the container)
+    monkeypatch.delattr(tarfile, "data_filter", raising=False)
+    real = tarfile.TarFile.extractall
+
+    def no_filter(self: tarfile.TarFile, *args: Any, **kwargs: Any) -> None:
+        assert "filter" not in kwargs
+        real(self, *args, **kwargs)
+
+    monkeypatch.setattr(tarfile.TarFile, "extractall", no_filter)
+    os.symlink("src/app.py", repo / "inside")
+    git(repo, "add", "inside")
+    git(repo, "commit", "-q", "-m", "inside link")
+    base = mgr.base_snapshot(deployment.scope, "app")
+    ws = mgr.materialize(deployment.scope, "run-1", base)
+    assert (ws / "inside").is_symlink()
+    # an escaping link in the base commit is refused before anything is written
+    os.symlink("../../outside", repo / "escape")
+    git(repo, "add", "escape")
+    git(repo, "commit", "-q", "-m", "escape link")
+    with pytest.raises(Hold) as exc:
+        mgr.materialize(deployment.scope, "run-2", mgr.base_snapshot(deployment.scope, "app"))
+    assert exc.value.code == "ARCHIVE_LINK"
