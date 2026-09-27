@@ -1,0 +1,156 @@
+{
+  "schema_version": "2.0",
+  "id": "AMPLAI-V3-EXEC01",
+  "title": "AMPLAI V3 Real Execution — Codex in the sandbox from goal to draft PR (Mac)",
+  "goal": "amplai work 로 받은 목표를 read-only Codex planner 가 계약으로 만들고, 운영자 승인 뒤 serve 안의 worker 가 qualified Codex CLI 를 egress-controlled ContainerSandbox 에서 실행하며, host 가 계산한 patch 를 새 base 에 적용해 container 안에서 계약 테스트로 검증하고, goal.verified 뒤에만 branch push 와 draft PR 을 만든다.",
+  "source": [
+    "spec.md",
+    "plan.md",
+    "../../docs/workstreams/v3-real-execution/DECISIONS.md"
+  ],
+  "work_type": "new_feature",
+  "risk": "high",
+  "scope": {
+    "include": [
+      ".ai-team/knowledge/decisions.index.json",
+      "deployment/",
+      "docs/v3/",
+      "docs/workstreams/v3-real-execution/",
+      "pyproject.toml",
+      "scripts/",
+      "specs/018-v3-real-execution/",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/control_plane/api_v3/",
+      "src/amplai_foundry/runtime/",
+      "src/amplai_foundry/sandbox/",
+      "src/amplai_foundry/verification/runtime/",
+      "tests/e2e/",
+      "tests/v3/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경. 충돌은 DESIGN_CHANGE_PROPOSAL 로 기록)",
+      "Canonical Vault 와 governed knowledge mutation",
+      "Production configuration, live provider account, paid API call",
+      "Git push/merge/release/deploy",
+      "실제 Slack/Hermes workspace 활성화",
+      "다른 저장소 (synapse, cortex) 의 실제 설치·변경"
+    ]
+  },
+  "non_goals": [
+    "회사 Windows 환경, 원격 worker, 여러 사용자",
+    "Claude CLI/OpenCode/Responses 자동 선택",
+    "Slack 접수, 자동 merge·배포",
+    "OpenAI API key 기반 planner",
+    "design-reference/ 변경 (설계 정본 무변경)"
+  ],
+  "acceptance": [
+    {
+      "id": "EX-001",
+      "statement": "production deployment 의 DriverRegistry 에는 qualified codex-cli CliPort 만 등록되고 RecipePort 는 없다.",
+      "evidence": [
+        "tests/v3/test_rc06_execution_wiring.py"
+      ]
+    },
+    {
+      "id": "EX-002",
+      "statement": "workspace 는 base commit 사본이고 결과는 host 계산 patch 하나다 (.git·사용자 checkout 미노출).",
+      "evidence": [
+        "tests/v3/test_rc06_git_workspace.py"
+      ]
+    },
+    {
+      "id": "EX-003",
+      "statement": "verifier 는 새 base 에 patch 를 적용해 allowlist test argv 를 container 에서 실행한다.",
+      "evidence": [
+        "tests/v3/test_rc06_patch_verifier.py"
+      ]
+    },
+    {
+      "id": "EX-004",
+      "statement": "계약은 read-only Codex planner 초안이 PlanningService 검증을 통과해야 만들어진다.",
+      "evidence": [
+        "tests/v3/test_rc06_planner.py"
+      ]
+    },
+    {
+      "id": "EX-005",
+      "statement": "execution/publish grant 는 인증된 human 운영자의 exact 승인으로만 발급된다.",
+      "evidence": [
+        "tests/v3/test_rc06_operator_authority.py"
+      ]
+    },
+    {
+      "id": "EX-006",
+      "statement": "재시도는 첫 시도 포함 3번, 벽시계 30분을 넘지 않고 취소·crash 에서 main/working tree 가 불변이다.",
+      "evidence": [
+        "tests/e2e/test_rc06_execution_e2e.py"
+      ]
+    },
+    {
+      "id": "EX-007",
+      "statement": "goal.verified 뒤에만 amplai/<goal> branch push 와 draft PR 을 멱등으로 만든다.",
+      "evidence": [
+        "tests/e2e/test_rc06_execution_e2e.py"
+      ]
+    },
+    {
+      "id": "EX-008",
+      "statement": "실제 Codex 로 이 repo 의 작은 목표 3~5개를 끝까지 돌린 evidence 가 있다.",
+      "evidence": [
+        "specs/018-v3-real-execution/runs/"
+      ]
+    },
+    {
+      "id": "GATE-001",
+      "statement": "verifier profile v2 PASS, ruff 0, mypy 0, docs validate RESOLVED.",
+      "evidence": [
+        ".ai-team/verifiers/run.py --profile v2"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "실제 Codex run 은 container marker 와 specs/018-v3-real-execution/runs/ evidence 로 확인한다",
+      "fixture 시험을 driver conformance 나 end-to-end 완료 근거로 세지 않는다 (D-065)",
+      "design-reference/ 는 무변경"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "production_operation",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "Existing D-046: controller/V2 유지, semantic runtime 미이식",
+    "Existing D-053: canonical Kit 은 tools/amplai-loop-kit",
+    "Existing D-056: Kit Python 3.6 호환, implicit Store rebinding/supervisor activation 없음",
+    "D-065..D-072 (docs/workstreams/v3-real-execution/DECISIONS.md)",
+    "2026-09-28 운영자 결정: 결과는 draft PR 까지 자동, 30분 상한, 매 goal 승인",
+    "2026-09-28 OD-1: 재시도는 설계값 유지 (첫 시도 포함 3번)"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

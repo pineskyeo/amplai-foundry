@@ -202,6 +202,86 @@
         "Vault curation",
         "specs/011-hermes-slack-orchestration"
       ]
+    },
+    {
+      "id": "D-065",
+      "status": "active",
+      "title": "Close V3 execution only through a real qualified driver",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "specs/018-v3-real-execution",
+        "tests/v3/test_rc01_e2e_cross_app.py"
+      ]
+    },
+    {
+      "id": "D-066",
+      "status": "active",
+      "title": "Run the V3 worker inside the serve process",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/deployment.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-067",
+      "status": "active",
+      "title": "Codex CLI is the first production driver",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers/cli.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-068",
+      "status": "active",
+      "title": "Git commit workspace and host-computed patch",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/sandbox",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-069",
+      "status": "active",
+      "title": "Codex read-only planner without an API key",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/goals/planner.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-070",
+      "status": "active",
+      "title": "Local operator authority",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/contracts/authority.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-071",
+      "status": "active",
+      "title": "Publish as a governed effect after verification",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/effects",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-072",
+      "status": "active",
+      "title": "Per-app worker image and requalification",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "deployment",
+        "specs/018-v3-real-execution"
+      ]
     }
   ]
 }
