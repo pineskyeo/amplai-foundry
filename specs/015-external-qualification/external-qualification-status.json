@@ -20,13 +20,13 @@
     {
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
       "status": "partial",
-      "evidence": "specs/015-external-qualification/driver-qualification.json#reports.opencode-server",
+      "evidence": "specs/015-external-qualification/driver-qualification.json",
       "note": "opencode 1.17.13 server, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py (Work 017): 6/9 pass (exact_version, exact_session, ordered_events, cancel_tree, filesystem_containment, budget_accounting). fail secret_isolation: opencode serve takes its password only from OPENCODE_SERVER_PASSWORD and the bash tool inherits it (name visible to the agent). fail crash_recovery: exact-session resume works after SIGKILL + restart without prompt replay, but the killed server's tool process survives as an orphan. egress inconclusive (host-side server). Both failures are host-side process-model limits; running OpenCode on the container egress profile is the remaining step. Work 017 also fixed two driver defects found only with the real server: non-ascending messageID made the server regenerate replies without end, and gzip bodies were decoded twice."
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",
       "status": "partial",
-      "evidence": "deployment/local-egress-qualification.json; deployment/local-limits-qualification.json",
+      "evidence": "deployment/local-egress-qualification.json",
       "note": "colima + docker 29.5; image pinned by registry digest. Egress is real: the agent joins only an --internal network and an allowlist CONNECT sidecar is the sole route out (deployment/local-egress-qualification.json, tests/v3/test_rc04_egress_container.py). Credential isolation of real claude and codex turns measured (Work 016, 9/9 each). Resource limits measured with ContainerSandbox argv (Work 017, scripts/limits_qualify.py, tests/v3/test_rc05_container_limits.py): memory 64m -> 512 MiB allocation OOMKilled (rc 137), in-limit allocation succeeds; pids 32 -> fork refused after 30 (EAGAIN) with container and engine alive; --cpus applied (NanoCpus). Not measured: CPU throttling under load, podman (not installed)."
     },
     {
