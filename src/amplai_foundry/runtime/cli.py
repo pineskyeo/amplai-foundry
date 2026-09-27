@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any, TypeVar
@@ -74,9 +75,116 @@ def work(
     text: Annotated[str, typer.Argument()],
     target: Annotated[list[str] | None, typer.Option("--app")] = None,
     request_id: Annotated[str | None, typer.Option("--request-id")] = None,
+    wait: Annotated[bool, typer.Option("--wait/--no-wait")] = True,
 ) -> None:
-    """Submit intent; the runtime resolves targets and measurable completion."""
-    submit(text, "work", target or [], request_id)
+    """Submit a goal. On a local product server, draft its contract and show it for approval."""
+    connection = client()
+    try:
+        submitted = connection.submit(
+            text, mode="work", target_hints=target or [], key=request_id or new_id("cli")
+        )
+        goal_id = submitted["goal_id"]
+        try:
+            connection.local_plan(goal_id)
+        except RuntimeFault as exc:
+            if exc.code not in {"NOT_FOUND", "HTTP_ERROR"}:
+                raise
+            emit(submitted)  # not a local product server: submission only
+            return
+        typer.echo(f"goal {goal_id}: planning (read-only Codex on the base commit)")
+        record = connection.local_goal(goal_id)
+        deadline = time.time() + 20 * 60
+        while wait and record.get("status") == "planning" and time.time() < deadline:
+            time.sleep(5)
+            record = connection.local_goal(goal_id)
+        typer.echo(render_plan(record))
+    except RuntimeFault as exc:
+        emit(exc.as_dict())
+        raise typer.Exit(3 if exc.outcome == "hold" else 2) from exc
+    finally:
+        connection.close()
+
+
+def render_plan(record: dict[str, Any]) -> str:
+    goal, status = record.get("goal_id", "?"), record.get("status", "?")
+    lines = [f"goal {goal}: {status}"]
+    draft = record.get("draft") or {}
+    if draft:
+        lines += [
+            f"  summary   : {draft.get('summary', '')}",
+            f"  objective : {draft.get('objective', '')}",
+        ]
+        for label, key in (
+            ("in scope", "in_scope"),
+            ("not doing", "non_goals"),
+            ("constraints", "constraints"),
+        ):
+            for item in draft.get(key) or []:
+                lines.append(f"  {label:<10}: {item}")
+        for i, a in enumerate(draft.get("acceptance") or [], start=1):
+            lines.append(f"  AC-{i:<7}: {a['statement']}  [{a['verifier']}]")
+        lines.append(
+            f"  risk      : {draft.get('risk', '')}   base: {record.get('base_commit', '')[:12]}"
+        )
+        for q in draft.get("questions") or []:
+            lines.append(f"  QUESTION  : {q}")
+    if record.get("reason"):
+        lines.append(f"  reason    : {record['reason']}")
+    for i, a in enumerate(record.get("attempts") or [], start=1):
+        detail = ", ".join(f"{v['acceptance']}={v['outcome']}" for v in a.get("verdicts", []))
+        lines.append(f"  attempt {i} : {a['outcome']} {detail} ({a.get('seconds', '?')}s)")
+    publication = record.get("publication") or {}
+    if publication.get("pr_url"):
+        lines.append(f"  draft PR  : {publication['pr_url']}")
+    elif publication.get("branch"):
+        lines.append(f"  branch    : {publication['branch']}")
+    elif publication.get("error"):
+        lines.append(f"  publish   : {publication['error']} {publication.get('message', '')}")
+    nxt = {
+        "awaiting_approval": f"next: amplai approve {goal}   (or amplai cancel {goal})",
+        "needs_answers": "next: answer the questions in a refined `amplai work` goal",
+        "approved": f"next: amplai status {goal}",
+        "running": f"next: amplai status {goal}",
+    }.get(status)
+    if nxt:
+        lines.append(nxt)
+    return "\n".join(lines)
+
+
+def _local(operation: Callable[[AmplaiClient], Any], *, render: bool = True) -> None:
+    connection = client()
+    try:
+        result = operation(connection)
+        if render and isinstance(result, dict):
+            typer.echo(render_plan(result))
+        else:
+            emit(result)
+    except RuntimeFault as exc:
+        emit(exc.as_dict())
+        raise typer.Exit(3 if exc.outcome == "hold" else 2) from exc
+    finally:
+        connection.close()
+
+
+@app.command("approve")
+def goal_approve(goal_id: Annotated[str, typer.Argument()]) -> None:
+    """Approve the drafted contract: AMPLAI may run it and publish a draft PR when verified."""
+    _local(lambda c: c.local_approve(goal_id))
+
+
+@app.command("status")
+def goal_status(goal_id: Annotated[str | None, typer.Argument()] = None) -> None:
+    """Show one goal (plan, attempts, verification, PR) or the recent goals."""
+    if goal_id:
+        _local(lambda c: c.local_goal(goal_id))
+    else:
+        _local(lambda c: c.local_goals(), render=False)
+
+
+@app.command("cancel")
+def goal_cancel(goal_id: Annotated[str, typer.Argument()]) -> None:
+    """Revoke the approval and stop the goal (a running container is stopped)."""
+    _local(lambda c: c.local_cancel(goal_id))
 
 
 @app.command("design")
@@ -283,6 +391,113 @@ def serve(
             access_log=False,
             proxy_headers=behind_tls_proxy,
         )
+    except RuntimeFault as exc:
+        emit(exc.as_dict())
+        raise typer.Exit(3) from exc
+    finally:
+        if deployment:
+            deployment.close()
+
+
+@ops.command("local-init")
+def local_init(
+    repo: Annotated[Path, typer.Option("--repo")],
+    app_id: Annotated[str, typer.Option("--app")],
+    codex_home: Annotated[Path, typer.Option("--codex-home")],
+    container_profile: Annotated[Path, typer.Option("--container-profile")],
+    qualification_report: Annotated[Path, typer.Option("--qualification-report")],
+    verifier: Annotated[list[str], typer.Option("--verifier", help="id=command ... | description")],
+    home: Annotated[Path, typer.Option("--home")] = Path("~/.amplai/local"),
+    egress_profile: Annotated[Path, typer.Option("--egress-profile")] = Path(
+        "deployment/local-egress.json"
+    ),
+    egress_qualification: Annotated[Path, typer.Option("--egress-qualification")] = Path(
+        "deployment/local-egress-qualification.json"
+    ),
+    base_branch: Annotated[str, typer.Option("--base-branch")] = "main",
+    operator: Annotated[str, typer.Option("--operator")] = os.getenv("USER", "operator"),
+) -> None:
+    """Create keys, the operator token (0600) and the local product configuration."""
+
+    def operation() -> Any:
+        import secrets
+        import shlex
+
+        from .deployment import generate_key
+
+        root = home.expanduser().absolute()
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        config = root / "local.json"
+        if config.exists():
+            raise Hold("CONFIG_EXISTS", "A local configuration already exists; not overwriting")
+        generate_key(root / "authority.pem")
+        generate_key(root / "verifier.pem")
+        token = root / "operator.token"
+        fd = os.open(token, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as out:
+            out.write(secrets.token_urlsafe(48))
+        verifiers = []
+        for item in verifier:
+            head, _, description = item.partition("|")
+            vid, _, command = head.partition("=")
+            if not vid.strip() or not command.strip():
+                raise Hold("VERIFIER_SPEC", "Use --verifier 'id=command | description'")
+            verifiers.append(
+                {"id": vid.strip(), "argv": shlex.split(command),
+                 "description": description.strip() or command.strip()}
+            )  # fmt: skip
+        value = {
+            "schema_version": "local-1",
+            "runtime_root": str(root / "runtime"),
+            "workspace_root": str(root / "workspaces"),
+            "scope": {"tenant_id": "local", "project_id": app_id},
+            "operator_subject": operator,
+            "operator_token_file": str(token),
+            "signing_key_file": str(root / "authority.pem"),
+            "verifier_key_file": str(root / "verifier.pem"),
+            "codex": {
+                "credential_home": str(codex_home.expanduser().absolute()),
+                "egress_profile": str(egress_profile.absolute()),
+                "egress_qualification": str(egress_qualification.absolute()),
+            },
+            "apps": [
+                {
+                    "app_id": app_id,
+                    "repo": str(repo.expanduser().absolute()),
+                    "container_profile": str(container_profile.absolute()),
+                    "qualification_report": str(qualification_report.absolute()),
+                    "verifiers": verifiers,
+                    "base_branch": base_branch,
+                }
+            ],
+        }
+        fd = os.open(config, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as out:
+            out.write(json.dumps(value, indent=2))
+        return {
+            "config": str(config),
+            "token_file": str(token),
+            "next": f"amplai ops local-serve --config {config}  |  "
+            f"export AMPLAI_TOKEN_FILE={token}",
+        }
+
+    guarded(operation)
+
+
+@ops.command("local-serve")
+def local_serve(
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+    port: int = 5083,
+) -> None:
+    """Start the local single-operator product (API + execution loop), loopback only."""
+    import uvicorn
+
+    from .local_deployment import LocalProductDeployment
+
+    deployment = None
+    try:
+        deployment = LocalProductDeployment(config)
+        uvicorn.run(deployment.app, host="127.0.0.1", port=port, workers=1, access_log=False)
     except RuntimeFault as exc:
         emit(exc.as_dict())
         raise typer.Exit(3) from exc
