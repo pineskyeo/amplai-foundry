@@ -42,6 +42,23 @@ def test_plan_compiles_a_frozen_contract_and_graph_awaiting_approval(
     assert d.store.head(d.scope, "goal", goal)["state"] != "active"
 
 
+def test_model_assumptions_become_proposed_inferred_contract_assumptions(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # found by the first real Codex plan: assumptions are schema objects, not strings
+    draft = {**DRAFT, "assumptions": ["value() has no other callers"]}
+    rig = build_rig(deployment, tmp_path, FixedPlanner(draft))
+    record = rig.service.plan(submit(rig))
+    contract = rig.d.store.get(rig.d.scope, "goal-contract", record["contract_ref"])
+    (assumption,) = contract["assumptions"]
+    assert assumption["statement"] == "value() has no other callers"
+    assert (assumption["origin"], assumption["status"], assumption["blocks_execution"]) == (
+        "inferred",
+        "proposed",
+        False,
+    )
+
+
 def test_open_questions_stop_before_any_contract(deployment: Any, tmp_path: Path) -> None:
     draft = {**DRAFT, "questions": ["Which module owns value()?"]}
     rig = build_rig(deployment, tmp_path, FixedPlanner(draft))

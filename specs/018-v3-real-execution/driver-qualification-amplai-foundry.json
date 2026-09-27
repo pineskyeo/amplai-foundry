@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "kind": "driver_qualification_in_container",
+  "reports": {
+    "codex-cli": {
+      "status": "pass",
+      "driver_version": "0.155.1",
+      "host_version": "codex-cli 0.155.1",
+      "model": "gpt-5.6-sol",
+      "auth": "chatgpt_account_sandbox_home",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-cf4a8498e3f74281a807347826ad4a27",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "container reports 'codex-cli 0.155.1'; pinned '0.155.1'",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "session bound=True rc=0 text='PONG'",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "4/4 events normalized, fault=None",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.09s exit=0 (graceful) completed=False running_after=False",
+          "artifacts": 2
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "probe: root_write_rc=1 | ws_write_ok | absent=/Users | absent=/var/run/docker.sock | root_home=readonly | root_home_entries=0 | uid=65534; turn wrote only ['.probe']",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "pass",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['chatgpt.com:443']; sidecar denied ['ab.chatgpt.com:443', 'example.com:443', 'sdmntprsouthcentralus.oaiusercontent.com:443']",
+          "artifacts": 2
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "pass",
+          "reason": "secret absent from stream, stderr, workspace, sidecar log and argv; present in worker-owned session home (82 files, not an agent-visible artifact)",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "usage=measured",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "pass",
+          "reason": "SIGKILL mid-turn (exit=137), then exact-session resume: same_session=True rc=0 text='PONG'",
+          "artifacts": 2
+        }
+      ]
+    }
+  },
+  "cost": {
+    "codex-cli": [
+      {
+        "turn": "pong",
+        "usage": {
+          "input_tokens": 13058,
+          "cached_input_tokens": 11136,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 6,
+          "reasoning_output_tokens": 0
+        },
+        "seconds": 6.1
+      },
+      {
+        "turn": "resume",
+        "usage": {
+          "input_tokens": 26421,
+          "cached_input_tokens": 22272,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 0
+        },
+        "seconds": 5.2
+      }
+    ]
+  },
+  "findings": [],
+  "checked_at": "2026-09-27T18:59:45Z",
+  "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
+  "container_image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:9d66c11461a85ef6f34c2a8fc0584f16d94b4b8dc5bf36acc9adf183d8a33cff",
+  "egress_profile": {
+    "schema_version": "1.0",
+    "name": "local-colima",
+    "network": "amplai-internal",
+    "proxy": "amplai-egress-proxy:3128",
+    "allow": [
+      "api.anthropic.com:443",
+      "api.openai.com:443",
+      "auth.openai.com:443",
+      "chatgpt.com:443",
+      "opencode.ai:443"
+    ],
+    "digest": "a80a7959d6de10fbb2138e7401f7c2985988c9083ff81ff83417ef16fd4a2510"
+  },
+  "artifacts_dir": "specs/018-v3-real-execution/artifacts"
+}

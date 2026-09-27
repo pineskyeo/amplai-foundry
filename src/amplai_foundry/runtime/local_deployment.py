@@ -284,7 +284,8 @@ class LocalProductDeployment:
                 self.service._save_plan(
                     goal_id,
                     {"goal_id": goal_id, "status": "plan_failed",
-                     "reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]},
+                     "reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
+                     "details": str(getattr(exc, "details", ""))[:1500]},
                 )  # fmt: skip
             finally:
                 with self._planning_lock:

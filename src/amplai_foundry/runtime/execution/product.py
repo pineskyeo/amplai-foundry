@@ -116,6 +116,27 @@ class InstalledApp:
     capabilities: list[dict[str, Any]] = field(default_factory=list)
 
 
+def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
+    """Model text within contract schema bounds: trimmed, non-empty, at most 4000 characters."""
+
+    def text(value: str) -> str:
+        return value.strip()[:4000]
+
+    cleaned = dict(draft)
+    for key in ("in_scope", "non_goals", "constraints", "assumptions", "questions"):
+        cleaned[key] = [text(v) for v in draft.get(key) or [] if text(v)]
+    cleaned["acceptance"] = [
+        {**a, "statement": text(a["statement"])}
+        for a in draft.get("acceptance") or []
+        if text(a["statement"])
+    ]
+    cleaned["objective"] = text(draft.get("objective", ""))
+    cleaned["summary"] = text(draft.get("summary", "")) or cleaned["objective"][:200]
+    if not cleaned["objective"]:
+        raise Hold("PLANNING_OBJECTIVE", "The draft has no objective")
+    return cleaned
+
+
 def app_capabilities(app_id: str) -> list[dict[str, Any]]:
     return [
         {
@@ -303,7 +324,7 @@ class LocalExecutionService:
             )
         finally:
             self.workspaces.discard(workspace)
-        draft = drafted["draft"]
+        draft = _clean_draft(drafted["draft"])
         record: dict[str, Any] = {
             "goal_id": goal_id,
             "scope": scope.wire(),
@@ -381,6 +402,7 @@ class LocalExecutionService:
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         scope, service = self.scope, self.actors.service
         env_ref, root = self.codex["environment"], self.budget.wire()
+        draft = _clean_draft(draft)
         bindings, acceptance = [], []
         if not draft["acceptance"] or any(
             a["verifier"] not in installed.verifier_refs for a in draft["acceptance"]
@@ -457,7 +479,17 @@ class LocalExecutionService:
             "targets": resolution["target_refs"],
             "constraints": constraints,
             "acceptance": acceptance,
-            "assumptions": draft["assumptions"],
+            "assumptions": [
+                {
+                    "id": f"A-{i}",
+                    "statement": text,
+                    "origin": "inferred",
+                    "source_refs": [],
+                    "status": "proposed",
+                    "blocks_execution": False,
+                }
+                for i, text in enumerate(draft["assumptions"], start=1)
+            ],
             "open_question_refs": [],
             "risk": draft["risk"],
             "budget": root,
