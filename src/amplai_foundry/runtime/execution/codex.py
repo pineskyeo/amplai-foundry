@@ -1,0 +1,268 @@
+"""The production Codex CLI execution profile (D-067, D-072).
+
+Two pieces:
+
+- ``SeededCodexPort`` wraps ``CliPort`` so each dispatch gets its own native home seeded with the
+  operator's *scoped* ChatGPT credential copy (``scripts/sandbox_up.sh --codex-home``), never the
+  real ``~/.codex``. A refreshed token is written back to the scoped copy after the run and the
+  per-dispatch credential is removed; the session files stay for exact resume.
+- ``install_codex_profile`` writes the runtime records the execution gate checks
+  (``runtime/execution/service.py:_profile``) from *measured* inputs only: the pinned container
+  profile, the qualified egress profile, and a passing ``scripts/container_qualify.py`` report
+  for exactly that image and driver version. Anything else refuses to register.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import threading
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from ...agent_drivers.cli import CodexCliDriver
+from ...agent_drivers.ports import CliPort
+from ...agent_drivers.protocol import SessionJournal
+from ...sandbox.container import ContainerProfile, ContainerSandbox
+from ...sandbox.egress import EgressProfile, load_qualification
+from ..contracts.identity import now
+from ..errors import Hold
+from ..storage.store import Scope, Store
+
+DRIVER_ID = "codex-cli"
+AUTH = Path(".codex") / "auth.json"
+
+
+class SeededCodexPort(CliPort):
+    def __init__(self, driver: CodexCliDriver, credential_home: Path) -> None:
+        super().__init__(driver)
+        home = Path(credential_home).absolute()
+        if home.resolve() != home or not (home / AUTH).is_file():
+            raise Hold("CODEX_CREDENTIAL", "Scoped credential copy (--codex-home) is required")
+        real = (Path.home() / ".codex").resolve()
+        if (home / ".codex").resolve() == real or home == Path.home().resolve():
+            # design 10_AUTHORITY_SECURITY: no home credential mounts; only a scoped copy
+            raise Hold("CODEX_CREDENTIAL", "Use a scoped copy, never the real ~/.codex")
+        self.credential_home = home
+        self._lock = threading.Lock()
+
+    def _dispatch_home(self, dispatch_id: str) -> Path:
+        self.driver.journal._path(dispatch_id)  # validate the id before joining a path
+        return self.driver.native_root / dispatch_id
+
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
+        home = self._dispatch_home(dispatch["dispatch_id"])
+        (home / ".codex").mkdir(parents=True, exist_ok=True, mode=0o700)
+        with self._lock:
+            data = (self.credential_home / AUTH).read_bytes()
+        target = home / AUTH
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(data)
+        # colima maps the bind owner for the container uid; the 0700 parent keeps others out.
+        target.chmod(0o644)
+        return self.driver.prepare(dispatch, prompt, workspace, native_home=home)
+
+    def _release(self, handle: str) -> None:
+        """Write a refreshed token back to the scoped copy, then drop the dispatch credential."""
+        target = self._dispatch_home(handle) / AUTH
+        if not target.is_file() or target.is_symlink():
+            return
+        data = target.read_bytes()
+        with self._lock:
+            current = (self.credential_home / AUTH).read_bytes()
+            if data != current:
+                try:
+                    json.loads(data)
+                except ValueError:
+                    data = b""
+                if data:
+                    tmp = self.credential_home / ".codex" / ".auth.json.writeback"
+                    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+                    with os.fdopen(fd, "wb") as out:
+                        out.write(data)
+                        out.flush()
+                        os.fsync(out.fileno())
+                    os.replace(tmp, self.credential_home / AUTH)
+        target.unlink()
+
+    def collect(self, handle: str) -> dict[str, Any]:
+        receipt = self.driver.collect(handle)
+        self._release(handle)
+        return receipt
+
+    def cancel(self, handle: str) -> dict[str, Any]:
+        result = self.driver.cancel(handle)
+        if result.get("process_stopped") is True:
+            self._release(handle)
+        return result
+
+    def destroy(self, handle: str) -> None:
+        self.driver.destroy(handle)
+        self._release(handle)
+
+
+@dataclass(frozen=True)
+class CodexProfileInputs:
+    container_profile: Path  # deployment/local-container-app-<app>.json
+    egress_profile: Path  # deployment/local-egress.json
+    egress_qualification: Path  # deployment/local-egress-qualification.json
+    qualification_report: Path  # container_qualify.py --container-profile ... output
+    model: str = "gpt-5.6-sol"
+    data_classes: tuple[str, ...] = ("internal",)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def container_profile(inputs: CodexProfileInputs) -> ContainerProfile:
+    c = json.loads(inputs.container_profile.read_text())
+    egress = EgressProfile.load(inputs.egress_profile)
+    return ContainerProfile(
+        c["image"],
+        uid=c["uid"],
+        gid=c["gid"],
+        memory=c["memory"],
+        cpus=c["cpus"],
+        pids=c["pids"],
+        network=egress.network,
+        network_qualification_ref=load_qualification(inputs.egress_qualification),
+        egress=egress,
+    )
+
+
+def measured_qualification(inputs: CodexProfileInputs) -> dict[str, Any]:
+    """The passing report for exactly this image and driver version, or a Hold."""
+    container = json.loads(inputs.container_profile.read_text())
+    doc = json.loads(inputs.qualification_report.read_text())
+    report = doc.get("reports", {}).get(DRIVER_ID)
+    version = str(container.get("tools", {}).get("codex", "")).split()[-1:]
+    if (
+        not report
+        or report.get("status") != "pass"
+        or doc.get("container_image") != container["image"]
+        or [report.get("driver_version")] != version
+        or report.get("model") != inputs.model
+    ):
+        raise Hold(
+            "DRIVER_UNQUALIFIED",
+            "No passing Codex qualification for this exact image, version and model",
+            details={"image": container["image"], "report": str(inputs.qualification_report)},
+        )
+    return {
+        "qualification_id": report["qualification_id"],
+        "driver_id": DRIVER_ID,
+        "driver_version": report["driver_version"],
+        "status": "pass",
+        "image": container["image"],
+        "model": report["model"],
+        "checks": {c["name"]: c["outcome"] for c in report["checks"]},
+        "source": {
+            "path": str(inputs.qualification_report),
+            "sha256": _sha256(inputs.qualification_report),
+        },
+        "checked_at": doc.get("checked_at"),
+    }
+
+
+def put_record(
+    store: Store, scope: Scope, contracts: Any, kind: str, object_id: str, value: dict[str, Any]
+) -> dict[str, Any]:
+    """Idempotent install: reuse the latest revision if identical, else append a revision."""
+    from ..contracts.identity import digest
+
+    if kind in contracts.definitions:
+        contracts.validate(kind, value)
+    existing = [r for r, _ in store.list_objects(scope, kind) if r["id"] == object_id]
+    latest = max(existing, key=lambda r: r["revision"]) if existing else None
+    if latest and latest["digest"] == digest(value):
+        return latest
+    with store.tx() as db:
+        return store.put(db, scope, kind, object_id, latest["revision"] + 1 if latest else 1, value)
+
+
+def install_codex_profile(
+    store: Store,
+    scope: Scope,
+    inputs: CodexProfileInputs,
+    capabilities: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Write environment → qualification → driver-capabilities → model-profile records."""
+    from ..contracts.registry import Contracts
+
+    contracts = Contracts()
+    measured = measured_qualification(inputs)
+    profile = container_profile(inputs)
+
+    def put(kind: str, object_id: str, value: dict[str, Any]) -> dict[str, Any]:
+        return put_record(store, scope, contracts, kind, object_id, value)
+
+    env_id = "codex-sandbox-" + profile.image.rsplit("@sha256:", 1)[-1][:12]
+    environment = {
+        "environment_id": env_id,
+        "scope": scope.wire(),
+        "status": "qualified",
+        "containment_enforced": True,
+        "boundary": "container: pinned image, egress allowlist, uid 65534, read-only root",
+        "image": profile.image,
+        "egress_profile": profile.egress.wire() if profile.egress else None,
+        "capabilities": capabilities,
+    }
+    env_ref = put("environment", env_id, environment)
+    qual_ref = put(
+        "qualification", measured["qualification_id"], {**measured, "environment_ref": env_ref}
+    )
+    driver = {
+        "schema_version": "3.0.0",
+        "driver_id": DRIVER_ID,
+        "driver_version": measured["driver_version"],
+        "transport": "cli",
+        "environment_ref": env_ref,
+        "declared": sorted({c["action"] for c in capabilities}),
+        "observed": sorted({c["action"] for c in capabilities}),
+        "qualified": sorted({c["action"] for c in capabilities}),
+        "qualification_report_ref": qual_ref,
+        "maturity": "qualified",
+        "probed_at": measured["checked_at"] or now(),
+    }
+    driver_ref = put("driver-capabilities", DRIVER_ID, driver)
+    model = {
+        "schema_version": "3.0.0",
+        "profile_id": "codex-" + inputs.model,
+        "provider": "openai-chatgpt-account",
+        "provider_model_id": inputs.model,
+        "model_version_policy": "pinned",
+        "driver_profile_ref": driver_ref,
+        "reasoning_profile": "provider-default",
+        "data_classes_allowed": list(inputs.data_classes),
+        "required_capabilities": [],
+        "context_limit_tokens": 200000,
+        "price_snapshot_ref": None,
+        "qualification_ref": qual_ref,
+        "enabled": True,
+    }
+    model_ref = put("model-profile", "codex-" + inputs.model, model)
+    return {
+        "environment": env_ref,
+        "qualification": qual_ref,
+        "driver": driver_ref,
+        "model": model_ref,
+    }
+
+
+def build_codex_port(
+    inputs: CodexProfileInputs, journal_root: Path, credential_home: Path
+) -> SeededCodexPort:
+    measured = measured_qualification(inputs)
+    sandbox = ContainerSandbox(container_profile(inputs))
+    driver = CodexCliDriver(
+        measured["driver_version"],
+        sandbox,
+        SessionJournal(journal_root),
+        model=inputs.model,
+        qualified=True,
+    )
+    return SeededCodexPort(driver, credential_home)
