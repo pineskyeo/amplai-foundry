@@ -9,11 +9,10 @@ prints a Codex JSONL stream. This proves the wiring, not Codex or container conf
 
 from __future__ import annotations
 
+import contextlib
 import json
 from pathlib import Path
 from typing import Any
-
-import pytest
 
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.codex import AUTH
@@ -64,9 +63,10 @@ def test_a_driver_failure_stops_without_retry_or_publish(deployment: Any, tmp_pa
     record = loop.run_goal(goal)
     assert record["status"] == "held" and len(record["attempts"]) == 1
     assert record["attempts"][0]["outcome"] == "driver_failed" and rig.published == []
-    # the approval is revoked, so nothing can claim this goal again
-    with pytest.raises(Hold):
-        rig.d.runtime.claim(rig.d.worker, goal_id=goal)
+    # the approval is revoked and the goal ended failed: nothing can claim it again
+    assert rig.d.store.head(rig.d.scope, "goal", goal)["state"] == "failed"
+    with contextlib.suppress(Hold):  # either no candidate or an explicit hold
+        assert rig.d.runtime.claim(rig.d.worker, goal_id=goal) is None
     assert checkout(rig.repo) == before
 
 
@@ -80,6 +80,30 @@ def test_cancel_and_timeout_stop_before_any_attempt(deployment: Any, tmp_path: P
     rig.service.approve(rig.operator, goal2)
     loop.clock = lambda: 10.0**10  # far past approved_at + max_wall_seconds
     assert loop.run_goal(goal2)["status"] == "timed_out" and container.prompts == []
+
+
+def test_stopped_goals_end_in_runtime_state_and_count_in_the_observatory(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # found by the metrics review: the loop only updated its plan record, so a failed goal
+    # stayed "active" and the Observatory's verified rate excluded it (inflated)
+    from amplai_foundry.evaluation.observatory import Observatory
+
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "always-wrong")
+    failed = approved(rig)
+    loop.run_goal(failed)
+    cancelled = submit(rig, "second goal")
+    rig.service.plan(cancelled)
+    rig.service.approve(rig.operator, cancelled)
+    loop.cancel(rig.operator, cancelled)
+    loop.run_goal(cancelled)
+    d = rig.d
+    assert d.store.head(d.scope, "goal", failed)["state"] == "failed"
+    assert d.store.head(d.scope, "goal", cancelled)["state"] == "cancelled"
+    graph = d.store.get(d.scope, "workgraph", rig.service.plan_record(failed)["graph_ref"])
+    assert d.store.head(d.scope, "work", graph["nodes"][0]["work_id"])["state"] == "failed"
+    summary = Observatory(d.store).summary(d.scope)
+    assert summary["eligible_terminated_goals"] == 1 and summary["verified_goal_rate"] == 0.0
 
 
 def test_the_background_loop_picks_up_approved_goals(deployment: Any, tmp_path: Path) -> None:

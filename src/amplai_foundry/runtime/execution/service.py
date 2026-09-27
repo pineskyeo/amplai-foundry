@@ -890,6 +890,69 @@ class Runtime:
             )
         return {"status": "verifying", "run_id": run_id}
 
+    def end_goal(self, actor: Actor, goal_id: str, *, outcome: str, reason: str) -> str:
+        """Terminate a goal the controller stopped: ``failed`` or ``cancelled`` (G-21).
+
+        The caller has already stopped every driver process (the coordinator cancels and
+        confirms before raising). External effects still in flight keep the goal open. Runs and
+        works that did not finish take the same outcome and release their resources, so
+        metrics count the goal instead of leaving it ``active``.
+        """
+        actor.require("goal.steer")
+        command = {"failed": "fail", "cancelled": "cancel_complete"}.get(outcome)
+        if command is None:
+            raise RuntimeFault("GOAL_OUTCOME", "A stopped goal ends failed or cancelled")
+        scope = actor.scope
+        with self.store.tx() as db:
+            goal = self.store.head(scope, "goal", goal_id, db=db)
+            if goal["state"] in {"verified", "failed", "cancelled"}:
+                return str(goal["state"])
+            pending = db.execute(
+                "SELECT data FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+                "AND state IN ('prepared','dispatched','unknown')",
+                scope.keys(),
+            ).fetchall()
+            contract_ref = goal["data"].get("active_contract_ref")
+            if contract_ref and any(
+                json.loads(r["data"])["request"]["contract_ref"] == contract_ref for r in pending
+            ):
+                raise Hold("EFFECT_PENDING", "Reconcile external effects before ending the goal")
+            state, _ = self.machines.transition(
+                "goal",
+                goal["state"],
+                command,
+                {"G-21": Observation.check(True, "Controller stopped; no effect in flight")},
+            )
+            graph_ref = goal["data"].get("active_graph_ref")
+            nodes = (
+                self.store.get(scope, "workgraph", graph_ref, db=db)["nodes"] if graph_ref else []
+            )
+            for node in nodes:
+                work = self.store.head(scope, "work", node["work_id"], db=db)
+                if work["state"] in {"succeeded", "failed", "cancelled", "superseded"}:
+                    continue
+                run_id = work["data"].get("current_run_id")
+                if run_id:
+                    run = self.store.head(scope, "run", run_id, db=db)
+                    if run["state"] not in {"succeeded", "failed", "cancelled", "lost"}:
+                        self.store.cas(
+                            db, scope, "run", run_id, run["row_version"], outcome,
+                            {**run["data"], "end_reason": reason},
+                        )  # fmt: skip
+                    db.execute(
+                        "DELETE FROM resources WHERE tenant=? AND project=? AND run_id=?",
+                        (*scope.keys(), run_id),
+                    )
+                self.store.cas(
+                    db, scope, "work", node["work_id"], work["row_version"], outcome, work["data"]
+                )
+            self.store.cas(
+                db, scope, "goal", goal_id, goal["row_version"], state,
+                {**goal["data"], "end_reason": reason},
+            )  # fmt: skip
+            self.store.event(db, scope, "goal", goal_id, "goal." + state, {"reason": reason})
+        return state
+
     def reap(
         self, scope: Scope, process_probe: Callable[[str, str], object]
     ) -> list[dict[str, Any]]:

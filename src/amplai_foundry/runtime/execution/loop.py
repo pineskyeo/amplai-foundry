@@ -67,6 +67,7 @@ class ExecutionLoop:
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
         if plan["status"] in {"awaiting_approval", "needs_answers"}:
+            self._end(goal_id, "cancelled", "cancelled by the operator")
             return self._finish(goal_id, "cancelled", reason="cancelled by the operator")
         return {**plan, "status": "cancelling"}
 
@@ -261,7 +262,17 @@ class ExecutionLoop:
         if plan.get("decision_ref"):
             with contextlib.suppress(Hold, RuntimeFault):
                 self.service.revoke(self._controller(), goal_id)
+        self._end(goal_id, "cancelled" if status == "cancelled" else "failed", reason)
         return self._finish(goal_id, status, reason=reason, attempts=attempts)
+
+    def _end(self, goal_id: str, outcome: str, reason: str) -> None:
+        """End the runtime goal too, so metrics count it (not only this plan record)."""
+        try:
+            self.service.runtime.end_goal(
+                self.service.actors.service, goal_id, outcome=outcome, reason=reason
+            )
+        except (Hold, RuntimeFault) as exc:
+            self._update(goal_id, end_error=getattr(exc, "code", type(exc).__name__))
 
     def _controller(self) -> Actor:
         # The loop stops its own goals with the controller's authority, never a human's.
