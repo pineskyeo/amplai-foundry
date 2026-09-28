@@ -9,7 +9,14 @@ from pathlib import Path
 import pytest
 
 from amplai_foundry.runtime.contracts.gates import Observation, StateMachines
-from amplai_foundry.runtime.contracts.identity import canonical, digest
+from amplai_foundry.runtime.contracts.identity import (
+    ID,
+    canonical,
+    digest,
+    digest_bytes,
+    new_id,
+    now,
+)
 from amplai_foundry.runtime.contracts.registry import Contracts
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
@@ -308,6 +315,37 @@ def test_outbox_retries_same_id(deployment):
     first = OutboxPump(d.store).pump(deliver)
     assert first and first[0]["acknowledged"]
     assert OutboxPump(d.store).pump(deliver) == []
+
+
+def test_now_is_microsecond_utc_iso8601_with_z_suffix():
+    value = now()
+    assert value.endswith("Z")
+    assert "+00:00" not in value
+    fractional = value[: -1].split(".")[1]
+    assert len(fractional) == 6
+    assert fractional.isdigit()
+
+
+def test_new_id_matches_prefix_hex_and_regex_and_is_unique():
+    first = new_id("goal")
+    second = new_id("goal")
+    prefix, _, hex_part = first.partition("-")
+    assert prefix == "goal"
+    assert len(hex_part) == 32
+    assert all(c in "0123456789abcdef" for c in hex_part)
+    assert ID.fullmatch(first)
+    assert first != second
+
+
+def test_digest_bytes_is_sha256_prefixed_hexdigest():
+    import hashlib
+
+    data = b"hello world"
+    result = digest_bytes(data)
+    assert result == "sha256:" + hashlib.sha256(data).hexdigest()
+    digest_hex = result.removeprefix("sha256:")
+    assert len(digest_hex) == 64
+    assert all(c in "0123456789abcdef" for c in digest_hex)
 
 
 def test_all_state_edges_require_declared_guards():
