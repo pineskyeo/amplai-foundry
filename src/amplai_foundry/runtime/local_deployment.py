@@ -21,6 +21,7 @@ import hashlib
 import json
 import threading
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -41,13 +42,15 @@ from .evidence.cas import ArtifactStore
 from .execution.codex import (
     CodexProfileInputs,
     ScopedCredential,
+    build_claude_port,
     build_codex_port,
     container_profile,
     install_codex_profile,
+    install_driver_profile,
 )
 from .execution.loop import ExecutionLoop
 from .execution.outcomes import PullRequestTracker
-from .execution.planner_codex import CodexPlanner
+from .execution.planner_codex import ClaudePlanner, CodexPlanner
 from .execution.product import (
     PLAN_KIND,
     Actors,
@@ -95,6 +98,8 @@ class AppEntry(BaseModel):
     repo: str
     container_profile: str  # deployment/local-container-app-<app>.json
     qualification_report: str  # container_qualify.py output for that image
+    # Claude CLI qualification in the same image (Work 019 E); absent = Codex only
+    claude_qualification_report: str | None = None
     verifiers: list[VerifierConfig] = Field(min_length=1)
     aliases: list[str] = Field(default_factory=list)
     base_branch: str = "main"
@@ -107,6 +112,14 @@ class CodexEntry(BaseModel):
     egress_profile: str
     egress_qualification: str
     model: str = "gpt-5.6-sol"
+    enabled: bool = True  # operator switch: a disabled model is filtered out of selection
+
+
+class ClaudeEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token_file: str  # 0600 file with CLAUDE_CODE_OAUTH_TOKEN=... (created by the operator)
+    model: str = "claude-sonnet-5"
+    enabled: bool = True
 
 
 class LocalConfig(BaseModel):
@@ -120,6 +133,7 @@ class LocalConfig(BaseModel):
     signing_key_file: str
     verifier_key_file: str
     codex: CodexEntry
+    claude: ClaudeEntry | None = None
     apps: list[AppEntry] = Field(min_length=1, max_length=1)
     publish_mode: str = "draft_pr"
 
@@ -185,10 +199,12 @@ class LocalProductDeployment:
             egress_qualification=self.local(cfg.codex.egress_qualification),
             qualification_report=self.local(entry.qualification_report),
             model=cfg.codex.model,
+            enabled=cfg.codex.enabled,
         )
         codex_refs = install_codex_profile(
             self.store, self.scope, inputs, app_capabilities(entry.app_id)
         )
+        driver_refs = {"codex-cli": codex_refs}
         credential = ScopedCredential(self.local(cfg.codex.credential_home))
         root = self.local(cfg.workspace_root)
         self.workspaces = GitWorkspaceManager(root / "work", self.artifacts, {entry.app_id: repo})
@@ -197,6 +213,28 @@ class LocalProductDeployment:
         registry.register(
             admin, codex_refs["driver"], build_codex_port(inputs, root / "journal", credential)
         )
+        planners: dict[str, Any] = {}
+        if cfg.claude is not None and entry.claude_qualification_report:
+            # the fallback composition (D-079): same image, its own measured qualification
+            claude = replace(
+                inputs,
+                provider="claude",
+                model=cfg.claude.model,
+                qualification_report=self.local(entry.claude_qualification_report),
+                enabled=cfg.claude.enabled,
+            )
+            claude_refs = install_driver_profile(
+                self.store, self.scope, claude, app_capabilities(entry.app_id)
+            )
+            token = claude_token(self.local(cfg.claude.token_file))
+            registry.register(
+                admin, claude_refs["driver"], build_claude_port(claude, root / "journal", token)
+            )
+            driver_refs["claude-cli"] = claude_refs
+            planners["claude-cli"] = ClaudePlanner(
+                ContainerSandbox(container_profile(claude)), token, root / "plans",
+                model=cfg.claude.model,
+            )  # fmt: skip
         self.coordinator = WorkCoordinator(
             self.runtime, registry, self.workspaces, poll_seconds=2.0, max_seconds=1800
         )
@@ -231,6 +269,8 @@ class LocalProductDeployment:
             ),
             global_factory=lambda app: NonEmptyChangeCheck(self.workspaces, self.scope),
             publish_mode=cfg.publish_mode,
+            driver_refs=driver_refs,
+            planners=planners,
         )  # fmt: skip
         self.service.install(
             AppConfig(
@@ -369,6 +409,18 @@ class LocalProductDeployment:
     def close(self) -> None:
         self.loop.stop()
         self.store.close()
+
+
+def claude_token(path: Path) -> str:
+    """CLAUDE_CODE_OAUTH_TOKEN from the operator's 0600 env file; the value is never logged."""
+    for line in private_bytes(path).decode().splitlines():
+        line = line.strip()
+        if line.startswith("export "):
+            line = line[len("export ") :]
+        key, _, value = line.partition("=")
+        if key.strip() == "CLAUDE_CODE_OAUTH_TOKEN" and value.strip():
+            return value.strip().strip('"').strip("'")
+    raise Hold("AUTH_TOKEN_REQUIRED", "The Claude token file has no CLAUDE_CODE_OAUTH_TOKEN")
 
 
 def _summary(record: dict[str, Any]) -> dict[str, Any]:

@@ -11,6 +11,7 @@ so the model cannot invent a verifier, widen a capability or set its own budget.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -186,3 +187,89 @@ class CodexPlanner:
         if errors or not (draft["acceptance"] or draft["questions"]):
             raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
         return {"draft": draft, "usage": usage, "seconds": round(time.time() - started, 1)}
+
+
+class ClaudePlanner(CodexPlanner):
+    """The same read-only planning turn on Claude CLI (the fallback composition, D-079).
+
+    Structured output comes from ``--json-schema`` and is read from the final ``result`` event's
+    ``structured_output`` (measured in the app image, 2026-09-28). Tools are read-only and the
+    workspace is a read-only bind mount, as for Codex.
+    """
+
+    READ_ONLY_TOOLS = "Read,Glob,Grep"
+
+    def __init__(
+        self,
+        sandbox: ContainerSandbox,
+        token: str,
+        runs_root: Path,
+        *,
+        model: str,
+        timeout_seconds: int = 900,
+    ) -> None:
+        if not token:
+            raise Hold("AUTH_TOKEN_REQUIRED", "Claude planning needs CLAUDE_CODE_OAUTH_TOKEN")
+        self.sandbox, self.model, self.token = sandbox, model, token
+        self.runs_root = Path(runs_root).absolute()
+        if self.runs_root.resolve() != self.runs_root:
+            raise Hold("PLANNER_ROOT", "Planner run storage cannot traverse links")
+        self.runs_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.timeout = timeout_seconds
+
+    def claude_argv(self, prompt: str, schema: dict[str, Any]) -> list[str]:
+        return [
+            "claude", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
+            "--no-chrome", "-p", prompt, "--output-format", "stream-json", "--verbose",
+            "--model", self.model, "--allowedTools", self.READ_ONLY_TOOLS,
+            "--json-schema", json.dumps(schema, separators=(",", ":")),
+        ]  # fmt: skip
+
+    def draft(
+        self, goal: str, app: str, verifiers: dict[str, str], workspace: Path
+    ) -> dict[str, Any]:
+        schema = plan_schema(list(verifiers))
+        run = self.runs_root / new_id("plan")
+        home = run / "home"
+        home.mkdir(parents=True, mode=0o700)
+        name = "amplai-plan-" + run.name[-20:].replace("_", "-").lower()
+        started = time.time()
+        env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.token}
+        try:
+            command = self.sandbox.command(
+                self.claude_argv(self.prompt(goal, app, verifiers), schema),
+                workspace,
+                name,
+                env_names=["CLAUDE_CODE_OAUTH_TOKEN"],
+                native_home=home,
+                workspace_readonly=True,
+            )
+            try:
+                result = subprocess.run(
+                    command, capture_output=True, timeout=self.timeout, check=False, env=env
+                )
+            except subprocess.TimeoutExpired:
+                subprocess.run(["docker", "kill", name], capture_output=True, check=False)
+                raise Hold("PLANNER_TIMEOUT", "Planner exceeded its time budget") from None
+        finally:
+            subprocess.run(["docker", "rm", "-f", name], capture_output=True, check=False)
+        events = JsonlDecoder().feed(result.stdout, final=True)
+        final = next((e for e in reversed(events) if e.get("type") == "result"), None)
+        if result.returncode != 0 or not final or final.get("is_error"):
+            raise Hold(
+                "PLANNER_FAILED",
+                "Planner turn did not complete",
+                details={"rc": result.returncode, "stderr": result.stderr.decode()[-400:]},
+            )
+        draft = final.get("structured_output")
+        if not isinstance(draft, dict):
+            raise Hold("PLANNER_OUTPUT", "Planner reply has no structured output")
+        errors = list(Draft202012Validator(schema).iter_errors(draft))
+        if errors or not (draft["acceptance"] or draft["questions"]):
+            raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
+        usage = final.get("usage") or {}
+        return {
+            "draft": draft,
+            "usage": {k: usage.get(k) for k in ("input_tokens", "output_tokens")},
+            "seconds": round(time.time() - started, 1),
+        }

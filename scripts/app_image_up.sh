@@ -25,12 +25,13 @@ docker push "$IMAGE:local" >/dev/null
 DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:local" | sed 's/.*@//')"
 run() { docker run --rm --network none -e HOME=/home/agent "$IMAGE:local" "$@" 2>/dev/null | head -1; }
 CODEX_V="$(run codex --version)"
+CLAUDE_V="$(run claude --version)"
 PY_V="$(run python --version)"
 PYPROJECT_SHA="$(shasum -a 256 "$SRC/pyproject.toml" | cut -d' ' -f1)"
-python3 - "$IMAGE@$DIGEST" "$BASE" "$CODEX_V" "$PY_V" "$APP" "$EXTRAS" "$PYPROJECT_SHA" \
+python3 - "$IMAGE@$DIGEST" "$BASE" "$CODEX_V" "$CLAUDE_V" "$PY_V" "$APP" "$EXTRAS" "$PYPROJECT_SHA" \
   "$REPO/deployment/local-container-app-$APP.json" <<'PY'
 import datetime, json, sys
-image, base, codex_v, py_v, app, extras, pyproject_sha, out = sys.argv[1:]
+image, base, codex_v, claude_v, py_v, app, extras, pyproject_sha, out = sys.argv[1:]
 json.dump({
   "schema_version": "1.0",
   "engine": "docker",
@@ -41,7 +42,7 @@ json.dump({
   "extras": extras,
   "pyproject_sha256": pyproject_sha,
   "uid": 65534, "gid": 65534, "memory": "2g", "cpus": 2.0, "pids": 256, "network": "none",
-  "tools": {"codex": codex_v, "python": py_v},
+  "tools": {"codex": codex_v, "claude": claude_v, "python": py_v},
   "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "qualification": "local development profile; requalify the driver in this image before use",
 }, open(out, "w"), indent=2)

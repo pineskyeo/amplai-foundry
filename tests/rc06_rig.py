@@ -17,8 +17,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from amplai_foundry.agent_drivers.cli import CodexCliDriver
-from amplai_foundry.agent_drivers.ports import DriverRegistry
+from amplai_foundry.agent_drivers.cli import ClaudeCodeDriver, CodexCliDriver
+from amplai_foundry.agent_drivers.ports import CliPort, DriverRegistry
 from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.execution.codex import (
@@ -123,9 +123,10 @@ class Rig:
     codex_refs: dict[str, dict[str, Any]]
 
 
-def codex_inputs(root: Path) -> CodexProfileInputs:
+def codex_inputs(root: Path, *, enabled: bool = True) -> CodexProfileInputs:
     container = {"image": IMAGE, "uid": 65534, "gid": 65534, "memory": "2g", "cpus": 2.0,
-                 "pids": 256, "tools": {"codex": "codex-cli 0.155.1"}}  # fmt: skip
+                 "pids": 256, "tools": {"codex": "codex-cli 0.155.1",
+                                        "claude": "2.1.278 (Claude Code)"}}  # fmt: skip
     (root / "container.json").write_text(json.dumps(container))
     doc = {
         "container_image": IMAGE,
@@ -138,7 +139,15 @@ def codex_inputs(root: Path) -> CodexProfileInputs:
                 "qualification_id": "qualification-codex-rig",
                 "checks": [{"name": "exact_version", "outcome": "pass"}],
                 "tool_use": {"outcome": "pass"},
-            }
+            },
+            "claude-cli": {
+                "status": "pass",
+                "driver_version": "2.1.278",
+                "model": "claude-sonnet-5",
+                "qualification_id": "qualification-claude-rig",
+                "checks": [{"name": "exact_version", "outcome": "pass"}],
+                "tool_use": {"outcome": "pass"},
+            },
         },
     }
     (root / "qual.json").write_text(json.dumps(doc))
@@ -147,7 +156,12 @@ def codex_inputs(root: Path) -> CodexProfileInputs:
         egress_profile=REPO_ROOT / "deployment" / "local-egress.json",
         egress_qualification=REPO_ROOT / "deployment" / "local-egress-qualification.json",
         qualification_report=root / "qual.json",
+        enabled=enabled,
     )
+
+
+def claude_inputs(root: Path, *, enabled: bool = True) -> CodexProfileInputs:
+    return replace(codex_inputs(root), provider="claude", model="claude-sonnet-5", enabled=enabled)
 
 
 def build_rig(
@@ -225,15 +239,35 @@ sys.stdout.write(json.dumps({"type": "turn.completed",
 """
 
 
+# Claude stream-json dialect of AGENT (same file decisions, no credential file: token by env).
+CLAUDE_AGENT = r"""
+import json, os, pathlib, sys
+ws, mode = pathlib.Path(sys.argv[1]), sys.argv[2]
+assert os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"), "token was not passed by env"
+if mode == "crash":
+    sys.exit(3)
+new = 3 if mode == "always-wrong" else 2
+(ws / "app.py").write_text("def value():\n    return %d\n" % new)
+sid = "sess_claude_" + mode
+sys.stdout.write(json.dumps({"type": "system", "subtype": "init", "session_id": sid}) + "\n")
+sys.stdout.write(json.dumps({"type": "result", "subtype": "success", "is_error": False,
+                             "session_id": sid, "result": "DONE",
+                             "usage": {"input_tokens": 10, "output_tokens": 5}}) + "\n")
+"""
+
+
 class ScriptContainer:
     """Host-process stand-in for ContainerSandbox; never represented as a sandbox."""
 
-    def __init__(self, mode: str) -> None:
-        self.mode = mode
+    def __init__(self, mode: str, dialect: str = "codex") -> None:
+        self.mode, self.dialect = mode, dialect
         self.driver: Any = None
         self.prompts: list[str] = []
 
     def command(self, argv: list[str], workspace: Path, run_name: str, **kw: Any) -> list[str]:
+        if self.dialect == "claude":
+            self.prompts.append(argv[argv.index("-p") + 1])
+            return [sys.executable, "-c", CLAUDE_AGENT, str(workspace), self.mode]
         self.prompts.append(argv[-1])
         return [sys.executable, "-c", AGENT, str(workspace), self.mode, str(kw["native_home"])]
 
@@ -295,3 +329,48 @@ def checkout(repo: Path) -> tuple[str, str, str]:
         git(repo, "status", "--porcelain"),
         git(repo, "branch", "--list"),
     )
+
+
+def rig_with_two_drivers(
+    deployment: Any, tmp_path: Path, *, codex_enabled: bool = True
+) -> tuple[Any, Any, ScriptContainer, ScriptContainer, FixedPlanner]:
+    """Codex and Claude both qualified (stand-in containers); Codex optionally disabled."""
+    rig = build_rig(deployment, tmp_path)
+    d = deployment
+    codex_refs = install_codex_profile(
+        d.store, d.scope, codex_inputs(tmp_path, enabled=codex_enabled), app_capabilities("app")
+    )
+    claude_refs = install_codex_profile(
+        d.store, d.scope, claude_inputs(tmp_path), app_capabilities("app")
+    )
+    claude_planner = FixedPlanner()
+    service = rig.service
+    service.codex = codex_refs
+    service.drivers = {"codex-cli": codex_refs, "claude-cli": claude_refs}
+    service.planners = {"claude-cli": claude_planner}
+    service.install(AppConfig("app", rig.repo, service.apps["app"].config.verifiers))
+    codex_box = ScriptContainer("right")
+    claude_box = ScriptContainer("right", dialect="claude")
+    journal = SessionJournal(tmp_path / "journal")
+    codex = CodexCliDriver("0.155.1", codex_box, journal, model="gpt-5.6-sol", qualified=True)  # type: ignore[arg-type]
+    claude = ClaudeCodeDriver(
+        "2.1.278", claude_box, journal, model="claude-sonnet-5", qualified=True,  # type: ignore[arg-type]
+        environment={"CLAUDE_CODE_OAUTH_TOKEN": "test-token-not-a-secret"}, auth="oauth_token",
+    )  # fmt: skip
+    codex_box.driver, claude_box.driver = codex, claude
+    home = tmp_path / "scoped-codex"
+    (home / ".codex").mkdir(parents=True)
+    (home / AUTH).write_text('{"tokens": "original"}')
+    registry = DriverRegistry(d.store)
+    registry.register(d.actor, codex_refs["driver"], SeededCodexPort(codex, home))
+    registry.register(d.actor, claude_refs["driver"], CliPort(claude))
+    coordinator = WorkCoordinator(d.runtime, registry, rig.workspaces, poll_seconds=0.05)
+    published: list[str] = []
+
+    def recording(goal_id: str) -> dict[str, Any]:
+        published.append(goal_id)
+        return {"branch": "amplai/" + goal_id}
+
+    loop = ExecutionLoop(service, coordinator, publisher=recording)
+    rig.published = published  # type: ignore[attr-defined]
+    return rig, loop, codex_box, claude_box, claude_planner

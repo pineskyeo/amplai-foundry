@@ -41,6 +41,8 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = REPO / "specs" / "016-container-egress-profile"
 PROBE_ROOT = Path.home() / ".amplai-sandbox-probes" / "requalify"  # colima shares $HOME only
 PROXY = "amplai-egress-proxy"
+# The worker's tool list for Claude (agent_drivers/cli.py CliDriver.argv).
+PRODUCTION_CLAUDE_TOOLS = "Read,Edit,Write,Glob,Grep,Bash"
 ISOLATION = [
     "--setting-sources",
     "",
@@ -123,18 +125,19 @@ class ContainerTurns:
         self.cost: list[dict[str, Any]] = []
 
     # -- argv -------------------------------------------------------------------------------
-    def argv(self, prompt: str, *, session: str | None = None, tools: str = "Read") -> list[str]:
+    def argv(
+        self,
+        prompt: str,
+        *,
+        session: str | None = None,
+        tools: str = "Read",
+        max_turns: int | None = 3,
+    ) -> list[str]:
         if self.driver == "claude":
             args = ["claude", *ISOLATION, "-p", prompt, "--output-format", "stream-json"]
-            args += [
-                "--verbose",
-                "--model",
-                self.model,
-                "--allowedTools",
-                tools,
-                "--max-turns",
-                "3",
-            ]
+            args += ["--verbose", "--model", self.model, "--allowedTools", tools]
+            if max_turns is not None:
+                args += ["--max-turns", str(max_turns)]
             return args + (["--resume", session] if session else [])
         args = ["codex", "--ask-for-approval", "never", "exec"]
         if session:
@@ -153,11 +156,18 @@ class ContainerTurns:
 
     # -- execution ------------------------------------------------------------------------
     def turn(
-        self, prompt: str, *, session: str | None = None, tools: str = "Read"
+        self,
+        prompt: str,
+        *,
+        session: str | None = None,
+        tools: str = "Read",
+        max_turns: int | None = 3,
     ) -> dict[str, Any]:
         self.runs += 1
         name = f"amplai-qual-{self.driver}-{self.runs}"
-        cmd = self.command(self.argv(prompt, session=session, tools=tools), name)
+        cmd = self.command(
+            self.argv(prompt, session=session, tools=tools, max_turns=max_turns), name
+        )
         started = time.time()
         try:  # F1: a timed-out attach must never leak the (non --rm) container
             run = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, timeout=600)
@@ -493,13 +503,18 @@ def tool_use(t: ContainerTurns) -> dict[str, Any]:
     """
     marker = t.ws / "tool-use.txt"
     marker.unlink(missing_ok=True)
-    turn = t.turn(
+    prompt = (
         "Run the shell command `python --version` and then create a file named tool-use.txt "
-        "containing exactly the version string it printed. Reply DONE.",
-        tools="Write",
+        "containing exactly the version string it printed. Reply DONE."
     )
+    if t.driver == "claude":
+        # production argv: the worker's tool list and no turn cap (CliDriver.argv)
+        turn = t.turn(prompt, tools=PRODUCTION_CLAUDE_TOOLS, max_turns=None)
+    else:
+        turn = t.turn(prompt, tools="Write")
     t.cost.append({"turn": "tool_use", "usage": turn["usage"], "seconds": turn["seconds"]})
     ran = []
+    pending: dict[str, str] = {}  # claude: tool_use id -> Bash command
     for line in turn["stdout"].decode(errors="replace").splitlines():
         try:
             event = json.loads(line)
@@ -509,6 +524,21 @@ def tool_use(t: ContainerTurns) -> dict[str, Any]:
         if item.get("type") == "command_execution" and item.get("exit_code") is not None:
             ran.append({"command": item.get("command", "")[:120], "exit": item["exit_code"],
                         "output": (item.get("aggregated_output") or "")[:120]})  # fmt: skip
+        for block in (event.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                pending[block.get("id", "")] = str((block.get("input") or {}).get("command", ""))
+            elif block.get("type") == "tool_result" and block.get("tool_use_id") in pending:
+                content = block.get("content")
+                text = (
+                    content
+                    if isinstance(content, str)
+                    else " ".join(c.get("text", "") for c in content or [] if isinstance(c, dict))
+                )
+                ran.append({"command": pending.pop(block["tool_use_id"])[:120],
+                            "exit": 1 if block.get("is_error") else 0,
+                            "output": text[:120]})  # fmt: skip
     python_ok = any(r["exit"] == 0 and "Python 3" in r["output"] for r in ran)
     written = marker.read_text().strip() if marker.is_file() else None
     ok = turn["ok"] and python_ok and bool(written and written.startswith("Python 3"))
@@ -572,7 +602,7 @@ def main() -> int:
     version = pinned.group(0) if pinned else ""
     t = ContainerTurns(a.driver, model, a.codex_home, a.container_profile)
     probes = measure(t, version)
-    tools = tool_use(t) if a.driver == "codex" else None
+    tools = tool_use(t)
     report = record(t, probes, version, a.artifacts)
     checks = [
         {

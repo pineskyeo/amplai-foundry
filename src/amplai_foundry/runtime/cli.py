@@ -129,6 +129,18 @@ def render_plan(record: dict[str, Any]) -> str:
         )
         for q in draft.get("questions") or []:
             lines.append(f"  QUESTION  : {q}")
+    chosen = record.get("composition") or {}
+    if chosen:  # selected by the system (D-079); the operator approves the plan, not a driver
+        others = "; ".join(
+            f"{c['driver_id']} "
+            + ("eligible" if c["eligible"] else "excluded (" + ", ".join(c["reasons"]) + ")")
+            for c in chosen.get("candidates", [])
+            if c["driver_id"] != chosen["driver_id"]
+        )
+        lines.append(
+            f"  driver    : {chosen['driver_id']} ({chosen['model']}), policy rank {chosen['rank']}"
+            + (f"; {others}" if others else "")
+        )
     check = record.get("base_check") or {}
     if check and check.get("outcome") != "pass":
         lines.append(
@@ -503,6 +515,69 @@ def local_init(
         }
 
     guarded(operation)
+
+
+def _edit_local_config(config: Path, change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
+    """Change local.json atomically (0600), validated before it replaces the old file."""
+    from .deployment import private_bytes
+    from .local_deployment import LocalConfig
+
+    path = config.expanduser().absolute()
+    value: dict[str, Any] = json.loads(private_bytes(path))
+    change(value)
+    LocalConfig.model_validate(value)
+    tmp = path.with_name(path.name + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w") as out:
+        out.write(json.dumps(value, indent=2))
+    os.replace(tmp, path)
+    return value
+
+
+@ops.command("local-claude")
+def local_claude(
+    token_file: Annotated[Path, typer.Option("--token-file")],
+    qualification_report: Annotated[Path, typer.Option("--qualification-report")],
+    app_id: Annotated[str | None, typer.Option("--app")] = None,
+    model: Annotated[str, typer.Option("--model")] = "claude-sonnet-5",
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Add Claude CLI as a candidate composition (Codex stays first; the system selects).
+
+    The operator creates the 0600 token file (CLAUDE_CODE_OAUTH_TOKEN=...); it is referenced,
+    never copied. The report must be a passing qualification in the app's image.
+    """
+
+    def change(value: dict[str, Any]) -> None:
+        value["claude"] = {
+            "token_file": str(token_file.expanduser().absolute()),
+            "model": model,
+            "enabled": True,
+        }
+        for app in value["apps"]:
+            if app_id in (None, app["app_id"]):
+                app["claude_qualification_report"] = str(qualification_report.absolute())
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
+@ops.command("local-driver")
+def local_driver(
+    driver: Annotated[str, typer.Argument(help="codex or claude")],
+    enabled: Annotated[bool, typer.Option("--enable/--disable")] = True,
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Make a driver eligible or not for selection (a disabled model is filtered out)."""
+
+    def change(value: dict[str, Any]) -> None:
+        if driver not in {"codex", "claude"} or not value.get(driver):
+            raise Hold("DRIVER_UNKNOWN", "Configure the driver before switching it")
+        value[driver]["enabled"] = enabled
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "driver": driver, "enabled": enabled,
+                     "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
 @ops.command("local-serve")

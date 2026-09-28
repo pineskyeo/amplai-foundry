@@ -15,6 +15,7 @@
   "network": "none",
   "tools": {
     "codex": "codex-cli 0.155.1",
+    "claude": "2.1.278 (Claude Code)",
     "python": "Python 3.11.2"
   },
   "built_at": "2026-09-27T19:18:46Z",

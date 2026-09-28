@@ -42,6 +42,8 @@ READINESS_AREAS = (
 APPROVAL_KIND = "operator-approval"
 PLAN_KIND = "execution-plan"
 TASK_CLASS_KIND = "task-class"
+# Initial task-class baseline order, every class: operator decision 2026-09-28 (D-079).
+ROUTER_ORDER = ("codex-cli", "claude-cli")
 PORT = "change"
 
 
@@ -116,6 +118,8 @@ class InstalledApp:
     invariant_ref: dict[str, Any]
     composition_ref: dict[str, Any]
     capabilities: list[dict[str, Any]] = field(default_factory=list)
+    compositions: dict[str, dict[str, Any]] = field(default_factory=dict)  # driver id -> ref
+    router_ref: dict[str, Any] | None = None
 
 
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
@@ -167,10 +171,15 @@ class LocalExecutionService:
         global_factory: Any,
         budget: Budget | None = None,
         publish_mode: str = "draft_pr",
+        driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
+        planners: dict[str, Any] | None = None,
     ) -> None:
         self.store, self.runtime, self.goals, self.knowledge = store, runtime, goals, knowledge
         self.authority, self.verification, self.workspaces = authority, verification, workspaces
         self.planner, self.actors, self.codex = planner, actors, codex_refs
+        # candidate compositions per driver id (D-079); Codex alone when nothing else is given
+        self.drivers = driver_refs or {"codex-cli": codex_refs}
+        self.planners = dict(planners or {})  # driver id -> planner; Codex is self.planner
         self.verifier_factory, self.global_factory = verifier_factory, global_factory
         self.budget = budget or Budget()
         if publish_mode not in {"draft_pr", "branch", "none"}:
@@ -249,27 +258,43 @@ class LocalExecutionService:
         )
         if digest(global_ref) not in self.verification.global_runners:
             self.verification.register_global(global_ref, self.global_factory(app))
-        composition_ref = self._put(
-            "harness-composition",
-            f"{a}-codex",
+        # Task-class baseline policy (design/16:16): operator decision 2026-09-28, D-079.
+        router_ref = self._put(
+            "router-policy",
+            f"{a}-router",
             {
-                "schema_version": "3.0.0",
-                "composition_id": f"{a}-codex",
-                "revision": 1,
-                "model_profile_ref": self.codex["model"],
-                "driver_profile_ref": self.codex["driver"],
-                "sandbox_profile_ref": env_ref,
-                "pack_refs": [],
-                "prompt_bundle_ref": policy_ref,
-                "router_policy_ref": policy_ref,
-                "context_policy_ref": policy_ref,
-                "verification_policy_ref": policy_ref,
-                "budget_policy_ref": policy_ref,
-                "protocol_major": 3,
-                "qualification_ref": self.codex["qualification"],
-                "created_at": "2026-09-28T00:00:00Z",
+                "policy_id": f"{a}-router",
+                "scope": scope.wire(),
+                "kind": "task_class_baseline",
+                "order": {"*": list(ROUTER_ORDER)},
+                "source": "operator decision 2026-09-28 (D-079): Codex first, Claude fallback",
             },
         )
+        compositions = {}
+        for driver_id, refs in self.drivers.items():
+            name = f"{a}-{driver_id.split('-')[0]}"
+            compositions[driver_id] = self._put(
+                "harness-composition",
+                name,
+                {
+                    "schema_version": "3.0.0",
+                    "composition_id": name,
+                    "revision": 1,
+                    "model_profile_ref": refs["model"],
+                    "driver_profile_ref": refs["driver"],
+                    "sandbox_profile_ref": refs["environment"],
+                    "pack_refs": [],
+                    "prompt_bundle_ref": policy_ref,
+                    "router_policy_ref": router_ref,
+                    "context_policy_ref": policy_ref,
+                    "verification_policy_ref": policy_ref,
+                    "budget_policy_ref": policy_ref,
+                    "protocol_major": 3,
+                    "qualification_ref": refs["qualification"],
+                    "created_at": "2026-09-28T00:00:00Z",
+                },
+            )
+        composition_ref = compositions.get("codex-cli") or next(iter(compositions.values()))
         binding = {
             "schema_version": "3.0.0",
             "app_id": a,
@@ -288,7 +313,7 @@ class LocalExecutionService:
         binding_ref = self._register_app(binding)
         installed = InstalledApp(
             app, binding_ref, verifier_refs, global_ref, policy_ref, invariant_ref,
-            composition_ref, caps,
+            composition_ref, caps, compositions, router_ref,
         )  # fmt: skip
         self.apps[a] = installed
         return installed
@@ -308,9 +333,45 @@ class LocalExecutionService:
         result: dict[str, Any] = self.goals.apps.register(self.actors.service, binding)
         return result
 
+    # -- composition selection (design/16:14-16, D-079) ---------------------------------------
+    def select_composition(
+        self, installed: InstalledApp, task_class: str | None = None
+    ) -> dict[str, Any]:
+        """Filter candidates on data class, qualification and capabilities, then rank them by
+        the task-class baseline policy. The operator sees the choice; nobody picks a driver."""
+        from ...meta_harness.composition import CompositionService
+
+        if installed.router_ref is None:
+            raise Hold("ROUTER_POLICY", "The app has no router policy")
+        policy = self.store.get(self.scope, "router-policy", installed.router_ref)
+        order = policy["order"].get(task_class or "*") or policy["order"]["*"]
+        candidates = [installed.compositions[d] for d in order if d in installed.compositions]
+        scores = {ref["digest"]: float(len(candidates) - i) for i, ref in enumerate(candidates)}
+        required = {c["action"] for c in installed.capabilities}
+        compositions = CompositionService(self.store, self.runtime.contracts)
+        rows = compositions.explain(
+            self.scope, candidates, classification="internal", required_actions=required
+        )
+        chosen = compositions.select(
+            self.scope, candidates, classification="internal", required_actions=required,
+            scores=scores,
+        )  # fmt: skip
+        row = next(r for r in rows if r["ref"] == chosen)
+        return {
+            "ref": chosen,
+            "driver_id": row["driver_id"],
+            "model": row["model"],
+            "task_class": task_class,
+            "rank": candidates.index(chosen) + 1,
+            "policy_ref": installed.router_ref,
+            "candidates": [
+                {k: r[k] for k in ("driver_id", "model", "eligible", "reasons")} for r in rows
+            ],
+        }
+
     # -- plan --------------------------------------------------------------------------------
     def plan(self, goal_id: str) -> dict[str, Any]:
-        """Draft (Codex, read-only) → compile → freeze contract → save graph."""
+        """Draft (selected driver, read-only) → compile → freeze contract → save graph."""
         service, scope = self.actors.service, self.scope
         goal = self.store.head(scope, "goal", goal_id)
         intent = self.store.get(scope, "intent-envelope", goal["data"]["intent_ref"])
@@ -319,9 +380,15 @@ class LocalExecutionService:
         base = self.workspaces.base_snapshot(scope, app.app_id, app.base_branch)
         base_value = self._base(base)
         base_check = self.base_check(installed, base_value)
+        planning = self.select_composition(installed)
+        planner = (
+            self.planner if planning["driver_id"] == "codex-cli" else None
+        ) or self.planners.get(planning["driver_id"])
+        if planner is None:
+            raise Hold("PLANNER_UNAVAILABLE", "No planner for " + planning["driver_id"])
         workspace = self.workspaces.materialize(scope, new_id("plan-ws"), base)
         try:
-            drafted = self.planner.draft(
+            drafted = planner.draft(
                 intent["text"],
                 app.app_id,
                 {v.id: v.description for v in app.verifiers},
@@ -338,6 +405,7 @@ class LocalExecutionService:
             "base_commit": base_value["commit"],
             "draft": draft,
             "planner_usage": drafted.get("usage"),
+            "planned_with": {k: planning[k] for k in ("driver_id", "model")},
             "base_check": base_check,
             "created_at": now(),
         }
@@ -377,6 +445,7 @@ class LocalExecutionService:
         contract_ref, graph_ref = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft
         )
+        record["composition"] = self.select_composition(installed, draft.get("task_class"))
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
@@ -632,6 +701,30 @@ class LocalExecutionService:
             )
         installed = self.apps[plan["app"]]
         service, scope = self.actors.service, self.scope
+        chosen = plan.get("composition")
+        if chosen:
+            # fixed from here on (design/16:16); eligibility may have changed since planning
+            again = self.select_composition(installed, chosen.get("task_class"))
+            if again["ref"] != chosen["ref"]:
+                raise Hold(
+                    "COMPOSITION_CHANGED",
+                    "The selected composition changed since planning; plan the goal again",
+                    details={"planned": chosen["driver_id"], "now": again["driver_id"]},
+                )
+            composition = self.store.get(scope, "harness-composition", chosen["ref"])
+            profile = {
+                "composition_ref": chosen["ref"],
+                "driver_profile_ref": composition["driver_profile_ref"],
+                "model_profile_ref": composition["model_profile_ref"],
+                "environment_ref": composition["sandbox_profile_ref"],
+            }
+        else:  # planned before composition selection existed (Work 018): Codex
+            profile = {
+                "composition_ref": installed.composition_ref,
+                "driver_profile_ref": self.codex["driver"],
+                "model_profile_ref": self.codex["model"],
+                "environment_ref": self.codex["environment"],
+            }
         decision = {
             "decision_id": new_id("approval"),
             "scope": scope.wire(),
@@ -672,12 +765,6 @@ class LocalExecutionService:
             "decision_ref": decision_ref,
         }
         grant_ref = self.authority.issue(service, grant)
-        profile = {
-            "composition_ref": installed.composition_ref,
-            "driver_profile_ref": self.codex["driver"],
-            "model_profile_ref": self.codex["model"],
-            "environment_ref": self.codex["environment"],
-        }
         self.runtime.activate(
             service,
             plan["contract_ref"],

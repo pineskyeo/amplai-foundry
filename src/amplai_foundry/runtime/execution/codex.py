@@ -17,12 +17,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ...agent_drivers.cli import CodexCliDriver
+from ...agent_drivers.cli import ClaudeCodeDriver, CodexCliDriver
 from ...agent_drivers.ports import CliPort
 from ...agent_drivers.protocol import SessionJournal
 from ...sandbox.container import ContainerProfile, ContainerSandbox
@@ -32,6 +33,9 @@ from ..errors import Hold
 from ..storage.store import Scope, Store
 
 DRIVER_ID = "codex-cli"
+# provider -> driver id / account kind (Work 019 E: Claude is a second qualified driver)
+DRIVER_IDS = {"codex": "codex-cli", "claude": "claude-cli"}
+ACCOUNTS = {"codex": "openai-chatgpt-account", "claude": "anthropic-subscription-oauth"}
 AUTH = Path(".codex") / "auth.json"
 
 
@@ -133,6 +137,16 @@ class CodexProfileInputs:
     qualification_report: Path  # container_qualify.py --container-profile ... output
     model: str = "gpt-5.6-sol"
     data_classes: tuple[str, ...] = ("internal",)
+    provider: str = "codex"  # "codex" | "claude"
+    enabled: bool = True  # operator switch: a disabled model is filtered out of selection
+
+    @property
+    def driver_id(self) -> str:
+        return DRIVER_IDS[self.provider]
+
+
+# The same inputs describe either driver; the historical name stays for Work 018 callers.
+DriverProfileInputs = CodexProfileInputs
 
 
 def _sha256(path: Path) -> str:
@@ -159,8 +173,10 @@ def measured_qualification(inputs: CodexProfileInputs) -> dict[str, Any]:
     """The passing report for exactly this image and driver version, or a Hold."""
     container = json.loads(inputs.container_profile.read_text())
     doc = json.loads(inputs.qualification_report.read_text())
-    report = doc.get("reports", {}).get(DRIVER_ID)
-    version = str(container.get("tools", {}).get("codex", "")).split()[-1:]
+    driver_id = inputs.driver_id
+    report = doc.get("reports", {}).get(driver_id)
+    pinned = re.search(r"\d+\.\d+\.\d+", str(container.get("tools", {}).get(inputs.provider, "")))
+    version = [pinned.group(0)] if pinned else []
     if (
         not report
         or report.get("status") != "pass"
@@ -173,12 +189,12 @@ def measured_qualification(inputs: CodexProfileInputs) -> dict[str, Any]:
     ):
         raise Hold(
             "DRIVER_UNQUALIFIED",
-            "No passing Codex qualification for this exact image, version and model",
+            f"No passing {driver_id} qualification for this exact image, version and model",
             details={"image": container["image"], "report": str(inputs.qualification_report)},
         )
     return {
         "qualification_id": report["qualification_id"],
-        "driver_id": DRIVER_ID,
+        "driver_id": driver_id,
         "driver_version": report["driver_version"],
         "status": "pass",
         "image": container["image"],
@@ -225,7 +241,9 @@ def install_codex_profile(
     def put(kind: str, object_id: str, value: dict[str, Any]) -> dict[str, Any]:
         return put_record(store, scope, contracts, kind, object_id, value)
 
-    env_id = "codex-sandbox-" + profile.image.rsplit("@sha256:", 1)[-1][:12]
+    # One record for the container both drivers run in: execution and verification must name
+    # the same pinned environment (the suite verifier checks it), whichever driver was chosen.
+    env_id = "sandbox-" + profile.image.rsplit("@sha256:", 1)[-1][:12]
     environment = {
         "environment_id": env_id,
         "scope": scope.wire(),
@@ -242,7 +260,7 @@ def install_codex_profile(
     )
     driver = {
         "schema_version": "3.0.0",
-        "driver_id": DRIVER_ID,
+        "driver_id": inputs.driver_id,
         "driver_version": measured["driver_version"],
         "transport": "cli",
         "environment_ref": env_ref,
@@ -253,11 +271,11 @@ def install_codex_profile(
         "maturity": "qualified",
         "probed_at": measured["checked_at"] or now(),
     }
-    driver_ref = put("driver-capabilities", DRIVER_ID, driver)
+    driver_ref = put("driver-capabilities", inputs.driver_id, driver)
     model = {
         "schema_version": "3.0.0",
-        "profile_id": "codex-" + inputs.model,
-        "provider": "openai-chatgpt-account",
+        "profile_id": f"{inputs.provider}-{inputs.model}",
+        "provider": ACCOUNTS[inputs.provider],
         "provider_model_id": inputs.model,
         "model_version_policy": "pinned",
         "driver_profile_ref": driver_ref,
@@ -267,15 +285,34 @@ def install_codex_profile(
         "context_limit_tokens": 200000,
         "price_snapshot_ref": None,
         "qualification_ref": qual_ref,
-        "enabled": True,
+        "enabled": inputs.enabled,
     }
-    model_ref = put("model-profile", "codex-" + inputs.model, model)
+    model_ref = put("model-profile", f"{inputs.provider}-{inputs.model}", model)
     return {
         "environment": env_ref,
         "qualification": qual_ref,
         "driver": driver_ref,
         "model": model_ref,
     }
+
+
+install_driver_profile = install_codex_profile
+
+
+def build_claude_port(inputs: CodexProfileInputs, journal_root: Path, token: str) -> CliPort:
+    """Claude CLI in the same qualified container; the OAuth token is passed by env name."""
+    measured = measured_qualification(inputs)
+    sandbox = ContainerSandbox(container_profile(inputs))
+    driver = ClaudeCodeDriver(
+        measured["driver_version"],
+        sandbox,
+        SessionJournal(journal_root),
+        model=inputs.model,
+        qualified=True,
+        environment={"CLAUDE_CODE_OAUTH_TOKEN": token},
+        auth="oauth_token",
+    )
+    return CliPort(driver)
 
 
 def build_codex_port(
