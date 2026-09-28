@@ -71,6 +71,16 @@ class PullRequestTracker:
             and (p.get("publication_outcome") or {}).get("state") not in FINAL
         ]
 
+    def _opened(self, goal_id: str) -> bool:
+        store, scope = self.service.store, self.service.scope
+        with store._lock:
+            row = store.conn.execute(
+                "SELECT 1 FROM events WHERE tenant=? AND project=? AND aggregate_id=? "
+                "AND event_type='publication.opened' LIMIT 1",
+                (*scope.keys(), goal_id),
+            ).fetchone()
+        return row is not None
+
     def sync(self) -> list[dict[str, Any]]:
         """Read every undecided PR once; return the transitions recorded."""
         self._last = self.clock()
@@ -95,6 +105,11 @@ class PullRequestTracker:
                 "checked_at": now(),
             }
             transitions = []
+            if not self._opened(goal_id):
+                # published before publication.opened existed: the PR exists (we just read it)
+                transitions.append(
+                    ("publication.opened", {"pr_url": publication["pr_url"], "backfilled": True})
+                )
             if outcome["revised"] and not before.get("revised"):
                 transitions.append(("publication.revised", {"head": outcome["head"]}))
             if outcome["state"] in FINAL and before.get("state") != outcome["state"]:

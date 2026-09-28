@@ -6,6 +6,7 @@ stand-in for ``gh pr view`` (the real ``gh`` read is exercised on PRs #12-#14 in
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -14,7 +15,7 @@ from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
-from rc06_rig import approved, git, rig_with_codex
+from rc06_rig import approved, git, rig_with_codex, submit
 
 
 class States:
@@ -126,3 +127,28 @@ def test_the_loop_syncs_outcomes_when_due(deployment: Any, tmp_path: Path) -> No
     loop.idle_tick()
     assert len(states.calls) == 1  # merged is final: nothing left to read
     assert events(rig, goal)[-1] == "publication.merged"
+
+
+def test_a_pr_published_before_tracking_is_backfilled_as_opened(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # real PRs #12-#14 were published before publication.opened existed
+    rig, _loop, _goal, _publication = published(deployment, tmp_path)
+    legacy = submit(rig, "legacy published goal")
+    rig.service._save_plan(
+        legacy,
+        {"goal_id": legacy, "status": "published", "app": "app",
+         "publication": {"pr_url": "https://example.invalid/pr/1", "commit": "a" * 40}},
+    )  # fmt: skip
+    states = States()
+    states.value = {"state": "MERGED", "headRefOid": "a" * 40}
+    PullRequestTracker(rig.service, reader=states).sync()
+    assert events(rig, legacy) == ["publication.opened", "publication.merged"]
+    opened = rig.d.store.conn.execute(
+        "SELECT data FROM events WHERE aggregate_id=? AND event_type='publication.opened'",
+        (legacy,),
+    ).fetchone()
+    assert json.loads(opened["data"])["backfilled"] is True
+    got = outcomes(rig)
+    # the scripted reader answers MERGED for both PRs
+    assert got["opened"] == 2 and got["merged"] == 2 and got["undecided"] == 0
