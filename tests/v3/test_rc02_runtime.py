@@ -418,6 +418,18 @@ def test_t034_unknown_usage(deployment):
     assert totals["unknown_runs"] == 1 and totals["reserved_or_spent_tokens"] == 500
 
 
+def test_budget_totals_without_reservations(deployment):
+    d = deployment
+    goal_id = "goal-without-reservations"
+    # A goal with no reservation rows has nothing reserved, spent, unknown, overrun, or active.
+    totals = d.runtime.budgets.totals(d.scope, goal_id)
+    assert totals["reserved_or_spent_tokens"] == 0
+    assert totals["reserved_or_spent_cost_microunits"] == 0
+    assert totals["unknown_runs"] == 0
+    assert totals["overruns"] == 0
+    assert totals["active_runs"] == 0
+
+
 def test_estimated_usage_settles_tokens_and_records_the_cost_estimate(deployment):
     # given: a driver-estimated cost (Claude CLI total_cost_usd) with provider-reported tokens
     d = deployment
