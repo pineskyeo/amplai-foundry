@@ -100,6 +100,7 @@ class SeededCodexPort(CliPort):
             if isinstance(credential_home, ScopedCredential)
             else ScopedCredential(credential_home)
         )
+        self._resumed: dict[str, Path] = {}  # resumed handle -> the paused session's home
 
     def _dispatch_home(self, dispatch_id: str) -> Path:
         self.driver.journal._path(dispatch_id)  # validate the id before joining a path
@@ -111,7 +112,28 @@ class SeededCodexPort(CliPort):
         return self.driver.prepare(dispatch, prompt, workspace, native_home=home)
 
     def _release(self, handle: str) -> None:
-        self.credential.release(self._dispatch_home(handle))
+        home = self._resumed.pop(handle, None) or self._dispatch_home(handle)
+        self.credential.release(home)
+
+    def pause(self, handle: str) -> dict[str, Any]:
+        result = self.driver.pause(handle)
+        if result.get("process_stopped") is True:
+            self._release(handle)  # no credential at rest while the run is paused
+        return result
+
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+    ) -> str:
+        """Seed the credential into the paused session's home, then resume it exactly."""
+        home = Path(checkpoint["native_home"])
+        self.credential.seed(home)
+        try:
+            handle = self.driver.resume(dispatch, prompt, workspace, checkpoint)
+        except Exception:
+            self.credential.release(home)
+            raise
+        self._resumed[handle] = home
+        return handle
 
     def collect(self, handle: str) -> dict[str, Any]:
         receipt = self.driver.collect(handle)

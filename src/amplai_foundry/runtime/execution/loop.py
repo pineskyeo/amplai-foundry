@@ -27,9 +27,10 @@ from typing import Any
 
 from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
-from ..contracts.identity import canonical, now
+from ..contracts.identity import canonical, new_id, now
 from ..errors import Hold, RuntimeFault
 from .product import PORT, LocalExecutionService
+from .steering import SteeringService
 
 FEEDBACK_TAIL = 3000
 
@@ -67,6 +68,8 @@ class ExecutionLoop:
         self._thread: threading.Thread | None = None
         self._cancel: set[str] = set()
         self._lock = threading.Lock()
+        self.steering = SteeringService(service.runtime)
+        self._steering: dict[str, dict[str, Any]] = {}  # goal -> pending operator steering
 
     # -- operator controls --------------------------------------------------------------------
     def cancel(self, operator: Actor, goal_id: str) -> dict[str, Any]:
@@ -82,6 +85,92 @@ class ExecutionLoop:
             self._end(goal_id, "cancelled", "cancelled by the operator")
             return self._finish(goal_id, "cancelled", reason="cancelled by the operator")
         return {**plan, "status": "cancelling"}
+
+    def steer(self, operator: Actor, goal_id: str, text: str) -> dict[str, Any]:
+        """Operator guidance for the running attempt (D-082): the agent is stopped at a process
+        boundary, checkpointed, and its exact session resumes with the message. The contract and
+        acceptance do not change; to change them, replan."""
+        operator.require("goal.steer")
+        message = text.strip()[:4000]
+        if not message:
+            raise Hold("STEER_TEXT", "Steering needs a message")
+        plan = self.service.plan_record(goal_id)
+        if plan["status"] != "running":
+            raise Hold(
+                "STEER_NOT_RUNNING",
+                "Steer while an attempt runs; to change a plan, replan it",
+                details=plan["status"],
+            )
+        with self._lock:
+            if goal_id in self._steering:
+                raise Hold("STEER_PENDING", "A steering message is already being applied")
+            goal = self.store.head(self.scope, "goal", goal_id)
+            queued = self.steering.receive(
+                operator, goal_id, "pause", message,
+                expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id("steer"),
+            )  # fmt: skip
+            self._steering[goal_id] = {
+                "operator": operator, "pause_id": queued["steering_id"], "text": message,
+            }  # fmt: skip
+        return {"goal_id": goal_id, "status": "steering", "steering_id": queued["steering_id"]}
+
+    def _execute(
+        self,
+        goal_id: str,
+        dispatch: dict[str, Any],
+        prompt: str,
+        base: dict[str, Any],
+    ) -> bool:
+        """Run one attempt; apply operator steering if it paused the attempt. True if steered."""
+        worker = self.service.actors.worker
+        try:
+            self.coordinator.execute(
+                worker, dispatch, prompt=prompt, base_snapshot=base,
+                output_paths={PORT: PATCH_BINDING},
+            )  # fmt: skip
+            return False
+        except Hold as exc:
+            steer = self._steering.get(goal_id)
+            if exc.code != "EXECUTION_PAUSED" or steer is None:
+                raise
+        try:
+            self._apply_steering(goal_id, dispatch, steer)
+        finally:
+            with self._lock:
+                self._steering.pop(goal_id, None)
+        return True
+
+    def _apply_steering(
+        self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]
+    ) -> None:
+        worker, controller = self.service.actors.worker, self._controller()
+        quiesced = self.steering.quiesce(
+            controller, steer["pause_id"],
+            lambda run_id, kind: self.coordinator.stop_and_snapshot(worker, run_id, kind),
+        )  # fmt: skip
+        if not quiesced.get("outcomes") or any(
+            o["status"] != "paused" for o in quiesced["outcomes"]
+        ):
+            raise Hold("STEER_BOUNDARY", "The agent did not reach a checkpoint", details=quiesced)
+        goal = self.store.head(self.scope, "goal", goal_id)
+        resume = self.steering.receive(
+            steer["operator"], goal_id, "resume", steer["text"],
+            expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id("steer"),
+        )  # fmt: skip
+        message = (
+            "Operator steering from the human operator (it does not change the objective or "
+            "the acceptance commands):\n" + steer["text"] + "\nContinue the same task with this "
+            "guidance, then run the acceptance commands again."
+        )
+        self.steering.resume(
+            controller, resume["steering_id"], worker,
+            lambda run_id, cp: self.coordinator.resume_exact(worker, run_id, cp, prompt=message),
+        )  # fmt: skip
+        self.coordinator.continue_resumed(worker, dispatch["run_id"])
+        plan = self.service.plan_record(goal_id)
+        entry = {"text": steer["text"], "run_id": dispatch["run_id"], "at": now()}
+        applied = [*(plan.get("steering") or []), entry]
+        self._update(goal_id, steering=applied)
 
     # -- the loop --------------------------------------------------------------------------------
     def reconcile(self) -> list[dict[str, Any]]:
@@ -215,12 +304,8 @@ class ExecutionLoop:
             )  # fmt: skip
             self.coordinator.max_seconds = max(1, int(remaining))
             try:
-                self.coordinator.execute(
-                    worker,
-                    dispatch,
-                    prompt=prompt,
-                    base_snapshot=repair.get(node["node_id"]) or bases[app],
-                    output_paths={PORT: PATCH_BINDING},
+                steered = self._execute(
+                    goal_id, dispatch, prompt, repair.get(node["node_id"]) or bases[app]
                 )
             except Exception as exc:
                 attempts.append(
@@ -246,7 +331,7 @@ class ExecutionLoop:
             observations = [self._observation(v) for v in verdicts]
             attempts.append(
                 {"run_id": dispatch["run_id"], "app": app, "outcome": finished["outcome"],
-                 "change": change,
+                 "change": change, **({"steered": True} if steered else {}),
                  "verdicts": [{"acceptance": o["acceptance_id"], "outcome": o["outcome"],
                                "reason": o["reason"]} for o in observations],
                  "seconds": round(self.clock() - started, 1)}
@@ -449,8 +534,8 @@ class ExecutionLoop:
         # The loop stops its own goals with the controller's authority, never a human's.
         service = self.service.actors.service
         return Actor(
-            service.subject_id, service.scope, frozenset({"execution.approve"}), "service",
-            service.authn_context_ref,
+            service.subject_id, service.scope, frozenset({"execution.approve", "goal.steer"}),
+            "service", service.authn_context_ref,
         )  # fmt: skip
 
     def _update(

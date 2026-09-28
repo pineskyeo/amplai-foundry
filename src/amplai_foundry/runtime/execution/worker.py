@@ -286,6 +286,12 @@ class WorkCoordinator:
                 port.destroy(handle)
             return result
         except Exception as exc:
+            if getattr(exc, "code", None) == "EXECUTION_PAUSED" and handle is not None:
+                # Steering: the controller stops this process at a boundary and checkpoints it
+                # (SteeringService.quiesce -> stop_and_snapshot); cancelling here would lose the
+                # session the operator's message resumes (D-082).
+                self._update(worker, did, "pause_requested", hold_code="EXECUTION_PAUSED")
+                raise
             stopped = False
             if handle is not None:
                 with contextlib.suppress(Exception):
@@ -367,7 +373,12 @@ class WorkCoordinator:
         return did, h
 
     def resume_exact(
-        self, worker: Actor, run_id: str, checkpoint: dict[str, Any]
+        self,
+        worker: Actor,
+        run_id: str,
+        checkpoint: dict[str, Any],
+        *,
+        prompt: str | None = None,
     ) -> dict[str, Any]:
         """Callback for SteeringService.resume after authority/resource preflight.
 
@@ -394,7 +405,8 @@ class WorkCoordinator:
         request["dispatch_id"] = (
             "resume-" + digest({"run_id": run_id, "pending": run["data"]["resume_pending"]})[7:39]
         )
-        prompt = self.runtime.artifacts.read(worker.scope, data["prompt_artifact"]).decode()
+        if prompt is None:  # a plain resume repeats the original turn's prompt
+            prompt = self.runtime.artifacts.read(worker.scope, data["prompt_artifact"]).decode()
         self._update(worker, did, "resuming", resume_dispatch_id=request["dispatch_id"])
         self.store.assert_outside_tx()
         handle = port.resume(request, prompt, Path(data["workspace"]), data["driver_checkpoint"])

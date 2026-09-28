@@ -83,7 +83,7 @@ SERVICE_PERMISSIONS = frozenset(
         "execution.approve",
     }
 )
-OPERATOR_PERMISSIONS = frozenset({"goal.submit", "runtime.read", "execution.approve"})
+OPERATOR_PERMISSIONS = frozenset({"goal.submit", "runtime.read", "execution.approve", "goal.steer"})
 
 
 class VerifierConfig(BaseModel):
@@ -436,6 +436,10 @@ class LocalProductDeployment:
         @router.post("/goals/{goal_id}/cancel")
         def cancel(goal_id: str, a: Actor = Depends(actor)) -> Any:
             return _summary(self.loop.cancel(a, goal_id))
+
+        @router.post("/goals/{goal_id}/steer")
+        def steer(goal_id: str, body: dict[str, Any], a: Actor = Depends(actor)) -> Any:
+            return self.loop.steer(a, goal_id, str(body.get("text", "")))
 
         @router.post("/publications/sync")
         def pr_sync(a: Actor = Depends(actor)) -> Any:

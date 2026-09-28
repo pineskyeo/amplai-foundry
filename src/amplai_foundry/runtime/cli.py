@@ -212,6 +212,14 @@ def goal_status(goal_id: Annotated[str | None, typer.Argument()] = None) -> None
         _local(lambda c: c.local_goals(), render=False)
 
 
+@app.command("steer")
+def goal_steer(
+    goal_id: Annotated[str, typer.Argument()], text: Annotated[str, typer.Argument()]
+) -> None:
+    """Guide the running agent: it pauses at a checkpoint and resumes with your message."""
+    _local(lambda c: c.local_steer(goal_id, text), render=False)
+
+
 @app.command("cancel")
 def goal_cancel(goal_id: Annotated[str, typer.Argument()]) -> None:
     """Revoke the approval and stop the goal (a running container is stopped)."""

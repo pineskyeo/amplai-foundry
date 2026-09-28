@@ -232,7 +232,15 @@ def with_permissions(actor: Actor, *extra: str) -> Actor:
 AGENT = r"""
 import json, pathlib, sys
 ws, mode, home = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
+prompt = sys.argv[4] if len(sys.argv) > 4 else ""
 assert (home / ".codex" / "auth.json").is_file(), "credential was not leased"
+if mode == "steer" and "Operator steering" not in prompt:
+    # a long first turn: bound session, then working until the operator's pause stops it
+    import time
+    sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": "thread_steer"}) + "\n")
+    sys.stdout.flush()
+    time.sleep(60)
+    sys.exit(0)
 src = (ws / "app.py").read_text() if (ws / "app.py").exists() else ""
 if mode == "crash":
     sys.exit(3)
@@ -297,7 +305,10 @@ class ScriptContainer:
             self.prompts.append(argv[argv.index("-p") + 1])
             return [sys.executable, "-c", CLAUDE_AGENT, str(workspace), self.mode]
         self.prompts.append(argv[-1])
-        return [sys.executable, "-c", AGENT, str(workspace), self.mode, str(kw["native_home"])]
+        return [
+            sys.executable, "-c", AGENT, str(workspace), self.mode, str(kw["native_home"]),
+            argv[-1],
+        ]  # fmt: skip
 
     def stop(self, name: str) -> None:
         p = self.driver.processes.get(name)
