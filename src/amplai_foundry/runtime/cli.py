@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -101,6 +102,7 @@ def version() -> None:
             "schema_version": "3.0.0",
             "release_status": "development_snapshot",
             "production_release": False,
+            "platform": platform.system(),
         }
     )
 

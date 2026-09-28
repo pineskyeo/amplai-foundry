@@ -273,6 +273,8 @@ def test_dev01_raw_intent_to_critic_to_graph_never_self_authorizes(deployment, b
 
 
 def test_dev01_cli_reports_development_not_final():
+    import platform
+
     from typer.testing import CliRunner
 
     from amplai_foundry import __version__
@@ -283,3 +285,4 @@ def test_dev01_cli_reports_development_not_final():
     value = json.loads(result.stdout)
     assert value["package_version"] == __version__ == "3.0.0.dev3"
     assert value["stage"] == "DEV-03" and value["production_release"] is False
+    assert value["platform"] == platform.system()
