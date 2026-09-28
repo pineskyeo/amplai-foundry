@@ -112,3 +112,43 @@ def test_a_config_change_that_does_not_validate_is_not_written(tmp_path: Path) -
     assert result.exit_code != 0 and "INTEGRATION_APPS" in result.output
     assert config.read_bytes() == before
     assert not list(config.parent.glob("*.tmp"))
+
+
+def test_an_app_verifier_is_added_replaced_in_place_and_removed(tmp_path: Path) -> None:
+    config, _inputs = init(tmp_path)
+
+    def ids() -> list[tuple[str, list[str]]]:
+        (app,) = json.loads(config.read_text())["apps"]
+        return [(v["id"], v["argv"]) for v in app["verifiers"]]
+
+    # the format gate CI runs (found when a verified agent change failed CI format check)
+    run(
+        "ops", "local-verifier", "--app", "app",
+        "--verifier", "format=ruff format --check . | ruff format is clean",
+        "--config", str(config),
+    )  # fmt: skip
+    assert ids() == [
+        ("check", ["python3", "-c", "import app"]),
+        ("format", ["ruff", "format", "--check", "."]),
+    ]
+    run(
+        "ops", "local-verifier", "--app", "app",
+        "--verifier", "check=python3 -c 'import app, sys' | app imports",
+        "--config", str(config),
+    )  # fmt: skip
+    assert ids()[0] == ("check", ["python3", "-c", "import app, sys"])  # same place
+    run("ops", "local-verifier", "--app", "app", "--remove", "format", "--config", str(config))
+    assert [i for i, _ in ids()] == ["check"]
+    # the last verifier and an unknown app are refused, and the file is left as it was
+    before = config.read_bytes()
+    for args in (["--app", "app", "--remove", "check"], ["--app", "nope", "--remove", "x"]):
+        result = CliRunner().invoke(
+            cli.app, ["ops", "local-verifier", *args, "--config", str(config)]
+        )
+        assert result.exit_code != 0
+    assert config.read_bytes() == before
+    dep = LocalProductDeployment(config, start_loop=False)
+    try:
+        assert [v.id for v in dep.service.apps["app"].config.verifiers] == ["check"]
+    finally:
+        dep.close()

@@ -617,18 +617,7 @@ def local_add_app(
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
 ) -> None:
     """Add another app to the local product (a goal may then target several apps)."""
-    import shlex
-
-    verifiers = []
-    for item in verifier:
-        head, _, description = item.partition("|")
-        vid, _, command = head.partition("=")
-        if not vid.strip() or not command.strip():
-            raise typer.BadParameter("Use --verifier 'id=command | description'")
-        verifiers.append(
-            {"id": vid.strip(), "argv": shlex.split(command),
-             "description": description.strip() or command.strip()}
-        )  # fmt: skip
+    verifiers = _verifier_specs(verifier)
 
     def change(value: dict[str, Any]) -> None:
         if any(a["app_id"] == app_id for a in value["apps"]):
@@ -651,6 +640,60 @@ def local_add_app(
 
     guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
                      "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
+def _verifier_specs(items: list[str]) -> list[dict[str, Any]]:
+    """--verifier 'id=command ... | description' values as config verifier entries."""
+    import shlex
+
+    verifiers = []
+    for item in items:
+        head, _, description = item.partition("|")
+        vid, _, command = head.partition("=")
+        if not vid.strip() or not command.strip():
+            raise typer.BadParameter("Use --verifier 'id=command | description'")
+        verifiers.append(
+            {"id": vid.strip(), "argv": shlex.split(command),
+             "description": description.strip() or command.strip()}
+        )  # fmt: skip
+    return verifiers
+
+
+@ops.command("local-verifier")
+def local_verifier(
+    app_id: Annotated[str, typer.Option("--app")],
+    verifier: Annotated[
+        list[str] | None, typer.Option("--verifier", help="id=command ... | description")
+    ] = None,
+    remove: Annotated[list[str] | None, typer.Option("--remove", help="verifier id")] = None,
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Add, replace (same id, same place) or remove an app's acceptance verifier commands.
+
+    New goals plan against the app's verifiers; goals planned earlier keep their contract.
+    """
+    specs = _verifier_specs(verifier or [])
+    dropped = set(remove or [])
+    if not specs and not dropped:
+        raise typer.BadParameter("Give --verifier and/or --remove")
+
+    def change(value: dict[str, Any]) -> None:
+        app = next((a for a in value["apps"] if a["app_id"] == app_id), None)
+        if app is None:
+            raise Hold("APP_UNKNOWN", "The app is not configured")
+        current = [v for v in app["verifiers"] if v["id"] not in dropped]
+        for spec in specs:
+            at = next((i for i, v in enumerate(current) if v["id"] == spec["id"]), None)
+            if at is None:
+                current.append(spec)
+            else:
+                current[at] = spec
+        if not current:
+            raise Hold("VERIFIERS_EMPTY", "An app keeps at least one verifier")
+        app["verifiers"] = current
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "app": app_id, "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
 @ops.command("local-integration")
