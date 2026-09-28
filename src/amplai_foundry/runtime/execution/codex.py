@@ -243,7 +243,9 @@ def install_codex_profile(
 
     # One record for the container both drivers run in: execution and verification must name
     # the same pinned environment (the suite verifier checks it), whichever driver was chosen.
-    env_id = "sandbox-" + profile.image.rsplit("@sha256:", 1)[-1][:12]
+    # Records are per image, so apps with different images never overwrite each other's.
+    image12 = profile.image.rsplit("@sha256:", 1)[-1][:12]
+    env_id = "sandbox-" + image12
     environment = {
         "environment_id": env_id,
         "scope": scope.wire(),
@@ -271,7 +273,7 @@ def install_codex_profile(
         "maturity": "qualified",
         "probed_at": measured["checked_at"] or now(),
     }
-    driver_ref = put("driver-capabilities", inputs.driver_id, driver)
+    driver_ref = put("driver-capabilities", f"{inputs.driver_id}-{image12}", driver)
     model = {
         "schema_version": "3.0.0",
         "profile_id": f"{inputs.provider}-{inputs.model}",
@@ -287,7 +289,7 @@ def install_codex_profile(
         "qualification_ref": qual_ref,
         "enabled": inputs.enabled,
     }
-    model_ref = put("model-profile", f"{inputs.provider}-{inputs.model}", model)
+    model_ref = put("model-profile", f"{inputs.provider}-{inputs.model}-{image12}", model)
     return {
         "environment": env_ref,
         "qualification": qual_ref,

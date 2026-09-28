@@ -128,6 +128,8 @@ class InstalledApp:
     compositions: dict[str, dict[str, Any]] = field(default_factory=dict)  # driver id -> ref
     router_ref: dict[str, Any] | None = None
     design_ref: dict[str, Any] | None = None  # the design-document verifier profile (F)
+    driver_refs: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
+    planners: dict[str, Any] = field(default_factory=dict)
 
 
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
@@ -144,6 +146,21 @@ def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
         for a in draft.get("acceptance") or []
         if text(a["statement"])
     ]
+    if "work_items" in draft:
+        cleaned["work_items"] = [
+            {
+                "app": item["app"],
+                "objective": text(item.get("objective", "")) or text(draft.get("objective", "")),
+                "in_scope": [text(v) for v in item.get("in_scope") or [] if text(v)],
+                "acceptance": [
+                    {**a, "statement": text(a["statement"])}
+                    for a in item.get("acceptance") or []
+                    if text(a["statement"])
+                ],
+                "after": [b for b in dict.fromkeys(item.get("after") or []) if b != item["app"]],
+            }
+            for item in draft["work_items"]
+        ]
     cleaned["objective"] = text(draft.get("objective", ""))
     cleaned["summary"] = text(draft.get("summary", "")) or cleaned["objective"][:200]
     if not cleaned["objective"]:
@@ -194,6 +211,7 @@ class LocalExecutionService:
         driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
         planners: dict[str, Any] | None = None,
         design_min_sources: int = 3,
+        integration_factory: Any = None,
     ) -> None:
         self.store, self.runtime, self.goals, self.knowledge = store, runtime, goals, knowledge
         self.authority, self.verification, self.workspaces = authority, verification, workspaces
@@ -202,6 +220,7 @@ class LocalExecutionService:
         self.drivers = driver_refs or {"codex-cli": codex_refs}
         self.planners = dict(planners or {})  # driver id -> planner; Codex is self.planner
         self.design_min_sources = design_min_sources
+        self.integration_factory = integration_factory  # multi-app goal check (D-081)
         self.verifier_factory, self.global_factory = verifier_factory, global_factory
         self.budget = budget or Budget()
         if publish_mode not in {"draft_pr", "branch", "none"}:
@@ -219,10 +238,17 @@ class LocalExecutionService:
         return put_record(self.store, self.scope, self.runtime.contracts, kind, object_id, value)
 
     # -- install ---------------------------------------------------------------------------
-    def install(self, app: AppConfig) -> InstalledApp:
+    def install(
+        self,
+        app: AppConfig,
+        *,
+        driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
+        planners: dict[str, Any] | None = None,
+    ) -> InstalledApp:
         scope, a = self.scope, app.app_id
         caps = app_capabilities(a)
-        env_ref = self.codex["environment"]
+        drivers = driver_refs or self.drivers
+        env_ref = (drivers.get("codex-cli") or self.codex)["environment"]
         invariant_ref = self._put(
             "invariant-registry",
             f"{a}-invariants",
@@ -305,7 +331,7 @@ class LocalExecutionService:
             },
         )
         compositions = {}
-        for driver_id, refs in self.drivers.items():
+        for driver_id, refs in drivers.items():
             name = f"{a}-{driver_id.split('-')[0]}"
             compositions[driver_id] = self._put(
                 "harness-composition",
@@ -348,6 +374,7 @@ class LocalExecutionService:
         installed = InstalledApp(
             app, binding_ref, verifier_refs, global_ref, policy_ref, invariant_ref,
             composition_ref, caps, compositions, router_ref, design_ref,
+            dict(drivers), dict(planners or {}),
         )  # fmt: skip
         self.apps[a] = installed
         return installed
@@ -405,34 +432,70 @@ class LocalExecutionService:
 
     # -- plan --------------------------------------------------------------------------------
     def plan(self, goal_id: str) -> dict[str, Any]:
-        """Draft (selected driver, read-only) → compile → freeze contract → save graph."""
+        """Draft (selected driver, read-only) → compile → freeze contract → save graph.
+
+        One app or several (D-081): every draft is normalised to work items (one per app that
+        must change, with the apps it comes after); a one-app goal is exactly one item.
+        """
         service, scope = self.actors.service, self.scope
         goal = self.store.head(scope, "goal", goal_id)
         intent = self.store.get(scope, "intent-envelope", goal["data"]["intent_ref"])
-        installed = self._target(intent)
+        targets = self._targets(intent)
+        installed = targets[0]
         app = installed.config
         mode = intent.get("mode", "work")
-        base = self.workspaces.base_snapshot(scope, app.app_id, app.base_branch)
+        multi = len(targets) > 1
+        if multi and mode != "work":
+            raise Hold("DESIGN_ONE_APP", "A design goal targets exactly one app")
+        bases = {
+            t.config.app_id: self.workspaces.base_snapshot(
+                scope, t.config.app_id, t.config.base_branch
+            )
+            for t in targets
+        }
+        base = bases[app.app_id]
         base_value = self._base(base)
         # a design goal changes documents only: the app suite on the base says nothing about it
-        base_check = self.base_check(installed, base_value) if mode == "work" else None
+        base_checks = (
+            {a: self.base_check(self.apps[a], self._base(b)) for a, b in bases.items()}
+            if mode == "work"
+            else {}
+        )
+        base_check = base_checks.get(app.app_id)
         verifiers = (
             {DESIGN_CHECK: DESIGN_CHECK_DESCRIPTION}
             if mode == "design"
             else {v.id: v.description for v in app.verifiers}
         )
         planning = self.select_composition(installed)
-        planner = (
-            self.planner if planning["driver_id"] == "codex-cli" else None
-        ) or self.planners.get(planning["driver_id"])
-        if planner is None:
-            raise Hold("PLANNER_UNAVAILABLE", "No planner for " + planning["driver_id"])
-        workspace = self.workspaces.materialize(scope, new_id("plan-ws"), base)
+        planner = self._planner(installed, planning["driver_id"])
+        workspaces = {
+            a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
+        }
         try:
-            drafted = planner.draft(intent["text"], app.app_id, verifiers, workspace, mode=mode)
+            if multi:
+                drafted = planner.draft_multi(
+                    intent["text"],
+                    {t.config.app_id: {v.id: v.description for v in t.config.verifiers}
+                     for t in targets},
+                    workspaces,
+                )  # fmt: skip
+            else:
+                drafted = planner.draft(
+                    intent["text"], app.app_id, verifiers, workspaces[app.app_id], mode=mode
+                )
         finally:
-            self.workspaces.discard(workspace)
+            for workspace in workspaces.values():
+                self.workspaces.discard(workspace)
         draft = _clean_draft(drafted["draft"])
+        items = (
+            draft["work_items"]
+            if multi
+            else [
+                {"app": app.app_id, "objective": draft["objective"],
+                 "in_scope": draft["in_scope"], "acceptance": draft["acceptance"], "after": []}
+            ]
+        )  # fmt: skip
         record: dict[str, Any] = {
             "goal_id": goal_id,
             "scope": scope.wire(),
@@ -444,6 +507,8 @@ class LocalExecutionService:
             "planned_with": {k: planning[k] for k in ("driver_id", "model")},
             "mode": mode,
             **({"design_dir": f"{DESIGN_ROOT}{goal_id}/"} if mode == "design" else {}),
+            **({"apps": list(bases), "bases": bases, "base_checks": base_checks} if multi else {}),
+            "work_items": items,
             "base_check": base_check,
             "created_at": now(),
         }
@@ -451,12 +516,29 @@ class LocalExecutionService:
             record.update(status="needs_answers", contract_ref=None, graph_ref=None)
             self._save_plan(goal_id, record, ("question.asked", {"count": len(draft["questions"])}))
             return record
-        facts = self.knowledge.record_observation(
-            scope,
-            f"git:{app.app_id}@{base_value['commit']}",
-            "Planner draft on base commit " + base_value["commit"] + ": " + draft["summary"],
+        entries = []
+        for a, b in bases.items():
+            commit = self._base(b)["commit"]
+            fact = self.knowledge.record_observation(
+                scope,
+                f"git:{a}@{commit}",
+                f"Planner draft on {a} base commit {commit}: " + draft["summary"],
+            )
+            entries.append(
+                {
+                    "ref": fact,
+                    "kind": "repo_fact",
+                    "trust": "observed",
+                    "mandatory": True,
+                    "freshness": "current",
+                    "superseded_by": None,
+                    "excerpt": draft["summary"][:500],
+                    "source_locator": f"git:{a}@{commit}",
+                }
+            )
+        readiness = self.knowledge.readiness(
+            scope, {area: [e["ref"] for e in entries] for area in READINESS_AREAS}
         )
-        readiness = self.knowledge.readiness(scope, {area: [facts] for area in READINESS_AREAS})
         resolution_ref, resolution = self.goals.resolve(service, goal_id, readiness)
         if resolution["status"] != "resolved":
             raise Hold("RESOLUTION_HOLD", "Goal could not be resolved", details=resolution)
@@ -464,25 +546,16 @@ class LocalExecutionService:
             scope,
             bundle_id=new_id("context"),
             core_refs=[installed.policy_ref, installed.invariant_ref],
-            entries=[
-                {
-                    "ref": facts,
-                    "kind": "repo_fact",
-                    "trust": "observed",
-                    "mandatory": True,
-                    "freshness": "current",
-                    "superseded_by": None,
-                    "excerpt": draft["summary"][:500],
-                    "source_locator": f"git:{app.app_id}@{base_value['commit']}",
-                }
-            ],
+            entries=entries,
             invariant_registry_ref=installed.invariant_ref,
             token_budget=8192,
             assembled_at=now(),
         )
-        contract_ref, graph_ref = self._compile(
-            goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft, mode=mode
-        )
+        contract_ref, graph_ref, acceptance_map = self._compile(
+            goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
+            mode=mode, items=items,
+        )  # fmt: skip
+        record["acceptance_map"] = acceptance_map
         record["composition"] = self.select_composition(installed, draft.get("task_class"))
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
@@ -531,14 +604,23 @@ class LocalExecutionService:
         value: dict[str, Any] = json.loads(self.workspaces.artifacts.read(self.scope, base))
         return value
 
+    def _targets(self, intent: dict[str, Any]) -> list[InstalledApp]:
+        """The apps a goal names (--app, in order); the only app when exactly one is installed."""
+        hints = list(dict.fromkeys(intent.get("target_hints") or []))
+        if not hints:
+            if len(self.apps) == 1:
+                return list(self.apps.values())
+            raise Hold("TARGET_REQUIRED", "Name the target app(s) with --app")
+        unknown = [h for h in hints if h not in self.apps]
+        if unknown:
+            raise Hold("TARGET_UNKNOWN", "Not an installed app", details=unknown)
+        return [self.apps[h] for h in hints]
+
     def _target(self, intent: dict[str, Any]) -> InstalledApp:
-        hints = intent.get("target_hints") or []
-        candidates = [a for a in self.apps.values() if a.config.app_id in hints] or (
-            list(self.apps.values()) if len(self.apps) == 1 else []
-        )
-        if len(candidates) != 1:
+        targets = self._targets(intent)
+        if len(targets) != 1:
             raise Hold("TARGET_REQUIRED", "Name exactly one registered app (--app)")
-        return candidates[0]
+        return targets[0]
 
     def _compile(
         self,
@@ -551,60 +633,88 @@ class LocalExecutionService:
         draft: dict[str, Any],
         *,
         mode: str = "work",
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        items: list[dict[str, Any]] | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
+        """Deterministic contract + graph: one node per work item (a one-app goal is one)."""
         scope, service = self.scope, self.actors.service
-        env_ref, root = self.codex["environment"], self.budget.wire()
+        root = self.budget.wire()
         draft = _clean_draft(draft)
+        items = items or [
+            {"app": installed.config.app_id, "objective": draft["objective"],
+             "in_scope": draft["in_scope"], "acceptance": draft["acceptance"], "after": []}
+        ]  # fmt: skip
         design = mode == "design"
-        refs = {DESIGN_CHECK: installed.design_ref} if design else installed.verifier_refs
         evidence = "design-verification" if design else "command-verification"
-        bindings, acceptance = [], []
-        if not draft["acceptance"] or any(a["verifier"] not in refs for a in draft["acceptance"]):
-            raise Hold("PLANNING_VERIFIER", "Every acceptance needs one installed verifier")
-        for i, item in enumerate(draft["acceptance"], start=1):
-            ac, command = f"AC-{i}", installed.config.verifiers
-            vref = refs[item["verifier"]]
-            assert vref is not None
-            timeout = (
-                300
-                if design
-                else next(v.timeout_seconds for v in command if v.id == item["verifier"])
-            )
-            rule = (
-                "only specs/design/<dir>/ changes; design.md has every required section and "
-                "resolved path:line sources"
-                if design
-                else "every installed suite command exits 0 on base + patch; "
-                + f"{item['verifier']} demonstrates this statement"
-            )
-            bindings.append(
-                {
-                    "acceptance_id": ac,
-                    "verifier_ref": vref,
-                    "subject_selector": PORT,
-                    "environment_ref": env_ref,
-                    "required_evidence_types": [evidence],
-                    "decision_rule": rule,
-                    "independent_review": True,
-                    "timeout_seconds": timeout,
+        apps = [item["app"] for item in items]
+        if len(set(apps)) != len(apps) or any(a not in self.apps for a in apps):
+            raise Hold("PLANNING_TARGET", "Work items must name distinct installed apps")
+        if any(b not in apps or b == item["app"] for item in items for b in item["after"]):
+            raise Hold("PLANNING_ORDER", "A work item can only come after another item's app")
+        bindings: list[dict[str, Any]] = []
+        acceptance: list[dict[str, Any]] = []
+        node_acceptance: list[list[str]] = []
+        acceptance_map: dict[str, dict[str, str]] = {}
+        for item in items:
+            target = self.apps[item["app"]]
+            refs = {DESIGN_CHECK: target.design_ref} if design else target.verifier_refs
+            if not item["acceptance"] or any(a["verifier"] not in refs for a in item["acceptance"]):
+                raise Hold("PLANNING_VERIFIER", "Every acceptance needs one installed verifier")
+            ids = []
+            for entry in item["acceptance"]:
+                ac = f"AC-{len(acceptance) + 1}"
+                vref = refs[entry["verifier"]]
+                assert vref is not None
+                timeout = (
+                    300
+                    if design
+                    else next(
+                        v.timeout_seconds
+                        for v in target.config.verifiers
+                        if v.id == entry["verifier"]
+                    )
+                )
+                rule = (
+                    "only specs/design/<dir>/ changes; design.md has every required section and "
+                    "resolved path:line sources"
+                    if design
+                    else f"every installed {item['app']} suite command exits 0 on base + patch; "
+                    + f"{entry['verifier']} demonstrates this statement"
+                )
+                bindings.append(
+                    {
+                        "acceptance_id": ac,
+                        "verifier_ref": vref,
+                        "subject_selector": PORT,
+                        "environment_ref": self._environment(target),
+                        "required_evidence_types": [evidence],
+                        "decision_rule": rule,
+                        "independent_review": True,
+                        "timeout_seconds": timeout,
+                    }
+                )
+                acceptance.append(
+                    {
+                        "id": ac,
+                        "statement": entry["statement"],
+                        "facet": "functional",
+                        "mandatory": True,
+                        "verifier_ref": vref,
+                        "required_evidence_types": [evidence],
+                        "success_rule": (
+                            "the design document check passes on base + patch"
+                            if design
+                            else f"suite passes ({entry['verifier']} shows it) on base + patch"
+                        ),
+                        "human_acceptance_required": False,
+                    }
+                )
+                acceptance_map[ac] = {
+                    "app": item["app"],
+                    "verifier": entry["verifier"],
+                    "statement": entry["statement"],
                 }
-            )
-            acceptance.append(
-                {
-                    "id": ac,
-                    "statement": item["statement"],
-                    "facet": "functional",
-                    "mandatory": True,
-                    "verifier_ref": vref,
-                    "required_evidence_types": [evidence],
-                    "success_rule": (
-                        "the design document check passes on base + patch"
-                        if design
-                        else f"suite passes ({item['verifier']} shows it) on base + patch"
-                    ),
-                    "human_acceptance_required": False,
-                }
-            )
+                ids.append(ac)
+            node_acceptance.append(ids)
         plan_ref = self._put(
             "verification-plan",
             new_id("plan"),
@@ -652,6 +762,7 @@ class LocalExecutionService:
                 else []
             )
         )
+        capabilities = [c for a in apps for c in mode_capabilities(a, mode)]
         contract = {
             "schema_version": "3.0.0",
             "goal_id": goal_id,
@@ -679,7 +790,7 @@ class LocalExecutionService:
             "open_question_refs": [],
             "risk": draft["risk"],
             "budget": root,
-            "requested_capabilities": mode_capabilities(installed.config.app_id, mode),
+            "requested_capabilities": capabilities,
             "verification_plan_ref": plan_ref,
             "context_bundle_ref": bundle_ref,
             "policy_ref": installed.policy_ref,
@@ -690,24 +801,41 @@ class LocalExecutionService:
             contract,
             expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
         )
-        node = {
-            "node_id": "node-" + installed.config.app_id,
-            "work_id": new_id("work-" + installed.config.app_id),
-            "target_ref": installed.binding_ref,
-            "objective": draft["objective"],
-            "strategy": "bounded_loop",
-            "depends_on": [],
-            "join": "all_required",
-            "consumes": [],
-            "produces": [{"name": PORT, "media_type": CHANGE_MEDIA, "required": True}],
-            "acceptance_ids": [a["id"] for a in acceptance],
-            "verification_profile_ref": acceptance[0]["verifier_ref"],
-            "capabilities": mode_capabilities(installed.config.app_id, mode),
-            "resource_claims": [
-                {"resource": "sandbox:" + installed.config.app_id, "mode": "exclusive_write"}
-            ],
-            "budget": {**root, "max_tokens": root["max_tokens"] // root["max_attempts"]},
-        }
+        nodes = []
+        for item, ids in zip(items, node_acceptance, strict=True):
+            target = self.apps[item["app"]]
+            a = target.config.app_id
+            nodes.append(
+                {
+                    "node_id": "node-" + a,
+                    "work_id": new_id("work-" + a),
+                    "target_ref": target.binding_ref,
+                    "objective": item["objective"],
+                    "strategy": "bounded_loop",
+                    "depends_on": ["node-" + b for b in item["after"]],
+                    "join": "all_required",
+                    # the downstream agent sees the verified upstream change (D-081)
+                    "consumes": [
+                        {
+                            "name": "upstream-" + b,
+                            "from_node": "node-" + b,
+                            "external_ref": None,
+                            "media_type": CHANGE_MEDIA,
+                            "output_name": PORT,
+                        }
+                        for b in item["after"]
+                    ],
+                    "produces": [{"name": PORT, "media_type": CHANGE_MEDIA, "required": True}],
+                    "acceptance_ids": ids,
+                    "verification_profile_ref": acceptance[int(ids[0][3:]) - 1]["verifier_ref"],
+                    "capabilities": mode_capabilities(a, mode),
+                    "resource_claims": [{"resource": "sandbox:" + a, "mode": "exclusive_write"}],
+                    "budget": {
+                        **root,
+                        "max_tokens": root["max_tokens"] // (root["max_attempts"] * len(items)),
+                    },
+                }
+            )
         graph = {
             "schema_version": "3.0.0",
             "graph_id": new_id("graph"),
@@ -716,8 +844,10 @@ class LocalExecutionService:
             "contract_ref": contract_ref,
             "previous_graph_ref": None,
             "replan_reason": None,
-            "nodes": [node],
-            "global_verification_ref": installed.global_ref,
+            "nodes": nodes,
+            "global_verification_ref": (
+                installed.global_ref if len(items) == 1 else self._global_for(apps)
+            ),
             "compiler_version": "amplai-local-1",
             "created_at": t,
         }
@@ -725,13 +855,51 @@ class LocalExecutionService:
         if draft.get("task_class") in TASK_CLASSES:
             # The planner's label, beside the graph: the approved 3.0.0 workgraph schema has no
             # task_class slot and cannot take one (D-077). Shown at approval; Observatory slices.
-            self._put(
-                TASK_CLASS_KIND,
-                node["work_id"],
-                {"scope": scope.wire(), "work_id": node["work_id"], "graph_ref": graph_ref,
-                 "task_class": draft["task_class"], "source": "planner"},
-            )  # fmt: skip
-        return contract_ref, graph_ref
+            for node in nodes:
+                self._put(
+                    TASK_CLASS_KIND,
+                    node["work_id"],
+                    {"scope": scope.wire(), "work_id": node["work_id"], "graph_ref": graph_ref,
+                     "task_class": draft["task_class"], "source": "planner"},
+                )  # fmt: skip
+        return contract_ref, graph_ref, acceptance_map
+
+    def _environment(self, installed: InstalledApp) -> dict[str, Any]:
+        refs = installed.driver_refs.get("codex-cli") or self.codex
+        env: dict[str, Any] = refs["environment"]
+        return env
+
+    def _planner(self, installed: InstalledApp, driver_id: str) -> Any:
+        planner = installed.planners.get(driver_id) or (
+            self.planner if driver_id == "codex-cli" else self.planners.get(driver_id)
+        )
+        if planner is None:
+            raise Hold("PLANNER_UNAVAILABLE", "No planner for " + driver_id)
+        return planner
+
+    def _global_for(self, apps: list[str]) -> dict[str, Any]:
+        """The goal-level check of a multi-app graph: non-empty changes + integration commands."""
+        key = "+".join(sorted(apps))
+        ref = self._put(
+            "global-verifier",
+            f"{key}-global",
+            {
+                "global_id": f"{key}-global",
+                "scope": self.scope.wire(),
+                "rule": "every node produced a non-empty change; the configured integration "
+                "commands pass on every app's base + patch together",
+                "owner": self.actors.verifier.subject_id,
+            },
+        )
+        if digest(ref) not in self.verification.global_runners:
+            factory = self.integration_factory
+            runner = (
+                factory(sorted(apps))
+                if factory is not None
+                else self.global_factory(self.apps[apps[0]].config)
+            )
+            self.verification.register_global(ref, runner)
+        return ref
 
     def _save_plan(
         self,
@@ -774,7 +942,8 @@ class LocalExecutionService:
             )
         installed = self.apps[plan["app"]]
         service, scope = self.actors.service, self.scope
-        caps = mode_capabilities(installed.config.app_id, plan.get("mode", "work"))
+        goal_apps = plan.get("apps") or [plan["app"]]
+        caps = [c for a in goal_apps for c in mode_capabilities(a, plan.get("mode", "work"))]
         chosen = plan.get("composition")
         if chosen:
             # fixed from here on (design/16:16); eligibility may have changed since planning
@@ -793,11 +962,12 @@ class LocalExecutionService:
                 "environment_ref": composition["sandbox_profile_ref"],
             }
         else:  # planned before composition selection existed (Work 018): Codex
+            codex = installed.driver_refs.get("codex-cli") or self.codex
             profile = {
                 "composition_ref": installed.composition_ref,
-                "driver_profile_ref": self.codex["driver"],
-                "model_profile_ref": self.codex["model"],
-                "environment_ref": self.codex["environment"],
+                "driver_profile_ref": codex["driver"],
+                "model_profile_ref": codex["model"],
+                "environment_ref": codex["environment"],
             }
         decision = {
             "decision_id": new_id("approval"),
@@ -816,6 +986,13 @@ class LocalExecutionService:
                 "mode": self.publish_mode,
                 "remote": installed.config.remote,
                 "base_branch": installed.config.base_branch,
+                "apps": {
+                    a: {
+                        "remote": self.apps[a].config.remote,
+                        "base_branch": self.apps[a].config.base_branch,
+                    }
+                    for a in goal_apps
+                },
             },
         }
         decision_ref = self._put(APPROVAL_KIND, decision["decision_id"], decision)

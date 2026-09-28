@@ -55,7 +55,7 @@ def test_claude_takes_over_when_codex_is_not_eligible(deployment: Any, tmp_path:
     assert claude_box.prompts and not codex_box.prompts
     # the activated profile, fixed for every dispatch of this goal, is the Claude composition
     goal_head = rig.d.store.head(rig.d.scope, "goal", goal)
-    assert goal_head["data"]["profile"]["driver_profile_ref"]["id"] == "claude-cli"
+    assert goal_head["data"]["profile"]["driver_profile_ref"]["id"].startswith("claude-cli-")
 
 
 def test_approval_refuses_a_choice_that_is_no_longer_eligible(

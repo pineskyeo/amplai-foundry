@@ -95,7 +95,10 @@ def test_submit_plan_approve_and_cancel_over_http(product: Any) -> None:
         dep.scope, "operator-approval", dep.service.plan_record(goal)["decision_ref"]
     )
     assert decision["approved_by"]["subject_id"] == "pinesky"
-    assert decision["publish"] == {"mode": "draft_pr", "remote": "origin", "base_branch": "main"}
+    assert decision["publish"] == {
+        "mode": "draft_pr", "remote": "origin", "base_branch": "main",
+        "apps": {"app": {"remote": "origin", "base_branch": "main"}},  # per app (D-081)
+    }  # fmt: skip
     assert client.post(f"/api/v3/local/goals/{goal}/cancel").json()["status"] == "cancelling"
     listed = client.get("/api/v3/local/goals").json()
     assert [g["goal_id"] for g in listed] == [goal]
