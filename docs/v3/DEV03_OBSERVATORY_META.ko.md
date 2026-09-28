@@ -35,6 +35,7 @@
 - 시간을 보고하지 않은 곳은 측정됐다고 가정하지 않는다. RunRecord의 wall time은 queue/compute/wait의 개별 실측값이 아니다.
 - `human_wait_ms`와 `queue_ms`는 goal audit event에서 잰다 (D-074). human wait는 `approval.requested`에서 `approval.granted`까지, queue는 `approval.granted`에서 그 goal의 첫 run 생성까지의 중앙값이다. `*_samples`가 표본 수다. 양 끝이 없으면 표본이 아니고, 표본이 없으면 `null`이다. `compute_ms`는 측정하지 않으므로 `null`이다.
 - 사람 개입은 `question.*`, `steering.*`, `approval.*` event 수다. 로컬 실행 흐름의 loop가 스스로 멈추며 하는 승인 철회는 사람 개입이 아니므로 기록하지 않는다.
+- `publication_outcomes`는 로컬 실행 흐름이 게시한 draft PR 의 결과다 (D-078): 열림·merged·closed·사람이 고침(revised) 수, 받아들여진 비율(merged/결정됨)과 고친 비율. 운영자의 `gh` 로 읽은 전이만 세고, 읽지 못한 PR 은 결정되지 않은 것으로 둔다. 추적 전에 게시된 PR 의 열림 event 는 소급 기록이며 `backfilled` 로 표시된다.
 - `failure_reasons`는 failure signature(hash)를 그 run의 attested verdict 이유로 풀어 보인다. `ended_run_reasons`는 멈춘 run의 종료 이유다. run head와 RunRecord 상태가 다르면 어느 쪽도 고르지 않고 `run_state_mismatch` integrity finding을 낸다.
 - 실제 task_class가 없는 과거 기록은 `unreported`다. 실행 전략을 작업 종류라고 이름만 바꾸지 않는다. `task_class`는 3.0.0 workgraph schema 밖의 work별 `task-class` 기록으로 남는다(D-076, D-077). 로컬 실행 흐름의 planner가 repository Work type 중에서 제안하고 운영자가 승인 때 본다. 목록 밖 값과 그 이전 기록은 `unreported`다.
 - 시간 필터는 timezone이 있는 ISO-8601, `[since, until)`를 쓴다. 잘못된 범위나 시간대 없는 값은 거절한다.

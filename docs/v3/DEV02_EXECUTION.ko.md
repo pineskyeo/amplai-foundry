@@ -88,7 +88,7 @@ SecretBroker는 scope·host·HTTPS endpoint·TTL에 묶인 handle을 사용한�
 | 드라이버 | DEV-02 확인 | 실제 배포에서 남은 확인 |
 |---|---|---|
 | RecipePort | 실제 독립 폴더에서 데이터 작업·증거·통합 검증 | 임의 코드/외부 모델에 사용 금지 |
-| Claude/Codex CLI | 알려진 테스트 subprocess의 JSONL·종료·정확한 resume·credential HOME·timeout·orphan HOLD | Codex CLI 0.155.1(`gpt-5.6-sol`)는 app image 안에서 9 probe + 실제 셸·파일 쓰기 turn(`tool_use`)을 pass했고 로컬 실행 경로(`amplai work` → 승인 → container → 검증 → draft PR)에 연결됐다 (Work 018, D-073). Claude CLI는 Work 016 의 9 probe 만 있고 container 안 도구 실행은 측정하지 않았으며 실행 경로에 연결되지 않았다. 회사 계정·여러 운영자·원격 worker 는 남아 있다 |
+| Claude/Codex CLI | 알려진 테스트 subprocess의 JSONL·종료·정확한 resume·credential HOME·timeout·orphan HOLD | Codex CLI 0.155.1(`gpt-5.6-sol`)는 app image 안에서 9 probe + 실제 셸·파일 쓰기 turn(`tool_use`)을 pass했고 로컬 실행 경로(`amplai work` → 승인 → container → 검증 → draft PR)에 연결됐다 (Work 018, D-073). Claude CLI 2.1.278(`claude-sonnet-5`)도 같은 app image 에서 9 probe + `tool_use` 를 pass 했고 시스템이 고르는 fallback composition 으로 연결됐다 (Work 019, D-079). 회사 계정·여러 운영자·원격 worker 는 남아 있다 |
 | OpenCode | HTTP fixture로 health/version·인증·204 ACK·turn/session correlation·idle/stop boundary·exact resume. 실제 `opencode serve` 1.17.13 실제 turn: host-side 9 probe 중 6 pass, sandbox(`amplai-worker-opencode` image + egress profile, `scripts/opencode_qualify.py --container`) 에서 8 pass (Work 017) | server 비밀번호가 env(`OPENCODE_SERVER_PASSWORD`)로만 전달되어 bash tool 이 상속함(secret_isolation fail, 컨테이너에서도 동일); crash resume 은 raw HTTP prompt 로만 측정; 실행 경로(worker → driver)에는 아직 연결되지 않음 |
 | Responses | HTTP fixture로 store=false·bounded tokens·native call ID·structured plan·idempotency | 실제 계정·정확한 모델·배포 도구 정책; 모든 async/steering API가 지원된다는 뜻 아님 |
 | Managed/API/app-server 확장 | 미승인 경로가 fail-closed인 경계 | 공개 API/배포 qualification 후 별도 profile |

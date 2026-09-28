@@ -49,6 +49,21 @@
         "repository": "amplai-foundry",
         "path": "src/amplai_foundry/evaluation/observatory.py",
         "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/runtime/execution/outcomes.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/verification/runtime/design_check.py",
+        "kind": "code"
+      },
+      {
+        "repository": "amplai-foundry",
+        "path": "src/amplai_foundry/verification/runtime/integration.py",
+        "kind": "code"
       }
     ],
     "retention": {
