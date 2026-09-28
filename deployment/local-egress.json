@@ -7,7 +7,8 @@
     "api.anthropic.com:443",
     "api.openai.com:443",
     "auth.openai.com:443",
-    "chatgpt.com:443"
+    "chatgpt.com:443",
+    "opencode.ai:443"
   ],
   "sidecar": "amplai-egress-proxy (deployment/egress/egress_proxy.py)",
   "qualification": "local development egress profile; not a production qualification"

@@ -1,0 +1,131 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/spec.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/019-v3-completion/work-contract.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "EX2-A/E/F/D/R; operator decisions 2026-09-28 (Codex first + Claude fallback, docs-only design PR, new GitHub demo repo).",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/runtime/contracts/provider_schema.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/fixtures/valid/workgraph.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "task_class cannot enter the 3.0.0 workgraph schema (structured-output rule vs approved fixture): resolved by D-077 (record beside the graph).",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/runtime/execution/product.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/execution/loop.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/018-v3-real-execution/runs/README.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "Work 018: one app, Codex only (hard-wired at approve), work mode only, no PR outcome, no steer/replan on the product path.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        {
+          "path": "design-reference/design/03_INVARIANT_REGISTRY.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/contracts/semantics.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "design mode never dispatches implementation (03:59, semantics.py DESIGN_CAPABILITY); composition fixed after dispatch (16:16); steering never changes a contract.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        {
+          "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/15_EVAL_OBSERVATORY.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "Runtime store (goal/run/work heads, events) is authoritative; plan records are the local product's view.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/runtime/local_deployment.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/sandbox/container.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "Local Mac product; drivers in the qualified container; gh for PRs (operator's account, read-only for outcomes).",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        {
+          "path": "design-reference/design/16_META_HARNESS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/05_GOAL_RESOLVER_CONTRACT.md",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "HarnessComposition/router policy, mode=design, WorkGraph node/consumes, steering pause/resume/revision.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        {
+          "path": ".ai-team/verifiers/registry.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "tests/e2e/test_rc07_multiapp.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "verifier v2 + rc07 e2e tests + real runs under specs/019-v3-completion/runs/.",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
+    "contract": "specs/019-v3-completion/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "AMPLAI-V3-EXEC02",
+  "work_type": "new_feature"
+}

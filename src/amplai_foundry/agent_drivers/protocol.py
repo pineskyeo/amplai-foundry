@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import contextlib
+import math
 import os
 import threading
 from collections.abc import Iterator
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -71,9 +73,12 @@ class EventNormalizer:
             "error",
         }
     )
+    # tool_progress: Claude Code 2.1.278 reports a foreground tool call still running after
+    # about 30 s (measured in the app container 2026-09-28; the first real steer run died on it)
     CLAUDE = frozenset(
-        {"system", "assistant", "user", "result", "stream_event", "rate_limit_event"}
-    )
+        {"system", "assistant", "user", "result", "stream_event", "rate_limit_event",
+         "tool_progress"}
+    )  # fmt: skip
 
     def __init__(self, provider: str, *, expected_session: str | None = None):
         if provider not in {"codex", "claude"}:
@@ -85,7 +90,7 @@ class EventNormalizer:
             False,
         )
         self.calls: dict[str, str] = {}
-        self.usage: dict[str, int | str | None] = {
+        self.usage: dict[str, Any] = {
             "input_tokens": None,
             "output_tokens": None,
             "cost_microunits": None,
@@ -152,12 +157,46 @@ class EventNormalizer:
                 "output_tokens": usage["output_tokens"],
                 "status": "measured",
             }
+        total_cost_usd = event.get("total_cost_usd")
+        if (
+            self.provider == "claude"
+            and kind == "result"
+            and isinstance(total_cost_usd, (int, float))
+            and not isinstance(total_cost_usd, bool)
+            and (isinstance(total_cost_usd, int) or math.isfinite(total_cost_usd))
+            and total_cost_usd >= 0
+        ):
+            scaled_cost = total_cost_usd * 1_000_000
+            cost_microunits = (
+                round(Fraction(*total_cost_usd.as_integer_ratio()) * 1_000_000)
+                if isinstance(scaled_cost, float) and not math.isfinite(scaled_cost)
+                else round(scaled_cost)
+            )
+            self.usage = {
+                **self.usage,
+                "cost_microunits": cost_microunits,
+                "currency": "USD",
+                "status": "estimated",
+                "source_ref": {
+                    "id": "claude-cli-total-cost-usd",
+                    "revision": 1,
+                    "digest": digest(event),
+                },
+            }
+        digest_event = event
+        if (
+            self.provider == "claude"
+            and kind == "result"
+            and isinstance(total_cost_usd, float)
+            and not math.isfinite(total_cost_usd)
+        ):
+            digest_event = {key: value for key, value in event.items() if key != "total_cost_usd"}
         # Do not retain private reasoning/tool payload text in the control-plane trace.
         return {
             "provider": self.provider,
             "type": kind,
             "session_handle": self.session,
-            "event_digest": digest(event),
+            "event_digest": digest(digest_event),
             "completed": self.completed,
             "failed": self.failed,
             "usage": self.usage.copy(),

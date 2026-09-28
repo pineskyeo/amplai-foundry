@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-EXEC02",
+  "kind": "document_review_evidence",
+  "changed_sources": [
+    ".ai-team/knowledge/decisions.index.json",
+    "docs/v3/DEV02_EXECUTION.ko.md",
+    "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+    "docs/v3/USING_AMPLAI_WORK.ko.md",
+    "docs/v3/USING_AMPLAI_WORK.ko.md.amplai.json",
+    "docs/workstreams/v3-real-execution/DECISIONS.md",
+    "scripts/container_qualify.py",
+    "src/amplai_foundry/agent_drivers/protocol.py",
+    "src/amplai_foundry/runtime/budgets/service.py",
+    "src/amplai_foundry/runtime/cli.py",
+    "src/amplai_foundry/runtime/execution/loop.py",
+    "src/amplai_foundry/runtime/execution/product.py",
+    "src/amplai_foundry/runtime/execution/publish.py",
+    "src/amplai_foundry/runtime/execution/steering.py",
+    "src/amplai_foundry/runtime/execution/worker.py",
+    "src/amplai_foundry/runtime/local_deployment.py",
+    "src/amplai_foundry/sandbox/git_workspace.py",
+    "src/amplai_foundry/verification/runtime/design_check.py",
+    "tests/e2e/test_rc07_design.py",
+    "tests/e2e/test_rc07_multiapp.py",
+    "tests/e2e/test_rc07_steer.py",
+    "tests/rc06_rig.py",
+    "tests/v3/test_core_runtime.py",
+    "tests/v3/test_dev02_sessions_workspace.py",
+    "tests/v3/test_dev03_observatory.py",
+    "tests/v3/test_rc02_driver.py",
+    "tests/v3/test_rc02_runtime.py",
+    "tests/v3/test_rc07_local_config.py"
+  ],
+  "semantic_changes": [
+    "PR outcome tracking: gh read-only sync, publication.opened/merged/closed/revised events, Observatory publication_outcomes (A, D-078)",
+    "System-selected driver composition: router policy Codex first, Claude fallback; Claude CLI qualified with tool_use and a >30 s foreground command (E, D-079)",
+    "Design mode: design_write only, C-DESIGN, DesignDocumentCheck on applied paths and exact committed citations, docs-only draft PR (F, D-080)",
+    "Multi-app goals with linked per-app PRs and a goal-level integration check (D-081)",
+    "Operator steer (pause -> exact-session resume) and replan (next contract revision, re-approval) on the real path, with review fixes F1-F9 (D-082)"
+  ],
+  "measurements": {
+    "real_runs": "specs/019-v3-completion/runs/README.md (PR #15, #16, #17, demo-app #1)",
+    "qualification": "specs/019-v3-completion/driver-qualification-amplai-foundry.json",
+    "tests": "full pytest suite exit 0 before the tool_progress fix; rc02/steer/design tests after"
+  }
+}

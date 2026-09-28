@@ -369,10 +369,12 @@ class EventChainTest(StoreTestBase):
                 self.store.add_evidence(cr_id, "code", "x%d" % index, "file", "a.c")
             return time.time() - start
 
-        first = batch()
-        for _ in range(4):
+        # min of two runs each: one scheduler stall on a shared CI runner must not read as
+        # growth (main CI run 35563398959 failed 0.146s -> 1.170s once, then passed on rerun).
+        first = min(batch(), batch())
+        for _ in range(3):
             batch()
-        last = batch()
+        last = min(batch(), batch())
         # 2.1.0 grew roughly linearly per batch; allow generous slack for a
         # noisy machine but catch a return to quadratic behaviour.
         self.assertLess(

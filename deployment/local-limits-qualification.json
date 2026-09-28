@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "kind": "container_limits_qualification",
+  "checked_at": "2026-09-27T02:48:18Z",
+  "host": {
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "runtime": "colima (lima VM) on macOS"
+  },
+  "engine": "docker",
+  "docker_version": "29.5.2",
+  "image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
+  "profile": {
+    "memory": "64m",
+    "pids": 32,
+    "cpus": 0.5
+  },
+  "probes": [
+    {
+      "name": "memory_within_limit_succeeds",
+      "outcome": "pass",
+      "observed": {
+        "rc": 0,
+        "oom_killed": false,
+        "stdout": "allocated_mib 16"
+      },
+      "artifact": "deployment/limits-qualification-artifacts/amplai-limits-mem-ok.json"
+    },
+    {
+      "name": "memory_over_limit_oom_killed",
+      "outcome": "pass",
+      "observed": {
+        "rc": 137,
+        "oom_killed": true,
+        "memory_bytes": 67108864,
+        "memory_swap_bytes": 134217728,
+        "stdout_tail": "",
+        "stderr_tail": ""
+      },
+      "artifact": "deployment/limits-qualification-artifacts/amplai-limits-mem-oom.json"
+    },
+    {
+      "name": "pids_within_limit_succeeds",
+      "outcome": "pass",
+      "observed": {
+        "rc": 0,
+        "forked": "8",
+        "fork_error": "None"
+      },
+      "artifact": "deployment/limits-qualification-artifacts/amplai-limits-pids-ok.json"
+    },
+    {
+      "name": "pids_over_limit_fork_refused",
+      "outcome": "pass",
+      "observed": {
+        "rc": 0,
+        "forked": "30",
+        "fork_error": "BlockingIOError(11, 'Resource temporarily unavailable')",
+        "container_alive_after": "True",
+        "engine_alive_after_rc": 0,
+        "pids_limit": 32
+      },
+      "artifact": "deployment/limits-qualification-artifacts/amplai-limits-pids-over.json"
+    },
+    {
+      "name": "cpus_configured",
+      "outcome": "pass",
+      "observed": {
+        "rc": 0,
+        "nano_cpus": 500000000,
+        "expected": 500000000
+      },
+      "artifact": "deployment/limits-qualification-artifacts/amplai-limits-cpus.json"
+    },
+    {
+      "name": "cpus_throttled_under_load",
+      "outcome": "inconclusive",
+      "observed": {
+        "reason": "CPU throttling under load was not measured"
+      },
+      "artifact": null
+    }
+  ]
+}

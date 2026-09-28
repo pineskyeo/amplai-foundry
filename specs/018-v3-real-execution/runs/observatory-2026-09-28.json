@@ -1,0 +1,148 @@
+{
+  "scope": {
+    "tenant_id": "local",
+    "project_id": "amplai-foundry"
+  },
+  "snapshot_event_seq": 271,
+  "window": {
+    "since": null,
+    "until": null,
+    "run_basis": "started_at"
+  },
+  "filters": {},
+  "run_count": 8,
+  "status_counts": {
+    "running": 1,
+    "succeeded": 2,
+    "failed": 5
+  },
+  "goal_count": 10,
+  "goal_status_counts": {
+    "cancelled": 3,
+    "failed": 1,
+    "draft": 2,
+    "verified": 2,
+    "discovering": 2
+  },
+  "eligible_terminated_goals": 3,
+  "verified_goals": 2,
+  "verified_goal_rate": 0.6666666666666666,
+  "first_attempt_verified_goals": 2,
+  "first_attempt_verified_rate": 0.6666666666666666,
+  "excluded_goals": {
+    "cancelled": 3,
+    "draft": 2,
+    "discovering": 2
+  },
+  "acceptance": {
+    "mandatory": 17,
+    "with_attested_verdict": 17,
+    "with_pass": 8,
+    "waived": 0,
+    "coverage": 1.0,
+    "basis": "current-contract immutable server-attested verdict references"
+  },
+  "cost_by_currency": {
+    "USD": {
+      "measured_microunits": 0,
+      "estimated_microunits": 0,
+      "measured_runs": 0,
+      "estimated_runs": 0,
+      "unknown_runs": 8,
+      "total_cost_microunits": null
+    }
+  },
+  "known_cost_sum_microunits": 0,
+  "unknown_cost_run_count": 8,
+  "total_cost_microunits": null,
+  "composition_samples": {
+    "sha256:51ae7bf24ac055b5d1097efee3e79e670f1976c34a961e5280647b0e40d27906": 8
+  },
+  "slices": {
+    "composition": {
+      "sha256:51ae7bf24ac055b5d1097efee3e79e670f1976c34a961e5280647b0e40d27906": 8
+    },
+    "driver": {
+      "sha256:377f9b96e05a7cb7613130ef51ad0991955777278ce1049e680ff35bb2acd92c": 8
+    },
+    "model": {
+      "sha256:41292e866639afb5a3f9d67608cdd6612e295801bbdad917cf3fb5220750306d": 8
+    },
+    "repo": {
+      "git:amplai-foundry": 8
+    },
+    "risk": {
+      "low": 8
+    },
+    "task_class": {
+      "unreported": 8
+    }
+  },
+  "strategy_samples": {
+    "bounded_loop": 8
+  },
+  "failure_signatures": {
+    "sha256:6dbd9a4acf29a4721170cfc815643670489c269b9b504020cdee7e6a939ebab1": 3,
+    "sha256:2af405d1d57e035ed2b3ba0bffb8dec01016b35108b1207d6bdb746573a196f2": 2
+  },
+  "failure_reasons": {
+    "sha256:6dbd9a4acf29a4721170cfc815643670489c269b9b504020cdee7e6a939ebab1": {
+      "AC-1": "fail: unit exited 1",
+      "AC-2": "fail: unit exited 1",
+      "AC-3": "fail: unit exited 1"
+    },
+    "sha256:2af405d1d57e035ed2b3ba0bffb8dec01016b35108b1207d6bdb746573a196f2": {
+      "AC-1": "fail: unit exited 1",
+      "AC-2": "fail: unit exited 1",
+      "AC-3": "fail: unit exited 1",
+      "AC-4": "fail: unit exited 1",
+      "AC-5": "fail: unit exited 1",
+      "AC-6": "fail: unit exited 1"
+    }
+  },
+  "ended_run_reasons": {
+    "cancelled": 1
+  },
+  "repair_runs": 4,
+  "human_intervention_events": {},
+  "event_counts": {
+    "intent.submitted": 10,
+    "intent.resolved": 8,
+    "contract.frozen": 7,
+    "contract.activated": 4,
+    "work.dispatch": 8,
+    "execution.envelope": 8,
+    "worker.preparing": 16,
+    "session.prepared": 8,
+    "worker.launching": 8,
+    "worker.observing": 8,
+    "session.bound": 8,
+    "run.started": 8,
+    "verification.requested": 7,
+    "worker.verifying": 7,
+    "verdict.issued": 29,
+    "work.verified": 7,
+    "worker.held": 1,
+    "goal.cancelled": 3,
+    "goal.failed": 1,
+    "goal.verified": 2
+  },
+  "run_wall_elapsed_ms": {
+    "samples": 7,
+    "median": 154042.05894470215
+  },
+  "compute_ms": null,
+  "queue_ms": null,
+  "queue_samples": 0,
+  "human_wait_ms": null,
+  "human_wait_samples": 0,
+  "integrity_findings": [
+    {
+      "run_id": "run-572b4b014729475a89654b3d31fec12b",
+      "finding": "run_state_mismatch",
+      "head": "cancelled",
+      "record": "running"
+    }
+  ],
+  "note": "Descriptive counts, not causal effects. Unknown time breakdowns are not inferred. Small slices expose counts; a zero incident count is not proof of zero risk."
+}

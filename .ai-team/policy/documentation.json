@@ -57,7 +57,9 @@
       "docs/v3/DEV02_EXECUTION.ko.md",
       "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "docs/v3/DEV03_RESEARCH_SOURCES.md"
+      "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "docs/workstreams/v3-real-execution/DECISIONS.md"
     ],
     "review_store": ".ai-team/knowledge/document-reviews.json",
     "default_security": "INTERNAL",
@@ -103,6 +105,11 @@
       },
       {
         "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+        "role": "decision_ledger",
+        "security": "INTERNAL"
+      },
+      {
+        "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "role": "decision_ledger",
         "security": "INTERNAL"
       }
@@ -372,7 +379,13 @@
       "lib/**",
       "lib/",
       "docs/.obsidian/**",
-      "docs/.obsidian/"
+      "docs/.obsidian/",
+      ".amplai/tmp/**",
+      ".amplai/tmp/",
+      ".amplai/jobs/**",
+      ".amplai/jobs/",
+      ".amplai/runtime/**",
+      ".amplai/runtime/"
     ],
     "reason": "문서가 존재하지 않는 repository 경로를 canonical한 것처럼 가리키면 stale이다. 이 검사는 기계적으로 판정 가능한 stale signal이다."
   },

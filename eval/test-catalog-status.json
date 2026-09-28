@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0.0",
   "source_catalog": "design-reference/eval/test-catalog.json",
-  "implementation_revision": "a750aebd0e7df03248358594a982659b41c1a894",
+  "implementation_revision": "3f71c84fcafa11e5eec9b20c033ae7581a38e2ca",
   "junit_reports": [
     "rc01-v3-e2e.xml"
   ],

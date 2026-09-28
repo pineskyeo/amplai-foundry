@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "engine": "docker",
+  "runtime": "colima (lima VM) on macOS",
+  "image": "localhost:5000/amplai-worker-opencode@sha256:773c1b7ae94041f92fd11ffc857b177012602d444f8b0e9f896d397558d783f2",
+  "base_image": "localhost:5000/amplai-worker@sha256:f642e03d19babe90e3d1758178c31ee6faab5e286ebc508f9981faa5662cb144",
+  "uid": 65534,
+  "gid": 65534,
+  "memory": "1g",
+  "cpus": 1.0,
+  "pids": 128,
+  "network": "none",
+  "tools": {
+    "opencode": "1.17.13"
+  },
+  "built_at": "2026-09-27T09:30:52Z",
+  "qualification": "local development profile; not a production qualification"
+}

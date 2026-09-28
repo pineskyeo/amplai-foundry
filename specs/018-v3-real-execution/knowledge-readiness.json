@@ -1,0 +1,151 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        {
+          "path": "specs/018-v3-real-execution/spec.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/018-v3-real-execution/work-contract.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "EX-001..EX-008 + GATE-001. 운영자 결정(draft PR, 30분, 매 goal 승인)과 OD-1 반영.",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        {
+          "path": "design-reference/design/21_TEST_ACCEPTANCE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "tests/v3/test_rc01_e2e_cross_app.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "release/rc01-conformance-closure.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "설계는 fake driver 로 conformance 를 닫지 말라 하지만 T-107/V3-026/V3-057 은 fixture 로 local_pass. D-065 로 표면화하고 이 Work 가 실제 run 으로 재판정. kind 이름 불일치 verification-profile vs verifier-profile (deployment.py:277 vs validation.py:55) 은 S1 에서 수정.",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        {
+          "path": "src/amplai_foundry/runtime/cli.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/execution/worker.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/execution/reference.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "tests/v3/test_api.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "amplai work 는 intent+draft goal 만 저장 (test_api.py:59-76). serve 는 API 만 (cli.py:259-291). WorkCoordinator 는 reference 에서만 생성되고 RecipePort 만 등록. CliPort/OpenCodePort 인스턴스 없음.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        {
+          "path": "design-reference/design/10_AUTHORITY_SECURITY.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "design-reference/design/07_RUNTIME_SCHEDULER.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/execution/service.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "qualified driver + exact version qualification + containment_enforced environment (service.py:112-174). LLM 호출은 tx 밖 (07:24). no home credential mount, egress deny-by-default (10:42). worker done 은 candidate 일 뿐 (02:39). 승인 없는 push 금지 (01:41).",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        {
+          "path": "design-reference/",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/contracts/data/runtime-defaults.json",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "설계 정본 design-reference/ (무변경). 이 Work 결정 D-065..D-072. 재시도 상한 runtime-defaults.json:10 (OD-1 설계값 유지).",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        {
+          "path": "design-reference/design/02_ARCHITECTURE.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/runtime/storage/store.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "control plane + sandbox worker (02:8,26-32). store single-owner lock (store.py:164-171) → worker 는 serve 안 thread (D-066). host 는 git/publish, container 는 agent·verifier 실행.",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        {
+          "path": "design-reference/design/11_DRIVERS_SESSIONS.md",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "src/amplai_foundry/agent_drivers/ports.py",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "AgentDriver=transport, ModelProfile=모델, SandboxDriver=격리 (11:8). AgentDriverPort/DriverRegistry/CliPort (ports.py:43-111,231). patch/workspace/grant/effect 는 설계 용어 그대로 쓴다.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        {
+          "path": ".ai-team/verifiers/run.py",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "specs/016-container-egress-profile/driver-qualification.json",
+          "type": "repository_evidence"
+        },
+        {
+          "path": "pyproject.toml",
+          "type": "repository_evidence"
+        }
+      ],
+      "notes": "verifier v2 + container marker 시험 + 실제 Codex run evidence (specs/018-v3-real-execution/runs/). Codex 컨테이너 자격 9/9 기록 존재, 새 app image 에서는 재자격 (D-072).",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "5b45155124886a32becf44dccdffa0b161ae926a",
+    "contract": "specs/018-v3-real-execution/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "AMPLAI-V3-EXEC01",
+  "work_type": "new_feature"
+}

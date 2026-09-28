@@ -118,3 +118,38 @@ class CompositionService:
         return sorted(
             eligible, key=lambda ref: (-(scores or {}).get(ref["digest"], 0), ref["digest"])
         )[0]
+
+    def explain(
+        self,
+        scope: Scope,
+        candidates: list[dict[str, Any]],
+        *,
+        classification: str,
+        required_actions: set[str],
+    ) -> list[dict[str, Any]]:
+        """Why each candidate is or is not eligible — the same checks ``select`` applies."""
+        rows = []
+        for ref in candidates:
+            composition = self.store.get(scope, "harness-composition", ref)
+            model = self.store.get(scope, "model-profile", composition["model_profile_ref"])
+            driver = self.store.get(scope, "driver-capabilities", composition["driver_profile_ref"])
+            reasons = []
+            if not model["enabled"]:
+                reasons.append("model disabled")
+            if classification not in model["data_classes_allowed"]:
+                reasons.append(f"data class {classification} not allowed")
+            if driver["maturity"] != "qualified":
+                reasons.append("driver not qualified")
+            missing = sorted(required_actions - set(driver["qualified"]))
+            if missing:
+                reasons.append("missing capabilities: " + ", ".join(missing))
+            rows.append(
+                {
+                    "ref": ref,
+                    "driver_id": driver["driver_id"],
+                    "model": model["provider_model_id"],
+                    "eligible": not reasons,
+                    "reasons": reasons,
+                }
+            )
+        return rows

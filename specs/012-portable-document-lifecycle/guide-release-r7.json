@@ -38,18 +38,18 @@
     {
       "doc_id": "amplai-foundry:docs-portable-development-md",
       "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f",
-      "snapshot_sha256": "e8aba81cecfbef2b5db9d317793487d30c201a5e9ca4cad7322527792d9ed75b",
-      "review_sha256": "c6fc7e19280bb5b0bac2fdba105e3c46107845970c5c98398f71e1cdcbf4d064"
+      "snapshot_sha256": "e1331bc94430a1d1ee05c8456ce9b88d0cb149f782774f921fe75bb0c1eebd29",
+      "review_sha256": "ef754a32cd755e69482d05e0ab3fc49146ea4913b66b3a46ee36861b4b997578"
     },
     {
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
       "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd",
-      "snapshot_sha256": "87ab7fef034f4df4c80f93555e4509c3ae4d4d12b58cc7d0efcf9fff57912abd",
-      "review_sha256": "8f5f9b63d4cd37e89b0b941bb6921f75dd1f7210f0142338ba3f65b329587d63"
+      "snapshot_sha256": "c69bc8a48917ef8bd3d8838c9a39800aaf07d2cf6ddc34a9ab06465ae0c09255",
+      "review_sha256": "6157a0e07b2e7f09fa5868eead66e0108217101c47d7bfad212e6a7f2d2a27b6"
     }
   ],
   "verification": {
     "path": "specs/012-portable-document-lifecycle/guide-verification-r7.json",
-    "sha256": "e00d904e037ff642e0aa730ce58483b7c1a52bf1a6296ca90dbb62c200876c85"
+    "sha256": "69c70767dad85d955b6b3a2cd97576af1e6aec511b08ada349ea8452363c1d68"
   }
 }

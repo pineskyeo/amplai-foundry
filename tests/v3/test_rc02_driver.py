@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 import signal
 import sys
+from fractions import Fraction
+from math import inf, nan
 
 import httpx
 import pytest
@@ -20,6 +22,7 @@ from amplai_foundry.agent_drivers.codex_app_server import CodexAppServerDriver
 from amplai_foundry.agent_drivers.http import OpenCodeDriver, ResponsesDriver
 from amplai_foundry.agent_drivers.ports import DriverRegistry, RecipePort
 from amplai_foundry.agent_drivers.protocol import EventNormalizer, JsonlDecoder, SessionJournal
+from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
 
@@ -133,6 +136,132 @@ def test_t066_unknown_provider_event_is_quarantined(tmp_path):
     # expected: quarantined as UNKNOWN_PROVIDER_EVENT; no guessed success/session pollution
     assert exc.value.code == "UNKNOWN_PROVIDER_EVENT"
     assert normalizer.session is None and normalizer.completed is False
+
+
+def test_claude_tool_progress_is_accepted_and_unknown_types_still_quarantined():
+    # given: the Claude stream of a foreground tool call longer than ~30 s (2.1.278, measured
+    # in the app container 2026-09-28): tool_progress between task_started and the result
+    normalizer = EventNormalizer("claude")
+    for event in [
+        {"type": "system", "subtype": "init", "session_id": "sess-1"},
+        {"type": "system", "subtype": "task_started", "session_id": "sess-1"},
+        {"type": "tool_progress", "session_id": "sess-1"},
+        {"type": "result", "subtype": "success", "is_error": False, "session_id": "sess-1"},
+    ]:
+        normalizer.accept(event)
+    assert normalizer.completed is True and normalizer.session == "sess-1"
+    # an event type nobody measured stays quarantined
+    with pytest.raises(Hold) as exc:
+        EventNormalizer("claude").accept({"type": "future_event"})
+    assert exc.value.code == "UNKNOWN_PROVIDER_EVENT"
+
+
+@pytest.mark.parametrize(
+    ("total_cost_usd", "cost_microunits"),
+    [(0, 0), (0.0000005, 0), (0.0000015, 2), (1.2345678, 1234568)],
+)
+def test_claude_result_normalizes_valid_total_cost(total_cost_usd, cost_microunits):
+    event = {
+        "type": "result",
+        "session_id": "claude-session",
+        "subtype": "success",
+        "total_cost_usd": total_cost_usd,
+    }
+
+    usage = EventNormalizer("claude").accept(event)["usage"]
+
+    assert usage == {
+        "input_tokens": None,
+        "output_tokens": None,
+        "cost_microunits": cost_microunits,
+        "currency": "USD",
+        "status": "estimated",
+        "source_ref": {
+            "id": "claude-cli-total-cost-usd",
+            "revision": 1,
+            "digest": digest(event),
+        },
+    }
+
+
+def test_claude_result_cost_keeps_tokens_and_estimated_status():
+    event = {
+        "type": "result",
+        "subtype": "success",
+        "total_cost_usd": 0.25,
+        "usage": {"input_tokens": 7, "output_tokens": 11},
+    }
+
+    usage = EventNormalizer("claude").accept(event)["usage"]
+
+    assert usage["input_tokens"] == 7
+    assert usage["output_tokens"] == 11
+    assert usage["cost_microunits"] == 250000
+    assert usage["status"] == "estimated"
+
+
+def test_claude_result_normalizes_largest_finite_float_cost():
+    total_cost_usd = sys.float_info.max
+
+    usage = EventNormalizer("claude").accept(
+        {"type": "result", "subtype": "success", "total_cost_usd": total_cost_usd}
+    )["usage"]
+
+    numerator, denominator = total_cost_usd.as_integer_ratio()
+    assert usage["cost_microunits"] == round(Fraction(numerator * 1_000_000, denominator))
+    assert usage["status"] == "estimated"
+
+
+@pytest.mark.parametrize("total_cost_usd", [-1, nan, inf, -inf, True, False, "0.25"])
+def test_claude_result_ignores_invalid_total_cost(total_cost_usd):
+    normalizer = EventNormalizer("claude")
+    baseline = normalizer.accept(
+        {"type": "assistant", "usage": {"input_tokens": 3, "output_tokens": 5}}
+    )["usage"]
+
+    usage = normalizer.accept(
+        {"type": "result", "subtype": "success", "total_cost_usd": total_cost_usd}
+    )["usage"]
+
+    assert usage == baseline
+
+
+def test_claude_result_missing_total_cost_keeps_unknown_usage():
+    usage = EventNormalizer("claude").accept({"type": "result", "subtype": "success"})["usage"]
+
+    assert usage["cost_microunits"] is None
+    assert usage["status"] == "unknown"
+    assert usage["source_ref"] is None
+
+
+@pytest.mark.parametrize(
+    ("provider", "event"),
+    [
+        (
+            "claude",
+            {
+                "type": "assistant",
+                "total_cost_usd": 0.25,
+                "usage": {"input_tokens": 2, "output_tokens": 3},
+            },
+        ),
+        (
+            "codex",
+            {
+                "type": "turn.completed",
+                "total_cost_usd": 0.25,
+                "usage": {"input_tokens": 2, "output_tokens": 3},
+            },
+        ),
+    ],
+)
+def test_total_cost_is_ignored_outside_claude_result(provider, event):
+    usage = EventNormalizer(provider).accept(event)["usage"]
+
+    assert usage["cost_microunits"] is None
+    assert usage["input_tokens"] == 2 and usage["output_tokens"] == 3
+    assert usage["status"] == "measured"
+    assert usage["source_ref"] is None
 
 
 def test_t067_async_result_call_mismatch_rejected_pending_call_unchanged(tmp_path):

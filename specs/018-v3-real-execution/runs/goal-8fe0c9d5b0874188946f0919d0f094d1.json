@@ -1,0 +1,6 @@
+{
+  "details": "None",
+  "goal_id": "goal-8fe0c9d5b0874188946f0919d0f094d1",
+  "reason": "PLANNER_OUTPUT: Planner reply does not match the plan schema",
+  "status": "plan_failed"
+}

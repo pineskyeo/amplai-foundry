@@ -91,12 +91,15 @@ class BudgetService:
         for k in ("input_tokens", "output_tokens", "cost_microunits"):
             if usage.get(k) is not None and (type(usage[k]) is not int or usage[k] < 0):
                 raise RuntimeFault("INVALID_USAGE", "Usage is a nonnegative integer or unknown")
-        known = (
-            usage.get("status") == "measured"
-            and usage.get("input_tokens") is not None
-            and usage.get("output_tokens") is not None
+        counted = usage.get("input_tokens") is not None and usage.get("output_tokens") is not None
+        known = usage.get("status") == "measured" and counted
+        # a driver-estimated cost (e.g. Claude CLI total_cost_usd) comes with provider-reported
+        # token counts: those settle and can overrun; the estimate is recorded, never settled,
+        # and never blocks work on its own (D-084; design/07:40, design/15:28)
+        estimated = usage.get("status") == "estimated" and counted
+        tokens = (
+            usage["input_tokens"] + usage["output_tokens"] if known or estimated else row["tokens"]
         )
-        tokens = usage["input_tokens"] + usage["output_tokens"] if known else row["tokens"]
         cost = (
             usage.get("cost_microunits")
             if known and usage.get("cost_microunits") is not None
@@ -105,10 +108,18 @@ class BudgetService:
         if tokens < 0 or (cost is not None and cost < 0):
             raise RuntimeFault("NEGATIVE_USAGE", "Usage cannot be negative")
         status = "settled" if known and usage.get("cost_microunits") is not None else "unknown"
+        if estimated:
+            status = "estimated"
         if tokens > row["tokens"] or (
             row["cost"] is not None and cost is not None and cost > row["cost"]
         ):
             status = "overrun"
+        guess = usage.get("cost_microunits") if estimated else None
+        if guess is not None and row["cost"] is not None and guess > row["cost"]:
+            self.store.event(
+                db, scope, "run", run_id, "budget.estimate_over",
+                {"estimated_cost": guess, "reserved_cost": row["cost"]},
+            )  # fmt: skip
         db.execute(
             "UPDATE reservations SET tokens=?,cost=?,status=?,usage=? "
             "WHERE tenant=? AND project=? AND run_id=?",
@@ -131,6 +142,7 @@ class BudgetService:
             if any(r["cost"] is None for r in rows)
             else sum(r["cost"] for r in rows),
             "unknown_runs": sum(r["status"] == "unknown" for r in rows),
+            "estimated_runs": sum(r["status"] == "estimated" for r in rows),
             "overruns": sum(r["status"] == "overrun" for r in rows),
             "active_runs": sum(r["status"] == "active" for r in rows),
         }

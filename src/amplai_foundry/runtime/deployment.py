@@ -274,7 +274,7 @@ class RuntimeDeployment:
         allowed = {
             "policy",
             "knowledge-observation",
-            "verification-profile",
+            "verifier-profile",
             "driver-capabilities",
             "model-profile",
             "environment",

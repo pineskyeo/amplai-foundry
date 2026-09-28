@@ -7,6 +7,7 @@
 #   scripts/sandbox_up.sh --egress   # start the allowlist egress sidecar and qualify it
 #   scripts/sandbox_up.sh --egress-down
 #   scripts/sandbox_up.sh --codex-home DIR   # copy ~/.codex/auth.json into a sandbox home (user-run)
+#   scripts/sandbox_up.sh --opencode-home DIR [provider]  # copy one OpenCode login (user-run)
 #
 # Egress: the agent container joins only an --internal network (no route, no DNS out). The
 # sidecar amplai-egress-proxy is the sole member with a bridge leg and it tunnels CONNECT
@@ -27,7 +28,7 @@ EGRESS_NET=amplai-egress
 PROXY_NAME=amplai-egress-proxy
 PROXY_PORT=3128
 # exact host:port; deny wins. Add entries deliberately and re-run --egress to requalify.
-ALLOW="api.anthropic.com:443 chatgpt.com:443 api.openai.com:443 auth.openai.com:443"
+ALLOW="api.anthropic.com:443 chatgpt.com:443 api.openai.com:443 auth.openai.com:443 opencode.ai:443"
 
 status() {
   echo "colima : $(colima status 2>&1 | head -1)"
@@ -91,6 +92,31 @@ codex_home() {
   echo "sandbox codex home: $dest (auth.json copied; uid 65534 must read it inside the container)"
 }
 
+opencode_home() {
+  # A scoped copy of ONE OpenCode provider login for the sandbox data dir. Never the real
+  # ~/.local/share/opencode (design: no home credential mounts). The user runs this; the agent
+  # does not. Only the named provider entry is copied (default opencode-go), not every login.
+  dest="$1"; provider="${2:-opencode-go}"
+  [ -n "$dest" ] || { echo "usage: --opencode-home DIR [provider]"; exit 2; }
+  src="${XDG_DATA_HOME:-$HOME/.local/share}/opencode/auth.json"
+  [ -f "$src" ] || { echo "no $src (run: opencode auth login)"; exit 2; }
+  mkdir -p "$dest/.local/share/opencode" && chmod 700 "$dest"
+  python3 - "$src" "$dest/.local/share/opencode/auth.json" "$provider" <<'PY'
+import json, os, sys
+src, out, provider = sys.argv[1:]
+logins = json.load(open(src))
+if provider not in logins:
+    sys.exit(f"provider {provider!r} not logged in; available: {sorted(logins)}")
+fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+with os.fdopen(fd, "w") as f:
+    json.dump({provider: logins[provider]}, f)
+PY
+  # 644 because the container runs as uid 65534 and colima maps the bind owner to the host user;
+  # the 700 parent keeps other host users out. Remove DIR when the qualification run is done.
+  chmod 644 "$dest/.local/share/opencode/auth.json"
+  echo "sandbox opencode data dir: $dest (only '$provider' copied; mounted as the sandbox HOME)"
+}
+
 case "${1:-up}" in
   --status) status; exit 0 ;;
   --down)
@@ -101,6 +127,7 @@ case "${1:-up}" in
   --egress) egress_up; exit $? ;;
   --egress-down) egress_down; exit 0 ;;
   --codex-home) codex_home "${2:-}"; exit 0 ;;
+  --opencode-home) opencode_home "${2:-}" "${3:-}"; exit 0 ;;
 esac
 
 colima status >/dev/null 2>&1 || colima start --cpu 2 --memory 4 --disk 20

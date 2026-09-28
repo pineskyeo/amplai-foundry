@@ -1,0 +1,55 @@
+{
+  "captured_at": "2026-09-27T03:29:33Z",
+  "content_hash": "59dfe8f2e7e11fd7e02a22f7897a009be60b6db4a439771ad9d8b3a379ec2396",
+  "fixture_refs": [
+    "testdata/"
+  ],
+  "git": {
+    "branch": "worktree-v3-external-qual",
+    "commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+    "dirty": true
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python": "3.11.15",
+    "system": "Darwin"
+  },
+  "safe_environment": {},
+  "schema_version": "1.0",
+  "target_assumptions": {
+    "not_verified": [
+      "다른 OS·architecture 에서의 동작",
+      "pyproject 의 requires-python 아래 버전에서의 동작"
+    ],
+    "python_requirement": ">=3.11",
+    "verified_on": "macOS-26.2-arm64-arm-64bit",
+    "verifier_interpreter": [
+      ".venv/bin/python",
+      "python3"
+    ]
+  },
+  "tools": [
+    {
+      "command": "/Users/pinesky/workspace/amplai-foundry/.claude/worktrees/v3-external-qual/.venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": ".venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": "python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": "git --version",
+      "exit_code": 0,
+      "output": "git version 2.50.1 (Apple Git-155)"
+    }
+  ],
+  "work_id": "AMPLAI-V3-RC05"
+}

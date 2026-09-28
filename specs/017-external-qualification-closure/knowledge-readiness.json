@@ -1,0 +1,55 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "contradictions": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "current_behavior": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "invariants": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "source_of_truth": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "system_boundary": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "terminology": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "verifier": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+    "contract": "specs/017-external-qualification-closure/work-contract.json"
+  },
+  "risk": "normal",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "AMPLAI-V3-RC05",
+  "work_type": "bug_fix"
+}
