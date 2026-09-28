@@ -22,6 +22,7 @@
     "src/amplai_foundry/sandbox/git_workspace.py",
     "src/amplai_foundry/verification/runtime/design_check.py",
     "tests/e2e/test_rc07_design.py",
+    "tests/e2e/test_rc07_fresh_base.py",
     "tests/e2e/test_rc07_multiapp.py",
     "tests/e2e/test_rc07_steer.py",
     "tests/rc06_rig.py",

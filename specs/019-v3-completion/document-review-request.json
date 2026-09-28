@@ -1,5 +1,5 @@
 {
-  "snapshot": "5dfe43e29adea999863cae38cc00d7b918344af247f50a5102fabf6d130b1456",
+  "snapshot": "ea8e3ae4709932de61da70bb324712c0501390ec50164f8e878dcfe2a77bcc5c",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -144,7 +144,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands and steering or replanning a steered turn (D-078..D-083).",
+      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands steering or replanning a steered turn, the fetched plan base and ops local-update (D-078..D-086).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -154,7 +154,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "D-085 appended (Codex CLI run cost stays unknown on a ChatGPT account); no earlier entry changed.",
+      "reason": "D-086 appended (a plan starts from the remote base branch fetched now; ops local-update); no earlier entry changed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
