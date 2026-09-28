@@ -283,8 +283,12 @@ def test_dev02_workspace_roundtrip_actual_bytes_modes_and_isolation(deployment, 
     ],
 )
 def test_dev02_workspace_paths_reject_control_and_secrets(name):
-    with pytest.raises(RuntimeFault):
+    with pytest.raises(Hold):
         WorkspaceManager.path(name)
+
+
+def test_dev02_workspace_path_preserves_normal_relative_path():
+    assert WorkspaceManager.path("a/b.txt") == "a/b.txt"
 
 
 @pytest.mark.parametrize("kind", ["symlink", "directory_symlink", "hardlink", "fifo"])
