@@ -17,7 +17,7 @@ import pytest
 
 from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.errors import Hold
-from rc06_rig import approved, rig_with_codex, with_permissions
+from rc06_rig import DRAFT, approved, rig_with_codex, with_permissions
 
 
 def wait_running(rig: Any, deadline: float = 20.0) -> None:
@@ -78,3 +78,48 @@ def test_steering_outside_a_running_attempt_is_refused(deployment: Any, tmp_path
     with pytest.raises(Hold) as held:
         loop.steer(operator, goal, "anything")
     assert held.value.code == "STEER_NOT_RUNNING"
+
+
+def test_replanning_a_running_goal_freezes_the_next_revision_and_waits_for_approval(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig, loop, container = rig_with_codex(deployment, tmp_path, "steer")
+    operator = with_permissions(rig.operator, "goal.steer")
+    goal = approved(rig)
+    result: dict[str, Any] = {}
+    runner = threading.Thread(target=lambda: result.update(loop.run_goal(goal)))
+    runner.start()
+    wait_running(rig)
+    rig.planner.draft_value = {
+        **DRAFT,
+        "objective": "value() returns 2 (replanned)",
+        "acceptance": [{"statement": "value() returns 2 after the replan", "verifier": "check"}],
+    }
+    assert loop.replan(operator, goal, "state the replanned objective")["status"] == "replanning"
+    runner.join(60)
+    assert result["status"] == "awaiting_approval" and result["revision"] == 2
+    assert result["attempts"] == []
+    assert [a["outcome"] for a in result["previous_attempts"]] == ["replanned"]
+    d = rig.d
+    contract = d.store.get(d.scope, "goal-contract", result["contract_ref"])
+    assert contract["revision"] == 2 and contract["objective"] == "value() returns 2 (replanned)"
+    graph = d.store.get(d.scope, "workgraph", result["graph_ref"])
+    assert graph["previous_graph_ref"] == result["replan"]["previous_graph_ref"]
+    assert graph["replan_reason"] == "state the replanned objective"
+    assert d.store.head(d.scope, "goal", goal)["state"] == "blocked"
+    # nothing runs before the operator approves the revision; then the revision runs
+    container.mode = "right"
+    rig.service.approve(rig.operator, goal)
+    record = loop.run_goal(goal)
+    assert record["status"] == "published"
+    head = d.store.head(d.scope, "goal", goal)
+    assert head["data"]["active_contract_ref"] == result["contract_ref"]
+
+
+def test_replanning_is_for_running_goals(deployment: Any, tmp_path: Path) -> None:
+    rig, loop, _container = rig_with_codex(deployment, tmp_path, "right")
+    operator = with_permissions(rig.operator, "goal.steer")
+    goal = approved(rig)
+    with pytest.raises(Hold) as held:
+        loop.replan(operator, goal, "anything")
+    assert held.value.code == "REPLAN_NOT_RUNNING"

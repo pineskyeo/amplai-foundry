@@ -115,6 +115,13 @@ class AmplaiClient:
             payload={"text": text},
         )
 
+    def local_replan(self, goal_id: str, reason: str) -> Any:
+        return self.call(
+            "POST",
+            "api/v3/local/goals/" + quote(goal_id, safe="") + "/replan",
+            payload={"reason": reason},
+        )
+
     def local_pr_sync(self) -> Any:
         return self.call("POST", "api/v3/local/publications/sync")
 

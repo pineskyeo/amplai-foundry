@@ -441,6 +441,10 @@ class LocalProductDeployment:
         def steer(goal_id: str, body: dict[str, Any], a: Actor = Depends(actor)) -> Any:
             return self.loop.steer(a, goal_id, str(body.get("text", "")))
 
+        @router.post("/goals/{goal_id}/replan")
+        def replan(goal_id: str, body: dict[str, Any], a: Actor = Depends(actor)) -> Any:
+            return self.loop.replan(a, goal_id, str(body.get("reason", "")))
+
         @router.post("/publications/sync")
         def pr_sync(a: Actor = Depends(actor)) -> Any:
             a.require("execution.approve")

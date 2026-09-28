@@ -29,6 +29,7 @@ from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
+from .steering import SteeringService
 
 READINESS_AREAS = (
     "terminology",
@@ -577,6 +578,104 @@ class LocalExecutionService:
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
 
+    def replan(self, goal_id: str, reason: str, steering_id: str) -> dict[str, Any]:
+        """Draft and freeze the next contract revision after the operator's replan (D-082).
+
+        The goal is blocked by the revision steering event (its attempt stopped at a process
+        boundary). The planner drafts again from the same bases with the operator's reason; the
+        contract keeps the resolution, targets, policy and protected constraints, and the graph
+        names its predecessor. Nothing runs until the operator approves the revision.
+        """
+        scope = self.scope
+        plan = self.plan_record(goal_id)
+        previous = self.store.get(scope, "goal-contract", plan["contract_ref"])
+        intent = self.store.get(scope, "intent-envelope", previous["intent_ref"])
+        targets = self._targets(intent)
+        installed = targets[0]
+        app = installed.config
+        mode = plan.get("mode", "work")
+        bases = plan.get("bases") or {plan["app"]: plan["base"]}
+        before = plan["draft"]
+        request = (
+            intent["text"]
+            + "\n\nOperator replan request (the plan must change accordingly): "
+            + reason
+            + "\nPrevious objective: "
+            + before["objective"]
+        )
+        planning = self.select_composition(installed)
+        planner = self._planner(installed, planning["driver_id"])
+        workspaces = {
+            a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
+        }
+        try:
+            if len(targets) > 1:
+                drafted = planner.draft_multi(
+                    request,
+                    {t.config.app_id: {v.id: v.description for v in t.config.verifiers}
+                     for t in targets},
+                    workspaces,
+                )  # fmt: skip
+            else:
+                verifiers = (
+                    {DESIGN_CHECK: DESIGN_CHECK_DESCRIPTION}
+                    if mode == "design"
+                    else {v.id: v.description for v in app.verifiers}
+                )
+                drafted = planner.draft(
+                    request, app.app_id, verifiers, workspaces[app.app_id], mode=mode
+                )
+        finally:
+            for workspace in workspaces.values():
+                self.workspaces.discard(workspace)
+        draft = _clean_draft(drafted["draft"])
+        if draft["questions"]:
+            raise Hold("REPLAN_QUESTIONS", "The replan needs answers", details=draft["questions"])
+        items = (
+            draft["work_items"]
+            if len(targets) > 1
+            else [
+                {"app": app.app_id, "objective": draft["objective"],
+                 "in_scope": draft["in_scope"], "acceptance": draft["acceptance"], "after": []}
+            ]
+        )  # fmt: skip
+        revision = previous["revision"] + 1
+        contract_ref, graph_ref, acceptance_map = self._compile(
+            goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
+            previous["context_bundle_ref"], installed, draft, mode=mode, items=items,
+            policy_ref=previous["policy_ref"], revision=revision,
+            previous_graph_ref=plan["graph_ref"], replan_reason=reason[:4000],
+        )  # fmt: skip
+        record = {
+            **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
+                                                          "approved_at", "finished_at"}},
+            "draft": draft,
+            "work_items": items,
+            "acceptance_map": acceptance_map,
+            "planner_usage": drafted.get("usage"),
+            "planned_with": {k: planning[k] for k in ("driver_id", "model")},
+            "composition": self.select_composition(installed, draft.get("task_class")),
+            "contract_ref": contract_ref,
+            "graph_ref": graph_ref,
+            "revision": revision,
+            "replan": {
+                "reason": reason,
+                "steering_id": steering_id,
+                "previous_contract_ref": plan["contract_ref"],
+                "previous_graph_ref": plan["graph_ref"],
+            },
+            "previous_attempts": [
+                *(plan.get("previous_attempts") or []),
+                *(plan.get("attempts") or []),
+            ],
+            "attempts": [],
+            "status": "awaiting_approval",
+            "reason": None,
+            "updated_at": now(),
+        }  # fmt: skip
+        self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
+        return record
+
     def base_check(self, installed: InstalledApp, base_value: dict[str, Any]) -> dict[str, Any]:
         """Run the app suite on the untouched base (cached per commit).
 
@@ -651,6 +750,9 @@ class LocalExecutionService:
         mode: str = "work",
         items: list[dict[str, Any]] | None = None,
         policy_ref: dict[str, Any] | None = None,
+        revision: int = 1,
+        previous_graph_ref: dict[str, Any] | None = None,
+        replan_reason: str | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
         """Deterministic contract + graph: one node per work item (a one-app goal is one)."""
         scope, service = self.scope, self.actors.service
@@ -785,7 +887,7 @@ class LocalExecutionService:
             "schema_version": "3.0.0",
             "goal_id": goal_id,
             "scope": scope.wire(),
-            "revision": 1,
+            "revision": revision,
             "intent_ref": self.store.head(scope, "goal", goal_id)["data"]["intent_ref"],
             "resolution_ref": resolution_ref,
             "mode": mode,
@@ -858,10 +960,10 @@ class LocalExecutionService:
             "schema_version": "3.0.0",
             "graph_id": new_id("graph"),
             "scope": scope.wire(),
-            "revision": 1,
+            "revision": revision,
             "contract_ref": contract_ref,
-            "previous_graph_ref": None,
-            "replan_reason": None,
+            "previous_graph_ref": previous_graph_ref,
+            "replan_reason": replan_reason,
             "nodes": nodes,
             "global_verification_ref": (
                 installed.global_ref if len(items) == 1 else self._global_for(apps)
@@ -1059,6 +1161,10 @@ class LocalExecutionService:
             profile,
             expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
         )
+        replan = plan.get("replan") or {}
+        if replan.get("steering_id"):
+            # the admitted revision makes the operator's revision steering effective (D-082)
+            SteeringService(self.runtime).apply_revision(service, replan["steering_id"])
         plan = {
             **plan,
             "status": "approved",

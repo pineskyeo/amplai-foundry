@@ -42,6 +42,14 @@ def _utc(value: str) -> float:
 UPSTREAM_PATCH = 60_000  # characters of an upstream patch shown to a downstream node
 
 
+class _Replan(Exception):
+    """The operator replanned the running goal; its attempt stopped at a boundary."""
+
+    def __init__(self, reason: str, steering_id: str) -> None:
+        super().__init__(reason)
+        self.reason, self.steering_id = reason, steering_id
+
+
 def _node_app(plan: dict[str, Any], node: dict[str, Any] | None) -> str:
     """Nodes are ``node-<app>`` (product._compile); older one-node plans name plan["app"]."""
     node_id = (node or {}).get("node_id", "")
@@ -81,7 +89,7 @@ class ExecutionLoop:
             self._cancel.add(goal_id)
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
-        if plan["status"] in {"awaiting_approval", "needs_answers"}:
+        if plan["status"] in {"awaiting_approval", "needs_answers", "replan_failed"}:
             self._end(goal_id, "cancelled", "cancelled by the operator")
             return self._finish(goal_id, "cancelled", reason="cancelled by the operator")
         return {**plan, "status": "cancelling"}
@@ -114,6 +122,35 @@ class ExecutionLoop:
             }  # fmt: skip
         return {"goal_id": goal_id, "status": "steering", "steering_id": queued["steering_id"]}
 
+    def replan(self, operator: Actor, goal_id: str, reason: str) -> dict[str, Any]:
+        """Change a running goal's plan (D-082): its attempt stops at a process boundary, the
+        goal is blocked, the planner drafts the next contract revision with the reason, and
+        nothing runs until the operator approves that revision."""
+        operator.require("goal.steer")
+        why = reason.strip()[:4000]
+        if not why:
+            raise Hold("REPLAN_REASON", "Replanning needs a reason")
+        plan = self.service.plan_record(goal_id)
+        if plan["status"] != "running":
+            raise Hold(
+                "REPLAN_NOT_RUNNING",
+                "Replan a running goal; before approval, cancel and submit the goal again",
+                details=plan["status"],
+            )
+        with self._lock:
+            if goal_id in self._steering:
+                raise Hold("STEER_PENDING", "A steering request is already being applied")
+            goal = self.store.head(self.scope, "goal", goal_id)
+            queued = self.steering.receive(
+                operator, goal_id, "acceptance_change", why,
+                expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id("replan"),
+            )  # fmt: skip
+            self._steering[goal_id] = {
+                "operator": operator, "pause_id": queued["steering_id"], "text": why,
+                "kind": "replan",
+            }  # fmt: skip
+        return {"goal_id": goal_id, "status": "replanning", "steering_id": queued["steering_id"]}
+
     def _execute(
         self,
         goal_id: str,
@@ -134,6 +171,13 @@ class ExecutionLoop:
             if exc.code != "EXECUTION_PAUSED" or steer is None:
                 raise
         try:
+            if steer.get("kind") == "replan":
+                worker = self.service.actors.worker
+                self.steering.quiesce(
+                    self._controller(), steer["pause_id"],
+                    lambda run_id, kind: self.coordinator.stop_and_snapshot(worker, run_id, kind),
+                )  # fmt: skip
+                raise _Replan(steer["text"], steer["pause_id"])
             self._apply_steering(goal_id, dispatch, steer)
         finally:
             with self._lock:
@@ -307,6 +351,21 @@ class ExecutionLoop:
                 steered = self._execute(
                     goal_id, dispatch, prompt, repair.get(node["node_id"]) or bases[app]
                 )
+            except _Replan as replan:
+                attempts.append(
+                    {"run_id": dispatch["run_id"], "app": app, "outcome": "replanned",
+                     "reason": replan.reason[:200], "seconds": round(self.clock() - started, 1)}
+                )  # fmt: skip
+                self._discard(dispatch["run_id"])
+                self._update(goal_id, status="replanning", attempts=attempts)
+                try:
+                    return self.service.replan(goal_id, replan.reason, replan.steering_id)
+                except Exception as exc:
+                    # the goal stays blocked: the operator can cancel it or replan again later
+                    return self._finish(
+                        goal_id, "replan_failed", attempts=attempts,
+                        reason=f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
+                    )  # fmt: skip
             except Exception as exc:
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "outcome": "driver_failed",

@@ -157,6 +157,12 @@ def render_plan(record: dict[str, Any]) -> str:
         lines.append("  base check: acceptance suite passes on the untouched base")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
+    replan = record.get("replan") or {}
+    if replan:
+        why = replan["reason"][:200]
+        lines.append(f"  revision  : {record.get('revision')} (replanned: {why})")
+    for step in record.get("steering") or []:
+        lines.append(f"  steered   : {step['text'][:200]}")
     for i, a in enumerate(record.get("attempts") or [], start=1):
         detail = ", ".join(f"{v['acceptance']}={v['outcome']}" for v in a.get("verdicts", []))
         lines.append(f"  attempt {i} : {a['outcome']} {detail} ({a.get('seconds', '?')}s)")
@@ -175,7 +181,9 @@ def render_plan(record: dict[str, Any]) -> str:
         "awaiting_approval": f"next: amplai approve {goal}   (or amplai cancel {goal})",
         "needs_answers": "next: answer the questions in a refined `amplai work` goal",
         "approved": f"next: amplai status {goal}",
-        "running": f"next: amplai status {goal}",
+        "running": f'next: amplai status {goal}   (guide it: amplai steer {goal} "..."; '
+        f'change it: amplai replan {goal} "...")',
+        "replan_failed": f"next: amplai cancel {goal}   (the goal is blocked)",
     }.get(status)
     if nxt:
         lines.append(nxt)
@@ -218,6 +226,14 @@ def goal_steer(
 ) -> None:
     """Guide the running agent: it pauses at a checkpoint and resumes with your message."""
     _local(lambda c: c.local_steer(goal_id, text), render=False)
+
+
+@app.command("replan")
+def goal_replan(
+    goal_id: Annotated[str, typer.Argument()], reason: Annotated[str, typer.Argument()]
+) -> None:
+    """Change a running goal's plan: it stops, a new revision is drafted, you approve it."""
+    _local(lambda c: c.local_replan(goal_id, reason), render=False)
 
 
 @app.command("cancel")
