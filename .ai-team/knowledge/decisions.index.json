@@ -401,6 +401,16 @@
         "src/amplai_foundry/runtime/budgets",
         "specs/019-v3-completion"
       ]
+    },
+    {
+      "id": "D-085",
+      "status": "active",
+      "title": "Codex CLI run cost stays unknown on a ChatGPT account",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers",
+        "src/amplai_foundry/runtime/budgets"
+      ]
     }
   ]
 }

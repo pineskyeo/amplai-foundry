@@ -308,3 +308,20 @@
   다루지 않는다)을 따른다.
 - Evidence: `tests/v3/test_rc02_runtime.py::test_estimated_usage_settles_tokens_and_records_the_cost_estimate`.
 
+## D-085 — Codex CLI Run Cost Stays Unknown On A ChatGPT Account
+
+- Status: accepted (운영자 선택 2026-09-28: 추천안 진행)
+- Date: 2026-09-28
+- Decision: Codex CLI run 의 비용은 추정하지 않고 `unknown` 으로 둔다. 가격표를 추가하지 않는다. usage 계약
+  (3.0.0 wire schema)도 바꾸지 않는다. token 이 보고된 Codex run 의 usage 는 지금처럼 `status: measured` 와
+  `cost_microunits: null` 이다. budget 은 이를 `unknown` 으로 정산해 reservation 비용을 유지한다
+  (`src/amplai_foundry/runtime/budgets/service.py` settle). Observatory 는 비용이 없는 run 을 unknown 비용으로
+  센다.
+- Reason: 이 환경의 Codex 는 ChatGPT 계정 로그인으로 실행된다
+  (`specs/018-v3-real-execution/driver-qualification-amplai-foundry.json:10`, `"auth":
+  "chatgpt_account_sandbox_home"`). token 단가 과금이 아니다. Codex 비용 설계(draft PR #24)는 계정 계약 때문에
+  요율을 하나로 정할 수 없으면 `unknown` 으로 두고 그럴듯한 요율을 고르지 않는다고 정했다. 그 조건에 해당하므로
+  설계의 조건부 추정은 이 환경에서 적용되지 않는다.
+- Revisit: API key 과금 Codex profile 을 도입할 때 PR #24 의 조건부 추정(가격 snapshot pin, token 종류별 완전한
+  매핑, fail-closed)을 그 profile 에 한해 다시 검토한다.
+
