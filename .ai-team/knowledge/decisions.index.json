@@ -381,6 +381,16 @@
         "src/amplai_foundry/runtime/execution",
         "specs/019-v3-completion"
       ]
+    },
+    {
+      "id": "D-083",
+      "status": "active",
+      "title": "A steered turn accepts steering and replanning again",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "specs/019-v3-completion"
+      ]
     }
   ]
 }

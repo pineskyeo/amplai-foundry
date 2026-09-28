@@ -234,7 +234,9 @@ import json, pathlib, sys
 ws, mode, home = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
 prompt = sys.argv[4] if len(sys.argv) > 4 else ""
 assert (home / ".codex" / "auth.json").is_file(), "credential was not leased"
-if mode == "steer" and "Operator steering" not in prompt:
+if (mode == "steer" and "Operator steering" not in prompt) or (
+    mode == "steer-twice" and "SECOND" not in prompt
+):
     # a long first turn: bound session, then working until the operator's pause stops it
     import time
     sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": "thread_steer"}) + "\n")
@@ -269,7 +271,8 @@ else:
     new = 2 if mode != "wrong-first" or "return 3" in src else 3
     (ws / "app.py").write_text("def value():\n    return %d\n" % new)
 (home / ".codex" / "auth.json").write_text('{"tokens": "refreshed"}')
-sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": "thread_" + mode}) + "\n")
+sid = "thread_steer" if mode.startswith("steer") else "thread_" + mode  # one session
+sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": sid}) + "\n")
 sys.stdout.write(json.dumps({"type": "turn.completed",
                              "usage": {"input_tokens": 10, "output_tokens": 5}}) + "\n")
 """

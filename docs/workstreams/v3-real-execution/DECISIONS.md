@@ -260,6 +260,7 @@
 ## D-082 — Steering And Replanning On The Real Path (Work 019 D)
 
 - Status: accepted
+- Superseded (resume 된 turn 에서 steer·replan 을 거절하는 부분만): D-083 이 대체한다. 나머지는 유효하다.
 - Date: 2026-09-28
 - Decision: `amplai steer <goal> "…"` 는 설계의 pause → exact-session resume 쌍이다. worker 는 pause 를 받으면
   process 를 스스로 취소하지 않고, loop 가 quiesce(process boundary, checkpoint, workspace snapshot) 후 같은
@@ -276,3 +277,17 @@
   남은 단계만 끝낸다.
 - Reason: 설계의 steering ledger 는 "frozen, admitted revision 또는 confirmed process boundary 만 steering 을
   유효하게 만든다" (`src/amplai_foundry/runtime/execution/steering.py:1-5`). 실제 경로에는 steer/replan 이 없었다.
+
+## D-083 — A Steered Turn Accepts Steering And Replanning Again
+
+- Status: accepted (운영자 선택 2026-09-28: 다음 작업 추천안 진행)
+- Date: 2026-09-28
+- Decision: steer 로 resume 된 turn 도 같은 attempt 의 turn 이다. 첫 turn 처럼 process 가 도는 동안 steer 와
+  replan 을 받는다. worker 의 `continue_resumed` 는 pause 를 받으면 `execute` 와 같이 process 를 취소하지 않고
+  `pause_requested` 로 넘긴다. loop 는 take-over 를 반복한다: 다시 quiesce(boundary, checkpoint)하고 같은
+  native session 을 새 메시지로 resume 하거나(steer), turn 을 멈추고 다음 contract revision 을 만든다(replan).
+  steering 은 resume 이 성공한 시점(session 이 메시지를 받은 시점)에 applied 로 기록한다.
+- Reason: D-082 의 거절은 resume 된 turn 에 quiesce 경로가 없어서였다(실제 run
+  `goal-2b823b3387ce4b79a7f6487804bb2bcf` 에서 replan 이 거절됨, `specs/019-v3-completion/runs/README.md`).
+  quiesce 는 run 의 현재 driver handle 에 동작하므로 resume 된 turn 에도 같은 경계 규칙이 적용된다.
+- Evidence: `tests/e2e/test_rc07_steer.py` 의 두 번 steer 와 steer 뒤 replan test(수정 전 코드에서 실패).

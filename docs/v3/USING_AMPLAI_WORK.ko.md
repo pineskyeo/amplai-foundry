@@ -107,8 +107,7 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
   워크스페이스 read-only mount 로 강제한다.
 - 한 번에 goal 하나만 실행한다. 회사(Windows) 환경, 원격 worker, 여러 사용자는 아직 지원하지 않는다.
 - steer 와 replan 은 attempt 가 실행 중일 때만 받는다. 승인 전 goal 을 바꾸려면 cancel 하고 다시 제출한다.
-  steer 로 이어서 도는 turn 동안에는 다음 steer·replan 을 받지 않는다. 그 turn 이 끝나고 다음 attempt 가
-  시작되면 다시 보낸다.
+  steer 로 이어서 도는 turn 에도 다시 steer 하거나 replan 할 수 있다 (D-083).
 - 취소·실패로 멈춘 goal 은 승인이 철회된 상태로 남는다. 다시 하려면 새 `amplai work` 를 연다.
 - `local-serve` 는 시작할 때 기록을 맞춘다. 멈춘 goal 의 runtime 상태와 점유를 닫는다. 죽은 프로세스가
   남긴 실행 중 goal 은 실패로 끝낸다. 한 번도 시도하지 못한 승인 goal 은 다시 대기열에 넣는다.
