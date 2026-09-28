@@ -593,6 +593,83 @@ def local_claude(
                      "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
+@ops.command("local-add-app")
+def local_add_app(
+    repo: Annotated[Path, typer.Option("--repo")],
+    app_id: Annotated[str, typer.Option("--app")],
+    container_profile: Annotated[Path, typer.Option("--container-profile")],
+    qualification_report: Annotated[Path, typer.Option("--qualification-report")],
+    verifier: Annotated[list[str], typer.Option("--verifier", help="id=command ... | description")],
+    claude_qualification_report: Annotated[
+        Path | None, typer.Option("--claude-qualification-report")
+    ] = None,
+    base_branch: Annotated[str, typer.Option("--base-branch")] = "main",
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Add another app to the local product (a goal may then target several apps)."""
+    import shlex
+
+    verifiers = []
+    for item in verifier:
+        head, _, description = item.partition("|")
+        vid, _, command = head.partition("=")
+        if not vid.strip() or not command.strip():
+            raise typer.BadParameter("Use --verifier 'id=command | description'")
+        verifiers.append(
+            {"id": vid.strip(), "argv": shlex.split(command),
+             "description": description.strip() or command.strip()}
+        )  # fmt: skip
+
+    def change(value: dict[str, Any]) -> None:
+        if any(a["app_id"] == app_id for a in value["apps"]):
+            raise Hold("APP_EXISTS", "The app is already configured")
+        value["apps"].append(
+            {
+                "app_id": app_id,
+                "repo": str(repo.expanduser().absolute()),
+                "container_profile": str(container_profile.absolute()),
+                "qualification_report": str(qualification_report.absolute()),
+                **(
+                    {"claude_qualification_report": str(claude_qualification_report.absolute())}
+                    if claude_qualification_report
+                    else {}
+                ),
+                "verifiers": verifiers,
+                "base_branch": base_branch,
+            }
+        )
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
+@ops.command("local-integration")
+def local_integration(
+    integration_id: Annotated[str, typer.Option("--id")],
+    apps: Annotated[list[str], typer.Option("--app")],
+    command: Annotated[str, typer.Option("--command")],
+    description: Annotated[str, typer.Option("--description")],
+    timeout_seconds: Annotated[int, typer.Option("--timeout")] = 900,
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Add a cross-app integration command (apps are read-only at /amplai-input/apps/<app>)."""
+    import shlex
+
+    def change(value: dict[str, Any]) -> None:
+        known = {a["app_id"] for a in value["apps"]}
+        if not set(apps) <= known or len(set(apps)) < 2:
+            raise Hold("INTEGRATION_APPS", "Name at least two configured apps")
+        value.setdefault("integrations", [])
+        value["integrations"] = [i for i in value["integrations"] if i["id"] != integration_id]
+        value["integrations"].append(
+            {"id": integration_id, "apps": list(dict.fromkeys(apps)), "argv": shlex.split(command),
+             "description": description, "timeout_seconds": timeout_seconds}
+        )  # fmt: skip
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
 @ops.command("local-driver")
 def local_driver(
     driver: Annotated[str, typer.Argument(help="codex or claude")],
