@@ -1,0 +1,131 @@
+{
+  "schema_version": "2.0",
+  "id": "AMPLAI-V3-RC05",
+  "title": "AMPLAI V3 RC-05 — External Qualification Closure (locally closable items)",
+  "goal": "외부 자격 미해결 항목 중 이 workstation 에서 실측 가능한 것(OpenCode 실제 server turn, 컨테이너 resource limit, main CI flaky)을 측정하고, 측정으로 드러난 driver 결함을 regression test 먼저 고친 뒤 ledger 에 사실대로 기록한다.",
+  "source": [
+    "spec.md",
+    "../015-external-qualification/external-qualification-status.json",
+    "../016-container-egress-profile/handoff.json"
+  ],
+  "work_type": "bug_fix",
+  "risk": "normal",
+  "scope": {
+    "include": [
+      "deployment/limits-qualification-artifacts/",
+      "deployment/local-limits-qualification.json",
+      "scripts/limits_qualify.py",
+      "scripts/opencode_qualify.py",
+      "specs/015-external-qualification/",
+      "specs/017-external-qualification-closure/",
+      "src/amplai_foundry/agent_drivers/",
+      "tests/ai/test_amplai_kit_regressions.py",
+      "tests/v3/"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경. 충돌은 DESIGN_CHANGE_PROPOSAL 로 기록)",
+      "Canonical Vault 와 governed knowledge mutation",
+      "Production configuration, live provider account, paid API call",
+      "Git push/merge/release/deploy",
+      "실제 Slack/Hermes workspace 활성화",
+      "다른 저장소 (synapse, cortex) 의 실제 설치·변경"
+    ]
+  },
+  "non_goals": [
+    "podman 설치, opencode 업그레이드 (pin 1.17.13 유지)",
+    "OpenAI API key, OTLP collector, 두 번째 host/독립 approver 준비",
+    "ReleaseSet 생성과 migration/upgrade/rollback drill",
+    "reuse.py scheduler wiring, R404 cutover resume verb",
+    "Git push/merge/release/deploy"
+  ],
+  "acceptance": [
+    {
+      "id": "Q17-001",
+      "statement": "OpenCodeDriver 가 보내는 user messageID 는 server 의 ascending 형식이며 journal 에 전송 전 저장된다.",
+      "evidence": [
+        "tests/v3/test_rc05_opencode_message_id.py"
+      ]
+    },
+    {
+      "id": "Q17-002",
+      "statement": "BoundHttp 는 gzip provider 응답을 한 번만 decode 한다.",
+      "evidence": [
+        "tests/v3/test_rc05_opencode_message_id.py"
+      ]
+    },
+    {
+      "id": "Q17-003",
+      "statement": "실제 opencode serve 에 대한 9 probe 결과가 secret 값 없이 기록된다.",
+      "evidence": [
+        "specs/015-external-qualification/driver-qualification.json"
+      ]
+    },
+    {
+      "id": "Q17-004",
+      "statement": "ContainerSandbox argv 로 memory OOM, pids fork 제한, cpus 설정이 실측된다.",
+      "evidence": [
+        "deployment/local-limits-qualification.json",
+        "tests/v3/test_rc05_container_limits.py"
+      ]
+    },
+    {
+      "id": "Q17-005",
+      "statement": "ledger note/evidence 가 실측을 반영하고 status 값은 측정이 바꾼 것만 바뀐다.",
+      "evidence": [
+        "specs/015-external-qualification/external-qualification-status.json"
+      ]
+    },
+    {
+      "id": "GATE-001",
+      "statement": "verifier profile v2 PASS, ruff 0, mypy 0.",
+      "evidence": [
+        ".ai-team/verifiers/run.py --profile v2"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "Live provider/컨테이너/holdout 자격은 NOT PASS 로 남긴다 (EXTERNAL_QUALIFICATION_PENDING)",
+      "evolution-demo 는 산술 recipe 이며 LLM 품질 개선 근거가 아니다",
+      "design-reference/ 는 무변경. 설계 충돌은 DESIGN_CHANGE_PROPOSAL.md 에 기록"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "production_operation",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "Existing D-046: controller/V2 유지, semantic runtime 미이식",
+    "Existing D-053: canonical Kit 은 tools/amplai-loop-kit",
+    "Existing D-056: Kit Python 3.6 호환, implicit Store rebinding/supervisor activation 없음",
+    "2026-09-27 사용자 지시: '해결할수있는거 해결하고 남은거 알려줘' — 로컬 실측 가능한 외부 자격만 진행",
+    "OpenCode provider login 은 operator data dir 에서 server 가 직접 읽는다. agent 는 credential 을 복사하지 않는다",
+    "무료 tier 는 opencode 1.18.0 을 요구(426)해 pin 1.17.13 을 유지하고 OpenCode Go (glm-5.3-flash) 를 쓴다"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

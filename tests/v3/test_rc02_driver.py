@@ -138,6 +138,24 @@ def test_t066_unknown_provider_event_is_quarantined(tmp_path):
     assert normalizer.session is None and normalizer.completed is False
 
 
+def test_claude_tool_progress_is_accepted_and_unknown_types_still_quarantined():
+    # given: the Claude stream of a foreground tool call longer than ~30 s (2.1.278, measured
+    # in the app container 2026-09-28): tool_progress between task_started and the result
+    normalizer = EventNormalizer("claude")
+    for event in [
+        {"type": "system", "subtype": "init", "session_id": "sess-1"},
+        {"type": "system", "subtype": "task_started", "session_id": "sess-1"},
+        {"type": "tool_progress", "session_id": "sess-1"},
+        {"type": "result", "subtype": "success", "is_error": False, "session_id": "sess-1"},
+    ]:
+        normalizer.accept(event)
+    assert normalizer.completed is True and normalizer.session == "sess-1"
+    # an event type nobody measured stays quarantined
+    with pytest.raises(Hold) as exc:
+        EventNormalizer("claude").accept({"type": "future_event"})
+    assert exc.value.code == "UNKNOWN_PROVIDER_EVENT"
+
+
 @pytest.mark.parametrize(
     ("total_cost_usd", "cost_microunits"),
     [(0, 0), (0.0000005, 0), (0.0000015, 2), (1.2345678, 1234568)],

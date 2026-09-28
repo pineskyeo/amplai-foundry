@@ -92,6 +92,39 @@ class AmplaiClient:
     def goal(self, goal_id: str) -> Any:
         return self.call("GET", "api/v3/goals/" + quote(goal_id, safe=""))
 
+    # -- local single-operator product (runtime/local_deployment.py) ------------------------------
+    def local_plan(self, goal_id: str) -> Any:
+        return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/plan")
+
+    def local_goal(self, goal_id: str) -> Any:
+        return self.call("GET", "api/v3/local/goals/" + quote(goal_id, safe=""))
+
+    def local_goals(self) -> Any:
+        return self.call("GET", "api/v3/local/goals")
+
+    def local_approve(self, goal_id: str) -> Any:
+        return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/approve")
+
+    def local_cancel(self, goal_id: str) -> Any:
+        return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/cancel")
+
+    def local_steer(self, goal_id: str, text: str) -> Any:
+        return self.call(
+            "POST",
+            "api/v3/local/goals/" + quote(goal_id, safe="") + "/steer",
+            payload={"text": text},
+        )
+
+    def local_replan(self, goal_id: str, reason: str) -> Any:
+        return self.call(
+            "POST",
+            "api/v3/local/goals/" + quote(goal_id, safe="") + "/replan",
+            payload={"reason": reason},
+        )
+
+    def local_pr_sync(self) -> Any:
+        return self.call("POST", "api/v3/local/publications/sync")
+
     def hermes_submit(
         self, text: str, *, workspace_id: str, channel_id: str, message_id: str, mode: str = "work"
     ) -> Any:

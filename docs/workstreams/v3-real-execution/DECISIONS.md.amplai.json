@@ -1,0 +1,28 @@
+{
+  "amplai_document": {
+    "schema_version": "1.0",
+    "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
+    "topic_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
+    "source": {
+      "repository": "amplai-foundry",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md"
+    },
+    "title": "V3 Real Execution Decisions",
+    "owner": "amplai-foundry-maintainers",
+    "kind": "decision_record",
+    "authority": "canonical",
+    "lifecycle": "active",
+    "security": "INTERNAL",
+    "release_ids": [
+      "kit-2.5.0-candidate-r6"
+    ],
+    "audiences": [
+      "maintainer"
+    ],
+    "dependencies": [],
+    "retention": {
+      "policy": "preserve",
+      "hold": true
+    }
+  }
+}

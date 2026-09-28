@@ -1,0 +1,65 @@
+{
+  "app": "amplai-foundry",
+  "base": {
+    "digest": "sha256:f5051c33b7b847342b68635f3b39682bdabcea6e0fcded94b9736484662c3cef",
+    "id": "artifact-84e10484578d4e079e94eacfe7563c6a",
+    "media_type": "application/vnd.amplai.git-base+json",
+    "size_bytes": 157
+  },
+  "base_commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+  "contract_ref": null,
+  "created_at": "2026-09-27T19:21:51.421149Z",
+  "draft": {
+    "acceptance": [
+      {
+        "statement": "변경된 Python 코드와 테스트가 Ruff 규칙을 위반하지 않는다.",
+        "verifier": "lint"
+      },
+      {
+        "statement": "변경된 amplai_foundry 패키지가 strict mypy 검사를 통과한다.",
+        "verifier": "types"
+      },
+      {
+        "statement": "최적화된 실행 경로의 기존 동작 계약과 새 회귀 테스트를 포함한 tests/v3 테스트가 통과한다.",
+        "verifier": "unit"
+      }
+    ],
+    "assumptions": [
+      "저장소에는 운영자 목표를 특정할 수 있는 명시적 성능 벤치마크나 성능 요구사항이 없다.",
+      "현재 제공된 verifier 가운데 처리 시간, 처리량, 메모리 사용량을 직접 검증하는 전용 명령은 없다."
+    ],
+    "constraints": [
+      "변경 대상 파일은 성능 병목이 재현되는 실행 경로와 그 tests/v3 계약 테스트로 한정해야 한다.",
+      "성능 목표치나 합격 기준을 임의로 만들지 않는다.",
+      "설치된 lint, types, unit verifier만 acceptance에 사용할 수 있으므로 별도 성능 측정 기준 없이는 개선 효과를 검증할 수 없다.",
+      "계획 단계에서는 파일을 수정하지 않는다."
+    ],
+    "in_scope": [],
+    "non_goals": [
+      "대상이 확정되지 않은 상태에서 전체 코드베이스를 포괄적으로 최적화하는 작업",
+      "측정 근거 없이 캐시, 동시성, 데이터 모델 또는 외부 의존성을 변경하는 작업",
+      "기존 거버넌스·권한·지식 안전 계약의 완화"
+    ],
+    "objective": "amplai-foundry의 지정된 실행 경로에서 운영자가 정한 성능 지표를 기준치 대비 개선하되 기존 동작 계약을 보존한다.",
+    "questions": [
+      "어느 사용자 흐름 또는 컴포넌트를 개선해야 하나요(예: CLI 시작, 검색, Governance Store, API, worker/runtime)?",
+      "대표 입력·환경, 측정할 지표, 현재 기준값과 목표값은 무엇이며, 그 성능 검증을 tests/v3의 unit verifier에 포함해도 되나요?"
+    ],
+    "risk": "medium",
+    "summary": "성능 개선 대상과 측정 기준이 없어 현재는 구현 범위를 확정할 수 없습니다."
+  },
+  "goal_id": "goal-94a177be95794854a72d8995593e7df2",
+  "graph_ref": null,
+  "planner_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 81536,
+    "input_tokens": 112752,
+    "output_tokens": 1397,
+    "reasoning_output_tokens": 423
+  },
+  "scope": {
+    "project_id": "amplai-foundry",
+    "tenant_id": "local"
+  },
+  "status": "needs_answers"
+}

@@ -696,7 +696,9 @@ class VerificationService:
         observation = installed(contract, graph, all_outputs)
         if not isinstance(observation, VerificationObservation) or observation.outcome != "pass":
             raise Hold(
-                "INTEGRATION_FAILED", "Independent integration/freshness acceptance has not passed"
+                "INTEGRATION_FAILED",
+                "Independent integration/freshness acceptance has not passed",
+                details={"reason": getattr(observation, "reason", None)},
             )
         artifact = self.artifacts.admit(
             scope,

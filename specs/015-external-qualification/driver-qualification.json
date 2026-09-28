@@ -177,6 +177,140 @@
           "artifacts": 1
         }
       ]
+    },
+    "opencode-server": {
+      "status": "fail",
+      "driver_version": "1.17.13",
+      "host_version": "1.17.13",
+      "model": "opencode-go/glm-5.3-flash",
+      "auth": "server_basic_auth; provider login read by the server from the operator data dir",
+      "method": "scripts/opencode_qualify.py: OpenCodeDriver against a real host-side opencode serve; QualificationRunner with CAS-admitted artifacts (operator trust)",
+      "checked_at": "2026-09-27T09:37:39Z",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-451675cfa2f84989b79ce04cc0c34943",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; unauthenticated health -> 401",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "state=completed process_stopped=True session=ses_f1dc90b20ffemEC85X2LRSe2BF replies_to_request=1 text='OK'",
+          "artifacts": 2
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "2 messages, roles=['user', 'assistant'], created timestamps monotonic=True",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.03s=True; children after=0 (first poll state cancelled)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}]; pending permission requests=1",
+          "artifacts": 2
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "inconclusive",
+          "reason": "host-side server: outbound network is not restricted. Egress containment is measured only with --container on the qualified egress profile",
+          "artifacts": 1
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "fail",
+          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=['OPENCODE_SERVER_PASSWORD']",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "output tokens=28, cost=[0.001139]",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "fail",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[91476]",
+          "artifacts": 2
+        }
+      ]
+    },
+    "opencode-server-container": {
+      "status": "fail",
+      "driver_version": "1.17.13",
+      "host_version": "1.17.13",
+      "model": "opencode-go/glm-5.3-flash",
+      "auth": "server_basic_auth; provider login from the operator's scoped copy",
+      "method": "scripts/opencode_qualify.py --container: opencode serve in the pinned image on the qualified egress profile (ContainerSandbox argv, detached), HTTP via docker exec curl; QualificationRunner with CAS-admitted artifacts (operator trust)",
+      "checked_at": "2026-09-27T09:59:15Z",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-e9e6a7c452614f91b336a3d09a8169bc",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; unauthenticated health -> 401",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "state=completed process_stopped=True session=ses_f1db52e18ffeZwe2IDv7yTD7cm replies_to_request=1 text='OK'",
+          "artifacts": 2
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "2 messages, roles=['user', 'assistant'], created timestamps monotonic=True",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.14s=True; children after=0 (first poll state cancelled)",
+          "artifacts": 1
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}]; pending permission requests=1",
+          "artifacts": 2
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "pass",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turns used only allowlist targets ['opencode.ai:443']; sidecar denied ['example.com:443', 'github.com:443', 'registry.npmjs.org:443']",
+          "artifacts": 2
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "fail",
+          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=['OPENCODE_SERVER_PASSWORD']",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "output tokens=14, cost=[0.00113005]",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "pass",
+          "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[]",
+          "artifacts": 2
+        }
+      ]
     }
   },
   "findings": [
@@ -187,5 +321,47 @@
     "codex-cli (ChatGPT account): the plan rejects the codex-branded identifiers (gpt-5.3-codex-spark, gpt-5-codex, gpt-5.3-codex) but accepts the general models the TUI lists (gpt-6-astra, gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5). A real turn with gpt-5.6-sol completes: thread bound, 6/6 events normalized, usage measured. The model executed one read-only shell command (sed on a user skill file) for a trivial prompt, which the sandbox policy must bound.",
     "codex-cli: remaining inconclusive probes need a turn inside the pinned container (egress profile pending) and a sandboxed auth path."
   ],
-  "artifacts_dir": "specs/015-external-qualification/artifacts"
+  "artifacts_dir": "specs/015-external-qualification/artifacts",
+  "cost_opencode": [
+    {
+      "turn": "ok",
+      "usage": [
+        {
+          "tokens": {
+            "total": 7528,
+            "input": 7500,
+            "output": 28,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "cost": 0.001139
+        }
+      ],
+      "seconds": 17.49
+    }
+  ],
+  "cost_opencode_container": [
+    {
+      "turn": "ok",
+      "usage": [
+        {
+          "tokens": {
+            "total": 7501,
+            "input": 7487,
+            "output": 14,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "cost": 0.00113005
+        }
+      ],
+      "seconds": 9.11
+    }
+  ]
 }

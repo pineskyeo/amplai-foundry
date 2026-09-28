@@ -41,6 +41,8 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = REPO / "specs" / "016-container-egress-profile"
 PROBE_ROOT = Path.home() / ".amplai-sandbox-probes" / "requalify"  # colima shares $HOME only
 PROXY = "amplai-egress-proxy"
+# The worker's tool list for Claude (agent_drivers/cli.py CliDriver.argv).
+PRODUCTION_CLAUDE_TOOLS = "Read,Edit,Write,Glob,Grep,Bash"
 ISOLATION = [
     "--setting-sources",
     "",
@@ -70,9 +72,11 @@ class Probe:
 
 
 class ContainerTurns:
-    def __init__(self, driver: str, model: str, codex_home: Path | None) -> None:
+    def __init__(
+        self, driver: str, model: str, codex_home: Path | None, container_profile: Path
+    ) -> None:
         self.driver, self.model = driver, model
-        container = json.loads((REPO / "deployment" / "local-container.json").read_text())
+        container = json.loads(container_profile.read_text())
         self.egress = EgressProfile.load(REPO / "deployment" / "local-egress.json")
         ref = load_qualification(REPO / "deployment" / "local-egress-qualification.json")
         self.profile = ContainerProfile(
@@ -121,25 +125,28 @@ class ContainerTurns:
         self.cost: list[dict[str, Any]] = []
 
     # -- argv -------------------------------------------------------------------------------
-    def argv(self, prompt: str, *, session: str | None = None, tools: str = "Read") -> list[str]:
+    def argv(
+        self,
+        prompt: str,
+        *,
+        session: str | None = None,
+        tools: str = "Read",
+        max_turns: int | None = 3,
+    ) -> list[str]:
         if self.driver == "claude":
             args = ["claude", *ISOLATION, "-p", prompt, "--output-format", "stream-json"]
-            args += [
-                "--verbose",
-                "--model",
-                self.model,
-                "--allowedTools",
-                tools,
-                "--max-turns",
-                "3",
-            ]
+            args += ["--verbose", "--model", self.model, "--allowedTools", tools]
+            if max_turns is not None:
+                args += ["--max-turns", str(max_turns)]
             return args + (["--resume", session] if session else [])
         args = ["codex", "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        args += ["--json", "--model", self.model, "--skip-git-repo-check"]
-        if not session:
-            args += ["--sandbox", "workspace-write" if tools != "Read" else "read-only"]
+        # Same argv as production CliDriver.argv (D-073: the container is the sandbox).
+        args += [
+            "--json", "--model", self.model, "--skip-git-repo-check",
+            "--dangerously-bypass-approvals-and-sandbox",
+        ]  # fmt: skip
         return [*args, prompt]
 
     def command(self, argv: list[str], name: str) -> list[str]:
@@ -149,11 +156,18 @@ class ContainerTurns:
 
     # -- execution ------------------------------------------------------------------------
     def turn(
-        self, prompt: str, *, session: str | None = None, tools: str = "Read"
+        self,
+        prompt: str,
+        *,
+        session: str | None = None,
+        tools: str = "Read",
+        max_turns: int | None = 3,
     ) -> dict[str, Any]:
         self.runs += 1
         name = f"amplai-qual-{self.driver}-{self.runs}"
-        cmd = self.command(self.argv(prompt, session=session, tools=tools), name)
+        cmd = self.command(
+            self.argv(prompt, session=session, tools=tools, max_turns=max_turns), name
+        )
         started = time.time()
         try:  # F1: a timed-out attach must never leak the (non --rm) container
             run = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, timeout=600)
@@ -480,6 +494,105 @@ def measure(t: ContainerTurns, version: str) -> dict[str, Probe]:
     return p
 
 
+def tool_use(t: ContainerTurns) -> dict[str, Any]:
+    """The agent can run the app's tools and edit files in the container (product gate).
+
+    Not one of the nine design probes: those passed on PONG turns while every shell command
+    and file write failed inside the container (Codex's bwrap sandbox, 2026-09-28). A driver is
+    only registered for real work if this passes too.
+    """
+    marker = t.ws / "tool-use.txt"
+    marker.unlink(missing_ok=True)
+    prompt = (
+        "Run the shell command `python --version` and then create a file named tool-use.txt "
+        "containing exactly the version string it printed. Reply DONE."
+    )
+    if t.driver == "claude":
+        # production argv: the worker's tool list and no turn cap (CliDriver.argv)
+        turn = t.turn(prompt, tools=PRODUCTION_CLAUDE_TOOLS, max_turns=None)
+    else:
+        turn = t.turn(prompt, tools="Write")
+    t.cost.append({"turn": "tool_use", "usage": turn["usage"], "seconds": turn["seconds"]})
+    ran = []
+    pending: dict[str, str] = {}  # claude: tool_use id -> Bash command
+    for line in turn["stdout"].decode(errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        item = event.get("item") or {}
+        if item.get("type") == "command_execution" and item.get("exit_code") is not None:
+            ran.append({"command": item.get("command", "")[:120], "exit": item["exit_code"],
+                        "output": (item.get("aggregated_output") or "")[:120]})  # fmt: skip
+        for block in (event.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                pending[block.get("id", "")] = str((block.get("input") or {}).get("command", ""))
+            elif block.get("type") == "tool_result" and block.get("tool_use_id") in pending:
+                content = block.get("content")
+                text = (
+                    content
+                    if isinstance(content, str)
+                    else " ".join(c.get("text", "") for c in content or [] if isinstance(c, dict))
+                )
+                ran.append({"command": pending.pop(block["tool_use_id"])[:120],
+                            "exit": 1 if block.get("is_error") else 0,
+                            "output": text[:120]})  # fmt: skip
+    python_ok = any(r["exit"] == 0 and "Python 3" in r["output"] for r in ran)
+    written = marker.read_text().strip() if marker.is_file() else None
+    long = long_command(t)
+    ok = (
+        turn["ok"]
+        and python_ok
+        and bool(written and written.startswith("Python 3"))
+        and long["outcome"] == "pass"
+    )
+    return {
+        "outcome": "pass" if ok else "fail",
+        "commands": ran,
+        "file": written,
+        "rc": turn["rc"],
+        "long_command": long,
+    }
+
+
+def long_command(t: ContainerTurns) -> dict[str, Any]:
+    """A foreground command longer than the provider's progress interval (a test suite does
+    this): the production normalizer must accept every event of the turn. Claude Code reports
+    such a call with tool_progress events after about 30 s (found by the first real steer run,
+    2026-09-28, which died on an event type this check did not cover)."""
+    prompt = (
+        "Run this exact command with the Bash tool in the foreground and wait for it: "
+        "python3 -c 'import time; time.sleep(45); print(\"marker-long\")' . "
+        "Then reply with exactly the line it printed."
+    )
+    if t.driver == "claude":
+        turn = t.turn(prompt, tools=PRODUCTION_CLAUDE_TOOLS, max_turns=None)
+    else:
+        turn = t.turn(prompt, tools="Write")
+    t.cost.append({"turn": "long_command", "usage": turn["usage"], "seconds": turn["seconds"]})
+    types = sorted(
+        {
+            str(e.get("type"))
+            for e in JsonlDecoder().feed(turn["stdout"], final=True)
+            if isinstance(e, dict)
+        }
+    )
+    ok = (
+        turn["ok"]
+        and turn["fault"] is None
+        and turn["seconds"] >= 45
+        and "marker-long" in turn["stdout"].decode(errors="replace")
+    )
+    return {
+        "outcome": "pass" if ok else "fail",
+        "seconds": turn["seconds"],
+        "fault": turn["fault"],
+        "event_types": types,
+    }
+
+
 def record(
     t: ContainerTurns, probes: dict[str, Probe], version: str, out_dir: Path
 ) -> dict[str, Any]:
@@ -517,17 +630,23 @@ def main() -> int:
     ap.add_argument("--model")
     ap.add_argument("--codex-home", type=Path)
     ap.add_argument("--out", type=Path, default=SPEC / "driver-qualification.json")
+    # A per-app image (D-072) is a new environment: qualify there before registering the driver.
+    ap.add_argument(
+        "--container-profile", type=Path, default=REPO / "deployment" / "local-container.json"
+    )
+    ap.add_argument("--artifacts", type=Path, default=SPEC / "artifacts")
     a = ap.parse_args()
     model = a.model or ("claude-sonnet-5" if a.driver == "claude" else "gpt-5.6-sol")
     host_version = subprocess.run(
         [a.driver, "--version"], capture_output=True, text=True, check=False
     ).stdout.strip()
-    container = json.loads((REPO / "deployment" / "local-container.json").read_text())
+    container = json.loads(a.container_profile.read_text())
     pinned = re.search(r"\d+\.\d+\.\d+", container["tools"][a.driver])
     version = pinned.group(0) if pinned else ""
-    t = ContainerTurns(a.driver, model, a.codex_home)
+    t = ContainerTurns(a.driver, model, a.codex_home, a.container_profile)
     probes = measure(t, version)
-    report = record(t, probes, version, SPEC / "artifacts")
+    tools = tool_use(t)
+    report = record(t, probes, version, a.artifacts)
     checks = [
         {
             "name": c["name"],
@@ -556,7 +675,7 @@ def main() -> int:
     )
     existing["container_image"] = t.profile.image
     existing["egress_profile"] = t.egress.wire()
-    existing["artifacts_dir"] = str((SPEC / "artifacts").relative_to(REPO))
+    existing["artifacts_dir"] = str(a.artifacts.absolute().relative_to(REPO))
     existing["reports"][f"{a.driver}-cli"] = {
         "status": report["status"],
         "driver_version": version,
@@ -566,6 +685,7 @@ def main() -> int:
         "native_delegation_qualified": report["native_delegation_qualified"],
         "qualification_id": report["qualification_id"],
         "checks": checks,
+        **({"tool_use": tools} if tools is not None else {}),
     }
     existing["cost"][f"{a.driver}-cli"] = t.cost
     a.out.parent.mkdir(parents=True, exist_ok=True)

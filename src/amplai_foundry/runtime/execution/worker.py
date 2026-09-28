@@ -10,15 +10,37 @@ from __future__ import annotations
 import contextlib
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from ...agent_drivers.ports import UNKNOWN_USAGE, DriverRegistry
 from ...agent_drivers.sessions import SessionStore
-from ...sandbox.workspace import WorkspaceManager
 from ..contracts.authority import Actor
 from ..contracts.identity import digest
 from ..errors import Conflict, Hold, RuntimeFault
 from .envelope import assert_execution_live, execution_envelope
+
+
+class Workspaces(Protocol):
+    """What the coordinator needs from a workspace manager (content snapshots or git)."""
+
+    def materialize(self, scope: Any, run_id: str, snapshot: dict[str, Any]) -> Path: ...
+
+    def collect(
+        self,
+        scope: Any,
+        workspace: str | Path,
+        bindings: dict[str, str],
+        node: dict[str, Any],
+        *,
+        process_stopped: bool,
+    ) -> dict[str, dict[str, Any]]: ...
+
+    def snapshot(self, scope: Any, directory: Path) -> dict[str, Any]: ...
+
+    def assert_matches(
+        self, scope: Any, directory: str | Path, snapshot: dict[str, Any]
+    ) -> bool: ...
+
 
 if TYPE_CHECKING:
     from .service import Runtime
@@ -29,7 +51,7 @@ class WorkCoordinator:
         self,
         runtime: Runtime,
         registry: DriverRegistry,
-        workspaces: WorkspaceManager,
+        workspaces: Workspaces,
         *,
         poll_seconds: float = 0.05,
         max_seconds: float = 3600,
@@ -259,12 +281,24 @@ class WorkCoordinator:
             self._update(
                 worker, did, "verifying", result=result, driver_receipt_digest=digest(receipt)
             )
+            # Outputs are in the CAS; remove the stopped run's container (never before collect).
+            with contextlib.suppress(Exception):
+                port.destroy(handle)
             return result
         except Exception as exc:
+            if getattr(exc, "code", None) == "EXECUTION_PAUSED" and handle is not None:
+                # Steering: the controller stops this process at a boundary and checkpoints it
+                # (SteeringService.quiesce -> stop_and_snapshot); cancelling here would lose the
+                # session the operator's message resumes (D-082).
+                self._update(worker, did, "pause_requested", hold_code="EXECUTION_PAUSED")
+                raise
             stopped = False
             if handle is not None:
                 with contextlib.suppress(Exception):
                     stopped = port.cancel(handle).get("process_stopped") is True
+                if stopped:
+                    with contextlib.suppress(Exception):
+                        port.destroy(handle)
             self._update(
                 worker,
                 did,
@@ -320,6 +354,32 @@ class WorkCoordinator:
             "workspace_base_digest": data["base_snapshot"]["digest"],
         }
 
+    def abort(self, worker: Actor, run_id: str) -> bool:
+        """Stop a run's process that no controller pause took over (never leave it running).
+
+        ``execute`` leaves a steering-paused process to the controller; when the controller
+        cannot apply that steering (no request, no checkpoint, a failed resume), it calls this.
+        True when the process is confirmed stopped.
+        """
+        did, h = self._run_execution(worker, run_id)
+        data = h["data"]
+        handle = data.get("driver_handle")
+        if not handle:
+            return True
+        port = self.registry.resolve(
+            worker.scope,
+            data["dispatch"]["profile"]["driver_profile_ref"],
+            data["dispatch"]["node"]["strategy"],
+        )
+        stopped = False
+        with contextlib.suppress(Exception):
+            stopped = port.cancel(handle).get("process_stopped") is True
+        if stopped:
+            with contextlib.suppress(Exception):
+                port.destroy(handle)
+        self._update(worker, did, "held", hold_code="CONTROLLER_ABORT", process_stopped=stopped)
+        return stopped
+
     def _run_execution(self, worker: Actor, run_id: str) -> tuple[str, dict[str, Any]]:
         with self.store._lock:
             rows = self.store.conn.execute(
@@ -339,7 +399,12 @@ class WorkCoordinator:
         return did, h
 
     def resume_exact(
-        self, worker: Actor, run_id: str, checkpoint: dict[str, Any]
+        self,
+        worker: Actor,
+        run_id: str,
+        checkpoint: dict[str, Any],
+        *,
+        prompt: str | None = None,
     ) -> dict[str, Any]:
         """Callback for SteeringService.resume after authority/resource preflight.
 
@@ -366,7 +431,8 @@ class WorkCoordinator:
         request["dispatch_id"] = (
             "resume-" + digest({"run_id": run_id, "pending": run["data"]["resume_pending"]})[7:39]
         )
-        prompt = self.runtime.artifacts.read(worker.scope, data["prompt_artifact"]).decode()
+        if prompt is None:  # a plain resume repeats the original turn's prompt
+            prompt = self.runtime.artifacts.read(worker.scope, data["prompt_artifact"]).decode()
         self._update(worker, did, "resuming", resume_dispatch_id=request["dispatch_id"])
         self.store.assert_outside_tx()
         handle = port.resume(request, prompt, Path(data["workspace"]), data["driver_checkpoint"])

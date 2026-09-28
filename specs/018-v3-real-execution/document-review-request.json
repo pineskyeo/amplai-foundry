@@ -1,0 +1,293 @@
+{
+  "snapshot": "7ea5a85d9a906284a9f0ed87e7ba98bdcb2c21e8463aecc382a8d4951f7f5e25",
+  "reviews": [
+    {
+      "document": ".ai-team/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "updated",
+      "reason": "V3 section links the new local execution usage guide; the rest (host adapters, snapshot status) is unchanged by Work 018.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/ROADMAP.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Mentions Evaluation Observatory as a roadmap stage only; Work 018 adds metrics fields but does not change roadmap status or stages.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "outcome": "updated",
+      "reason": "Claude/Codex CLI row updated: Codex qualified with tool_use and wired to the local execution path; Claude CLI tool use unmeasured and not wired.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "outcome": "updated",
+      "reason": "Metric semantics section updated for human_wait_ms/queue_ms, failure_reasons, run_state_mismatch and the task-class record (D-074, D-076, D-077).",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "outcome": "updated",
+      "reason": "New usage guide; updated for D-073 tool_use, suite verifier, base check, git copies, reconcile, metrics and task_class (D-076, D-077).",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "outcome": "updated",
+      "reason": "Decision ledger of this Work; D-073..D-077 appended; D-076 gained its superseded marker line, no other earlier entry changed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "tests/e2e/artifacts/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 018 adds the local execution product, metrics events and a task-class record. This document mentions none of them (its Codex/DECISIONS hits are host-adapter or ledger-convention wording that did not change) and stays accurate.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Grepped each document for amplai work/approve/local-serve/Observatory/task_class/workgraph/Codex/RecipePort/DECISIONS wording and compared the hits against git diff main...HEAD of the changed sources and the recorded real runs.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": "README.md",
+      "reference": "_v3_delivery/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": "validation/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reference": "_v3_delivery/*TRACE.json",
+      "line": 7,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "line": 3,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "validation/",
+      "line": 122,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "line": 122,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/018-v3-real-execution/document-review-evidence-018.json"
+      ]
+    }
+  ]
+}

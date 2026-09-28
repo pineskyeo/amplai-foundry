@@ -1,0 +1,77 @@
+{
+  "app": "amplai-foundry",
+  "base": {
+    "digest": "sha256:f5051c33b7b847342b68635f3b39682bdabcea6e0fcded94b9736484662c3cef",
+    "id": "artifact-ec88dbcd059043888daf3a0fbdee72a4",
+    "media_type": "application/vnd.amplai.git-base+json",
+    "size_bytes": 157
+  },
+  "base_commit": "575f51dacba49931712e084f3b8f2b1d38bd82d8",
+  "contract_ref": {
+    "digest": "sha256:a3feb5624b0dad2958bc514c7283f96f6a222e0748f19be71006743a4fc5b513",
+    "id": "goal-07f09db6c5284c569a4bee8cc0843bd2",
+    "revision": 1
+  },
+  "created_at": "2026-09-27T19:09:11.324368Z",
+  "draft": {
+    "acceptance": [
+      {
+        "statement": "tests/v3의 CLI 테스트에서 `amplai ops version`이 성공하고, 파싱된 JSON에 `python_version`이 존재하며 그 값이 `platform.python_version()`과 동일함이 검증된다.",
+        "verifier": "unit"
+      },
+      {
+        "statement": "추가된 `platform` 사용과 테스트 코드를 포함한 저장소의 Ruff lint가 깨끗하다.",
+        "verifier": "lint"
+      },
+      {
+        "statement": "변경 후 amplai_foundry 패키지의 strict mypy 검사가 깨끗하다.",
+        "verifier": "types"
+      }
+    ],
+    "assumptions": [
+      "`amplai` 콘솔 엔트리포인트는 `amplai_foundry.runtime.cli:main`에 연결되어 있고, 대상 명령 구현은 `src/amplai_foundry/runtime/cli.py`의 `ops` Typer 그룹 아래 `version()`이다.",
+      "새로운 독립 테스트 파일을 추가하는 것이 기존 대규모 runtime 테스트 파일에 CLI 검증을 섞는 것보다 현재 tests/v3 구조에서 변경 범위를 더 명확히 한정한다."
+    ],
+    "constraints": [
+      "표준 라이브러리 `platform.python_version()`의 반환값을 그대로 사용한다.",
+      "명령은 기존처럼 성공 시 JSON만 출력해야 한다.",
+      "테스트는 tests/v3 범위에 두고 실제 CLI 명령 경로를 검증한다.",
+      "변경된 Python 코드와 테스트는 기존 Ruff 및 strict mypy 규칙을 준수해야 한다."
+    ],
+    "in_scope": [
+      "src/amplai_foundry/runtime/cli.py의 `version()` 명령: 표준 라이브러리 `platform`을 사용해 기존 출력 객체에 `python_version`을 추가",
+      "tests/v3/test_ops_version.py 신규 테스트: Typer CLI를 통해 `amplai ops version`을 실행하고 JSON을 파싱하여 `python_version` 필드 존재 및 `platform.python_version()`과의 일치를 검증"
+    ],
+    "non_goals": [
+      "기존 `package_version`, `stage`, `schema_version`, `release_status`, `production_release` 필드의 값이나 의미 변경",
+      "`ops doctor`의 기존 `python` 필드 변경 또는 공통 버전 모델로의 리팩터링",
+      "Python 최소 지원 버전, 패키지 버전 또는 wire schema 버전 변경",
+      "JSON 외의 별도 출력 형식 추가"
+    ],
+    "objective": "`amplai ops version` 명령의 기존 JSON 출력에 `python_version` 필드를 추가하여 `platform.python_version()` 값을 반환하고, 해당 필드의 존재와 값의 일치를 검증하는 tests/v3 테스트를 추가한다.",
+    "questions": [],
+    "risk": "low",
+    "summary": "`amplai ops version` JSON에 실행 중인 Python 버전을 추가하고 tests/v3에서 회귀 검증합니다."
+  },
+  "finished_at": "2026-09-27T19:19:34.034120Z",
+  "goal_id": "goal-07f09db6c5284c569a4bee8cc0843bd2",
+  "graph_ref": {
+    "digest": "sha256:9e906ff05227cac0187cc38716881ef28fc2b40751d97937e781bd9883aec608",
+    "id": "graph-ba93759859454023a8b57b39a9ad415a",
+    "revision": 1
+  },
+  "planner_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 624512,
+    "input_tokens": 697988,
+    "output_tokens": 2876,
+    "reasoning_output_tokens": 719
+  },
+  "reason": "cancelled by the operator",
+  "scope": {
+    "project_id": "amplai-foundry",
+    "tenant_id": "local"
+  },
+  "status": "cancelled",
+  "updated_at": "2026-09-27T19:19:34.034198Z"
+}

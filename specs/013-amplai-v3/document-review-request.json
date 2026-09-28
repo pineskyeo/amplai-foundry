@@ -1,354 +1,374 @@
 {
-  "snapshot": "e09c8cdccda0134511971d396b2c94b0418a150f2ec1f63a73ea6c7c8b4ef7c2",
+  "snapshot": "9c3abaab386a46663d704bbc485bd60422e953775904c85cb35207a6efc495f0",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Loop Runtime 설명은 controller/verifier/document lifecycle 을 다루며 sandbox egress 구현과 무관하다. 새 script 는 loop 명령이 아니다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": ".ai-team/knowledge/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": ".ai-team/runtime/WORKFLOW.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": ".ai-team/verifiers/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "AGENTS.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "CLAUDE.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "저장소 개요는 V3 sandbox 의 network 정책을 서술하지 않는다. 새 파일은 deployment/scripts/src/sandbox 아래에 있고 개요의 구조 설명을 바꾸지 않는다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "deployment/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/KNOWLEDGE-RULES.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/LIFECYCLE.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "keyword 'status' 일치뿐이다. knowledge lifecycle 상태와 driver qualification status 는 다른 개념이며 본문이 sandbox 를 다루지 않는다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/PORTABLE-DEVELOPMENT.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "keyword 'release' 일치뿐이다. portable document release 절차는 바뀌지 않았고 egress profile 은 문서 release 와 무관하다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/PROJECT-PACK.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/PROPOSALS.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/RELATIONSHIPS.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/ROADMAP.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/VERSIONING.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/VISION.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "keyword 'amplai' 일치뿐이다. 비전 문서는 구현 세부(egress sidecar)를 서술하지 않는다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/v3/DEV02_EXECUTION.ko.md",
-      "outcome": "update",
-      "reason": "§컨테이너 레시피 문단이 'network=none 만 있고 docker 가 없어 격리를 인수시험하지 않았다' 고 적혀 있었다. egress qualification ref 요구, --internal network + allowlist sidecar, sandbox_up.sh --egress / container_qualify.py 로 최소 patch 했다. 표의 파일 소유 행은 그대로 유효하다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "관측/meta-harness 설명은 driver qualification 의 9 probe 의미를 바꾸지 않는다. 컨테이너 안 실측은 QualificationRunner 의 기존 계약(전부 pass 아니면 fail) 그대로다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "integrations/hermes/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "migration/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "packs/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "release/README.md",
-      "outcome": "update",
-      "reason": "remaining_blockers 설명이 'EXTERNAL_QUALIFICATION_PENDING 9건이 그대로' 라고 적혀 있었다. 015 status 파일이 9건을 resolved/partial/unavailable 로 정제하고 resolved 가 아닌 것만 pending 으로 실린다는 현재 규칙으로 최소 patch 했다. 나머지 규칙(catalog id 연결, local_pass 의미, release_status)은 scripts/rc01_closure.py 와 일치한다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "tests/e2e/artifacts/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "tools/amplai-loop-kit/CHANGELOG.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "keyword 'release' 일치뿐이다. kit 은 이 Work 에서 바뀌지 않았고 CHECKSUMS 도 그대로다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "tools/amplai-loop-kit/README.md",
-      "outcome": "reviewed_unchanged",
-      "reason": "keyword 'release' 일치뿐이다. kit 설치/사용 절차는 sandbox egress 와 무관하다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
-      "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": ".ai-team/contracts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": ".ai-team/evidence/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": ".ai-team/runtime/INSTALLATION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": ".ai-team/runtime/escalation.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Links the usage guide, which carries the Work 019 changes; README text itself is unaffected.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "deployment/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/LIFECYCLE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": "docs/MEMORY-DOMAIN-MODEL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/PORTABLE-DEVELOPMENT.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/PROPOSALS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/RELATIONSHIPS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/ROADMAP.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Roadmap stages only; Work 019 does not change roadmap status or stages.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 016 (egress profile, codex in-container qualification) 은 이 문서가 서술하는 범위를 바꾸지 않는다: 변경은 sandbox network 정책·qualification script·자격 ledger 에 한정된다.",
-      "reviewer": "claude-implementation-document-review",
-      "method": "Attributed implementation review by the implementing session (Work 016): compared each guide against the exact sources it names (git diff of the egress profile change: sandbox/egress.py, sandbox/container.py, deployment/egress, scripts/sandbox_up.sh, scripts/egress_qualify.py, scripts/container_qualify.py), the recorded gate results (slice evals S01-S04 PASS, ruff 0, mypy 0, container tests 7 passed, closure test 4 passed) and the ledger. Not human approval or independent review.",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
-        "specs/016-container-egress-profile/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/VERSIONING.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "outcome": "updated",
+      "reason": "Claude CLI row: qualified with tool_use in the app image and wired as the system-selected fallback composition (D-079).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "outcome": "updated",
+      "reason": "Publication outcome metrics section added (D-078).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "outcome": "updated",
+      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands and the resumed-turn steering limit (D-078..D-082).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "outcome": "updated",
+      "reason": "D-078..D-082 appended; D-080/D-082 refined in this Work with the review-fix and real-run failure handling; D-076 superseded marker unchanged.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "integrations/hermes/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "migration/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "packs/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "release/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "tests/e2e/artifacts/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     }
   ],
@@ -359,10 +379,10 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -371,10 +391,10 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -383,10 +403,10 @@
       "line": 54,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -395,10 +415,10 @@
       "line": 55,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -407,10 +427,10 @@
       "line": 57,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -419,10 +439,10 @@
       "line": 58,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -431,10 +451,10 @@
       "line": 59,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -443,10 +463,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -455,10 +475,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -467,34 +487,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "AGENTS.md",
-      "reference": ".amplai/tmp/",
-      "line": 41,
-      "disposition": "example",
-      "reason": "Scratch directory the ingest workflow creates at runtime for pasted source text and deletes after ingest; a runtime path, not a repository file.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
-      "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "README.md",
-      "reference": ".amplai/runtime/governance.db",
-      "line": 96,
-      "disposition": "example",
-      "reason": "The selected workspace runtime creates this governance database; cli.py constructs the path. The clean source checkout is not expected to contain runtime state.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
-      "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -503,10 +499,10 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -515,22 +511,10 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
-      ]
-    },
-    {
-      "document": "docs/PROJECT-PACK.md",
-      "reference": ".amplai/runtime/index/memory-index.json",
-      "line": 34,
-      "disposition": "example",
-      "reason": "ProjectPack service creates the memory index below its configured runtime root; this is a generated project output path, not a required repository file.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
-      "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -539,10 +523,10 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -551,10 +535,10 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -563,10 +547,10 @@
       "line": 19,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -575,10 +559,10 @@
       "line": 36,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -587,10 +571,10 @@
       "line": 57,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -599,10 +583,10 @@
       "line": 96,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -611,10 +595,10 @@
       "line": 107,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -623,10 +607,10 @@
       "line": 116,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked current physical line and unchanged source/manifest purpose. Existing optional locator only; no unsafe alias or required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -635,10 +619,10 @@
       "line": 7,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -647,34 +631,34 @@
       "line": 3,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reference": "validation/",
-      "line": 119,
+      "line": 123,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reference": "_v3_delivery/TEST_RESULTS.json",
-      "line": 119,
+      "line": 123,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -683,10 +667,10 @@
       "line": 86,
       "disposition": "historical",
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -695,10 +679,10 @@
       "line": 144,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     },
     {
@@ -707,10 +691,10 @@
       "line": 145,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-fable-5.1-implementation-document-review",
-      "method": "Rechecked the current physical line and the surrounding text against the repository tree and the delivery zip layout; optional inline locator only, no required dependency waived.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
-        "specs/013-amplai-v3/document-review-evidence.json"
+        "specs/019-v3-completion/document-review-evidence-013.json"
       ]
     }
   ]

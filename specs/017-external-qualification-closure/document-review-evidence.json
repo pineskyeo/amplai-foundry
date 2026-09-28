@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-RC05",
+  "kind": "document_review_evidence",
+  "changed_sources": [
+    "deployment/limits-qualification-artifacts/amplai-limits-cpus.json",
+    "deployment/limits-qualification-artifacts/amplai-limits-mem-ok.json",
+    "deployment/limits-qualification-artifacts/amplai-limits-mem-oom.json",
+    "deployment/limits-qualification-artifacts/amplai-limits-pids-ok.json",
+    "deployment/limits-qualification-artifacts/amplai-limits-pids-over.json",
+    "deployment/local-limits-qualification.json",
+    "docs/v3/DEV02_EXECUTION.ko.md",
+    "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+    "scripts/limits_qualify.py",
+    "scripts/opencode_qualify.py",
+    "src/amplai_foundry/agent_drivers/http.py",
+    "tests/ai/test_amplai_kit_regressions.py",
+    "tests/v3/test_rc05_container_limits.py",
+    "tests/v3/test_rc05_opencode_message_id.py"
+  ],
+  "semantic_changes": [
+    "src/amplai_foundry/agent_drivers/http.py: OpenCode user messageID in the server ascending form (start/resume); BoundHttp drops encoding headers after decode",
+    "tests/ai/test_amplai_kit_regressions.py: timing test compares min of two batches",
+    "scripts/opencode_qualify.py, scripts/limits_qualify.py: new measurement scripts"
+  ],
+  "measurements": {
+    "opencode": "specs/015-external-qualification/driver-qualification.json#reports.opencode-server (6/9 pass)",
+    "limits": "deployment/local-limits-qualification.json (5/5 required pass)",
+    "ci": "main run 35563398959 rerun green (validate 3.11/3.12)"
+  }
+}

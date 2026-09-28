@@ -73,9 +73,12 @@ class EventNormalizer:
             "error",
         }
     )
+    # tool_progress: Claude Code 2.1.278 reports a foreground tool call still running after
+    # about 30 s (measured in the app container 2026-09-28; the first real steer run died on it)
     CLAUDE = frozenset(
-        {"system", "assistant", "user", "result", "stream_event", "rate_limit_event"}
-    )
+        {"system", "assistant", "user", "result", "stream_event", "rate_limit_event",
+         "tool_progress"}
+    )  # fmt: skip
 
     def __init__(self, provider: str, *, expected_session: str | None = None):
         if provider not in {"codex", "claude"}:

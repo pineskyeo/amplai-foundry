@@ -202,6 +202,185 @@
         "Vault curation",
         "specs/011-hermes-slack-orchestration"
       ]
+    },
+    {
+      "id": "D-065",
+      "status": "active",
+      "title": "Close V3 execution only through a real qualified driver",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "specs/018-v3-real-execution",
+        "tests/v3/test_rc01_e2e_cross_app.py"
+      ]
+    },
+    {
+      "id": "D-066",
+      "status": "active",
+      "title": "Run the V3 worker inside the serve process",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/deployment.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-067",
+      "status": "active",
+      "title": "Codex CLI is the first production driver",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers/cli.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-068",
+      "status": "active",
+      "title": "Git commit workspace and host-computed patch",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/sandbox",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-069",
+      "status": "active",
+      "title": "Codex read-only planner without an API key",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/goals/planner.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-070",
+      "status": "active",
+      "title": "Local operator authority",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/contracts/authority.py",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-071",
+      "status": "active",
+      "title": "Publish as a governed effect after verification",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/effects",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-072",
+      "status": "active",
+      "title": "Per-app worker image and requalification",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "deployment",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-074",
+      "status": "active",
+      "title": "Local execution metrics from the audit trail",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/evaluation",
+        "src/amplai_foundry/runtime/execution",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-075",
+      "status": "active",
+      "title": "Re-judgement of T-107, V3-026 and V3-057 after real runs",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "release",
+        "eval",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-076",
+      "status": "active",
+      "title": "Task class for local execution; active ledger as a catalog document",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        ".ai-team/policy/documentation.json",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-077",
+      "status": "active",
+      "title": "Task class recorded beside the graph, not in the 3.0.0 workgraph schema",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/evaluation",
+        "specs/018-v3-real-execution"
+      ]
+    },
+    {
+      "id": "D-078",
+      "status": "active",
+      "title": "Draft PR outcomes are recorded",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/evaluation",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-079",
+      "status": "active",
+      "title": "The system selects the composition; Claude CLI is the qualified fallback",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/meta_harness",
+        "scripts",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-080",
+      "status": "active",
+      "title": "Design mode produces a verified design document",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/verification",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-081",
+      "status": "active",
+      "title": "One goal across several apps",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime",
+        "src/amplai_foundry/verification",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-082",
+      "status": "active",
+      "title": "Steering and replanning on the real path",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "specs/019-v3-completion"
+      ]
     }
   ]
 }

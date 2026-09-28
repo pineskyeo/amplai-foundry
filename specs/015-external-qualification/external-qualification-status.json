@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "external_qualification_status",
-  "checked_at": "2026-09-20T09:14:51Z",
+  "checked_at": "2026-09-28T00:00:00Z",
   "host": "macOS arm64 workstation",
   "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
   "status_values": {
@@ -15,19 +15,19 @@
       "item": "Actual Claude/Codex account + exact binary image/model version qualification",
       "status": "resolved",
       "evidence": "specs/016-container-egress-profile/driver-qualification.json",
-      "note": "claude-cli (subscription OAuth token) and codex-cli (ChatGPT account, gpt-5.6-sol): 9/9 mandatory probes each, measured with real turns inside the pinned worker image on the qualified egress profile (Work 016). Accounts are the user's subscriptions, not a production account; opencode is tracked by its own item. Host-side 015 record: specs/015-external-qualification/driver-qualification.json."
+      "note": "claude-cli (subscription OAuth token) and codex-cli (ChatGPT account, gpt-5.6-sol): 9/9 mandatory probes each, measured with real turns inside the pinned worker image on the qualified egress profile (Work 016). Accounts are the user's subscriptions, not a production account; opencode is tracked by its own item. Host-side 015 record: specs/015-external-qualification/driver-qualification.json. Work 018 (D-073): the 016 probes used PONG turns and never exercised tools; inside the container Codex's own bwrap sandbox failed every shell command and file write. codex-cli was requalified in the amplai-foundry app image with the production argv and a measured tool_use turn (9/9 + tool_use pass, specs/018-v3-real-execution/driver-qualification-amplai-foundry.json) and ran real goals to draft PRs (specs/018-v3-real-execution/runs/). claude-cli tool use inside the container has not been measured."
     },
     {
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
       "status": "partial",
       "evidence": "specs/015-external-qualification/driver-qualification.json",
-      "note": "opencode 1.17.13 server: health/version pin/auth gates and child termination pass; no model turn, workspace boundary probe not run"
+      "note": "opencode 1.17.13, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py (Work 017). Host-side server: 6/9. In the sandbox (pinned amplai-worker-opencode image on the qualified egress profile, --container): 8/9 pass; egress used only opencode.ai:443 (github/npm/example.com denied), SIGKILL of the container ends the tool tree and the exact session resumes without prompt replay. Remaining fail secret_isolation: opencode serve takes its password only from OPENCODE_SERVER_PASSWORD and the bash tool inherits it, in the container too. crash resume turn is a raw HTTP prompt, not OpenCodeDriver.resume. The model catalog is seeded because models.dev is not allowlisted. Work 017 also fixed two driver defects found only with the real server (non-ascending messageID caused endless reply regeneration; gzip bodies decoded twice)."
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",
       "status": "partial",
       "evidence": "deployment/local-egress-qualification.json",
-      "note": "colima + docker 29.5; image pinned by registry digest. Egress is now real: the agent joins only an --internal network and an allowlist CONNECT sidecar is the sole route out (direct DNS fails, allowlisted host tunnels, others get 403; measured in deployment/local-egress-qualification.json and tests/v3/test_rc04_egress_container.py). Credential isolation of a real claude turn measured (token absent from every agent-visible output). Not measured: memory/pids limits under load, podman, codex in-container turn. Related: specs/016-container-egress-profile/driver-qualification.json, specs/015-external-qualification/container-probes.json."
+      "note": "colima + docker 29.5; image pinned by registry digest. Egress is real: the agent joins only an --internal network and an allowlist CONNECT sidecar is the sole route out (deployment/local-egress-qualification.json, tests/v3/test_rc04_egress_container.py). Credential isolation of real claude and codex turns measured (Work 016, 9/9 each). Resource limits measured with ContainerSandbox argv (Work 017, scripts/limits_qualify.py, tests/v3/test_rc05_container_limits.py): memory 64m -> 512 MiB allocation OOMKilled (rc 137), in-limit allocation succeeds; pids 32 -> fork refused after 30 (EAGAIN) with container and engine alive; --cpus applied (NanoCpus). Not measured: CPU throttling under load, podman (not installed)."
     },
     {
       "item": "Responses production model/account/tool policy qualification; async/managed/app-server optional features remain disabled unless separately qualified",
@@ -39,7 +39,7 @@
       "item": "Full 112 normative scenario closure, full legacy regression, migration/upgrade/rollback and platform matrix at RC/FINAL",
       "status": "partial",
       "evidence": "specs/015-external-qualification/ci-platform-matrix.json",
-      "note": "112/112 catalog closure and full legacy regression (3174 passed) done locally; Python 3.11/3.12/3.13 matrix pass on macOS; Linux CI blocked by a kit fixture cleanup race fixed in this Work (awaiting CI); migration/upgrade/rollback drills against a real prior release not run"
+      "note": "112/112 catalog closure and full legacy regression done locally; Python 3.11/3.12/3.13 matrix pass on macOS; Linux CI (ubuntu, 3.11/3.12) green on main (run 35563398959 rerun 2026-09-27; its one failure was the wall-clock test test_append_cost_does_not_grow_with_history, hardened in Work 017). Migration/upgrade/rollback drills against a real prior release not run: no ReleaseSet exists yet."
     },
     {
       "item": "Clean dependency resolution: installed package tests explicitly share preinstalled dependencies",
@@ -72,5 +72,5 @@
     "unavailable": 3,
     "not_a_local_check": 1
   },
-  "updated_by": "Work 016 (2026-09-20): claude in-container qualification and real egress control"
+  "updated_by": "Work 018 (2026-09-28): codex requalified with a measured tool_use turn (D-073)"
 }
