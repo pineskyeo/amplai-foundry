@@ -32,6 +32,7 @@
 - 성공은 현재 계약·그래프에 연결된 실제 global verification이 있어야 한다. `state=verified` 문자열만 있는 손상된 head는 성공으로 세지 않고 integrity finding을 낸다.
 - 완료 조건 coverage는 현재 계약의 mandatory acceptance와 attested verdict를 대조한다.
 - 비용은 measured / estimated / unknown 및 currency별로 분리한다. 미보고를 0원으로 합치거나 서로 다른 통화를 더하지 않는다. 전체 확정 비용이 아닌 경우 그 한계를 노출한다.
+- budget 정산에서 estimated usage 는 보고된 token 으로 정산하고(초과하면 `overrun`) 추정 비용은 기록만 한다. 추정 비용이 예약을 넘으면 `budget.estimate_over` 로 알리고 work 를 막지 않는다 (D-084).
 - 시간을 보고하지 않은 곳은 측정됐다고 가정하지 않는다. RunRecord의 wall time은 queue/compute/wait의 개별 실측값이 아니다.
 - `human_wait_ms`와 `queue_ms`는 goal audit event에서 잰다 (D-074). human wait는 `approval.requested`에서 `approval.granted`까지, queue는 `approval.granted`에서 그 goal의 첫 run 생성까지의 중앙값이다. `*_samples`가 표본 수다. 양 끝이 없으면 표본이 아니고, 표본이 없으면 `null`이다. `compute_ms`는 측정하지 않으므로 `null`이다.
 - 사람 개입은 `question.*`, `steering.*`, `approval.*` event 수다. 로컬 실행 흐름의 loop가 스스로 멈추며 하는 승인 철회는 사람 개입이 아니므로 기록하지 않는다.

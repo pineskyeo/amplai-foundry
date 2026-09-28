@@ -391,6 +391,16 @@
         "src/amplai_foundry/runtime/execution",
         "specs/019-v3-completion"
       ]
+    },
+    {
+      "id": "D-084",
+      "status": "active",
+      "title": "Budget settlement of driver-estimated usage",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/budgets",
+        "specs/019-v3-completion"
+      ]
     }
   ]
 }

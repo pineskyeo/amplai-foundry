@@ -11,6 +11,7 @@
     "docs/workstreams/v3-real-execution/DECISIONS.md",
     "scripts/container_qualify.py",
     "src/amplai_foundry/agent_drivers/protocol.py",
+    "src/amplai_foundry/runtime/budgets/service.py",
     "src/amplai_foundry/runtime/cli.py",
     "src/amplai_foundry/runtime/execution/loop.py",
     "src/amplai_foundry/runtime/execution/product.py",
@@ -28,6 +29,7 @@
     "tests/v3/test_dev02_sessions_workspace.py",
     "tests/v3/test_dev03_observatory.py",
     "tests/v3/test_rc02_driver.py",
+    "tests/v3/test_rc02_runtime.py",
     "tests/v3/test_rc07_local_config.py"
   ],
   "semantic_changes": [

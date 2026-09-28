@@ -291,3 +291,20 @@
   `goal-2b823b3387ce4b79a7f6487804bb2bcf` 에서 replan 이 거절됨, `specs/019-v3-completion/runs/README.md`).
   quiesce 는 run 의 현재 driver handle 에 동작하므로 resume 된 turn 에도 같은 경계 규칙이 적용된다.
 - Evidence: `tests/e2e/test_rc07_steer.py` 의 두 번 steer 와 steer 뒤 replan test(수정 전 코드에서 실패).
+
+## D-084 — Budget Settlement Of Driver-Estimated Usage
+
+- Status: accepted (운영자 선택 2026-09-28: 추천안 1)
+- Date: 2026-09-28
+- Decision: usage status 가 `estimated` 이고 input/output token 이 있으면(Claude CLI 의 `total_cost_usd`, PR #19)
+  reservation 은 보고된 token 으로 정산하고 status 를 `estimated` 로 둔다. token 이 예약을 넘으면 기존처럼
+  `overrun` 이고 work 는 verified 가 되지 않는다. 추정 비용은 usage 기록에 남기고 reservation 의 비용 칸은
+  예약값 그대로 둔다. 추정 비용이 예약을 넘으면 `budget.estimate_over` event 만 남기고 work 를 막지 않는다.
+  token 이 없는 추정은 이전처럼 `unknown` 이다. `totals` 에 `estimated_runs` 를 더한다.
+- Reason: 설계는 exact cost 가 없을 때 상한 추정과 `unknown` 보존을 요구하고(`design-reference/design/07_RUNTIME_SCHEDULER.md:40`),
+  비용은 "provider 확정 usage 또는 bounded estimate/unknown" 이다(`design-reference/design/15_EVAL_OBSERVATORY.md:28`).
+  이전 정산(`src/amplai_foundry/runtime/budgets/service.py` settle)은 `measured` 만 반영해 estimated run 의
+  token 초과를 감지하지 못했다. 가격표 추정만으로 work 를 막지 않는 것은 PR #16 설계의 원칙(추정을 확정처럼
+  다루지 않는다)을 따른다.
+- Evidence: `tests/v3/test_rc02_runtime.py::test_estimated_usage_settles_tokens_and_records_the_cost_estimate`.
+
