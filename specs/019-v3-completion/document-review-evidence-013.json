@@ -239,6 +239,7 @@
     "tests/e2e/test_rc06_metrics.py",
     "tests/e2e/test_rc06_publish.py",
     "tests/e2e/test_rc07_design.py",
+    "tests/e2e/test_rc07_fresh_base.py",
     "tests/e2e/test_rc07_multiapp.py",
     "tests/e2e/test_rc07_outcomes.py",
     "tests/e2e/test_rc07_selection.py",

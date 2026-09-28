@@ -47,6 +47,7 @@
 | `amplai ops local-add-app --app A --repo …` | app 을 추가한다 (최대 4개) |
 | `amplai ops local-verifier --app A --verifier 'id=command \| 설명'` (`--remove id`) | app 의 acceptance 명령을 추가·교체(같은 id 는 같은 자리)·삭제한다. 새 goal 부터 적용된다. CI 가 보는 검사(예: `format=ruff format --check .`)를 같이 둬야 검증된 변경이 CI 에서 떨어지지 않는다 |
 | `amplai ops local-integration --id I --app A --app B --command …` | 여러 app goal 의 integration 명령을 등록한다. app 들은 `/amplai-input/apps/<app>` 에 읽기 전용이다 |
+| `amplai ops local-update` | server 설치본 checkout 을 remote branch 로 fast-forward 하고 launchd agent(`ai.amplai.local-serve`)를 재시작한다. local 변경이 있으면 거부한다 (D-086) |
 
 설정을 바꾼 뒤에는 `local-serve` 를 다시 시작한다.
 
@@ -85,7 +86,8 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 
 승인 뒤 일어나는 일:
 
-1. `main`(설정의 `base_branch`) commit 의 사본이 컨테이너에 들어간다. 사본은 그 commit 하나만 가진 새 local
+1. `main`(설정의 `base_branch`) commit 의 사본이 컨테이너에 들어간다. 이 commit 은 계획할 때 remote 에서 새로
+   가져온 branch 의 commit 이다. remote 가 없는 repo 는 local branch 를 쓴다 (D-086). 사본은 그 commit 하나만 가진 새 local
    git repo 다. 원래 repo 의 `.git`(remote, 다른 branch, 이력), 사용자 HOME, 실제 checkout 은 들어가지
    않는다. 인터넷은 egress allowlist 로만 나간다.
 2. 선택된 agent(Codex 또는 Claude)가 작업한다. 끝나면 host 가 변경을 patch 로 계산한다 (agent 가 쓴 파일을

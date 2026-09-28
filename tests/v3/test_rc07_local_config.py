@@ -152,3 +152,33 @@ def test_an_app_verifier_is_added_replaced_in_place_and_removed(tmp_path: Path) 
         assert [v.id for v in dep.service.apps["app"].config.verifiers] == ["check"]
     finally:
         dep.close()
+
+
+def test_local_update_fast_forwards_a_clean_checkout_and_refuses_a_dirty_one(
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    remote = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
+    seed = make_repo(tmp_path / "seed")
+    git(seed, "remote", "add", "origin", str(remote))
+    git(seed, "push", "-q", "origin", "main")
+    installed = tmp_path / "installed"
+    subprocess.run(["git", "clone", "-q", str(remote), str(installed)], check=True)
+    (seed / "notes.txt").write_text("merged on main\\n")
+    git(seed, "add", "-A")
+    git(seed, "commit", "-q", "-m", "merged")
+    git(seed, "push", "-q", "origin", "main")
+    head = git(seed, "rev-parse", "HEAD").strip()
+    out = json.loads(run("ops", "local-update", "--root", str(installed), "--no-restart"))
+    assert out["after"] == head and out["before"] != head
+    assert out["changed_files"] == 1 and out["reinstalled"] is False
+    assert out["restarted"] is False
+    # an operator's local change is never overwritten
+    (installed / "notes.txt").write_text("local edit\\n")
+    result = CliRunner().invoke(
+        cli.app, ["ops", "local-update", "--root", str(installed), "--no-restart"]
+    )
+    assert result.exit_code == 3 and "LOCAL_UPDATE_DIRTY" in result.output
+    assert (installed / "notes.txt").read_text() == "local edit\\n"

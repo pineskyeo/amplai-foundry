@@ -15,7 +15,9 @@
 
 from __future__ import annotations
 
+import subprocess
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -73,6 +75,33 @@ class AppConfig:
     # (possibly another branch) is never the implicit base.
     base_branch: str = "main"
     remote: str = "origin"
+
+
+def git_fresh_base(repo: Path, remote: str, branch: str) -> str:
+    """The revision a plan starts from (D-086): the remote's branch fetched now, or the local
+    branch when the checkout has no such remote. The fetch updates only the remote-tracking
+    ref, so the operator's branches and checkout are never moved; a failed fetch stops the plan
+    instead of planning on a stale base."""
+    if remote.startswith("-") or branch.startswith("-"):
+        raise Hold("BASE_REF", "Remote and branch names cannot start with '-'")
+    known = subprocess.run(
+        ["git", "remote", "get-url", remote], cwd=repo, capture_output=True, timeout=30,
+        check=False,
+    )  # fmt: skip
+    if known.returncode != 0:
+        return branch
+    fetched = subprocess.run(
+        ["git", "fetch", "--no-tags", "--quiet", remote,
+         f"+refs/heads/{branch}:refs/remotes/{remote}/{branch}"],
+        cwd=repo, capture_output=True, timeout=300, check=False,
+    )  # fmt: skip
+    if fetched.returncode != 0:
+        raise Hold(
+            "BASE_FETCH",
+            f"Could not fetch {remote}/{branch}; plan again once the remote is reachable",
+            details=fetched.stderr.decode(errors="replace")[-400:],
+        )
+    return f"refs/remotes/{remote}/{branch}"
 
 
 @dataclass(frozen=True)
@@ -213,8 +242,10 @@ class LocalExecutionService:
         planners: dict[str, Any] | None = None,
         design_min_sources: int = 3,
         integration_factory: Any = None,
+        base_fetcher: Callable[[Path, str, str], str] = git_fresh_base,
     ) -> None:
         self.store, self.runtime, self.goals, self.knowledge = store, runtime, goals, knowledge
+        self.base_fetcher = base_fetcher  # plan base freshness (D-086)
         self.authority, self.verification, self.workspaces = authority, verification, workspaces
         self.planner, self.actors, self.codex = planner, actors, codex_refs
         # candidate compositions per driver id (D-079); Codex alone when nothing else is given
@@ -451,12 +482,14 @@ class LocalExecutionService:
         if multi and len({digest(self._environment(t)) for t in targets}) != 1:
             # one activated profile runs every node of a goal (driver, model, image)
             raise Hold("MULTI_APP_IMAGE", "The apps of one goal must share one worker image")
+        # fetched now: a clone nobody pulls would plan every goal on an old base (D-086)
         bases = {
             t.config.app_id: self.workspaces.base_snapshot(
-                scope, t.config.app_id, t.config.base_branch
+                scope, t.config.app_id,
+                self.base_fetcher(t.config.repo, t.config.remote, t.config.base_branch),
             )
             for t in targets
-        }
+        }  # fmt: skip
         base = bases[app.app_id]
         base_value = self._base(base)
         # a design goal changes documents only: the app suite on the base says nothing about it
