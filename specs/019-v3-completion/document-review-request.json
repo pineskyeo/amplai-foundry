@@ -1,0 +1,273 @@
+{
+  "snapshot": "20eb73de927b0a9e355871131ba4aebfc65187498e3fa5d8ef15e945e5e6f38b",
+  "reviews": [
+    {
+      "document": ".ai-team/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Links the usage guide, which carries the Work 019 changes; README text itself is unaffected.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/PROJECT-PACK.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "outcome": "updated",
+      "reason": "Claude CLI row: qualified with tool_use in the app image and wired as the system-selected fallback composition (D-079).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "outcome": "updated",
+      "reason": "Publication outcome metrics section added (D-078).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "outcome": "updated",
+      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands and the resumed-turn steering limit (D-078..D-082).",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "outcome": "updated",
+      "reason": "D-078..D-082 appended; D-080/D-082 refined in this Work with the review-fix and real-run failure handling; D-076 superseded marker unchanged.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": "README.md",
+      "reference": "_v3_delivery/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": "validation/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reference": "_v3_delivery/*TRACE.json",
+      "line": 7,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "line": 3,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "validation/",
+      "line": 123,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "line": 123,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    }
+  ]
+}
