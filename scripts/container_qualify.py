@@ -541,12 +541,55 @@ def tool_use(t: ContainerTurns) -> dict[str, Any]:
                             "output": text[:120]})  # fmt: skip
     python_ok = any(r["exit"] == 0 and "Python 3" in r["output"] for r in ran)
     written = marker.read_text().strip() if marker.is_file() else None
-    ok = turn["ok"] and python_ok and bool(written and written.startswith("Python 3"))
+    long = long_command(t)
+    ok = (
+        turn["ok"]
+        and python_ok
+        and bool(written and written.startswith("Python 3"))
+        and long["outcome"] == "pass"
+    )
     return {
         "outcome": "pass" if ok else "fail",
         "commands": ran,
         "file": written,
         "rc": turn["rc"],
+        "long_command": long,
+    }
+
+
+def long_command(t: ContainerTurns) -> dict[str, Any]:
+    """A foreground command longer than the provider's progress interval (a test suite does
+    this): the production normalizer must accept every event of the turn. Claude Code reports
+    such a call with tool_progress events after about 30 s (found by the first real steer run,
+    2026-09-28, which died on an event type this check did not cover)."""
+    prompt = (
+        "Run this exact command with the Bash tool in the foreground and wait for it: "
+        "python3 -c 'import time; time.sleep(45); print(\"marker-long\")' . "
+        "Then reply with exactly the line it printed."
+    )
+    if t.driver == "claude":
+        turn = t.turn(prompt, tools=PRODUCTION_CLAUDE_TOOLS, max_turns=None)
+    else:
+        turn = t.turn(prompt, tools="Write")
+    t.cost.append({"turn": "long_command", "usage": turn["usage"], "seconds": turn["seconds"]})
+    types = sorted(
+        {
+            str(e.get("type"))
+            for e in JsonlDecoder().feed(turn["stdout"], final=True)
+            if isinstance(e, dict)
+        }
+    )
+    ok = (
+        turn["ok"]
+        and turn["fault"] is None
+        and turn["seconds"] >= 45
+        and "marker-long" in turn["stdout"].decode(errors="replace")
+    )
+    return {
+        "outcome": "pass" if ok else "fail",
+        "seconds": turn["seconds"],
+        "fault": turn["fault"],
+        "event_types": types,
     }
 
 

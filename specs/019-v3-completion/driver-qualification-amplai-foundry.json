@@ -9,7 +9,7 @@
       "model": "claude-sonnet-5",
       "auth": "oauth_token",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-4e1202fc2b8b447796a071aa55f3cc16",
+      "qualification_id": "qualification-998a626f36724802ab74f2fbdf9d50e4",
       "checks": [
         {
           "name": "exact_version",
@@ -32,7 +32,7 @@
         {
           "name": "cancel_tree",
           "outcome": "pass",
-          "reason": "SIGTERM via docker stop after first event: stopped_in=0.53s exit=143 (signal) completed=False running_after=False",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.62s exit=143 (signal) completed=False running_after=False",
           "artifacts": 2
         },
         {
@@ -76,7 +76,20 @@
           }
         ],
         "file": "Python 3.11.2",
-        "rc": 0
+        "rc": 0,
+        "long_command": {
+          "outcome": "pass",
+          "seconds": 50.1,
+          "fault": null,
+          "event_types": [
+            "assistant",
+            "rate_limit_event",
+            "result",
+            "system",
+            "tool_progress",
+            "user"
+          ]
+        }
       }
     }
   },
@@ -86,8 +99,8 @@
         "turn": "pong",
         "usage": {
           "input_tokens": 2,
-          "cache_creation_input_tokens": 6594,
-          "cache_read_input_tokens": 24279,
+          "cache_creation_input_tokens": 1379,
+          "cache_read_input_tokens": 29494,
           "output_tokens": 5,
           "output_tokens_details": {
             "thinking_tokens": 0
@@ -98,7 +111,7 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 6594,
+            "ephemeral_1h_input_tokens": 1379,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
@@ -106,11 +119,11 @@
             {
               "input_tokens": 2,
               "output_tokens": 5,
-              "cache_read_input_tokens": 24279,
-              "cache_creation_input_tokens": 6594,
+              "cache_read_input_tokens": 29494,
+              "cache_creation_input_tokens": 1379,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 6594
+                "ephemeral_1h_input_tokens": 1379
               },
               "type": "message"
             }
@@ -154,17 +167,17 @@
           ],
           "speed": "standard"
         },
-        "seconds": 2.7
+        "seconds": 2.8
       },
       {
         "turn": "tool_use",
         "usage": {
           "input_tokens": 6,
-          "cache_creation_input_tokens": 6925,
-          "cache_read_input_tokens": 91330,
-          "output_tokens": 178,
+          "cache_creation_input_tokens": 1723,
+          "cache_read_input_tokens": 96544,
+          "output_tokens": 184,
           "output_tokens_details": {
-            "thinking_tokens": 11
+            "thinking_tokens": 17
           },
           "server_tool_use": {
             "web_search_requests": 0,
@@ -172,7 +185,7 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 6925,
+            "ephemeral_1h_input_tokens": 1723,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
@@ -180,7 +193,7 @@
             {
               "input_tokens": 2,
               "output_tokens": 5,
-              "cache_read_input_tokens": 32742,
+              "cache_read_input_tokens": 32748,
               "cache_creation_input_tokens": 168,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -191,12 +204,49 @@
           ],
           "speed": "standard"
         },
-        "seconds": 6.7
+        "seconds": 8.8
+      },
+      {
+        "turn": "long_command",
+        "usage": {
+          "input_tokens": 4,
+          "cache_creation_input_tokens": 1592,
+          "cache_read_input_tokens": 63818,
+          "output_tokens": 117,
+          "output_tokens_details": {
+            "thinking_tokens": 14
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 1592,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 6,
+              "cache_read_input_tokens": 32625,
+              "cache_creation_input_tokens": 160,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 160
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard"
+        },
+        "seconds": 50.1
       }
     ]
   },
   "findings": [],
-  "checked_at": "2026-09-28T00:03:48Z",
+  "checked_at": "2026-09-28T02:12:09Z",
   "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
   "container_image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:9e09cc67510fd8e5e95ee73739ebd03188550addf8e6b23f9805bac131e89052",
   "egress_profile": {
