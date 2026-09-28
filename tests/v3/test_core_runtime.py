@@ -321,7 +321,7 @@ def test_now_is_microsecond_utc_iso8601_with_z_suffix():
     value = now()
     assert value.endswith("Z")
     assert "+00:00" not in value
-    fractional = value[: -1].split(".")[1]
+    fractional = value[:-1].split(".")[1]
     assert len(fractional) == 6
     assert fractional.isdigit()
 
