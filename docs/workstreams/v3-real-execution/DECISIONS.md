@@ -271,7 +271,8 @@
   둘 다 attempt process 가 실행 중일 때만 받는다(승인 전에는 cancel 후 다시 제출). 요청이 닿기 전에
   process 가 끝나면 요청은 superseded 로 철회되고 plan 에 적용되지 않은 steering 으로 남는다. boundary 가
   확인되지 않거나 resume 이 실패하면 process 를 멈추고(abort) 요청을 철회하며 goal 은 held 다. loop 가
-  요청하지 않은 pause 도 process 를 남기지 않는다. 승인이 활성화 뒤에 실패하면 재승인은 새 grant 없이
+  요청하지 않은 pause 도 process 를 남기지 않는다. steer 로 resume 된 turn 에는 quiesce 경로가 없으므로 그동안
+  steer·replan 은 거절한다(`REPLAN_NOT_RUNNING`/`STEER_NOT_RUNNING`). 승인이 활성화 뒤에 실패하면 재승인은 새 grant 없이
   남은 단계만 끝낸다.
 - Reason: 설계의 steering ledger 는 "frozen, admitted revision 또는 confirmed process boundary 만 steering 을
   유효하게 만든다" (`src/amplai_foundry/runtime/execution/steering.py:1-5`). 실제 경로에는 steer/replan 이 없었다.
