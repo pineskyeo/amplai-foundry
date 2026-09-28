@@ -88,6 +88,14 @@ def test_claude_second_app_and_integration_are_configured_and_loaded(tmp_path: P
             assert set(installed.planners) == {"codex-cli", "claude-cli"}
         chosen = dep.service.select_composition(dep.service.apps["consumer"])
         assert chosen["driver_id"] == "claude-cli"  # Codex disabled by the operator
+        # both apps share one image: its environment covers both, in config order, each once
+        composition = dep.store.get(dep.scope, "harness-composition", chosen["ref"])
+        environment = dep.store.get(dep.scope, "environment", composition["sandbox_profile_ref"])
+        assert [(c["action"], c["resource"]) for c in environment["capabilities"]] == [
+            ("workspace.write", "sandbox:app"), ("workspace.design_write", "sandbox:app"),
+            ("workspace.write", "sandbox:consumer"),
+            ("workspace.design_write", "sandbox:consumer"),
+        ]  # fmt: skip
         assert dep.service.integration_factory is not None
     finally:
         dep.close()

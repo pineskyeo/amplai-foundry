@@ -141,13 +141,20 @@ class GitPublisher:
             later = [u for b in apps[i + 1 :] if (u := published[b].get("pr_url"))]
             value = published[app]
             if later and value.get("pr_url") and not value.get("linked"):
-                self.pr_linker(
-                    self.service.apps[app].config.repo,
-                    value["pr_url"],
-                    f"Part of AMPLAI goal `{goal_id}` with: " + ", ".join(later),
-                )
+                # recorded before the comment: a retry after a crash never comments twice; a
+                # failed comment is recorded as not linked (the later PR's body links it anyway)
                 value["linked"] = True
                 self._save(f"{goal_id}:{app}", "done", value)
+                try:
+                    self.pr_linker(
+                        self.service.apps[app].config.repo,
+                        value["pr_url"],
+                        f"Part of AMPLAI goal `{goal_id}` with: " + ", ".join(later),
+                    )
+                except Exception:
+                    value["linked"] = False
+                    self._save(f"{goal_id}:{app}", "done", value)
+                    raise
         first = published[apps[0]]
         return {**first, "publications": published}
 

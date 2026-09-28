@@ -223,7 +223,9 @@ class LocalProductDeployment:
         image_caps: dict[str, list[dict[str, Any]]] = {}
         for entry in cfg.apps:
             image = json.loads(self.local(entry.container_profile).read_text())["image"]
-            image_caps.setdefault(image, []).extend(app_capabilities(entry.app_id))
+            caps = image_caps.setdefault(image, [])
+            # config order, each capability once (an app listed twice adds nothing)
+            caps.extend(c for c in app_capabilities(entry.app_id) if c not in caps)
         for entry in cfg.apps:
             image = json.loads(self.local(entry.container_profile).read_text())["image"]
             caps = image_caps[image]

@@ -354,6 +354,32 @@ class WorkCoordinator:
             "workspace_base_digest": data["base_snapshot"]["digest"],
         }
 
+    def abort(self, worker: Actor, run_id: str) -> bool:
+        """Stop a run's process that no controller pause took over (never leave it running).
+
+        ``execute`` leaves a steering-paused process to the controller; when the controller
+        cannot apply that steering (no request, no checkpoint, a failed resume), it calls this.
+        True when the process is confirmed stopped.
+        """
+        did, h = self._run_execution(worker, run_id)
+        data = h["data"]
+        handle = data.get("driver_handle")
+        if not handle:
+            return True
+        port = self.registry.resolve(
+            worker.scope,
+            data["dispatch"]["profile"]["driver_profile_ref"],
+            data["dispatch"]["node"]["strategy"],
+        )
+        stopped = False
+        with contextlib.suppress(Exception):
+            stopped = port.cancel(handle).get("process_stopped") is True
+        if stopped:
+            with contextlib.suppress(Exception):
+                port.destroy(handle)
+        self._update(worker, did, "held", hold_code="CONTROLLER_ABORT", process_stopped=stopped)
+        return stopped
+
     def _run_execution(self, worker: Actor, run_id: str) -> tuple[str, dict[str, Any]]:
         with self.store._lock:
             rows = self.store.conn.execute(

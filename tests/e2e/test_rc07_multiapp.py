@@ -139,3 +139,41 @@ def test_a_work_item_cannot_come_after_itself_or_an_unknown_app(
     with pytest.raises(Hold) as held:
         rig.service.plan(two_app_goal(rig, "bad order goal"))
     assert held.value.code == "PLANNING_ORDER"
+
+
+def test_the_link_comment_is_recorded_before_it_is_posted(deployment: Any, tmp_path: Path) -> None:
+    box: dict[str, GitPublisher] = {}
+    rig, loop, _container, consumer = rig_two_apps(
+        deployment, tmp_path, publisher=lambda g: box["p"](g)
+    )
+    remote(rig.repo, tmp_path, "app")
+    remote(consumer, tmp_path, "consumer")
+    created: list[str] = []
+    posted: list[str] = []
+    seen: list[bool] = []
+
+    def prs(repo: Path, head: str, base: str, title: str, body: str) -> str:
+        created.append(title)
+        return f"https://example.invalid/pr/{len(created)}"
+
+    def linker(repo: Path, url: str, body: str) -> None:
+        record = box["p"]._record(f"{goal}:app")
+        seen.append(bool(record and record["data"].get("linked")))
+        if not posted and len(seen) == 1:
+            raise RuntimeError("gh is down")  # the first comment fails
+        posted.append(url)
+
+    box["p"] = GitPublisher(rig.service, pr_creator=prs, pr_linker=linker)
+    goal = two_app_goal(rig)
+    rig.service.plan(goal)
+    rig.service.approve(rig.operator, goal)
+    record = loop.run_goal(goal)
+    # the failed comment leaves the goal verified with the error, the link recorded as not made
+    assert record["status"] == "verified" and record["publication"]["error"] == "RuntimeError"
+    assert box["p"]._record(f"{goal}:app")["data"]["linked"] is False  # type: ignore[index]
+    # a retry reuses both PRs and comments once; it was recorded before it was posted
+    again = box["p"](goal)
+    assert len(created) == 2 and posted == ["https://example.invalid/pr/1"]
+    assert seen == [True, True] and again["publications"]["app"]["linked"] is True
+    box["p"](goal)
+    assert posted == ["https://example.invalid/pr/1"]  # never twice

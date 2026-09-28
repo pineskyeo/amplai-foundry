@@ -441,6 +441,41 @@ class SteeringService:
             "outcomes": outcomes,
         }
 
+    def withdraw(self, actor: Actor, steering_id: str, reason: str) -> dict[str, Any]:
+        """A queued steering that can no longer take effect (its attempt already finished) is
+        superseded; admission resumes once no other steering of the goal is queued. The caller
+        records the reason where the operator reads it."""
+        actor.require("goal.steer")
+        scope = actor.scope
+        h = self.store.head(scope, "steering", steering_id)
+        if h["state"] != "queued":
+            return {"status": h["state"]}
+        goal_id = h["data"]["event"]["goal_id"]
+        with self.store.tx() as db:
+            ref = self._move(
+                db,
+                scope,
+                steering_id,
+                "supersede",
+                {g: Observation.check(True, reason[:200]) for g in ["G-01", "G-03"]},
+            )
+            others = [
+                r
+                for r in db.execute(
+                    "SELECT id, data FROM heads WHERE tenant=? AND project=? AND kind='steering' "
+                    "AND state='queued'",
+                    scope.keys(),
+                ).fetchall()
+                if r["id"] != steering_id and json.loads(r["data"])["event"]["goal_id"] == goal_id
+            ]
+            goal = self.store.head(scope, "goal", goal_id, db=db)
+            if not others and goal["data"].get("admission_paused"):
+                self.store.cas(
+                    db, scope, "goal", goal_id, goal["row_version"], goal["state"],
+                    {**goal["data"], "admission_paused": False},
+                )  # fmt: skip
+        return {"status": "superseded", "steering_ref": ref}
+
     def apply_revision(self, actor: Actor, steering_id: str) -> dict[str, Any]:
         actor.require("goal.steer")
         scope = actor.scope

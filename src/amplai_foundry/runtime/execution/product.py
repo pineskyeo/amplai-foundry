@@ -1079,6 +1079,15 @@ class LocalExecutionService:
             )
         installed = self.apps[plan["app"]]
         service, scope = self.actors.service, self.scope
+        goal = self.store.head(scope, "goal", goal_id)["data"]
+        if (
+            goal.get("active_contract_ref") == plan["contract_ref"]
+            and goal.get("active_graph_ref") == plan["graph_ref"]
+        ):
+            # an earlier approval activated this contract and failed after it (review F6): its
+            # grant and decision stand; only the remaining steps run, never a second grant
+            grant = self.store.get(scope, "execution-grant", goal["grant_ref"])
+            return self._approved(goal_id, plan, grant["decision_ref"], goal["grant_ref"])
         goal_apps = plan.get("apps") or [plan["app"]]
         caps = [c for a in goal_apps for c in mode_capabilities(a, plan.get("mode", "work"))]
         chosen = plan.get("composition")
@@ -1161,10 +1170,21 @@ class LocalExecutionService:
             profile,
             expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
         )
-        replan = plan.get("replan") or {}
-        if replan.get("steering_id"):
+        return self._approved(goal_id, plan, decision_ref, grant_ref)
+
+    def _approved(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        decision_ref: dict[str, Any],
+        grant_ref: dict[str, Any],
+    ) -> dict[str, Any]:
+        steering_id: str = (plan.get("replan") or {}).get("steering_id") or ""
+        if steering_id and self.store.head(self.scope, "steering", steering_id)["state"] == (
+            "queued"
+        ):
             # the admitted revision makes the operator's revision steering effective (D-082)
-            SteeringService(self.runtime).apply_revision(service, replan["steering_id"])
+            SteeringService(self.runtime).apply_revision(self.actors.service, steering_id)
         plan = {
             **plan,
             "status": "approved",

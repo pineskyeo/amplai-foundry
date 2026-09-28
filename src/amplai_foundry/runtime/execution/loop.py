@@ -78,6 +78,7 @@ class ExecutionLoop:
         self._lock = threading.Lock()
         self.steering = SteeringService(service.runtime)
         self._steering: dict[str, dict[str, Any]] = {}  # goal -> pending operator steering
+        self._in_attempt: set[str] = set()  # goals whose attempt process is running
 
     # -- operator controls --------------------------------------------------------------------
     def cancel(self, operator: Actor, goal_id: str) -> dict[str, Any]:
@@ -102,25 +103,7 @@ class ExecutionLoop:
         message = text.strip()[:4000]
         if not message:
             raise Hold("STEER_TEXT", "Steering needs a message")
-        plan = self.service.plan_record(goal_id)
-        if plan["status"] != "running":
-            raise Hold(
-                "STEER_NOT_RUNNING",
-                "Steer while an attempt runs; to change a plan, replan it",
-                details=plan["status"],
-            )
-        with self._lock:
-            if goal_id in self._steering:
-                raise Hold("STEER_PENDING", "A steering message is already being applied")
-            goal = self.store.head(self.scope, "goal", goal_id)
-            queued = self.steering.receive(
-                operator, goal_id, "pause", message,
-                expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id("steer"),
-            )  # fmt: skip
-            self._steering[goal_id] = {
-                "operator": operator, "pause_id": queued["steering_id"], "text": message,
-            }  # fmt: skip
-        return {"goal_id": goal_id, "status": "steering", "steering_id": queued["steering_id"]}
+        return self._request(operator, goal_id, "pause", message, kind="steer")
 
     def replan(self, operator: Actor, goal_id: str, reason: str) -> dict[str, Any]:
         """Change a running goal's plan (D-082): its attempt stops at a process boundary, the
@@ -130,26 +113,35 @@ class ExecutionLoop:
         why = reason.strip()[:4000]
         if not why:
             raise Hold("REPLAN_REASON", "Replanning needs a reason")
+        return self._request(operator, goal_id, "acceptance_change", why, kind="replan")
+
+    def _request(
+        self, operator: Actor, goal_id: str, steering_kind: str, text: str, *, kind: str
+    ) -> dict[str, Any]:
         plan = self.service.plan_record(goal_id)
-        if plan["status"] != "running":
-            raise Hold(
-                "REPLAN_NOT_RUNNING",
-                "Replan a running goal; before approval, cancel and submit the goal again",
-                details=plan["status"],
-            )
+        code = "STEER_NOT_RUNNING" if kind == "steer" else "REPLAN_NOT_RUNNING"
         with self._lock:
+            # only while an attempt's process runs: between attempts a pause would block the
+            # next claim, and before approval there is no active contract to revise
+            if plan["status"] != "running" or goal_id not in self._in_attempt:
+                raise Hold(
+                    code,
+                    "Only while an attempt runs; before approval, cancel and submit again",
+                    details=plan["status"],
+                )
             if goal_id in self._steering:
                 raise Hold("STEER_PENDING", "A steering request is already being applied")
             goal = self.store.head(self.scope, "goal", goal_id)
             queued = self.steering.receive(
-                operator, goal_id, "acceptance_change", why,
-                expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id("replan"),
+                operator, goal_id, steering_kind, text,
+                expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id(kind),
             )  # fmt: skip
             self._steering[goal_id] = {
-                "operator": operator, "pause_id": queued["steering_id"], "text": why,
-                "kind": "replan",
+                "operator": operator, "pause_id": queued["steering_id"], "text": text,
+                "kind": kind,
             }  # fmt: skip
-        return {"goal_id": goal_id, "status": "replanning", "steering_id": queued["steering_id"]}
+        status = "steering" if kind == "steer" else "replanning"
+        return {"goal_id": goal_id, "status": status, "steering_id": queued["steering_id"]}
 
     def _execute(
         self,
@@ -158,44 +150,86 @@ class ExecutionLoop:
         prompt: str,
         base: dict[str, Any],
     ) -> bool:
-        """Run one attempt; apply operator steering if it paused the attempt. True if steered."""
+        """Run one attempt; take over when operator steering paused it. True if steered.
+
+        A paused process is never left behind: when no steering request stands behind the
+        pause, or the steering cannot be applied, the process is stopped (abort) before the
+        attempt fails. A request that arrives as the attempt ends is withdrawn (superseded).
+        """
         worker = self.service.actors.worker
+        steer: dict[str, Any] | None = None
+        with self._lock:
+            self._in_attempt.add(goal_id)
         try:
-            self.coordinator.execute(
-                worker, dispatch, prompt=prompt, base_snapshot=base,
-                output_paths={PORT: PATCH_BINDING},
-            )  # fmt: skip
-            return False
-        except Hold as exc:
-            steer = self._steering.get(goal_id)
-            if exc.code != "EXECUTION_PAUSED" or steer is None:
-                raise
-        try:
-            if steer.get("kind") == "replan":
-                worker = self.service.actors.worker
-                self.steering.quiesce(
-                    self._controller(), steer["pause_id"],
-                    lambda run_id, kind: self.coordinator.stop_and_snapshot(worker, run_id, kind),
+            try:
+                self.coordinator.execute(
+                    worker, dispatch, prompt=prompt, base_snapshot=base,
+                    output_paths={PORT: PATCH_BINDING},
                 )  # fmt: skip
+            finally:
+                with self._lock:
+                    self._in_attempt.discard(goal_id)
+                    steer = self._steering.pop(goal_id, None)
+        except Exception as exc:
+            paused = getattr(exc, "code", None) == "EXECUTION_PAUSED"
+            if paused and steer is not None:
+                return self._take_over(goal_id, dispatch, steer)
+            if paused:  # a pause nobody here will quiesce (e.g. another client's steering)
+                self._abort(dispatch)
+            elif steer is not None:
+                self._withdraw(goal_id, steer, "the attempt ended before the request reached it")
+            raise
+        if steer is not None:
+            self._withdraw(goal_id, steer, "the attempt finished before the request reached it")
+        return False
+
+    def _take_over(self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]) -> bool:
+        try:
+            if steer["kind"] == "replan":
+                self._quiesce(steer, "cancelled")
                 raise _Replan(steer["text"], steer["pause_id"])
             self._apply_steering(goal_id, dispatch, steer)
-        finally:
-            with self._lock:
-                self._steering.pop(goal_id, None)
-        return True
+            return True
+        except _Replan:
+            raise
+        except Exception as exc:
+            self._abort(dispatch)  # what the steering could not finish must not keep running
+            code = str(getattr(exc, "code", type(exc).__name__))
+            self._withdraw(goal_id, steer, "not applied: " + code)
+            raise
+
+    def _quiesce(self, steer: dict[str, Any], expected: str) -> None:
+        worker = self.service.actors.worker
+        quiesced = self.steering.quiesce(
+            self._controller(), steer["pause_id"],
+            lambda run_id, kind: self.coordinator.stop_and_snapshot(worker, run_id, kind),
+        )  # fmt: skip
+        # every stopped run must reach the boundary the request asked for (paused for steering,
+        # cancelled for a revision); an unconfirmed process or effect leaves the run as it was
+        outcomes = quiesced.get("outcomes") or []
+        if not outcomes or any(o["status"] != expected for o in outcomes):
+            raise Hold(
+                "STEER_BOUNDARY", "The agent did not stop at a confirmed boundary",
+                details=quiesced,
+            )  # fmt: skip
+
+    def _abort(self, dispatch: dict[str, Any]) -> None:
+        with contextlib.suppress(Exception):
+            self.coordinator.abort(self.service.actors.worker, dispatch["run_id"])
+
+    def _withdraw(self, goal_id: str, steer: dict[str, Any], reason: str) -> None:
+        with contextlib.suppress(Exception):
+            self.steering.withdraw(self._controller(), steer["pause_id"], reason)
+        plan = self.service.plan_record(goal_id)
+        entry = {"text": steer["text"], "kind": steer["kind"], "at": now(), "applied": False,
+                 "reason": reason}  # fmt: skip
+        self._update(goal_id, steering=[*(plan.get("steering") or []), entry])
 
     def _apply_steering(
         self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]
     ) -> None:
         worker, controller = self.service.actors.worker, self._controller()
-        quiesced = self.steering.quiesce(
-            controller, steer["pause_id"],
-            lambda run_id, kind: self.coordinator.stop_and_snapshot(worker, run_id, kind),
-        )  # fmt: skip
-        if not quiesced.get("outcomes") or any(
-            o["status"] != "paused" for o in quiesced["outcomes"]
-        ):
-            raise Hold("STEER_BOUNDARY", "The agent did not reach a checkpoint", details=quiesced)
+        self._quiesce(steer, "paused")
         goal = self.store.head(self.scope, "goal", goal_id)
         resume = self.steering.receive(
             steer["operator"], goal_id, "resume", steer["text"],
@@ -212,9 +246,9 @@ class ExecutionLoop:
         )  # fmt: skip
         self.coordinator.continue_resumed(worker, dispatch["run_id"])
         plan = self.service.plan_record(goal_id)
-        entry = {"text": steer["text"], "run_id": dispatch["run_id"], "at": now()}
-        applied = [*(plan.get("steering") or []), entry]
-        self._update(goal_id, steering=applied)
+        entry = {"text": steer["text"], "kind": "steer", "run_id": dispatch["run_id"],
+                 "at": now(), "applied": True}  # fmt: skip
+        self._update(goal_id, steering=[*(plan.get("steering") or []), entry])
 
     # -- the loop --------------------------------------------------------------------------------
     def reconcile(self) -> list[dict[str, Any]]:
@@ -361,7 +395,7 @@ class ExecutionLoop:
                 try:
                     return self.service.replan(goal_id, replan.reason, replan.steering_id)
                 except Exception as exc:
-                    # the goal stays blocked: the operator can cancel it or replan again later
+                    # the goal stays blocked; the operator cancels it (amplai cancel)
                     return self._finish(
                         goal_id, "replan_failed", attempts=attempts,
                         reason=f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
@@ -382,11 +416,20 @@ class ExecutionLoop:
                 return self._stop_goal(goal_id, status, reason, attempts)
             work = self.store.head(self.scope, "work", dispatch["node"]["work_id"])
             change = work["data"]["outputs"][PORT]
-            verdicts = [
-                self.service.verification.verify(verifier, dispatch["run_id"], ac, change)
-                for ac in dispatch["node"]["acceptance_ids"]
-            ]
-            finished = self.service.verification.finish_work(verifier, dispatch["run_id"])
+            try:
+                verdicts = [
+                    self.service.verification.verify(verifier, dispatch["run_id"], ac, change)
+                    for ac in dispatch["node"]["acceptance_ids"]
+                ]
+                finished = self.service.verification.finish_work(verifier, dispatch["run_id"])
+            except Exception as exc:  # never leave the goal open on a verification fault
+                code = getattr(exc, "code", type(exc).__name__)
+                attempts.append(
+                    {"run_id": dispatch["run_id"], "app": app, "outcome": "verify_failed",
+                     "reason": code, "seconds": round(self.clock() - started, 1)}
+                )  # fmt: skip
+                self._discard(dispatch["run_id"])
+                return self._stop_goal(goal_id, "held", f"verification: {code}", attempts)
             observations = [self._observation(v) for v in verdicts]
             attempts.append(
                 {"run_id": dispatch["run_id"], "app": app, "outcome": finished["outcome"],
@@ -484,8 +527,9 @@ class ExecutionLoop:
                 "Implementation Plan, Sources.",
                 "Ground every statement about the current system in this repository and cite it "
                 "as path:line (for example src/pkg/module.py:42); at least 3 citations, and "
-                "every citation must exist here. Implementation Plan lists the steps for a "
-                "later work goal; do not implement them.",
+                "every citation must name a committed regular file here exactly (not a symlink, "
+                "not the design directory). Implementation Plan lists the steps for a later "
+                "work goal; do not implement them.",
                 "",
                 "Objective: " + contract["objective"],
             ]

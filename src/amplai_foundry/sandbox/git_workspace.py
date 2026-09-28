@@ -353,6 +353,39 @@ class GitWorkspaceManager:
             raise
         return target, patch
 
+    def change_paths(self, workspace: Path) -> list[str]:
+        """Paths a materialized change touches, as git applied them (not parsed from the
+        patch text): the copy's base commit against its change commit, renames split."""
+        args = ["diff", "--name-only", "-z", "--no-renames", "--no-ext-diff", "HEAD~1", "HEAD"]
+        out = self._in_copy(workspace, *args)
+        return sorted({p.decode(errors="replace") for p in out.split(b"\0") if p})
+
+    def base_files(self, workspace: Path) -> set[str]:
+        """Regular files of a materialized change's base commit, exact paths (no symlink, and
+        nothing git would reach through one)."""
+        out = self._in_copy(workspace, "ls-tree", "-r", "-z", "HEAD~1")
+        files: set[str] = set()
+        for entry in out.split(b"\0"):
+            meta, _, path = entry.partition(b"\t")
+            if meta.split(b" ")[0] in {b"100644", b"100755"}:
+                files.add(path.decode(errors="replace"))
+        return files
+
+    def _in_copy(self, workspace: Path, *args: str) -> bytes:
+        root = Path(workspace).absolute()
+        if root.parent != self.root or root.resolve() != root:
+            raise Hold("WORKSPACE_SCOPE", "Not a managed isolated workspace")
+        run = subprocess.run(
+            ["git", "-c", "core.hooksPath=/dev/null", *args],
+            cwd=root, env=_git_env(), capture_output=True, timeout=300, check=False,
+        )  # fmt: skip
+        if run.returncode != 0:
+            raise Hold(
+                "GIT_COPY", "Could not read the change copy",
+                details={"args": list(args[:1]), "stderr": run.stderr.decode()[-400:]},
+            )  # fmt: skip
+        return run.stdout
+
     def _base_of(self, workspace: Path) -> Ref:
         base = self._bases.get(Path(workspace).absolute())
         if base is None:

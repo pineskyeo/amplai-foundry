@@ -239,7 +239,8 @@
   `C-DESIGN`)을 만들고, agent 는 `specs/design/<goal>/design.md` 만 쓴다. `DesignDocumentCheck`(host, 변경을
   실행하지 않음)가 경로 범위, 일곱 section(Goal, Current State, Options, Decision, Risks, Implementation Plan,
   Sources), 해결되는 `path:line` 출처 3개 이상을 확인한다. 결과는 `[AMPLAI design]` draft PR 이다. 구현 node 는
-  dispatch 하지 않는다.
+  dispatch 하지 않는다. 변경 경로는 patch 글자를 해석하지 않고 git 이 실제로 적용한 path 로 판정한다. 출처는 base
+  commit 에 추적된 regular file 의 정확한 path 만 인정한다(symlink, 대소문자 변형, design directory 제외).
 - Reason: mode=design 은 설계 artifact 와 review evidence 만 만든다
   (`design-reference/design/03_INVARIANT_REGISTRY.md:59`, `05_GOAL_RESOLVER_CONTRACT.md:48`).
 
@@ -267,6 +268,10 @@
   steering 이다. 실행 중 attempt 를 멈추고(goal blocked), planner 가 같은 base 에서 이유와 함께 다시 초안을
   만들고, 다음 contract revision(resolution·target·policy·protected constraint 유지)과 이전 graph 를 가리키는
   graph revision 을 만든다. 운영자가 revision 을 승인하면 활성화하고 steering 을 적용한 뒤 실행한다.
-  둘 다 실행 중인 goal 에만 쓴다(승인 전에는 cancel 후 다시 제출).
+  둘 다 attempt process 가 실행 중일 때만 받는다(승인 전에는 cancel 후 다시 제출). 요청이 닿기 전에
+  process 가 끝나면 요청은 superseded 로 철회되고 plan 에 적용되지 않은 steering 으로 남는다. boundary 가
+  확인되지 않거나 resume 이 실패하면 process 를 멈추고(abort) 요청을 철회하며 goal 은 held 다. loop 가
+  요청하지 않은 pause 도 process 를 남기지 않는다. 승인이 활성화 뒤에 실패하면 재승인은 새 grant 없이
+  남은 단계만 끝낸다.
 - Reason: 설계의 steering ledger 는 "frozen, admitted revision 또는 confirmed process boundary 만 steering 을
   유효하게 만든다" (`src/amplai_foundry/runtime/execution/steering.py:1-5`). 실제 경로에는 steer/replan 이 없었다.

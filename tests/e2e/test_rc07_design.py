@@ -113,7 +113,7 @@ def test_a_design_pr_is_labelled_and_carries_documents_only(
     assert changed == ["specs/design/g1/design.md"]
 
 
-def _change(rig: Any, files: dict[str, str]) -> bytes:
+def _change(rig: Any, files: dict[str, str], *, links: dict[str, Path] | None = None) -> bytes:
     """A change artifact built the way the worker does it: base snapshot + host diff."""
     d, ws = rig.d, rig.workspaces
     base = ws.base_snapshot(d.scope, "app", "main")
@@ -121,6 +121,9 @@ def _change(rig: Any, files: dict[str, str]) -> bytes:
     for path, text in files.items():
         (workspace / path).parent.mkdir(parents=True, exist_ok=True)
         (workspace / path).write_text(text)
+    for path, target in (links or {}).items():
+        (workspace / path).parent.mkdir(parents=True, exist_ok=True)
+        (workspace / path).symlink_to(target)
     node = {"produces": [{"name": "change", "media_type": CHANGE_MEDIA, "required": True}]}
     refs = ws.collect(
         d.scope, workspace, {"change": PATCH_BINDING}, node, process_stopped=True,
@@ -146,3 +149,37 @@ def test_the_design_check_names_what_is_missing(deployment: Any, tmp_path: Path)
     two = _change(rig, {"specs/design/a/design.md": doc, "specs/design/b/design.md": doc})
     assert check(two).reason == "A design goal writes exactly one design directory"
     assert canonical({"ok": True})  # identity helpers stay importable alongside the check
+
+
+FULL_DOC = (
+    "## Goal\nx\n## Current State\nx\n## Options\nx\n## Decision\nx\n## Risks\nx\n"
+    "## Implementation Plan\nx\n## Sources\n- app.py:1\n- app.py:2\n"
+)
+
+
+def test_a_code_path_the_diff_header_hides_still_fails(deployment: Any, tmp_path: Path) -> None:
+    rig, _loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    check = DesignDocumentCheck(rig.workspaces, rig.d.scope, min_sources=2)
+    assert check(_change(rig, {"specs/design/a/design.md": FULL_DOC})).outcome == "pass"
+    # a space splits the header; git quotes a non-ASCII path: both are still changed paths
+    for sneaky in ["my notes.py", "코드.py"]:
+        got = check(_change(rig, {"specs/design/a/design.md": FULL_DOC, sneaky: "x = 1\n"}))
+        assert got.outcome == "fail" and got.details["outside"] == [sneaky]
+
+
+def test_a_citation_counts_only_for_an_exact_committed_file(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig, _loop, _ = rig_with_codex(deployment, tmp_path, "right")
+    check = DesignDocumentCheck(rig.workspaces, rig.d.scope, min_sources=1)
+    secret = tmp_path / "outside.txt"
+    secret.write_text("a\nb\nc\n")
+    doc = FULL_DOC + "- Specs/design/a/link.txt:1\n- APP.py:1\n"
+    got = check(_change(rig, {"specs/design/a/design.md": doc}, links={
+        "specs/design/a/link.txt": secret,
+    }))  # fmt: skip
+    # a case variant reaching the design directory (and through it a host file) or another
+    # file is not a source, whatever the disk resolves it to
+    assert got.details["sources"] == ["app.py:1", "app.py:2"]
+    assert got.details["unresolved_sources"] == ["APP.py:1", "Specs/design/a/link.txt:1"]
+    assert got.outcome == "fail"
