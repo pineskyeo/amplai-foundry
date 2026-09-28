@@ -209,9 +209,7 @@ def test_claude_result_ignores_invalid_total_cost(total_cost_usd):
 
 
 def test_claude_result_missing_total_cost_keeps_unknown_usage():
-    usage = EventNormalizer("claude").accept({"type": "result", "subtype": "success"})[
-        "usage"
-    ]
+    usage = EventNormalizer("claude").accept({"type": "result", "subtype": "success"})["usage"]
 
     assert usage["cost_microunits"] is None
     assert usage["status"] == "unknown"
