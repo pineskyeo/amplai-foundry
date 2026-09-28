@@ -326,6 +326,61 @@
         "src/amplai_foundry/evaluation",
         "specs/018-v3-real-execution"
       ]
+    },
+    {
+      "id": "D-078",
+      "status": "active",
+      "title": "Draft PR outcomes are recorded",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/evaluation",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-079",
+      "status": "active",
+      "title": "The system selects the composition; Claude CLI is the qualified fallback",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/meta_harness",
+        "scripts",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-080",
+      "status": "active",
+      "title": "Design mode produces a verified design document",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/verification",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-081",
+      "status": "active",
+      "title": "One goal across several apps",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime",
+        "src/amplai_foundry/verification",
+        "specs/019-v3-completion"
+      ]
+    },
+    {
+      "id": "D-082",
+      "status": "active",
+      "title": "Steering and replanning on the real path",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "specs/019-v3-completion"
+      ]
     }
   ]
 }

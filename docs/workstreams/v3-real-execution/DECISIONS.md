@@ -198,3 +198,75 @@
 - Rejected: design-reference fixture 를 고친다 (승인 원본 변경). structured-output 규칙에 예외를 둔다.
 - Consequence: workgraph schema 두 사본은 main 과 같다. `task-class` 는 V3 wire 계약이 아닌 로컬 제품 기록이다.
   wire schema 에 넣으려면 schema version 을 올리는 별도 설계가 필요하다.
+
+## D-078 — Draft PR Outcomes Are Recorded (Work 019 A)
+
+- Status: APPROVED (운영자 선택 2026-09-28: A 우선 처리)
+- Date: 2026-09-28
+- Decision: 게시된 draft PR 의 상태를 운영자의 `gh` 로 읽기만 하고(`gh pr view --json state,headRefOid,…`),
+  전이마다 한 번 goal audit event 로 남긴다: `publication.opened`(게시 때; 추적 전 PR 은 `backfilled: true`
+  로 소급), `publication.merged`, `publication.closed`, `publication.revised`(branch head 가 AMPLAI 가 push 한
+  commit 이 아님 = 사람이 고침). 실행 loop 가 한가할 때 10분마다 읽고 `amplai ops pr-sync` 로 즉시 읽는다.
+  읽지 못한 PR 은 unknown 으로 두고 다음에 다시 읽는다. 여러 app goal 은 PR 들의 합계다(전부 merged 여야
+  merged, 하나라도 closed 면 closed, 하나라도 고쳐지면 revised). Observatory 는 acceptance rate(merged/
+  decided)와 revised share 를 낸다.
+- Reason: 설계는 rework 와 사람 개입을 지표로 둔다 (`design-reference/design/15_EVAL_OBSERVATORY.md:20-31`).
+  "결과가 받아들여졌나"가 빠져 있었다.
+- Rejected: GitHub webhook(로컬 Mac 에 공개 endpoint 가 필요), PR 상태 추정.
+
+## D-079 — The System Selects The Composition; Claude CLI Is The Qualified Fallback (Work 019 E)
+
+- Status: APPROVED (운영자 선택 2026-09-28: 초기 정책 "Codex 우선, Claude fallback")
+- Date: 2026-09-28
+- Decision: app 마다 driver 별 HarnessComposition 과 task-class baseline router policy 를 둔다.
+  `CompositionService.select` 가 eligibility(model enabled, data class, driver qualified, capabilities)로 먼저
+  거르고 policy 순서로 고른다. `explain` 이 후보별 제외 이유를 낸다. planning 도 같은 선택을 따른다(Claude
+  planner 는 `--json-schema` 의 `structured_output` 을 읽는다). 실행 선택은 plan 에 고정해 승인 화면에 보이고,
+  승인 기록을 쓰기 전에 다시 확인한다(`COMPOSITION_CHANGED` 면 다시 계획). 운영자는 driver 를 고르지 않는다.
+  `amplai ops local-driver <codex|claude> --enable/--disable` 가 eligibility 스위치다.
+  Claude CLI 는 app image 에서 production argv 로 9 probe + 실제 tool-use turn 을 pass 해야 등록된다
+  (`specs/019-v3-completion/driver-qualification-amplai-foundry.json`, 2.1.278 / claude-sonnet-5).
+- Reason: 설계는 시스템 선택이다 (`design-reference/design/16_META_HARNESS.md:14-16`). 사람이 goal 마다 driver 를
+  고르는 안은 사용자가 설계와 어긋난다고 거부했다.
+- Consequence: 두 driver 는 한 sandbox environment 기록을 공유한다(실행과 검증이 같은 pinned container 를
+  가리킨다). profile 기록은 image 별이다.
+
+## D-080 — Design Mode Produces A Verified Design Document (Work 019 F)
+
+- Status: APPROVED (운영자 선택 2026-09-28: 문서만 담은 draft PR)
+- Date: 2026-09-28
+- Decision: `amplai design "…" --app X` 는 mode=design 계약(`workspace.design_write` 만, protected
+  `C-DESIGN`)을 만들고, agent 는 `specs/design/<goal>/design.md` 만 쓴다. `DesignDocumentCheck`(host, 변경을
+  실행하지 않음)가 경로 범위, 일곱 section(Goal, Current State, Options, Decision, Risks, Implementation Plan,
+  Sources), 해결되는 `path:line` 출처 3개 이상을 확인한다. 결과는 `[AMPLAI design]` draft PR 이다. 구현 node 는
+  dispatch 하지 않는다.
+- Reason: mode=design 은 설계 artifact 와 review evidence 만 만든다
+  (`design-reference/design/03_INVARIANT_REGISTRY.md:59`, `05_GOAL_RESOLVER_CONTRACT.md:48`).
+
+## D-081 — One Goal Across Several Apps (Work 019 D)
+
+- Status: accepted
+- Date: 2026-09-28
+- Decision: planner 가 모든 app 을 읽기 전용으로 보고(첫 app 은 `/workspace`, 나머지는
+  `/amplai-input/apps/<app>`) app 마다 work item(`after` 의존)을 만든다. app 마다 node 하나, `depends_on`/
+  `consumes`; 후행 node 의 prompt 에 검증된 선행 patch 가 들어간다. node 는 자기 app suite 로, goal 은 합친
+  global check(비어 있지 않은 변경 + 운영자가 설정한 integration 명령을 모든 app 의 base+patch 에서 함께
+  실행, network none)로 검증한다. 실패하면 이유와 함께 goal failed. app 마다 draft PR 하나, 서로 링크한다.
+  goal 정책은 모든 app ceiling 의 합이다. 한 goal 의 app 들은 같은 worker image 를 써야 한다
+  (`MULTI_APP_IMAGE`) — goal 은 활성화된 profile 하나로 모든 node 를 실행한다.
+- Reason: V3-057·T-107 은 fixture evidence 뿐이었다 (D-075).
+
+## D-082 — Steering And Replanning On The Real Path (Work 019 D)
+
+- Status: accepted
+- Date: 2026-09-28
+- Decision: `amplai steer <goal> "…"` 는 설계의 pause → exact-session resume 쌍이다. worker 는 pause 를 받으면
+  process 를 스스로 취소하지 않고, loop 가 quiesce(process boundary, checkpoint, workspace snapshot) 후 같은
+  native session 을 운영자 메시지로 resume 하고 결과를 평소처럼 검증한다. 계약은 바뀌지 않는다. Codex
+  credential 은 pause 때 회수하고 resume 때 다시 넣는다. `amplai replan <goal> "…"` 은 acceptance_change
+  steering 이다. 실행 중 attempt 를 멈추고(goal blocked), planner 가 같은 base 에서 이유와 함께 다시 초안을
+  만들고, 다음 contract revision(resolution·target·policy·protected constraint 유지)과 이전 graph 를 가리키는
+  graph revision 을 만든다. 운영자가 revision 을 승인하면 활성화하고 steering 을 적용한 뒤 실행한다.
+  둘 다 실행 중인 goal 에만 쓴다(승인 전에는 cancel 후 다시 제출).
+- Reason: 설계의 steering ledger 는 "frozen, admitted revision 또는 confirmed process boundary 만 steering 을
+  유효하게 만든다" (`src/amplai_foundry/runtime/execution/steering.py:1-5`). 실제 경로에는 steer/replan 이 없었다.

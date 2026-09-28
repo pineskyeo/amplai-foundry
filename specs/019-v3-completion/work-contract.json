@@ -1,0 +1,133 @@
+{
+  "schema_version": "2.0",
+  "id": "AMPLAI-V3-EXEC02",
+  "title": "AMPLAI V3 completion on the Mac — PR outcomes, composition selection, design mode, multi-app/steer/replan",
+  "goal": "Work 018 의 실제 실행 경로(amplai work → 계약 → 승인 → container → 검증 → draft PR)에 설계의 남은 네 부분을 붙인다: draft PR 결과 기록(A), 시스템의 composition 선택과 Claude CLI fallback(E), 설계 문서만 만드는 design mode(F), 여러 app goal·운영자 steering·replan(D).",
+  "source": [
+    "spec.md",
+    "plan.md",
+    "../../docs/workstreams/v3-real-execution/DECISIONS.md"
+  ],
+  "work_type": "new_feature",
+  "risk": "high",
+  "scope": {
+    "include": [
+      ".ai-team/knowledge/decisions.index.json",
+      ".ai-team/policy/documentation.json",
+      "deployment/",
+      "docs/v3/",
+      "docs/workstreams/v3-real-execution/",
+      "scripts/",
+      "specs/019-v3-completion/",
+      "src/amplai_foundry/agent_drivers/",
+      "src/amplai_foundry/control_plane/api_v3/",
+      "src/amplai_foundry/evaluation/",
+      "src/amplai_foundry/meta_harness/",
+      "src/amplai_foundry/runtime/",
+      "src/amplai_foundry/sandbox/",
+      "src/amplai_foundry/verification/runtime/",
+      "tests/e2e/",
+      "tests/v3/",
+      "tests/rc06_rig.py"
+    ],
+    "exclude": [
+      "vault/",
+      "design-reference/ (승인 설계, 무변경. 충돌은 DESIGN_CHANGE_PROPOSAL 로 기록)",
+      "Canonical Vault 와 governed knowledge mutation",
+      "Production configuration, live provider account, paid API call",
+      "Git push/merge/release/deploy",
+      "실제 Slack/Hermes workspace 활성화",
+      "다른 저장소 (synapse, cortex) 의 실제 설치·변경"
+    ]
+  },
+  "non_goals": [
+    "회사 Windows 환경, 원격 worker, 여러 운영자",
+    "자동 online routing/bandit, 데이터로 baseline policy 를 바꾸는 일 (B, 별도 Work)",
+    "자동 merge·배포",
+    "design-reference/ 와 3.0.0 wire schema 변경"
+  ],
+  "acceptance": [
+    {
+      "id": "EX2-A",
+      "statement": "게시된 draft PR 의 merged/closed/revised 전이가 한 번씩 goal event 로 남고 Observatory 가 acceptance rate 와 revised share 를 낸다. 실제 PR #12–#14 의 상태가 기록된다.",
+      "evidence": [
+        "tests/e2e/test_rc07_outcomes.py",
+        "specs/019-v3-completion/runs/"
+      ]
+    },
+    {
+      "id": "EX2-E",
+      "statement": "시스템이 composition 을 고르고(Codex 우선, Claude fallback) 승인 화면에 선택과 이유가 보인다. Claude CLI 는 app image 에서 9 probe + tool_use 를 pass 했고, Codex 가 제외되면 실제 goal 이 Claude 로 실행된다.",
+      "evidence": [
+        "tests/e2e/test_rc07_selection.py",
+        "specs/019-v3-completion/driver-qualification-amplai-foundry.json",
+        "specs/019-v3-completion/runs/"
+      ]
+    },
+    {
+      "id": "EX2-F",
+      "statement": "amplai design 이 설계 문서만 담은 draft PR 로 끝나고, 코드를 건드린 변경은 검증을 통과하지 못한다.",
+      "evidence": [
+        "tests/e2e/test_rc07_design.py",
+        "specs/019-v3-completion/runs/"
+      ]
+    },
+    {
+      "id": "EX2-D",
+      "statement": "한 goal 이 두 app 을 의존 순서로 실행하고 integration 검사 후 서로 링크된 draft PR 두 개로 끝난다. 실행 중 steer 와 replan 이 실제 run 에 기록된다.",
+      "evidence": [
+        "tests/e2e/test_rc07_multiapp.py",
+        "tests/e2e/test_rc07_steer.py",
+        "specs/019-v3-completion/runs/"
+      ]
+    },
+    {
+      "id": "EX2-R",
+      "statement": "Work 018 동작에 회귀가 없다: verifier v2 PASS, docs validate RESOLVED, 저장소 문서 FRESH.",
+      "evidence": [
+        ".ai-team/verifiers/registry.json"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": [
+      "실제 run 은 specs/019-v3-completion/runs/ evidence 로 확인한다",
+      "fixture 시험을 driver conformance 나 end-to-end 완료 근거로 세지 않는다 (D-065)",
+      "design-reference/ 와 3.0.0 wire schema 는 무변경 (D-077)"
+    ]
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "production_operation",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "Existing D-046: controller/V2 유지, semantic runtime 미이식",
+    "Existing D-065..D-077 (v3-real-execution ledger)",
+    "D-078..D-082 (this Work)"
+  ],
+  "blocked_by": [],
+  "status": "executing"
+}

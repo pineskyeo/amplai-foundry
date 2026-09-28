@@ -127,8 +127,18 @@ def render_plan(record: dict[str, Any]) -> str:
         ):
             for item in draft.get(key) or []:
                 lines.append(f"  {label:<10}: {item}")
-        for i, a in enumerate(draft.get("acceptance") or [], start=1):
-            lines.append(f"  AC-{i:<7}: {a['statement']}  [{a['verifier']}]")
+        items = record.get("work_items") or []
+        mapping = record.get("acceptance_map") or {}
+        if len(items) > 1 and mapping:  # several apps (D-081): each app's part and acceptance
+            for item in items:
+                after = f" (after {', '.join(item['after'])})" if item["after"] else ""
+                lines.append(f"  app       : {item['app']}{after}: {item['objective']}")
+                for ac, entry in mapping.items():
+                    if entry["app"] == item["app"]:
+                        lines.append(f"  {ac:<10}: {entry['statement']}  [{entry['verifier']}]")
+        else:
+            for i, a in enumerate(draft.get("acceptance") or [], start=1):
+                lines.append(f"  AC-{i:<7}: {a['statement']}  [{a['verifier']}]")
         lines.append(
             f"  risk      : {draft.get('risk', '')}   class: {draft.get('task_class', '-')}"
             f"   base: {record.get('base_commit', '')[:12]}"
