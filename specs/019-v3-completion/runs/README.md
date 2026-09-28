@@ -26,7 +26,21 @@ the operator, Claude CLI 2.1.278 (`claude-sonnet-5`) enabled, apps `amplai-found
 
 Found by the run: while a steered (resumed) turn runs, a further `steer`/`replan` is refused
 (`REPLAN_NOT_RUNNING`): the resumed turn has no quiesce path, so it is not offered. The replan
-was sent during the next node's attempt instead.
+was sent during the next node's attempt instead. D-083 (PR #20) removed this limit; see below.
+
+## D-083: Steering A Steered Turn (Real Run)
+
+`goal-fbe8c15166ef4161a613775e9b929856` (add a `BudgetService.totals()` test), driver
+`codex-cli` (`gpt-5.6-sol`, policy rank 1), run `run-0b18edb02aab4e8cbe9a4533077877bb`:
+
+1. `amplai steer` "Put the new test directly after the existing unknown-usage budget test."
+   was applied at 2026-09-28T08:06:41Z (boundary, checkpoint, exact-session resume).
+2. During that resumed turn, `amplai steer` "Also give the new test a one-line comment saying
+   why an empty goal totals to zero." was accepted and applied at 08:06:54Z.
+3. The run has two `steering.process_boundary` events; the single attempt passed and is
+   marked steered; the goal published draft PR pineskyeo/amplai-foundry#22. Its diff shows
+   both instructions: the test sits right after `test_t034_unknown_usage` and carries the
+   one-line comment.
 
 ## The First D Attempt (Superseded)
 
