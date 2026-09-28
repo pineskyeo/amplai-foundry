@@ -1,5 +1,5 @@
 {
-  "snapshot": "9c3abaab386a46663d704bbc485bd60422e953775904c85cb35207a6efc495f0",
+  "snapshot": "09458a2c466060082d1eb74c5bcd13d00cb479e41f639d78ad03bfbc769d4390",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -284,7 +284,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands and the resumed-turn steering limit (D-078..D-082).",
+      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands and steering or replanning a steered turn (D-078..D-083).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -294,7 +294,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "D-078..D-082 appended; D-080/D-082 refined in this Work with the review-fix and real-run failure handling; D-076 superseded marker unchanged.",
+      "reason": "D-083 appended (a steered turn accepts steering and replanning again); D-082 gained its partial superseded marker line; no other earlier entry changed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [

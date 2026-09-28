@@ -281,3 +281,67 @@ def test_an_approval_that_failed_after_activation_completes_on_retry(
     assert "applied" in steering_states(rig)
     container.mode = "right"
     assert loop.run_goal(goal)["status"] == "published"
+
+
+# -- steering a steered (resumed) turn -----------------------------------------------------------
+
+
+def wait_resumed(loop: Any, container: Any, goal: str, deadline: float = 30.0) -> None:
+    """The steered turn has started and accepts steering again."""
+    end = time.time() + deadline
+    while time.time() < end:
+        with loop._lock:
+            ready = len(container.prompts) >= 2 and goal in loop._in_attempt
+        if ready:
+            return
+        time.sleep(0.05)
+    raise AssertionError("the resumed turn never started")
+
+
+def test_a_steered_turn_can_be_steered_again(deployment: Any, tmp_path: Path) -> None:
+    rig, loop, container = rig_with_codex(deployment, tmp_path, "steer-twice")
+    operator = with_permissions(rig.operator, "goal.steer")
+    goal = approved(rig)
+    result: dict[str, Any] = {}
+    runner = threading.Thread(target=lambda: result.update(loop.run_goal(goal)))
+    runner.start()
+    wait_running(rig)
+    loop.steer(operator, goal, "first guidance")
+    wait_resumed(loop, container, goal)
+    assert loop.steer(operator, goal, "SECOND guidance")["status"] == "steering"
+    runner.join(60)
+    assert result["status"] == "published"
+    (attempt,) = result["attempts"]
+    assert attempt["outcome"] == "pass" and attempt["steered"] is True
+    # three turns of one native session: original, first steer, second steer
+    assert len(container.prompts) == 3
+    assert "first guidance" in container.prompts[1] and "SECOND guidance" in container.prompts[2]
+    steering = rig.service.plan_record(goal)["steering"]
+    assert [(s["text"], s["applied"]) for s in steering] == [
+        ("first guidance", True), ("SECOND guidance", True)
+    ]  # fmt: skip
+    d = rig.d
+    boundaries = d.store.conn.execute(
+        "SELECT COUNT(*) FROM events WHERE event_type='steering.process_boundary'"
+    ).fetchone()[0]
+    assert boundaries == 2
+    assert list((tmp_path / "journal").rglob("auth.json")) == []  # credential released each time
+
+
+def test_a_steered_turn_can_be_replanned(deployment: Any, tmp_path: Path) -> None:
+    rig, loop, container = rig_with_codex(deployment, tmp_path, "steer-twice")
+    operator = with_permissions(rig.operator, "goal.steer")
+    goal = approved(rig)
+    result: dict[str, Any] = {}
+    runner = threading.Thread(target=lambda: result.update(loop.run_goal(goal)))
+    runner.start()
+    wait_running(rig)
+    loop.steer(operator, goal, "first guidance")
+    wait_resumed(loop, container, goal)
+    rig.planner.draft_value = {**DRAFT, "objective": "value() returns 2 (replanned)"}
+    assert loop.replan(operator, goal, "change the objective")["status"] == "replanning"
+    runner.join(60)
+    assert result["status"] == "awaiting_approval" and result["revision"] == 2
+    assert [a["outcome"] for a in result["previous_attempts"]] == ["replanned"]
+    assert processes_stopped(container)
+    assert rig.d.store.head(rig.d.scope, "goal", goal)["state"] == "blocked"

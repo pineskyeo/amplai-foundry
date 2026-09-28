@@ -540,6 +540,11 @@ class WorkCoordinator:
             self._update(worker, did, "verifying", dispatch=dispatch, result=result)
             return result
         except Exception as exc:
+            if getattr(exc, "code", None) == "EXECUTION_PAUSED":
+                # steering again during a resumed turn: as in execute, the controller stops
+                # this process at a boundary and resumes the same session (D-082)
+                self._update(worker, did, "pause_requested", hold_code="EXECUTION_PAUSED")
+                raise
             stopped = False
             with contextlib.suppress(Exception):
                 stopped = port.cancel(handle).get("process_stopped") is True

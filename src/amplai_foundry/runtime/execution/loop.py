@@ -150,46 +150,60 @@ class ExecutionLoop:
         prompt: str,
         base: dict[str, Any],
     ) -> bool:
-        """Run one attempt; take over when operator steering paused it. True if steered.
+        """Run one attempt; take over whenever operator steering paused it. True if steered.
 
-        A paused process is never left behind: when no steering request stands behind the
-        pause, or the steering cannot be applied, the process is stopped (abort) before the
-        attempt fails. A request that arrives as the attempt ends is withdrawn (superseded).
+        The first turn and every resumed turn are the same attempt: each accepts steering and
+        replanning while its process runs, so an operator can steer again (or replan) during a
+        steered turn. A paused process is never left behind: when no steering request stands
+        behind the pause, or the steering cannot be applied, the process is stopped (abort)
+        before the attempt fails. A request that arrives as a turn ends is withdrawn.
         """
         worker = self.service.actors.worker
-        steer: dict[str, Any] | None = None
-        with self._lock:
-            self._in_attempt.add(goal_id)
-        try:
-            try:
-                self.coordinator.execute(
-                    worker, dispatch, prompt=prompt, base_snapshot=base,
-                    output_paths={PORT: PATCH_BINDING},
-                )  # fmt: skip
-            finally:
-                with self._lock:
-                    self._in_attempt.discard(goal_id)
-                    steer = self._steering.pop(goal_id, None)
-        except Exception as exc:
-            paused = getattr(exc, "code", None) == "EXECUTION_PAUSED"
-            if paused and steer is not None:
-                return self._take_over(goal_id, dispatch, steer)
-            if paused:  # a pause nobody here will quiesce (e.g. another client's steering)
-                self._abort(dispatch)
-            elif steer is not None:
-                self._withdraw(goal_id, steer, "the attempt ended before the request reached it")
-            raise
-        if steer is not None:
-            self._withdraw(goal_id, steer, "the attempt finished before the request reached it")
-        return False
 
-    def _take_over(self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]) -> bool:
+        def first() -> Any:
+            return self.coordinator.execute(
+                worker, dispatch, prompt=prompt, base_snapshot=base,
+                output_paths={PORT: PATCH_BINDING},
+            )  # fmt: skip
+
+        def resumed() -> Any:
+            return self.coordinator.continue_resumed(worker, dispatch["run_id"])
+
+        turn, steered = first, False
+        while True:
+            steer: dict[str, Any] | None = None
+            with self._lock:
+                self._in_attempt.add(goal_id)
+            try:
+                try:
+                    turn()
+                finally:
+                    with self._lock:
+                        self._in_attempt.discard(goal_id)
+                        steer = self._steering.pop(goal_id, None)
+            except Exception as exc:
+                paused = getattr(exc, "code", None) == "EXECUTION_PAUSED"
+                if paused and steer is not None:
+                    self._take_over(goal_id, dispatch, steer)
+                    turn, steered = resumed, True
+                    continue
+                if paused:  # a pause nobody here will quiesce (e.g. another client's steering)
+                    self._abort(dispatch)
+                elif steer is not None:
+                    self._withdraw(goal_id, steer, "the turn ended before the request reached it")
+                raise
+            if steer is not None:
+                self._withdraw(goal_id, steer, "the turn finished before the request reached it")
+            return steered
+
+    def _take_over(self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]) -> None:
+        """Replan: stop the turn and raise _Replan. Steer: stop at a checkpoint and resume the
+        exact session with the message (the caller then continues the resumed turn)."""
         try:
             if steer["kind"] == "replan":
                 self._quiesce(steer, "cancelled")
                 raise _Replan(steer["text"], steer["pause_id"])
             self._apply_steering(goal_id, dispatch, steer)
-            return True
         except _Replan:
             raise
         except Exception as exc:
@@ -244,7 +258,7 @@ class ExecutionLoop:
             controller, resume["steering_id"], worker,
             lambda run_id, cp: self.coordinator.resume_exact(worker, run_id, cp, prompt=message),
         )  # fmt: skip
-        self.coordinator.continue_resumed(worker, dispatch["run_id"])
+        # applied: the exact session now has the message; its turn runs as part of the attempt
         plan = self.service.plan_record(goal_id)
         entry = {"text": steer["text"], "kind": "steer", "run_id": dispatch["run_id"],
                  "at": now(), "applied": True}  # fmt: skip
