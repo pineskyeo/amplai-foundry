@@ -268,15 +268,34 @@ class ExecutionLoop:
     ) -> str:
         app = self.service.apps[plan["app"]].config
         commands = {v.id: " ".join(v.argv) for v in app.verifiers}
-        lines = [
-            "You are the IMPLEMENTER for AMPLAI. The current directory is a copy of the "
-            f"{app.app_id} repository at commit {plan['base_commit']} (no .git, network limited).",
-            "Make the change below. Do not commit. When you are done, run the acceptance "
-            "commands yourself; the result is judged by running them on a clean copy with "
-            "exactly your file changes applied.",
-            "",
-            "Objective: " + contract["objective"],
-        ]
+        if plan.get("mode") == "design":
+            commands = {"design": "the design document check (sections, sources, paths)"}
+            lines = [
+                "You are the DESIGNER for AMPLAI. The current directory is a copy of the "
+                f"{app.app_id} repository at commit {plan['base_commit']} (no .git, network "
+                "limited).",
+                f"Write one design document: {plan['design_dir']}design.md. Change nothing "
+                "else: no source, test or configuration file. Do not commit.",
+                "Use exactly these '## ' sections: Goal, Current State, Options, Decision, Risks, "
+                "Implementation Plan, Sources.",
+                "Ground every statement about the current system in this repository and cite it "
+                "as path:line (for example src/pkg/module.py:42); at least 3 citations, and "
+                "every citation must exist here. Implementation Plan lists the steps for a "
+                "later work goal; do not implement them.",
+                "",
+                "Objective: " + contract["objective"],
+            ]
+        else:
+            lines = [
+                "You are the IMPLEMENTER for AMPLAI. The current directory is a copy of the "
+                f"{app.app_id} repository at commit {plan['base_commit']} (no .git, network "
+                "limited).",
+                "Make the change below. Do not commit. When you are done, run the acceptance "
+                "commands yourself; the result is judged by running them on a clean copy with "
+                "exactly your file changes applied.",
+                "",
+                "Objective: " + contract["objective"],
+            ]
         draft = plan["draft"]
         if draft.get("in_scope"):
             lines.append("In scope: " + "; ".join(draft["in_scope"]))
@@ -294,6 +313,9 @@ class ExecutionLoop:
                     continue
                 tail = o["details"].get("stdout_tail", "") + o["details"].get("stderr_tail", "")
                 lines.append(f"- {o['acceptance_id']} {o['outcome']}: {o['reason']}")
+                for key in ("outside", "missing_sections", "unresolved_sources"):
+                    if o["details"].get(key):  # the design check says exactly what to fix
+                        lines.append(f"  {key}: " + ", ".join(map(str, o["details"][key][:20])))
                 if tail:
                     lines.append("```\n" + tail[-FEEDBACK_TAIL:] + "\n```")
         return "\n".join(lines)

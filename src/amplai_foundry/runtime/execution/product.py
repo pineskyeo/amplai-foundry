@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from ...sandbox.git_workspace import CHANGE_MEDIA, GitWorkspaceManager
+from ...verification.runtime.design_check import DESIGN_ROOT, DesignDocumentCheck
 from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
@@ -44,6 +45,12 @@ PLAN_KIND = "execution-plan"
 TASK_CLASS_KIND = "task-class"
 # Initial task-class baseline order, every class: operator decision 2026-09-28 (D-079).
 ROUTER_ORDER = ("codex-cli", "claude-cli")
+DESIGN_CHECK = "design"
+DESIGN_CHECK_DESCRIPTION = (
+    "design document check: only files under specs/design/<goal>/ change; design.md has "
+    "the sections Goal, Current State, Options, Decision, Risks, Implementation Plan, "
+    "Sources; at least 3 path:line citations that resolve in the repository"
+)
 PORT = "change"
 
 
@@ -120,6 +127,7 @@ class InstalledApp:
     capabilities: list[dict[str, Any]] = field(default_factory=list)
     compositions: dict[str, dict[str, Any]] = field(default_factory=dict)  # driver id -> ref
     router_ref: dict[str, Any] | None = None
+    design_ref: dict[str, Any] | None = None  # the design-document verifier profile (F)
 
 
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
@@ -144,13 +152,25 @@ def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
 
 
 def app_capabilities(app_id: str) -> list[dict[str, Any]]:
+    """The app's ceiling: implementation writes (work) and design-document writes (design)."""
     return [
         {
             "action": "workspace.write",
             "resource": "sandbox:" + app_id,
             "effect_class": "sandbox_write",
-        }
+        },
+        {
+            "action": "workspace.design_write",
+            "resource": "sandbox:" + app_id,
+            "effect_class": "sandbox_write",
+        },
     ]
+
+
+def mode_capabilities(app_id: str, mode: str) -> list[dict[str, Any]]:
+    """What one goal may request: design mode never gets implementation writes (design/03:59)."""
+    action = "workspace.design_write" if mode == "design" else "workspace.write"
+    return [c for c in app_capabilities(app_id) if c["action"] == action]
 
 
 class LocalExecutionService:
@@ -173,6 +193,7 @@ class LocalExecutionService:
         publish_mode: str = "draft_pr",
         driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
         planners: dict[str, Any] | None = None,
+        design_min_sources: int = 3,
     ) -> None:
         self.store, self.runtime, self.goals, self.knowledge = store, runtime, goals, knowledge
         self.authority, self.verification, self.workspaces = authority, verification, workspaces
@@ -180,6 +201,7 @@ class LocalExecutionService:
         # candidate compositions per driver id (D-079); Codex alone when nothing else is given
         self.drivers = driver_refs or {"codex-cli": codex_refs}
         self.planners = dict(planners or {})  # driver id -> planner; Codex is self.planner
+        self.design_min_sources = design_min_sources
         self.verifier_factory, self.global_factory = verifier_factory, global_factory
         self.budget = budget or Budget()
         if publish_mode not in {"draft_pr", "branch", "none"}:
@@ -245,6 +267,18 @@ class LocalExecutionService:
         suite_ref = self._put("verifier-profile", f"{a}-suite", profile)
         if digest(suite_ref) not in self.verification.runners:
             self.verification.register(suite_ref, self.verifier_factory(app))
+        design_ref = self._put(
+            "verifier-profile",
+            f"{a}-design",
+            {**profile, "profile_id": f"{a}-design", "allowed_command_ids": [DESIGN_CHECK]},
+        )
+        if digest(design_ref) not in self.verification.runners:
+            self.verification.register(
+                design_ref,
+                DesignDocumentCheck(
+                    self.workspaces, self.scope, min_sources=self.design_min_sources
+                ),
+            )
         verifier_refs = {v.id: suite_ref for v in app.verifiers}
         global_ref = self._put(
             "global-verifier",
@@ -305,7 +339,7 @@ class LocalExecutionService:
             "allowed_roots": [str(self.workspaces.root)],
             "environment_refs": [env_ref],
             "invariant_refs": [invariant_ref],
-            "verifier_profile_refs": [suite_ref],
+            "verifier_profile_refs": [suite_ref, design_ref],
             "data_classification": "internal",
             "requested_capabilities_ceiling": caps,
             "registry_revision": 1,
@@ -313,7 +347,7 @@ class LocalExecutionService:
         binding_ref = self._register_app(binding)
         installed = InstalledApp(
             app, binding_ref, verifier_refs, global_ref, policy_ref, invariant_ref,
-            composition_ref, caps, compositions, router_ref,
+            composition_ref, caps, compositions, router_ref, design_ref,
         )  # fmt: skip
         self.apps[a] = installed
         return installed
@@ -377,9 +411,16 @@ class LocalExecutionService:
         intent = self.store.get(scope, "intent-envelope", goal["data"]["intent_ref"])
         installed = self._target(intent)
         app = installed.config
+        mode = intent.get("mode", "work")
         base = self.workspaces.base_snapshot(scope, app.app_id, app.base_branch)
         base_value = self._base(base)
-        base_check = self.base_check(installed, base_value)
+        # a design goal changes documents only: the app suite on the base says nothing about it
+        base_check = self.base_check(installed, base_value) if mode == "work" else None
+        verifiers = (
+            {DESIGN_CHECK: DESIGN_CHECK_DESCRIPTION}
+            if mode == "design"
+            else {v.id: v.description for v in app.verifiers}
+        )
         planning = self.select_composition(installed)
         planner = (
             self.planner if planning["driver_id"] == "codex-cli" else None
@@ -388,12 +429,7 @@ class LocalExecutionService:
             raise Hold("PLANNER_UNAVAILABLE", "No planner for " + planning["driver_id"])
         workspace = self.workspaces.materialize(scope, new_id("plan-ws"), base)
         try:
-            drafted = planner.draft(
-                intent["text"],
-                app.app_id,
-                {v.id: v.description for v in app.verifiers},
-                workspace,
-            )
+            drafted = planner.draft(intent["text"], app.app_id, verifiers, workspace, mode=mode)
         finally:
             self.workspaces.discard(workspace)
         draft = _clean_draft(drafted["draft"])
@@ -406,6 +442,8 @@ class LocalExecutionService:
             "draft": draft,
             "planner_usage": drafted.get("usage"),
             "planned_with": {k: planning[k] for k in ("driver_id", "model")},
+            "mode": mode,
+            **({"design_dir": f"{DESIGN_ROOT}{goal_id}/"} if mode == "design" else {}),
             "base_check": base_check,
             "created_at": now(),
         }
@@ -443,7 +481,7 @@ class LocalExecutionService:
             assembled_at=now(),
         )
         contract_ref, graph_ref = self._compile(
-            goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft
+            goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft, mode=mode
         )
         record["composition"] = self.select_composition(installed, draft.get("task_class"))
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
@@ -511,28 +549,42 @@ class LocalExecutionService:
         bundle_ref: dict[str, Any],
         installed: InstalledApp,
         draft: dict[str, Any],
+        *,
+        mode: str = "work",
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         scope, service = self.scope, self.actors.service
         env_ref, root = self.codex["environment"], self.budget.wire()
         draft = _clean_draft(draft)
+        design = mode == "design"
+        refs = {DESIGN_CHECK: installed.design_ref} if design else installed.verifier_refs
+        evidence = "design-verification" if design else "command-verification"
         bindings, acceptance = [], []
-        if not draft["acceptance"] or any(
-            a["verifier"] not in installed.verifier_refs for a in draft["acceptance"]
-        ):
+        if not draft["acceptance"] or any(a["verifier"] not in refs for a in draft["acceptance"]):
             raise Hold("PLANNING_VERIFIER", "Every acceptance needs one installed verifier")
         for i, item in enumerate(draft["acceptance"], start=1):
             ac, command = f"AC-{i}", installed.config.verifiers
-            vref = installed.verifier_refs[item["verifier"]]
-            timeout = next(v.timeout_seconds for v in command if v.id == item["verifier"])
+            vref = refs[item["verifier"]]
+            assert vref is not None
+            timeout = (
+                300
+                if design
+                else next(v.timeout_seconds for v in command if v.id == item["verifier"])
+            )
+            rule = (
+                "only specs/design/<dir>/ changes; design.md has every required section and "
+                "resolved path:line sources"
+                if design
+                else "every installed suite command exits 0 on base + patch; "
+                + f"{item['verifier']} demonstrates this statement"
+            )
             bindings.append(
                 {
                     "acceptance_id": ac,
                     "verifier_ref": vref,
                     "subject_selector": PORT,
                     "environment_ref": env_ref,
-                    "required_evidence_types": ["command-verification"],
-                    "decision_rule": "every installed suite command exits 0 on base + patch; "
-                    + f"{item['verifier']} demonstrates this statement",
+                    "required_evidence_types": [evidence],
+                    "decision_rule": rule,
                     "independent_review": True,
                     "timeout_seconds": timeout,
                 }
@@ -544,8 +596,12 @@ class LocalExecutionService:
                     "facet": "functional",
                     "mandatory": True,
                     "verifier_ref": vref,
-                    "required_evidence_types": ["command-verification"],
-                    "success_rule": f"suite passes ({item['verifier']} shows it) on base + patch",
+                    "required_evidence_types": [evidence],
+                    "success_rule": (
+                        "the design document check passes on base + patch"
+                        if design
+                        else f"suite passes ({item['verifier']} shows it) on base + patch"
+                    ),
                     "human_acceptance_required": False,
                 }
             )
@@ -563,22 +619,39 @@ class LocalExecutionService:
             },
         )
         t = now()
-        constraints = [
-            {
-                "id": f"C-{i}",
-                "statement": text,
-                "source_refs": [installed.policy_ref],
-                "protected": False,
-            }
-            for i, text in enumerate(draft["constraints"], start=1)
-        ] + [
-            {
-                "id": "C-SANDBOX",
-                "statement": "Changes happen only in the sandbox copy; the patch is the result",
-                "source_refs": [installed.policy_ref],
-                "protected": True,
-            }
-        ]
+        constraints = (
+            [
+                {
+                    "id": f"C-{i}",
+                    "statement": text,
+                    "source_refs": [installed.policy_ref],
+                    "protected": False,
+                }
+                for i, text in enumerate(draft["constraints"], start=1)
+            ]
+            + [
+                {
+                    "id": "C-SANDBOX",
+                    "statement": "Changes happen only in the sandbox copy; the patch is the result",
+                    "source_refs": [installed.policy_ref],
+                    "protected": True,
+                }
+            ]
+            + (
+                [
+                    {
+                        "id": "C-DESIGN",
+                        "statement": "Design mode: only documents under "
+                        + DESIGN_ROOT
+                        + "<goal>/ change; no source, test or configuration file (design/03:59)",
+                        "source_refs": [installed.policy_ref],
+                        "protected": True,
+                    }
+                ]
+                if design
+                else []
+            )
+        )
         contract = {
             "schema_version": "3.0.0",
             "goal_id": goal_id,
@@ -586,7 +659,7 @@ class LocalExecutionService:
             "revision": 1,
             "intent_ref": self.store.head(scope, "goal", goal_id)["data"]["intent_ref"],
             "resolution_ref": resolution_ref,
-            "mode": "work",
+            "mode": mode,
             "objective": draft["objective"],
             "non_goals": draft["non_goals"],
             "targets": resolution["target_refs"],
@@ -606,7 +679,7 @@ class LocalExecutionService:
             "open_question_refs": [],
             "risk": draft["risk"],
             "budget": root,
-            "requested_capabilities": installed.capabilities,
+            "requested_capabilities": mode_capabilities(installed.config.app_id, mode),
             "verification_plan_ref": plan_ref,
             "context_bundle_ref": bundle_ref,
             "policy_ref": installed.policy_ref,
@@ -629,7 +702,7 @@ class LocalExecutionService:
             "produces": [{"name": PORT, "media_type": CHANGE_MEDIA, "required": True}],
             "acceptance_ids": [a["id"] for a in acceptance],
             "verification_profile_ref": acceptance[0]["verifier_ref"],
-            "capabilities": installed.capabilities,
+            "capabilities": mode_capabilities(installed.config.app_id, mode),
             "resource_claims": [
                 {"resource": "sandbox:" + installed.config.app_id, "mode": "exclusive_write"}
             ],
@@ -701,6 +774,7 @@ class LocalExecutionService:
             )
         installed = self.apps[plan["app"]]
         service, scope = self.actors.service, self.scope
+        caps = mode_capabilities(installed.config.app_id, plan.get("mode", "work"))
         chosen = plan.get("composition")
         if chosen:
             # fixed from here on (design/16:16); eligibility may have changed since planning
@@ -735,7 +809,7 @@ class LocalExecutionService:
             "subject_id": service.subject_id,
             "contract_ref": plan["contract_ref"],
             "graph_ref": plan["graph_ref"],
-            "capabilities": installed.capabilities,
+            "capabilities": caps,
             "approved_by": operator.wire(),
             "approved_at": now(),
             "publish": {
@@ -756,7 +830,7 @@ class LocalExecutionService:
             "graph_ref": plan["graph_ref"],
             "policy_ref": installed.policy_ref,
             "generation": 1,
-            "capabilities": installed.capabilities,
+            "capabilities": caps,
             "artifact_bounds": [],
             "max_uses": 32,
             "effect_key": None,

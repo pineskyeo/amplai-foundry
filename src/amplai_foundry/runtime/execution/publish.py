@@ -146,8 +146,9 @@ class GitPublisher:
         if value["mode"] == "draft_pr" and not value.get("pr_url"):
             draft = plan["draft"]
             body = self._body(plan, draft, value)
+            prefix = "[AMPLAI design] " if plan.get("mode") == "design" else "[AMPLAI] "
             value["pr_url"] = self.pr_creator(
-                app.repo, branch, value["base_branch"], "[AMPLAI] " + draft["summary"][:200], body
+                app.repo, branch, value["base_branch"], prefix + draft["summary"][:200], body
             )
         value["done_at"] = now()
         self._save(goal_id, "done", value)

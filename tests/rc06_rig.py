@@ -102,10 +102,10 @@ class FixedPlanner:
         self.calls: list[dict[str, Any]] = []
 
     def draft(
-        self, goal: str, app: str, verifiers: dict[str, str], workspace: Path
+        self, goal: str, app: str, verifiers: dict[str, str], workspace: Path, *, mode: str = "work"
     ) -> dict[str, Any]:
         self.calls.append(
-            {"goal": goal, "app": app, "verifiers": verifiers,
+            {"goal": goal, "app": app, "verifiers": verifiers, "mode": mode,
              "saw_base": (workspace / "app.py").read_text()}
         )  # fmt: skip
         return {"draft": json.loads(json.dumps(self.draft_value)), "usage": {"output_tokens": 1}}
@@ -199,6 +199,7 @@ def build_rig(
             sandbox=HostSandbox(),
         ),
         global_factory=lambda app: NonEmptyChangeCheck(workspaces, d.scope),
+        design_min_sources=2,  # the rig repo has one two-line file to cite
     )
     commands = [VerifierCommand("check", CHECK, "value() must return 2", 60)]
     if extra_verifier:
@@ -225,13 +226,21 @@ assert (home / ".codex" / "auth.json").is_file(), "credential was not leased"
 src = (ws / "app.py").read_text()
 if mode == "crash":
     sys.exit(3)
-if mode == "always-wrong":
-    new = 3
-elif mode == "wrong-first":
-    new = 2 if "return 3" in src else 3
+if mode.startswith("design"):
+    doc = ws / "specs" / "design" / "g1" / "design.md"
+    thin = mode == "design-thin-first" and not doc.exists()
+    doc.parent.mkdir(parents=True, exist_ok=True)
+    sources = "" if thin else "- app.py:1 defines value()\n- app.py:2 returns the constant\n"
+    doc.write_text("# Design\n\n## Goal\nx\n## Current State\nvalue() in app.py:1\n"
+                   "## Options\nx\n## Decision\nx\n## Risks\nx\n## Implementation Plan\nx\n"
+                   "## Sources\n" + sources)
+    if mode == "design-code":
+        (ws / "app.py").write_text("def value():\n    return 2\n")
+elif mode == "always-wrong":
+    (ws / "app.py").write_text("def value():\n    return 3\n")
 else:
-    new = 2
-(ws / "app.py").write_text("def value():\n    return %d\n" % new)
+    new = 2 if mode != "wrong-first" or "return 3" in src else 3
+    (ws / "app.py").write_text("def value():\n    return %d\n" % new)
 (home / ".codex" / "auth.json").write_text('{"tokens": "refreshed"}')
 sys.stdout.write(json.dumps({"type": "thread.started", "thread_id": "thread_" + mode}) + "\n")
 sys.stdout.write(json.dumps({"type": "turn.completed",

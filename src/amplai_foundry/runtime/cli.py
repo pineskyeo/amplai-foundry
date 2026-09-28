@@ -78,10 +78,16 @@ def work(
     wait: Annotated[bool, typer.Option("--wait/--no-wait")] = True,
 ) -> None:
     """Submit a goal. On a local product server, draft its contract and show it for approval."""
+    _submit_and_plan(text, "work", target, request_id, wait)
+
+
+def _submit_and_plan(
+    text: str, mode: str, target: list[str] | None, request_id: str | None, wait: bool
+) -> None:
     connection = client()
     try:
         submitted = connection.submit(
-            text, mode="work", target_hints=target or [], key=request_id or new_id("cli")
+            text, mode=mode, target_hints=target or [], key=request_id or new_id("cli")
         )
         goal_id = submitted["goal_id"]
         try:
@@ -91,7 +97,7 @@ def work(
                 raise
             emit(submitted)  # not a local product server: submission only
             return
-        typer.echo(f"goal {goal_id}: planning (read-only Codex on the base commit)")
+        typer.echo(f"goal {goal_id}: planning (read-only planner on the base commit)")
         record = connection.local_goal(goal_id)
         deadline = time.time() + 20 * 60
         while wait and record.get("status") == "planning" and time.time() < deadline:
@@ -223,9 +229,10 @@ def design(
     text: Annotated[str, typer.Argument()],
     target: Annotated[list[str] | None, typer.Option("--app")] = None,
     request_id: Annotated[str | None, typer.Option("--request-id")] = None,
+    wait: Annotated[bool, typer.Option("--wait/--no-wait")] = True,
 ) -> None:
-    """Design-only intent. It does not authorize implementation or deployment."""
-    submit(text, "design", target or [], request_id)
+    """Design-only goal: a reviewed design document, never implementation or deployment."""
+    _submit_and_plan(text, "design", target, request_id, wait)
 
 
 @ops.command("version")
