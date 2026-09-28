@@ -38,6 +38,16 @@ def _utc(value: str) -> float:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC).timestamp()
 
 
+UPSTREAM_PATCH = 60_000  # characters of an upstream patch shown to a downstream node
+
+
+def _node_app(plan: dict[str, Any], node: dict[str, Any] | None) -> str:
+    """Nodes are ``node-<app>`` (product._compile); older one-node plans name plan["app"]."""
+    node_id = (node or {}).get("node_id", "")
+    app = node_id[len("node-") :] if node_id.startswith("node-") else ""
+    return app if app in (plan.get("bases") or {plan["app"]: None}) else str(plan["app"])
+
+
 class ExecutionLoop:
     def __init__(
         self,
@@ -171,9 +181,13 @@ class ExecutionLoop:
         if plan["status"] != "approved":
             raise Hold("PLAN_NOT_APPROVED", "Only an approved goal runs")
         contract = self.store.get(self.scope, "goal-contract", plan["contract_ref"])
+        graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
         deadline = _utc(plan["approved_at"]) + contract["budget"]["max_wall_seconds"]
         attempts: list[dict[str, Any]] = []
-        base, feedback = plan["base"], None
+        # one node per app (D-081); a one-app goal is one node on plan["base"]
+        bases = plan.get("bases") or {plan["app"]: plan["base"]}
+        feedback: dict[str, list[dict[str, Any]]] = {}
+        repair: dict[str, dict[str, Any]] = {}
         self._update(goal_id, status="running", attempts=attempts)
         while True:
             if goal_id in self._cancel:
@@ -193,19 +207,24 @@ class ExecutionLoop:
                 # nothing ran: keep the approval, park the goal for reconcile to requeue
                 return self._finish(goal_id, "held", reason="claim failed: " + why, attempts=[])
             started = self.clock()
-            prompt = self.prompt(contract, plan, feedback)
+            node = dispatch["node"]
+            app = _node_app(plan, node)
+            prompt = self.prompt(
+                contract, plan, feedback.get(node["node_id"]), node=node,
+                upstream=self._upstream(graph, node),
+            )  # fmt: skip
             self.coordinator.max_seconds = max(1, int(remaining))
             try:
                 self.coordinator.execute(
                     worker,
                     dispatch,
                     prompt=prompt,
-                    base_snapshot=base,
+                    base_snapshot=repair.get(node["node_id"]) or bases[app],
                     output_paths={PORT: PATCH_BINDING},
                 )
             except Exception as exc:
                 attempts.append(
-                    {"run_id": dispatch["run_id"], "outcome": "driver_failed",
+                    {"run_id": dispatch["run_id"], "app": app, "outcome": "driver_failed",
                      "reason": getattr(exc, "code", type(exc).__name__),
                      "seconds": round(self.clock() - started, 1)}
                 )  # fmt: skip
@@ -226,23 +245,35 @@ class ExecutionLoop:
             finished = self.service.verification.finish_work(verifier, dispatch["run_id"])
             observations = [self._observation(v) for v in verdicts]
             attempts.append(
-                {"run_id": dispatch["run_id"], "outcome": finished["outcome"], "change": change,
+                {"run_id": dispatch["run_id"], "app": app, "outcome": finished["outcome"],
+                 "change": change,
                  "verdicts": [{"acceptance": o["acceptance_id"], "outcome": o["outcome"],
                                "reason": o["reason"]} for o in observations],
                  "seconds": round(self.clock() - started, 1)}
             )  # fmt: skip
             self._update(goal_id, attempts=attempts)
             self._discard(dispatch["run_id"])
-            state = self.store.head(self.scope, "work", dispatch["node"]["work_id"])["state"]
+            state = self.store.head(self.scope, "work", node["work_id"])["state"]
             if state == "succeeded":
-                break
+                feedback.pop(node["node_id"], None)
+                if self._all_succeeded(graph):
+                    break
+                continue  # the next node whose dependencies are now met
             if state != "ready":
                 return self._stop_goal(
                     goal_id, "failed", "acceptance failed within the attempt budget", attempts
                 )
-            feedback = observations
-            base = self._repair_base(plan["base"], change)
-        result = self.service.verification.finish_goal(verifier, goal_id)
+            feedback[node["node_id"]] = observations
+            repair[node["node_id"]] = self._repair_base(bases[app], change)
+        try:
+            result = self.service.verification.finish_goal(verifier, goal_id)
+        except Hold as exc:
+            # the goal-level check (e.g. a cross-app integration command) failed: every node
+            # passed its own suite, but the goal is not verified (D-081); replan from here
+            detail = f"{exc.code}: {exc.message}"
+            if isinstance(exc.details, dict) and exc.details.get("reason"):
+                detail += f" ({exc.details['reason']})"
+            return self._stop_goal(goal_id, "failed", "goal verification: " + detail, attempts)
         record = self._finish(goal_id, "verified", attempts=attempts, verification=result)
         if self.publisher is not None:
             try:
@@ -263,10 +294,39 @@ class ExecutionLoop:
         return record
 
     # -- helpers ---------------------------------------------------------------------------------
+    def _all_succeeded(self, graph: dict[str, Any]) -> bool:
+        return all(
+            self.store.head(self.scope, "work", n["work_id"])["state"] == "succeeded"
+            for n in graph["nodes"]
+        )
+
+    def _upstream(self, graph: dict[str, Any], node: dict[str, Any]) -> list[tuple[str, str]]:
+        """(app, verified patch text) of every node this one consumes (D-081)."""
+        by_id = {n["node_id"]: n for n in graph["nodes"]}
+        out = []
+        for consumed in node.get("consumes") or []:
+            producer = by_id.get(consumed.get("from_node") or "")
+            if producer is None:
+                continue
+            work = self.store.head(self.scope, "work", producer["work_id"])
+            ref = (work["data"].get("outputs") or {}).get(consumed["output_name"])
+            if work["state"] != "succeeded" or not ref:
+                continue
+            raw = self.service.workspaces.artifacts.read(self.scope, ref)
+            _base, patch = self.service.workspaces.read_change(self.scope, raw)
+            out.append((producer["node_id"][len("node-") :], patch.decode(errors="replace")))
+        return out
+
     def prompt(
-        self, contract: dict[str, Any], plan: dict[str, Any], feedback: list[dict[str, Any]] | None
+        self,
+        contract: dict[str, Any],
+        plan: dict[str, Any],
+        feedback: list[dict[str, Any]] | None,
+        *,
+        node: dict[str, Any] | None = None,
+        upstream: list[tuple[str, str]] | None = None,
     ) -> str:
-        app = self.service.apps[plan["app"]].config
+        app = self.service.apps[_node_app(plan, node) if node else plan["app"]].config
         commands = {v.id: " ".join(v.argv) for v in app.verifiers}
         if plan.get("mode") == "design":
             commands = {"design": "the design document check (sections, sources, paths)"}
@@ -302,9 +362,26 @@ class ExecutionLoop:
         if contract["non_goals"]:
             lines.append("Do not: " + "; ".join(contract["non_goals"]))
         lines += ["Constraints: " + "; ".join(c["statement"] for c in contract["constraints"])]
+        mapping = plan.get("acceptance_map")
+        if node is not None and len(plan.get("work_items") or []) > 1:
+            lines.append(f"This part of the goal, in {app.app_id}: {node['objective']}")
         lines.append("Acceptance (each must pass):")
-        for a, d in zip(contract["acceptance"], draft["acceptance"], strict=False):
-            lines.append(f"- {a['id']}: {a['statement']}  command: `{commands[d['verifier']]}`")
+        if mapping and node is not None:
+            for ac in node["acceptance_ids"]:
+                entry = mapping[ac]
+                lines.append(
+                    f"- {ac}: {entry['statement']}  command: `{commands[entry['verifier']]}`"
+                )
+        else:  # plans recorded before work items (Work 018)
+            for a, d in zip(contract["acceptance"], draft["acceptance"], strict=False):
+                lines.append(f"- {a['id']}: {a['statement']}  command: `{commands[d['verifier']]}`")
+        for upstream_app, patch in upstream or []:
+            lines += [
+                "",
+                f"The {upstream_app} change this builds on is already verified (do not redo it; "
+                "it is applied in its own repository, not in this directory):",
+                "```diff\n" + patch[-UPSTREAM_PATCH:] + "\n```",
+            ]
         if feedback:
             lines += ["", "The previous attempt did not pass. The directory already contains "
                       "that attempt's changes. Fix what failed:"]  # fmt: skip

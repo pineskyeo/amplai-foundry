@@ -49,12 +49,18 @@ def product(tmp_path: Path) -> Any:
     assert oct(config.stat().st_mode & 0o777) == "0o600"
     assert oct((home / "operator.token").stat().st_mode & 0o777) == "0o600"
     dep = LocalProductDeployment(config, start_loop=False)
-    dep.service.planner = FixedPlanner()
+    use_planner(dep, FixedPlanner())
     token = (home / "operator.token").read_text().strip()
     with TestClient(dep.app) as client:
         client.headers["Authorization"] = "Bearer " + token
         yield dep, client, token
     dep.close()
+
+
+def use_planner(dep: Any, planner: Any) -> None:
+    """Planners are per app and per driver (Work 019); swap the Codex one for a stand-in."""
+    for installed in dep.service.apps.values():
+        installed.planners["codex-cli"] = planner
 
 
 def wait_status(client: TestClient, goal: str, not_in: set[str]) -> dict[str, Any]:
@@ -111,7 +117,7 @@ def test_a_failed_plan_is_reported_not_hidden(product: Any) -> None:
         def draft(self, *a: Any, **k: Any) -> dict[str, Any]:
             raise RuntimeError("planner unavailable")
 
-    dep.service.planner = Broken()
+    use_planner(dep, Broken())
     goal = client.post(
         "/api/v3/intents",
         headers={"Idempotency-Key": "g2"},

@@ -32,9 +32,11 @@ from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, crea
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
 from ..sandbox.git_workspace import GitWorkspaceManager
+from ..verification.runtime.integration import IntegrationCheck
 from ..verification.runtime.patch_commands import NonEmptyChangeCheck, SuiteVerifier
 from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
+from .contracts.identity import digest
 from .contracts.registry import Contracts
 from .deployment import private_bytes, read_key
 from .errors import Hold, RuntimeFault
@@ -122,6 +124,17 @@ class ClaudeEntry(BaseModel):
     enabled: bool = True
 
 
+class IntegrationEntry(BaseModel):
+    """A cross-app check run on every named app's base + patch together (D-081)."""
+
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    apps: list[str] = Field(min_length=2)
+    argv: list[str] = Field(min_length=1)  # apps are at /amplai-input/apps/<app> (read-only)
+    description: str
+    timeout_seconds: int = 900
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -134,7 +147,8 @@ class LocalConfig(BaseModel):
     verifier_key_file: str
     codex: CodexEntry
     claude: ClaudeEntry | None = None
-    apps: list[AppEntry] = Field(min_length=1, max_length=1)
+    apps: list[AppEntry] = Field(min_length=1, max_length=4)
+    integrations: list[IntegrationEntry] = Field(default_factory=list)
     publish_mode: str = "draft_pr"
 
 
@@ -191,67 +205,103 @@ class LocalProductDeployment:
         return (p if p.is_absolute() else self.path.parent / p).absolute()
 
     def _compose(self, cfg: LocalConfig) -> None:
-        entry = cfg.apps[0]
-        repo = self.local(entry.repo)
-        inputs = CodexProfileInputs(
-            container_profile=self.local(entry.container_profile),
-            egress_profile=self.local(cfg.codex.egress_profile),
-            egress_qualification=self.local(cfg.codex.egress_qualification),
-            qualification_report=self.local(entry.qualification_report),
-            model=cfg.codex.model,
-            enabled=cfg.codex.enabled,
-        )
-        codex_refs = install_codex_profile(
-            self.store, self.scope, inputs, app_capabilities(entry.app_id)
-        )
-        driver_refs = {"codex-cli": codex_refs}
-        credential = ScopedCredential(self.local(cfg.codex.credential_home))
+        """Every configured app with its own image, drivers, planners and verifier sandbox."""
         root = self.local(cfg.workspace_root)
-        self.workspaces = GitWorkspaceManager(root / "work", self.artifacts, {entry.app_id: repo})
+        repos = {entry.app_id: self.local(entry.repo) for entry in cfg.apps}
+        self.workspaces = GitWorkspaceManager(root / "work", self.artifacts, repos)
         registry = DriverRegistry(self.store)
         admin = self.actors.service
-        registry.register(
-            admin, codex_refs["driver"], build_codex_port(inputs, root / "journal", credential)
-        )
-        planners: dict[str, Any] = {}
-        if cfg.claude is not None and entry.claude_qualification_report:
-            # the fallback composition (D-079): same image, its own measured qualification
-            claude = replace(
-                inputs,
-                provider="claude",
-                model=cfg.claude.model,
-                qualification_report=self.local(entry.claude_qualification_report),
-                enabled=cfg.claude.enabled,
+        credential = ScopedCredential(self.local(cfg.codex.credential_home))
+        token = claude_token(self.local(cfg.claude.token_file)) if cfg.claude else None
+        registered: set[str] = set()
+        per_app: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+        verify_sandboxes: dict[str, ContainerSandbox] = {}
+        first_codex: dict[str, Any] | None = None
+        first_planner: Any = None
+        # one environment/driver record per image, covering every app that runs in it: a
+        # multi-app goal runs all its nodes in one activated profile (D-081)
+        image_caps: dict[str, list[dict[str, Any]]] = {}
+        for entry in cfg.apps:
+            image = json.loads(self.local(entry.container_profile).read_text())["image"]
+            image_caps.setdefault(image, []).extend(app_capabilities(entry.app_id))
+        for entry in cfg.apps:
+            image = json.loads(self.local(entry.container_profile).read_text())["image"]
+            caps = image_caps[image]
+            inputs = CodexProfileInputs(
+                container_profile=self.local(entry.container_profile),
+                egress_profile=self.local(cfg.codex.egress_profile),
+                egress_qualification=self.local(cfg.codex.egress_qualification),
+                qualification_report=self.local(entry.qualification_report),
+                model=cfg.codex.model,
+                enabled=cfg.codex.enabled,
             )
-            claude_refs = install_driver_profile(
-                self.store, self.scope, claude, app_capabilities(entry.app_id)
+            codex_refs = install_codex_profile(self.store, self.scope, inputs, caps)
+            if digest(codex_refs["driver"]) not in registered:  # apps may share an image
+                registry.register(
+                    admin, codex_refs["driver"],
+                    build_codex_port(inputs, root / "journal", credential),
+                )  # fmt: skip
+                registered.add(digest(codex_refs["driver"]))
+            agent_profile = container_profile(inputs)
+            drivers = {"codex-cli": codex_refs}
+            planners: dict[str, Any] = {
+                "codex-cli": CodexPlanner(
+                    ContainerSandbox(agent_profile),
+                    credential,
+                    root / "plans",
+                    model=cfg.codex.model,
+                )
+            }
+            if cfg.claude is not None and token and entry.claude_qualification_report:
+                # the fallback composition (D-079): same image, its own measured qualification
+                claude = replace(
+                    inputs,
+                    provider="claude",
+                    model=cfg.claude.model,
+                    qualification_report=self.local(entry.claude_qualification_report),
+                    enabled=cfg.claude.enabled,
+                )
+                claude_refs = install_driver_profile(self.store, self.scope, claude, caps)
+                if digest(claude_refs["driver"]) not in registered:
+                    registry.register(
+                        admin, claude_refs["driver"],
+                        build_claude_port(claude, root / "journal", token),
+                    )  # fmt: skip
+                    registered.add(digest(claude_refs["driver"]))
+                drivers["claude-cli"] = claude_refs
+                planners["claude-cli"] = ClaudePlanner(
+                    ContainerSandbox(container_profile(claude)), token, root / "plans",
+                    model=cfg.claude.model,
+                )  # fmt: skip
+            verify_sandboxes[entry.app_id] = ContainerSandbox(
+                ContainerProfile(
+                    agent_profile.image,
+                    uid=agent_profile.uid,
+                    gid=agent_profile.gid,
+                    memory=agent_profile.memory,
+                    cpus=agent_profile.cpus,
+                    pids=agent_profile.pids,
+                    network="none",
+                )
             )
-            token = claude_token(self.local(cfg.claude.token_file))
-            registry.register(
-                admin, claude_refs["driver"], build_claude_port(claude, root / "journal", token)
-            )
-            driver_refs["claude-cli"] = claude_refs
-            planners["claude-cli"] = ClaudePlanner(
-                ContainerSandbox(container_profile(claude)), token, root / "plans",
-                model=cfg.claude.model,
-            )  # fmt: skip
+            per_app[entry.app_id] = (drivers, planners)
+            if first_codex is None:
+                first_codex, first_planner = codex_refs, planners["codex-cli"]
+        assert first_codex is not None
         self.coordinator = WorkCoordinator(
             self.runtime, registry, self.workspaces, poll_seconds=2.0, max_seconds=1800
         )
-        agent_profile = container_profile(inputs)
-        verify_profile = ContainerProfile(
-            agent_profile.image,
-            uid=agent_profile.uid,
-            gid=agent_profile.gid,
-            memory=agent_profile.memory,
-            cpus=agent_profile.cpus,
-            pids=agent_profile.pids,
-            network="none",
-        )
-        verify_sandbox = ContainerSandbox(verify_profile)
-        planner = CodexPlanner(
-            ContainerSandbox(agent_profile), credential, root / "plans", model=cfg.codex.model
-        )
+        integrations = [
+            (i.id, list(i.argv), i.timeout_seconds, list(i.apps)) for i in cfg.integrations
+        ]
+
+        def integration(apps: list[str]) -> IntegrationCheck:
+            # the first goal app's image runs the integration commands (network none)
+            return IntegrationCheck(
+                integrations, workspaces=self.workspaces, scope=self.scope,
+                sandbox=verify_sandboxes[apps[0]],
+            )  # fmt: skip
+
         self.service = LocalExecutionService(
             store=self.store,
             runtime=self.runtime,
@@ -260,31 +310,35 @@ class LocalProductDeployment:
             authority=self.authority,
             verification=self.verification,
             workspaces=self.workspaces,
-            planner=planner,
+            planner=first_planner,
             actors=self.actors,
-            codex_refs=codex_refs,
+            codex_refs=first_codex,
             verifier_factory=lambda app: SuiteVerifier(
                 [(v.id, list(v.argv), v.timeout_seconds) for v in app.verifiers],
-                workspaces=self.workspaces, scope=self.scope, sandbox=verify_sandbox,
+                workspaces=self.workspaces, scope=self.scope,
+                sandbox=verify_sandboxes[app.app_id],
             ),
             global_factory=lambda app: NonEmptyChangeCheck(self.workspaces, self.scope),
             publish_mode=cfg.publish_mode,
-            driver_refs=driver_refs,
-            planners=planners,
+            integration_factory=integration,
         )  # fmt: skip
-        self.service.install(
-            AppConfig(
-                entry.app_id,
-                repo,
-                tuple(
-                    VerifierCommand(v.id, tuple(v.argv), v.description, v.timeout_seconds)
-                    for v in entry.verifiers
+        for entry in cfg.apps:
+            drivers, planners = per_app[entry.app_id]
+            self.service.install(
+                AppConfig(
+                    entry.app_id,
+                    repos[entry.app_id],
+                    tuple(
+                        VerifierCommand(v.id, tuple(v.argv), v.description, v.timeout_seconds)
+                        for v in entry.verifiers
+                    ),
+                    tuple(entry.aliases),
+                    entry.base_branch,
+                    entry.remote,
                 ),
-                tuple(entry.aliases),
-                entry.base_branch,
-                entry.remote,
+                driver_refs=drivers,
+                planners=planners,
             )
-        )
         publisher = GitPublisher(self.service) if cfg.publish_mode != "none" else None
         self.tracker = PullRequestTracker(self.service) if publisher is not None else None
         self.loop = ExecutionLoop(

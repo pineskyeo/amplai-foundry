@@ -87,23 +87,42 @@ class PullRequestTracker:
         recorded = []
         for plan in self._pending():
             goal_id, publication = plan["goal_id"], plan["publication"]
+            # a multi-app goal has one PR per app (D-081); its outcome is the aggregate
+            parts = publication.get("publications") or {plan["app"]: publication}
+            states: dict[str, dict[str, Any]] = {}
             try:
-                repo = self.service.apps[plan["app"]].config.repo
-                state = self.reader(repo, publication["pr_url"])
+                for app, part in parts.items():
+                    if part.get("pr_url"):
+                        repo = self.service.apps[app].config.repo
+                        states[app] = self.reader(repo, part["pr_url"])
             except (Hold, RuntimeFault, OSError, ValueError, KeyError):
                 continue  # unknown stays unknown; retried at the next sync
-            if state.get("state") not in {"OPEN", "MERGED", "CLOSED"}:
+            if not states or any(
+                s.get("state") not in {"OPEN", "MERGED", "CLOSED"} for s in states.values()
+            ):
                 continue
             before = plan.get("publication_outcome") or {}
-            revised = bool(state.get("headRefOid")) and state["headRefOid"] != publication.get(
-                "commit"
+            kinds = {s["state"] for s in states.values()}
+            revised_apps = [
+                app
+                for app, s in states.items()
+                if s.get("headRefOid") and s["headRefOid"] != parts[app].get("commit")
+            ]
+            aggregate = (
+                "MERGED" if kinds == {"MERGED"} else "CLOSED" if "CLOSED" in kinds else "OPEN"
             )
-            outcome = {
-                "state": state["state"],
-                "revised": revised or bool(before.get("revised")),
-                "head": state.get("headRefOid"),
+            outcome: dict[str, Any] = {
+                "state": aggregate,
+                "revised": bool(revised_apps) or bool(before.get("revised")),
+                "head": next(iter(states.values())).get("headRefOid"),
                 "checked_at": now(),
-            }
+                **(
+                    {"parts": {a: {"state": s["state"], "revised": a in revised_apps}
+                               for a, s in states.items()}}
+                    if len(parts) > 1
+                    else {}
+                ),
+            }  # fmt: skip
             transitions = []
             if not self._opened(goal_id):
                 # published before publication.opened existed: the PR exists (we just read it)
@@ -113,7 +132,7 @@ class PullRequestTracker:
             if outcome["revised"] and not before.get("revised"):
                 transitions.append(("publication.revised", {"head": outcome["head"]}))
             if outcome["state"] in FINAL and before.get("state") != outcome["state"]:
-                transitions.append(("publication." + outcome["state"].lower(), {}))
+                transitions.append(("publication." + aggregate.lower(), {}))
             current = {**self.service.plan_record(goal_id), "publication_outcome": outcome}
             self.service._save_plan(goal_id, current, transitions)
             recorded += [{"goal_id": goal_id, "event": t[0]} for t in transitions]

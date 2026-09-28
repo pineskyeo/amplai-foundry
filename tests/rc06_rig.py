@@ -99,7 +99,17 @@ class FixedPlanner:
 
     def __init__(self, draft: dict[str, Any] | None = None) -> None:
         self.draft_value = dict(draft or DRAFT)
+        self.multi_value: dict[str, Any] = {}
         self.calls: list[dict[str, Any]] = []
+
+    def draft_multi(
+        self, goal: str, apps: dict[str, dict[str, str]], workspaces: dict[str, Path]
+    ) -> dict[str, Any]:
+        self.calls.append(
+            {"goal": goal, "apps": apps, "mode": "work",
+             "saw_bases": {a: sorted(p.name for p in w.iterdir()) for a, w in workspaces.items()}}
+        )  # fmt: skip
+        return {"draft": json.loads(json.dumps(self.multi_value)), "usage": {"output_tokens": 1}}
 
     def draft(
         self, goal: str, app: str, verifiers: dict[str, str], workspace: Path, *, mode: str = "work"
@@ -223,10 +233,19 @@ AGENT = r"""
 import json, pathlib, sys
 ws, mode, home = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
 assert (home / ".codex" / "auth.json").is_file(), "credential was not leased"
-src = (ws / "app.py").read_text()
+src = (ws / "app.py").read_text() if (ws / "app.py").exists() else ""
 if mode == "crash":
     sys.exit(3)
-if mode.startswith("design"):
+if mode.startswith("multi"):
+    # two apps: the producer makes value() return 2; the consumer renders LABEL=value
+    if (ws / "app.py").exists():
+        (ws / "app.py").write_text("def value():\n    return 2\n")
+    if (ws / "report.py").exists():
+        sep = ":" if mode == "multi-bad" else "="
+        (ws / "report.py").write_text(
+            'LABEL = "value"\n\n\ndef render(v):\n    return LABEL + "%s" + str(v)\n' % sep
+        )
+elif mode.startswith("design"):
     doc = ws / "specs" / "design" / "g1" / "design.md"
     thin = mode == "design-thin-first" and not doc.exists()
     doc.parent.mkdir(parents=True, exist_ok=True)
@@ -383,3 +402,78 @@ def rig_with_two_drivers(
     loop = ExecutionLoop(service, coordinator, publisher=recording)
     rig.published = published  # type: ignore[attr-defined]
     return rig, loop, codex_box, claude_box, claude_planner
+
+
+# Consumer app of the two-app rig and its cross-app integration command (D-081).
+CCHECK = ("python3", "-c", "import report, sys; sys.exit(0 if report.LABEL == 'value' else 1)")
+INTEGRATION = [
+    "python3", "-c",
+    "import sys; sys.path[:0] = ['/amplai-input/apps/app', '/amplai-input/apps/consumer']; "
+    "import app, report; sys.exit(0 if report.render(app.value()) == 'value=2' else 1)",
+]  # fmt: skip
+MULTI_DRAFT = {
+    "summary": "value() returns 2 and the consumer renders it",
+    "objective": "value() returns 2; report renders LABEL=value",
+    "non_goals": ["no other behaviour"],
+    "constraints": ["keep the function names"],
+    "work_items": [
+        {"app": "app", "objective": "value() returns 2", "in_scope": ["app.py"],
+         "acceptance": [{"statement": "value() returns 2", "verifier": "check"}], "after": []},
+        {"app": "consumer", "objective": "report renders the value", "in_scope": ["report.py"],
+         "acceptance": [{"statement": "LABEL is value", "verifier": "ccheck"}],
+         "after": ["app"]},
+    ],
+    "risk": "low",
+    "task_class": "new_feature",
+    "assumptions": [],
+    "questions": [],
+}  # fmt: skip
+
+
+class MountSandbox(HostSandbox):
+    """Host stand-in that resolves /amplai-input/apps/<app> mounts to their host copies."""
+
+    def command(self, argv: list[str], workspace: Path, run_name: str, **kw: Any) -> list[str]:
+        mounts = kw.get("readonly_mounts") or {}
+        resolved = []
+        for arg in argv:
+            for target, source in mounts.items():
+                arg = arg.replace(target, str(source))
+            resolved.append(arg)
+        return super().command(resolved, workspace, run_name)
+
+
+def rig_two_apps(
+    deployment: Any, tmp_path: Path, mode: str = "multi", publisher: Any = None
+) -> tuple[Any, Any, ScriptContainer, Path]:
+    from amplai_foundry.verification.runtime.integration import IntegrationCheck
+
+    rig, loop, container = rig_with_codex(deployment, tmp_path, mode, publisher=publisher)
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    git(consumer, "init", "-q", "-b", "main")
+    (consumer / "report.py").write_text('LABEL = "old"\n')
+    git(consumer, "add", "-A")
+    git(consumer, "commit", "-q", "-m", "base")
+    rig.workspaces.repos["consumer"] = consumer
+    # both apps run in the rig's one image: its profile covers both (as local_deployment does)
+    d = deployment
+    shared = install_codex_profile(
+        d.store, d.scope, codex_inputs(tmp_path),
+        app_capabilities("app") + app_capabilities("consumer"),
+    )  # fmt: skip
+    rig.service.codex = shared
+    rig.service.drivers = {"codex-cli": shared}
+    loop.coordinator.registry.register(
+        d.actor, shared["driver"], SeededCodexPort(container.driver, rig.home)
+    )
+    rig.service.install(AppConfig("app", rig.repo, rig.service.apps["app"].config.verifiers))
+    rig.service.integration_factory = lambda apps: IntegrationCheck(
+        [("both", INTEGRATION, 60, ["app", "consumer"])],
+        workspaces=rig.workspaces, scope=deployment.scope, sandbox=MountSandbox(),
+    )  # fmt: skip
+    rig.service.install(
+        AppConfig("consumer", consumer, (VerifierCommand("ccheck", CCHECK, "LABEL is value", 60),))
+    )
+    rig.planner.multi_value = json.loads(json.dumps(MULTI_DRAFT))
+    return rig, loop, container, consumer

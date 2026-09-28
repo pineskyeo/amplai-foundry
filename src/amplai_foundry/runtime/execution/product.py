@@ -447,6 +447,9 @@ class LocalExecutionService:
         multi = len(targets) > 1
         if multi and mode != "work":
             raise Hold("DESIGN_ONE_APP", "A design goal targets exactly one app")
+        if multi and len({digest(self._environment(t)) for t in targets}) != 1:
+            # one activated profile runs every node of a goal (driver, model, image)
+            raise Hold("MULTI_APP_IMAGE", "The apps of one goal must share one worker image")
         bases = {
             t.config.app_id: self.workspaces.base_snapshot(
                 scope, t.config.app_id, t.config.base_branch
@@ -507,7 +510,16 @@ class LocalExecutionService:
             "planned_with": {k: planning[k] for k in ("driver_id", "model")},
             "mode": mode,
             **({"design_dir": f"{DESIGN_ROOT}{goal_id}/"} if mode == "design" else {}),
-            **({"apps": list(bases), "bases": bases, "base_checks": base_checks} if multi else {}),
+            **(
+                {
+                    "apps": list(bases),
+                    "bases": bases,
+                    "base_checks": base_checks,
+                    "base_commits": {a: self._base(b)["commit"] for a, b in bases.items()},
+                }
+                if multi
+                else {}
+            ),
             "work_items": items,
             "base_check": base_check,
             "created_at": now(),
@@ -536,6 +548,9 @@ class LocalExecutionService:
                     "source_locator": f"git:{a}@{commit}",
                 }
             )
+        policy_ref = self._policy_for([t.config.app_id for t in targets])
+        if multi:
+            record["policy_ref"] = policy_ref
         readiness = self.knowledge.readiness(
             scope, {area: [e["ref"] for e in entries] for area in READINESS_AREAS}
         )
@@ -545,7 +560,8 @@ class LocalExecutionService:
         bundle_ref, _ = self.knowledge.bundle(
             scope,
             bundle_id=new_id("context"),
-            core_refs=[installed.policy_ref, installed.invariant_ref],
+            # every target app's invariants govern the goal (validation checks all of them)
+            core_refs=[policy_ref, *(t.invariant_ref for t in targets)],
             entries=entries,
             invariant_registry_ref=installed.invariant_ref,
             token_budget=8192,
@@ -553,7 +569,7 @@ class LocalExecutionService:
         )
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
-            mode=mode, items=items,
+            mode=mode, items=items, policy_ref=policy_ref,
         )  # fmt: skip
         record["acceptance_map"] = acceptance_map
         record["composition"] = self.select_composition(installed, draft.get("task_class"))
@@ -634,9 +650,11 @@ class LocalExecutionService:
         *,
         mode: str = "work",
         items: list[dict[str, Any]] | None = None,
+        policy_ref: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
         """Deterministic contract + graph: one node per work item (a one-app goal is one)."""
         scope, service = self.scope, self.actors.service
+        policy_ref = policy_ref or installed.policy_ref
         root = self.budget.wire()
         draft = _clean_draft(draft)
         items = items or [
@@ -725,7 +743,7 @@ class LocalExecutionService:
                 "contract_ref": None,
                 "bindings": bindings,
                 "protected_regression_refs": [],
-                "policy_ref": installed.policy_ref,
+                "policy_ref": policy_ref,
             },
         )
         t = now()
@@ -734,7 +752,7 @@ class LocalExecutionService:
                 {
                     "id": f"C-{i}",
                     "statement": text,
-                    "source_refs": [installed.policy_ref],
+                    "source_refs": [policy_ref],
                     "protected": False,
                 }
                 for i, text in enumerate(draft["constraints"], start=1)
@@ -743,7 +761,7 @@ class LocalExecutionService:
                 {
                     "id": "C-SANDBOX",
                     "statement": "Changes happen only in the sandbox copy; the patch is the result",
-                    "source_refs": [installed.policy_ref],
+                    "source_refs": [policy_ref],
                     "protected": True,
                 }
             ]
@@ -754,7 +772,7 @@ class LocalExecutionService:
                         "statement": "Design mode: only documents under "
                         + DESIGN_ROOT
                         + "<goal>/ change; no source, test or configuration file (design/03:59)",
-                        "source_refs": [installed.policy_ref],
+                        "source_refs": [policy_ref],
                         "protected": True,
                     }
                 ]
@@ -793,7 +811,7 @@ class LocalExecutionService:
             "requested_capabilities": capabilities,
             "verification_plan_ref": plan_ref,
             "context_bundle_ref": bundle_ref,
-            "policy_ref": installed.policy_ref,
+            "policy_ref": policy_ref,
             "created_at": t,
         }
         contract_ref = self.goals.freeze_contract(
@@ -877,9 +895,26 @@ class LocalExecutionService:
             raise Hold("PLANNER_UNAVAILABLE", "No planner for " + driver_id)
         return planner
 
+    def _policy_for(self, apps: list[str]) -> dict[str, Any]:
+        """The app's policy; for several apps one goal policy whose ceiling is their union."""
+        if len(apps) == 1:
+            return self.apps[apps[0]].policy_ref
+        key = "__".join(sorted(apps))
+        return self._put(
+            "policy",
+            f"{key}-policy",
+            {
+                "policy_id": f"{key}-policy",
+                "scope": self.scope.wire(),
+                "production": False,
+                "requested_ceiling": [c for a in sorted(apps) for c in app_capabilities(a)],
+                "classification": "internal",
+            },
+        )
+
     def _global_for(self, apps: list[str]) -> dict[str, Any]:
         """The goal-level check of a multi-app graph: non-empty changes + integration commands."""
-        key = "+".join(sorted(apps))
+        key = "__".join(sorted(apps))  # ids allow letters, digits and . _ : -
         ref = self._put(
             "global-verifier",
             f"{key}-global",
@@ -1005,7 +1040,7 @@ class LocalExecutionService:
             "subject_id": service.subject_id,
             "contract_ref": plan["contract_ref"],
             "graph_ref": plan["graph_ref"],
-            "policy_ref": installed.policy_ref,
+            "policy_ref": plan.get("policy_ref") or installed.policy_ref,
             "generation": 1,
             "capabilities": caps,
             "artifact_bounds": [],

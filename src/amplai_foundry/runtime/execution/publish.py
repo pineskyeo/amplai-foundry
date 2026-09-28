@@ -60,14 +60,22 @@ def gh_pr_creator(repo: Path, head: str, base: str, title: str, body: str) -> st
     return created.stdout.decode().strip().splitlines()[-1]
 
 
+def gh_pr_linker(repo: Path, url: str, body: str) -> None:
+    """Comment on a draft PR (links the other PRs of a multi-app goal)."""
+    done = _run(["gh", "pr", "comment", url, "--body", body], cwd=repo)
+    if done.returncode != 0:
+        raise Hold("PR_COMMENT", "gh pr comment failed", details=done.stderr.decode()[-400:])
+
+
 class GitPublisher:
     def __init__(
         self,
         service: LocalExecutionService,
         *,
         pr_creator: Callable[[Path, str, str, str, str], str] = gh_pr_creator,
+        pr_linker: Callable[[Path, str, str], None] = gh_pr_linker,
     ) -> None:
-        self.service, self.pr_creator = service, pr_creator
+        self.service, self.pr_creator, self.pr_linker = service, pr_creator, pr_linker
         self.store, self.scope = service.store, service.scope
 
     # -- checks --------------------------------------------------------------------------------
@@ -87,9 +95,7 @@ class GitPublisher:
             raise Hold("PUBLISH_NOT_CONSENTED", "The approval does not consent to publication")
         return plan, decision
 
-    def _change(self, plan: dict[str, Any]) -> tuple[dict[str, Any], bytes]:
-        graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
-        (node,) = graph["nodes"]
+    def _change(self, node: dict[str, Any]) -> tuple[dict[str, Any], bytes]:
         work = self.store.head(self.scope, "work", node["work_id"])
         if work["state"] != "succeeded":
             raise Hold("PUBLISH_WORK_STATE", "The verified work did not succeed")
@@ -100,28 +106,73 @@ class GitPublisher:
         return value, patch
 
     # -- effect record -------------------------------------------------------------------------
-    def _record(self, goal_id: str) -> dict[str, Any] | None:
+    def _record(self, record_id: str) -> dict[str, Any] | None:
         try:
-            return self.store.head(self.scope, KIND, goal_id)
+            return self.store.head(self.scope, KIND, record_id)
         except RuntimeFault:
             return None
 
-    def _save(self, goal_id: str, state: str, value: dict[str, Any]) -> None:
+    def _save(self, record_id: str, state: str, value: dict[str, Any]) -> None:
         with self.store.tx() as db:
-            current = self._record(goal_id)
+            current = self._record(record_id)
             version = current["row_version"] if current else 0
-            self.store.cas(db, self.scope, KIND, goal_id, version, state, value)
+            self.store.cas(db, self.scope, KIND, record_id, version, state, value)
 
     # -- publish -------------------------------------------------------------------------------
     def __call__(self, goal_id: str) -> dict[str, Any]:
         plan, decision = self._authorized(goal_id)
-        app = self.service.apps[plan["app"]].config
-        base, patch = self._change(plan)
+        nodes = self.store.get(self.scope, "workgraph", plan["graph_ref"])["nodes"]
+        safe = re.sub(r"[^A-Za-z0-9._-]", "-", goal_id)
+        if len(nodes) == 1:
+            return self._publish(
+                goal_id, plan, decision, nodes[0], plan["app"], goal_id, "amplai/" + safe, []
+            )
+        # one draft PR per app (D-081), linked both ways
+        published: dict[str, dict[str, Any]] = {}
+        for node in nodes:
+            app = node["node_id"][len("node-") :]
+            earlier = [v["pr_url"] for v in published.values() if v.get("pr_url")]
+            published[app] = self._publish(
+                goal_id, plan, decision, node, app, f"{goal_id}:{app}",
+                f"amplai/{safe}-{app}", earlier,
+            )  # fmt: skip
+        apps = list(published)
+        for i, app in enumerate(apps):
+            later = [u for b in apps[i + 1 :] if (u := published[b].get("pr_url"))]
+            value = published[app]
+            if later and value.get("pr_url") and not value.get("linked"):
+                self.pr_linker(
+                    self.service.apps[app].config.repo,
+                    value["pr_url"],
+                    f"Part of AMPLAI goal `{goal_id}` with: " + ", ".join(later),
+                )
+                value["linked"] = True
+                self._save(f"{goal_id}:{app}", "done", value)
+        first = published[apps[0]]
+        return {**first, "publications": published}
+
+    def _publish(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        decision: dict[str, Any],
+        node: dict[str, Any],
+        app_id: str,
+        record_id: str,
+        branch: str,
+        earlier: list[str],
+    ) -> dict[str, Any]:
+        app = self.service.apps[app_id].config
+        base, patch = self._change(node)
         if not patch.strip():
             raise Hold("PUBLISH_EMPTY", "A verified goal with no change is not published")
-        branch = "amplai/" + re.sub(r"[^A-Za-z0-9._-]", "-", goal_id)
-        key = digest({"goal": goal_id, "patch": digest(patch.decode("latin-1"))})
-        current = self._record(goal_id)
+        multi = record_id != goal_id
+        key = digest(
+            {"goal": goal_id, "patch": digest(patch.decode("latin-1")),
+             **({"app": app_id} if multi else {})}
+        )  # fmt: skip
+        consent = {**decision["publish"], **(decision["publish"].get("apps") or {}).get(app_id, {})}
+        current = self._record(record_id)
         value: dict[str, Any] = dict(current["data"]) if current else {}
         if value and value.get("effect_key") != key:
             raise Conflict("PUBLISH_KEY", "A different change was already published for this goal")
@@ -129,29 +180,32 @@ class GitPublisher:
             commit = self._commit(app.repo, base, patch, goal_id, plan)
             value = {
                 "goal_id": goal_id,
+                **({"app": app_id} if multi else {}),
                 "effect_key": key,
                 "branch": branch,
-                "remote": decision["publish"]["remote"],
-                "base_branch": decision["publish"]["base_branch"],
-                "mode": decision["publish"]["mode"],
+                "remote": consent["remote"],
+                "base_branch": consent["base_branch"],
+                "mode": consent["mode"],
                 "commit": commit,
                 "prepared_at": now(),
             }
-            self._save(goal_id, "prepared", value)
+            self._save(record_id, "prepared", value)
         if (current or {}).get("state") == "done":
             return value
         self._push(app.repo, value)
         value["pushed_at"] = value.get("pushed_at") or now()
-        self._save(goal_id, "pushed", value)
+        self._save(record_id, "pushed", value)
         if value["mode"] == "draft_pr" and not value.get("pr_url"):
             draft = plan["draft"]
-            body = self._body(plan, draft, value)
+            body = self._body(plan, draft, value, node=node if multi else None, earlier=earlier)
             prefix = "[AMPLAI design] " if plan.get("mode") == "design" else "[AMPLAI] "
+            suffix = f" ({app_id})" if multi else ""
             value["pr_url"] = self.pr_creator(
-                app.repo, branch, value["base_branch"], prefix + draft["summary"][:200], body
-            )
+                app.repo, branch, value["base_branch"],
+                prefix + draft["summary"][:200] + suffix, body,
+            )  # fmt: skip
         value["done_at"] = now()
-        self._save(goal_id, "done", value)
+        self._save(record_id, "done", value)
         return value
 
     def _commit(
@@ -174,7 +228,8 @@ class GitPublisher:
         message = (
             f"[AMPLAI] {plan['draft']['summary']}\n\n"
             f"Goal: {goal_id}\nBase: {base['commit']}\n"
-            "Verified by AMPLAI (Codex in the sandbox; acceptance commands on base + patch).\n"
+            f"Verified by AMPLAI ({(plan.get('composition') or {}).get('driver_id', 'codex-cli')}"
+            " in the sandbox; acceptance commands on base + patch).\n"
         )
         commit = _run(
             ["git", "--git-dir", str(git_dir), "commit-tree", tree.stdout.decode().strip(),
@@ -218,14 +273,34 @@ class GitPublisher:
             raise Hold("PUBLISH_PUSH", "git push failed", details=pushed.stderr.decode()[-400:])
 
     @staticmethod
-    def _body(plan: dict[str, Any], draft: dict[str, Any], value: dict[str, Any]) -> str:
-        acceptance = "\n".join(
-            f"- {a['statement']} (`{a['verifier']}`)" for a in draft["acceptance"]
-        )
+    def _body(
+        plan: dict[str, Any],
+        draft: dict[str, Any],
+        value: dict[str, Any],
+        *,
+        node: dict[str, Any] | None = None,
+        earlier: list[str] | None = None,
+    ) -> str:
+        if node is not None:  # one app of a multi-app goal: its own acceptance and base
+            mapping = plan.get("acceptance_map") or {}
+            acceptance = "\n".join(
+                f"- {mapping[ac]['statement']} (`{mapping[ac]['verifier']}`)"
+                for ac in node["acceptance_ids"]
+            )
+            app = node["node_id"][len("node-") :]
+            base_commit = (plan.get("base_commits") or {}).get(app, plan["base_commit"])
+            head = f"{draft['objective']}\n\nThis PR: {node['objective']} ({app})"
+        else:
+            acceptance = "\n".join(
+                f"- {a['statement']} (`{a['verifier']}`)" for a in draft["acceptance"]
+            )
+            base_commit = plan["base_commit"]
+            head = draft["objective"]
         attempts = plan.get("attempts") or []
+        linked = "\n**Other PRs of this goal**: " + ", ".join(earlier) + "\n" if earlier else ""
         return (
-            f"{draft['objective']}\n\n**Acceptance** (verified on base + patch in the sandbox):\n"
-            f"{acceptance}\n\n**Base**: `{plan['base_commit']}` · **Attempts**: {len(attempts)}\n\n"
+            f"{head}\n\n**Acceptance** (verified on base + patch in the sandbox):\n"
+            f"{acceptance}\n\n**Base**: `{base_commit}` · **Attempts**: {len(attempts)}\n{linked}\n"
             f"Goal `{plan['goal_id']}` · commit `{value['commit']}`.\n"
             "This PR is a draft created by AMPLAI after verification; review before merging.\n"
         )
