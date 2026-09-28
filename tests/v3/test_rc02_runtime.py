@@ -418,6 +418,55 @@ def test_t034_unknown_usage(deployment):
     assert totals["unknown_runs"] == 1 and totals["reserved_or_spent_tokens"] == 500
 
 
+def test_estimated_usage_settles_tokens_and_records_the_cost_estimate(deployment):
+    # given: a driver-estimated cost (Claude CLI total_cost_usd) with provider-reported tokens
+    d = deployment
+    scope = d.scope
+    goal_id = "goal-estimated"
+    root = {
+        "max_delegation_depth": 2, "max_attempts": 3, "currency": "USD",
+        "max_wall_seconds": 3600, "max_parallel_works": 4, "max_tokens": 10_000,
+        "max_cost_microunits": 10_000,
+    }  # fmt: skip
+    request = {
+        "max_delegation_depth": 1, "max_attempts": 3, "currency": "USD", "max_tokens": 500,
+        "max_cost_microunits": 1_000, "max_wall_seconds": 60,
+    }  # fmt: skip
+
+    def settle(run_id, usage):
+        with d.store.tx() as db:
+            d.runtime.budgets.reserve(db, scope, goal_id, run_id, root, request)
+        with d.store.tx() as db:
+            d.runtime.budgets.settle(db, scope, run_id, usage)
+        return d.store.conn.execute(
+            "SELECT tokens,cost,status FROM reservations WHERE tenant=? AND project=? AND run_id=?",
+            (*scope.keys(), run_id),
+        ).fetchone()
+
+    def events(kind):
+        return d.store.conn.execute(
+            "SELECT COUNT(*) FROM events WHERE event_type=?", (kind,)
+        ).fetchone()[0]
+
+    estimate = {"status": "estimated", "input_tokens": 100, "output_tokens": 20}
+    # expected: tokens settle; the cost stays the reservation (the estimate is kept in usage)
+    row = settle("run-est", {**estimate, "cost_microunits": 900})
+    assert (row["tokens"], row["cost"], row["status"]) == (120, 1_000, "estimated")
+    # an estimate above the reservation is reported, not an overrun: work is not blocked
+    row = settle("run-est-high", {**estimate, "cost_microunits": 5_000})
+    assert row["status"] == "estimated" and events("budget.estimate_over") == 1
+    assert events("budget.overrun") == 0
+    # provider-reported tokens above the reservation are an actual overrun
+    row = settle("run-est-tokens", {**estimate, "output_tokens": 900})
+    assert row["status"] == "overrun" and events("budget.overrun") == 1
+    # an estimate without token counts stays unknown, as before
+    row = settle("run-est-blind", {"status": "estimated", "cost_microunits": 10})
+    assert (row["tokens"], row["status"]) == (500, "unknown")
+    totals = d.runtime.budgets.totals(scope, goal_id)
+    assert totals["estimated_runs"] == 2 and totals["overruns"] == 1
+    assert totals["unknown_runs"] == 1
+
+
 def test_t035_attempt_budget(deployment):
     # given: verifier repeatedly fails under a bounded loop; when: attempt one (of one)
     # is exhausted; expected: the Run is terminal, no more auto repair, typed HOLD.
