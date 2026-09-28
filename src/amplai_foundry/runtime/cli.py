@@ -741,6 +741,69 @@ def local_driver(
                      "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
+LAUNCHD_LABEL = "ai.amplai.local-serve"
+
+
+@ops.command("local-update")
+def local_update(
+    root: Annotated[Path | None, typer.Option("--root", help="the installed checkout")] = None,
+    restart: Annotated[bool, typer.Option("--restart/--no-restart")] = True,
+    label: Annotated[str, typer.Option("--label")] = LAUNCHD_LABEL,
+) -> None:
+    """Fast-forward this installation's checkout to its remote branch and restart the server.
+
+    Refuses a checkout with local changes. Reinstalls only when pyproject.toml changed. The
+    restart is the launchd agent's (``launchctl kickstart -k``); ``--no-restart`` skips it.
+    """
+    import subprocess
+
+    import amplai_foundry
+
+    checkout = (root or Path(amplai_foundry.__file__).resolve().parents[2]).absolute()
+
+    def git(*args: str) -> str:
+        run = subprocess.run(
+            ["git", *args], cwd=checkout, capture_output=True, text=True, timeout=300,
+            check=False,
+        )  # fmt: skip
+        if run.returncode != 0:
+            raise Hold("LOCAL_UPDATE_GIT", "git " + args[0] + " failed", details=run.stderr[-400:])
+        return run.stdout.strip()
+
+    def update() -> dict[str, Any]:
+        if not (checkout / ".git").exists():
+            raise Hold("LOCAL_UPDATE_CHECKOUT", "The installation is not a git checkout")
+        if git("status", "--porcelain"):
+            raise Hold("LOCAL_UPDATE_DIRTY", "The installed checkout has local changes")
+        before = git("rev-parse", "HEAD")
+        git("pull", "--ff-only", "--quiet")
+        after = git("rev-parse", "HEAD")
+        changed = git("diff", "--name-only", before, after).splitlines() if after != before else []
+        installed = "pyproject.toml" in changed
+        if installed:
+            run = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--quiet", "-e", str(checkout)],
+                capture_output=True, text=True, timeout=900, check=False,
+            )  # fmt: skip
+            if run.returncode != 0:
+                raise Hold("LOCAL_UPDATE_INSTALL", "pip install failed", details=run.stderr[-400:])
+        restarted = False
+        if restart and after != before:
+            run = subprocess.run(
+                ["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{label}"],
+                capture_output=True, text=True, timeout=60, check=False,
+            )  # fmt: skip
+            if run.returncode != 0:
+                raise Hold("LOCAL_UPDATE_RESTART", "launchctl kickstart failed",
+                           details=run.stderr[-400:])  # fmt: skip
+            restarted = True
+        return {"checkout": str(checkout), "before": before, "after": after,
+                "changed_files": len(changed), "reinstalled": installed,
+                "restarted": restarted}  # fmt: skip
+
+    guarded(update)
+
+
 @ops.command("local-serve")
 def local_serve(
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),

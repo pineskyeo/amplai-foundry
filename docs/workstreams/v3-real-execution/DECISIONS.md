@@ -325,3 +325,20 @@
 - Revisit: API key 과금 Codex profile 을 도입할 때 PR #24 의 조건부 추정(가격 snapshot pin, token 종류별 완전한
   매핑, fail-closed)을 그 profile 에 한해 다시 검토한다.
 
+## D-086 — A Plan Starts From The Remote Base Branch Fetched Now
+
+- Status: accepted (운영자 선택 2026-09-28: 다음 작업 추천안 진행)
+- Date: 2026-09-28
+- Decision: plan 직전에 app repo 에 설정의 remote(`origin`)가 있으면
+  `git fetch <remote> +refs/heads/<base_branch>:refs/remotes/<remote>/<base_branch>` 를 하고, 그 remote-tracking
+  ref 의 commit 을 base 로 쓴다. fetch 는 remote-tracking ref 만 바꾼다. 운영자의 local branch, checkout,
+  작업 파일은 움직이지 않는다. fetch 가 실패하면 옛 base 로 계획하지 않고 `BASE_FETCH` 로 멈춘다. remote 가
+  없는 repo 는 이전처럼 local `base_branch` 를 쓴다. replan 은 이전과 같이 원래 plan 의 base 를 유지한다.
+  launchd 로 도는 server 설치본은 `amplai ops local-update` 로 갱신한다. 이 명령은 local 변경이 있으면 거부하고,
+  fast-forward 만 하며, `pyproject.toml` 이 바뀐 경우에만 다시 설치하고, launchd agent 를 재시작한다.
+- Reason: app clone(`~/.amplai/repos/amplai-foundry`)의 local `main` 을 아무도 갱신하지 않았다. 그래서 2026-09-28
+  의 goal 여러 개가 옛 base `575f51d` 로 계획됐다. 그 결과 draft PR #22 가 main 과 충돌했고, planner 는 이미
+  merge 된 D-084 를 찾지 못해 질문으로 멈췄다(`goal-03b21dff4b714c66b4ac8c2da5fba80d`).
+- Evidence: `tests/e2e/test_rc07_fresh_base.py`(수정 전 코드에서 2개 실패),
+  `tests/v3/test_rc07_local_config.py::test_local_update_fast_forwards_a_clean_checkout_and_refuses_a_dirty_one`.
+

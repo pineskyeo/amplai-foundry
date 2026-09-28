@@ -411,6 +411,16 @@
         "src/amplai_foundry/agent_drivers",
         "src/amplai_foundry/runtime/budgets"
       ]
+    },
+    {
+      "id": "D-086",
+      "status": "active",
+      "title": "A plan starts from the remote base branch fetched now",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution",
+        "src/amplai_foundry/runtime/cli.py"
+      ]
     }
   ]
 }
