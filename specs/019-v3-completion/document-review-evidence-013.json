@@ -191,6 +191,7 @@
     "src/amplai_foundry/runtime/execution/codex.py",
     "src/amplai_foundry/runtime/execution/envelope.py",
     "src/amplai_foundry/runtime/execution/loop.py",
+    "src/amplai_foundry/runtime/execution/meta_local.py",
     "src/amplai_foundry/runtime/execution/outcomes.py",
     "src/amplai_foundry/runtime/execution/planner_codex.py",
     "src/amplai_foundry/runtime/execution/product.py",
@@ -306,6 +307,7 @@
     "tests/v3/test_rc06_patch_verifier.py",
     "tests/v3/test_rc06_planner.py",
     "tests/v3/test_rc07_local_config.py",
+    "tests/v3/test_rc09_meta_local.py",
     "tools/amplai-loop-kit/CHANGELOG.md.amplai.json",
     "tools/amplai-loop-kit/CHECKSUMS.sha256",
     "tools/amplai-loop-kit/README.md.amplai.json",
@@ -315,12 +317,10 @@
     "tools/amplai-loop-kit/tests/document-browser.mjs"
   ],
   "semantic_changes": [
-    "D-091: driver provider credentials are readable by the agent tools; the risk is accepted and recorded, isolation is not claimed (Claude token in container env and /proc, Codex auth.json 0644 by structure, OpenCode the same standard)",
-    "Usage guide limits: a bullet states the credential exposure and points to Work 032",
-    "Work 032 spec: credential broker feasibility probe, no product change"
+    "MetaHarness.reject: the reviewer ends a candidate from draft, screened, offline_evaluated or promotion_pending, with a required reason (D-089 S3)",
+    "Local product wiring: meta-proposer service identity, operator meta permissions, durable operator approvals bound to action and subject (D-089 S3)"
   ],
   "measurements": {
-    "baseline": "specs/032-credential-broker-probe/baseline-exposure.json",
-    "claim_limit": "the agent-tool path is not measured; the container uid path is"
+    "tests": "tests/v3/test_rc09_meta_local.py (8 tests); verifier v2 PASS 3381 passed"
   }
 }
