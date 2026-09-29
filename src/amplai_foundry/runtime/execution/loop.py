@@ -29,6 +29,7 @@ from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
 from ..contracts.identity import canonical, new_id, now
 from ..errors import Hold, RuntimeFault
+from . import prompts
 from .product import PORT, LocalExecutionService
 from .steering import SteeringService
 
@@ -549,12 +550,11 @@ class ExecutionLoop:
             ]
         else:
             lines = [
-                "You are the IMPLEMENTER for AMPLAI. The current directory is a copy of the "
-                f"{app.app_id} repository at commit {plan['base_commit']} (no .git, network "
-                "limited).",
-                "Make the change below. Do not commit. When you are done, run the acceptance "
-                "commands yourself; the result is judged by running them on a clean copy with "
-                "exactly your file changes applied.",
+                *prompts.render(
+                    self._implementer_role(plan),
+                    app_id=app.app_id,
+                    base_commit=plan["base_commit"],
+                ),
                 "",
                 "Objective: " + contract["objective"],
             ]
@@ -598,6 +598,22 @@ class ExecutionLoop:
                 if tail:
                     lines.append("```\n" + tail[-FEEDBACK_TAIL:] + "\n```")
         return "\n".join(lines)
+
+    def _implementer_role(self, plan: dict[str, Any]) -> list[str]:
+        """The IMPLEMENTER role lines from the goal's fixed composition (D-089 S1).
+
+        A composition whose prompt bundle ref is not a prompt bundle (planned before bundles
+        existed) gets the built-in baseline, which is the same text.
+        """
+        ref = (plan.get("composition") or {}).get("ref")
+        if not ref:
+            return list(prompts.IMPLEMENTER_BASELINE)
+        composition = self.store.get(self.scope, "harness-composition", ref)
+        try:
+            value = self.store.get(self.scope, prompts.KIND, composition["prompt_bundle_ref"])
+        except RuntimeFault:
+            return list(prompts.IMPLEMENTER_BASELINE)
+        return prompts.validate(value)
 
     def _observation(self, verdict_ref: dict[str, Any]) -> dict[str, Any]:
         verdict = self.store.get(self.scope, "verdict", verdict_ref)
