@@ -305,3 +305,25 @@ def test_an_opencode_profile_records_http_sse_and_needs_its_own_report(
     assert (driver["driver_id"], driver["transport"]) == ("opencode-server", "http_sse")
     assert model["provider"] == "opencode-go"
     assert ROUTER_ORDER == ("codex-cli", "claude-cli", "opencode-server")
+
+
+def test_opencode_never_plans_the_first_available_planner_does() -> None:
+    from types import SimpleNamespace
+
+    from amplai_foundry.runtime.execution.product import LocalExecutionService
+
+    def pick(installed: Any, driver_id: str, service: Any) -> Any:
+        return LocalExecutionService._planner(service, installed, driver_id)
+
+    empty = SimpleNamespace(planner=None, planners={})
+    service = SimpleNamespace(planner="codex-planner", planners={})
+    both = SimpleNamespace(planners={"codex-cli": "codex-planner", "claude-cli": "claude-planner"})
+    assert pick(both, "opencode-server", service) == "codex-planner"
+    claude_only = SimpleNamespace(planners={"claude-cli": "claude-planner"})
+    assert pick(claude_only, "opencode-server", empty) == "claude-planner"
+    assert pick(claude_only, "claude-cli", service) == "claude-planner"
+    with pytest.raises(Hold) as held:  # no planner at all
+        pick(SimpleNamespace(planners={}), "opencode-server", empty)
+    assert held.value.code == "PLANNER_UNAVAILABLE"
+    with pytest.raises(Hold):  # other unknown drivers stay strict
+        pick(claude_only, "some-other-driver", service)

@@ -161,7 +161,7 @@ OpenCode(`opencode serve` 1.17.13)를 AMPLAI V3 local product 의 세 번째 sys
 | SSE frame 은 `{_tag:"Event",event:"message",id:void 0,data:JSON.stringify(n)}` 이다. `id:` 줄이 없다 | `function iX(` / `function PX(` |
 | `/event` 는 요청한 instance directory 의 event 만 보낸다 | `function rX(` 의 `G.location?.directory===i.directory` |
 | event type: `session.status {sessionID,status:{type}}`, `session.idle {sessionID}`, `message.updated {info}`, `message.part.updated`, `session.error`, `permission.asked` | `"session.idle"` 정의(`wn=`, `cn=`), TUI/CLI event switch |
-| `Last-Event-ID` 처리 흔적은 bun 런타임 문자열뿐이고 server replay 는 찾지 못했다 | 모른다 수준의 negative evidence. 측정 필요(M2) |
+| `Last-Event-ID` 처리 흔적은 bun 런타임 문자열뿐이고 server replay 는 찾지 못했다 | 측정 완료(M2): 재연결에 replay 없음, `id:` 줄 없음 (`measurements.md`) |
 
 구현(`src/amplai_foundry/agent_drivers/http.py`):
 
@@ -205,22 +205,49 @@ OpenCode(`opencode serve` 1.17.13)를 AMPLAI V3 local product 의 세 번째 sys
 | D | plugin 이 로드 시 `delete process.env.OPENCODE_SERVER_PASSWORD` | 모름: auth layer 가 plugin 로드 전에 값을 읽는지. 늦게 읽으면 인증이 꺼진다(fail-open, `required` 가 false). 추정: `/proc/<pid>/environ` 은 시작 시 env 를 그대로 보여 준다 | 권장 안 함 |
 | E | uid 분리: server 는 uid A(비밀번호 보유), tool 은 uid B | 모름: OpenCode 에 tool 실행 uid 를 바꾸는 설정이 있다는 증거가 없다. C 의 wrapper 가 `setpriv`/`sudo` 로 uid 를 바꾸는 방식은 image 에 권한 도구와 정책이 필요하다 | agent 에 대한 실제 경계. 설계·측정 필요 |
 
-권장: **B + C 를 기본으로 하고 M1 측정 결과로 판정한다.** B+C 는 design 의 "password/auth explicitly on" 을
-지키고 D-087 이 측정한 bash `env` 누출(`specs/017-external-qualification-closure/spec.md:44-45`) 경로를 막는다.
-M1 에서 `/proc/<server pid>/environ` 이나 formatter/git 경로로 값이 보이면, 같은 uid 에서는 비밀번호가 agent 에게
-비밀이 아니다. 그때 비밀번호는 다른 주체(host·다른 container)에 대한 인증으로만 쓰고, agent 에 대한 경계는
-E(uid 분리)로 따로 결정한다. 같은 network namespace 의 tool 이 loopback server 에 닿는 것은 비밀번호 유무와
-무관하게 사실이다(tool 은 server 가 spawn 한 같은 container process 다).
+### 측정 결과 (M1, 2026-09-29, `measurements.md`)
+
+| 질문 | 결과 |
+| --- | --- |
+| 비밀번호를 켠 server 가 인증 없는 요청을 거부하는가 | 예. health/session/event 모두 401, 틀린 비밀번호도 401, 맞으면 200 |
+| B(plugin)+C(wrapper) 로 bash tool env 에서 변수가 사라지는가 | 예. `OPENCODE_SERVER_*` 0 줄. plugin 은 로드됐다(marker). plugin 만으로는 이름이 빈 값으로 남는다(hook 은 값을 쓸 뿐 이름을 지우지 못한다). 이름 제거는 wrapper 가 한다 |
+| **agent 의 tool 이 비밀번호를 읽을 수 있는가** | **예.** tool 의 parent 가 server(pid 6)이고 `/proc/6/environ` 이 같은 uid(65534)에게 읽히며 값이 들어 있다. 실제 model turn 의 bash tool 과 `docker exec` 두 경로로 확인했다. pid 1 (docker-init) 도 같다 |
+| formatter/git 자식 | env 내용은 측정 못 했다(image 에 formatter 없음, git 은 있음). 위 `/proc` 사실 때문에 결론에 영향이 없다 |
+| 부수 사실 | read-only config dir 은 `.gitignore` 를 미리 만들어야 한다(없으면 server 가 쓰려다 EROFS → `POST /session` 500). 의존성 npm install 은 egress 에서 403 WARN 이며 plugin 로드를 막지 않는다 |
+
+**평문 결론: 같은 container·같은 uid 에서는 환경 변수로 받은 비밀번호를 agent 의 tool 에게 숨길 수 없다.**
+B+C 는 `env` 출력만 막고, `/proc/<server pid>/environ` 은 막지 못한다. OpenCode 는 비밀번호를 env 로만 받으므로
+(위 표) server process 의 초기 environ 에 값이 남는다. plugin 으로 `process.env` 를 지워도 `/proc/<pid>/environ` 은
+시작 시점 값을 보여 준다(추정: Linux 동작, 이 run 에서 D 는 측정하지 않았다).
+
+### 선택지 (결정하지 않는다)
+
+| 안 | 내용 | 얻는 것 / 잃는 것 |
+| --- | --- | --- |
+| 1 | 비밀번호 켬 + B+C (+ `.gitignore` 선생성) | design 11:36 "password/auth explicitly on" 을 문자대로 만족하고 401 을 측정했다. 그러나 agent 는 값을 읽을 수 있으므로 agent 에 대한 경계가 아니다. 부품이 늘어난다(plugin, wrapper, read-only config dir) |
+| 2 | D-087 유지: 비밀번호 없음 + loopback bind + `--internal` network + `docker exec` | 측정된 실제 경계(listener 는 127.0.0.1 뿐, host route 없음)를 그대로 쓴다. 단순하다. design 11:36 의 "auth explicitly on" 과 다르므로 운영자의 문서화된 예외 결정이 필요하다 |
+| 3 | tool uid 분리 (server 와 tool 이 다른 uid) | 유일하게 agent 에 대한 실제 비밀 경계가 된다. OpenCode 에 tool 실행 uid 설정이 있다는 증거가 없고, profile 이 `--cap-drop=ALL` 이라 setuid 계열을 쓸 수 없다. 별도 설계와 측정이 필요하다 |
+| 4 | server 를 host 쪽으로 옮기고 비밀번호는 host 에 둔다 | agent 가 같은 process 트리에 없다. 그러나 container 격리·egress 경계를 잃는다(현재 qualification 의 전제와 반대) |
+
+이 topology 에서 비밀번호가 막는 상대는 "server 의 loopback 에 닿을 수 있는 다른 주체" 인데, 닿을 수 있는 것은 같은
+container 의 process, 즉 agent 뿐이다. 그래서 1 과 2 는 agent 에 대해서는 같은 보호 수준이다(비밀번호는 agent 에게
+비밀이 아니다). 차이는 design 문구 준수와 복잡도다.
+
+권장: **2 를 기본으로 하고, design 의 "auth explicitly on" 은 이 container topology 에 대한 운영자 예외로 문서화**한다.
+문구 준수가 우선이면 1 을 택하되, 비밀번호를 `secret_isolation` 통과 근거로 세지 않는다(qualifier 의 그 check 는
+env 이름만 본다; `/proc` 를 보게 하면 1 은 실패한다). agent 에 대한 진짜 비밀 경계가 필요하면 3 을 별도 Work 로
+설계한다. 결정은 운영자 몫이며 이 문서는 고르지 않는다.
 
 구현 상태: `OpenCodeServer.password` 필드만 두었다(`opencode_port.py`). 값이 있으면 driver 가 Basic auth 로
-붙고, 없으면 D-087 경로(`loopback_exec`)다. plugin/wrapper/launcher 는 만들지 않았다.
+붙고, 없으면 D-087 경로(`loopback_exec`)다. plugin/wrapper/launcher 는 제품 코드에 만들지 않았다. 측정용
+`scripts/opencode_auth_probe.py` 만 있다.
 
 ## Still Needs A Real Measurement
 
-- M1 auth: 선택한 auth 방식으로 bash `env`, `/proc/*/environ`, formatter/git subprocess env 에 비밀번호가 보이는지,
-  인증 없는 요청이 401 인지.
-- M2 SSE: 실제 `opencode serve` 에서 event 순서(`message.updated` completed 와 `session.idle` 의 순서), 재연결
-  시 replay 가 정말 없는지, heartbeat 10초.
+- M1 auth: 완료(`measurements.md`). 남은 것: formatter/git 자식이 실제로 받는 env, agent 가 HOME 의 provider
+  login(`auth.json`)을 읽을 수 있는지(추정: 읽힌다).
+- M2 SSE: 완료(`measurements.md`): replay 없음, heartbeat 10초, completed `message.updated` 가 `session.idle`
+  보다 먼저 온다.
 - M3 exec transport streaming: `docker exec curl -N` 이 SSE 를 끊김 없이 흘리는지, 끊긴 뒤 재연결.
 - M4 resume: server 재시작 후 같은 home 에서 session 이 복원되는지(R3).
 - M5 app image: opencode 를 넣은 app image build 후 qualifier(`--container --container-profile
@@ -229,9 +256,10 @@ E(uid 분리)로 따로 결정한다. 같은 network namespace 의 tool 이 loop
 
 ## Open
 
-- O1 (D5 결과): planner 는 선택된 driver id 로 찾는다(`product.py` `_planner`, `installed.planners.get(driver_id)`).
-  OpenCode 가 선택되면(codex·claude 가 모두 빠진 경우) planning 은 `PLANNER_UNAVAILABLE` 로 Hold 한다.
-  "OpenCode 실행 + 다른 driver planner" 조합을 허용할지는 결정이 필요하다.
+- O1 (해결, 운영자 2026-09-29): OpenCode 가 선택되면 planning 은 router 순서의 첫 번째 사용 가능한 planner
+  (Codex, 없으면 Claude)가 한다. OpenCode 는 계획하지 않는다(`product.py` `NON_PLANNING_DRIVERS`,
+  `_planner`; 테스트 `test_opencode_never_plans_the_first_available_planner_does`). planner 가 하나도 없으면
+  `PLANNER_UNAVAILABLE`, OpenCode 외 다른 driver id 는 그대로 엄격하다.
 - O2: launcher(container 시작/health/stop, streaming exec transport)는 auth 선택 뒤 구현한다.
 - O3: `_compose` 는 opencode 가 켜져 있으면 여전히 `OPENCODE_NOT_WIRED` 로 Hold 한다(launcher 와 auth 대기).
 
