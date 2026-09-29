@@ -232,8 +232,16 @@ class GitWorkspaceManager:
             run = subprocess.run(
                 # no background gc/maintenance: git may otherwise keep writing (and removing
                 # locks in) .git/objects after commit returns (seen on a Linux CI runner)
-                ["git", "-c", "core.hooksPath=/dev/null", "-c", "gc.auto=0",
-                 "-c", "maintenance.auto=false", *args],
+                [
+                    "git",
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "gc.auto=0",
+                    "-c",
+                    "maintenance.auto=false",
+                    *args,
+                ],
                 cwd=target,
                 env=env,
                 capture_output=True,
