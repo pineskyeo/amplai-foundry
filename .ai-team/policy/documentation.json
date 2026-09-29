@@ -66,7 +66,7 @@
     "maximum_security": "INTERNAL",
     "current_release_id": "kit-2.5.0-candidate-r7",
     "max_files": 10000,
-    "max_file_bytes": 8388608,
+    "max_file_bytes": 16777216,
     "governing_inputs": [
       {
         "path": "AGENTS.md",
