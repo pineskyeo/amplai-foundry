@@ -341,7 +341,10 @@ def test_a_steered_turn_can_be_replanned(deployment: Any, tmp_path: Path) -> Non
     rig.planner.draft_value = {**DRAFT, "objective": "value() returns 2 (replanned)"}
     assert loop.replan(operator, goal, "change the objective")["status"] == "replanning"
     runner.join(60)
-    assert result["status"] == "awaiting_approval" and result["revision"] == 2
+    # the reason and attempts in the message: this failed once only on a Linux CI runner
+    assert result["status"] == "awaiting_approval" and result["revision"] == 2, {
+        k: result.get(k) for k in ("status", "reason", "attempts", "steering")
+    }
     assert [a["outcome"] for a in result["previous_attempts"]] == ["replanned"]
     assert processes_stopped(container)
     assert rig.d.store.head(rig.d.scope, "goal", goal)["state"] == "blocked"

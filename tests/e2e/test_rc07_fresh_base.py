@@ -30,7 +30,8 @@ def advance(remote: Path, tmp_path: Path) -> str:
 
 def with_remote(rig: Any, tmp_path: Path) -> Path:
     remote = tmp_path / "remote.git"
-    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    # -b main: a runner whose git defaults to master would leave the bare HEAD dangling
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
     git(rig.repo, "remote", "add", "origin", str(remote))
     git(rig.repo, "push", "-q", "origin", "main")
     return remote
