@@ -378,8 +378,8 @@
 - Status: accepted (운영자 선택 2026-09-29: 전부 진행)
 - Date: 2026-09-29
 - Decision: `.ai-team/policy/documentation.json` 의 `max_file_bytes` 를 8 MiB(8388608)에서 16 MiB(16777216)로
-  올린다. 정책 검증기가 허용하는 상한은 64 MiB 다(`scripts/amplai_docs.py:1161`). 정본 검토 기록
-  (`.ai-team/knowledge/document-reviews.json`)은 append-only 이력이라(`history` 1782건, `reference_history`
+  올린다. 정책 검증기가 허용하는 상한은 64 MiB 다(`scripts/amplai_docs.py:1161`). 정본 검토 기록(문서 검토
+  저장소)은 append-only 이력이라(`history` 1782건, `reference_history`
   1350건) 검토 cycle 마다 커진다. 8 MiB 에 도달하면 `review-batch` 가 `SCOPE_INCOMPLETE` 로 새 검토를 기록하지
   못한다(`atomic_json`, 같은 파일 2203-2204). 기록을 잘라 내거나 요약하지 않는다.
 - Reason: 이력을 줄이는 것은 검토 근거를 지우는 일이다. 한도를 올리는 것이 되돌릴 수 있는 가장 작은 조치다.

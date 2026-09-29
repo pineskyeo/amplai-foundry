@@ -4,11 +4,13 @@
   "kind": "document_review_evidence",
   "changed_sources": [
     ".ai-team/knowledge/decisions.index.json",
+    ".ai-team/policy/documentation.json",
     "docs/v3/DEV02_EXECUTION.ko.md",
     "docs/v3/DEV03_OBSERVATORY_META.ko.md",
     "docs/v3/USING_AMPLAI_WORK.ko.md",
     "docs/v3/USING_AMPLAI_WORK.ko.md.amplai.json",
     "docs/workstreams/v3-real-execution/DECISIONS.md",
+    "scripts/amplai_docs.py",
     "scripts/container_qualify.py",
     "scripts/sandbox_up.sh",
     "src/amplai_foundry/agent_drivers/protocol.py",
