@@ -12,6 +12,7 @@ snapshot descriptor cannot point the host at another directory.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import os
 import posixpath
@@ -207,12 +208,14 @@ class GitWorkspaceManager:
         for current, dirs, names in os.walk(target):
             for name in dirs:
                 path = Path(current) / name
-                if not path.is_symlink():
-                    path.chmod(0o777)
+                with contextlib.suppress(FileNotFoundError):  # a git lock can vanish mid-walk
+                    if not path.is_symlink():
+                        path.chmod(0o777)
             for name in names:
                 path = Path(current) / name
-                if not path.is_symlink():
-                    path.chmod(path.stat().st_mode | 0o666)
+                with contextlib.suppress(FileNotFoundError):
+                    if not path.is_symlink():
+                        path.chmod(path.stat().st_mode | 0o666)
 
     @staticmethod
     def _commit(target: Path, message: str) -> None:
@@ -227,7 +230,18 @@ class GitWorkspaceManager:
         steps += [["add", "-A"], ["commit", "-q", "--no-verify", "--allow-empty", "-m", message]]
         for args in steps:
             run = subprocess.run(
-                ["git", "-c", "core.hooksPath=/dev/null", *args],
+                # no background gc/maintenance: git may otherwise keep writing (and removing
+                # locks in) .git/objects after commit returns (seen on a Linux CI runner)
+                [
+                    "git",
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "gc.auto=0",
+                    "-c",
+                    "maintenance.auto=false",
+                    *args,
+                ],
                 cwd=target,
                 env=env,
                 capture_output=True,
