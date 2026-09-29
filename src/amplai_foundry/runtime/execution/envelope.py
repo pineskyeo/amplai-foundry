@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from ..contracts.authority import Actor
     from .service import Runtime
 
+LIVE_CHECK_ATTEMPTS = 3  # a validate-only check has no effect, so reading again is safe
+
 
 def execution_envelope(
     runtime: Runtime, worker: Actor, dispatch: dict[str, Any], *, _validate_only: bool = False
@@ -132,5 +134,16 @@ def execution_envelope(
 
 
 def assert_execution_live(runtime: Runtime, worker: Actor, dispatch: dict[str, Any]) -> None:
-    """Recheck authority/fencing without creating an envelope for every poll."""
-    execution_envelope(runtime, worker, dispatch, _validate_only=True)
+    """Recheck authority/fencing without creating an envelope for every poll.
+
+    The goal is read before the transaction that compares its version. A goal that changed in
+    between (an operator's pause, a revision) is read again, so the check reports what the
+    change means (EXECUTION_PAUSED, DISPATCH_TAMPERED) instead of the race itself.
+    """
+    for attempt in range(LIVE_CHECK_ATTEMPTS):
+        try:
+            execution_envelope(runtime, worker, dispatch, _validate_only=True)
+            return
+        except Conflict as exc:
+            if exc.code != "ENVELOPE_RACE" or attempt == LIVE_CHECK_ATTEMPTS - 1:
+                raise
