@@ -1,0 +1,55 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "contradictions": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "current_behavior": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "invariants": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "source_of_truth": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "system_boundary": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "terminology": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    },
+    "verifier": {
+      "evidence": [],
+      "notes": "",
+      "status": "not_applicable"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "dabf5149acc74772edcb5a5a6791702a1afa8062",
+    "contract": "specs/030-meta-harness-live/work-contract.json"
+  },
+  "risk": "normal",
+  "schema_version": "1.0",
+  "verdict": "READY",
+  "work_id": "FEATURE-ID",
+  "work_type": "new_feature"
+}

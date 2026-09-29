@@ -135,6 +135,7 @@ class EvolutionBudget:
         tokens: int | None,
         cost: int | None,
         uncertain: bool = False,
+        cost_required: bool = True,
     ) -> dict[str, Any]:
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         data = head["data"]
@@ -149,12 +150,15 @@ class EvolutionBudget:
         overrun = (tokens is not None and tokens > old["token_ceiling"]) or (
             cost is not None and cost > old["cost_ceiling"]
         )
-        uncertain = uncertain or tokens is None or cost is None
+        # D-088: when the plan does not compare cost, a missing cost keeps the reserved amount
+        # (never 0) and does not make the allocation uncertain; tokens are still required.
+        uncertain = uncertain or tokens is None or (cost is None and cost_required)
+        kept_cost = old["cost"] if cost is None else cost
         new = {
             **old,
             "status": "unknown" if uncertain else "settled",
             "tokens": max(old["tokens"], tokens or 0) if uncertain else tokens,
-            "cost": max(old["cost"], cost or 0) if uncertain else cost,
+            "cost": max(old["cost"], cost or 0) if uncertain else kept_cost,
             "overrun": overrun,
             "settled_at": now(),
         }
