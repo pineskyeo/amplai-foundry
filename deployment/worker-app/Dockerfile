@@ -19,5 +19,9 @@ ENV PATH=/opt/app-venv/bin:$PATH
 # Codex runs tools through `bash -lc`; a login shell rebuilds PATH from /etc/profile, which
 # dropped the venv (measured 2026-09-28: `python: command not found`).
 RUN printf 'export PATH=/opt/app-venv/bin:$PATH\n' > /etc/profile.d/amplai-venv.sh
+# OpenCode in the app image (Work 031 D3, operator 2026-09-29): execution and verification
+# share one pinned environment. Same install as deployment/worker-opencode/Dockerfile.
+ARG OPENCODE_VERSION=1.17.13
+RUN npm install -g "opencode-ai@${OPENCODE_VERSION}" && npm cache clean --force
 USER 65534:65534
 CMD ["python", "--version"]

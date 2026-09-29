@@ -34,8 +34,16 @@ from ..storage.store import Scope, Store
 
 DRIVER_ID = "codex-cli"
 # provider -> driver id / account kind (Work 019 E: Claude is a second qualified driver)
-DRIVER_IDS = {"codex": "codex-cli", "claude": "claude-cli"}
-ACCOUNTS = {"codex": "openai-chatgpt-account", "claude": "anthropic-subscription-oauth"}
+DRIVER_IDS = {"codex": "codex-cli", "claude": "claude-cli", "opencode": "opencode-server"}
+# Work 031 (operator 2026-09-29): D2 driver id, D6 provider "opencode-go"
+ACCOUNTS = {
+    "codex": "openai-chatgpt-account",
+    "claude": "anthropic-subscription-oauth",
+    "opencode": "opencode-go",
+}
+# driver-capabilities transport (3.0.0 enum). D1: OpenCode consumes the server's SSE stream
+# (design-reference/design/11_DRIVERS_SESSIONS.md:36).
+TRANSPORTS = {"codex": "cli", "claude": "cli", "opencode": "http_sse"}
 AUTH = Path(".codex") / "auth.json"
 
 
@@ -159,7 +167,7 @@ class CodexProfileInputs:
     qualification_report: Path  # container_qualify.py --container-profile ... output
     model: str = "gpt-5.6-sol"
     data_classes: tuple[str, ...] = ("internal",)
-    provider: str = "codex"  # "codex" | "claude"
+    provider: str = "codex"  # "codex" | "claude" | "opencode"
     enabled: bool = True  # operator switch: a disabled model is filtered out of selection
 
     @property
@@ -286,7 +294,7 @@ def install_codex_profile(
         "schema_version": "3.0.0",
         "driver_id": inputs.driver_id,
         "driver_version": measured["driver_version"],
-        "transport": "cli",
+        "transport": TRANSPORTS[inputs.provider],
         "environment_ref": env_ref,
         "declared": sorted({c["action"] for c in capabilities}),
         "observed": sorted({c["action"] for c in capabilities}),
@@ -296,9 +304,11 @@ def install_codex_profile(
         "probed_at": measured["checked_at"] or now(),
     }
     driver_ref = put("driver-capabilities", f"{inputs.driver_id}-{image12}", driver)
+    # OpenCode models are "<provider>/<model>"; a record id has no "/" (common.schema $defs/id)
+    model_id = f"{inputs.provider}-{inputs.model}".replace("/", ".")
     model = {
         "schema_version": "3.0.0",
-        "profile_id": f"{inputs.provider}-{inputs.model}",
+        "profile_id": model_id,
         "provider": ACCOUNTS[inputs.provider],
         "provider_model_id": inputs.model,
         "model_version_policy": "pinned",
@@ -311,7 +321,7 @@ def install_codex_profile(
         "qualification_ref": qual_ref,
         "enabled": inputs.enabled,
     }
-    model_ref = put("model-profile", f"{inputs.provider}-{inputs.model}-{image12}", model)
+    model_ref = put("model-profile", f"{model_id}-{image12}", model)
     return {
         "environment": env_ref,
         "qualification": qual_ref,

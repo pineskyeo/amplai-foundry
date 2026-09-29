@@ -286,7 +286,9 @@ class ContainerServer(Server):
     NAME = "amplai-qual-opencode-server"
     OUTSIDE = "/tmp/outside"
 
-    def __init__(self, root: Path, canary_name: str, canary_value: str, home: Path) -> None:
+    def __init__(
+        self, root: Path, canary_name: str, canary_value: str, home: Path, profile: Path
+    ) -> None:
         from amplai_foundry.sandbox.container import ContainerProfile, ContainerSandbox
         from amplai_foundry.sandbox.egress import EgressProfile, load_qualification
 
@@ -311,9 +313,8 @@ class ContainerServer(Server):
         self.credential_values = [
             v for v in _json_strings(json.loads(auth.read_text())) if len(v) >= 24
         ]
-        profile_json = json.loads(
-            (REPO / "deployment" / "local-container-opencode.json").read_text()
-        )
+        # Work 031 D3: the app image (local-container-app-<app>.json) carries opencode too
+        profile_json = json.loads(profile.read_text())
         self.egress_profile = EgressProfile.load(REPO / "deployment" / "local-egress.json")
         ref = load_qualification(REPO / "deployment" / "local-egress-qualification.json")
         self.profile = ContainerProfile(
@@ -834,7 +835,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="opencode-go/glm-5.3-flash")
     ap.add_argument("--version", default="1.17.13", help="pinned server version")
-    ap.add_argument("--out", type=Path, default=SPEC / "driver-qualification.json")
+    ap.add_argument("--out", type=Path, default=None, help="--container: required, per image")
+    ap.add_argument(
+        "--container-profile",
+        type=Path,
+        default=REPO / "deployment" / "local-container-opencode.json",
+        help="--container: the image to run in (Work 031 D3: the app image profile)",
+    )
     ap.add_argument("--container", action="store_true", help="run the server in the sandbox")
     ap.add_argument(
         "--opencode-home", type=Path, help="scoped copy (sandbox_up.sh --opencode-home)"
@@ -851,8 +858,15 @@ def main() -> int:
     if a.container:
         if a.opencode_home is None:
             raise SystemExit("--container needs --opencode-home DIR")
-        server = ContainerServer(ROOT, canary_name, canary_value, a.opencode_home.absolute())
-        profile = json.loads((REPO / "deployment" / "local-container-opencode.json").read_text())
+        shared = (SPEC / "driver-qualification.json").resolve()
+        if a.out is None or a.out.resolve() == shared:
+            # measured_qualification reads reports["opencode-server"] beside a top-level
+            # container_image; the shared file holds the host run under that key.
+            raise SystemExit("--container needs its own --out file (one per image)")
+        server = ContainerServer(
+            ROOT, canary_name, canary_value, a.opencode_home.absolute(), a.container_profile
+        )
+        profile = json.loads(a.container_profile.read_text())
         host_version = profile["tools"]["opencode"]  # the version pinned in the image
     else:
         server = Server(ROOT, canary_name, canary_value)
@@ -873,8 +887,14 @@ def main() -> int:
         }
         for c in report["checks"]
     ]
-    existing: dict[str, Any] = json.loads(a.out.read_text())
-    key = "opencode-server-container" if a.container else "opencode-server"
+    out: Path = a.out or SPEC / "driver-qualification.json"
+    existing: dict[str, Any] = (
+        json.loads(out.read_text())
+        if out.is_file()
+        else {"schema_version": "1.0", "kind": "driver-qualification", "reports": {}}
+    )
+    # Work 031 D2: the container report is keyed by the driver id the runtime registers
+    key = "opencode-server"
     existing["reports"][key] = {
         "status": report["status"],
         "driver_version": a.version,
@@ -897,10 +917,12 @@ def main() -> int:
         "checks": checks,
     }
     existing["cost_opencode_container" if a.container else "cost_opencode"] = t.cost
+    if isinstance(server, ContainerServer):
+        existing["container_image"] = server.profile.image  # measured_qualification pins it
     body = json.dumps(existing, ensure_ascii=False, indent=2) + "\n"
     if any(v in body for v in (server.password, canary_value, *server.leak_values())):
         raise SystemExit("refusing to write report: contains a secret value")
-    a.out.write_text(body)
+    out.write_text(body)
     for c in checks:
         print(f"  {c['name']:24} {c['outcome']:12} {c.get('reason', '')[:220]}")
     print("status", report["status"])

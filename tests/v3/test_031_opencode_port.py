@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import json
+import queue
+import uuid
+from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -22,27 +26,70 @@ from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.runtime import cli
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.codex import AUTH as CODEX_AUTH
+from amplai_foundry.runtime.execution.codex import install_driver_profile
+from amplai_foundry.runtime.execution.product import ROUTER_ORDER
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
 from rc06_rig import codex_inputs, make_repo
+
+
+def frame(event: dict[str, Any]) -> bytes:
+    return b"data: " + json.dumps({"id": uuid.uuid4().hex, **event}).encode() + b"\n\n"
+
+
+class IterStream(httpx.SyncByteStream):
+    def __init__(self, chunks: Iterator[bytes]) -> None:
+        self.chunks = chunks
+
+    def __iter__(self) -> Iterator[bytes]:
+        return self.chunks
 
 
 class FakeServer:
     """An in-process stand-in for one ``opencode serve`` reached by its exec transport."""
 
     base_url = "http://127.0.0.1:4096"
+    password = None  # D-087 stand-in; the auth approach is pending (design.md Auth Options)
 
     def __init__(self, workspace: Path, home: Path) -> None:
         self.ws, self.home = workspace, home
-        self.busy, self.children, self.running = False, 0, True
+        self.events: queue.Queue[dict[str, Any]] = queue.Queue()
+        self._busy, self.children, self.running = False, 0, True
         self.message: str | None = None
         self.sessions = 0
         self.saw_auth = (home / AUTH).is_file()
         self.transport = httpx.MockTransport(self.handle)
 
+    @property
+    def busy(self) -> bool:
+        return self._busy
+
+    @busy.setter
+    def busy(self, value: bool) -> None:
+        self._busy = value
+        if not value and self.message:
+            self.events.put({"type": "message.updated", "properties": {"info": self.reply()}})
+        status = {"type": "busy" if value else "idle"}
+        self.events.put({"type": "session.status",
+                         "properties": {"sessionID": "ses_one", "status": status}})  # fmt: skip
+
+    def reply(self) -> dict[str, Any]:
+        return {"id": "msg_reply", "sessionID": "ses_one", "role": "assistant",
+                "parentID": self.message, "time": {"completed": 1}}  # fmt: skip
+
+    def stream(self) -> Iterator[bytes]:
+        yield frame({"type": "server.connected", "properties": {}})
+        while self.running:
+            try:
+                yield frame(self.events.get(timeout=0.02))
+            except queue.Empty:
+                continue
+
     def handle(self, request: httpx.Request) -> httpx.Response:
         assert self.running, "request to a stopped server"
         assert "authorization" not in request.headers  # D-087: no password
         path = request.url.path
+        if path == "/event":
+            return httpx.Response(200, stream=IterStream(self.stream()))
         if path == "/global/health":
             return httpx.Response(200, json={"healthy": True, "version": "1.17.13"})
         if path == "/session" and request.method == "POST":
@@ -55,9 +102,7 @@ class FakeServer:
         if path == "/session/status":
             return httpx.Response(200, json={"ses_one": {"type": "busy" if self.busy else "idle"}})
         if path.endswith("/message"):
-            info = {"id": "msg_reply", "sessionID": "ses_one", "role": "assistant",
-                    "parentID": self.message, "time": {"completed": 1}}  # fmt: skip
-            return httpx.Response(200, json=[{"info": info, "parts": []}])
+            return httpx.Response(200, json=[{"info": self.reply(), "parts": []}])
         if path.endswith("/abort"):
             self.busy = False
             return httpx.Response(200, json=True)
@@ -233,3 +278,30 @@ def test_opencode_config_is_parsed_switched_and_held_until_wired(tmp_path: Path)
         assert set(dep.service.apps["app"].compositions) == {"codex-cli"}
     finally:
         dep.close()
+
+
+def test_an_opencode_profile_records_http_sse_and_needs_its_own_report(
+    tmp_path: Path, deployment: Any
+) -> None:
+    inputs = codex_inputs(tmp_path)
+    container = json.loads(inputs.container_profile.read_text())
+    container["tools"]["opencode"] = "1.17.13"  # app_image_up.sh records it (D3)
+    inputs.container_profile.write_text(json.dumps(container))
+    opencode = replace(inputs, provider="opencode", model="opencode-go/glm-5.3-flash")
+    with pytest.raises(Hold) as held:  # no reports["opencode-server"] yet
+        install_driver_profile(deployment.store, deployment.scope, opencode, [])
+    assert held.value.code == "DRIVER_UNQUALIFIED"
+    doc = json.loads(inputs.qualification_report.read_text())
+    doc["reports"]["opencode-server"] = {
+        "status": "pass", "driver_version": "1.17.13", "model": "opencode-go/glm-5.3-flash",
+        "qualification_id": "qualification-opencode-rig",
+        "checks": [{"name": "exact_version", "outcome": "pass"}],
+        "tool_use": {"outcome": "pass", "long_command": {"outcome": "pass"}},
+    }  # fmt: skip
+    inputs.qualification_report.write_text(json.dumps(doc))
+    refs = install_driver_profile(deployment.store, deployment.scope, opencode, [])
+    driver = deployment.store.get(deployment.scope, "driver-capabilities", refs["driver"])
+    model = deployment.store.get(deployment.scope, "model-profile", refs["model"])
+    assert (driver["driver_id"], driver["transport"]) == ("opencode-server", "http_sse")
+    assert model["provider"] == "opencode-go"
+    assert ROUTER_ORDER == ("codex-cli", "claude-cli", "opencode-server")

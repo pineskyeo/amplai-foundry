@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 import string
+import threading
 import time
-from collections.abc import Callable
+from collections import deque
+from collections.abc import Callable, Iterator
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -90,7 +93,8 @@ class BoundHttp:
             trust_env=False,
         )
 
-    def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+    @staticmethod
+    def _check_path(path: str) -> None:
         if (
             "://" in path
             or path.startswith("//")
@@ -100,6 +104,38 @@ class BoundHttp:
             raise RuntimeFault(
                 "HTTP_PATH", "HTTP adapter path must stay on its configured endpoint"
             )
+
+    def sse(self, path: str, *, line_limit: int = 1024 * 1024) -> Iterator[str]:
+        """The ``data`` of each server-sent event on ``path`` until the stream ends.
+
+        A dropped stream ends the iteration; the caller reconciles what it may have missed.
+        """
+        self._check_path(path)
+        try:
+            with self.client.stream(
+                "GET", path.lstrip("/"), headers={"Accept": "text/event-stream"}
+            ) as stream:
+                if stream.status_code >= 300:
+                    raise Hold(
+                        "PROVIDER_HTTP",
+                        "Provider returned a non-success status",
+                        details={"status_code": stream.status_code},
+                    )
+                data: list[str] = []
+                for line in stream.iter_lines():
+                    if len(line) > line_limit:
+                        raise Hold("HTTP_BODY_LIMIT", "Server-sent event exceeded byte budget")
+                    if line == "":
+                        if data:
+                            yield "\n".join(data)
+                        data = []
+                    elif line.startswith("data:"):
+                        data.append(line[5:].removeprefix(" "))
+        except httpx.HTTPError:
+            return
+
+    def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        self._check_path(path)
         try:
             with self.client.stream(method, path.lstrip("/"), **kwargs) as stream:
                 chunks = []
@@ -138,6 +174,147 @@ class BoundHttp:
         self.client.close()
 
 
+class OpenCodeEvents:
+    """The server's ``/event`` SSE stream folded into per-session turn state (design 11:36).
+
+    Read from the pinned 1.17.13 binary (specs/031-opencode-driver/design.md, Event Stream):
+    each event is ``{"id", "type", "properties"}`` in the SSE ``data`` field, the frame has no
+    ``id:`` line and the server keeps no replay buffer, so a reconnect cannot resume from a
+    cursor. Recovery is therefore: on every ``server.connected`` the tracked sessions are re-read
+    over REST (``reconcile``) and later events fold on top. Event IDs are deduplicated and a
+    completion is kept once per session, so a replayed or reconciled completion never doubles.
+    """
+
+    def __init__(
+        self,
+        http: BoundHttp,
+        reconcile: Callable[[str, str | None], tuple[str, dict[str, Any] | None]],
+        *,
+        path: str = "event",
+    ) -> None:
+        self.http, self.reconcile, self.path = http, reconcile, path
+        self._lock = threading.Lock()
+        self._tracked: dict[str, str] = {}  # session -> request message id
+        self._status: dict[str, str] = {}
+        self._completed: dict[str, dict[str, Any]] = {}  # session -> assistant info
+        self._seen: set[str] = set()
+        self._order: deque[str] = deque()
+        self._synced: set[str] = set()  # sessions reconciled on the current connection
+        self.connections = 0
+        self.connected = False
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def track(self, session: str, request_message_id: str) -> None:
+        with self._lock:
+            self._tracked[session] = request_message_id
+            self._completed.pop(session, None)
+            self._synced.discard(session)
+            if self.connected:
+                # tracked on a live connection before its prompt is sent: every event of the
+                # turn arrives on this connection; idle only when the server says so
+                self._status[session] = "busy"
+                self._synced.add(session)
+
+    def view(self, session: str) -> tuple[str, dict[str, Any] | None] | None:
+        """(status type, completed assistant info) from events, or None if not yet known."""
+        with self._lock:
+            if not self.connected or session not in self._synced:
+                return None  # dropped or not yet reconciled: the caller reads over REST
+            return self._status.get(session, "idle"), self._completed.get(session)
+
+    def _fresh(self, event_id: object) -> bool:
+        if not isinstance(event_id, str) or not event_id:
+            return True  # nothing to deduplicate on; folding is idempotent per session
+        with self._lock:
+            if event_id in self._seen:
+                return False
+            self._seen.add(event_id)
+            self._order.append(event_id)
+            if len(self._order) > 4096:
+                self._seen.discard(self._order.popleft())
+            return True
+
+    def _connected(self) -> None:
+        with self._lock:
+            self._synced.clear()
+            tracked = dict(self._tracked)
+        for session, request in tracked.items():
+            status, completed = self.reconcile(session, request)
+            with self._lock:
+                self._status[session] = status
+                if completed is not None:
+                    self._completed.setdefault(session, completed)
+                self._synced.add(session)
+        self.connections += 1
+        self.connected = True
+
+    def fold(self, event: dict[str, Any]) -> None:
+        kind, props = event.get("type"), event.get("properties") or {}
+        if not isinstance(props, dict) or not self._fresh(event.get("id")):
+            return
+        if kind == "server.connected":
+            self._connected()
+            return
+        session = props.get("sessionID")
+        if kind in {"session.status", "session.idle"}:
+            status = "idle" if kind == "session.idle" else (props.get("status") or {}).get("type")
+            with self._lock:
+                if session in self._tracked and isinstance(status, str):
+                    self._status[session] = status
+            return
+        if kind == "message.updated":
+            info = props.get("info") or {}
+            with self._lock:
+                owner = [s for s, r in self._tracked.items() if r == info.get("parentID")]
+            if not owner or info.get("role") != "assistant":
+                return
+            if info.get("sessionID") != owner[0]:
+                raise Hold("SESSION_CORRELATION", "Cross-session response")
+            if (info.get("time") or {}).get("completed"):
+                with self._lock:
+                    self._completed.setdefault(owner[0], info)
+
+    def run_once(self) -> None:
+        """Consume one connection until it ends; the next ``server.connected`` reconciles."""
+        try:
+            for data in self.http.sse(self.path):
+                try:
+                    event = strict_json_loads(data)
+                except (ValueError, RuntimeFault) as exc:
+                    raise Hold("PROVIDER_JSON", "Server-sent event is not strict JSON") from exc
+                if isinstance(event, dict):
+                    self.fold(event)
+        finally:
+            self.connected = False
+
+    def start(self) -> None:
+        if self._thread is not None:
+            return
+
+        def loop() -> None:
+            delay = 0.5
+            while not self._stop.is_set():
+                before = self.connections
+                # a broken stream is recovered by the next connection's reconcile
+                with contextlib.suppress(Exception):
+                    self.run_once()
+                delay = 0.5 if self.connections > before else min(delay * 2, 5.0)
+                self._stop.wait(delay)
+
+        self._thread = threading.Thread(target=loop, name="opencode-events", daemon=True)
+        self._thread.start()
+
+    def wait_connected(self, timeout: float) -> bool:
+        deadline = time.monotonic() + timeout
+        while not self.connected and time.monotonic() < deadline:
+            time.sleep(0.05)
+        return self.connected
+
+    def stop(self) -> None:
+        self._stop.set()
+
+
 class OpenCodeDriver:
     """One qualified isolated server workspace, explicit asynchronous turn correlation.
 
@@ -159,6 +336,8 @@ class OpenCodeDriver:
         allow_local: bool = False,
         expected_version: str | None = None,
         boundary_probe: Callable[[str], bool] | None = None,
+        subscribe: bool = False,
+        event_thread: bool = True,
     ) -> None:
         if not password:
             raise Hold("OPENCODE_AUTH", "Server authentication is required")
@@ -177,6 +356,9 @@ class OpenCodeDriver:
             qualified,
         )
         self.expected_version, self.boundary_probe = expected_version, boundary_probe
+        # D1 (operator 2026-09-29): consume the server's SSE stream; REST reads are recovery
+        self.events = OpenCodeEvents(self.http, self._rest_turn) if subscribe else None
+        self.event_thread = event_thread
 
     def probe(self) -> dict[str, Any]:
         result = response_json(self.http.request("GET", "global/health"))
@@ -185,7 +367,7 @@ class OpenCodeDriver:
         return {
             "health": result,
             "qualified": self.qualified and bool(self.expected_version),
-            "transport": "http_poll",
+            "transport": "http_sse" if self.events is not None else "http_poll",
             "native_steering": False,
             "native_delegation": False,
         }
@@ -216,6 +398,7 @@ class OpenCodeDriver:
         health = self.probe()["health"]
         if health.get("healthy") is not True:
             raise Hold("OPENCODE_HEALTH", "Server health is not established")
+        self._subscribe()  # listen before the prompt so the turn's events are not missed
         self.journal.transition(
             did, {"prepared"}, "starting", expected_version=record["row_version"]
         )
@@ -228,6 +411,8 @@ class OpenCodeDriver:
             self.journal.update(
                 did, session_handle=session, request_message_id=message, process_stopped=False
             )
+            if self.events is not None:
+                self.events.track(session, message)
             response = self.http.request(
                 "POST",
                 f"session/{session}/prompt_async",
@@ -253,6 +438,42 @@ class OpenCodeDriver:
             "completed": False,
         }
 
+    def _subscribe(self) -> None:
+        if self.events is not None and self.event_thread:
+            self.events.start()
+            self.events.wait_connected(10)  # not connected yet: REST recovery covers the gap
+
+    def _rest_turn(
+        self, session: str, request_message_id: str | None
+    ) -> tuple[str, dict[str, Any] | None]:
+        """(status type, completed assistant reply to the exact user turn) read over REST."""
+        statuses = response_json(self.http.request("GET", "session/status"))
+        if not isinstance(statuses, dict):
+            raise Hold("OPENCODE_STATUS", "Malformed session status")
+        current = statuses.get(session, {"type": "idle"})
+        status = current.get("type") if isinstance(current, dict) else None
+        if not isinstance(status, str):
+            raise Hold("OPENCODE_STATUS", "Malformed session status")
+        if status != "idle":
+            return status, None
+        messages = response_json(self.http.request("GET", f"session/{session}/message"))
+        if not isinstance(messages, list):
+            raise Hold("OPENCODE_MESSAGES", "Expected bounded list of messages")
+        assistants = []
+        for message in messages:
+            info = message.get("info", {})
+            if info.get("sessionID") != session:
+                raise Hold("SESSION_CORRELATION", "Cross-session response")
+            if info.get("role") == "assistant" and info.get("parentID") == request_message_id:
+                assistants.append(info)
+        if not assistants or not assistants[-1].get("time", {}).get("completed"):
+            return status, None
+        return status, assistants[-1]
+
+    def close(self) -> None:
+        if self.events is not None:
+            self.events.stop()
+
     def _boundary(self, session: str) -> bool:
         if self.boundary_probe is None:
             return False
@@ -266,11 +487,10 @@ class OpenCodeDriver:
         ):
             return record
         session = native_id(record["session_handle"])
-        statuses = response_json(self.http.request("GET", "session/status"))
-        if not isinstance(statuses, dict):
-            raise Hold("OPENCODE_STATUS", "Malformed session status")
-        current = statuses.get(session, {"type": "idle"})
-        if current.get("type") != "idle":
+        seen = self.events.view(session) if self.events is not None else None
+        # Until the stream has reconciled this session, the REST read is the recovery path.
+        status, last = seen or self._rest_turn(session, record.get("request_message_id"))
+        if status != "idle":
             return {
                 **record,
                 "state": "cancelling" if record["state"] == "cancelling" else "running",
@@ -281,25 +501,12 @@ class OpenCodeDriver:
             return self.journal.transition(
                 handle, {"cancelling"}, "cancelled", process_stopped=True
             )
-        messages = response_json(self.http.request("GET", f"session/{session}/message"))
-        if not isinstance(messages, list):
-            raise Hold("OPENCODE_MESSAGES", "Expected bounded list of messages")
-        assistants = []
-        for message in messages:
-            info = message.get("info", {})
-            if info.get("sessionID") != session:
-                raise Hold("SESSION_CORRELATION", "Cross-session response")
-            if info.get("role") == "assistant" and info.get("parentID") == record.get(
-                "request_message_id"
-            ):
-                assistants.append(info)
-        if not assistants or not assistants[-1].get("time", {}).get("completed"):
+        if last is None:
             return {
                 **record,
                 "state": "running",
                 "reason": "No completed assistant response for the exact user turn",
             }
-        last = assistants[-1]
         stopped = self._boundary(session)
         if not stopped:
             return {
@@ -400,6 +607,9 @@ class OpenCodeDriver:
         self.journal.update(
             did, session_handle=session, request_message_id=message, process_stopped=False
         )
+        self._subscribe()
+        if self.events is not None:
+            self.events.track(session, message)
         try:
             response = self.http.request(
                 "POST",
@@ -436,6 +646,7 @@ class OpenCodeDriver:
         if record.get("process_stopped") is not True:
             raise Hold("DESTROY_RUNNING", "Stop and reconcile before destruction")
         # Retain server session history until a separately authorized retention job.
+        self.close()
         self.http.close()
 
 

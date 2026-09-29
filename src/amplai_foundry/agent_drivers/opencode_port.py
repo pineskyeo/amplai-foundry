@@ -3,8 +3,9 @@
 The registry holds one port per admitted profile, while the worker materializes a new workspace
 per run (runtime/execution/worker.py). ``PerDispatchOpenCodePort`` bridges the two: it launches a
 server for each dispatch on that dispatch's workspace through an ``OpenCodeServerLauncher``,
-builds an ``OpenCodeDriver`` against the server's exec transport (D-087: loopback only, no
-password), and stops the server once the driver has confirmed a stopped process.
+builds an ``OpenCodeDriver`` against the server's exec transport with the server password on
+(design 11:36 "password/auth explicitly on"; D-091 records that the agent can read it), and stops
+the server once the driver has confirmed a stopped process.
 
 The container launcher itself is pending an operator decision on the execution image
 (design.md D3); ``PendingDockerLauncher`` holds until then.
@@ -35,6 +36,7 @@ class OpenCodeServer(Protocol):
 
     base_url: str
     transport: httpx.BaseTransport
+    password: str | None  # None: no server password (D-087, on hold; design.md Auth Options)
 
     def workspace(self) -> str: ...  # the workspace the server actually serves
     def boundary(self, session: str) -> bool: ...  # idle and no tool process left
@@ -134,10 +136,12 @@ class PerDispatchOpenCodePort:
         self._lock = threading.Lock()
 
     def _driver(self, server: OpenCodeServer) -> OpenCodeDriver:
+        if not server.password:
+            raise Hold("OPENCODE_AUTH", "The OpenCode server runs with a password (design 11:36)")
         return OpenCodeDriver(
             server.base_url,
             "opencode",
-            "",  # D-087: loopback-only server behind its exec transport, no password
+            server.password,
             self.journal,
             provider_id=self.provider_id,
             model_id=self.model_id,
@@ -146,7 +150,7 @@ class PerDispatchOpenCodePort:
             allow_local=True,
             expected_version=self.version,
             boundary_probe=server.boundary,
-            loopback_exec=True,
+            subscribe=True,  # D1: SSE events, REST reads only as recovery
         )
 
     def _home(self, dispatch_id: str) -> Path:
@@ -186,6 +190,7 @@ class PerDispatchOpenCodePort:
         run = self._runs.get(handle)
         if run is None or run.stopped:
             return
+        run.driver.close()
         run.server.stop()
         self.credential.release(run.home)
         run.stopped = True
