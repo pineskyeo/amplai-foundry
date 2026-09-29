@@ -310,7 +310,10 @@ def test_a_steered_turn_can_be_steered_again(deployment: Any, tmp_path: Path) ->
     wait_resumed(loop, container, goal)
     assert loop.steer(operator, goal, "SECOND guidance")["status"] == "steering"
     runner.join(60)
-    assert result["status"] == "published"
+    # the reason and attempts in the message: this failed only on a Linux CI runner
+    assert result["status"] == "published", {
+        k: result.get(k) for k in ("status", "reason", "attempts", "steering")
+    }
     (attempt,) = result["attempts"]
     assert attempt["outcome"] == "pass" and attempt["steered"] is True
     # three turns of one native session: original, first steer, second steer
