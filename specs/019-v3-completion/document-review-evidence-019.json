@@ -10,6 +10,7 @@
     "docs/v3/USING_AMPLAI_WORK.ko.md.amplai.json",
     "docs/workstreams/v3-real-execution/DECISIONS.md",
     "scripts/container_qualify.py",
+    "scripts/sandbox_up.sh",
     "src/amplai_foundry/agent_drivers/protocol.py",
     "src/amplai_foundry/runtime/budgets/service.py",
     "src/amplai_foundry/runtime/cli.py",

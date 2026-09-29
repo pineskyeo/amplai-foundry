@@ -54,8 +54,10 @@ egress_up() {
   ALLOW_ARGS=""; for a in $ALLOW; do ALLOW_ARGS="$ALLOW_ARGS --allow $a"; done
   # the sidecar is as confined as the agent: read-only, no caps, unprivileged, pinned image
   # shellcheck disable=SC2086
+  # --restart: the sidecar comes back with docker after a reboot (colima as a login service)
   docker run -d --name "$PROXY_NAME" --network "$EGRESS_NET" --read-only --cap-drop=ALL \
     --security-opt=no-new-privileges --user 65534:65534 --pids-limit 256 --memory 256m \
+    --restart unless-stopped \
     --mount "type=bind,src=$REPO/deployment/egress,dst=/amplai-input/egress,readonly" \
     "$IMAGE_PINNED" python3 /amplai-input/egress/egress_proxy.py --listen 0.0.0.0:$PROXY_PORT $ALLOW_ARGS >/dev/null
   docker network connect "$INTERNAL_NET" "$PROXY_NAME"
@@ -134,7 +136,8 @@ colima status >/dev/null 2>&1 || colima start --cpu 2 --memory 4 --disk 20
 docker info >/dev/null
 if ! docker ps --filter name="$REGISTRY_NAME" --format '{{.Names}}' | grep -q "$REGISTRY_NAME"; then
   docker rm -f "$REGISTRY_NAME" >/dev/null 2>&1 || true
-  docker run -d --name "$REGISTRY_NAME" -p 127.0.0.1:${REGISTRY_PORT}:5000 registry:2 >/dev/null
+  docker run -d --name "$REGISTRY_NAME" --restart unless-stopped \
+    -p 127.0.0.1:${REGISTRY_PORT}:5000 registry:2 >/dev/null
 fi
 docker build -t "$IMAGE:local" "$REPO/deployment/worker"
 docker push "$IMAGE:local" >/dev/null

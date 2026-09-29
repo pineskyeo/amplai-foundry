@@ -1,5 +1,5 @@
 {
-  "snapshot": "ea8e3ae4709932de61da70bb324712c0501390ec50164f8e878dcfe2a77bcc5c",
+  "snapshot": "180820a9abeab2486342523154b79ac907507ed2c7611fb138f4af090b5993be",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -144,7 +144,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands steering or replanning a steered turn, the fetched plan base and ops local-update (D-078..D-086).",
+      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands steering or replanning a steered turn, the fetched plan base, ops local-update and the always-on setup (D-078..D-086).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [

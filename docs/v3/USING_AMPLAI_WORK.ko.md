@@ -51,6 +51,12 @@
 
 설정을 바꾼 뒤에는 `local-serve` 를 다시 시작한다.
 
+**상시 실행 (Mac)**: 재부팅 뒤에도 쓰려면 세 가지가 로그인 때 떠야 한다.
+
+- colima: `brew services start colima`(Homebrew 가 `colima start -f` 를 launchd 로 띄운다).
+- registry 와 egress proxy: `scripts/sandbox_up.sh` 가 `--restart unless-stopped` 로 만든다. 그래서 docker 와 함께 돌아온다. proxy 는 `deployment/egress` 를 bind mount 하므로, 지워질 수 있는 작업 worktree 가 아닌 상시 checkout 에서 `--egress` 를 실행한다.
+- `local-serve`: 상시 checkout 의 venv 로 도는 launchd agent(`ai.amplai.local-serve`, `RunAtLoad`·`KeepAlive`)다. main 이 바뀌면 `amplai ops local-update` 로 갱신한다.
+
 ## 매번 쓰는 흐름
 
 ```bash
