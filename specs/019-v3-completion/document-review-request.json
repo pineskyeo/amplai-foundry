@@ -1,5 +1,5 @@
 {
-  "snapshot": "5cb5384421304d7c9dc8091a1ced7a176db10722c8fd5af08b9150360e47a6b1",
+  "snapshot": "7b86028ba5decd47a20ee19cb174162fb9322bd8528390397dbcc2a959f1f99f",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -114,7 +114,7 @@
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "updated",
-      "reason": "OpenCode row: in-container qualification 9/9 with a tool-use gate after removing the server password (D-087); Claude row (D-079) unchanged.",
+      "reason": "OpenCode and Claude rows unchanged by this change (D-087, D-079).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -134,7 +134,7 @@
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "updated",
-      "reason": "Codex (ChatGPT account) cost-stays-unknown rule added beside the cost principle (D-085); earlier lines unchanged.",
+      "reason": "Experiment cost basis rule (D-088) added to the inconclusive rules; earlier lines unchanged.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -164,7 +164,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "D-087 appended (OpenCode in its container runs without a server password); no earlier entry changed.",
+      "reason": "D-088 and D-089 appended (cost basis of experiments; the meta-harness on real runs); no earlier entry changed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
