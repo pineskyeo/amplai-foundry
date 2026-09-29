@@ -1,5 +1,5 @@
 {
-  "snapshot": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+  "snapshot": "d2aafe97905316cbdf2d50f56156c81a26f0eaf75ec41fefb427ae06770e974c",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -244,7 +244,7 @@
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "updated",
-      "reason": "Claude CLI row: qualified with tool_use in the app image and wired as the system-selected fallback composition (D-079).",
+      "reason": "OpenCode row: in-container qualification 9/9 with a tool-use gate after removing the server password (D-087); Claude row (D-079) unchanged.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -294,7 +294,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "D-086 appended (a plan starts from the remote base branch fetched now; ops local-update); no earlier entry changed.",
+      "reason": "D-087 appended (OpenCode in its container runs without a server password); no earlier entry changed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [

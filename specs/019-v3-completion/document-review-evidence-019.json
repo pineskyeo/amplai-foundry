@@ -9,8 +9,11 @@
     "docs/v3/USING_AMPLAI_WORK.ko.md",
     "docs/v3/USING_AMPLAI_WORK.ko.md.amplai.json",
     "docs/workstreams/v3-real-execution/DECISIONS.md",
+    "release/rc01-conformance-closure.json",
     "scripts/container_qualify.py",
+    "scripts/opencode_qualify.py",
     "scripts/sandbox_up.sh",
+    "src/amplai_foundry/agent_drivers/http.py",
     "src/amplai_foundry/agent_drivers/protocol.py",
     "src/amplai_foundry/runtime/budgets/service.py",
     "src/amplai_foundry/runtime/cli.py",
@@ -32,6 +35,7 @@
     "tests/v3/test_dev03_observatory.py",
     "tests/v3/test_rc02_driver.py",
     "tests/v3/test_rc02_runtime.py",
+    "tests/v3/test_rc05_opencode_message_id.py",
     "tests/v3/test_rc07_local_config.py"
   ],
   "semantic_changes": [

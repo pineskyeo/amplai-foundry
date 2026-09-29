@@ -1,5 +1,5 @@
 {
-  "snapshot": "180820a9abeab2486342523154b79ac907507ed2c7611fb138f4af090b5993be",
+  "snapshot": "5cb5384421304d7c9dc8091a1ced7a176db10722c8fd5af08b9150360e47a6b1",
   "reviews": [
     {
       "document": ".ai-team/README.md",
@@ -82,6 +82,16 @@
       ]
     },
     {
+      "document": "docs/PORTABLE-DEVELOPMENT.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
@@ -104,7 +114,7 @@
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "updated",
-      "reason": "Claude CLI row: qualified with tool_use in the app image and wired as the system-selected fallback composition (D-079).",
+      "reason": "OpenCode row: in-container qualification 9/9 with a tool-use gate after removing the server password (D-087); Claude row (D-079) unchanged.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -154,7 +164,27 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "updated",
-      "reason": "D-086 appended (a plan starts from the remote base branch fetched now; ops local-update); no earlier entry changed.",
+      "reason": "D-087 appended (OpenCode in its container runs without a server password); no earlier entry changed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "release/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "evidence": [
@@ -239,6 +269,18 @@
       "line": 125,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/019-v3-completion/document-review-evidence-019.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reference": "supervisor/",
+      "line": 86,
+      "disposition": "historical",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
