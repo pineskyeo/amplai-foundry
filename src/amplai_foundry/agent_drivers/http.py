@@ -159,14 +159,24 @@ class OpenCodeDriver:
         allow_local: bool = False,
         expected_version: str | None = None,
         boundary_probe: Callable[[str], bool] | None = None,
+        loopback_exec: bool = False,
     ) -> None:
-        if not password:
+        # loopback_exec (D-087): the server listens only on its container's loopback and is
+        # reached through an exec transport. A password would only be an env value the agent's
+        # own tools inherit (the secret_isolation failure), so none is set there. Anywhere else
+        # the server must authenticate.
+        if not password and not loopback_exec:
             raise Hold("OPENCODE_AUTH", "Server authentication is required")
+        if loopback_exec and transport is None:
+            raise Hold(
+                "OPENCODE_TRANSPORT",
+                "A loopback-only server is reached only through its exec transport",
+            )
         if not model_id or model_id in {"latest", "default", "auto"}:
             raise Hold("MODEL_UNPINNED", "Pinned model required")
         self.http = BoundHttp(
             base_url,
-            auth=httpx.BasicAuth(username, password),
+            auth=httpx.BasicAuth(username, password) if password else None,
             transport=transport,
             allow_local=allow_local,
         )

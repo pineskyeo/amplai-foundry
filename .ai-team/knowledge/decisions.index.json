@@ -421,6 +421,16 @@
         "src/amplai_foundry/runtime/execution",
         "src/amplai_foundry/runtime/cli.py"
       ]
+    },
+    {
+      "id": "D-087",
+      "status": "active",
+      "title": "OpenCode in its container runs without a server password",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers",
+        "scripts/opencode_qualify.py"
+      ]
     }
   ]
 }

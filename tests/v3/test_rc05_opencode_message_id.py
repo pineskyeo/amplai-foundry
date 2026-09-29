@@ -113,3 +113,34 @@ def test_distinct_dispatches_get_distinct_ids(tmp_path: Path) -> None:
     d.start({"dispatch_id": "dispatch-one"}, "task")
     d.start({"dispatch_id": "dispatch-two"}, "task")
     assert len(set(f.sent)) == 2
+
+
+def test_a_loopback_exec_server_needs_no_password_and_sends_none(tmp_path: Path) -> None:
+    # D-087: in its container the server listens on loopback only, behind the exec transport,
+    # so no password exists for the agent's tools to inherit
+    import pytest
+
+    from amplai_foundry.runtime.errors import Hold
+
+    seen: list[str | None] = []
+
+    def fixture(request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"healthy": True, "version": "fixture-1"})
+
+    def make(password: str, **kw: object) -> OpenCodeDriver:
+        return OpenCodeDriver(
+            "http://127.0.0.1:4096", "opencode", password, SessionJournal(tmp_path / "s"),
+            provider_id="local", model_id="pinned-model", qualified=True, allow_local=True,
+            expected_version="fixture-1", **kw,  # type: ignore[arg-type]
+        )  # fmt: skip
+
+    make("", transport=httpx.MockTransport(fixture), loopback_exec=True).probe()
+    assert seen == [None]
+    # anywhere else the server must authenticate, and loopback needs its exec transport
+    with pytest.raises(Hold) as no_auth:
+        make("", transport=httpx.MockTransport(fixture))
+    assert no_auth.value.code == "OPENCODE_AUTH"
+    with pytest.raises(Hold) as no_transport:
+        make("", loopback_exec=True)
+    assert no_transport.value.code == "OPENCODE_TRANSPORT"

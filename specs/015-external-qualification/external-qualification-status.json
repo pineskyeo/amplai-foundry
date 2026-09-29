@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "external_qualification_status",
-  "checked_at": "2026-09-28T00:00:00Z",
+  "checked_at": "2026-09-29T00:00:00Z",
   "host": "macOS arm64 workstation",
   "source_list": "specs/013-amplai-v3/dev03-delivery-evidence.json#external_qualification_pending",
   "status_values": {
@@ -21,7 +21,7 @@
       "item": "Actual isolated OpenCode server, credentials, child-process termination and workspace boundary",
       "status": "partial",
       "evidence": "specs/015-external-qualification/driver-qualification.json",
-      "note": "opencode 1.17.13, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py (Work 017). Host-side server: 6/9. In the sandbox (pinned amplai-worker-opencode image on the qualified egress profile, --container): 8/9 pass; egress used only opencode.ai:443 (github/npm/example.com denied), SIGKILL of the container ends the tool tree and the exact session resumes without prompt replay. Remaining fail secret_isolation: opencode serve takes its password only from OPENCODE_SERVER_PASSWORD and the bash tool inherits it, in the container too. crash resume turn is a raw HTTP prompt, not OpenCodeDriver.resume. The model catalog is seeded because models.dev is not allowlisted. Work 017 also fixed two driver defects found only with the real server (non-ascending messageID caused endless reply regeneration; gzip bodies decoded twice)."
+      "note": "opencode 1.17.13, real model turns (opencode-go/glm-5.3-flash) through OpenCodeDriver, scripts/opencode_qualify.py. Host-side server (Work 017): 6/9. In the sandbox (pinned amplai-worker-opencode image on the qualified egress profile, --container, 2026-09-29): 9/9 pass. secret_isolation now passes because the server has no password (D-087): it listens only on the container loopback (exact_version checks /proc/net/tcp) and is reached by docker exec, so no secret exists for the bash tool to inherit. A tool-use gate (shell command + workspace file write, and a 59.6 s foreground command, no pending permission) also passes. Egress used only opencode.ai:443; SIGKILL of the container ends the tool tree and the exact session resumes without prompt replay. Remaining: the crash resume turn is a raw HTTP prompt, not OpenCodeDriver.resume; OpenCode is not wired into the local product (per-run server lifecycle and the driver transport value are open). The model catalog is seeded because models.dev is not allowlisted."
     },
     {
       "item": "Real docker/podman containment, egress, resource and credential isolation",
@@ -72,5 +72,5 @@
     "unavailable": 3,
     "not_a_local_check": 1
   },
-  "updated_by": "Work 018 (2026-09-28): codex requalified with a measured tool_use turn (D-073)"
+  "updated_by": "D-087 (2026-09-29): OpenCode in-container 9/9 without a server password"
 }

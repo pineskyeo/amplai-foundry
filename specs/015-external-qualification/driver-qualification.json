@@ -246,26 +246,26 @@
       ]
     },
     "opencode-server-container": {
-      "status": "fail",
+      "status": "pass",
       "driver_version": "1.17.13",
       "host_version": "1.17.13",
       "model": "opencode-go/glm-5.3-flash",
-      "auth": "server_basic_auth; provider login from the operator's scoped copy",
+      "auth": "none: server on the container loopback only, reached by docker exec (D-087); provider login from the operator's scoped copy",
       "method": "scripts/opencode_qualify.py --container: opencode serve in the pinned image on the qualified egress profile (ContainerSandbox argv, detached), HTTP via docker exec curl; QualificationRunner with CAS-admitted artifacts (operator trust)",
-      "checked_at": "2026-09-27T09:59:15Z",
+      "checked_at": "2026-09-29T07:48:01Z",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-e9e6a7c452614f91b336a3d09a8169bc",
+      "qualification_id": "qualification-80c9c0282f464758bcd9bfbf55302569",
       "checks": [
         {
           "name": "exact_version",
           "outcome": "pass",
-          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; unauthenticated health -> 401",
+          "reason": "server reports '1.17.13'; binary '1.17.13'; pinned '1.17.13'; listens only on loopback=True ['0100007F']",
           "artifacts": 1
         },
         {
           "name": "exact_session",
           "outcome": "pass",
-          "reason": "state=completed process_stopped=True session=ses_f1db52e18ffeZwe2IDv7yTD7cm replies_to_request=1 text='OK'",
+          "reason": "state=completed process_stopped=True session=ses_f13e1b0baffePvKt7mZ4hHFKcJ replies_to_request=1 text='OK'",
           "artifacts": 2
         },
         {
@@ -277,13 +277,13 @@
         {
           "name": "cancel_tree",
           "outcome": "pass",
-          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.14s=True; children after=0 (first poll state cancelled)",
+          "reason": "sleep child seen=True; abort ack=True; cancelled with boundary in 0.18s=True; children after=0 (first poll state cancelled)",
           "artifacts": 1
         },
         {
           "name": "filesystem_containment",
           "outcome": "pass",
-          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}]; pending permission requests=1",
+          "reason": "outside read leaked=False; outside write happened=False; tools=[{'tool': 'read', 'status': 'error'}, {'tool': 'write', 'status': 'error'}]; pending permission requests=2",
           "artifacts": 2
         },
         {
@@ -294,14 +294,14 @@
         },
         {
           "name": "secret_isolation",
-          "outcome": "fail",
-          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=['OPENCODE_SERVER_PASSWORD']",
+          "outcome": "pass",
+          "reason": "bash tool ran=True; secret values in agent-visible output=[]; secret variable names visible=[]",
           "artifacts": 1
         },
         {
           "name": "budget_accounting",
           "outcome": "pass",
-          "reason": "output tokens=14, cost=[0.00113005]",
+          "reason": "output tokens=12, cost=[0.00112905]",
           "artifacts": 1
         },
         {
@@ -310,7 +310,20 @@
           "reason": "SIGKILL server mid-turn; restart; same dispatch replayed prompt=False (journal state running); exact-session resume (raw HTTP prompt, not OpenCodeDriver.resume) text='RESUMED'; pre-crash tool processes still alive=[]",
           "artifacts": 2
         }
-      ]
+      ],
+      "tool_use": {
+        "outcome": "pass",
+        "file": "Python 3.11.2",
+        "state": "completed",
+        "pending_permissions": 0,
+        "long_command": {
+          "outcome": "pass",
+          "seconds": 59.57,
+          "state": "completed",
+          "pending_permissions": 0,
+          "printed": true
+        }
+      }
     }
   },
   "findings": [
@@ -349,19 +362,27 @@
       "usage": [
         {
           "tokens": {
-            "total": 7501,
+            "total": 7499,
             "input": 7487,
-            "output": 14,
+            "output": 12,
             "reasoning": 0,
             "cache": {
               "read": 0,
               "write": 0
             }
           },
-          "cost": 0.00113005
+          "cost": 0.00112905
         }
       ],
-      "seconds": 9.11
+      "seconds": 3.85
+    },
+    {
+      "turn": "tool_use",
+      "seconds": 9.12
+    },
+    {
+      "turn": "long_command",
+      "seconds": 59.57
     }
   ]
 }

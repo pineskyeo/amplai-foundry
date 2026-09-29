@@ -1,7 +1,7 @@
-{"ts": 1790502949.652, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
-{"ts": 1790502949.763, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
-{"ts": 1790502950.047, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
-{"ts": 1790503151.756, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
-{"ts": 1790503152.001, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
-{"ts": 1790503152.256, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
-{"ts": 1790503154.916, "target": "example.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790667804.758, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790667804.885, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790667805.119, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
+{"ts": 1790668010.101, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790668010.333, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790668010.616, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
+{"ts": 1790668012.165, "target": "example.com:443", "decision": "deny", "reason": "allowlist"}

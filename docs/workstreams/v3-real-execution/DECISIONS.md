@@ -342,3 +342,25 @@
 - Evidence: `tests/e2e/test_rc07_fresh_base.py`(수정 전 코드에서 2개 실패),
   `tests/v3/test_rc07_local_config.py::test_local_update_fast_forwards_a_clean_checkout_and_refuses_a_dirty_one`.
 
+## D-087 — OpenCode In Its Container Runs Without A Server Password
+
+- Status: accepted (운영자 선택 2026-09-29: OpenCode blocker 두 개 해결)
+- Date: 2026-09-29
+- Decision: container 안의 `opencode serve` 에는 비밀번호를 주지 않는다. server 는 container 의
+  loopback(`--hostname 127.0.0.1`, 기본값)에만 listen 하고, host 는 `docker exec` 로만 닿는다.
+  `OpenCodeDriver` 는 `loopback_exec=True` 이고 exec transport 가 있을 때만 비밀번호 없이 만들어진다. 그 밖에서는
+  지금처럼 비밀번호가 필요하다(`OPENCODE_AUTH`). qualifier(`scripts/opencode_qualify.py --container`)는 이
+  경계를 `/proc/net/tcp` 의 listener 가 loopback 뿐인지로 확인한다. host-side 는 이전처럼 인증 없는 요청이 401
+  인지로 확인한다. container qualification 에 tool_use gate(명령 실행 + workspace 파일 쓰기, 30초 넘는 foreground
+  명령, 대기 중인 permission 0)를 더한다.
+- Reason: `opencode serve` 는 비밀번호를 `OPENCODE_SERVER_PASSWORD` env 로만 받는다. agent 의 bash tool 이
+  그 env 를 상속하므로 비밀번호는 agent 자신의 접근을 막지 못했고 secret_isolation 을 실패시켰다
+  (`specs/017-external-qualification-closure/spec.md:44-45`). 막아야 할 container 밖 접근은 loopback bind 와
+  `--internal` network 가 막는다. 고정 image 에서 비밀번호 없이 server 가 뜨고 127.0.0.1:4096 에만 listen 하는 것을
+  측정했다.
+- Evidence: `specs/015-external-qualification/driver-qualification.json` 의 `opencode-server-container`
+  (2026-09-29, 9/9 pass, `tool_use` pass: 59.6초 명령), `tests/v3/test_rc05_opencode_message_id.py` 의
+  loopback test.
+- Open: OpenCode 를 실행 경로에 연결하는 일(run 별 server 수명, driver 계약의 transport 값)과
+  `OpenCodeDriver.resume` 측정은 남아 있다. 외부 자격 항목은 `partial` 로 둔다.
+
