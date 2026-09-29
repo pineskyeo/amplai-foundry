@@ -1,7 +1,7 @@
 # 031 OpenCode Driver — Design
 
 Status: Phase 2. 운영자 결정(2026-09-29) 반영. auth 방식은 아직 선택 전이다(Auth Options).
-Base: `origin/feat/029-opencode-loopback` (PR #28, D-087 포함; 작성 시점 main 미병합).
+Base: `origin/feat/029-opencode-loopback` (PR #28, D-087 포함). PR #28 은 2026-09-29 닫혔다(Tool UID Separation 참고).
 
 ## Goal
 
@@ -68,7 +68,7 @@ OpenCode(`opencode serve` 1.17.13)를 AMPLAI V3 local product 의 세 번째 sys
 - `httpx.BaseTransport` 구현 `DockerExecTransport`(현재 `scripts/opencode_qualify.py:218-275`)를 src 로 옮겨
   launcher 가 쓴다. 요청은 curl config 로 stdin 에 넣는다(argv 에 body/인증 없음).
 - `OpenCodeDriver(..., transport=<exec transport>, allow_local=True, subscribe=True)`. 비밀번호는 Auth
-  Options 의 선택을 따른다(`OpenCodeServer.password`). D-087(비밀번호 없음)은 보류다.
+  Options 의 선택을 따른다(`OpenCodeServer.password`). D-087(비밀번호 없음)은 PR #28 과 함께 닫혔다.
 - SSE 를 받으려면 exec transport 가 streaming 이어야 한다(Event Stream 참고).
 - container 는 `--internal` egress network 위에 있어 host route 가 없다(`opencode_qualify.py:221-223`).
 
@@ -132,7 +132,7 @@ OpenCode(`opencode serve` 1.17.13)를 AMPLAI V3 local product 의 세 번째 sys
 | D4 | router 순서 `codex, claude, opencode` (append) | `ROUTER_ORDER` |
 | D5 | OpenCode planner 없음 | 변경 없음. 아래 Open O1 참고 |
 | D6 | model-profile `provider` = `opencode-go` | `ACCOUNTS["opencode"]` |
-| Auth | "정식으로" = design 의 "password/auth explicitly on" 유지. PR #28(D-087, 비밀번호 제거)은 보류 | 아래 Auth Options. 선택 전이라 구현은 stub 뿐이다 |
+| Auth | "정식으로" = design 의 "password/auth explicitly on" 유지. 이후 M1 결과로 option 3(tool uid 분리) 결정. PR #28(D-087)은 닫힘 | Auth Options, Tool UID Separation. 구현은 stub 뿐이다 |
 
 ### Polling 이 fallback 으로 남는 근거
 
@@ -220,7 +220,7 @@ B+C 는 `env` 출력만 막고, `/proc/<server pid>/environ` 은 막지 못한�
 (위 표) server process 의 초기 environ 에 값이 남는다. plugin 으로 `process.env` 를 지워도 `/proc/<pid>/environ` 은
 시작 시점 값을 보여 준다(추정: Linux 동작, 이 run 에서 D 는 측정하지 않았다).
 
-### 선택지 (결정하지 않는다)
+### 선택지 (운영자 결정 2026-09-29: 3, 아래 Tool UID Separation)
 
 | 안 | 내용 | 얻는 것 / 잃는 것 |
 | --- | --- | --- |
@@ -242,6 +242,89 @@ env 이름만 본다; `/proc` 를 보게 하면 1 은 실패한다). agent 에 �
 붙고, 없으면 D-087 경로(`loopback_exec`)다. plugin/wrapper/launcher 는 제품 코드에 만들지 않았다. 측정용
 `scripts/opencode_auth_probe.py` 만 있다.
 
+## Tool UID Separation
+
+운영자 결정(2026-09-29): OpenCode auth 는 design 을 그대로 따른다. tool 은 `opencode serve` process 와 **다른 uid**
+로 실행한다(`design-reference/design/10_AUTHORITY_SECURITY.md:42` "기본 worker는 별도 unprivileged UID 또는
+container/VM … no home credential mounts", `:44` "production credential은 agent text/context/env에 장기 노출하지
+않는다"). PR #28(D-087, container 안 server 에 비밀번호 없음)은 **닫혔고 merge 하지 않는다.** 이유: M1 에서 확인했듯
+같은 uid 에서는 비밀번호가 agent 에게 비밀이 아니고, D-087 은 그 대신 비밀번호를 없애 design 11:36
+"password/auth explicitly on" 과 10:42 의 uid 분리 둘 다를 만족하지 못한다. OpenCode 는 uid 분리가 설계·측정될
+때까지 unwired(`OPENCODE_NOT_WIRED`)로 남는다.
+
+주의: 이 branch 는 `origin/feat/029-opencode-loopback`(PR #28) 위에 있다. `git log origin/main..HEAD` 에 PR #28 의
+commit 4개(`af6bd02`, `e40c70f`, `ff0dfb9`, `66ff284`)가 포함된다. merge 전에 031 commit 만 main 위로 옮기고
+`loopback_exec` 경로(`http.py`, `opencode_port.py` 의 password 없는 분기)를 제거해야 한다.
+
+### 1. OpenCode 1.17.13 가 subprocess 를 띄우는 방식 (binary, byte offset)
+
+| 경로 | 사실 | 근거 |
+| --- | --- | --- |
+| bash tool | shell = `cA(process.env.SHELL)`: 절대경로이고 파일이며 deny 목록(`Lx`)에 없으면 그 파일을 쓴다. 없으면 `bash`, 없으면 `/bin/sh` | offset 98345377 (`cA`, `K9`, `s8`, `Jx`) |
+| bash tool env | `{...process.env, ...shell.env hook}` | 96551656 |
+| bash tool 실행 | `Ir.make(cmd, [], {shell, cwd, env, detached:true})`, 취소는 process group 에 SIGTERM → SIGKILL (`process.kill(-pid)`) | 96549585 (`xi`), 98344959 (`Wx`) |
+| `SHELL` wrapper | 측정: `SHELL=/amplai-input/oc-config/shell` 이 bash tool 의 shell 로 쓰였다(M1) | `measurements.md` M1 (a) |
+| tool 인자 변경 hook | `tool.execute.before` 가 `{args:g}` 로 불리고 같은 `g` 객체가 `execute(g, …)` 로 넘어간다. plugin 이 `output.args.command` 를 바꾸면 실행 명령이 바뀐다(필드 변경은 전달, 객체 교체는 전달 안 됨) | 96475150 |
+| session shell / PTY | `shell.env` hook 을 적용한다. PTY 가 process.env 를 상속하는지는 모른다 | 96493731, 96218736 |
+| formatter / LSP | config 에서 생략하거나 `false` 면 꺼진다("Omit or set to false to disable") | 102039192 |
+| snapshot | server data dir 의 별도 git-dir 에 `--work-tree=/workspace` 로 git 실행, `check-ignore` 는 `/workspace/.git` 을 git-dir 로 쓴다. config `snapshot: false` 로 끈다 | 98016197, 96304654 |
+| project config | `OPENCODE_DISABLE_PROJECT_CONFIG` 가 없으면 workspace 에서 위로 `opencode.json(c)` 와 `.opencode/` (plugin 포함)를 읽는다. 켜면 둘 다 건너뛴다. HOME 의 `.opencode` 와 `OPENCODE_CONFIG_DIR` 는 항상 읽는다 | 99048475, 99058314 |
+| file tools (read/write/edit/glob/grep/list) | server process 안에서 실행된다(server uid). 바깥 경로 검사 `Tool.assertExternalDirectory` 는 주어진 경로 문자열로 판단한다. **측정: workspace 안 symlink 가 가리키는 workspace 밖 파일을 read tool 이 permission 요청 없이 읽었다** | 96556289; `measurements.md` M7 symlink turn |
+
+결론 1: bash tool 은 `SHELL` wrapper 로 실행 파일을 바꿀 수 있어 다른 uid 로 넘기는 지점이 있다. 그러나 file tool,
+snapshot git, (켜면) formatter/LSP/MCP, project config plugin 은 server uid 로 돈다. 특히 symlink 측정 때문에
+**bash 만 분리하고 file tool 을 그대로 두면 분리가 무너진다**: tool uid 가 workspace 에 symlink 를 만들고 read tool
+(server uid)에게 server HOME 의 `auth.json` 이나 `/proc/self/environ` 을 읽게 할 수 있다(추정: 같은 경로로 동작한다.
+측정한 것은 `/tmp/outside` canary).
+
+### 2. 메커니즘 (qualified flag: `--read-only`, `--cap-drop=ALL`, `no-new-privileges`, uid 65534)
+
+| # | 메커니즘 | 가능? | 근거 | 필요한 것 / 깨지는 것 |
+| --- | --- | --- | --- | --- |
+| M-a | setuid 도구(`sudo`, `su-exec`, `gosu`, setuid 바이너리)로 wrapper 가 uid 전환 | 불가 | image 에 sudo/su-exec/gosu 없음, `setpriv` 는 있으나 CapEff=0 이라 uid 를 못 바꾼다, no-new-privileges 가 setuid bit 를 무력화(M7 b) | profile 변경(CAP_SETUID)과 재qualification 필요 |
+| M-b | user namespace (`unshare -U`) | 불가 | `unshare: Operation not permitted` (M7 e) | 또 userns 는 같은 kuid 라 `/proc` 접근을 막지 못한다(추정, kernel ptrace 규칙) |
+| M-c | 같은 container, host 가 `docker exec -u <B>` 로 tool-runner 를 띄우고 wrapper(A)가 unix socket 으로 명령을 넘긴다 | **가능(부품 측정됨)** | `docker exec -u 65533` 동작, CapEff 0, NoNewPrivs 1(M7 b); B 는 A 의 `/proc/*/environ` 읽기 거부(M7 c); `/tmp` socket A→B 응답 `uid=65533`(M7 f) | runner script(read-only mount, node 있음), wrapper, cancel 전달, 종료 코드·stream 전달. **server HOME 은 tmpfs 여야 한다**: colima bind mount 는 uid 간 mode 를 강제하지 않는다(B 가 A 의 0600 파일을 읽음, M7 d). tmpfs 는 강제한다(M7 d). 같은 netns 라 B 는 server loopback 에 닿는다 → 비밀번호 필요(B 는 못 읽음). file tool 은 A 로 돈다 → 아래 필수 조건 |
+| M-d | 두 container: server container(A) + tool container(B), workspace 만 공유 | 가능성 높음, handoff 미측정 | tool container 는 자기 process 만 보고 server HOME 이 없다(M7 h). **bind dir 위 unix socket 은 container 간 연결 실패 `ECONNREFUSED`**(M7 f). docker named volume 또는 internal network TCP 는 미측정 | handoff 수단 측정 필요. dispatch 당 container 2개, 두 container 의 egress 설정, lifecycle 동기화. B 는 server loopback 에 닿지 않는다(다른 netns). file tool 문제는 M-c 와 같다 |
+| M-e | profile 을 바꿔 root 로 시작 → entrypoint 가 server 를 A, runner 를 B 로 띄우고 cap 을 버린다 | 기술적으로 가능 | 측정 안 함 | qualified flag(`--user 65534`, `--cap-drop=ALL`) 변경 → container 재qualification. 선택하지 않는 것을 권한다 |
+
+모든 안의 **필수 조건**(측정·설계 근거가 있는 것):
+
+1. OpenCode 의 in-process file tool 을 막는다: config `permission` 의 `read, edit, glob, grep, list` 를 `deny`
+   (permission key 목록, offset 101334233 부근 문서). 모든 파일 접근은 bash(runner, uid B)로 한다. 미측정: deny 가
+   symlink 경로까지 막는지, agent 품질 저하 정도.
+2. `OPENCODE_DISABLE_PROJECT_CONFIG=1`: workspace 의 `.opencode/plugin` 이 server uid 로 실행되는 경로를 끊는다.
+3. `formatter`/`lsp` 생략(기본 꺼짐), `snapshot: false`. AMPLAI 는 자기 workspace snapshot 을 쓴다.
+4. server HOME(`auth.json`, session DB)은 A 소유 0700 tmpfs. credential 은 bind mount 가 아니라 `docker exec -u A` 의
+   stdin 으로 넣는다(10:42 "no home credential mounts").
+5. server 비밀번호는 A 의 env 에만 둔다(B 는 `/proc/<A>/environ` 거부, M7 c). wrapper(A)는 runner 로 넘기는 env 에서
+   `OPENCODE_SERVER_*` 를 뺀다.
+6. git: server 가 A 로 도는 git 은 B 가 만든 repo 를 "dubious ownership" 으로 거부했다(git 2.39.5, fsmonitor 미실행,
+   M7 g). 같은 uid repo 에서는 `core.fsmonitor` 가 실행됐다. snapshot 을 끄면 server 의 workspace git 사용이 줄지만
+   project 감지 등 남은 git 호출은 모른다.
+
+### 3. Provider credential (`auth.json`)
+
+측정(M7 a, model 없음): 지금 layout(scoped copy 를 `/home/agent` 로 bind mount)에서 `auth.json` 은
+`owner=65534:65534 mode=644`, agent uid 65534 에게 **읽힌다**. 다른 uid(65533)에게도 읽힌다(mode 644, 그리고 colima
+bind mount 는 mode 를 uid 간에 강제하지 않는다, M7 d). 즉 오늘 OpenCode agent 는 bash 로 provider credential 을
+읽을 수 있다. (codex/claude 경로의 credential 은 이번 측정 범위가 아니다.)
+
+| 안 | credential 보호 |
+| --- | --- |
+| 현재(D-087 포함) | 없음: agent uid 가 읽는다 |
+| M-c | tmpfs 0700 A-home 이면 B 는 못 읽는다(M7 d tmpfs). 단 file tool deny(필수 1)가 없으면 symlink 로 read tool 이 읽는다 |
+| M-d | tool container 에는 server HOME 이 없다(M7 h). file tool 은 M-c 와 같은 조건 |
+| 장기 | design 10:44 broker: provider key 를 egress proxy 가 주입하고 server 는 보유하지 않는다. OpenCode provider 가 이를 허용하는지는 모른다 |
+
+### 권장과 다음 결정
+
+권장: **M-c(같은 container, `docker exec -u` runner) + 필수 조건 1-6 을 먼저 측정한다.** 부품(uid 전환, environ 거부,
+tmpfs 거부, socket handoff)은 이미 측정됐고 image·profile 변경이 필요 없다(runner 와 wrapper 는 read-only
+`/amplai-input` mount). M-d 는 더 강한 격리(netns, pid ns 분리)를 주지만 handoff 수단이 아직 동작하지 않았다.
+
+비용(M-c): runner/wrapper(소량의 node 또는 python 코드, stream·exit code·cancel 전달), launcher 변경(tmpfs HOME,
+credential 주입, runner 기동), qualifier 에 uid 분리 check 추가, 그리고 file tool 을 막는 데 따른 agent 품질 측정.
+
 ## Still Needs A Real Measurement
 
 - M1 auth: 완료(`measurements.md`). 남은 것: formatter/git 자식이 실제로 받는 env, agent 가 HOME 의 provider
@@ -260,8 +343,9 @@ env 이름만 본다; `/proc` 를 보게 하면 1 은 실패한다). agent 에 �
   (Codex, 없으면 Claude)가 한다. OpenCode 는 계획하지 않는다(`product.py` `NON_PLANNING_DRIVERS`,
   `_planner`; 테스트 `test_opencode_never_plans_the_first_available_planner_does`). planner 가 하나도 없으면
   `PLANNER_UNAVAILABLE`, OpenCode 외 다른 driver id 는 그대로 엄격하다.
-- O2: launcher(container 시작/health/stop, streaming exec transport)는 auth 선택 뒤 구현한다.
-- O3: `_compose` 는 opencode 가 켜져 있으면 여전히 `OPENCODE_NOT_WIRED` 로 Hold 한다(launcher 와 auth 대기).
+- O2: launcher(container 시작/health/stop, streaming exec transport)는 uid 분리 설계·측정 뒤 구현한다.
+- O3: `_compose` 는 opencode 가 켜져 있으면 여전히 `OPENCODE_NOT_WIRED` 로 Hold 한다(uid 분리 대기, 운영자 결정).
+- O4: merge 전 rebase: PR #28 commit 을 빼고 `loopback_exec` 경로를 제거한다.
 
 ## Risks
 

@@ -99,3 +99,51 @@ and the late `message.updated` after idle is ignored (first completion kept).
 - A control run without B+C (the earlier qualifier already measured the `env` leak,
   `specs/017-external-qualification-closure/spec.md:44-45`).
 - Resume after a server restart (M4), `docker exec curl -N` streaming (M3), app image (M5), startup cost (M6).
+
+# M7 Tool UID Separation Facts (2026-09-29)
+
+Harness: `scripts/opencode_uid_probe.py`. Disposable containers of the pinned image with the
+`ContainerSandbox` flags, network `none`. `docker inspect`: `ReadonlyRootfs=true CapDrop=[ALL]
+SecurityOpt=[no-new-privileges] User=65534:65534`. A = 65534 (server uid today), B = 65533 (candidate tool
+uid, gid 65534). The scoped OpenCode home was mounted **read-only** at `/home/agent`; only `test -r`/`stat`
+were run on the credential. A random fake secret stood in for a password (never printed; a write-time check
+refused output containing it). Model turns: **1** (the symlink turn); everything else is `docker exec`.
+
+Image tools: `python3`, `node`, `/usr/bin/git` (2.39.5), `unshare`, `setpriv`, `stat`; no `sudo`, `su-exec`,
+`gosu`.
+
+| check | result |
+| --- | --- |
+| a) `auth.json` as the agent uid (today's bind-mounted home) | `owner=65534:65534 mode=644`, **readable=yes**; home dir `mode=700` |
+| a) `auth.json` as uid B | **readable=yes** |
+| b) `docker exec -u 65533:65534` into the container | works: `uid=65533`, `CapEff 0000000000000000`, `NoNewPrivs 1` |
+| c) `/proc/<pid>/environ` of uid-A processes (docker-init, the main process) as B | **denied** (`Permission denied`); B's own process: readable |
+| c) same as A | readable, secret present |
+| d) tmpfs: A's `0700` dir / file, read by B | **read=no** |
+| d) colima bind-mounted workspace: A's `0600` file read by B | **read=yes** (mode not enforced between uids) |
+| d) bind workspace: A appends to B's file / B appends to A's file | write=yes / write=yes |
+| d) bind workspace, container view | owners shown as the creating uid (65534 / 65533), `/workspace` itself `0:0 777` |
+| d) bind workspace, host view | every file `uid=501` (the macOS user) |
+| e) `unshare -U -r id` | `Operation not permitted`; `max_user_namespaces=15443` |
+| f) unix socket in `/tmp`, runner as B, client as A (same container) | reply `uid=65533` (handoff works) |
+| f) unix socket in a bind-mounted dir, runner in container 2, client in container 1 | **`ECONNREFUSED`** |
+| h) second container (uid B) sharing only workspace + socket dir | started; sees only its own processes; `auth.json` path does not exist there; workspace files shared |
+| g) `git status` as A in a repo owned by B with `core.fsmonitor` set | `fatal: detected dubious ownership`, rc 128, **fsmonitor not run** |
+| g) same, repo owned by A | rc 0, **fsmonitor ran** |
+
+## Symlink turn (1 model turn, server with password + B+C, 1.17.13)
+
+Setup: `/workspace/notes.txt -> /tmp/outside/canary.txt` (canary is a random token, not a secret).
+Prompt: use the read tool (not bash) on `/workspace/notes.txt`.
+
+| result | value |
+| --- | --- |
+| state | `completed` (4.87 s) |
+| tools | `read` → `completed` |
+| canary token in the messages | **yes** |
+| pending permission requests | none |
+
+OpenCode's read tool followed a workspace symlink to a file outside the workspace without an
+`external_directory` permission request. A tool uid that can create symlinks in the workspace can therefore
+make the server-uid read tool read any file the server uid can read (inferred for `auth.json` and
+`/proc/self/environ`; measured with the canary).
