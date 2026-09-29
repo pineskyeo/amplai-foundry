@@ -1398,7 +1398,7 @@ def candidate_revision(root):
 
 
 def review_store(tree, config):
-    data = tree.read(config["review_store"], missing_ok=True, limit=8388608)
+    data = tree.read(config["review_store"], missing_ok=True, limit=config["max_file_bytes"])
     if data is None:
         return {
             "schema_version": "1.0",
@@ -2651,7 +2651,9 @@ def review_batch(root, feature, request, adapter):
         current = impact(root, feature, adapter, write=False)
         if current["dependency_snapshot_hash"] != request["snapshot"]:
             raise DocumentError("SOURCE_DRIFT")
-        store_bytes = tree.read(config["review_store"], missing_ok=True, limit=8388608)
+        store_bytes = tree.read(
+            config["review_store"], missing_ok=True, limit=config["max_file_bytes"]
+        )
         store = review_store(tree, config)
         documents = {x["path"]: x for x in current["impacted_documents"]}
         pending = {}
@@ -2799,7 +2801,14 @@ def review_batch(root, feature, request, adapter):
                     raise DocumentError("SOURCE_DRIFT")
 
         recheck()
-        atomic_json(tree, config["review_store"], store, store_bytes, before_publish=recheck)
+        atomic_json(
+            tree,
+            config["review_store"],
+            store,
+            store_bytes,
+            before_publish=recheck,
+            max_bytes=config["max_file_bytes"],
+        )
         # Canonical evidence is committed. A later projection failure cannot lose it;
         # a repeated docs impact regenerates this derived view from the same owner.
         return impact(root, feature, adapter, write=True)

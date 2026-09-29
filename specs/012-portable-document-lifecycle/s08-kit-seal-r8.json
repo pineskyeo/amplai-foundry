@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "check": "tools/amplai-loop-kit/seal.py --verify",
+  "verdict": "PASS",
+  "implementation_revision": "5d1366f16b2a916392720cceee8e7ed95389223e",
+  "checked_at": "2026-09-29T15:06:51Z",
+  "result": {
+    "baseline_stale": [],
+    "checksum_mismatched": [],
+    "checksum_missing_file": [],
+    "hint": null,
+    "manifest_stale": [],
+    "not_in_checksums": [],
+    "ok": true
+  },
+  "reason": "D-090 changed scripts/amplai_docs.py (the review store honors the policy max_file_bytes); the kit baseline payload mirror was updated and resealed, so CHECKSUMS.sha256 changed and r7 no longer binds the kit bytes.",
+  "supersedes": "kit-2.5.0-candidate-r7",
+  "release_id": "kit-2.5.0-candidate-r8"
+}

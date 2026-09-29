@@ -442,6 +442,16 @@
         "src/amplai_foundry/runtime/execution",
         "specs/030-meta-harness-live"
       ]
+    },
+    {
+      "id": "D-090",
+      "status": "active",
+      "title": "The document review store limit is 16 MiB",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        ".ai-team/policy/documentation.json",
+        ".ai-team/knowledge/document-reviews.json"
+      ]
     }
   ]
 }

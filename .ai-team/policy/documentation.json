@@ -4,15 +4,15 @@
     "schema_version": "1.0",
     "entries": [
       {
-        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r7.json",
-        "output": "specs/012-portable-document-lifecycle/html-developer-r7",
+        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r8.json",
+        "output": "specs/012-portable-document-lifecycle/html-developer-r8",
         "audience": "developer",
         "security": "INTERNAL",
         "history": false
       },
       {
-        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r7.json",
-        "output": "specs/012-portable-document-lifecycle/html-operator-r7",
+        "release_manifest": "specs/012-portable-document-lifecycle/guide-release-r8.json",
+        "output": "specs/012-portable-document-lifecycle/html-operator-r8",
         "audience": "operator",
         "security": "INTERNAL",
         "history": false
@@ -64,9 +64,9 @@
     "review_store": ".ai-team/knowledge/document-reviews.json",
     "default_security": "INTERNAL",
     "maximum_security": "INTERNAL",
-    "current_release_id": "kit-2.5.0-candidate-r7",
+    "current_release_id": "kit-2.5.0-candidate-r8",
     "max_files": 10000,
-    "max_file_bytes": 8388608,
+    "max_file_bytes": 16777216,
     "governing_inputs": [
       {
         "path": "AGENTS.md",
