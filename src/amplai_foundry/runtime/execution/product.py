@@ -29,6 +29,7 @@ from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
+from . import prompts
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
 from .steering import SteeringService
@@ -362,6 +363,15 @@ class LocalExecutionService:
                 "source": "operator decision 2026-09-28 (D-079): Codex first, Claude fallback",
             },
         )
+        # the class-A prompt surface each composition pins (D-089 S1); the baseline is the
+        # IMPLEMENTER text the loop used before bundles, byte for byte
+        prompt_ref = self._put(
+            prompts.KIND,
+            prompts.BASELINE_ID,
+            prompts.bundle(
+                prompts.BASELINE_ID, prompts.IMPLEMENTER_BASELINE, "built-in baseline (Work 018)"
+            ),
+        )
         compositions = {}
         for driver_id, refs in drivers.items():
             name = f"{a}-{driver_id.split('-')[0]}"
@@ -376,7 +386,7 @@ class LocalExecutionService:
                     "driver_profile_ref": refs["driver"],
                     "sandbox_profile_ref": refs["environment"],
                     "pack_refs": [],
-                    "prompt_bundle_ref": policy_ref,
+                    "prompt_bundle_ref": prompt_ref,
                     "router_policy_ref": router_ref,
                     "context_policy_ref": policy_ref,
                     "verification_policy_ref": policy_ref,
