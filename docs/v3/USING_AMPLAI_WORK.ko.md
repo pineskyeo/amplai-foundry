@@ -109,6 +109,10 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - Codex credential 은 run 마다 새 home 에 넣었다가 끝나면 지운다(steer 로 멈추면 회수했다가 이어갈 때 다시
   넣는다). 갱신된 token 만 사본에 되돌려 쓴다. Claude 는 운영자가 만든 0600 token 파일을 참조만 하고
   환경 변수 이름으로만 컨테이너에 넘긴다.
+- **driver credential 은 agent 의 tool 이 읽을 수 있다고 본다 (D-091).** Claude token 은 컨테이너 env 에 있고 같은
+  uid 에서 `/proc` 으로 읽힌다(측정). Codex `auth.json` 도 같은 구조다(추정, 미측정). 계정 revoke, egress
+  allowlist, 산출물 leak scan 으로 영향을 줄일 뿐 credential 격리를 보장하지 않는다. credential broker 는
+  Work 032 에서 성립 여부를 확인한다.
 - 검증 명령은 설치된 목록에서만 고른다. 모델은 verifier, 권한, 예산을 정할 수 없다.
 - 격리는 자격을 받은 컨테이너가 맡는다. 컨테이너 안에서는 Codex 자체 sandbox(bwrap)가 동작하지 않아
   Codex 를 `--dangerously-bypass-approvals-and-sandbox` 로 실행한다 (D-073). 계획 단계의 읽기 전용은
