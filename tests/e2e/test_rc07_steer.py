@@ -351,3 +351,45 @@ def test_a_steered_turn_can_be_replanned(deployment: Any, tmp_path: Path) -> Non
     assert [a["outcome"] for a in result["previous_attempts"]] == ["replanned"]
     assert processes_stopped(container)
     assert rig.d.store.head(rig.d.scope, "goal", goal)["state"] == "blocked"
+
+
+def test_a_steer_inside_the_liveness_check_window_is_a_pause_not_a_race(
+    deployment: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The liveness check reads the goal, then compares its version in a transaction. A steer
+    that lands between the two is the operator's pause, not a driver failure (the Linux CI
+    runner hit this window: held with ENVELOPE_RACE instead of a resumed turn)."""
+    import sys
+
+    rig, loop, container = rig_with_codex(deployment, tmp_path, "steer")
+    operator = with_permissions(rig.operator, "goal.steer")
+    goal = approved(rig)
+    store = rig.d.store
+    head = store.head
+    armed = threading.Event()
+
+    def racing(scope: Any, kind: str, key: str, *args: Any, **kw: Any) -> Any:
+        row = head(scope, kind, key, *args, **kw)
+        if (
+            kind == "goal"
+            and armed.is_set()
+            and sys._getframe(1).f_code.co_name == "execution_envelope"
+        ):
+            armed.clear()
+            loop.steer(operator, goal, "value() must return 2")
+        return row
+
+    monkeypatch.setattr(store, "head", racing)
+    result: dict[str, Any] = {}
+    runner = threading.Thread(target=lambda: result.update(loop.run_goal(goal)))
+    runner.start()
+    wait_running(rig)
+    armed.set()
+    runner.join(60)
+    assert not armed.is_set()  # the steer really landed inside the window
+    assert result["status"] == "published", {
+        k: result.get(k) for k in ("status", "reason", "attempts")
+    }
+    (attempt,) = result["attempts"]
+    assert attempt["outcome"] == "pass" and attempt["steered"] is True
+    assert "value() must return 2" in container.prompts[1]
