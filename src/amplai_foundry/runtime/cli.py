@@ -730,14 +730,14 @@ def local_integration(
 
 @ops.command("local-driver")
 def local_driver(
-    driver: Annotated[str, typer.Argument(help="codex or claude")],
+    driver: Annotated[str, typer.Argument(help="codex, claude or opencode")],
     enabled: Annotated[bool, typer.Option("--enable/--disable")] = True,
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
 ) -> None:
     """Make a driver eligible or not for selection (a disabled model is filtered out)."""
 
     def change(value: dict[str, Any]) -> None:
-        if driver not in {"codex", "claude"} or not value.get(driver):
+        if driver not in {"codex", "claude", "opencode"} or not value.get(driver):
             raise Hold("DRIVER_UNKNOWN", "Configure the driver before switching it")
         value[driver]["enabled"] = enabled
 

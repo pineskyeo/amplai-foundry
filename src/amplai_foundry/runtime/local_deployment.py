@@ -104,6 +104,8 @@ class AppEntry(BaseModel):
     qualification_report: str  # container_qualify.py output for that image
     # Claude CLI qualification in the same image (Work 019 E); absent = Codex only
     claude_qualification_report: str | None = None
+    # OpenCode (specs/031-opencode-driver): parsed only; wiring waits on design.md D1-D4
+    opencode_qualification_report: str | None = None
     verifiers: list[VerifierConfig] = Field(min_length=1)
     aliases: list[str] = Field(default_factory=list)
     base_branch: str = "main"
@@ -123,6 +125,15 @@ class ClaudeEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
     token_file: str  # 0600 file with CLAUDE_CODE_OAUTH_TOKEN=... (created by the operator)
     model: str = "claude-sonnet-5"
+    enabled: bool = True
+
+
+class OpenCodeEntry(BaseModel):
+    """A third driver candidate (specs/031-opencode-driver). Parsed, not yet composed."""
+
+    model_config = ConfigDict(extra="forbid")
+    credential_home: str  # scripts/sandbox_up.sh --opencode-home DIR (scoped copy)
+    model: str = "opencode-go/glm-5.3-flash"  # the model the container qualification measured
     enabled: bool = True
 
 
@@ -149,6 +160,7 @@ class LocalConfig(BaseModel):
     verifier_key_file: str
     codex: CodexEntry
     claude: ClaudeEntry | None = None
+    opencode: OpenCodeEntry | None = None
     apps: list[AppEntry] = Field(min_length=1, max_length=4)
     integrations: list[IntegrationEntry] = Field(default_factory=list)
     publish_mode: str = "draft_pr"
@@ -161,6 +173,13 @@ class LocalProductDeployment:
         if self.config.schema_version != "local-1":
             raise Hold("CONFIG_VERSION", "Unknown local product configuration")
         cfg = self.config
+        if cfg.opencode is not None and cfg.opencode.enabled:
+            # stub: transport value, image, driver id and router order are open decisions
+            raise Hold(
+                "OPENCODE_NOT_WIRED",
+                "OpenCode is configured but its wiring waits on specs/031-opencode-driver D1-D4;"
+                " disable it with ops local-driver opencode --disable",
+            )
         self.scope = Scope.parse(cfg.scope)
         self.contracts = Contracts()
         self.store = Store(self.local(cfg.runtime_root))
