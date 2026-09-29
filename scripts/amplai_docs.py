@@ -2799,7 +2799,14 @@ def review_batch(root, feature, request, adapter):
                     raise DocumentError("SOURCE_DRIFT")
 
         recheck()
-        atomic_json(tree, config["review_store"], store, store_bytes, before_publish=recheck)
+        atomic_json(
+            tree,
+            config["review_store"],
+            store,
+            store_bytes,
+            before_publish=recheck,
+            max_bytes=config["max_file_bytes"],
+        )
         # Canonical evidence is committed. A later projection failure cannot lose it;
         # a repeated docs impact regenerates this derived view from the same owner.
         return impact(root, feature, adapter, write=True)
