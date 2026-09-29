@@ -499,7 +499,9 @@
       "specs/030-meta-harness-live/knowledge-readiness.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/030-meta-harness-live/plan.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/030-meta-harness-live/spec.md": "per-Work contract/plan/evidence; active contract independently bound",
-      "specs/030-meta-harness-live/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound"
+      "specs/030-meta-harness-live/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/032-credential-broker-probe/baseline-exposure.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/032-credential-broker-probe/spec.md": "per-Work contract/plan/evidence; active contract independently bound"
     },
     "expected": [
       ".ai-team/knowledge/decisions.index.json",
@@ -555,6 +557,8 @@
       "specs/030-meta-harness-live/plan.md",
       "specs/030-meta-harness-live/spec.md",
       "specs/030-meta-harness-live/work-contract.json",
+      "specs/032-credential-broker-probe/baseline-exposure.json",
+      "specs/032-credential-broker-probe/spec.md",
       "src/amplai_foundry/agent_drivers/protocol.py",
       "src/amplai_foundry/evaluation/analysis.py",
       "src/amplai_foundry/evaluation/service.py",
@@ -644,21 +648,21 @@
     "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
     "unprocessed": []
   },
-  "content_hash": "7e99fe0c115f350274235b9fc75a252be59c2ce765afd4a2d7206ed42923bf71",
+  "content_hash": "09c4f7594ae0ee4103bb470bb4c77ad669d9c96e1f101d3a11635e098fea2806",
   "dependency_snapshot": {
     "base_commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c"
+      "sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969"
     },
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-          "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -676,7 +680,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -695,7 +699,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -714,8 +718,8 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-          "declared_reference_sha256": "b950b201c6bbd5399e0a791d439931b42f3b80c9cbd129f222abfa383c36a0d1",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -733,7 +737,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -752,7 +756,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -771,7 +775,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -790,7 +794,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -809,7 +813,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -828,8 +832,8 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-          "declared_reference_sha256": "57b2c103549365d1eacfcd48d17febde8682fdfef977a2ac45ebc45c3acd9f02",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -847,7 +851,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -866,8 +870,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-          "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -885,7 +889,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -904,7 +908,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -923,7 +927,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -942,7 +946,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -961,7 +965,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -980,7 +984,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -999,7 +1003,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
           "metadata_owner": "sidecar",
@@ -1018,7 +1022,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1037,7 +1041,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1056,7 +1060,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1075,7 +1079,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1094,7 +1098,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
           "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
           "metadata_owner": "sidecar",
@@ -1113,7 +1117,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
           "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
           "metadata_owner": "sidecar",
@@ -1132,7 +1136,7 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
           "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
           "metadata_owner": "sidecar",
@@ -1151,7 +1155,7 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
           "metadata_owner": "sidecar",
@@ -1170,7 +1174,7 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
           "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
           "metadata_owner": "sidecar",
@@ -1183,14 +1187,14 @@
           },
           "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+          "source_sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51"
         }
       },
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-          "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
           "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -1202,13 +1206,13 @@
           },
           "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+          "source_sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b"
         }
       },
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1227,7 +1231,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1246,7 +1250,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
           "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1461,7 +1465,7 @@
       {
         "mode": 420,
         "path": ".ai-team/knowledge/decisions.index.json",
-        "sha256": "7a87a2caa420f525f99a0a7c69fd7d9c882ccaa849c84880da690e817037f9d7",
+        "sha256": "bee27da4f537da5121c3bd00090079eab7afb472e7d76eeb7743ec4a3de0496a",
         "state": "PRESENT"
       },
       {
@@ -1491,7 +1495,7 @@
       {
         "mode": 420,
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-        "sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c",
+        "sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51",
         "state": "PRESENT"
       },
       {
@@ -1503,7 +1507,7 @@
       {
         "mode": 420,
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-        "sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a",
+        "sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b",
         "state": "PRESENT"
       },
       {
@@ -1742,7 +1746,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+  "dependency_snapshot_hash": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -1750,7 +1754,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+    "commit": "56bcf43201c00729a630ebb0adcfc82068257fc6",
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
   },
@@ -1779,9 +1783,9 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword knowledge,policy,runtime; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -1795,7 +1799,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "4a8650376fbe510ac37504102850efdeb7a3c45fab085e8a948ac1dd0b700157",
+      "review_hash": "8f114b8c13a23f25e2de8797f1480aebc4d19e68455c4543fc884e2b50e95e57",
       "state": "ACTIVE"
     },
     {
@@ -1813,8 +1817,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1829,7 +1833,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "9bf3ab2e47ae0a2aae03517f51daadeeb574d061e679dd162b759878f69552cc",
+      "review_hash": "94244083fd536540b96a4370b724978bfa297d63f315dfcfc8ef30f60c3e7d22",
       "state": "ACTIVE"
     },
     {
@@ -1847,8 +1851,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1863,7 +1867,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "b8f339fa7e9b4c1dab9780a84da38a2f048f1e8e08c4d90a93e3d39dbf20b526",
+      "review_hash": "8c3e1cf268139297b406b405538f6645a97ec8a03f7ca09615c35dabe162f6f2",
       "state": "ACTIVE"
     },
     {
@@ -1883,9 +1887,9 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "b950b201c6bbd5399e0a791d439931b42f3b80c9cbd129f222abfa383c36a0d1",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -1899,7 +1903,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "72d386c3ce661b4e9fc6c49f518c9eb5665987d3eb33b579befa4d73261bcd63",
+      "review_hash": "298b3ca7d2421c8fbcc64a8acc41278a0b378ebabfa9f3197b6387187f7cfe19",
       "state": "ACTIVE"
     },
     {
@@ -1917,8 +1921,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1933,7 +1937,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "08c0ce8f5f6ce02f2548f90003e13ed305e26fc1ef8e38e23c9c43a9d72f9ba2",
+      "review_hash": "8643984f34b462836c6c42ecdf1411ff37382c3752c75f22b7416d8b87078f8a",
       "state": "ACTIVE"
     },
     {
@@ -1951,8 +1955,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1967,7 +1971,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "28d2917973599e4c5963175ead98c3c8c8935a6746f4c6dd5d409c78d23c44db",
+      "review_hash": "d83f3be6dbefd9e2a39e0209003fa690416737891778aa6a1c41337f4c5cce67",
       "state": "ACTIVE"
     },
     {
@@ -1992,8 +1996,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2008,7 +2012,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "5f54f9ff941c4909763f819d4874e52019fd710a010c92b31fc365e67d6f6541",
+      "review_hash": "6073778b1d14428aa740d6bd54cf0008704367aa30ab38e025c3b53ff49f7a67",
       "state": "ACTIVE"
     },
     {
@@ -2026,8 +2030,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2042,7 +2046,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "a4cfe1aac403022fa45b5d3f37763f83afb36adbe7144f1afa90b405a1bf75ec",
+      "review_hash": "23a0ec4287421438c1f09dabaaee7cd123c86b79886127426911899935c89da9",
       "state": "ACTIVE"
     },
     {
@@ -2062,8 +2066,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2078,7 +2082,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "5297576680ed7294ff217907e261ee3a45c3403f8e55b1e84cee8a585edb5b5f",
+      "review_hash": "53accfc178063cce3e6c7eab5f52ab0c684e526c99e192005ac8504eccd04d8a",
       "state": "ACTIVE"
     },
     {
@@ -2100,9 +2104,9 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "57b2c103549365d1eacfcd48d17febde8682fdfef977a2ac45ebc45c3acd9f02",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -2116,7 +2120,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "7c996748c65b41e3c88994e84fbf8fe1d459b43c9389d48c6bdf30322183d4bc",
+      "review_hash": "bd3befb3d04a0dd44566566eab35ef4a7eb40fb060ddc95182f5e110e6366ca7",
       "state": "ACTIVE"
     },
     {
@@ -2138,8 +2142,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2154,7 +2158,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "55425f689c517738cce8eda95d81d6d3de1854d1741bd621c96fd8f798151a69",
+      "review_hash": "b5ff9bae9baf3f26f75765389d01b7888b1b0cc4af0c7cf78e2cac9147e1c789",
       "state": "ACTIVE"
     },
     {
@@ -2174,9 +2178,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -2190,7 +2194,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "e2409d8b75147efcea7969da99aaa7ad43215b56b6c4412e704174667cae0a32",
+      "review_hash": "c56027e5e21b16a8333058c1a5d94c30c3e280f4008e2901400ab1ade69855a0",
       "state": "ACTIVE"
     },
     {
@@ -2210,8 +2214,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2226,7 +2230,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "7d13bda089483f79e99a69d4b587762dbf68643676ec7c1a821e98d2f9ba02e9",
+      "review_hash": "a33f3c451bdfdd5b73a16bf23893cad28221ebd6524630a0cd9e247f93ef7205",
       "state": "ACTIVE"
     },
     {
@@ -2244,8 +2248,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2260,7 +2264,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "b335e3291aa5942e94493a7fc113e672e271cc70ecc29a1b73771aac874ea94e",
+      "review_hash": "aa1929c10a8bb5757a1e5ef3d7f70edcbb5dd902be7ef7c3ae4a094f5aa69ba1",
       "state": "ACTIVE"
     },
     {
@@ -2278,8 +2282,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2294,7 +2298,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "3e07d1fe26954d9b5bb6e70f70c21f2a0566bcb16cce74fb61b716b691f3329c",
+      "review_hash": "bce76100879c7199abbdb9ca7c65e4c3e97a7ce72886f1374ccb7008149c93e0",
       "state": "ACTIVE"
     },
     {
@@ -2314,8 +2318,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2330,7 +2334,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "1bb769c33cae8782d32f89ba450f603ab85495fc2dfc4b8a14c3edb503e88e42",
+      "review_hash": "9d287c9935a0fc82933dd7c2195156f1e49597179b540cd99f30aeffa52e9ef3",
       "state": "ACTIVE"
     },
     {
@@ -2350,8 +2354,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2366,7 +2370,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "a08b5bf1d447dd0d2e3273996d88d5bd0e434c1d4596f9121bbd6b29f2551c7d",
+      "review_hash": "6609b258472aee7d2dde05f7b086552ff90c04428e747bcce88aada83bae332d",
       "state": "ACTIVE"
     },
     {
@@ -2384,8 +2388,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2400,7 +2404,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "e648c4e95fdb3792d472effbd3fe8e96986c824eb1543b5774e371c6dc3e107a",
+      "review_hash": "74c64ead727c7bc82b3ff1cd0a54c0a15958a6ff199474cd83390c5cc1666aa0",
       "state": "ACTIVE"
     },
     {
@@ -2418,8 +2422,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -2434,7 +2438,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "29523b3faf07c776caa762d8a65ddc18835291e275b775922ab12c8109a2f7f4",
+      "review_hash": "99f264340c6343429b85131424ea13b364bbaeaf747db0d7bfdbb121231fc8c1",
       "state": "ACTIVE"
     },
     {
@@ -2452,8 +2456,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2468,7 +2472,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "17c0e36a21cd413ccece85b34973d9ab1a6574c2dd0a45c553c96d5d9928ebca",
+      "review_hash": "2b676ac6795714dd05fafc06d583613aa82bb4bd3620fb05ee957408210b4282",
       "state": "ACTIVE"
     },
     {
@@ -2486,8 +2490,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2502,7 +2506,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "6ab09c547112a2f6ce5dae5af1fca3c1c50493315d0d8648738f3cc9f969ca1c",
+      "review_hash": "b809f12497794290d8f88c24c2b96c527aa0606dbba0e5a45e88988192096aef",
       "state": "ACTIVE"
     },
     {
@@ -2520,8 +2524,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2536,7 +2540,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "3badcccab0ede170bb88632c1c0936baa5a276011584155f7453cbf90d9194d0",
+      "review_hash": "b0175aa2395357fc8e2310974474606282080dcacd1eeed0e26eb642371f5c69",
       "state": "ACTIVE"
     },
     {
@@ -2556,8 +2560,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2572,11 +2576,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "7507d8d051522ed9a8c98274131550a549e4d82f67ef7cfdcb7bc8e4f3e3fbb8",
+      "review_hash": "510196b8ce37f4e6d74ee69b37171b070764f03ead8e39c08ef26935baca7846",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
@@ -2592,8 +2596,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh, src/amplai_foundry/agent_drivers/protocol.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -2608,7 +2612,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
       },
-      "review_hash": "02fc99f4a7f354e8643ae5d4fb37a4d1c8b0ddd044c25074bbbd1c86df6f8a3d",
+      "review_hash": "05cba513af457f6864dceca78514a51170294cd8c89b3935199c9126cd06228e",
       "state": "ACTIVE"
     },
     {
@@ -2626,8 +2630,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -2642,11 +2646,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "e240a2865e047963eb3c390ea20a77e61159ce67a9f19c8203621ec6cb91d209",
+      "review_hash": "4221a4313d32a731dde21ea01b71c98f3062099ca9597a50efb12706c2171f5a",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
@@ -2662,8 +2666,8 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/service.py, src/amplai_foundry/meta_harness/budget.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
         "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
@@ -2678,7 +2682,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       },
-      "review_hash": "0a8d15ae4153e276a5449f329dc2ace1217feffba2e99e98a72c42466cdf68d1",
+      "review_hash": "1687e3212d58c901224f6f82389c25d5c8442855c40dde1c6d7744e1370c3d23",
       "state": "ACTIVE"
     },
     {
@@ -2696,8 +2700,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
         "metadata_owner": "sidecar",
@@ -2712,7 +2716,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "59dac038183158106fc39b649e564e3c8a2ac5d0fc67640a29670087c46b9a4c",
+      "review_hash": "f55fb83f9fa5e0f1a94b73ac930898eac92aa17205fdf332338389bbe3e22b21",
       "state": "ACTIVE"
     },
     {
@@ -2723,7 +2727,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-v3-using_amplai_work-ko-md",
-      "document_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c",
+      "document_sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51",
       "evidence": [
         "docs/v3/USING_AMPLAI_WORK.ko.md",
         "git grep -F scripts/container_qualify.py"
@@ -2732,8 +2736,8 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
         "metadata_owner": "sidecar",
@@ -2746,9 +2750,9 @@
         },
         "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+        "source_sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51"
       },
-      "review_hash": "8562b4dfb5e5d103c39abeb09a9296b5318cc815948a2a646b43e38d34f5a62b",
+      "review_hash": "027e92697246f1a2fa9ca3d97ab7724f42338e1e0a1bf9208445318f285d9e6b",
       "state": "ACTIVE"
     },
     {
@@ -2760,7 +2764,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
-      "document_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a",
+      "document_sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b",
       "evidence": [
         ".ai-team/knowledge/decisions.index.json#D-068",
         ".ai-team/knowledge/decisions.index.json#D-074",
@@ -2778,16 +2782,17 @@
         ".ai-team/knowledge/decisions.index.json#D-088",
         ".ai-team/knowledge/decisions.index.json#D-089",
         ".ai-team/knowledge/decisions.index.json#D-090",
+        ".ai-team/knowledge/decisions.index.json#D-091",
         "docs/workstreams/v3-real-execution/DECISIONS.md",
         "git grep -F .ai-team/policy/documentation.json"
       ],
       "handled": true,
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "active decision D-068; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; 문서가 .ai-team/policy/documentation.json, scripts/amplai_docs.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
+      "reason": "active decision D-068; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; active decision D-091; 문서가 .ai-team/policy/documentation.json, scripts/amplai_docs.py, scripts/container_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
         "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -2799,9 +2804,9 @@
         },
         "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+        "source_sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b"
       },
-      "review_hash": "109933fe4fd910e10b31b2354b88c4a7ae67b5110c581f73e877fddc8ea87882",
+      "review_hash": "fee96ceda5d9db9676c9b465b7603b1e86f5e939f7540868d129d1290dac651e",
       "state": "ACTIVE"
     },
     {
@@ -2821,8 +2826,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -2837,7 +2842,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "ea8df45e31dd2a99141d0be13cf3e139fa15eac549cac420dafb7d6bc376ce74",
+      "review_hash": "495b4f86dcef3866899bfc340ea3a54a03b5062548d959ad3e4541f1b3ffc0c5",
       "state": "ACTIVE"
     },
     {
@@ -2857,8 +2862,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2873,7 +2878,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "f7c8934292930c50496133e5523e00d0551ba84c55c9e84a5e04234c9bb1e569",
+      "review_hash": "8d1db33a6b1f82bf8627e7cf772e99d9cb02adbc6a3563e971b62f28a4b700a2",
       "state": "ACTIVE"
     },
     {
@@ -2898,8 +2903,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2914,7 +2919,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "b8a5f8aea6829b3bf8b7b585d34ea478bb3373b56c35074c3023f88257e954a0",
+      "review_hash": "8fddc5e2039079ab0495875d7024d9046be1e95e2abf7df35c017989bcf7b5a9",
       "state": "ACTIVE"
     }
   ],
@@ -3019,10 +3024,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 58,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3030,10 +3035,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "evidence/*.json",
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3060,10 +3065,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3071,10 +3076,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3101,10 +3106,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 54,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3112,10 +3117,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/change.json",
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3142,10 +3147,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3153,10 +3158,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3183,10 +3188,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3194,10 +3199,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3224,10 +3229,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 55,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3235,10 +3240,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/work/*.json",
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3265,10 +3270,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 59,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3276,10 +3281,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "decisions/*.json",
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3306,10 +3311,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3317,10 +3322,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "questions/*.json",
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3347,10 +3352,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3358,10 +3363,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/",
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3388,10 +3393,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3399,10 +3404,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3470,10 +3475,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3481,10 +3486,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3511,10 +3516,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 19,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3522,10 +3527,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3552,10 +3557,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3563,10 +3568,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "patches/",
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3593,10 +3598,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 116,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3604,10 +3609,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3634,10 +3639,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3645,10 +3650,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "speckit-tasks/SKILL.md",
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3675,10 +3680,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 107,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3686,10 +3691,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3716,10 +3721,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3727,10 +3732,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".amplai/tasks/tasks.md",
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3757,10 +3762,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 36,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3768,10 +3773,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "ui/dist/",
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3798,10 +3803,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 7,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3809,10 +3814,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/*TRACE.json",
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -3962,10 +3967,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 3,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3973,10 +3978,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
         "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
@@ -4126,10 +4131,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 125,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4137,10 +4142,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/TEST_RESULTS.json",
       "reference_hash": "ce1018b3137a907caaaaff5b39afddd58be69c1e4f078874d05888e87de9ea52",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
         "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
@@ -4249,10 +4254,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 125,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4260,10 +4265,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "f334bbeacbff6a04ec9b03a17a6168c34945d68cafad0364d2190b7b9087fb29",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
         "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
@@ -4290,10 +4295,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4301,11 +4306,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4331,10 +4336,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4342,11 +4347,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/",
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4495,10 +4500,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 86,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4506,10 +4511,10 @@
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
       "reference": "supervisor/",
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4823,10 +4828,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 145,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4834,10 +4839,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".ai-team/skills/handoff/SKILL.md",
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4946,10 +4951,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
       "line": 144,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4957,10 +4962,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".agents/skills/handoff/SKILL.md",
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5153,19 +5158,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "57b2c103549365d1eacfcd48d17febde8682fdfef977a2ac45ebc45c3acd9f02",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -5190,18 +5195,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5227,18 +5232,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5264,19 +5269,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "b950b201c6bbd5399e0a791d439931b42f3b80c9cbd129f222abfa383c36a0d1",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -5301,19 +5306,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -5338,18 +5343,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5375,18 +5380,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5412,18 +5417,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5449,18 +5454,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5486,18 +5491,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5523,18 +5528,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5560,18 +5565,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5597,18 +5602,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5634,18 +5639,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5671,18 +5676,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5708,18 +5713,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5745,18 +5750,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5782,18 +5787,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -5819,18 +5824,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
-      "reason": "Roadmap stages only; Work 019 does not change roadmap status or stages.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5856,18 +5861,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5893,18 +5898,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "OpenCode and Claude rows unchanged by this change (D-087, D-079).",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -5930,18 +5935,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -5967,18 +5972,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "Unaffected by the review store limit (D-090); earlier lines unchanged.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
         "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
@@ -6004,18 +6009,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
         "metadata_owner": "sidecar",
@@ -6041,18 +6046,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "updated",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-      "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands steering or replanning a steered turn, the fetched plan base, ops local-update and the always-on setup (D-078..D-086).",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "A limits bullet states that the agent tools can read the driver credential (D-091), what is measured and what is not, and points to Work 032; no earlier statement changed.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
         "metadata_owner": "sidecar",
@@ -6065,7 +6070,7 @@
         },
         "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+        "source_sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51"
       }
     },
     {
@@ -6078,18 +6083,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6115,18 +6120,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6152,19 +6157,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "updated",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "D-090 appended (the document review store limit is 16 MiB); no earlier entry changed.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 appended (driver provider credentials are readable by the agent tools; the risk is accepted); no earlier entry changed.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
         "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -6176,7 +6181,7 @@
         },
         "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+        "source_sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b"
       }
     },
     {
@@ -6189,19 +6194,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
-      "reason": "Links the usage guide, which carries the Work 019 changes; README text itself is unaffected.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
-        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6226,18 +6231,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -6263,18 +6268,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6300,18 +6305,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "31eebee0b1ca7683baf6bfda452e006d6af146905579add07f2256e1e71e2f86"
+          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
         }
       ],
-      "impact_snapshot_sha256": "c57982820525e2d116beb952009d5cf5413f9d0f067adbb123d5d92319eb5500",
-      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
-      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
-      "reviewer": "claude-opus-5.5-work019-document-review",
+      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-d091-document-review",
       "snapshot": {
-        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
-        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",

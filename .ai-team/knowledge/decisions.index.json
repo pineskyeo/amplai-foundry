@@ -452,6 +452,17 @@
         ".ai-team/policy/documentation.json",
         ".ai-team/knowledge/document-reviews.json"
       ]
+    },
+    {
+      "id": "D-091",
+      "status": "active",
+      "title": "Driver provider credentials are readable by the agent's tools; the risk is accepted and recorded",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/runtime/execution/codex.py",
+        "src/amplai_foundry/agent_drivers/cli.py",
+        "docs/v3/USING_AMPLAI_WORK.ko.md"
+      ]
     }
   ]
 }

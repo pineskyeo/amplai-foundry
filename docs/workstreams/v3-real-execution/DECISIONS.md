@@ -387,3 +387,32 @@
   쓸 수 있는 여유다. 그 전에 이력을 나누는 방식(연도별 파일 등)을 별도 Work 로 정해야 한다.
 - Open: 이력 분할 방식은 정하지 않았다.
 
+## D-091 — Driver Provider Credentials Are Readable By The Agent's Tools; The Risk Is Accepted And Recorded
+
+- Status: accepted (운영자 선택 2026-09-30: 추천대로)
+- Date: 2026-09-30
+- Decision: driver 가 provider 를 부르려고 컨테이너 안에 둔 credential 은 같은 컨테이너·같은 uid 에서 도는 agent 의
+  tool 이 읽을 수 있다고 본다. 이 위험을 accepted risk 로 기록하고, 격리된 것처럼 표시하지 않는다.
+  - Claude: `CLAUDE_CODE_OAUTH_TOKEN` 이 컨테이너 process env 에 있다. container uid(65534)로 모델 없이 측정하면
+    env 에 있고 `/proc/1/environ`, `/proc/7/environ` 에서도 읽힌다
+    (`specs/032-credential-broker-probe/baseline-exposure.json`).
+  - Codex: run home 의 `auth.json` 이 0644 로 놓인다(`src/amplai_foundry/runtime/execution/codex.py:69`). agent 는
+    `--dangerously-bypass-approvals-and-sandbox` 로 실행된다(`src/amplai_foundry/agent_drivers/cli.py:142-147`).
+    (추정: 같은 uid 의 tool 이 읽을 수 있는 구조다. 실측하지 않았다.)
+  - OpenCode: 같은 기준을 적용한다. 서버 password/auth 는 켠다(`design-reference/design/11_DRIVERS_SESSIONS.md:36`).
+    driver 마다 다른 기준을 쓰지 않는다. tool uid 분리(M-c)는 file tool 이 서버 process 안에서 돈다는 이유로
+    credential 격리를 보장하지 못한다(이전 조사 기준, 실측하지 않았다).
+- Not measured: agent 의 tool 이 실제로 그 값을 읽는지는 측정하지 못했다. 컨테이너 안의 Claude 모델이 marker 만
+  출력하는 probe 실행을 거부했고, 우회하지 않았다. 따라서 "agent tool 이 읽는다"는 구조에서 나온 추정이고 측정한
+  fact 는 위 container uid 측정까지다.
+- Reason: 이 위험을 줄이는 정석은 credential broker 다. `design-reference/design/10_AUTHORITY_SECURITY.md:44` 는
+  production credential 을 agent env 에 장기 노출하지 않고 broker 가 짧은 scoped token 이나 server-side 동작을 하게
+  한다. 다만 이 문장은 production credential 규칙이고 driver 의 provider credential 을 직접 다룬 문장은 design 에서
+  찾지 못했다. broker 가 Codex(ChatGPT 계정)와 Claude(OAuth token)에서 성립하는지는 확인 전이다. 그 전까지
+  isolation 을 없애고 있다고 쓰거나, 있다고 쓰지 않는다(`design-reference/design/29_THREAT_MODEL.md:31`).
+  영향을 줄이는 장치는 이미 있다: 운영자가 만든 scoped 사본, 계정 단위 revoke, egress allowlist, stream·workspace·
+  sidecar log·argv 의 leak scan(`scripts/container_qualify.py:427`).
+- Follow-up: Work 032 (`specs/032-credential-broker-probe/`)가 broker 성립 여부를 probe 로 정한다. 성립하면 새
+  Decision 으로 이 항목을 supersede 한다.
+- Open: broker 가 성립하지 않으면 accepted risk 를 유지할지, 해당 driver 를 격리된 VM 로 옮길지는 정하지 않았다.
+
