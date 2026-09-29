@@ -79,7 +79,14 @@ def validate_analysis_plan(plan: dict[str, Any]) -> None:
             raise RuntimeFault(
                 "SEQUENTIAL_RULE", "This implementation qualifies fixed-sample analysis only"
             )
+    # D-088: subscription drivers report no settled cost; such a plan declares that cost is
+    # not compared, so unknown cost and non-measured usage are not reasons for inconclusive.
+    # It cannot then claim a cost benefit.
+    if plan.get("cost_basis", "compared") not in {"compared", "not_compared"}:
+        raise RuntimeFault("COST_BASIS", "Declare cost as compared or not_compared")
     benefit = plan.get("benefit")
+    if plan.get("cost_basis") == "not_compared" and benefit is not None:
+        raise RuntimeFault("COST_BASIS", "A cost benefit needs compared cost")
     if benefit is not None and (
         not isinstance(benefit, dict)
         or set(benefit) != {"endpoint", "minimum_reduction", "bootstrap_samples", "seed"}
@@ -167,9 +174,10 @@ def analyze_pairs(
         reasons.append("insufficient_distinct_tasks")
     if missing:
         reasons.append("missing_or_unknown_trials")
-    if any(t.get("cost_microunits") is None for t in trials):
+    compared = plan.get("cost_basis", "compared") == "compared"
+    if compared and any(t.get("cost_microunits") is None for t in trials):
         reasons.append("unknown_cost")
-    if any(t.get("usage_status", "measured") != "measured" for t in trials):
+    if compared and any(t.get("usage_status", "measured") != "measured" for t in trials):
         reasons.append("nonmeasured_usage")
     if environment_drifted:
         reasons.append("environment_drift")

@@ -374,6 +374,7 @@ class EvaluationService:
                             tokens=tokens,
                             cost=observation.cost_microunits,
                             uncertain=bool(observation.unknown_effects),
+                            cost_required=analysis.get("cost_basis", "compared") == "compared",
                         )
                         current = self.store.head(scope, "experiment", plan["experiment_id"], db=db)
                         self.store.cas(

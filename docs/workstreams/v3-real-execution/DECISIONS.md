@@ -342,3 +342,34 @@
 - Evidence: `tests/e2e/test_rc07_fresh_base.py`(수정 전 코드에서 2개 실패),
   `tests/v3/test_rc07_local_config.py::test_local_update_fast_forwards_a_clean_checkout_and_refuses_a_dirty_one`.
 
+## D-088 — An Experiment May Declare That Cost Is Not Compared
+
+- Status: accepted (운영자 선택 2026-09-29: 성공률만 비교)
+- Date: 2026-09-29
+- Decision: analysis plan 은 선택 항목 `cost_basis` 를 가진다(`compared` 기본, `not_compared`).
+  `not_compared` 이면 cost unknown 과 `measured` 가 아닌 usage 를 inconclusive 사유로 세지 않는다. 대신
+  cost benefit 분석(`benefit`)을 선언할 수 없다. 누락 결과, safety, drift, 오염 규칙은 그대로다. evolution
+  budget 은 그런 실험의 trial 비용이 없어도 allocation 을 `settled` 로 두고, 비용은 예약값을 그대로
+  유지한다(0 으로 세지 않는다). token 은 여전히 있어야 한다. 기본값(`compared`)의 동작은 바뀌지 않는다.
+- Reason: 이 환경의 driver 는 구독 계정이라 비용을 알 수 없다(Codex, D-085). Claude usage 는 `estimated`
+  다(D-084). 그대로면 모든 실험이 `unknown_cost`/`nonmeasured_usage` 로 inconclusive 가 되고, 첫 trial 뒤
+  `budget_overrun_or_unknown_usage` 로 멈춘다(`src/amplai_foundry/evaluation/analysis.py`,
+  `src/amplai_foundry/meta_harness/budget.py` settle). 평가기 변경이라 후보 실험과 따로 먼저 넣는다
+  (`design-reference/design/16_META_HARNESS.md:27`).
+- Evidence: `tests/v3/test_dev03_evaluation.py` 의 cost basis 3개 test(수정 전 코드에서 실패).
+
+## D-089 — The Meta-Harness Runs On Real Runs (Work 030)
+
+- Status: accepted (운영자 선택 2026-09-29)
+- Date: 2026-09-29
+- Decision: 메타하네스를 실제 local 제품의 run 위에서 돌린다(`specs/030-meta-harness-live/`).
+  - 첫 개선 surface 는 class A 인 IMPLEMENTER prompt 다.
+  - 과제 묶음은 demo-app 의 결정적 verifier 과제 20개다.
+  - 예산은 offline 40 run(20 × 2 arm × 1 회)과 canary 3 goal 이다.
+  - 분석은 `confirmatory`, 비열등성 margin 0.25, confidence 0.95, `cost_basis: not_compared`(D-088)다.
+  - 역할: V3 의 meta-proposer service identity 가 제안한다. 운영자가 screen, 실험 승인, canary 승인, 승격을
+    한다. 제안자와 검토자는 다르다.
+- Reason: V3 완료 기준은 실제 V3 실행 pipeline 을 통과한 개선 후보 하나의 실험, canary, 승격, rollback 연습
+  증거를 요구한다(`design-reference/design/16_META_HARNESS.md:76-78`). V3 FINAL 의 연습은 LLM 이 아닌 결정적
+  recipe 를 비교했다(`src/amplai_foundry/meta_harness/pipeline_reference.py:1-6`).
+

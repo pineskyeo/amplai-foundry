@@ -73,7 +73,7 @@ license/privacy/provenance는 명시적으로 기록한다. license가 미확인
 - non-inferiority는 사전 margin에 대해 paired binary 결과의 보수적인 동시 Wilson 구간을 쓴다. 모두 통과했다고 차이의 불확실성을 0으로 만들지 않는다.
 - cost benefit을 요청하면 계획에 최소 개선·bootstrap seed/반복 수를 고정한다. paired task mean을 비교한다. 이 bootstrap은 근사값이며 효과가 보장되는 통계 검정이라고 과장하지 않는다.
 - confidence, margin, sample rationale, variance basis를 선언한 confirmatory plan과 exploratory / local_qualification을 구분한다.
-- 누락·unknown 비용·환경 drift·오염은 inconclusive, safety 위반은 fail이다. 결과를 보고 유리한 중단 시점을 고르는 adaptive peeking은 허용하지 않는다.
+- 누락·unknown 비용·환경 drift·오염은 inconclusive, safety 위반은 fail이다. 단 analysis plan 이 `cost_basis: not_compared`(구독 계정처럼 비용을 알 수 없을 때)를 선언하면 unknown 비용과 measured 가 아닌 usage 는 사유에서 빠지고, 성공률만 비교하며 cost benefit 은 선언할 수 없다 (D-088). 결과를 보고 유리한 중단 시점을 고르는 adaptive peeking은 허용하지 않는다.
 - 분석 자원도 한도를 둔다. 과도한 bootstrap은 inconclusive로 반환한다.
 - 승인 `eval-report` 스키마의 최대 256 run refs를 보존한다. `2 × case_count × repeats`가 범위를 넘는 계획은 freeze 때 거절한다.
 - 실제 trial이 하나도 시작되지 않았다면 report를 꾸며내지 않는다. 독립적인 `experiment-stop` 기록과 aborted/inconclusive 사유를 남긴다.

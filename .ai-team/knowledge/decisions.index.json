@@ -421,6 +421,27 @@
         "src/amplai_foundry/runtime/execution",
         "src/amplai_foundry/runtime/cli.py"
       ]
+    },
+    {
+      "id": "D-088",
+      "status": "active",
+      "title": "An experiment may declare that cost is not compared",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/evaluation",
+        "src/amplai_foundry/meta_harness"
+      ]
+    },
+    {
+      "id": "D-089",
+      "status": "active",
+      "title": "The meta-harness runs on real runs",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness",
+        "src/amplai_foundry/runtime/execution",
+        "specs/030-meta-harness-live"
+      ]
     }
   ]
 }

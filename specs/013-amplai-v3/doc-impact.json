@@ -985,7 +985,11 @@
       "specs/019-v3-completion/plan.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/runs/README.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/spec.md": "per-Work contract/plan/evidence; active contract independently bound",
-      "specs/019-v3-completion/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound"
+      "specs/019-v3-completion/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/knowledge-readiness.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/plan.md": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/spec.md": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound"
     },
     "expected": [
       ".ai-team/knowledge/decisions.index.json",
@@ -1391,6 +1395,10 @@
       "specs/019-v3-completion/runs/README.md",
       "specs/019-v3-completion/spec.md",
       "specs/019-v3-completion/work-contract.json",
+      "specs/030-meta-harness-live/knowledge-readiness.json",
+      "specs/030-meta-harness-live/plan.md",
+      "specs/030-meta-harness-live/spec.md",
+      "specs/030-meta-harness-live/work-contract.json",
       "src/amplai_foundry/_vendor/rfc8785.py",
       "src/amplai_foundry/agent_drivers/cli.py",
       "src/amplai_foundry/agent_drivers/codex_app_server.py",
@@ -1875,21 +1883,21 @@
     "rule_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
     "unprocessed": []
   },
-  "content_hash": "121a6785d189750808c5555096bfc4cec0640858172eb8aeb39b987a0ef39534",
+  "content_hash": "a8ee75f1c5b8f73d0da381d4cf7a6f66d821508631c6d223331997ce242b54f9",
   "dependency_snapshot": {
     "base_commit": "5edbb7879ce4793db466371d72340b3fe3c864b3",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d"
+      "sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e"
     },
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "73abfc96181ef320fa190bded10f8b372658df8817a365b95b90e3bb0790d5cf",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "e4b6e4f195f6f611322171aa7b83c6420ace768a240c0d2c95fb0f82169dfb9e",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -1907,7 +1915,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1926,7 +1934,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1945,8 +1953,8 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "a9c6e3f653472e3fb7f7231dda484b0a7d6e6d0aac2b526451d0539150af702f",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "87cb50bcf683ba00167bb1b9fd134987e9bf2b14ca9451938c99e726523d1564",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -1964,7 +1972,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -1983,7 +1991,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2002,7 +2010,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2021,7 +2029,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2040,7 +2048,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2059,8 +2067,8 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "a3281c782bf010cb02e4f664833078fbba8822dbb1793f755bf0459b981940cb",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "13ac84c540e38a20316a5c74b94572aab488b1d7d3d7659e4aaa588fde2102e9",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -2078,7 +2086,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2097,8 +2105,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "5d2657c1b0339f5102e3dc7b1e03c608e289a83b7e23ffce333c2a2a5df35d90",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "5d70f454c1e04738fe3b5b8580a3ef1fe157d2e3c6d27ee2da3a915be1934260",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -2116,7 +2124,7 @@
       {
         "path": "deployment/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
           "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
           "metadata_owner": "sidecar",
@@ -2135,7 +2143,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2154,7 +2162,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2173,7 +2181,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2192,7 +2200,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2211,7 +2219,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2230,7 +2238,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2249,7 +2257,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
           "metadata_owner": "sidecar",
@@ -2268,7 +2276,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2287,7 +2295,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2306,7 +2314,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2325,7 +2333,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2344,7 +2352,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "f3a3e6338abdd7e49e195ec44a6904688927034a4153abcab8014fc741d2177a",
           "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
           "metadata_owner": "sidecar",
@@ -2363,7 +2371,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
           "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
           "metadata_owner": "sidecar",
@@ -2382,9 +2390,9 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-          "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+          "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
           "rules": {
@@ -2395,15 +2403,15 @@
           },
           "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+          "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
         }
       },
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "dependency_snapshot_sha256": "ec0788a673f327bac4cf00b0ba46332732c00d2b245ca016124e7fddd7d95227",
+          "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
           "metadata_owner": "sidecar",
           "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
           "rules": {
@@ -2420,7 +2428,7 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
           "dependency_snapshot_sha256": "ae2b0d38e8f2c5494292eda29783c669082bc33d12c13ed1b44e9794b4200ac1",
           "metadata_owner": "sidecar",
@@ -2439,8 +2447,8 @@
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-          "declared_reference_sha256": "11b6e2729ea0573322abb594a10fc24f59cc3d4d95e6d581b6c529d34af49469",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+          "declared_reference_sha256": "8692d4f7983ce46a0272b46a2a0e512474b4be80c443bb8b88b49a9fce37ffaa",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
           "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -2452,13 +2460,13 @@
           },
           "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "eb4c04d139870263bbaabee3336e0090df83dcf74a1e4f67e4e2f851b7ede2c6"
+          "source_sha256": "365cfbc8951543040f291450a8d82734d371a93b09fada4b96c4395c816c35c9"
         }
       },
       {
         "path": "integrations/hermes/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
           "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
           "metadata_owner": "sidecar",
@@ -2477,7 +2485,7 @@
       {
         "path": "migration/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
           "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
           "metadata_owner": "sidecar",
@@ -2496,7 +2504,7 @@
       {
         "path": "packs/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
           "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
           "metadata_owner": "sidecar",
@@ -2515,7 +2523,7 @@
       {
         "path": "release/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "99bb59abef7c241491e8e3f29ceff0f3b9945b6a2464f12a0f12f322a74e5e7a",
           "dependency_snapshot_sha256": "8c47a170da47562084879340941d2ae9fcafddd3cce2595b0dde37a9c0c72268",
           "metadata_owner": "sidecar",
@@ -2534,7 +2542,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "a82c95a5de78650a7b53cd5c1cff06efba363280896a164f2b744e8b305e9d95",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -2553,7 +2561,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -2572,7 +2580,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+          "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
           "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
           "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
           "metadata_owner": "sidecar",
@@ -3173,7 +3181,7 @@
       {
         "mode": 420,
         "path": ".ai-team/knowledge/decisions.index.json",
-        "sha256": "0483d61e6d14415b3c4b9a2814a9ae5ef2d060d08d6223411731ae5a58ba3441",
+        "sha256": "f5a2a0ecf65ed7b2fd100d4e3d8bca417eb15e455d68fb309b6e8f54580a55fa",
         "state": "PRESENT"
       },
       {
@@ -3359,7 +3367,7 @@
       {
         "mode": 420,
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-        "sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042",
+        "sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732",
         "state": "PRESENT"
       },
       {
@@ -3389,7 +3397,7 @@
       {
         "mode": 420,
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-        "sha256": "eb4c04d139870263bbaabee3336e0090df83dcf74a1e4f67e4e2f851b7ede2c6",
+        "sha256": "365cfbc8951543040f291450a8d82734d371a93b09fada4b96c4395c816c35c9",
         "state": "PRESENT"
       },
       {
@@ -4067,7 +4075,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/evaluation/analysis.py",
-        "sha256": "83011fc0c8d8237bac6a773d78e4068fb209b673201976833d105e5ba9e69a76",
+        "sha256": "e2d8c0de8ee9632803f149171751b7b14a9ba7fc73de2f2ee0636e51a3cd0d5d",
         "state": "PRESENT"
       },
       {
@@ -4091,7 +4099,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/evaluation/service.py",
-        "sha256": "0c50ae76bb0a4c59e31e4d2b23f81c15be45ddc19b734e84fb6e717aec11014f",
+        "sha256": "cfae17e6c96306a2947b36207163a89925864285b0db6292c62e4f6d151c3dda",
         "state": "PRESENT"
       },
       {
@@ -4127,7 +4135,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/meta_harness/budget.py",
-        "sha256": "1bee79561a58ce21211d12ae6e88e44b4a078cbe9ec99a1c9e27a20022016313",
+        "sha256": "2bf3def64f277096ac71123014e88457f3720a88888933fdfd466e9d97ad133a",
         "state": "PRESENT"
       },
       {
@@ -4427,7 +4435,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/sandbox/git_workspace.py",
-        "sha256": "904a7ad0ba69930c978f6725487ae1357dc69fd430eca57cbf5e50d91d778999",
+        "sha256": "e0997b8b7b14d3f52b3ac3959f264f189a5a1ecb2a5886c82228ba85c8276f38",
         "state": "PRESENT"
       },
       {
@@ -4589,7 +4597,7 @@
       {
         "mode": 420,
         "path": "tests/e2e/test_rc07_fresh_base.py",
-        "sha256": "926259cb8c93f7d8e4c9127b90746b56b5790f4a027ce1c1f7b4107825ee44d9",
+        "sha256": "a2a121b65d22a62f60a2274ab0a6a786c369b9f69538d629b11ab34ec6abc22d",
         "state": "PRESENT"
       },
       {
@@ -4613,7 +4621,7 @@
       {
         "mode": 420,
         "path": "tests/e2e/test_rc07_steer.py",
-        "sha256": "7af7ffe82438dd002f968399f5ba3daf307bc60e5efa41c110976ece5ff92c9c",
+        "sha256": "77e5afd4bb9304f05ff42ae38e6cf907c3c63faba2dd3433a2a792abcb26626d",
         "state": "PRESENT"
       },
       {
@@ -4679,7 +4687,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_dev03_evaluation.py",
-        "sha256": "bef7792746a565b35e4990fe920e5e4c4de762e59bb769b64de6f1eaed404002",
+        "sha256": "0702ad13a603818337814414ae4c59d587069db51155661fa3d91c16e789c753",
         "state": "PRESENT"
       },
       {
@@ -5002,7 +5010,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+  "dependency_snapshot_hash": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -5010,7 +5018,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
+    "commit": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
     "contract_sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903",
     "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb"
   },
@@ -5040,9 +5048,9 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword evidence,knowledge,plane; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "73abfc96181ef320fa190bded10f8b372658df8817a365b95b90e3bb0790d5cf",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "e4b6e4f195f6f611322171aa7b83c6420ace768a240c0d2c95fb0f82169dfb9e",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -5056,7 +5064,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "54028385338a8a2d9af23ed9ae69b4ed8d2d9e9edbe15e83af60998173a18b1f",
+      "review_hash": "ca7e52b6fe95d28f73dbfb51c2a6a1eeb3bbe2084d68a66defd9e388c11b294a",
       "state": "ACTIVE"
     },
     {
@@ -5074,8 +5082,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5090,7 +5098,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "790ed3064047036b33d3ae97782bd4ec2c2c7998155e26784f307a9a03895692",
+      "review_hash": "35f08ea659d2a4ed7c8b33615ebfe93008e910cf2bd916339694d8ed301c7845",
       "state": "ACTIVE"
     },
     {
@@ -5108,8 +5116,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5124,7 +5132,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "953290322312b08b8dfd9096c24db2cd6468e31a2dd54d0eed34dfed7ac569f0",
+      "review_hash": "cf33d9e43b095a18b78dc2b5d14941d8c25c4842280aa82edc51d067c42420ff",
       "state": "ACTIVE"
     },
     {
@@ -5144,9 +5152,9 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "a9c6e3f653472e3fb7f7231dda484b0a7d6e6d0aac2b526451d0539150af702f",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "87cb50bcf683ba00167bb1b9fd134987e9bf2b14ca9451938c99e726523d1564",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -5160,7 +5168,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "cafc4a13bc0ee0974f1cf1204744c6ba2c0f88edcdfb586a49571afa2d84f2a3",
+      "review_hash": "f81080b205f02af039d87761f55da06ff2b7f89a7765965c346b861efd8e5b40",
       "state": "ACTIVE"
     },
     {
@@ -5178,8 +5186,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5194,7 +5202,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "7f73ed880af4c9484fd5d50d58b70765bbd121c8e1a97e8f9f0a6493250fa6d1",
+      "review_hash": "f5233375c92f27b517070d88b9201fdc4983915db8bac883c5d0a7a94884b142",
       "state": "ACTIVE"
     },
     {
@@ -5212,8 +5220,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5228,7 +5236,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "af0f15b756c10f876ec83d31160c477521002260bb5e88ebca635fc4eb688dca",
+      "review_hash": "e0167459a1bd71e9896d33439cf220509cc42f706f51153bf2fb8b9a7a492346",
       "state": "ACTIVE"
     },
     {
@@ -5255,8 +5263,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword converge,review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5271,7 +5279,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "d7a6ced2aaba3124d6b9fdc77b5dca4eabdb2c3182ba61360042495724967f87",
+      "review_hash": "0a21fb16516a905e0055d64c6038d76fb895e1207559e5fb0dfafb27e727af64",
       "state": "ACTIVE"
     },
     {
@@ -5289,8 +5297,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5305,7 +5313,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "b9adea6bf9318538f655dcf23af930e9f98411c55ac0d41a12c76d2d76878530",
+      "review_hash": "4b0492b6d20f9458f518f9903cc2974a9cc32195e86852c6985cb245071e0f59",
       "state": "ACTIVE"
     },
     {
@@ -5325,8 +5333,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5341,7 +5349,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "272c54e2f73623720e67802effff0f0d9f831d806d7ebd418011f718ca0f9d50",
+      "review_hash": "ab682f80755e3d1507c9bcdb10ff332df56c5ff5a0bb511b5600e1af871a19db",
       "state": "ACTIVE"
     },
     {
@@ -5363,9 +5371,9 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "a3281c782bf010cb02e4f664833078fbba8822dbb1793f755bf0459b981940cb",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "13ac84c540e38a20316a5c74b94572aab488b1d7d3d7659e4aaa588fde2102e9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -5379,7 +5387,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "550f1459f13ecc26c36f5a929d3967f2e9c335f431ff39657fdf67d100f83b6d",
+      "review_hash": "cd87b6df474722025b4483abbbdef1e1c3f05e4afb7d9730ecb045ecec68eff9",
       "state": "ACTIVE"
     },
     {
@@ -5401,8 +5409,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,skill,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5417,7 +5425,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "0b6c03cb602c0c5d1a903e73a8d23cce3621802b08adb50de75a9542c9050ac8",
+      "review_hash": "092f302b33516ce5db4496e556150a8dd9e5130bc714ddf9b397d1885e4b0027",
       "state": "ACTIVE"
     },
     {
@@ -5441,9 +5449,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "5d2657c1b0339f5102e3dc7b1e03c608e289a83b7e23ffce333c2a2a5df35d90",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "5d70f454c1e04738fe3b5b8580a3ef1fe157d2e3c6d27ee2da3a915be1934260",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -5457,7 +5465,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "83f975b5efdaab09cbc68e8e7cfe8819783170578b0f91984747737278737a86",
+      "review_hash": "a3d7777d57fd66b6e0d7f6b98001020888fbc8a56790d248efabb61a0a97eb29",
       "state": "ACTIVE"
     },
     {
@@ -5477,8 +5485,8 @@
       "path": "deployment/README.md",
       "reason": "문서가 deployment/support-evidence.json, deployment/support-matrix.json, src/amplai_foundry/runtime/profiles.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -5493,7 +5501,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "f33457765bcda2cf4ecb77e5925640d53c13eca4ad83d5b1e294590348b13092"
       },
-      "review_hash": "4faa8ac72a06283f6da395a1fa9cdf76ffec711b91d0dc5c2b96d0ade5239a31",
+      "review_hash": "ce8da374bf399c17fa8e415cfcd858a369a0639eee3ba6d8ef36ee9a91426d73",
       "state": "ACTIVE"
     },
     {
@@ -5513,8 +5521,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge,lint; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5529,7 +5537,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "e76e85470052b7da6bee49c2d7b4460f675e3d15a4c53ea9965d3ed19e194b65",
+      "review_hash": "8112ffa1cdf9e7d379335c79ee924e2b3a0316c1218df5ac69b1b766d4c130a4",
       "state": "ACTIVE"
     },
     {
@@ -5549,8 +5557,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "keyword status; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5565,7 +5573,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "ea6fffca3a2abba8f5ce64f478731c824b5a3f7f41d9d6175402c2059eb7aae8",
+      "review_hash": "0ffe6ae1b5f1bf2d6e09f8c082196099a738f678cdf22e8c779edbdf518e5bf8",
       "state": "ACTIVE"
     },
     {
@@ -5583,8 +5591,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5599,7 +5607,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "9e14ec7748d66f8a83eabc3aa41ae1b9ec56eae0a6b490c9118f4e206eff2cbc",
+      "review_hash": "8794f51402ee10f163489742e6301a6ab13ae15a06599117fcd7430f65a6f89f",
       "state": "ACTIVE"
     },
     {
@@ -5619,8 +5627,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5635,7 +5643,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "e9621e919ace2292f80b6abc13c9620f38e0f50e1c558e2f77eb94761fe8c381",
+      "review_hash": "c1187fe4a59d0b268b74b561e21ff81ffb60022de1fb7fc3f2ee39a48f671eff",
       "state": "ACTIVE"
     },
     {
@@ -5655,8 +5663,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,pack,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5671,7 +5679,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "e80101fb02aa3e649c9cfc3b8c7ba7109499f73cb78fde3e118bacde61c788d1",
+      "review_hash": "71feff0c1c787a9dd21ff091b74e685e17368ccee83ef6abcc6245ddc318fdd7",
       "state": "ACTIVE"
     },
     {
@@ -5693,8 +5701,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "keyword proposal,validate; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5709,7 +5717,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "b9c0bd68067c114386af2a47cb8b6952e1ab688919f22df62e2d0a2c6b0815ea",
+      "review_hash": "40035259cd5b6beff5e13fc814586ad4a40cc76430b65cbeb116a48600889973",
       "state": "ACTIVE"
     },
     {
@@ -5729,8 +5737,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "keyword graph,reference; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -5745,7 +5753,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "719ccd2dc1b3535165fd0994f19e58961acb63c48f5b05a59eb403681f0b3d79",
+      "review_hash": "c05b4315ce44d150570c59401a67bdef5495dade14ad2af0363f3cfc47c46547",
       "state": "ACTIVE"
     },
     {
@@ -5765,8 +5773,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "keyword plan; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5781,7 +5789,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "6cb255d7ff8bec989ee8296e22b9e27ab55c989c01699de1cfd6cfc34aa0658a",
+      "review_hash": "b1c95c09d8fda65987b39bdbc92c517a6d834175df9761ccc23d31ebf48dd0c1",
       "state": "ACTIVE"
     },
     {
@@ -5799,8 +5807,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5815,7 +5823,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "c2ece48bf37f30a23f4f0f22c5f2a7c4cf9efde9643e79b3522195dd9adc2aa8",
+      "review_hash": "24876ca619811a47a24cfb42c937e7184d3367c1f231c50ae99d1e008b5a58db",
       "state": "ACTIVE"
     },
     {
@@ -5837,8 +5845,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "keyword compatibility,migration,schema; 문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5853,7 +5861,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "58541e6836482a9a7a7b818406b095f2f998c8ae1f372f894bc38d98f6615a81",
+      "review_hash": "6f5970ee261b081fd2da169b60b7562b673503a9a28a1a49f329e852fd080d95",
       "state": "ACTIVE"
     },
     {
@@ -5873,8 +5881,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai,goal; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -5889,7 +5897,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "fac7684f7c256d5e8f110f08ae924cf8710f6e27a7dbcc72b06c681809130b3f",
+      "review_hash": "14d35813a99c2bff460940ec88248c22e9b185981814e0ab728975c9b6a540d6",
       "state": "ACTIVE"
     },
     {
@@ -5909,8 +5917,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 deployment/local-limits-qualification.json, scripts/container_qualify.py, scripts/limits_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "f3a3e6338abdd7e49e195ec44a6904688927034a4153abcab8014fc741d2177a",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -5925,7 +5933,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
       },
-      "review_hash": "66534ac64d6b0cca0b6fb5d1b4409b4765eae9dfabfca7caf11d5aeca0ed4cd3",
+      "review_hash": "69dbb139e58e3416424f99ef3f6f5668a4be91607e3f64b405313b2791764473",
       "state": "ACTIVE"
     },
     {
@@ -5945,8 +5953,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "문서가 scripts/opencode_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -5961,7 +5969,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "95276a5ff78dc75115f45f9e309ebf999ba71aba4b5240eb4e8aca5e4d27b1ec",
+      "review_hash": "62c94abd79bc9f0ed01635a126502d57461aadefc61abd3405e4df79eaef64db",
       "state": "ACTIVE"
     },
     {
@@ -5972,7 +5980,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
-      "document_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042",
+      "document_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732",
       "evidence": [
         "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "git grep -F src/amplai_foundry/evaluation/analysis.py"
@@ -5981,10 +5989,10 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/corpus.py, src/amplai_foundry/evaluation/observatory.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-        "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -5995,9 +6003,9 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       },
-      "review_hash": "2afded281612239376d21cffe2ecf60b61f3a4cbcd65c759b4a1feb64c7d9973",
+      "review_hash": "b5919dd00e26b4de8f6238e0c9a9028256afeaec6a288bd684b2141401ad110c",
       "state": "ACTIVE"
     },
     {
@@ -6015,10 +6023,10 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "ec0788a673f327bac4cf00b0ba46332732c00d2b245ca016124e7fddd7d95227",
+        "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -6031,7 +6039,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "ea7b5c3c3f6347f57dcc2b07d44192e4357cf5fa6b5b0d8d2d55c7e3f5145288",
+      "review_hash": "9d798925a59f968003b0a8418331b5c417cd55b25f082a12a63f7faf4b82d018",
       "state": "ACTIVE"
     },
     {
@@ -6051,8 +6059,8 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/app_image_up.sh, scripts/container_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "ae2b0d38e8f2c5494292eda29783c669082bc33d12c13ed1b44e9794b4200ac1",
         "metadata_owner": "sidecar",
@@ -6067,7 +6075,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
       },
-      "review_hash": "5e4e825cc6a83e6c7f3dd8e6b242090623c066305ab9a630b7f4cbb89b37c439",
+      "review_hash": "a96bb4a3644ca24554290fb279ee4f9751d1fb0abfa1feffb80e3f3954b926ce",
       "state": "ACTIVE"
     },
     {
@@ -6079,7 +6087,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
-      "document_sha256": "eb4c04d139870263bbaabee3336e0090df83dcf74a1e4f67e4e2f851b7ede2c6",
+      "document_sha256": "365cfbc8951543040f291450a8d82734d371a93b09fada4b96c4395c816c35c9",
       "evidence": [
         ".ai-team/knowledge/decisions.index.json#D-065",
         ".ai-team/knowledge/decisions.index.json#D-066",
@@ -6102,16 +6110,18 @@
         ".ai-team/knowledge/decisions.index.json#D-084",
         ".ai-team/knowledge/decisions.index.json#D-085",
         ".ai-team/knowledge/decisions.index.json#D-086",
+        ".ai-team/knowledge/decisions.index.json#D-088",
+        ".ai-team/knowledge/decisions.index.json#D-089",
         "docs/workstreams/v3-real-execution/DECISIONS.md",
         "git grep -F README.md"
       ],
       "handled": true,
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "active decision D-065; active decision D-066; active decision D-067; active decision D-068; active decision D-069; active decision D-070; active decision D-071; active decision D-072; active decision D-074; active decision D-075; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; 문서가 README.md, pyproject.toml, release/rc01-conformance-closure.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
+      "reason": "active decision D-065; active decision D-066; active decision D-067; active decision D-068; active decision D-069; active decision D-070; active decision D-071; active decision D-072; active decision D-074; active decision D-075; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; 문서가 README.md, pyproject.toml, release/rc01-conformance-closure.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "11b6e2729ea0573322abb594a10fc24f59cc3d4d95e6d581b6c529d34af49469",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "8692d4f7983ce46a0272b46a2a0e512474b4be80c443bb8b88b49a9fce37ffaa",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
         "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -6123,9 +6133,9 @@
         },
         "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "eb4c04d139870263bbaabee3336e0090df83dcf74a1e4f67e4e2f851b7ede2c6"
+        "source_sha256": "365cfbc8951543040f291450a8d82734d371a93b09fada4b96c4395c816c35c9"
       },
-      "review_hash": "b822b2e21a13277a3b6c379e4ff6c23fcffda18497bbd462429c00c8efa1f33a",
+      "review_hash": "635cdc6815e40479dd5c5ae7ebbba8b43aadfe118d9afc0f7dff8a282d2f0683",
       "state": "ACTIVE"
     },
     {
@@ -6145,8 +6155,8 @@
       "path": "integrations/hermes/README.md",
       "reason": "문서가 src/amplai_foundry/control_plane/hermes.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -6161,7 +6171,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8e47d43ec0e236ce875069c882b12c4af3f6d14b7fb397d886b34daa8da8e6c2"
       },
-      "review_hash": "0e6176e77607020476377adf28fd0a2143bb6fe600e9db3d3f8d419cf0b71bef",
+      "review_hash": "2344738a38fb9d04b15b38a9ee490f4c2155375b0aba17bbef6c5d9bf4c686c5",
       "state": "ACTIVE"
     },
     {
@@ -6181,8 +6191,8 @@
       "path": "migration/README.md",
       "reason": "문서가 migration/retirement-proposal.json, src/amplai_foundry/migration/retirement.py, tests/v3/test_rc01_legacy_retirement.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -6197,7 +6207,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "fe389d391e27c2fcc75b3d97ac9e1eb3a585370e9a6ec7a7b38274f92babc9dd"
       },
-      "review_hash": "0eaf157347efb22bdc8968c9c3f7e8fda1000b94369927cd2d7e81e677415860",
+      "review_hash": "cf1abb1ef6e0251a56fa666a3df82f9f5f498e7419279140cb6300fb18aa7c81",
       "state": "ACTIVE"
     },
     {
@@ -6217,8 +6227,8 @@
       "path": "packs/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -6233,7 +6243,7 @@
         "source_assets_sha256": "292cbb3f874f0b7aeca0c02c5ca02f321259bb32f367dbbb8a9f40446992b30d",
         "source_sha256": "9398b113211cdc957180d288ad8fab60b6d4a360368be12682049ab7a436f9d7"
       },
-      "review_hash": "fe672c94481e0a5111367110689afda0df9d954f287eb081fca058da49be60d4",
+      "review_hash": "0bfaebacc549ea5894ac75ffd77ea5c51e2f51470c25640ecd373d67ec3031c5",
       "state": "ACTIVE"
     },
     {
@@ -6253,8 +6263,8 @@
       "path": "release/README.md",
       "reason": "문서가 .ai-team/policy/approvals.jsonl, eval/test-catalog-status.json, release/rc01-conformance-closure.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "99bb59abef7c241491e8e3f29ceff0f3b9945b6a2464f12a0f12f322a74e5e7a",
         "dependency_snapshot_sha256": "8c47a170da47562084879340941d2ae9fcafddd3cce2595b0dde37a9c0c72268",
         "metadata_owner": "sidecar",
@@ -6269,7 +6279,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "76cf31621fa1cdae8d7c96448aa8ada50e6da414f5c735703e2725e86b0f92c7"
       },
-      "review_hash": "676bff5efea80741581a6798943617a2cb08e3256605d48af2a9ce32ca99b88b",
+      "review_hash": "a24dff8a29651050915e721a573b8ef24ae3231e17dbf463e3f8957cf92165a2",
       "state": "ACTIVE"
     },
     {
@@ -6289,8 +6299,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json, tests/e2e/artifacts/golden-registry.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "a82c95a5de78650a7b53cd5c1cff06efba363280896a164f2b744e8b305e9d95",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -6305,7 +6315,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "0f5b69f65c3b3508b46e4d6e7bb62aa587d381fc6b3992c6fac5b9c2f6356bbe",
+      "review_hash": "a66d79250ef58843060d218ba137aa00ac069be5449086092e1f9c345923aafb",
       "state": "ACTIVE"
     },
     {
@@ -6325,8 +6335,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6341,7 +6351,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "fa8b144eae27f3756ecbf9abfbf55cd52ed797f301533de0ae390c3b1c5f6ffb",
+      "review_hash": "269f40a2a016c589b0a5b98d45fc0f60f554a80044f0db66b8aeff56b3a972ab",
       "state": "ACTIVE"
     },
     {
@@ -6371,8 +6381,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6387,7 +6397,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "ff6e2987e38629972f6cff904c60b991d0c77011215c5e8208f1942bed3f550b",
+      "review_hash": "71a5ff64bb7a52496cc562a968254ac35fb06277d5bbbe809088a34392140903",
       "state": "ACTIVE"
     }
   ],
@@ -6497,7 +6507,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 58,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6507,8 +6517,8 @@
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6538,7 +6548,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6548,8 +6558,8 @@
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6579,7 +6589,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 54,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6589,8 +6599,8 @@
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6620,7 +6630,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6630,8 +6640,8 @@
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6661,7 +6671,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6671,8 +6681,8 @@
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6702,7 +6712,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 55,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6712,8 +6722,8 @@
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6743,7 +6753,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 59,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6753,8 +6763,8 @@
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6784,7 +6794,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6794,8 +6804,8 @@
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6825,7 +6835,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6835,8 +6845,8 @@
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6866,7 +6876,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6876,8 +6886,8 @@
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6948,7 +6958,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6958,8 +6968,8 @@
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -6989,7 +6999,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 19,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -6999,8 +7009,8 @@
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7030,7 +7040,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7040,8 +7050,8 @@
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7071,7 +7081,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 116,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7081,8 +7091,8 @@
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7112,7 +7122,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7122,8 +7132,8 @@
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7153,7 +7163,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 107,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7163,8 +7173,8 @@
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7194,7 +7204,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7204,8 +7214,8 @@
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7235,7 +7245,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 36,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7245,8 +7255,8 @@
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -7276,7 +7286,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 7,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7286,8 +7296,8 @@
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "f3a3e6338abdd7e49e195ec44a6904688927034a4153abcab8014fc741d2177a",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -7440,7 +7450,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 3,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7450,10 +7460,10 @@
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-        "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -7464,7 +7474,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       }
     },
     {
@@ -7604,7 +7614,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 125,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7614,10 +7624,10 @@
       "reference_hash": "ce1018b3137a907caaaaff5b39afddd58be69c1e4f078874d05888e87de9ea52",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-        "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -7628,7 +7638,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       }
     },
     {
@@ -7727,7 +7737,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 125,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7737,10 +7747,10 @@
       "reference_hash": "f334bbeacbff6a04ec9b03a17a6168c34945d68cafad0364d2190b7b9087fb29",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-        "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -7751,7 +7761,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       }
     },
     {
@@ -7768,7 +7778,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7778,9 +7788,9 @@
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "5d2657c1b0339f5102e3dc7b1e03c608e289a83b7e23ffce333c2a2a5df35d90",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "5d70f454c1e04738fe3b5b8580a3ef1fe157d2e3c6d27ee2da3a915be1934260",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -7809,7 +7819,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7819,9 +7829,9 @@
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "5d2657c1b0339f5102e3dc7b1e03c608e289a83b7e23ffce333c2a2a5df35d90",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "5d70f454c1e04738fe3b5b8580a3ef1fe157d2e3c6d27ee2da3a915be1934260",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -7973,7 +7983,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 86,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -7983,8 +7993,8 @@
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8301,7 +8311,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 145,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -8311,8 +8321,8 @@
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8424,7 +8434,7 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "line": 144,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -8434,8 +8444,8 @@
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8631,16 +8641,16 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "a3281c782bf010cb02e4f664833078fbba8822dbb1793f755bf0459b981940cb",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "13ac84c540e38a20316a5c74b94572aab488b1d7d3d7659e4aaa588fde2102e9",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "83e54a048310bda7687611a9c4ff7ab012bbeedac362b1ab06f83da2d70492ba",
@@ -8668,15 +8678,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8705,15 +8715,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8742,16 +8752,16 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "a9c6e3f653472e3fb7f7231dda484b0a7d6e6d0aac2b526451d0539150af702f",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "87cb50bcf683ba00167bb1b9fd134987e9bf2b14ca9451938c99e726523d1564",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -8779,16 +8789,16 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "73abfc96181ef320fa190bded10f8b372658df8817a365b95b90e3bb0790d5cf",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "e4b6e4f195f6f611322171aa7b83c6420ace768a240c0d2c95fb0f82169dfb9e",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -8816,15 +8826,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8853,15 +8863,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8890,15 +8900,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8927,15 +8937,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -8964,15 +8974,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9001,15 +9011,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9038,15 +9048,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "deployment/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "239fa730c0ec167dedf7a9b8eb5be46bfa0dea7ea06621ae38ac9bb12e683cf4",
         "dependency_snapshot_sha256": "bd2b571780da9f9f5e610c5013a6da10aac7daf203fc43bdaa10f915fa50d655",
         "metadata_owner": "sidecar",
@@ -9075,15 +9085,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9112,15 +9122,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9149,15 +9159,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9186,15 +9196,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9223,15 +9233,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9260,15 +9270,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9297,15 +9307,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "be1616f864d2e9eae96a7f872f40b0c49748f7f328bcfc58eecd91a05f5155d9",
         "metadata_owner": "sidecar",
@@ -9334,15 +9344,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
       "reason": "Roadmap stages only; Work 019 does not change roadmap status or stages.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9371,15 +9381,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9408,15 +9418,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "updated",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "Claude CLI row: qualified with tool_use in the app image and wired as the system-selected fallback composition (D-079).",
+      "reason": "OpenCode and Claude rows unchanged by this change (D-087, D-079).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "f3a3e6338abdd7e49e195ec44a6904688927034a4153abcab8014fc741d2177a",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -9445,15 +9455,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -9482,17 +9492,17 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "updated",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "Codex (ChatGPT account) cost-stays-unknown rule added beside the cost principle (D-085); earlier lines unchanged.",
+      "reason": "Experiment cost basis rule (D-088) added to the inconclusive rules; earlier lines unchanged.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "738e75c1e079072d3a0c5f7362baf4b98f184b221c7e9b8b0091bc0bdfb74199",
-        "dependency_snapshot_sha256": "6dce7a47a2c7ea15c0ac55006eef65dcdf7efca1d4daa35a995f02fc7035913c",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "b22cf52c030c56c4adf0b0af998887eb80ce4d92aad9f698e1247229ab9a1112",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -9503,7 +9513,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "179cc53a5e42cfa21c47f7155fa591c0e4bd3d377f6fb58594042e95ede58042"
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
       }
     },
     {
@@ -9519,17 +9529,17 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "ec0788a673f327bac4cf00b0ba46332732c00d2b245ca016124e7fddd7d95227",
+        "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -9556,15 +9566,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "updated",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "Usage guide updated for steer, replan, design, PR outcomes, agent selection, multi-app, config commands steering or replanning a steered turn, the fetched plan base, ops local-update and the always-on setup (D-078..D-086).",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "ae2b0d38e8f2c5494292eda29783c669082bc33d12c13ed1b44e9794b4200ac1",
         "metadata_owner": "sidecar",
@@ -9593,15 +9603,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9630,15 +9640,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9667,16 +9677,16 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "updated",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "D-086 appended (a plan starts from the remote base branch fetched now; ops local-update); no earlier entry changed.",
+      "reason": "D-088 and D-089 appended (cost basis of experiments; the meta-harness on real runs); no earlier entry changed.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "11b6e2729ea0573322abb594a10fc24f59cc3d4d95e6d581b6c529d34af49469",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "8692d4f7983ce46a0272b46a2a0e512474b4be80c443bb8b88b49a9fce37ffaa",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
         "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
@@ -9688,7 +9698,7 @@
         },
         "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "eb4c04d139870263bbaabee3336e0090df83dcf74a1e4f67e4e2f851b7ede2c6"
+        "source_sha256": "365cfbc8951543040f291450a8d82734d371a93b09fada4b96c4395c816c35c9"
       }
     },
     {
@@ -9704,15 +9714,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "integrations/hermes/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "aa818c3bf2ed6b20ffd12a0298313764e40da184f82cb34331f14532863be8a7",
         "dependency_snapshot_sha256": "adfa89a6c1eddaf4a17ee17fa070d092f6dcaccc326ba57b42182265f097bdc3",
         "metadata_owner": "sidecar",
@@ -9741,15 +9751,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "migration/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "3996b729fb81d69bc83d2eb24eba813e351e7463f76d3b534f73e1ebd75cc8b2",
         "dependency_snapshot_sha256": "d99224a7e16f9bb40cd63b928ab7e3065a45ddb5d9f38f4805ba40de9b91c1fa",
         "metadata_owner": "sidecar",
@@ -9778,15 +9788,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "packs/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "580785445eb5fa166de1e765fc4fc7db1dfa6bb01b38ed469cd02900f18fe6ae",
         "dependency_snapshot_sha256": "7e8ea783017b9b41921e2fde70961d79c3d551a61f8ba1c7f04b7488ee9dcaf7",
         "metadata_owner": "sidecar",
@@ -9815,16 +9825,16 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "Links the usage guide, which carries the Work 019 changes; README text itself is unaffected.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
-        "declared_reference_sha256": "5d2657c1b0339f5102e3dc7b1e03c608e289a83b7e23ffce333c2a2a5df35d90",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
+        "declared_reference_sha256": "5d70f454c1e04738fe3b5b8580a3ef1fe157d2e3c6d27ee2da3a915be1934260",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -9852,15 +9862,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "release/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "99bb59abef7c241491e8e3f29ceff0f3b9945b6a2464f12a0f12f322a74e5e7a",
         "dependency_snapshot_sha256": "8c47a170da47562084879340941d2ae9fcafddd3cce2595b0dde37a9c0c72268",
         "metadata_owner": "sidecar",
@@ -9889,15 +9899,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "a82c95a5de78650a7b53cd5c1cff06efba363280896a164f2b744e8b305e9d95",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -9926,15 +9936,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "18d68dfe99592e50015cdfdf2da6e2833988d2b4c84e453d4b0b015b65bebe18",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",
@@ -9963,15 +9973,15 @@
           "sha256": "f53dffafa2b235da11a76c82c7d1f71acaf88c85f8bc8a6c88d97569c881ae8f"
         }
       ],
-      "impact_snapshot_sha256": "d846587c940af95e906fad7a9d5d02259f4e08c5064e3fc2b871ecd7a843c8bb",
+      "impact_snapshot_sha256": "59e9cadbb2c882d58e481b281c94b986a43b0b55f8af98d113fa338bfe3e9653",
       "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
       "reviewer": "claude-opus-5.5-work019-document-review",
       "snapshot": {
-        "candidate_revision": "e497e3164864fb2c45d97dc145df86ad38dd5f52",
-        "candidate_sha256": "f6bb99f3cb913a9b750816703dc3405af35d107d02a0605e831f673d914c396d",
+        "candidate_revision": "c21ac7331431eabb7a805b9a143b040fe5c8ef57",
+        "candidate_sha256": "553a8f4fe8160cf05db68812586c8a74bd04bb1c6370adaa61d11319b2de6a2e",
         "declared_reference_sha256": "31b3b2bd18f9de6f519b7bcc5cc1b4ff0a78ba47d26c7f5aeed3102dd723fa7a",
         "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
         "metadata_owner": "sidecar",

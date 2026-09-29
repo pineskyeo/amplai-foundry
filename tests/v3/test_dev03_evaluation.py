@@ -405,3 +405,81 @@ def test_dev03_interrupted_experiment_requires_new_owner_and_no_reexecution(meta
     assert m.meta.budgets.totals(m.d.scope, p["proposal_id"])["pending"] == 1
     with pytest.raises(Hold):
         m.eval.run(m.reviewer, p["experiment_ref"], m.execute_case)
+
+
+def subscription_trials(n=20):
+    """Codex on a ChatGPT account: tokens counted, cost unknown (D-085); Claude: estimated."""
+    return [
+        {**t, "cost_microunits": None, "usage_status": "measured" if i % 2 else "estimated"}
+        for i, t in enumerate(observations(n))
+    ]
+
+
+def test_cost_not_compared_judges_success_only_and_default_is_unchanged():
+    # D-088: the same subscription trials are inconclusive by default, and judged on success
+    # when the plan declares that cost is not compared
+    expected = [str(i) for i in range(20)]
+    default = analyze_pairs(
+        subscription_trials(), analysis_plan(minimum_tasks=20), expected_tasks=expected
+    )
+    assert default["verdict"] == "inconclusive"
+    assert {"unknown_cost", "nonmeasured_usage"} <= set(default["reasons"])
+    judged = analyze_pairs(
+        subscription_trials(),
+        analysis_plan(minimum_tasks=20, cost_basis="not_compared"),
+        expected_tasks=expected,
+    )
+    assert judged["verdict"] == "pass" and judged["reasons"] == []
+    # missing results still make it inconclusive: only cost stops counting
+    partial = [
+        t for t in subscription_trials() if not (t["task_id"] == "0" and t["arm"] == "candidate")
+    ]
+    assert (
+        analyze_pairs(
+            partial,
+            analysis_plan(minimum_tasks=20, cost_basis="not_compared"),
+            expected_tasks=expected,
+        )["verdict"]
+        == "inconclusive"
+    )
+
+
+def test_cost_not_compared_cannot_claim_a_cost_benefit():
+    benefit = {"endpoint": "cost_mean_microunits", "minimum_reduction": 1,
+               "bootstrap_samples": 1000, "seed": 1}  # fmt: skip
+    with pytest.raises(RuntimeFault) as bad:
+        validate_analysis_plan(analysis_plan(cost_basis="not_compared", benefit=benefit))
+    assert bad.value.code == "COST_BASIS"
+    with pytest.raises(RuntimeFault):
+        validate_analysis_plan(analysis_plan(cost_basis="free"))
+
+
+def test_budget_keeps_the_reservation_when_cost_is_not_compared(meta03):
+    # D-088: a missing cost settles at the reserved amount (never 0) when cost is not compared;
+    # by default it is still uncertain and blocks further spending
+    from amplai_foundry.meta_harness.budget import EvolutionBudget
+
+    d = meta03.d
+    budget = EvolutionBudget(d.store)
+    limits = {"max_attempts": 4, "max_tokens": 1000, "max_cost_microunits": None,
+              "max_parallel_works": 1, "max_wall_seconds": 3600}  # fmt: skip
+    ref = {"id": "experiment-d088", "revision": 1, "digest": "sha256:" + "0" * 64}
+
+    def settle(proposal, trial, required):
+        with d.store.tx() as db:
+            budget.freeze(db, d.scope, proposal, ref, limits)
+            budget.reserve(db, d.scope, proposal, trial, tokens=100, cost=7)
+            return budget.settle(db, d.scope, proposal, trial, tokens=40, cost=None,
+                                 cost_required=required)  # fmt: skip
+
+    assert settle("proposal-not-compared", "a", False)["uncertain"] is False
+    settled = d.store.head(d.scope, "meta-budget", "proposal-not-compared")["data"]["allocations"]
+    assert (settled["a"]["status"], settled["a"]["tokens"], settled["a"]["cost"]) == (
+        "settled", 40, 7
+    )  # fmt: skip
+    with d.store.tx() as db:  # further runs are admitted
+        budget.reserve(db, d.scope, "proposal-not-compared", "b", tokens=100, cost=7)
+    assert settle("proposal-compared", "a", True)["uncertain"] is True
+    with d.store.tx() as db, pytest.raises(Hold) as held:
+        budget.reserve(db, d.scope, "proposal-compared", "b", tokens=1, cost=0)
+    assert held.value.code == "META_USAGE_UNKNOWN"
