@@ -50,6 +50,28 @@ def test_accumulated_review_budget_rejects_before_replacing_readable_store(runti
     assert len(json.loads(target.read_text())["history"]) == 2
 
 
+def test_review_store_follows_the_policy_limit_when_it_is_raised(runtime, tmp_path):
+    # D-090: the writer and both readers of the store use the policy's max_file_bytes, not the
+    # 8 MiB default; three 2.8 MB reviews are 8.4 MB and must be stored and read back
+    root = fixture(tmp_path)
+    policy_path = root / ".ai-team/policy/documentation.json"
+    policy = json.loads(policy_path.read_text())
+    policy["portable_documents"]["max_file_bytes"] = 16_777_216
+    docs.put_json(policy_path, policy)
+    report = change(runtime, root)
+    target = root / ".ai-team/knowledge/document-reviews.json"
+    for number in range(3):
+        value = request(report)
+        value["reviews"][0]["reason"] = str(number) + "a" * 2_800_000
+        assert runtime.docs_review_batch(str(root), "specs/canary", value)["status"] == "RESOLVED"
+    assert target.stat().st_size > 8_388_608
+    stored = json.loads(target.read_text())
+    assert len(stored["history"]) == 2  # the superseded ones; the latest is in "reviews"
+    assert stored["reviews"][0]["reason"].startswith("2")
+    assert runtime.docs_impact(str(root), "specs/canary")["status"] == "RESOLVED"
+    assert runtime.amplai_docs.select_documents(root, "release-2")["count"] == 1
+
+
 def test_impact_projection_respects_its_configured_reader_budget(runtime, tmp_path):
     root = fixture(tmp_path)
     policy_path = root / ".ai-team/policy/documentation.json"

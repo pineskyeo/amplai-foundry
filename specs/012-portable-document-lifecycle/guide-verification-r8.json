@@ -1,22 +1,22 @@
 {
   "schema_version": "1.0",
   "verdict": "PASS",
-  "input_sha256": "37d6f005e6b5a0dccdb7a213b5797afe9cfe3d6c4052106af82396fb7f86fefd",
+  "input_sha256": "75d3b414bbdf3217463c7457461956190186b86ab045b3cd36c075771d90fca6",
   "checks": [
     {
-      "id": "s08-local-verification-r7",
+      "id": "s08-local-verification-r8",
       "exit_code": 0,
       "evidence": {
-        "path": "specs/012-portable-document-lifecycle/s08-local-verification-r7.json",
-        "sha256": "00c54f0664f079318006b784d3d380f9b5573b7f647f3eea338b61d55dabe455"
+        "path": "specs/012-portable-document-lifecycle/s08-local-verification-r8.json",
+        "sha256": "488564d30de8d4f5de679fac1b6298c85bce4add21f2a7bb2d187f2cd379471e"
       }
     },
     {
-      "id": "s08-kit-seal-r7",
+      "id": "s08-kit-seal-r8",
       "exit_code": 0,
       "evidence": {
-        "path": "specs/012-portable-document-lifecycle/s08-kit-seal-r7.json",
-        "sha256": "26fbc63182330f9a61047a2fe2281ed6a3c329169610e653cb3052aa06760e77"
+        "path": "specs/012-portable-document-lifecycle/s08-kit-seal-r8.json",
+        "sha256": "bc226561c0d44d566ce1eba1c9e430fafee1ed404a37c9abccb2fb738298566d"
       }
     },
     {
