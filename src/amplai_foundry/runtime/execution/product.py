@@ -29,7 +29,7 @@ from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
-from . import prompts
+from . import prompts, releases
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
 from .steering import SteeringService
@@ -448,7 +448,9 @@ class LocalExecutionService:
             raise Hold("ROUTER_POLICY", "The app has no router policy")
         policy = self.store.get(self.scope, "router-policy", installed.router_ref)
         order = policy["order"].get(task_class or "*") or policy["order"]["*"]
-        candidates = [installed.compositions[d] for d in order if d in installed.compositions]
+        # the active release may carry a promoted class-A candidate of a composition (D-089 S2)
+        available = releases.effective(self.store, self.scope, installed.compositions)
+        candidates = [available[d] for d in order if d in available]
         scores = {ref["digest"]: float(len(candidates) - i) for i, ref in enumerate(candidates)}
         required = {c["action"] for c in installed.capabilities}
         compositions = CompositionService(self.store, self.runtime.contracts)

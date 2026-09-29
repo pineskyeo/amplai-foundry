@@ -41,6 +41,7 @@ from .contracts.registry import Contracts
 from .deployment import private_bytes, read_key
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
+from .execution import releases
 from .execution.codex import (
     CodexProfileInputs,
     ScopedCredential,
@@ -170,6 +171,7 @@ class LocalProductDeployment:
             == verifier_signer.public_key().public_bytes_raw()
         ):
             raise Hold("KEY_SEPARATION", "Execution and verification need distinct keys")
+        self._release_signer = signer  # signs the local baseline release (D-089 S2)
         self.authority = Authority(
             self.store,
             self.contracts,
@@ -341,6 +343,12 @@ class LocalProductDeployment:
                 driver_refs=drivers,
                 planners=planners,
             )
+        # the baseline release of what is installed; a promoted release stays active (D-089 S2)
+        releases.bootstrap(
+            self.store, self.scope, self.contracts,
+            [ref for app in self.service.apps.values() for ref in app.compositions.values()],
+            signer=self._release_signer, key_id="local-authority",
+        )  # fmt: skip
         publisher = GitPublisher(self.service) if cfg.publish_mode != "none" else None
         self.tracker = PullRequestTracker(self.service) if publisher is not None else None
         self.loop = ExecutionLoop(

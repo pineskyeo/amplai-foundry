@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "work_id": "AMPLAI-V3-EXEC02",
+  "kind": "document_review_evidence",
+  "changed_sources": [
+    "src/amplai_foundry/runtime/execution/envelope.py",
+    "src/amplai_foundry/runtime/execution/product.py",
+    "src/amplai_foundry/runtime/execution/releases.py",
+    "src/amplai_foundry/runtime/local_deployment.py",
+    "tests/e2e/test_rc07_steer.py",
+    "tests/e2e/test_rc08_release_pointer.py"
+  ],
+  "semantic_changes": [
+    "PR outcome tracking: gh read-only sync, publication.opened/merged/closed/revised events, Observatory publication_outcomes (A, D-078)",
+    "System-selected driver composition: router policy Codex first, Claude fallback; Claude CLI qualified with tool_use and a >30 s foreground command (E, D-079)",
+    "Design mode: design_write only, C-DESIGN, DesignDocumentCheck on applied paths and exact committed citations, docs-only draft PR (F, D-080)",
+    "Multi-app goals with linked per-app PRs and a goal-level integration check (D-081)",
+    "Operator steer (pause -> exact-session resume) and replan (next contract revision, re-approval) on the real path, with review fixes F1-F9 (D-082)"
+  ],
+  "measurements": {
+    "real_runs": "specs/019-v3-completion/runs/README.md (PR #15, #16, #17, demo-app #1)",
+    "qualification": "specs/019-v3-completion/driver-qualification-amplai-foundry.json",
+    "tests": "full pytest suite exit 0 before the tool_progress fix; rc02/steer/design tests after"
+  }
+}

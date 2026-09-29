@@ -1,0 +1,2718 @@
+{
+  "acknowledged": [],
+  "broken_references": [
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "README.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 196,
+      "raw_reference": "_v3_delivery/",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "_v3_delivery/",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "README.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 196,
+      "raw_reference": "validation/",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "validation/",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 7,
+      "raw_reference": "_v3_delivery/*TRACE.json",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "_v3_delivery/*TRACE.json",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 3,
+      "raw_reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 125,
+      "raw_reference": "validation/",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "validation/",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "external",
+      "disposition_eligible": true,
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 125,
+      "raw_reference": "_v3_delivery/TEST_RESULTS.json",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "directory, glob or filename-extension syntax",
+      "disposition": "historical",
+      "disposition_eligible": true,
+      "document": "tools/amplai-loop-kit/CHANGELOG.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 86,
+      "raw_reference": "supervisor/",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": "supervisor/",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "repository root or explicit relative/absolute path syntax",
+      "disposition": "example",
+      "disposition_eligible": true,
+      "document": "tools/amplai-loop-kit/README.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 144,
+      "raw_reference": ".agents/skills/handoff/SKILL.md",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    },
+    {
+      "classification_reason": "repository root or explicit relative/absolute path syntax",
+      "disposition": "example",
+      "disposition_eligible": true,
+      "document": "tools/amplai-loop-kit/README.md",
+      "explicit_dependency": false,
+      "kind": "repository_path",
+      "line": 145,
+      "raw_reference": ".ai-team/skills/handoff/SKILL.md",
+      "reason": "선언된 경로가 repository 에 없다",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "required": false,
+      "review_disposition_valid": true,
+      "source_kind": "inline_code"
+    }
+  ],
+  "changed_sources": [
+    "src/amplai_foundry/runtime/execution/envelope.py",
+    "src/amplai_foundry/runtime/execution/product.py",
+    "src/amplai_foundry/runtime/execution/releases.py",
+    "src/amplai_foundry/runtime/local_deployment.py",
+    "tests/e2e/test_rc07_steer.py",
+    "tests/e2e/test_rc08_release_pointer.py"
+  ],
+  "completeness": {
+    "excluded": {
+      ".ai-team/knowledge/document-reviews.json": "canonical document review result/transaction; each review separately verified",
+      "specs/012-portable-document-lifecycle/guide-release-r8.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/012-portable-document-lifecycle/guide-verification-r8.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/012-portable-document-lifecycle/html-developer-r8/manifest.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/012-portable-document-lifecycle/html-operator-r8/manifest.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/013-amplai-v3/doc-impact.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/013-amplai-v3/document-review-request.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/doc-impact.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/document-review-evidence-013.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/document-review-evidence-019.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/document-review-evidence-030.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/document-review-request.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/document-review-request.json": "per-Work contract/plan/evidence; active contract independently bound"
+    },
+    "expected": [
+      ".ai-team/knowledge/document-reviews.json",
+      "specs/012-portable-document-lifecycle/guide-release-r8.json",
+      "specs/012-portable-document-lifecycle/guide-verification-r8.json",
+      "specs/012-portable-document-lifecycle/html-developer-r8/manifest.json",
+      "specs/012-portable-document-lifecycle/html-operator-r8/manifest.json",
+      "specs/013-amplai-v3/doc-impact.json",
+      "specs/013-amplai-v3/document-review-request.json",
+      "specs/019-v3-completion/doc-impact.json",
+      "specs/019-v3-completion/document-review-evidence-013.json",
+      "specs/019-v3-completion/document-review-evidence-019.json",
+      "specs/019-v3-completion/document-review-evidence-030.json",
+      "specs/019-v3-completion/document-review-request.json",
+      "specs/030-meta-harness-live/document-review-request.json",
+      "src/amplai_foundry/runtime/execution/envelope.py",
+      "src/amplai_foundry/runtime/execution/product.py",
+      "src/amplai_foundry/runtime/execution/releases.py",
+      "src/amplai_foundry/runtime/local_deployment.py",
+      "tests/e2e/test_rc07_steer.py",
+      "tests/e2e/test_rc08_release_pointer.py"
+    ],
+    "processed": [
+      "src/amplai_foundry/runtime/execution/envelope.py",
+      "src/amplai_foundry/runtime/execution/product.py",
+      "src/amplai_foundry/runtime/execution/releases.py",
+      "src/amplai_foundry/runtime/local_deployment.py",
+      "tests/e2e/test_rc07_steer.py",
+      "tests/e2e/test_rc08_release_pointer.py"
+    ],
+    "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+    "unprocessed": []
+  },
+  "content_hash": "6b39165e1c6b591a30da209e909527c3d4903acb332a5d5292ec474408cc2501",
+  "dependency_snapshot": {
+    "base_commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+    "candidate": {
+      "complete": true,
+      "mode": "git",
+      "sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c"
+    },
+    "contract_sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5",
+    "documents": [
+      {
+        "path": ".ai-team/README.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "7bc26798603355bc8a8daae24800bcbfe02ef6136fcc7948511d7bd15a01e791",
+          "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
+          "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
+        }
+      },
+      {
+        "path": "README.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+          "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+          "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+        }
+      },
+      {
+        "path": "docs/PORTABLE-DEVELOPMENT.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "269cdfaa681512bf972c77a0f2b1439f60e43c454d8bb55516e73cbc3ba075bf",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "4c8398ad02ec799f1b93a321cf04c873c25ffd2f058fdc2db8a474c13a21b2a7",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
+        }
+      },
+      {
+        "path": "docs/VISION.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "ee0803e1c15f4a55215ea106a386bbdde9c7884f47caf748b49cbb555c30151a",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "53870d1f08613c05bb1cdb1cb4bfc2d1482229aa73c33b32f3229f63d6fa15f1",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
+        }
+      },
+      {
+        "path": "docs/v3/DEV02_EXECUTION.ko.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
+          "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "6f2ac140f899df8bfb7ea2f37d048d180f5d2d9438a2cb3af3b9c0b90807b6e0",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
+        }
+      },
+      {
+        "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+          "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+        }
+      },
+      {
+        "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
+          "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+        }
+      },
+      {
+        "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+          "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+        }
+      },
+      {
+        "path": "tools/amplai-loop-kit/CHANGELOG.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "ba93bed4cb61122297008524b94fc4f1aaab62c7464d739c2d43d5a5e8e1f524",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "2c449361747c98e6b85219b3a09da6e9778488d7b8c69d5891c46f7c4faaea6d",
+          "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
+        }
+      },
+      {
+        "path": "tools/amplai-loop-kit/README.md",
+        "snapshot": {
+          "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+          "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
+          "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+          "metadata_owner": "sidecar",
+          "metadata_sha256": "3086e3b5bcf3b15ef514a1727ae3dfc2060c7afe4ab585299ad009e1494bfa0d",
+          "rules": {
+            "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "engine_version": "document-lifecycle-1",
+            "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+            "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+          },
+          "sidecar_sha256": "92ad9b8e2dde0ee4b70a42a0f66699bc1d8e6f685e217d89b66b816aadcc9e30",
+          "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
+          "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
+        }
+      }
+    ],
+    "rules": {
+      "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "engine_version": "document-lifecycle-1",
+      "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+      "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+    },
+    "source_role_records": [
+      {
+        "current_guide": false,
+        "kind": "source_asset",
+        "owner": ".ai-team/README.md",
+        "path": ".ai-team/rules/contract-registry.md",
+        "reason": "Protected repository rules remain authoritative inputs to the current runtime guide.",
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": ".ai-team/rules/contract-registry.md",
+          "sha256": "9251ddea61d1a66f13580546fdfc2ef6e5191592194d8123e03bd16a73d029a0",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "source_asset",
+        "owner": ".ai-team/README.md",
+        "path": ".specify/memory/constitution.md",
+        "reason": "Preserve protected project principles as source inputs; do not rewrite or promote them.",
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": ".specify/memory/constitution.md",
+          "sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
+        "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+          "sha256": "2d4b6a5dc0e67430be3eef37ab8d2d7bc804718176b81921bf0b30c611df169f"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+          "sha256": "2d4b6a5dc0e67430be3eef37ab8d2d7bc804718176b81921bf0b30c611df169f",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
+        "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+          "sha256": "26cccb4194ef30b266825ce5af4dc19427611465cc2e8a70d39265a2f4156b7f"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+          "sha256": "26cccb4194ef30b266825ce5af4dc19427611465cc2e8a70d39265a2f4156b7f",
+          "state": "PRESENT"
+        }
+      },
+      {
+        "current_guide": false,
+        "kind": "historical",
+        "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+        "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+        "retained_baseline": {
+          "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+          "sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825"
+        },
+        "security": "INTERNAL",
+        "source": {
+          "mode": 420,
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+          "state": "PRESENT"
+        }
+      }
+    ],
+    "sources": [
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/execution/envelope.py",
+        "sha256": "fd2773cc09ae355cd4f8e0fcaaa5ce59de31757ceff83c4b1064ebaf6a2ac2d7",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/execution/product.py",
+        "sha256": "a333e0d130ae82155690e5aac85415011b9ba0f3725719f76bc9e5fff71f1ad7",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/execution/releases.py",
+        "sha256": "5c728097200a02f8cd0e90c94827ebcb1f0fbc5263da248262fa145ca443c5c0",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/local_deployment.py",
+        "sha256": "9b16718c9cf3285d93819f2057a7bec90683c7c3102371d8499c4227dc2c62ae",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/e2e/test_rc07_steer.py",
+        "sha256": "68f9dbd7187af09133703d8068e82dea7279ae412e8b6dedb5634cb5a1f766be",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "tests/e2e/test_rc08_release_pointer.py",
+        "sha256": "fa9d041a30d403551235c0a76090e7f30af9d04a27222f30607589a2082544a6",
+        "state": "PRESENT"
+      }
+    ]
+  },
+  "dependency_snapshot_hash": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+  "evidence": [
+    "complete_git_scope",
+    "declared_dependencies",
+    "existing_discovery",
+    "external_exact_reviews"
+  ],
+  "generated_from": {
+    "commit": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+    "contract_sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5",
+    "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
+  },
+  "impacted_documents": [
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "knowledge_map",
+        "source_asset_owner"
+      ],
+      "doc_id": "amplai-foundry:ai-team-readme-md",
+      "document_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "evidence": [
+        ".ai-team/knowledge/map.json#loop-runtime-readme",
+        ".ai-team/rules/contract-registry.md",
+        ".specify/memory/constitution.md"
+      ],
+      "handled": true,
+      "path": ".ai-team/README.md",
+      "reason": "keyword runtime; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "7bc26798603355bc8a8daae24800bcbfe02ef6136fcc7948511d7bd15a01e791",
+        "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
+        "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
+      },
+      "review_hash": "30293513b64739d5fa8a208d1fa8f6d6273c8949df81d81b4281443dfd810a29",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "declared_document_dependency"
+      ],
+      "doc_id": "amplai-foundry:readme-md",
+      "document_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26",
+      "evidence": [
+        "README.md"
+      ],
+      "handled": true,
+      "path": "README.md",
+      "reason": "Owner source/metadata or exact declared dependency changed",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+        "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+        "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+      },
+      "review_hash": "1498475062249f9dd164024756cdd7141018212d4d20e63db3c93714274e869e",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "runbook",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "doc_id": "amplai-foundry:docs-portable-development-md",
+      "document_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f",
+      "evidence": [
+        ".ai-team/knowledge/map.json#kit-portable-development"
+      ],
+      "handled": true,
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "reason": "keyword release",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "269cdfaa681512bf972c77a0f2b1439f60e43c454d8bb55516e73cbc3ba075bf",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "4c8398ad02ec799f1b93a321cf04c873c25ffd2f058fdc2db8a474c13a21b2a7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
+      },
+      "review_hash": "910671f2b6e5182523eb30e5214e6b64cc14ab8605ffda99fb709b2bce7842a5",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "doc_id": "amplai-foundry:docs-vision-md",
+      "document_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e",
+      "evidence": [
+        ".ai-team/knowledge/map.json#vision"
+      ],
+      "handled": true,
+      "path": "docs/VISION.md",
+      "reason": "keyword amplai",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ee0803e1c15f4a55215ea106a386bbdde9c7884f47caf748b49cbb555c30151a",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "53870d1f08613c05bb1cdb1cb4bfc2d1482229aa73c33b32f3229f63d6fa15f1",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
+      },
+      "review_hash": "6a3d0f8bac2ec30fec39c63c43c958717ff9b485f210ffedada1db83c480eece",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "declared_document_dependency",
+        "doc_reference"
+      ],
+      "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
+      "document_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57",
+      "evidence": [
+        "docs/v3/DEV02_EXECUTION.ko.md",
+        "git grep -F src/amplai_foundry/runtime/execution/envelope.py"
+      ],
+      "handled": true,
+      "path": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reason": "문서가 src/amplai_foundry/runtime/execution/envelope.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
+        "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "6f2ac140f899df8bfb7ea2f37d048d180f5d2d9438a2cb3af3b9c0b90807b6e0",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
+      },
+      "review_hash": "6108bd220b26051d560a038fb36cc1d296b26e3d2462d4b0de94e264f149537f",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "declared_document_dependency"
+      ],
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "document_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732",
+      "evidence": [
+        "docs/v3/DEV03_OBSERVATORY_META.ko.md"
+      ],
+      "handled": true,
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Owner source/metadata or exact declared dependency changed",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+      },
+      "review_hash": "39888178faa4647e18276746e58876a6f7d18e5736a830ccb00a877fb56df2b4",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "declared_document_dependency"
+      ],
+      "doc_id": "amplai-foundry:docs-v3-using_amplai_work-ko-md",
+      "document_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c",
+      "evidence": [
+        "docs/v3/USING_AMPLAI_WORK.ko.md"
+      ],
+      "handled": true,
+      "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "reason": "Owner source/metadata or exact declared dependency changed",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
+        "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+      },
+      "review_hash": "3ad3cb856312872111f3683db430496115055e298285386742d667b69c6da3e2",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "decision_record",
+      "discovered_by": [
+        "decision_index",
+        "declared_document_dependency",
+        "doc_reference"
+      ],
+      "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
+      "document_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a",
+      "evidence": [
+        ".ai-team/knowledge/decisions.index.json#D-074",
+        ".ai-team/knowledge/decisions.index.json#D-076",
+        ".ai-team/knowledge/decisions.index.json#D-077",
+        ".ai-team/knowledge/decisions.index.json#D-078",
+        ".ai-team/knowledge/decisions.index.json#D-079",
+        ".ai-team/knowledge/decisions.index.json#D-080",
+        ".ai-team/knowledge/decisions.index.json#D-081",
+        ".ai-team/knowledge/decisions.index.json#D-082",
+        ".ai-team/knowledge/decisions.index.json#D-083",
+        ".ai-team/knowledge/decisions.index.json#D-086",
+        ".ai-team/knowledge/decisions.index.json#D-089",
+        "docs/workstreams/v3-real-execution/DECISIONS.md",
+        "git grep -F tests/e2e/test_rc07_steer.py"
+      ],
+      "handled": true,
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-086; active decision D-089; 문서가 tests/e2e/test_rc07_steer.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+        "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+      },
+      "review_hash": "bee5c29292a425b4cd0cf76cf06fb6b8c77763331fb483e5e22d3ce42bb704a6",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "internal_guide",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "document_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42",
+      "evidence": [
+        ".ai-team/knowledge/map.json#kit-owning-changelog"
+      ],
+      "handled": true,
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "keyword release",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ba93bed4cb61122297008524b94fc4f1aaab62c7464d739c2d43d5a5e8e1f524",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "2c449361747c98e6b85219b3a09da6e9778488d7b8c69d5891c46f7c4faaea6d",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
+      },
+      "review_hash": "6f0902f53cba41fdc736670584dd29be4ce8e6c36f69327832e94a9dd71294cd",
+      "state": "ACTIVE"
+    },
+    {
+      "action": "acknowledge",
+      "category": "runbook",
+      "discovered_by": [
+        "knowledge_map"
+      ],
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "document_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd",
+      "evidence": [
+        ".ai-team/knowledge/map.json#kit-owning-readme"
+      ],
+      "handled": true,
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "keyword release",
+      "record_snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "3086e3b5bcf3b15ef514a1727ae3dfc2060c7afe4ab585299ad009e1494bfa0d",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "92ad9b8e2dde0ee4b70a42a0f66699bc1d8e6f685e217d89b66b816aadcc9e30",
+        "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
+        "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
+      },
+      "review_hash": "97c4733c2a488b64b11f48634b12cdac1b4a8f57067be9f02f2d6ad06a6c47fa",
+      "state": "ACTIVE"
+    }
+  ],
+  "legacy_acknowledgements_accepted": false,
+  "non_semantic_sources": [],
+  "projection_exclusion": {
+    "path": "specs/030-meta-harness-live/doc-impact.json",
+    "reason": "this derived view and its atomic publication stage"
+  },
+  "reason": "Current complete snapshot evaluated",
+  "reference_reviews": [
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 7,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/*TRACE.json",
+      "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
+        "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "6f2ac140f899df8bfb7ea2f37d048d180f5d2d9438a2cb3af3b9c0b90807b6e0",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "addca69768eff8f40503dafb48ecb75f91d0a7d62aecfbee724c2645ee3380ec"
+        }
+      ],
+      "impact_snapshot_sha256": "e214c3e6ecafb9e094b0378cdf82dd27a394caa7f55532bf13e29329bab4b34b",
+      "line": 124,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "2ad2f459abcc236efc3c6ef93296798400eae6e045ebe63e01a429bbb063cc18",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "4795a6d6ef04b9702bdada6494badf6a831fadcc",
+        "candidate_sha256": "f4b38b027a834d9a86cdc516253c36871660ac0152cda856cd311f90e4a0e909",
+        "declared_reference_sha256": "5bdd1c6b64e7b4ca4c594becac9a7caa8ab2780a5abd466f6bbd4c1b7d7c4ddc",
+        "dependency_snapshot_sha256": "dd57c77e21194f3c7bf57f5f3a9be7e21812693c09b5abf1c13f26e4cadb0fbc",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "950bf28107c316b7af768c8166bc94101b1b04831a2ecb10e0597f1e6a7fb421"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "6f99058698bdcd345e71394e8959c42a5588232be7e6549d9f2a0074a18dae99"
+        }
+      ],
+      "impact_snapshot_sha256": "debda4ccf724b6e63c7de8d814e41a5f6f4d0a5d8c73058c4764f07b6a4e2f03",
+      "line": 123,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "7e74a1dd9fc90363e00ecab78609c5806b7e85de399a4d7796628b71690145e8",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "9513f08d4f521f8e458d2747eb13ba05a73b02a4",
+        "candidate_sha256": "abd69c941d444a4051d5819f23221d6a4054f7249d97f070de0ca245d3fe771f",
+        "declared_reference_sha256": "2047296de30b0dbecd91bdeb64982772dfdd0e46a08bdae3eec2c22545191ac2",
+        "dependency_snapshot_sha256": "dd57c77e21194f3c7bf57f5f3a9be7e21812693c09b5abf1c13f26e4cadb0fbc",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "80065a838f78d9e10d80f1564baed9425b159e6cdef8928a45f1eb562d905814"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/013-amplai-v3/work-contract.json",
+        "sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/017-external-qualification-closure/document-review-evidence.json",
+          "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
+        }
+      ],
+      "impact_snapshot_sha256": "207f221ce1bbfdee940a50d8ce74967962e9a7c00a7729aac33fd873318f1049",
+      "line": 119,
+      "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "984ebe49144cb4d6e1c0ce4bb88879ee0c638df3c2df957fd9d1ab7a6543b22a",
+      "reviewer": "claude-opus-5.5-work017-document-review",
+      "snapshot": {
+        "candidate_revision": "509b901d5b3e7ee7f7343c690267761e1cda5226",
+        "candidate_sha256": "925bdeea3621689f61dfdd5fc613c48a2aacbda7e46ce394a668319a56073033",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
+        "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 3,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/013-amplai-v3/work-contract.json",
+        "sha256": "4fc78bcfa715e2448bcc5d516b8daf8089e74e03e9c955724208f75708840903"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/017-external-qualification-closure/document-review-evidence.json",
+          "sha256": "e22e31ddb1a6f73a34c59afb29e7f46ef44b63386becf9c9ca4af2505f3890de"
+        }
+      ],
+      "impact_snapshot_sha256": "207f221ce1bbfdee940a50d8ce74967962e9a7c00a7729aac33fd873318f1049",
+      "line": 119,
+      "method": "Rechecked the referencing line on this tree; the disposition recorded by the earlier review still applies (the line is unchanged).",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "a73b9b42b25743be5311818a241572daef8a96d12524e656b3492da9cda8a0c5",
+      "reviewer": "claude-opus-5.5-work017-document-review",
+      "snapshot": {
+        "candidate_revision": "509b901d5b3e7ee7f7343c690267761e1cda5226",
+        "candidate_sha256": "925bdeea3621689f61dfdd5fc613c48a2aacbda7e46ce394a668319a56073033",
+        "declared_reference_sha256": "38ca9f74cd97ce1c7cfea4762a9818ef7c94cbb53061acc65e5d5dcddb4fcb4b",
+        "dependency_snapshot_sha256": "7e05626bb0cf481659332f21632828dce10e01f8b474d1e0c02f32a1cacc636d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "fc0b8e558d46ca3b2ee9ba0592f676eb8e4a8bfd1c295958436fc4c3eb85a51c",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "7058d34dc96a0917ff935c557aa41faff24a84a09919a3e9276d055cda799771"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/018-v3-real-execution/work-contract.json",
+        "sha256": "a5d7028ca1db215e84c1485b29a030818c67fc757c729d96615dfbf27918a975"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/018-v3-real-execution/document-review-evidence-018.json",
+          "sha256": "6306337c097cf9ad1f186af9264f720415f805dc4da63e918a53d1d76def0bb3"
+        }
+      ],
+      "impact_snapshot_sha256": "7ea5a85d9a906284a9f0ed87e7ba98bdcb2c21e8463aecc382a8d4951f7f5e25",
+      "line": 122,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "bd78845c17a246181a199086c169581a4d75499bc80683910f2ad46269558f08",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "snapshot": {
+        "candidate_revision": "7e293aa4b50183cb83a24346dd3d490dd1a7042f",
+        "candidate_sha256": "268b0f3383acc005999512a1ef847c1d90764805d72e3c952e9b1f12c48eea40",
+        "declared_reference_sha256": "aa702ced00f878e6fc3cc9a188b1c79aff7dc383b0db9d3f3d6f8732d39cfbaf",
+        "dependency_snapshot_sha256": "f4b912b69af3642f95c97064d106b0ea7960263c2fe8c03473396ef0a1d5ab3b",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "817f1e62a7e5a1de263b2aab957bc53c1ad8aa3ff4ea061703dbb488a431aaad"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/018-v3-real-execution/work-contract.json",
+        "sha256": "a5d7028ca1db215e84c1485b29a030818c67fc757c729d96615dfbf27918a975"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/018-v3-real-execution/document-review-evidence-018.json",
+          "sha256": "6306337c097cf9ad1f186af9264f720415f805dc4da63e918a53d1d76def0bb3"
+        }
+      ],
+      "impact_snapshot_sha256": "7ea5a85d9a906284a9f0ed87e7ba98bdcb2c21e8463aecc382a8d4951f7f5e25",
+      "line": 122,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "c6c9be41a1259cb4a5e5c10f58968ea5ceafbebe955a22a59a2b0b7522ce0c8d",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "snapshot": {
+        "candidate_revision": "7e293aa4b50183cb83a24346dd3d490dd1a7042f",
+        "candidate_sha256": "268b0f3383acc005999512a1ef847c1d90764805d72e3c952e9b1f12c48eea40",
+        "declared_reference_sha256": "aa702ced00f878e6fc3cc9a188b1c79aff7dc383b0db9d3f3d6f8732d39cfbaf",
+        "dependency_snapshot_sha256": "f4b912b69af3642f95c97064d106b0ea7960263c2fe8c03473396ef0a1d5ab3b",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "817f1e62a7e5a1de263b2aab957bc53c1ad8aa3ff4ea061703dbb488a431aaad"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 125,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "ce1018b3137a907caaaaff5b39afddd58be69c1e4f078874d05888e87de9ea52",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "addca69768eff8f40503dafb48ecb75f91d0a7d62aecfbee724c2645ee3380ec"
+        }
+      ],
+      "impact_snapshot_sha256": "e214c3e6ecafb9e094b0378cdf82dd27a394caa7f55532bf13e29329bab4b34b",
+      "line": 124,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "d18557aecefa731eb00a354dca936c6b4c6255bf9745a0cb6be4ca3835ade9b3",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "4795a6d6ef04b9702bdada6494badf6a831fadcc",
+        "candidate_sha256": "f4b38b027a834d9a86cdc516253c36871660ac0152cda856cd311f90e4a0e909",
+        "declared_reference_sha256": "5bdd1c6b64e7b4ca4c594becac9a7caa8ab2780a5abd466f6bbd4c1b7d7c4ddc",
+        "dependency_snapshot_sha256": "dd57c77e21194f3c7bf57f5f3a9be7e21812693c09b5abf1c13f26e4cadb0fbc",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "950bf28107c316b7af768c8166bc94101b1b04831a2ecb10e0597f1e6a7fb421"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "6f99058698bdcd345e71394e8959c42a5588232be7e6549d9f2a0074a18dae99"
+        }
+      ],
+      "impact_snapshot_sha256": "debda4ccf724b6e63c7de8d814e41a5f6f4d0a5d8c73058c4764f07b6a4e2f03",
+      "line": 123,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "db533ddf822a1c82116c798d5dee8f400ba301fdea49d1e682608fff322032a8",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "9513f08d4f521f8e458d2747eb13ba05a73b02a4",
+        "candidate_sha256": "abd69c941d444a4051d5819f23221d6a4054f7249d97f070de0ca245d3fe771f",
+        "declared_reference_sha256": "2047296de30b0dbecd91bdeb64982772dfdd0e46a08bdae3eec2c22545191ac2",
+        "dependency_snapshot_sha256": "dd57c77e21194f3c7bf57f5f3a9be7e21812693c09b5abf1c13f26e4cadb0fbc",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d3c99e745cd49bf7390e80c3a99d9bbbc2f57419230f25f88333e373175ddceb",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "80065a838f78d9e10d80f1564baed9425b159e6cdef8928a45f1eb562d905814"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 125,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "f334bbeacbff6a04ec9b03a17a6168c34945d68cafad0364d2190b7b9087fb29",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 196,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "README.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+        "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+        "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 196,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "README.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/",
+      "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+        "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+        "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/018-v3-real-execution/work-contract.json",
+        "sha256": "a5d7028ca1db215e84c1485b29a030818c67fc757c729d96615dfbf27918a975"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:readme-md",
+      "evidence": [
+        {
+          "path": "specs/018-v3-real-execution/document-review-evidence-018.json",
+          "sha256": "522fec2b1f18d87495a49c0bf73dd36cd3181f3624a12015fe0c0889f8cf9c71"
+        }
+      ],
+      "impact_snapshot_sha256": "8553b6564a26987bcfafaa5d60f5142de4fafccf8180644e18c956d332f1fbff",
+      "line": 96,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "README.md",
+      "reason": "The selected workspace runtime creates this governance database; cli.py constructs the path. The clean source checkout is not expected to contain runtime state.",
+      "reference": ".amplai/runtime/governance.db",
+      "reference_hash": "a6354da311efb0306561a0aba0dd987a75891c26f76d66b9f42cf8fb8c9d8454",
+      "reviewer": "claude-opus-5.5-work018-document-review",
+      "snapshot": {
+        "candidate_revision": "5040e779a690687792f0a5517d8fc2fea7e6ac07",
+        "candidate_sha256": "924e750b861ac2f80b8eb0c103a681e6f95081b5f6d2894322161d2e3481b738",
+        "declared_reference_sha256": "6aec2d9eab689111780fe9613c2dfee71a76f123089ec24fade0bde22a02377a",
+        "dependency_snapshot_sha256": "31b310dc975d21064e332337a4acd51a67a1aa9da3c8fcfb0460bc18396d4243",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "6d4d8470ee762312b98ef39cff569fa6112ae0c802291255344e47e7f22548ac",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+        "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+        "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r2.json",
+          "sha256": "d0783c3de6e6b9a68f31348c7d37095302e3f4b69823c29be1541c72d631f144"
+        }
+      ],
+      "impact_snapshot_sha256": "e4b55b19d0dfcc6089a5fb0d4a27156d3c120dbbc2328b24d58faf3997d2febd",
+      "line": 72,
+      "method": "Compare the specific surrounding prose, source layout and actual manifest/runtime path construction",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "8909d1c23f7b02f615dd3984a81f78fc26b4c22f8d65b9de52088042a36c7702",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "949739bbcea4a70e67284c1f06215e6d86bf98d30cef10ab1ecc2cdd4d99546e",
+        "declared_reference_sha256": "51a5d05420f9eb6766a6df41a8f4646a07b60c00c60945bf002c85922dd126f7",
+        "dependency_snapshot_sha256": "fe379f4d95b8b14c4cbe5a71fe963a91d97cd999aca6ae562380b72cb5901df8",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "fe41fec0a073ecec45f4b2f2dbd8420def6a1f805335104c03cf05c0e431f03a",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "e7ff70cd6a6b0df402b8ddc3031289c2156e067eb6f4bc6a14528e98e6597db2",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "834b75c5acd8c095e0ceb8cc1178f8e1fe1f648ee27ae9ba996fa59171d3cf6f",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "d30cfc4e0dbb5457e08620d4121f0b37a5cd731d2998860c3eb7dda30e733c61"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r4.json",
+          "sha256": "4bcc1b98725834c66db5338274d2faf87b0bf10d9be901acc0c76387fb8c0ee8"
+        }
+      ],
+      "impact_snapshot_sha256": "191c1bed91ec8541e8ae7965c33538f1e1d0e2bb9ac8c74f0421f1369e7b72f4",
+      "line": 75,
+      "method": "Main attributed document review: compare preserved R1 guide bytes, inspect changed owner sections and exact R1-repair source/tests, bind the current snapshot and retain existing authority",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "9d09e6701b376a12cfe55fbe445e9a6af990c030b8763686aba8fa317491dd84",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "6a7d9c07509d387f221587b8a4dccb643989e33f5c4aae93f02b247bd4f49fd8",
+        "declared_reference_sha256": "597d3e05a9ad9e409e9fd8b55ff57b1d72889087076404355a170009014f6402",
+        "dependency_snapshot_sha256": "8298769060789a0e0cae2992f54345b9a6cf8bf29ded9415113d68751da6a469",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "881511fe3cae05332168ae2d6540698e183af0f827280b2991b1e1e5b96984c9",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "ac63f3f35d55e83e14c69cc4008f685cce12ecdd6f2f7c907a3b83d3c7e7e153",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "be0d2e78904438911fca1740e3065f41dbd2d7a4b5cd00fe0d5c4901c21eeccf",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "b36b20b520385e21e2db21cfaf5b45fffaa8cad721a633476cc99bb68e9fcfb0"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 86,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ba93bed4cb61122297008524b94fc4f1aaab62c7464d739c2d43d5a5e8e1f524",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "2c449361747c98e6b85219b3a09da6e9778488d7b8c69d5891c46f7c4faaea6d",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r10.json",
+          "sha256": "3fe08ebce1d661746b25929ea9bbf70afc590c9e9be0de1495edfa29428af2ec"
+        }
+      ],
+      "impact_snapshot_sha256": "371a912969c350319dd59fd471418492ffaf02e08c30636025b3e6c0ddd6a3c0",
+      "line": 81,
+      "method": "Main attributed final fixture-source review: compare25unchanged guide bodies,24exact optional reference locations and unchanged product/package source; inspect cache-free exact compilation with dont_inherit=True and80normal-interpreter tests/strict seal. Full S08 and independent verdict remain separate.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "a7864747618f77910399dd6b1e6f4c90ad7baa9a7084629f016220bc04c03d23",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "2a4b7a48d70436052bbd8aee6cb5598b3c70de2baf5aac187324e34e6ba19404",
+        "declared_reference_sha256": "6f859ae111431602a78aef0d33f2e6c11b981a71b34e1a4ca95d3b785dcb04a8",
+        "dependency_snapshot_sha256": "c35ccf95a4a0ecfc04dc7e0f65c286f3b1ada7f4b88b56f58c89bd74b0b7c686",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6190b66c01c688800ad86bba4f7ec3b7f90f120cb101b6642b2ab1c6ba3e47c7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "8697bc63a51de967497029c401c40301c6d27e716ecf95bcd116ebf101683e1f",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "e06bc71233dc9c91ab7e28c1b6f37d781055bb444ac7ac0b2aec335b57710bf7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "ff4316f1ffcd2b341a3660a93ff147fd1b2dcc4ca330a21a47e07bcb16ebffce"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r6.json",
+          "sha256": "6d05c5095ea9db85e884aa8b8dcea1ddb1a8c97e755c1d75a985ddcbb36b1c44"
+        }
+      ],
+      "impact_snapshot_sha256": "92fd8514805893ae39bc8629cdad53af2b3797678232506dbf53150f505e8349",
+      "line": 77,
+      "method": "Main attributed document review: compare frozen R2 guide bytes with the current source, inspect S12/S13 code and RED/GREEN evidence, verify all nine revalidations, and bind exact current dependencies; no human approval or independent implementation verdict",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "e74161b8d6a1d369796db6b6c17fa4c5c2d5f1ae409d5e2df69bf2895d202554",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "62fd99f05ffda6cded2501d7e3095d0363df124a98639eafe56a69aefbf52bec",
+        "declared_reference_sha256": "37265ab94cc7e1ab003f562ca52979e2ba3762970b50afb49d88e1382cd4b7a9",
+        "dependency_snapshot_sha256": "b9015fb9cc3372572be40756409b57dcbc72c2051f7c3c943d2aceaf8369a9fb",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "2d4fc9bf40d608e066babbc8d280c01a3e52fc72c21183893af38163055b76ab",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "de3cbd2c128d275c67e43f26c314222c9280385067ef2e04e4e3e856e8254347",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "c05f53fcd0ee3def7737e0991a06f0f5dd75f56d1c48000a2668a6a48882bd53"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "historical",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r12.json",
+          "sha256": "793ed5ce79b428e7d824b9554b72a05deaaf893e49ab837fa468ddadf90a380e"
+        }
+      ],
+      "impact_snapshot_sha256": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+      "line": 84,
+      "method": "Recheck exact unchanged physical-line context and source/manifest purpose under the current complete impact snapshot. No required dependency waived.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
+      "reference": "supervisor/",
+      "reference_hash": "ebc3908510be7474d8e4f618157c9b25c1f29925d5cb99fefe29b037c4ce007a",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "9f43cbc01afdc669786d9cc56a3d3cbb8e44caa819426e3381d7f05e8cb3b4f4",
+        "declared_reference_sha256": "146896f472e6dacbff3c2245617062ec4ecb5094cc211c54ea23ee20f46f1fde",
+        "dependency_snapshot_sha256": "1c25712c4eb1ace7169d466f991b83bf04183dd3be24a16376cb428788673ee1",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "d72124876b491c6889e2a0eca6e383df698753af4a3f3fd0fbad2e0b903d4171",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "5ad2f1f580f02917f0744e9d44f30eab1dc20fc4042155344bf881e45e125bf1",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "824406268321f844b27649eb0810815c7d6a7da9ece89ee1d5cb3ae1c2a97c40",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "0ca7a582e111d6dca039f286ce88fcfddbaf57e673d6a774e4e9eaa4debd5cb0"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r12.json",
+          "sha256": "793ed5ce79b428e7d824b9554b72a05deaaf893e49ab837fa468ddadf90a380e"
+        }
+      ],
+      "impact_snapshot_sha256": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+      "line": 136,
+      "method": "Recheck exact unchanged physical-line context and source/manifest purpose under the current complete impact snapshot. No required dependency waived.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "042b34c35a2a6ddaafc4973b43108a81ea5076a4e3b63957f0bea245b7be1d6c",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "9f43cbc01afdc669786d9cc56a3d3cbb8e44caa819426e3381d7f05e8cb3b4f4",
+        "declared_reference_sha256": "61faba6980fbf2438c61921e1555d5f82b24b8bdf3acbb8b1e5cf554761b3ca2",
+        "dependency_snapshot_sha256": "1c25712c4eb1ace7169d466f991b83bf04183dd3be24a16376cb428788673ee1",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "352f0e6cb419ed30a474a4eda3bd8d935a9bf947788442ec862decffa8f14bd9",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "5ad2f1f580f02917f0744e9d44f30eab1dc20fc4042155344bf881e45e125bf1",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "5012db3748adf77164cd37ede36c8eb625e6820d6288e6f5c59cda575609883a",
+        "source_assets_sha256": "b557822ddfbe88feb04829eb41c35d7be622e69d0daf5413f582e36e1dc0b324",
+        "source_sha256": "3c533427a76ef4b79e9d4976ceaab03b79d578598fa8d4a36708015fbd1848fd"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r2.json",
+          "sha256": "d0783c3de6e6b9a68f31348c7d37095302e3f4b69823c29be1541c72d631f144"
+        }
+      ],
+      "impact_snapshot_sha256": "e4b55b19d0dfcc6089a5fb0d4a27156d3c120dbbc2328b24d58faf3997d2febd",
+      "line": 93,
+      "method": "Compare the specific surrounding prose, source layout and actual manifest/runtime path construction",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "2340d3792a0d343567c76156e0e8a1fb4017f716128627ad7e8a75b1337914eb",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "949739bbcea4a70e67284c1f06215e6d86bf98d30cef10ab1ecc2cdd4d99546e",
+        "declared_reference_sha256": "780133fdcaac0e7a349f066c4b4f4efbfdea108dd82bb4b7178be87cc14d8a76",
+        "dependency_snapshot_sha256": "fe379f4d95b8b14c4cbe5a71fe963a91d97cd999aca6ae562380b72cb5901df8",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ed410ab9a3134f5cc8bce811f642e42d28171c936202717256f86fab51273814",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "e7ff70cd6a6b0df402b8ddc3031289c2156e067eb6f4bc6a14528e98e6597db2",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "930ae303dbf11773e5247ca74564b1b0791d54bc946c733a333704ca215ed070",
+        "source_assets_sha256": "6407240e79bc70c563427d8a1fb1d09c6d8edec8672c2b2902999542256cf658",
+        "source_sha256": "4147208f6ba9188a07a7a27521bf2808da353cc046690a158222a0e5b23c9289"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r12.json",
+          "sha256": "793ed5ce79b428e7d824b9554b72a05deaaf893e49ab837fa468ddadf90a380e"
+        }
+      ],
+      "impact_snapshot_sha256": "0543af4ba718067fbf1537eea0a4dbbcf9047a19c0e351e0d9123fdb65c818df",
+      "line": 135,
+      "method": "Recheck exact unchanged physical-line context and source/manifest purpose under the current complete impact snapshot. No required dependency waived.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "2da0b06a230eaefdc6b8c8490d2684881df929a17efc5e2d9de84062a1f61810",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "9f43cbc01afdc669786d9cc56a3d3cbb8e44caa819426e3381d7f05e8cb3b4f4",
+        "declared_reference_sha256": "61faba6980fbf2438c61921e1555d5f82b24b8bdf3acbb8b1e5cf554761b3ca2",
+        "dependency_snapshot_sha256": "1c25712c4eb1ace7169d466f991b83bf04183dd3be24a16376cb428788673ee1",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "352f0e6cb419ed30a474a4eda3bd8d935a9bf947788442ec862decffa8f14bd9",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "5ad2f1f580f02917f0744e9d44f30eab1dc20fc4042155344bf881e45e125bf1",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "5012db3748adf77164cd37ede36c8eb625e6820d6288e6f5c59cda575609883a",
+        "source_assets_sha256": "b557822ddfbe88feb04829eb41c35d7be622e69d0daf5413f582e36e1dc0b324",
+        "source_sha256": "3c533427a76ef4b79e9d4976ceaab03b79d578598fa8d4a36708015fbd1848fd"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r10.json",
+          "sha256": "3fe08ebce1d661746b25929ea9bbf70afc590c9e9be0de1495edfa29428af2ec"
+        }
+      ],
+      "impact_snapshot_sha256": "371a912969c350319dd59fd471418492ffaf02e08c30636025b3e6c0ddd6a3c0",
+      "line": 124,
+      "method": "Main attributed final fixture-source review: compare25unchanged guide bodies,24exact optional reference locations and unchanged product/package source; inspect cache-free exact compilation with dont_inherit=True and80normal-interpreter tests/strict seal. Full S08 and independent verdict remain separate.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "2f7d6e56c412ce88534385f086108f85cb5664b43d93c9061acce84305f56e66",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "2a4b7a48d70436052bbd8aee6cb5598b3c70de2baf5aac187324e34e6ba19404",
+        "declared_reference_sha256": "5b75ca38dc039b81f25a4e262f49435b9fb94d4e4d24c1b27f07c740384f53db",
+        "dependency_snapshot_sha256": "c35ccf95a4a0ecfc04dc7e0f65c286f3b1ada7f4b88b56f58c89bd74b0b7c686",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "19c0e6d93971446955d8eab2511c328965402f3c2e88c22ab781f9242bc1f657",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "8697bc63a51de967497029c401c40301c6d27e716ecf95bcd116ebf101683e1f",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "3d6b8a1372519522e9046beb7312ab6fa1010bea1f4410029dbc36cd662cd80b",
+        "source_assets_sha256": "86be7a4704e6b8bbdf629bf6565fb0c16e6736149c5c048add5cf732d8282a55",
+        "source_sha256": "71ab12a22b1565b9203ead64c973173ca350cb1acc0fb38417bad75312458715"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 145,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "3086e3b5bcf3b15ef514a1727ae3dfc2060c7afe4ab585299ad009e1494bfa0d",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "92ad9b8e2dde0ee4b70a42a0f66699bc1d8e6f685e217d89b66b816aadcc9e30",
+        "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
+        "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r4.json",
+          "sha256": "4bcc1b98725834c66db5338274d2faf87b0bf10d9be901acc0c76387fb8c0ee8"
+        }
+      ],
+      "impact_snapshot_sha256": "191c1bed91ec8541e8ae7965c33538f1e1d0e2bb9ac8c74f0421f1369e7b72f4",
+      "line": 102,
+      "method": "Main attributed document review: compare preserved R1 guide bytes, inspect changed owner sections and exact R1-repair source/tests, bind the current snapshot and retain existing authority",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "5e51151c09873bfbeb0c423eee6cf01890252f48ac7fa17fe229686badce6d7d",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "6a7d9c07509d387f221587b8a4dccb643989e33f5c4aae93f02b247bd4f49fd8",
+        "declared_reference_sha256": "406c2ea7c134ff6f16e16270187fedc917d58a1ed7335172448520f1cac889b0",
+        "dependency_snapshot_sha256": "8298769060789a0e0cae2992f54345b9a6cf8bf29ded9415113d68751da6a469",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "5f773730b3b23419c44a93674d78e001c738668f001cbfc90cfb2a7aabb5030b",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "ac63f3f35d55e83e14c69cc4008f685cce12ecdd6f2f7c907a3b83d3c7e7e153",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "4d68fafc5aeab45d1a5a2c02c944b654dcf3824c897536732aeb1585ab3356d1",
+        "source_assets_sha256": "7f70cf6016a3386d7b14624ad705def840bf19fb6128f85089e53e403429d419",
+        "source_sha256": "00b6597e38ab83a4adc8ee7d96defe86b5836c87abd326d1824ee04597440225"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r6.json",
+          "sha256": "6d05c5095ea9db85e884aa8b8dcea1ddb1a8c97e755c1d75a985ddcbb36b1c44"
+        }
+      ],
+      "impact_snapshot_sha256": "92fd8514805893ae39bc8629cdad53af2b3797678232506dbf53150f505e8349",
+      "line": 109,
+      "method": "Main attributed document review: compare frozen R2 guide bytes with the current source, inspect S12/S13 code and RED/GREEN evidence, verify all nine revalidations, and bind exact current dependencies; no human approval or independent implementation verdict",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "6c75d92c1e29fd36e469947c9d2cd6f3f4cd3e9c8566021adbfdbac700790613",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "62fd99f05ffda6cded2501d7e3095d0363df124a98639eafe56a69aefbf52bec",
+        "declared_reference_sha256": "c9ac0622c1e6e4e76a33bb0f748179bfb0bc6a2f67514dd9548fc32892362216",
+        "dependency_snapshot_sha256": "b9015fb9cc3372572be40756409b57dcbc72c2051f7c3c943d2aceaf8369a9fb",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "29817d6d770db0d48419424b702c55d954597fe17af7163391dbc6b1ec732ee7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f4bb575f337f2c591900d136103bd8e7c841d0f6ae670112941c9ecd2536e9d9",
+        "source_assets_sha256": "7de5891dba1cdf813068731ba703f690608da2e5c225d0ca5056b6182bd7e766",
+        "source_sha256": "fabcedecd840965ecca21a8bf455ddd61b9acebe464875b825c9556ea5dd5f47"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "line": 144,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "3086e3b5bcf3b15ef514a1727ae3dfc2060c7afe4ab585299ad009e1494bfa0d",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "92ad9b8e2dde0ee4b70a42a0f66699bc1d8e6f685e217d89b66b816aadcc9e30",
+        "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
+        "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r4.json",
+          "sha256": "4bcc1b98725834c66db5338274d2faf87b0bf10d9be901acc0c76387fb8c0ee8"
+        }
+      ],
+      "impact_snapshot_sha256": "191c1bed91ec8541e8ae7965c33538f1e1d0e2bb9ac8c74f0421f1369e7b72f4",
+      "line": 103,
+      "method": "Main attributed document review: compare preserved R1 guide bytes, inspect changed owner sections and exact R1-repair source/tests, bind the current snapshot and retain existing authority",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "reference_hash": "bd7ee4f785a536313d2e4b56d476bddec3a358498eaead026e6f679b6cdd5314",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "6a7d9c07509d387f221587b8a4dccb643989e33f5c4aae93f02b247bd4f49fd8",
+        "declared_reference_sha256": "406c2ea7c134ff6f16e16270187fedc917d58a1ed7335172448520f1cac889b0",
+        "dependency_snapshot_sha256": "8298769060789a0e0cae2992f54345b9a6cf8bf29ded9415113d68751da6a469",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "5f773730b3b23419c44a93674d78e001c738668f001cbfc90cfb2a7aabb5030b",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "ac63f3f35d55e83e14c69cc4008f685cce12ecdd6f2f7c907a3b83d3c7e7e153",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "4d68fafc5aeab45d1a5a2c02c944b654dcf3824c897536732aeb1585ab3356d1",
+        "source_assets_sha256": "7f70cf6016a3386d7b14624ad705def840bf19fb6128f85089e53e403429d419",
+        "source_sha256": "00b6597e38ab83a4adc8ee7d96defe86b5836c87abd326d1824ee04597440225"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r10.json",
+          "sha256": "3fe08ebce1d661746b25929ea9bbf70afc590c9e9be0de1495edfa29428af2ec"
+        }
+      ],
+      "impact_snapshot_sha256": "371a912969c350319dd59fd471418492ffaf02e08c30636025b3e6c0ddd6a3c0",
+      "line": 123,
+      "method": "Main attributed final fixture-source review: compare25unchanged guide bodies,24exact optional reference locations and unchanged product/package source; inspect cache-free exact compilation with dont_inherit=True and80normal-interpreter tests/strict seal. Full S08 and independent verdict remain separate.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "cd152ff1fe9f97c3d1fda1febe41748df79c6ab52454a1c935dda2bfb6b4f582",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "2a4b7a48d70436052bbd8aee6cb5598b3c70de2baf5aac187324e34e6ba19404",
+        "declared_reference_sha256": "5b75ca38dc039b81f25a4e262f49435b9fb94d4e4d24c1b27f07c740384f53db",
+        "dependency_snapshot_sha256": "c35ccf95a4a0ecfc04dc7e0f65c286f3b1ada7f4b88b56f58c89bd74b0b7c686",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "19c0e6d93971446955d8eab2511c328965402f3c2e88c22ab781f9242bc1f657",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "8697bc63a51de967497029c401c40301c6d27e716ecf95bcd116ebf101683e1f",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "3d6b8a1372519522e9046beb7312ab6fa1010bea1f4410029dbc36cd662cd80b",
+        "source_assets_sha256": "86be7a4704e6b8bbdf629bf6565fb0c16e6736149c5c048add5cf732d8282a55",
+        "source_sha256": "71ab12a22b1565b9203ead64c973173ca350cb1acc0fb38417bad75312458715"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r2.json",
+          "sha256": "d0783c3de6e6b9a68f31348c7d37095302e3f4b69823c29be1541c72d631f144"
+        }
+      ],
+      "impact_snapshot_sha256": "e4b55b19d0dfcc6089a5fb0d4a27156d3c120dbbc2328b24d58faf3997d2febd",
+      "line": 92,
+      "method": "Compare the specific surrounding prose, source layout and actual manifest/runtime path construction",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "de0dc4b072fd54d7239279888343f0378faa08b56b53f1e754af15ce21133cf2",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "949739bbcea4a70e67284c1f06215e6d86bf98d30cef10ab1ecc2cdd4d99546e",
+        "declared_reference_sha256": "780133fdcaac0e7a349f066c4b4f4efbfdea108dd82bb4b7178be87cc14d8a76",
+        "dependency_snapshot_sha256": "fe379f4d95b8b14c4cbe5a71fe963a91d97cd999aca6ae562380b72cb5901df8",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ed410ab9a3134f5cc8bce811f642e42d28171c936202717256f86fab51273814",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "e7ff70cd6a6b0df402b8ddc3031289c2156e067eb6f4bc6a14528e98e6597db2",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "930ae303dbf11773e5247ca74564b1b0791d54bc946c733a333704ca215ed070",
+        "source_assets_sha256": "6407240e79bc70c563427d8a1fb1d09c6d8edec8672c2b2902999542256cf658",
+        "source_sha256": "4147208f6ba9188a07a7a27521bf2808da353cc046690a158222a0e5b23c9289"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/012-portable-document-lifecycle/work-contract.json",
+        "sha256": "8f19db4bf51f0c586bb093e6b996f4fc2448a6a764112af7c49f001e7354ce90"
+      },
+      "disposition": "example",
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/012-portable-document-lifecycle/s08-document-review-evidence-r6.json",
+          "sha256": "6d05c5095ea9db85e884aa8b8dcea1ddb1a8c97e755c1d75a985ddcbb36b1c44"
+        }
+      ],
+      "impact_snapshot_sha256": "92fd8514805893ae39bc8629cdad53af2b3797678232506dbf53150f505e8349",
+      "line": 108,
+      "method": "Main attributed document review: compare frozen R2 guide bytes with the current source, inspect S12/S13 code and RED/GREEN evidence, verify all nine revalidations, and bind exact current dependencies; no human approval or independent implementation verdict",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "reference_hash": "fe5fa8b0d686cd5de6981df187b9d039d5e0b5c0ce52d4f6ad0aec3b5f8a814f",
+      "reviewer": "codex-implementation-document-review",
+      "snapshot": {
+        "candidate_revision": "6e005a5e3035ef05510c403a7cd691d524b733bd",
+        "candidate_sha256": "62fd99f05ffda6cded2501d7e3095d0363df124a98639eafe56a69aefbf52bec",
+        "declared_reference_sha256": "c9ac0622c1e6e4e76a33bb0f748179bfb0bc6a2f67514dd9548fc32892362216",
+        "dependency_snapshot_sha256": "b9015fb9cc3372572be40756409b57dcbc72c2051f7c3c943d2aceaf8369a9fb",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "29817d6d770db0d48419424b702c55d954597fe17af7163391dbc6b1ec732ee7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "d88e27ad739eb53557d87379d48ede79d98faacb5397c72ffae9baf5ddde58c4",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f4bb575f337f2c591900d136103bd8e7c841d0f6ae670112941c9ecd2536e9d9",
+        "source_assets_sha256": "7de5891dba1cdf813068731ba703f690608da2e5c225d0ca5056b6182bd7e766",
+        "source_sha256": "fabcedecd840965ecca21a8bf455ddd61b9acebe464875b825c9556ea5dd5f47"
+      }
+    }
+  ],
+  "review_authority": ".ai-team/knowledge/document-reviews.json",
+  "reviews": [
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:ai-team-readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": ".ai-team/README.md",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "36492befb45b9111d52d1796732654bcb719391ed128c5a4be3edd8241a92850",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "7bc26798603355bc8a8daae24800bcbfe02ef6136fcc7948511d7bd15a01e791",
+        "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
+        "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-portable-development-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "269cdfaa681512bf972c77a0f2b1439f60e43c454d8bb55516e73cbc3ba075bf",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "4c8398ad02ec799f1b93a321cf04c873c25ffd2f058fdc2db8a474c13a21b2a7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reason": "Byte-identical to base abc9796b2dce; this Work does not change it. Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
+        "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "0fa1aded95ee4f0ae7e26534f6bdaa06b67828e9c01589f9b78318dd4e01fd88",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "6f2ac140f899df8bfb7ea2f37d048d180f5d2d9438a2cb3af3b9c0b90807b6e0",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Byte-identical to base abc9796b2dce; this Work does not change it. Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
+        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-v3-using_amplai_work-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "reason": "Byte-identical to base abc9796b2dce; this Work does not change it. Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
+        "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "80e33f76c435e1a11ab7a393ec4e0f7f0b6d93879a5b49e20255d4687086c78c"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-vision-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/VISION.md",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ee0803e1c15f4a55215ea106a386bbdde9c7884f47caf748b49cbb555c30151a",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "53870d1f08613c05bb1cdb1cb4bfc2d1482229aa73c33b32f3229f63d6fa15f1",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Byte-identical to base abc9796b2dce; this Work does not change it. Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "4e4098e8ef24964ce4a02b0318847b078ad4707498cc1fd85279471bd404ebc4",
+        "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "cc272a031891e4f2ae51d68dc9efff834d0752c8c08f773dfb001d5ddb33f25c",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "741e2268a23ba839aa2ebb25f5da315985a58408d3f3f321fdcf36e049bea3d5",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "ea3d44e70b85da1d6bacb6bb6f5b6222d24d92aa09658308dc2f22fe2134187a"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "README.md",
+      "reason": "Links the usage guide, which carries the Work 019 changes; README text itself is unaffected.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "f66f0d7e1e3b87650cf7f032b74d218eca1ff557415466fe3ca2cbc31444dcb7",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "f0525018f8b85824ecfef57958790f3b6d60e56416a752baf22dc2c54c0c19d5",
+        "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
+        "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/CHANGELOG.md",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "ba93bed4cb61122297008524b94fc4f1aaab62c7464d739c2d43d5a5e8e1f524",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "2c449361747c98e6b85219b3a09da6e9778488d7b8c69d5891c46f7c4faaea6d",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/030-meta-harness-live/work-contract.json",
+        "sha256": "b8f68b15ad6818bbbf1afd188540706f32744f38bac5565fbf2378380ffbdaf5"
+      },
+      "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-030.json",
+          "sha256": "a76db5a322459594bf8f3b2e3df6c05dca79d7c84e0215d0b78bd5a43ef9bd23"
+        }
+      ],
+      "impact_snapshot_sha256": "a836b28464a39d4accd6e00ae00e696a584ab418aa8733571c455eb7e63c4a89",
+      "method": "Grepped each document for steer/replan/design/composition/Claude/PR outcome/multi-app/integration wording and compared the hits against the branch diff against main of the changed sources and the recorded real runs in specs/019-v3-completion/runs/.",
+      "outcome": "reviewed_unchanged",
+      "path": "tools/amplai-loop-kit/README.md",
+      "reason": "Work 019 adds PR outcome tracking, system-selected Claude fallback, design mode, multi-app goals and operator steer/replan. This document mentions none of them in a way that changed and stays accurate.",
+      "reviewer": "claude-opus-5.5-work019-document-review",
+      "snapshot": {
+        "candidate_revision": "830ea3ac4de4c83d13511ae9e1d76fcc1affe703",
+        "candidate_sha256": "9ee27516aebf29548451cb4f56f5f94a197f432f75858398de96348334f9480c",
+        "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
+        "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "3086e3b5bcf3b15ef514a1727ae3dfc2060c7afe4ab585299ad009e1494bfa0d",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "92ad9b8e2dde0ee4b70a42a0f66699bc1d8e6f685e217d89b66b816aadcc9e30",
+        "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
+        "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
+      }
+    }
+  ],
+  "scan_complete": true,
+  "schema_version": "1.0",
+  "semantic_change": true,
+  "source_role_records": [
+    {
+      "current_guide": false,
+      "kind": "source_asset",
+      "owner": ".ai-team/README.md",
+      "path": ".ai-team/rules/contract-registry.md",
+      "reason": "Protected repository rules remain authoritative inputs to the current runtime guide.",
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": ".ai-team/rules/contract-registry.md",
+        "sha256": "9251ddea61d1a66f13580546fdfc2ef6e5191592194d8123e03bd16a73d029a0",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "source_asset",
+      "owner": ".ai-team/README.md",
+      "path": ".specify/memory/constitution.md",
+      "reason": "Preserve protected project principles as source inputs; do not rewrite or promote them.",
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": ".specify/memory/constitution.md",
+        "sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+        "sha256": "2d4b6a5dc0e67430be3eef37ab8d2d7bc804718176b81921bf0b30c611df169f"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/amplai-loop-runtime-adoption/FACTS.md",
+        "sha256": "2d4b6a5dc0e67430be3eef37ab8d2d7bc804718176b81921bf0b30c611df169f",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+        "sha256": "26cccb4194ef30b266825ce5af4dc19427611465cc2e8a70d39265a2f4156b7f"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/amplai-loop-runtime-adoption/PORT-LOG.md",
+        "sha256": "26cccb4194ef30b266825ce5af4dc19427611465cc2e8a70d39265a2f4156b7f",
+        "state": "PRESENT"
+      }
+    },
+    {
+      "current_guide": false,
+      "kind": "historical",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Existing policy identifies these as historical work records. Require exact baseline retention; no current-guide promotion.",
+      "retained_baseline": {
+        "commit": "abc9796b2dce1dad63bfcdf69baf036ebc5dbb91",
+        "sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825"
+      },
+      "security": "INTERNAL",
+      "source": {
+        "mode": 420,
+        "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+        "sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+        "state": "PRESENT"
+      }
+    }
+  ],
+  "status": "RESOLVED",
+  "unresolved_broken_references": [],
+  "work_id": "FEATURE-ID"
+}
