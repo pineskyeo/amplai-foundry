@@ -45,6 +45,11 @@ def guarded(operation: Callable[[], T]) -> T:
         raise typer.Exit(2) from exc
 
 
+from . import meta_cli  # noqa: E402  (needs `guarded` defined above)
+
+meta_cli.register(app, guarded)
+
+
 def client() -> AmplaiClient:
     from .deployment import private_bytes
 
