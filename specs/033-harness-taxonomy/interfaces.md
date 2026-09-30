@@ -2738,3 +2738,26 @@ authority or policy decision):
   without changing expected text.
 - **Plan-time router check**: S3 holds a goal whose composition carries router parts it cannot
   honour before the first claim; refusing at plan time (before the planner turn) is S4/S10.
+
+## Clarifications After W2 Part 1 (2026-10-01)
+
+- **Promoted candidate vs changed router**: after the installed router changes (for example a new cell), a
+  promoted candidate built on the old router is not substituted by `releases.effective`; status and the dashboard
+  show it as "stale: re-derive". Never rebased silently (a promoted artifact does not change under the operator).
+- **Effort syntax**: `EFFORT_SYNTAX` holds the values quoted in `runs/cli-effort-facts.md` (Codex low … ultra;
+  Claude low … max, `ultracode` excluded); a non-default effort needs an accepted probe of that exact cell
+  (`EFFORT_UNPROBED`); a value outside the syntax is refused.
+- **Cell enablement**: a cell is eligible only when its entry and its driver entry are both enabled.
+- **Effort cells and images**: an effort cell installs only in the image of its accepted probe; a (cell, image)
+  keyed probe is a later change (S7b).
+- **Bench base**: defects D1–D15 are intentional bug targets, catalogued in `corpus/authoring/bench-defects.md`
+  (outside the base tree). Bench app id: `amplai-bench-app` (S6-freeze writes it into `manifest.json`).
+  `cli_ops` hidden tests run `python -m stockroom` / `scripts/*.py`, never `pip install`.
+- **§14 Q17**: `scripts/corpus_base_repo.py` does not reproduce the Work 030 demo commit `9e574bc` (it builds a
+  root commit, tree `e3209d6796b2cc81d41bd782ff8a627d776e42cb`); the meta deployment installs
+  `github.com/pineskyeo/amplai-demo-app` at `9e574bc` as Work 030 did.
+- **S8 contract addition**: `TrialPlanner` derives `in_scope` per base (from the base tree's top-level entries);
+  the demo value stays `['demo_app/', 'tests/']`.
+- **Still open for later slices**: options wiring from the loop (`resolve_options`, S8); route roles and driver
+  options in the router (S9/S10); plan-time router refusal (S10); `append_system_prompt` validator refusing a
+  leading `-` or NUL in `policies.py` (S10).

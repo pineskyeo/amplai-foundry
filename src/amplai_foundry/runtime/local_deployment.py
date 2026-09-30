@@ -23,9 +23,9 @@ import threading
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
@@ -42,6 +42,14 @@ from .deployment import private_bytes, read_key
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
 from .execution import releases
+from .execution.cells import (
+    EFFORT_SYNTAX,
+    LEGACY_EFFORT,
+    PROVIDERS,
+    Cell,
+    CellInstaller,
+    latest_probe,
+)
 from .execution.codex import (
     CodexProfileInputs,
     ScopedCredential,
@@ -49,8 +57,7 @@ from .execution.codex import (
     build_codex_port,
     build_opencode_port,
     container_profile,
-    install_codex_profile,
-    install_driver_profile,
+    measured_qualification,
 )
 from .execution.loop import ExecutionLoop
 from .execution.meta_local import META_OPERATOR_PERMISSIONS, LocalMeta
@@ -95,6 +102,16 @@ class VerifierConfig(BaseModel):
     argv: list[str] = Field(min_length=1)
     description: str
     timeout_seconds: int = 900
+    quick: bool = False  # usable as an L7 fast check (Work 033 §12.2, AppConfig.quick_verifiers)
+
+
+class EnvironmentEntry(BaseModel):
+    """A task environment of an app (IC-12, §12.2); read by S7b, accepted from S4 on."""
+
+    model_config = ConfigDict(extra="forbid")
+    environment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+    container_profile: str
+    qualification_reports: dict[str, str] = Field(default_factory=dict)  # driver id -> path
 
 
 class AppEntry(BaseModel):
@@ -111,6 +128,15 @@ class AppEntry(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     base_branch: str = "main"
     remote: str = "origin"
+    environments: list[EnvironmentEntry] = Field(default_factory=list)  # S7b wires them
+
+    def driver_report(self, driver_id: str) -> str | None:
+        """The app's own qualification report for a driver (the legacy entries)."""
+        return {
+            "codex-cli": self.qualification_report,
+            "claude-cli": self.claude_qualification_report,
+            "opencode-server": self.opencode_qualification_report,
+        }[driver_id]
 
 
 class CodexEntry(BaseModel):
@@ -136,6 +162,108 @@ class OpenCodeEntry(BaseModel):
     credential_home: str  # scripts/sandbox_up.sh --opencode-home DIR (scoped copy)
     model: str = "opencode-go/glm-5.3-flash"  # the model the container qualification measured
     enabled: bool = True
+
+
+class CellEntry(BaseModel):
+    """A non-legacy cell (Work 033 S4, D-097, §12.2): driver, model and reasoning effort.
+
+    The legacy ``codex``/``claude``/``opencode`` entries define the legacy cells (IC-07). An
+    effort outside the driver's documented values is refused here (EFFORT_UNSUPPORTED); a
+    documented one still needs an accepted ``amplai ops local-cell probe`` before it installs.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    driver: Literal["codex-cli", "claude-cli", "opencode-server"]
+    model: str
+    effort: str
+    # per model; absent = each app's own report for that driver (effort variants share it)
+    qualification_reports: dict[str, str] | None = None
+    enabled: bool = True
+
+    def cell(self) -> Cell:
+        reports = tuple(sorted((self.qualification_reports or {}).items()))
+        cell_id = Cell.make_id(self.driver, self.model, self.effort, legacy=False)
+        return Cell(cell_id, self.driver, self.model, self.effort, reports, legacy=False)
+
+    @model_validator(mode="after")
+    def _effort(self) -> CellEntry:
+        if self.effort != LEGACY_EFFORT and self.effort not in EFFORT_SYNTAX[self.driver]:
+            raise Hold(
+                "EFFORT_UNSUPPORTED", f"{self.driver} does not document this effort",
+                details={"effort": self.effort, "documented": list(EFFORT_SYNTAX[self.driver])},
+            )  # fmt: skip
+        self.cell()  # Hold MODEL_UNPINNED / EFFORT_UNSUPPORTED for an unusable model or effort
+        return self
+
+
+class RolesEntry(BaseModel):
+    """Cell lists per role (§12.2, L3). Accepted and checked from S4 on; the execution loop
+    refuses route-policy roles until it honours them (loop.py ``_router_unsupported``), so they
+    do not reach the router yet."""
+
+    model_config = ConfigDict(extra="forbid")
+    planner: list[str] | None = Field(default=None, min_length=1, max_length=64)
+    reviewer: list[str] | None = Field(default=None, min_length=1, max_length=64)
+    proposer: list[str] | None = Field(default=None, min_length=1, max_length=64)
+
+
+class NightlyEntry(BaseModel):
+    """= ``NightlyConfig`` (§3.13); the canonical shape is the ``nightly-plan`` record (§2.14)."""
+
+    model_config = ConfigDict(extra="forbid")
+    budget_trials: int = Field(default=150, ge=0)
+    shares: dict[str, float] = Field(
+        default_factory=lambda: {
+            "drift": 0.1, "screening_design": 0.0, "search": 0.6, "confirmation": 0.3,
+        }
+    )  # fmt: skip
+    cells: list[str] = Field(default_factory=list)
+    max_parallel: int = Field(default=2, ge=1, le=4)
+    pilot: bool = True
+    stop_at: str = Field(default="07:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    drift_tasks: list[str] = Field(default_factory=list)
+    pilot_nights: int = Field(default=3, ge=0)
+    keep_operator_share: float = Field(default=0.5, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def _shares(self) -> NightlyEntry:
+        # §2.14: drift + search + confirmation = 1; 0 <= screening_design <= search
+        s = self.shares
+        if set(s) != {"drift", "screening_design", "search", "confirmation"} or any(
+            not 0 <= v <= 1 for v in s.values()
+        ):
+            raise ValueError("shares are drift, screening_design, search, confirmation in 0..1")
+        if abs(s["drift"] + s["search"] + s["confirmation"] - 1) > 1e-9:
+            raise ValueError("drift + search + confirmation = 1 (§2.14)")
+        if s["screening_design"] > s["search"]:
+            raise ValueError("screening_design <= search (§2.14)")
+        return self
+
+
+class MetaEntry(BaseModel):
+    """Meta-harness settings (§12.2); read by S11-S13, accepted from S4 on."""
+
+    model_config = ConfigDict(extra="forbid")
+    corpus_root: str = "specs/033-harness-taxonomy/corpus"
+    evaluator_version: str = "eval-2"
+    max_parallel_trials: int = Field(default=2, ge=1, le=4)
+    trace_capture: bool = True  # trials only
+    stage_template: str = "default_v1"
+    nightly: NightlyEntry | None = None
+
+
+DataClass = Literal["public", "internal", "confidential", "restricted"]
+JEV_DEFAULT: tuple[DataClass, ...] = ("public",)
+
+
+class JevEntry(BaseModel):
+    """The Jev judge stub's config (§6.6); access and API are 확인 필요 (§14 Q9)."""
+
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool = False
+    endpoint: str | None = None
+    token_file: str | None = None
+    data_classes_allowed: list[DataClass] = Field(default_factory=lambda: list(JEV_DEFAULT))
 
 
 class IntegrationEntry(BaseModel):
@@ -165,6 +293,47 @@ class LocalConfig(BaseModel):
     apps: list[AppEntry] = Field(min_length=1, max_length=4)
     integrations: list[IntegrationEntry] = Field(default_factory=list)
     publish_mode: str = "draft_pr"
+    # Work 033 S4 (§12.2): every key optional, so a local-1 file without them behaves as today
+    cells: list[CellEntry] = Field(default_factory=list)
+    roles: RolesEntry | None = None
+    meta: MetaEntry | None = None
+    jev: JevEntry | None = None
+
+    def legacy_cells(self) -> dict[str, str]:
+        """The legacy cells (IC-07): configured driver id -> its model."""
+        out = {"codex-cli": self.codex.model}
+        if self.claude is not None:
+            out["claude-cli"] = self.claude.model
+        if self.opencode is not None:
+            out["opencode-server"] = self.opencode.model
+        return out
+
+    @model_validator(mode="after")
+    def _cells(self) -> LocalConfig:
+        legacy = self.legacy_cells()
+        seen: set[str] = set()
+        for entry in self.cells:
+            cell = entry.cell()
+            if entry.driver not in legacy:
+                raise ValueError(f"{cell.cell_id}: configure the {entry.driver} driver first")
+            if cell.cell_id in seen or (
+                entry.effort == LEGACY_EFFORT and entry.model == legacy[entry.driver]
+            ):
+                raise ValueError(f"{cell.cell_id}: the cell is already configured")
+            seen.add(cell.cell_id)
+            unknown = set(entry.qualification_reports or {}) - {a.app_id for a in self.apps}
+            if unknown:
+                raise ValueError(f"{cell.cell_id}: unknown apps {sorted(unknown)}")
+        known = set(legacy) | seen
+        named: list[str] = []
+        if self.roles is not None:
+            for listed in (self.roles.planner, self.roles.reviewer, self.roles.proposer):
+                named += listed or []
+        if self.meta is not None and self.meta.nightly is not None:
+            named += self.meta.nightly.cells
+        if set(named) - known:
+            raise ValueError(f"unknown cells {sorted(set(named) - known)}")
+        return self
 
 
 class LocalProductDeployment:
@@ -243,7 +412,47 @@ class LocalProductDeployment:
         credential = ScopedCredential(self.local(cfg.codex.credential_home))
         token = claude_token(self.local(cfg.claude.token_file)) if cfg.claude else None
         registered: set[str] = set()
-        per_app: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+        per_app: dict[str, tuple[dict[str, Any], dict[str, Any], list[Cell]]] = {}
+        cells = CellInstaller(self.store, self.scope)
+        recorded: set[str] = set()  # cells whose harness-cell record this boot wrote
+        # configured cells an app did not install, with the reason (read by operators and tests)
+        self.cell_skips: list[dict[str, Any]] = []
+        installed_cells: set[str] = set()
+
+        def install_cell(
+            cell: Cell, inputs: CodexProfileInputs, caps: list[dict[str, Any]], app_id: str
+        ) -> dict[str, Any] | None:
+            """A cell's records; its harness-cell record comes from the first app that installs
+            it (§2.4 names one image per cell; apps in the same image reuse it).
+
+            An effort cell installs only in the image and driver version its latest probe ran
+            on (§2.4: one image per cell, one probe per cell id). An app in another image skips
+            it (None, reason recorded) instead of holding the whole boot; a cell no app can
+            install still holds EFFORT_UNPROBED after the loop, as before."""
+            found = latest_probe(self.store, self.scope, cell.cell_id)
+            probe = found[1] if found is not None else None
+            if not cell.legacy and cell.effort != LEGACY_EFFORT and probe is not None:
+                measured = measured_qualification(replace(inputs, model=cell.model))
+                ran_on = (probe.get("image"), probe.get("driver_version"))
+                if ran_on != (measured["image"], measured["driver_version"]):
+                    self.cell_skips.append({
+                        "cell_id": cell.cell_id, "app": app_id, "code": "EFFORT_UNPROBED",
+                        "reason": "the cell's probe ran on another image or driver version",
+                        "probe_image": probe.get("image"), "image": measured["image"],
+                    })  # fmt: skip
+                    return None
+            installed_cells.add(cell.cell_id)
+            if cell.cell_id in recorded:
+                refs, _ = cells.profile(cell, inputs, caps, probe=probe)
+                return refs
+            recorded.add(cell.cell_id)
+            return cells.install(cell, inputs, caps, probe=probe)
+
+        def register(refs: dict[str, Any], build: Any) -> None:
+            if digest(refs["driver"]) not in registered:  # apps and effort variants share
+                registry.register(admin, refs["driver"], build())
+                registered.add(digest(refs["driver"]))
+
         verify_sandboxes: dict[str, ContainerSandbox] = {}
         first_codex: dict[str, Any] | None = None
         first_planner: Any = None
@@ -266,13 +475,11 @@ class LocalProductDeployment:
                 model=cfg.codex.model,
                 enabled=cfg.codex.enabled,
             )
-            codex_refs = install_codex_profile(self.store, self.scope, inputs, caps)
-            if digest(codex_refs["driver"]) not in registered:  # apps may share an image
-                registry.register(
-                    admin, codex_refs["driver"],
-                    build_codex_port(inputs, root / "journal", credential),
-                )  # fmt: skip
-                registered.add(digest(codex_refs["driver"]))
+            codex_refs = install_cell(
+                legacy_cell("codex-cli", inputs, entry.app_id), inputs, caps, entry.app_id
+            )
+            assert codex_refs is not None  # a legacy cell is never skipped
+            register(codex_refs, lambda i=inputs: build_codex_port(i, root / "journal", credential))
             agent_profile = container_profile(inputs)
             drivers = {"codex-cli": codex_refs}
             planners: dict[str, Any] = {
@@ -292,13 +499,13 @@ class LocalProductDeployment:
                     qualification_report=self.local(entry.claude_qualification_report),
                     enabled=cfg.claude.enabled,
                 )
-                claude_refs = install_driver_profile(self.store, self.scope, claude, caps)
-                if digest(claude_refs["driver"]) not in registered:
-                    registry.register(
-                        admin, claude_refs["driver"],
-                        build_claude_port(claude, root / "journal", token),
-                    )  # fmt: skip
-                    registered.add(digest(claude_refs["driver"]))
+                claude_refs = install_cell(
+                    legacy_cell("claude-cli", claude, entry.app_id), claude, caps, entry.app_id
+                )
+                assert claude_refs is not None
+                register(
+                    claude_refs, lambda c=claude: build_claude_port(c, root / "journal", token)
+                )
                 drivers["claude-cli"] = claude_refs
                 planners["claude-cli"] = ClaudePlanner(
                     ContainerSandbox(container_profile(claude)), token, root / "plans",
@@ -314,16 +521,67 @@ class LocalProductDeployment:
                     qualification_report=self.local(entry.opencode_qualification_report),
                     enabled=cfg.opencode.enabled,
                 )
-                opencode_refs = install_driver_profile(self.store, self.scope, opencode, caps)
-                if digest(opencode_refs["driver"]) not in registered:
-                    registry.register(
-                        admin, opencode_refs["driver"],
-                        build_opencode_port(
-                            opencode, root / "journal", self.local(cfg.opencode.credential_home)
-                        ),
-                    )  # fmt: skip
-                    registered.add(digest(opencode_refs["driver"]))
+                opencode_refs = install_cell(
+                    legacy_cell("opencode-server", opencode, entry.app_id), opencode, caps,
+                    entry.app_id,
+                )  # fmt: skip
+                assert opencode_refs is not None
+                register(
+                    opencode_refs,
+                    lambda o=opencode: build_opencode_port(
+                        o, root / "journal", self.local(cfg.opencode.credential_home)
+                    ),
+                )
                 drivers["opencode-server"] = opencode_refs
+            app_cells: list[Cell] = []
+            for cell_entry in cfg.cells:
+                # Work 033 S4: the configured cells in this app's image, each with the model's
+                # qualification report (D-097), a port per model and a planner per cell
+                report = (
+                    (cell_entry.qualification_reports or {}).get(entry.app_id)
+                    if cell_entry.qualification_reports is not None
+                    else entry.driver_report(cell_entry.driver)
+                )
+                cell = cell_entry.cell()
+                if report is None:  # this cell is not qualified in this app's image
+                    self.cell_skips.append({
+                        "cell_id": cell.cell_id, "app": entry.app_id, "code": None,
+                        "reason": "no qualification report for this app",
+                    })  # fmt: skip
+                    continue
+                # `ops local-driver <d> --disable` is the per-driver kill switch: a cell is
+                # eligible only while both its own flag and its driver's legacy entry are
+                # enabled. §12.2 leaves the combination open; S4 security review chose this rule
+                # (to be recorded in the interfaces.md Clarifications section).
+                # No legacy entry means no switch was set (local-driver refuses to switch one).
+                driver_entry = {
+                    "codex-cli": cfg.codex, "claude-cli": cfg.claude,
+                    "opencode-server": cfg.opencode,
+                }[cell.driver_id]  # fmt: skip
+                cell_inputs = replace(
+                    inputs, provider=cell.provider, model=cell.model,
+                    qualification_report=self.local(report),
+                    enabled=cell_entry.enabled
+                    and (driver_entry is None or driver_entry.enabled),
+                )  # fmt: skip
+                refs = install_cell(cell, cell_inputs, caps, entry.app_id)
+                if refs is None:
+                    continue  # probed in another image (recorded in cell_skips)
+                register(refs, lambda ci=cell_inputs: self._port(cfg, ci, root, credential, token))
+                drivers[cell.cell_id] = refs
+                app_cells.append(cell)
+                effort = None if cell.effort == LEGACY_EFFORT else cell.effort
+                sandbox = ContainerSandbox(container_profile(cell_inputs))
+                if cell.driver_id == "codex-cli":
+                    planners[cell.cell_id] = CodexPlanner(
+                        sandbox, credential, root / "plans", model=cell.model, effort=effort,
+                        cell_id=cell.cell_id,
+                    )  # fmt: skip
+                elif cell.driver_id == "claude-cli" and token:
+                    planners[cell.cell_id] = ClaudePlanner(
+                        sandbox, token, root / "plans", model=cell.model, effort=effort,
+                        cell_id=cell.cell_id,
+                    )  # fmt: skip
             verify_sandboxes[entry.app_id] = ContainerSandbox(
                 ContainerProfile(
                     agent_profile.image,
@@ -335,10 +593,20 @@ class LocalProductDeployment:
                     network="none",
                 )
             )
-            per_app[entry.app_id] = (drivers, planners)
+            per_app[entry.app_id] = (drivers, planners, app_cells)
             if first_codex is None:
                 first_codex, first_planner = codex_refs, planners["codex-cli"]
         assert first_codex is not None
+        stale = sorted(
+            {s["cell_id"] for s in self.cell_skips if s["code"] == "EFFORT_UNPROBED"}
+            - installed_cells
+        )
+        if stale:
+            # no app runs the image its probe ran on: re-probe, as a single-app boot always held
+            raise Hold(
+                "EFFORT_UNPROBED", "The probe ran on another image or driver version",
+                details=[s for s in self.cell_skips if s["cell_id"] in stale],
+            )  # fmt: skip
         self.coordinator = WorkCoordinator(
             self.runtime, registry, self.workspaces, poll_seconds=2.0, max_seconds=1800
         )
@@ -374,7 +642,7 @@ class LocalProductDeployment:
             integration_factory=integration,
         )  # fmt: skip
         for entry in cfg.apps:
-            drivers, planners = per_app[entry.app_id]
+            drivers, planners, app_cells = per_app[entry.app_id]
             self.service.install(
                 AppConfig(
                     entry.app_id,
@@ -386,9 +654,12 @@ class LocalProductDeployment:
                     tuple(entry.aliases),
                     entry.base_branch,
                     entry.remote,
+                    tool_versions=tool_versions(self.local(entry.container_profile)),
+                    quick_verifiers=tuple(v.id for v in entry.verifiers if v.quick),
                 ),
                 driver_refs=drivers,
                 planners=planners,
+                cells=app_cells,
             )
         # the baseline release of what is installed; a promoted release stays active (D-089 S2)
         releases.bootstrap(
@@ -400,6 +671,27 @@ class LocalProductDeployment:
         self.tracker = PullRequestTracker(self.service) if publisher is not None else None
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
+        )
+
+    def _port(
+        self,
+        cfg: LocalConfig,
+        inputs: CodexProfileInputs,
+        root: Path,
+        credential: ScopedCredential,
+        token: str | None,
+    ) -> Any:
+        """The port of a configured cell whose model has its own driver record (§2.4)."""
+        if inputs.provider == "codex":
+            return build_codex_port(inputs, root / "journal", credential)
+        if inputs.provider == "claude":
+            if not token:
+                raise Hold("AUTH_TOKEN_REQUIRED", "Claude cells need the claude token file")
+            return build_claude_port(inputs, root / "journal", token)
+        if cfg.opencode is None:
+            raise Hold("CELL_UNKNOWN", "OpenCode cells need the opencode entry")
+        return build_opencode_port(
+            inputs, root / "journal", self.local(cfg.opencode.credential_home)
         )
 
     # -- operator authentication -----------------------------------------------------------------
@@ -535,6 +827,132 @@ class LocalProductDeployment:
     def close(self) -> None:
         self.loop.stop()
         self.store.close()
+
+
+def legacy_cell(driver_id: str, inputs: CodexProfileInputs, app_id: str) -> Cell:
+    """The legacy cell of a configured driver entry (IC-07: cell id = driver id)."""
+    return Cell(
+        driver_id, driver_id, inputs.model, LEGACY_EFFORT,  # type: ignore[arg-type]
+        ((app_id, str(inputs.qualification_report)),), legacy=True,
+    )  # fmt: skip
+
+
+def tool_versions(profile: Path) -> tuple[tuple[str, str], ...]:
+    """The container profile's ``tools`` (deployment/*.json) for env_bootstrap (§3.3, D-096)."""
+    tools = json.loads(profile.read_text()).get("tools") or {}
+    if not isinstance(tools, dict):
+        return ()
+    return tuple((str(k), str(v)) for k, v in tools.items())
+
+
+def cell_of(cfg: LocalConfig, cell_id: str) -> tuple[CellEntry | None, Cell]:
+    """A configured cell by id: (its entry, the cell); a legacy cell has no entry."""
+    legacy = cfg.legacy_cells()
+    if cell_id in legacy:
+        return None, Cell(
+            cell_id, cell_id, legacy[cell_id], LEGACY_EFFORT, (), legacy=True,  # type: ignore[arg-type]
+        )  # fmt: skip
+    for entry in cfg.cells:
+        cell = entry.cell()
+        if cell.cell_id == cell_id:
+            return entry, cell
+    raise Hold("CELL_UNKNOWN", "No configured cell has this id", details=cell_id)
+
+
+def probe_local_cell(
+    config_path: Path, cell_id: str, *, app_id: str | None = None, turn_factory: Any = None
+) -> dict[str, Any]:
+    """``amplai ops local-cell probe``: one effort probe turn, stored as ``cell-effort-probe``.
+
+    The turn runs read-only on an empty scratch directory (IC-14) in the app's qualified image
+    with the cell's model and effort. It opens the store directly, so the local server must be
+    stopped (the store has one owner). ``turn_factory(cell, inputs, scratch_root)`` replaces the
+    real container turn in tests.
+
+    One probe per cell id (§2.4): the latest probe decides the image the cell installs in; apps
+    in other images skip the cell at boot (``LocalProductDeployment.cell_skips``). ``app_id``
+    picks the app, and so the image, to probe in; without it the first app with a report.
+    """
+    from .contracts.identity import new_id
+    from .execution.cells import PROBE_PROMPT, PROBE_SCHEMA, run_probe, store_probe
+    from .execution.codex import measured_qualification
+    from .execution.readonly_turn import ClaudeReadOnlyTurn, CodexReadOnlyTurn
+
+    path = Path(config_path).expanduser().absolute()
+    cfg = LocalConfig.model_validate_json(path.read_bytes())
+
+    def local(value: str) -> Path:
+        p = Path(value).expanduser()
+        return (p if p.is_absolute() else path.parent / p).absolute()
+
+    entry, cell = cell_of(cfg, cell_id)
+    if entry is None or cell.effort == LEGACY_EFFORT:
+        raise Hold("EFFORT_UNSUPPORTED", "Only a cell with an effort is probed")
+    chosen: tuple[AppEntry, str] | None = None
+    for candidate in cfg.apps:
+        if app_id not in (None, candidate.app_id):
+            continue
+        report = (
+            (entry.qualification_reports or {}).get(candidate.app_id)
+            if entry.qualification_reports is not None
+            else candidate.driver_report(cell.driver_id)
+        )
+        if report is not None:
+            chosen = (candidate, report)
+            break
+    if chosen is None:
+        raise Hold("DRIVER_UNQUALIFIED", "No app has a qualification report for this cell")
+    app, report = chosen
+    inputs = CodexProfileInputs(
+        container_profile=local(app.container_profile),
+        egress_profile=local(cfg.codex.egress_profile),
+        egress_qualification=local(cfg.codex.egress_qualification),
+        qualification_report=local(report),
+        model=cell.model,
+        provider=PROVIDERS[cell.driver_id],
+    )
+    measured = measured_qualification(inputs)  # Hold DRIVER_UNQUALIFIED: the model's report
+    scratch_root = local(cfg.workspace_root) / "probes"
+    turn: Any
+    argv: list[str]
+    if turn_factory is not None:
+        turn = turn_factory(cell, inputs, scratch_root)
+        argv = list(getattr(turn, "probe_argv", [cell.cell_id]))
+    elif cell.driver_id == "codex-cli":
+        codex_turn = CodexReadOnlyTurn(
+            ContainerSandbox(container_profile(inputs)),
+            ScopedCredential(local(cfg.codex.credential_home)), scratch_root / "runs",
+            model=cell.model, effort=cell.effort, cell_id=cell.cell_id,
+        )  # fmt: skip
+        turn, argv = codex_turn, codex_turn.argv(PROBE_PROMPT)
+    else:
+        if cfg.claude is None:
+            raise Hold("AUTH_TOKEN_REQUIRED", "Claude cells need the claude token file")
+        claude_turn = ClaudeReadOnlyTurn(
+            ContainerSandbox(container_profile(inputs)), claude_token(local(cfg.claude.token_file)),
+            scratch_root / "runs", model=cell.model, effort=cell.effort, cell_id=cell.cell_id,
+        )  # fmt: skip
+        turn, argv = claude_turn, claude_turn.argv(PROBE_PROMPT, PROBE_SCHEMA)
+    scope = Scope.parse(cfg.scope)
+    # opened before the turn: a store another process owns fails here, not after a spent turn
+    store = Store(local(cfg.runtime_root))
+    try:
+        scratch = scratch_root / new_id("probe")
+        scratch.mkdir(parents=True, mode=0o700)
+        value = run_probe(
+            scope, cell, turn, scratch, driver_version=measured["driver_version"],
+            image=measured["image"], argv=argv,
+        )  # fmt: skip
+        ref = store_probe(store, scope, value)
+    finally:
+        store.close()
+    return {
+        "cell_id": cell.cell_id,
+        "app": app.app_id,
+        "outcome": value["outcome"],
+        "probe_ref": ref,
+        "next": "restart amplai ops local-serve" if value["outcome"] == "accepted" else None,
+    }
 
 
 def claude_token(path: Path) -> str:

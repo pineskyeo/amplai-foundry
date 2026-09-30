@@ -9,7 +9,7 @@ import threading
 from collections.abc import Iterator
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from amplai_foundry.runtime.contracts.identity import ID, canonical, digest, new_id, now
 from amplai_foundry.runtime.contracts.registry import strict_json_loads
@@ -79,6 +79,18 @@ class EventNormalizer:
         {"system", "assistant", "user", "result", "stream_event", "rate_limit_event",
          "tool_progress"}
     )  # fmt: skip
+    # Work 033 S4 (interfaces.md §4.1 row protocol.py, §8.6): rate-limit signals are kept as
+    # "rate_limit" with allowlisted scalar fields only, never payload text. The field names of
+    # Claude rate_limit_event payloads and the shape of Codex usage-limit errors are 확인 필요
+    # (§14 Q5), so every allowlist is empty: the signal is counted, no field is kept.
+    RATE_LIMIT_EVENTS: ClassVar[dict[str, frozenset[str]]] = {
+        "claude": frozenset({"rate_limit_event"}),
+        "codex": frozenset(),
+    }
+    RATE_LIMIT_FIELDS: ClassVar[dict[str, frozenset[str]]] = {
+        "claude": frozenset(),
+        "codex": frozenset(),
+    }
 
     def __init__(self, provider: str, *, expected_session: str | None = None):
         if provider not in {"codex", "claude"}:
@@ -90,6 +102,7 @@ class EventNormalizer:
             False,
         )
         self.calls: dict[str, str] = {}
+        self.rate_limit_events = 0
         self.usage: dict[str, Any] = {
             "input_tokens": None,
             "output_tokens": None,
@@ -196,7 +209,7 @@ class EventNormalizer:
         ):
             digest_event = {key: value for key, value in event.items() if key != "total_cost_usd"}
         # Do not retain private reasoning/tool payload text in the control-plane trace.
-        return {
+        normalized = {
             "provider": self.provider,
             "type": kind,
             "session_handle": self.session,
@@ -206,6 +219,21 @@ class EventNormalizer:
             "usage": self.usage.copy(),
             "call_mappings": self.calls.copy(),
         }
+        if kind in self.RATE_LIMIT_EVENTS[self.provider]:
+            self.rate_limit_events += 1
+            normalized["rate_limit"] = self.rate_limit(event)
+        return normalized
+
+    def rate_limit(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Allowlisted top-level scalar fields (numbers, booleans, null): never text (§14 Q5)."""
+        fields = self.RATE_LIMIT_FIELDS[self.provider]
+        return {
+            k: v
+            for k, v in event.items()
+            if k in fields
+            and (v is None or isinstance(v, bool) or type(v) is int or (
+                type(v) is float and math.isfinite(v)))
+        }  # fmt: skip
 
 
 # D-094: the breakdown fields each provider reports, and whether its input count includes cache.

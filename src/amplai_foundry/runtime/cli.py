@@ -775,6 +775,133 @@ def local_driver(
                      "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
+local_cell = typer.Typer(
+    help="Cells: driver, model and reasoning effort (Work 033, D-097)", no_args_is_help=True
+)
+ops.add_typer(local_cell, name="local-cell")
+
+
+@local_cell.command("add")
+def local_cell_add(
+    driver: Annotated[str, typer.Option("--driver", help="codex-cli, claude-cli, opencode-server")],
+    model: Annotated[str, typer.Option("--model")],
+    effort: Annotated[str, typer.Option("--effort", help="a documented value or provider-default")],
+    qualification_report: Annotated[
+        Path | None, typer.Option("--qualification-report", help="the model's passing report")
+    ] = None,
+    app_id: Annotated[str | None, typer.Option("--app")] = None,
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Register a cell (driver, model, effort) in local.json.
+
+    An effort the driver does not document is refused (EFFORT_UNSUPPORTED); a documented one
+    installs only after `amplai ops local-cell probe CELL` recorded an accepted probe turn. Effort
+    variants of one model share its qualification report (D-097). Without --qualification-report
+    each app's own report for the driver is used.
+    """
+    from .execution.cells import Cell
+
+    def change(value: dict[str, Any]) -> None:
+        if driver not in {"codex-cli", "claude-cli", "opencode-server"}:
+            raise Hold("DRIVER_UNKNOWN", "The driver is codex-cli, claude-cli or opencode-server")
+        cell_id = Cell.make_id(driver, model, effort, legacy=False)
+        cells = value.setdefault("cells", [])
+        entry = next(
+            (c for c in cells
+             if Cell.make_id(c["driver"], c["model"], c["effort"], legacy=False) == cell_id),
+            None,
+        )  # fmt: skip
+        if entry is None:
+            entry = {"driver": driver, "model": model, "effort": effort,
+                     "qualification_reports": None, "enabled": True}  # fmt: skip
+            cells.append(entry)
+        if qualification_report is not None:
+            reports = dict(entry.get("qualification_reports") or {})
+            for app in value["apps"]:
+                if app_id in (None, app["app_id"]):
+                    reports[app["app_id"]] = str(qualification_report.expanduser().absolute())
+            entry["qualification_reports"] = reports
+        elif app_id is not None:
+            raise typer.BadParameter("--app names the app of a --qualification-report")
+
+    def run() -> dict[str, Any]:
+        _edit_local_config(config, change)
+        cell_id = Cell.make_id(driver, model, effort, legacy=False)
+        return {
+            "config": str(config),
+            "cell_id": cell_id,
+            "next": f"amplai ops local-cell probe {cell_id}, then restart local-serve",
+        }
+
+    guarded(run)
+
+
+@local_cell.command("remove")
+def local_cell_remove(
+    cell_id: Annotated[str, typer.Argument(help="a cell id from local-cell list")],
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Remove a configured cell (the legacy cells are the driver entries: local-driver)."""
+    from .execution.cells import Cell
+
+    def change(value: dict[str, Any]) -> None:
+        cells = value.get("cells") or []
+        kept = [
+            c for c in cells
+            if Cell.make_id(c["driver"], c["model"], c["effort"], legacy=False) != cell_id
+        ]  # fmt: skip
+        if len(kept) == len(cells):
+            raise Hold("CELL_UNKNOWN", "No configured non-legacy cell has this id")
+        value["cells"] = kept
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "removed": cell_id, "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
+@local_cell.command("list")
+def local_cell_list(
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """The legacy cells (driver entries, IC-07) and the configured cells of local.json."""
+
+    def show() -> dict[str, Any]:
+        from .deployment import private_bytes
+        from .local_deployment import LocalConfig
+
+        cfg = LocalConfig.model_validate_json(private_bytes(config.expanduser().absolute()))
+        rows: list[dict[str, Any]] = []
+        for driver_id, model in cfg.legacy_cells().items():
+            entry = {"codex-cli": cfg.codex, "claude-cli": cfg.claude,
+                     "opencode-server": cfg.opencode}[driver_id]  # fmt: skip
+            rows.append({"cell_id": driver_id, "driver": driver_id, "model": model,
+                         "effort": "provider-default", "legacy": True,
+                         "enabled": bool(entry and entry.enabled),
+                         "qualification_reports": None})  # fmt: skip
+        for c in cfg.cells:
+            rows.append({"cell_id": c.cell().cell_id, "driver": c.driver, "model": c.model,
+                         "effort": c.effort, "legacy": False, "enabled": c.enabled,
+                         "qualification_reports": c.qualification_reports})  # fmt: skip
+        return {"config": str(config), "cells": rows}
+
+    guarded(show)
+
+
+@local_cell.command("probe")
+def local_cell_probe(
+    cell_id: Annotated[str, typer.Argument(help="a configured cell with an effort")],
+    app_id: Annotated[str | None, typer.Option("--app")] = None,
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Run one read-only effort probe turn and record it (cell-effort-probe).
+
+    Needs docker and the driver credentials; stop local-serve first (the store has one owner).
+    "accepted" proves only that the provider completed a turn with the flag (§14 Q2).
+    """
+    from .local_deployment import probe_local_cell
+
+    guarded(lambda: probe_local_cell(config.expanduser(), cell_id, app_id=app_id))
+
+
 LAUNCHD_LABEL = "ai.amplai.local-serve"
 
 

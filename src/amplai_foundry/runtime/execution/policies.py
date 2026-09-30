@@ -40,8 +40,17 @@ STRATEGY_RANK: dict[str, int] = {s: i for i, s in enumerate(STRATEGIES, start=1)
 BOOTSTRAP_FACTS = ("repo_tree", "verifier_commands", "tool_versions", "fast_test_command")
 ROLES = ("planner", "executor", "reviewer", "proposer")
 CLAUDE_TOOLS = ("Read", "Edit", "Write", "Glob", "Grep", "Bash")
-# §2.2: starts empty; a key is added only after an argv-capture test and a probe turn (§14 Q1)
+# §2.2: starts empty; a key is added only after an argv-capture test and a probe turn (§14 Q1).
+# S4: Codex 0.155.1 documents `-c key=value` on exec and exec resume (specs/033-harness-taxonomy/
+# runs/cli-effort-facts.md), but no key has had a probe turn, so the list stays empty; effort is
+# the cell's (model_reasoning_effort, §2.4) and never a driver option.
 CODEX_CONFIG_ALLOWLIST: frozenset[str] = frozenset()
+# The Claude driver options (driver_options.claude) a component may set non-null. §14 Q13: each
+# needs an argv capture plus one probe turn with the OAuth isolation flags; until then
+# driver_options.claude stays empty in every allowed version. `claude --help` 2.1.278 lists
+# --allowedTools and --append-system-prompt but not --max-turns (cli-effort-facts.md); no probe
+# turn has run, so none is admitted.
+CLAUDE_OPTION_ALLOWLIST: frozenset[str] = frozenset()
 DECIDER_LAYERS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8")
 SOURCES = ("baseline", "operator", "proposer", "dreaming", "sweep")
 PINNED_IMAGE = re.compile(r"[^@\s]+@sha256:[0-9a-f]{64}")
@@ -301,6 +310,9 @@ def _driver_options(c: dict[str, Any]) -> None:
     _fields(k, c, ("claude", "codex"))
     claude, codex = c["claude"], c["codex"]
     _fields(k, claude, ("max_turns", "append_system_prompt", "allowed_tools"))
+    unmeasured = sorted(n for n, v in claude.items() if v is not None)
+    if set(unmeasured) - CLAUDE_OPTION_ALLOWLIST:
+        raise _bad(k, "claude options come from CLAUDE_OPTION_ALLOWLIST (§14 Q13)", unmeasured)
     if claude["max_turns"] is not None:
         _int(k, "max_turns", claude["max_turns"], 1, 500)
     if claude["append_system_prompt"] is not None:

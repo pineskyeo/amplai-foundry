@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stockroom"
+version = "0.4.0"
+description = "A small inventory and order ledger"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+stockroom = "stockroom.cli:main"
+
+[tool.setuptools]
+packages = ["stockroom"]
