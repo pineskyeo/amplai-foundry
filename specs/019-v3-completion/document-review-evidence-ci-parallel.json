@@ -74,6 +74,7 @@
     "tests/v3/test_031_opencode_port.py",
     "tests/v3/test_031_opencode_wiring.py",
     "tests/v3/test_core_runtime.py",
+    "tests/v3/test_dev02_execution.py",
     "tests/v3/test_dev02_sessions_workspace.py",
     "tests/v3/test_dev03_evaluation.py",
     "tests/v3/test_dev03_observatory.py",
@@ -92,6 +93,6 @@
     "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py"
   ],
   "semantic_changes": [
-    "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome."
+    "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome."
   ]
 }

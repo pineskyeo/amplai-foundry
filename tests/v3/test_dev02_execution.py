@@ -531,6 +531,7 @@ def test_dev02_coordinator_pause_exact_resume_to_actual_verified_output(deployme
             self.journal.transition(
                 did, {"prepared"}, "running", session_handle="fixture-exact", process_stopped=False
             )
+            self.native_started = True
             return did
 
         def cancel(self, handle):
@@ -558,8 +559,12 @@ def test_dev02_coordinator_pause_exact_resume_to_actual_verified_output(deployme
     ss = SteeringService(d.runtime)
     with ThreadPoolExecutor(max_workers=1) as pool:
         future = pool.submit(execute, d, p, w, ws, x)
-        for _ in range(150):
-            if d.store.head(d.scope, "run", x["run_id"])["state"] == "running":
+        # Pause only after the native session started: the run head can read "running" before
+        # the fixture's start ran, and a pause that early leaves nothing to resume (loaded CI).
+        for _ in range(500):
+            if d.store.head(d.scope, "run", x["run_id"])["state"] == "running" and getattr(
+                port, "native_started", False
+            ):
                 break
             time.sleep(0.02)
         else:

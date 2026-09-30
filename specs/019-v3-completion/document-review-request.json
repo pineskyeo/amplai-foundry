@@ -1,10 +1,10 @@
 {
-  "snapshot": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
+  "snapshot": "3c65acc4adffa11708024ff5133633481f81a7dfada9e60e61309aeb3517516f",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -14,7 +14,7 @@
     {
       "document": ".ai-team/contracts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -24,7 +24,7 @@
     {
       "document": ".ai-team/evidence/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -34,7 +34,7 @@
     {
       "document": ".ai-team/knowledge/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -44,7 +44,7 @@
     {
       "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -54,7 +54,7 @@
     {
       "document": ".ai-team/runtime/INSTALLATION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -64,7 +64,7 @@
     {
       "document": ".ai-team/runtime/WORKFLOW.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -74,7 +74,7 @@
     {
       "document": ".ai-team/runtime/escalation.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -84,7 +84,7 @@
     {
       "document": ".ai-team/verifiers/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -94,7 +94,7 @@
     {
       "document": "AGENTS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -104,7 +104,7 @@
     {
       "document": "CLAUDE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -114,7 +114,7 @@
     {
       "document": "README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -124,7 +124,7 @@
     {
       "document": "docs/KNOWLEDGE-RULES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -134,7 +134,7 @@
     {
       "document": "docs/LIFECYCLE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -144,7 +144,7 @@
     {
       "document": "docs/MEMORY-DOMAIN-MODEL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -154,7 +154,7 @@
     {
       "document": "docs/PORTABLE-DEVELOPMENT.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -164,7 +164,7 @@
     {
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -174,7 +174,7 @@
     {
       "document": "docs/PROPOSALS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -184,7 +184,7 @@
     {
       "document": "docs/RELATIONSHIPS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -194,7 +194,7 @@
     {
       "document": "docs/ROADMAP.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -204,7 +204,7 @@
     {
       "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -214,7 +214,7 @@
     {
       "document": "docs/VERSIONING.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -224,7 +224,7 @@
     {
       "document": "docs/VISION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -234,7 +234,7 @@
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -244,7 +244,7 @@
     {
       "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -254,7 +254,7 @@
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -264,7 +264,7 @@
     {
       "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -274,7 +274,7 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -284,7 +284,7 @@
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -294,7 +294,7 @@
     {
       "document": "tests/e2e/artifacts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -304,7 +304,7 @@
     {
       "document": "tools/amplai-loop-kit/CHANGELOG.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
@@ -314,7 +314,7 @@
     {
       "document": "tools/amplai-loop-kit/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); three timing-sensitive tests wait for the state they assert or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
