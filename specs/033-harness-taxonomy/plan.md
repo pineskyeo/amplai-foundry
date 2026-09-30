@@ -251,3 +251,39 @@ the release pointer keeps its signed rollback (`meta_harness/service.py:944-1024
 - Per PR: `python3 .ai-team/verifiers/run.py --profile v2`, docs cycle on
   `specs/019-v3-completion`, CI.
 - End: AC-11 real round records, dashboard, final report.
+
+## 8. Execution Strategies And How They Are Chosen (operator, 2026-09-30: implement all)
+
+Strategies (all implemented as `execution_strategy` versions):
+
+| # | Strategy | Mechanism |
+|---|---|---|
+| 1 | single | one agent end to end (today) |
+| 2 | repair loop | retry with verifier feedback (today; form = `feedback_form`) |
+| 3 | workgraph split | planner splits one repo's goal into ordered nodes by file area |
+| 4 | plan-then-execute | a planner cell plans, an executor cell implements |
+| 5 | best-of-n | n independent attempts, the verifier picks a passing one |
+| 6 | generator + reviewer | a second agent reviews the diff and asks for fixes before verification |
+| 7 | cascade | cheap cell first, escalate to a stronger cell on failure |
+| 8 | orchestrator + sub-agents | a lead agent delegates bounded parts; depth and count are budget-capped (design 02) |
+| 9 | parallel read-only steps | investigation and review steps in parallel (≤ 4, design 07 §4) |
+| 10 | vote / ensemble | several answers combined; for test-graded tasks the verifier decides |
+
+Write concurrency stays 1 per repo write scope (design 07 §4); parallel writers work in separate
+worktrees and go through an integration queue with re-verification.
+
+Selection (`route_policy`), in order:
+
+1. **Features** known before running: task class, domain, planned size (files and acceptance
+   items from the plan), number of apps, risk.
+2. **Measured table**: for each feature bucket × (strategy, cell), the success rate with its interval,
+   pass^k, cost per solved task and time, from calibration and experiments.
+3. **Rule**: among options whose success rate is not credibly lower than the best option's (the
+   non-inferiority margin of the policy), pick the lowest expected cost per solved task; ties go to
+   the simpler strategy (lower number above).
+4. **Prior** when a bucket has too few samples: today's behaviour (single + repair, router order),
+   never an untested strategy.
+5. **Runtime signal**: cascade (7) and repair (2) react to failure within a goal; nothing else
+   changes mid-goal (design 16 §2: composition fixed after dispatch).
+6. The policy itself is a class B candidate: a new table/rule goes through screening → focused →
+   holdout → canary against the current policy; no online learning (design 16 §2).
