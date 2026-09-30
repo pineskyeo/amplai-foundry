@@ -1,0 +1,14 @@
+{
+  "task_id": "s06-slugify",
+  "difficulty": "small",
+  "objective": "Add a new module `demo_app/slug.py` with a function `slugify(text: str) -> str` that turns text into a URL-safe slug. The ASCII alphanumeric characters are exactly `a-z`, `A-Z` and `0-9`; every other character (spaces, punctuation, underscores, and all non-ASCII characters such as `é`) is non-alphanumeric. Rules: (1) ASCII letters are lower-cased; digits are kept; (2) every maximal run of one or more non-alphanumeric characters is replaced by a single `-`; (3) leading and trailing `-` are removed; (4) if the result is empty, return the string `n-a`.",
+  "acceptance": [
+    "slugify('Hello World') returns 'hello-world' and slugify('already-a-slug') returns 'already-a-slug'",
+    "A run of separators becomes one dash: slugify('a   b') returns 'a-b', slugify('a - b') returns 'a-b' and slugify('a__b!!c') returns 'a-b-c'",
+    "Leading and trailing separators are removed: slugify('  Hello, World!  ') returns 'hello-world' and slugify('---x---') returns 'x'",
+    "Digits are kept: slugify('Release 3.0 RC-2') returns 'release-3-0-rc-2'",
+    "Non-ASCII characters count as separators: slugify('Café Au Lait') returns 'caf-au-lait'",
+    "If nothing alphanumeric remains, the result is 'n-a': slugify('') , slugify('   '), slugify('!!!') and slugify('é') all return 'n-a'",
+    "The result never starts or ends with '-' (except that 'n-a' contains a dash inside) and never contains '--'"
+  ]
+}

@@ -438,10 +438,17 @@ class LocalExecutionService:
 
     # -- composition selection (design/16:14-16, D-079) ---------------------------------------
     def select_composition(
-        self, installed: InstalledApp, task_class: str | None = None
+        self,
+        installed: InstalledApp,
+        task_class: str | None = None,
+        *,
+        pin: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Filter candidates on data class, qualification and capabilities, then rank them by
-        the task-class baseline policy. The operator sees the choice; nobody picks a driver."""
+        the task-class baseline policy. The operator sees the choice; nobody picks a driver.
+
+        ``pin`` fixes the composition (an offline experiment arm or a canary goal, D-089). It must
+        be an installed composition or its class-A candidate, and it still has to be eligible."""
         from ...meta_harness.composition import CompositionService
 
         if installed.router_ref is None:
@@ -450,7 +457,15 @@ class LocalExecutionService:
         order = policy["order"].get(task_class or "*") or policy["order"]["*"]
         # the active release may carry a promoted class-A candidate of a composition (D-089 S2)
         available = releases.effective(self.store, self.scope, installed.compositions)
-        candidates = [available[d] for d in order if d in available]
+        if pin is not None:
+            if releases.class_a_driver(self.store, self.scope, installed.compositions, pin) is None:
+                raise Hold(
+                    "COMPOSITION_PIN",
+                    "A pinned composition must be an installed one or its class-A candidate",
+                )
+            candidates = [pin]
+        else:
+            candidates = [available[d] for d in order if d in available]
         scores = {ref["digest"]: float(len(candidates) - i) for i, ref in enumerate(candidates)}
         required = {c["action"] for c in installed.capabilities}
         compositions = CompositionService(self.store, self.runtime.contracts)
@@ -468,6 +483,7 @@ class LocalExecutionService:
             "model": row["model"],
             "task_class": task_class,
             "rank": candidates.index(chosen) + 1,
+            "pinned": pin is not None,
             "policy_ref": installed.router_ref,
             "candidates": [
                 {k: r[k] for k in ("driver_id", "model", "eligible", "reasons")} for r in rows
@@ -475,8 +491,19 @@ class LocalExecutionService:
         }
 
     # -- plan --------------------------------------------------------------------------------
-    def plan(self, goal_id: str) -> dict[str, Any]:
+    def plan(
+        self,
+        goal_id: str,
+        *,
+        composition: dict[str, Any] | None = None,
+        planner: Any | None = None,
+        revision: str | None = None,
+    ) -> dict[str, Any]:
         """Draft (selected driver, read-only) → compile → freeze contract → save graph.
+
+        ``composition`` pins the composition for this goal, ``planner`` replaces the model planner
+        and ``revision`` starts from that exact commit instead of the fetched base (an offline
+        experiment trial: a fixed corpus contract on a fixed base, no model, D-089).
 
         One app or several (D-081): every draft is normalised to work items (one per app that
         must change, with the apps it comes after); a one-app goal is exactly one item.
@@ -489,8 +516,8 @@ class LocalExecutionService:
         app = installed.config
         mode = intent.get("mode", "work")
         multi = len(targets) > 1
-        if multi and mode != "work":
-            raise Hold("DESIGN_ONE_APP", "A design goal targets exactly one app")
+        if multi and (mode != "work" or revision is not None):
+            raise Hold("DESIGN_ONE_APP", "A design or pinned-revision goal targets exactly one app")
         if multi and len({digest(self._environment(t)) for t in targets}) != 1:
             # one activated profile runs every node of a goal (driver, model, image)
             raise Hold("MULTI_APP_IMAGE", "The apps of one goal must share one worker image")
@@ -498,7 +525,8 @@ class LocalExecutionService:
         bases = {
             t.config.app_id: self.workspaces.base_snapshot(
                 scope, t.config.app_id,
-                self.base_fetcher(t.config.repo, t.config.remote, t.config.base_branch),
+                revision
+                or self.base_fetcher(t.config.repo, t.config.remote, t.config.base_branch),
             )
             for t in targets
         }  # fmt: skip
@@ -516,8 +544,8 @@ class LocalExecutionService:
             if mode == "design"
             else {v.id: v.description for v in app.verifiers}
         )
-        planning = self.select_composition(installed)
-        planner = self._planner(installed, planning["driver_id"])
+        planning = self.select_composition(installed, pin=composition)
+        planner = planner or self._planner(installed, planning["driver_id"])
         workspaces = {
             a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
         }
@@ -618,7 +646,9 @@ class LocalExecutionService:
             mode=mode, items=items, policy_ref=policy_ref,
         )  # fmt: skip
         record["acceptance_map"] = acceptance_map
-        record["composition"] = self.select_composition(installed, draft.get("task_class"))
+        record["composition"] = self.select_composition(
+            installed, draft.get("task_class"), pin=composition
+        )
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
@@ -648,7 +678,9 @@ class LocalExecutionService:
             + "\nPrevious objective: "
             + before["objective"]
         )
-        planning = self.select_composition(installed)
+        was = plan.get("composition") or {}
+        pin = was["ref"] if was.get("pinned") else None
+        planning = self.select_composition(installed, pin=pin)
         planner = self._planner(installed, planning["driver_id"])
         workspaces = {
             a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
@@ -699,7 +731,7 @@ class LocalExecutionService:
             "acceptance_map": acceptance_map,
             "planner_usage": drafted.get("usage"),
             "planned_with": {k: planning[k] for k in ("driver_id", "model")},
-            "composition": self.select_composition(installed, draft.get("task_class")),
+            "composition": self.select_composition(installed, draft.get("task_class"), pin=pin),
             "contract_ref": contract_ref,
             "graph_ref": graph_ref,
             "revision": revision,
@@ -1138,7 +1170,11 @@ class LocalExecutionService:
         chosen = plan.get("composition")
         if chosen:
             # fixed from here on (design/16:16); eligibility may have changed since planning
-            again = self.select_composition(installed, chosen.get("task_class"))
+            again = self.select_composition(
+                installed,
+                chosen.get("task_class"),
+                pin=chosen["ref"] if chosen.get("pinned") else None,
+            )
             if again["ref"] != chosen["ref"]:
                 raise Hold(
                     "COMPOSITION_CHANGED",

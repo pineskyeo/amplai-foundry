@@ -1,0 +1,14 @@
+{
+  "task_id": "s07-percent",
+  "difficulty": "small",
+  "objective": "Add a new module `demo_app/formatting.py` with a function `percent(part: int, total: int) -> str` that formats `part` as a percentage of `total`. The check order is: first, if `part` or `total` is negative, raise ValueError (even when `total` is 0); second, if `total` is 0, return the string `n/a`; otherwise compute the value `part * 100 / total` and return it formatted with Python's `f\"{value:.1f}\"` followed by `%` (exactly one digit after the decimal point, no thousands separators). `part` may be larger than `total`, which gives a value above 100. No special rounding mode is required beyond what `:.1f` does; the tests avoid exact ties.",
+  "acceptance": [
+    "percent(1, 4) returns '25.0%', percent(1, 8) returns '12.5%' and percent(1, 2) returns '50.0%'",
+    "percent(1, 3) returns '33.3%' and percent(2, 3) returns '66.7%'",
+    "percent(0, 5) returns '0.0%' and percent(5, 5) returns '100.0%'",
+    "percent(3, 2) returns '150.0%' and percent(2000, 1) returns '200000.0%' (values above 100 are allowed, no separators)",
+    "percent(1, 1000) returns '0.1%' and percent(1, 10000) returns '0.0%'",
+    "A total of 0 returns 'n/a': percent(5, 0) and percent(0, 0) return 'n/a'",
+    "A negative part or total raises ValueError: percent(-1, 5), percent(1, -5), percent(-1, -1) and percent(-1, 0) all raise ValueError"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "corpus_id": "demo-app-implementer-v1",
+  "app_id": "amplai-demo-app",
+  "base_commit": "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b",
+  "task_ids": [
+    "s01-semver-parse",
+    "s02-semver-compare",
+    "s03-stage-rank",
+    "s04-human-bytes",
+    "s05-truncate",
+    "s06-slugify",
+    "s07-percent",
+    "m08-summarize-missing",
+    "m09-summarize-all",
+    "m10-render-table",
+    "m11-latest-per-stage",
+    "m12-load-info",
+    "m13-format-entry",
+    "m14-in-range",
+    "l15-cli-summary",
+    "l16-registry",
+    "l17-diff-infos",
+    "l18-resolve",
+    "l19-render-html",
+    "l20-upgrade-plan"
+  ]
+}

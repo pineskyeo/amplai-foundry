@@ -1,0 +1,13 @@
+{
+  "task_id": "l20-upgrade-plan",
+  "difficulty": "large",
+  "objective": "Add a module `demo_app/upgrade.py` with the function `plan_upgrade(current: str, target: str, steps: dict[str, list[str]]) -> list[str]` and the exception class `NoUpgradePath`, a subclass of `LookupError` defined in `demo_app/upgrade.py`.\n\n`steps` is a directed graph: it maps a version to the list of versions it can be upgraded to directly. Versions are opaque strings: they are never parsed, only compared for equality and ordered with Python's default `str` ordering (so `\"1.10.0\"` sorts before `\"1.9.0\"`, and `\"10\"` before `\"9\"`). A version that has no key in `steps` simply has no outgoing edges; a version may appear only in the value lists (for example as the target). The graph may contain cycles, self edges (a version listing itself) and duplicate entries in a list; these never make a path longer or change the answer.\n\n`plan_upgrade` returns the shortest path from `current` to `target` as a list of version strings that starts with `current` and ends with `target`; consecutive entries are connected by an edge in `steps`, and the length of the list is the smallest possible. When `current == target` the result is the single-element list `[current]`, whether or not that version appears in `steps`. Among all shortest paths, the result is the lexicographically smallest one when the paths are compared as lists of strings (compare the first entries, then the second entries, and so on, each with the `str` ordering above). When there is no path from `current` to `target` (including when `current` has no outgoing edges, or `target` does not appear anywhere in `steps`) `NoUpgradePath` is raised. The `steps` argument is never modified and the returned list is a new list.",
+  "acceptance": [
+    "plan_upgrade('1', '1', {}) == ['1'] and plan_upgrade('1', '1', {'1': ['2']}) == ['1']",
+    "A direct edge gives [current, target]; with a longer detour available only the shortest path is returned",
+    "Among several shortest paths the lexicographically smallest list of strings is returned (opaque string comparison: '1.10.0' < '1.9.0')",
+    "Cycles, self edges and duplicate list entries do not break the search or change the result; versions that only appear as edge targets are handled",
+    "An unreachable target, a target unknown to the graph, or a current version without a key in steps (and current != target) raises NoUpgradePath, which is a LookupError",
+    "steps is not modified and the result is a new list each call"
+  ]
+}

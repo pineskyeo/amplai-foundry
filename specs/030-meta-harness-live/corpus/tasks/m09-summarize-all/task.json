@@ -1,0 +1,13 @@
+{
+  "task_id": "m09-summarize-all",
+  "difficulty": "medium",
+  "objective": "Add a function `summarize_all(infos: list[dict]) -> list[str]` to `demo_app/version_report.py`. It returns one summary line per info, in the same format `summarize` produces (`amplai <package_version> (<stage>)`), reusing `summarize` for the line text. Each info is a dict with a `str` `package_version` and a `str` `stage`. The lines are ordered by version ascending. Version ordering rule: a version string is either `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH.devN`, where MAJOR, MINOR, PATCH and N are each one or more ASCII digits (0-9); leading zeros are allowed and the numbers are compared as integers (so `1.02.0` equals `1.2.0`). Anything else (empty text, surrounding whitespace, a `v` prefix, fewer or more parts, a different suffix, a `.dev` with no digits, a sign) is unparsable. Versions are compared by the tuple (MAJOR, MINOR, PATCH) first. For the same (MAJOR, MINOR, PATCH), every `.devN` build sorts BEFORE the release without a suffix, and `.devN` builds sort among themselves by N ascending (numeric, so `dev9` comes before `dev10`). Infos whose versions compare equal keep their input order (stable sort). If any info in the list has an unparsable `package_version`, `summarize_all` raises `ValueError`, even when the list has only one element. An empty list returns an empty list. The input list is not modified.",
+  "acceptance": [
+    "summarize_all([{'package_version': '1.10.0', 'stage': 'B'}, {'package_version': '1.2.0', 'stage': 'A'}]) returns ['amplai 1.2.0 (A)', 'amplai 1.10.0 (B)']",
+    "For one (MAJOR, MINOR, PATCH), '3.0.0.dev3' and '3.0.0.dev10' sort before '3.0.0', and '3.0.0.dev3' sorts before '3.0.0.dev10'; '2.9.9' sorts before all of them",
+    "Infos with equal versions (including '1.02.0' and '1.2.0') keep their input order",
+    "Each output line is exactly the text summarize would return for that info (the original package_version text appears in the line)",
+    "'', ' 1.0.0', 'v1.0.0', '1.0', '1.0.0.1', '1.0.0.dev', '1.0.0.rc1', '1.0.-1' and 'x.y.z' as package_version raise ValueError, also in a list of one info",
+    "summarize_all([]) returns []; the input list is left unchanged"
+  ]
+}
