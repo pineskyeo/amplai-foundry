@@ -144,6 +144,8 @@ def test_a_good_candidate_goes_from_proposal_to_promotion_and_back(
     assert experiment["verdict"] == "pass", experiment
 
     ops.approve_canary(pid, [t.task_id for t in w.corpus.tasks[:3]], max_trial_tokens=60)
+    assert ops.status(pid)["state"] == "canary_approved"  # approved, not started
+    w.dep.store.epoch += 1  # the canary is run by a later command, i.e. another process
     canary = ops.run_canary(pid)
     assert canary["state"] == "promotion_pending", canary
     assert selected(w) == baseline_composition  # nothing changed before the operator promotes

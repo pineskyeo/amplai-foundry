@@ -315,12 +315,16 @@ class LocalMetaOps:
                 }
             ),
         )
+        # Approval only. The canary is owned by the process that starts it (its owner epoch), so
+        # ``run_canary`` starts it in the process that runs its trials; a canary started by one
+        # command and run by another needs recovery, which ends it.
         self.local.meta.approve_canary(self.operator, proposal_id, policy_ref, approval)
-        self.local.meta.start_canary(self.operator, proposal_id)
         return {"policy_ref": policy_ref, "tasks": task_ids}
 
     def run_canary(self, proposal_id: str) -> dict[str, Any]:
-        head = self._require(proposal_id, "canary_running")
+        """Start the approved canary and run its tasks in this process (one owner)."""
+        head = self._require(proposal_id, "canary_approved")
+        self.local.meta.start_canary(self.operator, proposal_id)
         proposal = self.store.get(
             self.scope, "harness-change-proposal", head["data"]["proposal_ref"]
         )
