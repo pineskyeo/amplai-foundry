@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # PR branches are checked by pull_request; push runs only on main, so a PR commit runs once.
   push:
+    branches: [main]
   pull_request:
 
 jobs:
