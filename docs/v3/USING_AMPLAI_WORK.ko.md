@@ -43,7 +43,8 @@
 | 명령 | 하는 일 |
 |---|---|
 | `amplai ops local-claude --token-file F --qualification-report R` | Claude CLI 를 후보로 추가한다. token 파일(0600)은 운영자가 만든다 |
-| `amplai ops local-driver <codex\|claude> --enable/--disable` | 그 driver 를 선택 후보에서 넣거나 뺀다 |
+| `amplai ops local-opencode --credential-home D --qualification-report R` | OpenCode 를 세 번째 후보로 추가한다(계획은 하지 않는다). D 는 운영자가 만든 scoped 사본, R 은 그 app image 에서 통과한 자격 기록이다 (D-095) |
+| `amplai ops local-driver <codex\|claude\|opencode> --enable/--disable` | 그 driver 를 선택 후보에서 넣거나 뺀다 |
 | `amplai ops local-add-app --app A --repo …` | app 을 추가한다 (최대 4개) |
 | `amplai ops local-verifier --app A --verifier 'id=command \| 설명'` (`--remove id`) | app 의 acceptance 명령을 추가·교체(같은 id 는 같은 자리)·삭제한다. 새 goal 부터 적용된다. CI 가 보는 검사(예: `format=ruff format --check .`)를 같이 둬야 검증된 변경이 CI 에서 떨어지지 않는다 |
 | `amplai ops local-integration --id I --app A --app B --command …` | 여러 app goal 의 integration 명령을 등록한다. app 들은 `/amplai-input/apps/<app>` 에 읽기 전용이다 |

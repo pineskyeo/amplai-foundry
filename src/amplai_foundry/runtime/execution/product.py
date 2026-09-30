@@ -47,8 +47,10 @@ READINESS_AREAS = (
 APPROVAL_KIND = "operator-approval"
 PLAN_KIND = "execution-plan"
 TASK_CLASS_KIND = "task-class"
-# Initial task-class baseline order, every class: operator decision 2026-09-28 (D-079).
-ROUTER_ORDER = ("codex-cli", "claude-cli")
+# Initial task-class baseline order, every class: operator decision 2026-09-28 (D-079);
+# OpenCode appended by the operator 2026-09-29 (Work 031 D4).
+ROUTER_ORDER = ("codex-cli", "claude-cli", "opencode-server")
+NON_PLANNING_DRIVERS = frozenset({"opencode-server"})
 DESIGN_CHECK = "design"
 DESIGN_CHECK_DESCRIPTION = (
     "design document check: only files under specs/design/<goal>/ change; design.md has "
@@ -360,7 +362,8 @@ class LocalExecutionService:
                 "scope": scope.wire(),
                 "kind": "task_class_baseline",
                 "order": {"*": list(ROUTER_ORDER)},
-                "source": "operator decision 2026-09-28 (D-079): Codex first, Claude fallback",
+                "source": "operator decisions 2026-09-28 (D-079): Codex first, Claude fallback;"
+                " 2026-09-29 (Work 031 D4): OpenCode appended",
             },
         )
         # the class-A prompt surface each composition pins (D-089 S1); the baseline is the
@@ -1070,6 +1073,15 @@ class LocalExecutionService:
         planner = installed.planners.get(driver_id) or (
             self.planner if driver_id == "codex-cli" else self.planners.get(driver_id)
         )
+        if planner is None and driver_id in NON_PLANNING_DRIVERS:
+            # Work 031 O1 (operator 2026-09-29): OpenCode never plans; the first available
+            # planner in router order does, whichever driver executes.
+            for other in ROUTER_ORDER:
+                planner = installed.planners.get(other) or (
+                    self.planner if other == "codex-cli" else self.planners.get(other)
+                )
+                if planner is not None:
+                    break
         if planner is None:
             raise Hold("PLANNER_UNAVAILABLE", "No planner for " + driver_id)
         return planner

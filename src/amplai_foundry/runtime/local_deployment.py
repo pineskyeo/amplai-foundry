@@ -47,6 +47,7 @@ from .execution.codex import (
     ScopedCredential,
     build_claude_port,
     build_codex_port,
+    build_opencode_port,
     container_profile,
     install_codex_profile,
     install_driver_profile,
@@ -104,6 +105,8 @@ class AppEntry(BaseModel):
     qualification_report: str  # container_qualify.py output for that image
     # Claude CLI qualification in the same image (Work 019 E); absent = Codex only
     claude_qualification_report: str | None = None
+    # OpenCode in the same image (specs/031-opencode-driver); absent = no OpenCode candidate
+    opencode_qualification_report: str | None = None
     verifiers: list[VerifierConfig] = Field(min_length=1)
     aliases: list[str] = Field(default_factory=list)
     base_branch: str = "main"
@@ -123,6 +126,15 @@ class ClaudeEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
     token_file: str  # 0600 file with CLAUDE_CODE_OAUTH_TOKEN=... (created by the operator)
     model: str = "claude-sonnet-5"
+    enabled: bool = True
+
+
+class OpenCodeEntry(BaseModel):
+    """The third driver candidate (specs/031-opencode-driver): never plans, router order last."""
+
+    model_config = ConfigDict(extra="forbid")
+    credential_home: str  # scripts/sandbox_up.sh --opencode-home DIR (scoped copy)
+    model: str = "opencode-go/glm-5.3-flash"  # the model the container qualification measured
     enabled: bool = True
 
 
@@ -149,6 +161,7 @@ class LocalConfig(BaseModel):
     verifier_key_file: str
     codex: CodexEntry
     claude: ClaudeEntry | None = None
+    opencode: OpenCodeEntry | None = None
     apps: list[AppEntry] = Field(min_length=1, max_length=4)
     integrations: list[IntegrationEntry] = Field(default_factory=list)
     publish_mode: str = "draft_pr"
@@ -164,6 +177,15 @@ class LocalProductDeployment:
         self.scope = Scope.parse(cfg.scope)
         self.contracts = Contracts()
         self.store = Store(self.local(cfg.runtime_root))
+        # A Hold while composing (an unqualified driver, a missing key) must not leave the
+        # store's owner lock held in this process: a CLI or a test may open it again.
+        try:
+            self._build(cfg, start_loop)
+        except BaseException:
+            self.store.close()
+            raise
+
+    def _build(self, cfg: LocalConfig, start_loop: bool) -> None:
         self.artifacts = ArtifactStore(self.store)
         signer = read_key(self.local(cfg.signing_key_file))
         verifier_signer = read_key(self.local(cfg.verifier_key_file))
@@ -282,6 +304,26 @@ class LocalProductDeployment:
                     ContainerSandbox(container_profile(claude)), token, root / "plans",
                     model=cfg.claude.model,
                 )  # fmt: skip
+            if cfg.opencode is not None and entry.opencode_qualification_report:
+                # the third composition (031 D4): same image, its own measured qualification,
+                # one server per dispatch with a per-run password (D-091)
+                opencode = replace(
+                    inputs,
+                    provider="opencode",
+                    model=cfg.opencode.model,
+                    qualification_report=self.local(entry.opencode_qualification_report),
+                    enabled=cfg.opencode.enabled,
+                )
+                opencode_refs = install_driver_profile(self.store, self.scope, opencode, caps)
+                if digest(opencode_refs["driver"]) not in registered:
+                    registry.register(
+                        admin, opencode_refs["driver"],
+                        build_opencode_port(
+                            opencode, root / "journal", self.local(cfg.opencode.credential_home)
+                        ),
+                    )  # fmt: skip
+                    registered.add(digest(opencode_refs["driver"]))
+                drivers["opencode-server"] = opencode_refs
             verify_sandboxes[entry.app_id] = ContainerSandbox(
                 ContainerProfile(
                     agent_profile.image,

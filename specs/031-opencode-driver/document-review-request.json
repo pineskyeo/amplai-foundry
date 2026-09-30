@@ -1,0 +1,253 @@
+{
+  "snapshot": "efcc66b729cba5fe33f2a45559b22a200ec078b5cf41e4f13c2ce87664e43da2",
+  "reviews": [
+    {
+      "document": ".ai-team/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/knowledge/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/runtime/WORKFLOW.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": ".ai-team/verifiers/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "AGENTS.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "CLAUDE.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/KNOWLEDGE-RULES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/VISION.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "outcome": "updated",
+      "reason": "The OpenCode row said secret_isolation fails and the driver is not wired; it now records the Work 031 qualification, the wiring as third candidate, the env guard and the remaining /proc risk (D-095, D-091).",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Its OpenCode entry lists server API facts and the Work 017 measurement; Work 031 changes neither and the entry stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "The only OpenCode mention scopes the local recipe example (not an LLM connection); still true.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "outcome": "updated",
+      "reason": "Adds the amplai ops local-opencode row and opencode to local-driver.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "outcome": "updated",
+      "reason": "Appends D-095 (OpenCode as the third driver); earlier entries unchanged.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    }
+  ],
+  "reference_reviews": [
+    {
+      "document": "README.md",
+      "reference": "_v3_delivery/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "README.md",
+      "reference": "validation/",
+      "line": 196,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV02_EXECUTION.ko.md",
+      "reference": "_v3_delivery/*TRACE.json",
+      "line": 7,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
+      "line": 3,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "validation/",
+      "line": 141,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "line": 141,
+      "disposition": "external",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".agents/skills/handoff/SKILL.md",
+      "line": 144,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    },
+    {
+      "document": "tools/amplai-loop-kit/README.md",
+      "reference": ".ai-team/skills/handoff/SKILL.md",
+      "line": 145,
+      "disposition": "example",
+      "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
+      "reviewer": "claude-opus-5.5-work031-document-review",
+      "method": "Rechecked the referencing line on this tree; the same reference the Work 030 review classified, so its disposition still applies.",
+      "evidence": [
+        "specs/031-opencode-driver/document-review-evidence.json"
+      ]
+    }
+  ]
+}

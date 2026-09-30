@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "work_id": "031-opencode-driver",
+  "kind": "document_review_evidence",
+  "changed_sources": [
+    ".ai-team/knowledge/decisions.index.json",
+    "deployment/local-container-app-amplai-foundry-opencode.json",
+    "deployment/worker-app/Dockerfile",
+    "docs/v3/DEV02_EXECUTION.ko.md",
+    "docs/v3/USING_AMPLAI_WORK.ko.md",
+    "docs/workstreams/v3-real-execution/DECISIONS.md",
+    "scripts/app_image_up.sh",
+    "scripts/opencode_auth_probe.py",
+    "scripts/opencode_qualify.py",
+    "scripts/opencode_uid_probe.py",
+    "src/amplai_foundry/agent_drivers/http.py",
+    "src/amplai_foundry/agent_drivers/opencode_launcher.py",
+    "src/amplai_foundry/agent_drivers/opencode_port.py",
+    "src/amplai_foundry/runtime/cli.py",
+    "src/amplai_foundry/runtime/execution/codex.py",
+    "src/amplai_foundry/runtime/execution/product.py",
+    "src/amplai_foundry/runtime/local_deployment.py",
+    "tests/v3/test_031_opencode_events.py",
+    "tests/v3/test_031_opencode_launcher.py",
+    "tests/v3/test_031_opencode_port.py",
+    "tests/v3/test_031_opencode_wiring.py"
+  ],
+  "semantic_changes": [
+    "OpenCode serve is the third system-selected driver: one server container per dispatch, password on, env guard (D-095)",
+    "New operator command amplai ops local-opencode; local-driver accepts opencode",
+    "LocalProductDeployment closes its store when composition raises a Hold",
+    "scripts/opencode_qualify.py: tool_use check, product server argv with guard, evidence beside --out"
+  ],
+  "grep_hits": {
+    "docs/v3/DEV02_EXECUTION.ko.md": "line 5 (transport boundary list, still true), line 92 (OpenCode row: updated)",
+    "docs/v3/DEV02_TRANSPORT_SOURCES.md": "line 5 (server API facts and Work 017 measurement, still true)",
+    "docs/v3/DEV03_OBSERVATORY_META.ko.md": "line 127 (local recipe example scope, still true)",
+    "docs/v3/USING_AMPLAI_WORK.ko.md": "lines 46-47 (new command rows: updated)",
+    "docs/workstreams/v3-real-execution/DECISIONS.md": "D-095 appended"
+  },
+  "runs": [
+    "specs/031-opencode-driver/runs/README.md",
+    "specs/031-opencode-driver/runs/trial-1.json",
+    "specs/031-opencode-driver/driver-qualification-amplai-foundry.json"
+  ]
+}

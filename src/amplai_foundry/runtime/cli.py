@@ -608,6 +608,35 @@ def local_claude(
                      "next": "restart amplai ops local-serve"})  # fmt: skip
 
 
+@ops.command("local-opencode")
+def local_opencode(
+    credential_home: Annotated[Path, typer.Option("--credential-home")],
+    qualification_report: Annotated[Path, typer.Option("--qualification-report")],
+    app_id: Annotated[str | None, typer.Option("--app")] = None,
+    model: Annotated[str, typer.Option("--model")] = "opencode-go/glm-5.3-flash",
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """Add OpenCode as the third candidate (Codex, then Claude, then OpenCode; it never plans).
+
+    The operator makes the scoped copy (scripts/sandbox_up.sh --opencode-home DIR); it is
+    referenced, never copied. The report must be a passing qualification in the app's image
+    (scripts/opencode_qualify.py --container --container-profile <that image's profile>).
+    """
+
+    def change(value: dict[str, Any]) -> None:
+        value["opencode"] = {
+            "credential_home": str(credential_home.expanduser().absolute()),
+            "model": model,
+            "enabled": True,
+        }
+        for app in value["apps"]:
+            if app_id in (None, app["app_id"]):
+                app["opencode_qualification_report"] = str(qualification_report.absolute())
+
+    guarded(lambda: {"config": str(_edit_local_config(config, change) and config),
+                     "next": "restart amplai ops local-serve"})  # fmt: skip
+
+
 @ops.command("local-add-app")
 def local_add_app(
     repo: Annotated[Path, typer.Option("--repo")],
@@ -730,14 +759,14 @@ def local_integration(
 
 @ops.command("local-driver")
 def local_driver(
-    driver: Annotated[str, typer.Argument(help="codex or claude")],
+    driver: Annotated[str, typer.Argument(help="codex, claude or opencode")],
     enabled: Annotated[bool, typer.Option("--enable/--disable")] = True,
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
 ) -> None:
     """Make a driver eligible or not for selection (a disabled model is filtered out)."""
 
     def change(value: dict[str, Any]) -> None:
-        if driver not in {"codex", "claude"} or not value.get(driver):
+        if driver not in {"codex", "claude", "opencode"} or not value.get(driver):
             raise Hold("DRIVER_UNKNOWN", "Configure the driver before switching it")
         value[driver]["enabled"] = enabled
 
