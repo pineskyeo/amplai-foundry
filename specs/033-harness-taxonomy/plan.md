@@ -449,3 +449,19 @@ same decision procedure:
   subscription window a night uses, then set B as a share of the measured headroom (default: keep at least
   half of the subscription windows for the operator's own daytime work). B is shown in the dashboard with
   the quota observed.
+
+## 11. Production Loop Elements Adopted (research: `research-production-loops.md`)
+
+| Element | Source practice | In 033 |
+|---|---|---|
+| Proposer ensemble | AlphaEvolve breadth/depth, ShinkaEvolve | a cheap cell drafts several component edits; near-duplicates of seen edits are dropped; a strong cell refines the top ones before screening |
+| Evaluator cascade | AlphaEvolve, TestGen-LLM filters | cheap checks first (applies, lint/format, quick tests), then hidden tests; repeated passes remove flaky results |
+| Candidates cannot touch the evaluator | Cloud AlphaEvolve external evaluator; Anthropic "do not edit tests" | evaluator and hidden tests stay outside the candidate's reach (class C); a trial that edits tests or the verifier is a safety failure |
+| Elite archive | AlphaEvolve MAP-Elites, DGM archive | besides the champion, keep elites per (domain × cost band) with lineage as parents for new edits |
+| Hack guards | Cursor, DGM, Kevin-32B, OpenAI CoT monitor | per trial: ask-back rate, edit rate, broken tool calls, test-file edits, verified-but-hidden-fail; a sharp shift from the baseline rejects the candidate at screening; guard signals reject only, they are never a score |
+| Removal sweep | Anthropic ("every component encodes an assumption") | on a model snapshot change, leave-one-out ablation of active components; non-inferior and cheaper without it → removal candidate |
+| Dreaming job | Anthropic Managed Agents, Letta sleep-time, ACE deltas | after each night, a consolidation run proposes add/merge/delete deltas to `memory_notes` with evidence trace ids and absolute dates; the delta is a candidate version through the normal stages |
+| Graduation | Anthropic evals | saturated capability tasks move to the regression set (§1.3) |
+| Judge alignment | Databricks align, Anthropic calibration | judges with no known outcomes are qualified on 50–100 operator-labelled items |
+| Doc gardening | OpenAI harness engineering, Cognition | optional nightly maintenance goals that fix doc/code drift in a target app as small verified changes through the normal V3 path; merge policy per app (default: the operator merges) |
+| Staged deploy | rainbow deploy, A/B, CursorBench gate | canary, promote, signed rollback (existing, design 16) |
