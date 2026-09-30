@@ -1,0 +1,55 @@
+{
+  "captured_at": "2026-09-30T10:05:37Z",
+  "content_hash": "210b91c005c7b295ac2fbb6732cb6a3183b32c78202dd6a6b6e8583d391a8808",
+  "fixture_refs": [
+    "testdata/"
+  ],
+  "git": {
+    "branch": "feat/033-meta-harness-system",
+    "commit": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
+    "dirty": true
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python": "3.9.6",
+    "system": "Darwin"
+  },
+  "safe_environment": {},
+  "schema_version": "1.0",
+  "target_assumptions": {
+    "not_verified": [
+      "다른 OS·architecture 에서의 동작",
+      "pyproject 의 requires-python 아래 버전에서의 동작"
+    ],
+    "python_requirement": ">=3.11",
+    "verified_on": "macOS-26.2-arm64-arm-64bit",
+    "verifier_interpreter": [
+      ".venv/bin/python",
+      "python3"
+    ]
+  },
+  "tools": [
+    {
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": ".venv/bin/python --version",
+      "exit_code": 0,
+      "output": "Python 3.11.15"
+    },
+    {
+      "command": "python3 --version",
+      "exit_code": 0,
+      "output": "Python 3.9.6"
+    },
+    {
+      "command": "git --version",
+      "exit_code": 0,
+      "output": "git version 2.50.1 (Apple Git-155)"
+    }
+  ],
+  "work_id": "033-meta-harness-system"
+}
