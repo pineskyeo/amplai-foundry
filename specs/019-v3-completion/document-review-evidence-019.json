@@ -5,6 +5,7 @@
   "changed_sources": [
     ".ai-team/knowledge/decisions.index.json",
     ".ai-team/policy/documentation.json",
+    "deployment/prices/2026-09-30.json",
     "docs/PORTABLE-DEVELOPMENT.md.amplai.json",
     "docs/v3/DEV02_EXECUTION.ko.md",
     "docs/v3/DEV03_OBSERVATORY_META.ko.md",
@@ -17,14 +18,17 @@
     "scripts/corpus_check.py",
     "scripts/meta_smoke.py",
     "scripts/sandbox_up.sh",
+    "src/amplai_foundry/agent_drivers/cli.py",
     "src/amplai_foundry/agent_drivers/protocol.py",
     "src/amplai_foundry/evaluation/analysis.py",
+    "src/amplai_foundry/evaluation/pricing.py",
     "src/amplai_foundry/evaluation/service.py",
     "src/amplai_foundry/meta_harness/budget.py",
     "src/amplai_foundry/meta_harness/local_canary.py",
     "src/amplai_foundry/meta_harness/local_corpus.py",
     "src/amplai_foundry/meta_harness/local_executor.py",
     "src/amplai_foundry/meta_harness/service.py",
+    "src/amplai_foundry/meta_harness/trial_metrics.py",
     "src/amplai_foundry/runtime/budgets/service.py",
     "src/amplai_foundry/runtime/cli.py",
     "src/amplai_foundry/runtime/execution/envelope.py",
@@ -50,6 +54,7 @@
     "tests/e2e/test_rc08_release_pointer.py",
     "tests/e2e/test_rc10_local_executor.py",
     "tests/e2e/test_rc12_meta_rehearsal.py",
+    "tests/e2e/test_rc13_usage_detail.py",
     "tests/rc06_rig.py",
     "tests/v3/test_core_runtime.py",
     "tests/v3/test_dev02_sessions_workspace.py",
@@ -63,17 +68,19 @@
     "tests/v3/test_rc11_canary_adapter.py",
     "tests/v3/test_rc11_canary_cost_basis.py",
     "tests/v3/test_rc12_meta_cli.py",
+    "tests/v3/test_rc13_usage_pricing.py",
     "tools/amplai-loop-kit/CHECKSUMS.sha256",
     "tools/amplai-loop-kit/README.md.amplai.json",
     "tools/amplai-loop-kit/baseline/manifest.json",
     "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py"
   ],
   "semantic_changes": [
-    "amplai meta: approve-canary only approves; run-canary starts the canary and runs its trials in one process (a canary is owned by the process that starts it)",
-    "First real evolution run recorded: the shorter prompt passed, the negative control failed"
+    "Usage detail (cache and reasoning tokens) stored as usage-detail, referenced by usage.source_ref; the 3.0.0 usage shape is unchanged (D-094)",
+    "Dated price tables in deployment/prices and the API-equivalent cost, separate from the run cost; amplai ops prices",
+    "Descriptive trial metrics: amplai meta report; corpus_check --repeats"
   ],
   "measurements": {
-    "tests": "test_rc11_canary_cost_basis.py (10), test_rc11_canary_adapter.py (6), test_rc12_meta_rehearsal.py (3), test_rc12_meta_cli.py (5); verifier v2 PASS 3420 passed",
-    "real_runs": "specs/030-meta-harness-live/runs/README.md (calibration: codex baseline 20 of 20)"
+    "tests": "test_rc13_usage_pricing.py (15), test_rc13_usage_detail.py (3), test_rc12_meta_cli.py (7); verifier v2 PASS 3440 passed",
+    "real_runs": "specs/030-meta-harness-live/runs/README.md (one Codex trial: 89 percent cached, 0.080 USD)"
   }
 }
