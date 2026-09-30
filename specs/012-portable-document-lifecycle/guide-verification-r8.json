@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "verdict": "PASS",
-  "input_sha256": "6a610a9093c69657bc53d8245c48e9916310a9832aafde326801748b917bd31b",
+  "input_sha256": "609792aaba3c87ece17384fc6587909eb6e34695fe961502f57e79784e641fef",
   "checks": [
     {
       "id": "s08-local-verification-r8",

@@ -1,324 +1,324 @@
 {
-  "snapshot": "348397abc5b1bd631177e82f5092d537b21dbb45d6af58ccd46da59de1b0670f",
+  "snapshot": "13f68f6ce353b22184b4a8aaf501386f5300e13dc4865afbabdf40a393d35434",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/contracts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/evidence/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/knowledge/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/runtime/INSTALLATION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/runtime/WORKFLOW.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/runtime/escalation.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": ".ai-team/verifiers/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "AGENTS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "CLAUDE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/KNOWLEDGE-RULES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/LIFECYCLE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/MEMORY-DOMAIN-MODEL.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/PORTABLE-DEVELOPMENT.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/PROPOSALS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/RELATIONSHIPS.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/ROADMAP.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/VERSIONING.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/VISION.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "outcome": "updated",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This branch updates the document for it.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "tests/e2e/artifacts/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "tools/amplai-loop-kit/CHANGELOG.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
       "document": "tools/amplai-loop-kit/README.md",
       "outcome": "reviewed_unchanged",
-      "reason": "Work 033 design and W0-W1: decisions D-096..D-105 recorded; new meta-harness modules (components, manifests, evaluator v2, corpus v2, leak gate) not yet described in the user guides, which change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reason": "Work 033 W2 part 1: cells and reasoning effort for drivers, read-only turns, amplai ops local-cell, bench corpus base; user guides change at the end of Work 033 (S18). This document does not describe it and stays accurate.",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     }
   ],
@@ -329,10 +329,10 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -341,10 +341,10 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -353,10 +353,10 @@
       "line": 54,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -365,10 +365,10 @@
       "line": 55,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -377,10 +377,10 @@
       "line": 57,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -389,10 +389,10 @@
       "line": 58,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -401,10 +401,10 @@
       "line": 59,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -413,10 +413,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -425,10 +425,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -437,10 +437,10 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -449,10 +449,10 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -461,10 +461,10 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -473,10 +473,10 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -485,10 +485,10 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -497,10 +497,10 @@
       "line": 19,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -509,10 +509,10 @@
       "line": 36,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -521,10 +521,10 @@
       "line": 57,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -533,10 +533,10 @@
       "line": 96,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -545,10 +545,10 @@
       "line": 107,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -557,10 +557,10 @@
       "line": 116,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -569,10 +569,10 @@
       "line": 7,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -581,10 +581,10 @@
       "line": 3,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -593,10 +593,10 @@
       "line": 141,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -605,10 +605,10 @@
       "line": 141,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -617,10 +617,10 @@
       "line": 86,
       "disposition": "historical",
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -629,10 +629,10 @@
       "line": 144,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     },
     {
@@ -641,10 +641,10 @@
       "line": 145,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-opus-5.5-033-w1-document-review",
+      "reviewer": "claude-opus-5.5-033-w2a-document-review",
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "evidence": [
-        "specs/019-v3-completion/document-review-evidence-033.json"
+        "specs/019-v3-completion/document-review-evidence-033-w2a.json"
       ]
     }
   ]
