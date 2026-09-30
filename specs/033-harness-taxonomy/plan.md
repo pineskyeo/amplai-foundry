@@ -38,6 +38,8 @@ A store record `harness-component`:
 | `memory_notes` | `context-policy` | off (v1); on: ≤ 40 curated lines per app / task class | A (approved notes) | AHE memory +5.6 pp |
 | `feedback_form` | `context-policy` | today's form: failing acceptance + 3,000-char stdout/stderr tail (`loop.py:586-600`) | B (repair heuristic) | AHE middleware +2.2 pp |
 | `attempt_policy` | `budget_policy_ref` → `budget-policy` | today's repair attempts, repair on the previous patch, best-of-n = 1 | B (repair heuristic; budget bound) | budget-matched baseline |
+| `execution_strategy` | `budget-policy` | single node per app (v1, today's planner, `loop.py:3`); variants: workgraph split by file area, parallel read-only steps (≤ 4, design 07 §4); write concurrency 1 per repo | B (decomposition; routing) | AFlow graph search |
+| `route_policy` | app router policy (`product.py:457-460`) | task features (task class, domain, planned size, apps) → (strategy, cell); v1 = today's order | B (routing threshold / driver mapping) | design 16 §2 |
 | `driver_options` | `budget-policy` | none (v1); Claude `--max-turns`, `--append-system-prompt`; Codex config overrides from an allowlist | B (driver behaviour) | AHE tools +3.3 pp |
 
 - A candidate's class is the highest class among changed components. Changing a cell (model or

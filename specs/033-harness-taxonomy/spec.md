@@ -58,6 +58,11 @@ The operator runs the V3 meta-harness end to end on real executions:
 5. A read-only **HTML dashboard** shows the model × effort matrix, the best composition per cell,
    ablation contributions, candidate lineage and pending approvals.
 6. Legacy paths that the new system replaces are removed, and the final result is an HTML report.
+7. **Strategy is chosen per task, and the chooser is itself evaluated** (operator, 2026-09-30):
+   a router policy maps observable task features (task class, domain, planned size, apps) to a
+   strategy (single agent, workgraph decomposition, parallel read-only steps) and a cell. The router
+   policy is a class B component: a changed policy is a candidate that goes through the same stages,
+   and the dashboard shows per-strategy results.
 
 ## Terms
 
@@ -92,6 +97,7 @@ Open (asked 2026-09-30; recommendation in bold):
 | OD-10 | Legacy scope | **(1) the meta-harness path only**; (2) every superseded V3 path; (3) also the V1/V2 loop (`.ai-team`, loop kit, skills) |
 | OD-11 | Real-run budget for this Work | S ≈ 355 trials (2 cells, ~6 h); **M ≈ 710 trials (4 cells, ~12 h)**; L ≈ 1,065 trials (6 cells, ~18 h) — plan §4 |
 | OD-12 | Cells in the first round | **codex gpt-5.6-sol {medium, high} and claude {claude-sonnet-5, claude-opus-5-5} at high**, each cell qualified first; opencode stays a routing candidate without effort variants until its variant control is measured |
+| OD-14 | Strategy selection and experiment parallelism | **Add an `execution_strategy` component (single / workgraph split / parallel read-only steps) chosen per task by the router policy, which is evaluated like any candidate; write concurrency stays 1 per repo (design 07 §4); run experiment trials concurrently (separate containers and workspaces)** |
 | OD-13 | Trace capture for the proposer | **Sanitized transcripts of meta-harness trials on the synthetic corpus only (no reasoning items, secret-scanned, proposer-readable, never exported)**; or no capture (proposer gets scores and verdict details only) |
 
 ## Proposed Decisions (recorded after approval)
