@@ -1,0 +1,513 @@
+{
+  "schema_version": "1.0",
+  "runs": {
+    "claude": {
+      "driver": "claude",
+      "image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:2ab060217a109af7ca70ff724ee878881d4c76e1465f045fe41e9b242b89e0f7",
+      "broker_image": "mitmproxy/mitmproxy@sha256:e0deb0df7edf9f909053f274a067cd1cacb90f5c17d74459e1693179c0b98d8f",
+      "turn_rc": 0,
+      "turn_seconds": 3.7,
+      "turn_result": "PONG",
+      "turn_is_error": false,
+      "turn_stderr_tail": "",
+      "broker_requests": [
+        {
+          "ts": 1790753835.278,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "GET",
+          "path": "/api/claude_code/policy_limits",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753835.281,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "GET",
+          "path": "/api/claude_code/settings",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753835.816,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "POST",
+          "path": "/api/eval/sdk-zAZezfDKGoZuXXKe",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753836.281,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "GET",
+          "path": "/api/claude_cli/bootstrap",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753836.297,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "POST",
+          "path": "/v1/messages",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753836.299,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "POST",
+          "path": "/api/event_logging/v2/batch",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753838.212,
+          "event": "request",
+          "target": "api.anthropic.com:443",
+          "method": "POST",
+          "path": "/api/event_logging/v2/batch",
+          "replaced_headers": [
+            "authorization"
+          ]
+        }
+      ],
+      "broker_responses": [
+        {
+          "ts": 1790753835.662,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/claude_code/settings",
+          "status": 404
+        },
+        {
+          "ts": 1790753835.7,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/claude_code/policy_limits",
+          "status": 200
+        },
+        {
+          "ts": 1790753836.125,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/eval/sdk-zAZezfDKGoZuXXKe",
+          "status": 200
+        },
+        {
+          "ts": 1790753836.713,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/claude_cli/bootstrap",
+          "status": 403
+        },
+        {
+          "ts": 1790753836.75,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/event_logging/v2/batch",
+          "status": 200
+        },
+        {
+          "ts": 1790753838.067,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/v1/messages",
+          "status": 200
+        },
+        {
+          "ts": 1790753838.484,
+          "event": "response",
+          "target": "api.anthropic.com:443",
+          "path": "/api/event_logging/v2/batch",
+          "status": 200
+        }
+      ],
+      "broker_denied": [
+        {
+          "ts": 1790753838.124,
+          "event": "deny",
+          "target": "http-intake.logs.us5.datadoghq.com:443"
+        }
+      ],
+      "container_markers": [
+        "UID 65534",
+        "ENV_TOKEN_SET len=87",
+        "/home/agent: . .. .claude .claude.json ",
+        "PROBE_END",
+        ""
+      ],
+      "placeholder_length": 87,
+      "checked_at": "2026-09-30T07:37:18Z"
+    },
+    "codex": {
+      "driver": "codex",
+      "image": "localhost:5000/amplai-worker-app-amplai-foundry@sha256:2ab060217a109af7ca70ff724ee878881d4c76e1465f045fe41e9b242b89e0f7",
+      "broker_image": "mitmproxy/mitmproxy@sha256:e0deb0df7edf9f909053f274a067cd1cacb90f5c17d74459e1693179c0b98d8f",
+      "turn_rc": 0,
+      "turn_seconds": 8.8,
+      "turn_result": "PONG",
+      "turn_is_error": false,
+      "turn_events": [
+        "item.completed",
+        "thread.started",
+        "turn.completed",
+        "turn.started"
+      ],
+      "turn_stderr_tail": "Reading additional input from stdin...\n",
+      "broker_requests": [
+        {
+          "ts": 1790753916.632,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/list",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.637,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/installed",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.637,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/installed",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.637,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/suggested/codex",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.637,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/codex/models",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.638,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/plugins/featured",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753916.652,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/codex/models",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753917.611,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/list",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753917.895,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "POST",
+          "path": "/backend-api/ps/mcp",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753917.91,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "POST",
+          "path": "/backend-api/codex/analytics-events/events",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753918.249,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "POST",
+          "path": "/backend-api/ps/mcp",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753918.593,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "POST",
+          "path": "/backend-api/ps/mcp",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753919.328,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/list",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753920.519,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/codex/responses",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753920.952,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/list",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753921.964,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/wham/settings/user",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753923.005,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "GET",
+          "path": "/backend-api/ps/plugins/list",
+          "replaced_headers": [
+            "authorization"
+          ]
+        },
+        {
+          "ts": 1790753924.701,
+          "event": "request",
+          "target": "chatgpt.com:443",
+          "method": "POST",
+          "path": "/backend-api/codex/analytics-events/events",
+          "replaced_headers": [
+            "authorization"
+          ]
+        }
+      ],
+      "broker_responses": [
+        {
+          "ts": 1790753917.097,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/suggested/codex",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.104,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/plugins/featured",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.244,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/codex/models",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.369,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/installed",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.468,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/installed",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.601,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/list",
+          "status": 200
+        },
+        {
+          "ts": 1790753917.817,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/codex/models",
+          "status": 200
+        },
+        {
+          "ts": 1790753918.23,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/codex/analytics-events/events",
+          "status": 200
+        },
+        {
+          "ts": 1790753918.241,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/mcp",
+          "status": 200
+        },
+        {
+          "ts": 1790753918.586,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/mcp",
+          "status": 204
+        },
+        {
+          "ts": 1790753919.314,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/list",
+          "status": 200
+        },
+        {
+          "ts": 1790753920.44,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/mcp",
+          "status": 200
+        },
+        {
+          "ts": 1790753920.947,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/list",
+          "status": 200
+        },
+        {
+          "ts": 1790753921.167,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/codex/responses",
+          "status": 101
+        },
+        {
+          "ts": 1790753922.19,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/wham/settings/user",
+          "status": 200
+        },
+        {
+          "ts": 1790753922.997,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/ps/plugins/list",
+          "status": 200
+        },
+        {
+          "ts": 1790753925.008,
+          "event": "response",
+          "target": "chatgpt.com:443",
+          "path": "/backend-api/codex/analytics-events/events",
+          "status": 200
+        }
+      ],
+      "broker_denied": [
+        {
+          "ts": 1790753917.481,
+          "event": "deny",
+          "target": "sdmntprsouthcentralus.oaiusercontent.com:443"
+        },
+        {
+          "ts": 1790753917.486,
+          "event": "deny",
+          "target": "sdmntprsouthcentralus.oaiusercontent.com:443"
+        },
+        {
+          "ts": 1790753917.494,
+          "event": "deny",
+          "target": "sdmntprsouthcentralus.oaiusercontent.com:443"
+        },
+        {
+          "ts": 1790753917.5,
+          "event": "deny",
+          "target": "sdmntprcentralus.oaiusercontent.com:443"
+        },
+        {
+          "ts": 1790753917.505,
+          "event": "deny",
+          "target": "sdmntprsouthcentralus.oaiusercontent.com:443"
+        },
+        {
+          "ts": 1790753925.016,
+          "event": "deny",
+          "target": "ab.chatgpt.com:443"
+        }
+      ],
+      "container_markers": [
+        "UID 65534",
+        "/home/agent: . .. .codex  /home/agent/.codex: . .. .sandbox_migration auth.json cache config.toml goals_1.sqlite goals_1.sqlite-shm goals_1.sqlite-wal installation_id logs_2.sqlite memories_1.sqlite models_cache.json queue_1.sqlite queue_1.sqlite-shm queue_1.sqlite-wal sessions shell_snapshots skills state_5.sqlite state_5.sqlite-shm state_5.sqlite-wal thread-writer-locks thread_history_1.sqlite tmp ",
+        "PROBE_END",
+        ""
+      ],
+      "placeholder_length": 1489,
+      "checked_at": "2026-09-30T07:38:45Z"
+    }
+  }
+}

@@ -422,6 +422,7 @@
     "pyproject.toml",
     "scripts/amplai_docs.py",
     "scripts/app_image_up.sh",
+    "scripts/broker_probe.py",
     "scripts/container_qualify.py",
     "scripts/corpus_check.py",
     "scripts/meta_smoke.py",
@@ -526,6 +527,7 @@
       "specs/019-v3-completion/document-review-evidence-019.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/document-review-evidence-030.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/document-review-evidence-031.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/019-v3-completion/document-review-evidence-032.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/document-review-request.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/driver-qualification-amplai-foundry.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/environment.json": "per-Work contract/plan/evidence; active contract independently bound",
@@ -651,6 +653,9 @@
       "specs/031-opencode-driver/runs/trial-1.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/031-opencode-driver/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/032-credential-broker-probe/baseline-exposure.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/032-credential-broker-probe/broker-probe.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/032-credential-broker-probe/broker_addon.py": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/032-credential-broker-probe/results.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/032-credential-broker-probe/spec.md": "per-Work contract/plan/evidence; active contract independently bound"
     },
     "expected": [
@@ -669,6 +674,7 @@
       "pyproject.toml",
       "scripts/amplai_docs.py",
       "scripts/app_image_up.sh",
+      "scripts/broker_probe.py",
       "scripts/container_qualify.py",
       "scripts/corpus_check.py",
       "scripts/meta_smoke.py",
@@ -706,6 +712,7 @@
       "specs/019-v3-completion/document-review-evidence-019.json",
       "specs/019-v3-completion/document-review-evidence-030.json",
       "specs/019-v3-completion/document-review-evidence-031.json",
+      "specs/019-v3-completion/document-review-evidence-032.json",
       "specs/019-v3-completion/document-review-request.json",
       "specs/019-v3-completion/driver-qualification-amplai-foundry.json",
       "specs/019-v3-completion/environment.json",
@@ -831,6 +838,9 @@
       "specs/031-opencode-driver/runs/trial-1.json",
       "specs/031-opencode-driver/work-contract.json",
       "specs/032-credential-broker-probe/baseline-exposure.json",
+      "specs/032-credential-broker-probe/broker-probe.json",
+      "specs/032-credential-broker-probe/broker_addon.py",
+      "specs/032-credential-broker-probe/results.md",
       "specs/032-credential-broker-probe/spec.md",
       "src/amplai_foundry/agent_drivers/cli.py",
       "src/amplai_foundry/agent_drivers/http.py",
@@ -911,6 +921,7 @@
       "pyproject.toml",
       "scripts/amplai_docs.py",
       "scripts/app_image_up.sh",
+      "scripts/broker_probe.py",
       "scripts/container_qualify.py",
       "scripts/corpus_check.py",
       "scripts/meta_smoke.py",
@@ -985,20 +996,20 @@
     "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
     "unprocessed": []
   },
-  "content_hash": "7fd675e4dab9cd4283328adc5d6dcf5b76b24e2a5d86b7c37cae2904e09e4163",
+  "content_hash": "075a67645d2ef0cc4c7fa196e688187f402293acd51b4248b0c25a65a690812f",
   "dependency_snapshot": {
     "base_commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53"
+      "sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000"
     },
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1017,7 +1028,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1036,7 +1047,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1055,7 +1066,7 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1074,7 +1085,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1093,7 +1104,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1112,7 +1123,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1131,7 +1142,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1150,7 +1161,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1169,7 +1180,7 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1188,7 +1199,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1207,7 +1218,7 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1226,7 +1237,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1245,7 +1256,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1264,7 +1275,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1283,7 +1294,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1302,7 +1313,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1321,7 +1332,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1340,7 +1351,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
           "metadata_owner": "sidecar",
@@ -1359,7 +1370,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1378,7 +1389,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1397,7 +1408,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1416,7 +1427,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1435,7 +1446,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
           "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
           "metadata_owner": "sidecar",
@@ -1454,7 +1465,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
           "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
           "metadata_owner": "sidecar",
@@ -1473,7 +1484,7 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
           "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
           "metadata_owner": "sidecar",
@@ -1492,7 +1503,7 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
           "metadata_owner": "sidecar",
@@ -1511,7 +1522,7 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
           "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
           "metadata_owner": "sidecar",
@@ -1530,7 +1541,7 @@
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
@@ -1549,7 +1560,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1568,7 +1579,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1587,7 +1598,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+          "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
           "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1960,6 +1971,12 @@
         "mode": 493,
         "path": "scripts/app_image_up.sh",
         "sha256": "ddaa0b57f310fae4f8a6bb58b15ad4616845078aae51d79c14406f11841fb7b4",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "scripts/broker_probe.py",
+        "sha256": "9cd6aa5082ce45e7aac0ccb46fc3f5380de1cf83218b2ac2b1084fef0b5d937c",
         "state": "PRESENT"
       },
       {
@@ -2384,7 +2401,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+  "dependency_snapshot_hash": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -2392,7 +2409,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
+    "commit": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
   },
@@ -2422,8 +2439,8 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword knowledge,policy,runtime; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2438,7 +2455,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "cb8f0944aee7ca176a9fcc830e60707e9e74017e31a712d6dbe810ad89fd4e11",
+      "review_hash": "111f275857d467a1b60f0cceff412129d155d459538c60ac5fbb4ab294939bb7",
       "state": "ACTIVE"
     },
     {
@@ -2456,8 +2473,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2472,7 +2489,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "8a2d099ecb036abe138e2adc3bcfd0a8579e55cff3eaf27162e58fd229a14010",
+      "review_hash": "16576bc34b5e0c04390ed63224a6a45b48b3fb1aa1f10d47a3fbef783f06a19e",
       "state": "ACTIVE"
     },
     {
@@ -2490,8 +2507,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2506,7 +2523,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "7019f5932373c09ec3cb5ebb76ef2a688efc5945d65e6dcb4fd91cf8177364f2",
+      "review_hash": "66effd23abaea81e1a1ad6be6f5123a72ac7c03c293db18b0041a97402c68759",
       "state": "ACTIVE"
     },
     {
@@ -2526,8 +2543,8 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2542,7 +2559,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "6b0b8d43ce411f5de8db68fe14949ef0980674effd3cc3a0b4d0c1c5c413d067",
+      "review_hash": "9646b719afc5d5abbe17d2fdbda869ed48e830c464434d3a5619cc71f2a205c4",
       "state": "ACTIVE"
     },
     {
@@ -2560,8 +2577,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2576,7 +2593,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "4ecdc19fea984e2741c6c7b3f12f96d0e9f3d2cd3e796a46f29082ed591ffec6",
+      "review_hash": "4f65794abd1b97d8471c49b83da677f957543cb7f1bdd8ba171bd763aa7b5a97",
       "state": "ACTIVE"
     },
     {
@@ -2594,8 +2611,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2610,7 +2627,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "a3715a7b8e7f4266d60192e9da0cbcbb86778a3f5d8ecf6c408de600120bfeb5",
+      "review_hash": "80c895c6f3c6cfc66ee793a333f074710521490d0466ef397fd1fb37ee1f2c01",
       "state": "ACTIVE"
     },
     {
@@ -2635,8 +2652,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2651,7 +2668,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "5ed0f9bc51b18062cafadb7d2fe0509f955b0bae7e25249b797a5b9466c9dc14",
+      "review_hash": "04af470cdd3826fee8c353157e4f3728c1d2d985c2c386f10ff3de1ed19dd296",
       "state": "ACTIVE"
     },
     {
@@ -2669,8 +2686,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2685,7 +2702,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "d59c0c4b812998596300625860ac477fda779d564212aabbe256bf5f7990e573",
+      "review_hash": "931dd09277667005dcabadc42bbbffcc664f2f4109c0b8d8449b32b5c26ad41b",
       "state": "ACTIVE"
     },
     {
@@ -2705,8 +2722,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2721,7 +2738,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "8c1221406328b973662e04913b3bad8db3f7483e0b0bae7c2bdb55597c4fe813",
+      "review_hash": "eb92b103d3f4c17d0705dd48ee11d673c50abf6eb0908905ed9152bb01d71296",
       "state": "ACTIVE"
     },
     {
@@ -2743,8 +2760,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2759,7 +2776,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "ce227f140d57ecaf4a7d9eb9b0ee45f765fb56c98a04f8fa6666850cb951c2c5",
+      "review_hash": "d94bfc83a90144d7f746c629308abef60ae2d2aff31ac89bfca211cb6e4ed4f6",
       "state": "ACTIVE"
     },
     {
@@ -2781,8 +2798,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2797,7 +2814,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "ea2c17bb323bfd103ca09658bdcab6abcec9006743559a96f854784efaeea9b8",
+      "review_hash": "cfa351e5636d19a26e2b4c484099f4daf2b34f63d5311bb694306f2cdc776077",
       "state": "ACTIVE"
     },
     {
@@ -2819,8 +2836,8 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2835,7 +2852,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "545d28e34f99650d8160e0195c764a04655f3cf733d9620ff782c1bc33e928f4",
+      "review_hash": "8cd43cb115b7f4deeff7db3046cfbd2c6046682f9fddfc8359dcedfe475a96f5",
       "state": "ACTIVE"
     },
     {
@@ -2855,8 +2872,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2871,7 +2888,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "7f9dc241b98f84768ce8264a644a7f40f598ca6b8fe6d5f1c206b5f4e2153556",
+      "review_hash": "d4d8c87ece21161b663465d856b0d949a2333613961cdafd62820ca48713102b",
       "state": "ACTIVE"
     },
     {
@@ -2889,8 +2906,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2905,7 +2922,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "ce8b56021556d6647b5ba0bfcc88011296d5c421c4bab6fe48818edeaf09c637",
+      "review_hash": "b636661b58463824b39b7151835998f557bb1910b2eb8c08c28db1a23034d8b3",
       "state": "ACTIVE"
     },
     {
@@ -2923,8 +2940,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2939,7 +2956,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "f88dceb213f4a10b9f6d185bc0f0a4b17286c7d2786f2616d6af8a3566fe98aa",
+      "review_hash": "8f02c0933e8b98998cef45723226f5aa12831a01d61dfddfdbfe73f5820825da",
       "state": "ACTIVE"
     },
     {
@@ -2959,8 +2976,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2975,7 +2992,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "0948ff5d2deb36a566847949d413f8ae5777b64fae856e48dec0b698b971843e",
+      "review_hash": "8333d686ca6787fc0d52f2ddd1b0ec7ebcc3f8fbbb51a8e201507ac117d46b65",
       "state": "ACTIVE"
     },
     {
@@ -2995,8 +3012,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3011,7 +3028,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "c97e0887f243ff5d60a04eb084e13a9435027d2c1a4a79663c55a5cb2821e2d1",
+      "review_hash": "bc1b0cef767afa8f1fb8e502708e1278550b0c58aaa9fac82e21909aa08c75b2",
       "state": "ACTIVE"
     },
     {
@@ -3029,8 +3046,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3045,7 +3062,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "9c5e66df04d92b9a2809b7c62f5967b22304a5e1b1e57f7c7ee6bae7428b41ea",
+      "review_hash": "ae2f500ececf46f9a4597dcaaca51ee3bee24b6fff566cc1c4b6d627db393ff3",
       "state": "ACTIVE"
     },
     {
@@ -3063,8 +3080,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -3079,7 +3096,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "cf96826975117277dcc21e14b12dd0629778a3a581e8d6b708aac8c7a02f6789",
+      "review_hash": "9121d1764c3172a4ce67423d3377e7cfb2b22757a24fbb54b77b82e3ee1e9f3c",
       "state": "ACTIVE"
     },
     {
@@ -3097,8 +3114,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3113,7 +3130,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "aed674a36f819bcbd63844cf779f0b7dabfaa5dbae79e65f5cbae38f9a6c0a23",
+      "review_hash": "7726044b819a976a755d8fb1763ae145ebc1238a09e7f5ca22383d867b914bb9",
       "state": "ACTIVE"
     },
     {
@@ -3131,8 +3148,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3147,7 +3164,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "61465cbdfd40b247fb5278614e6b15dcdf40348e3070a28eb637d6f4186d8ee3",
+      "review_hash": "fb19cce83c9c0735f0b2ad30dfc53a7ed7c070e2a9763eb0a5a7f87f80823790",
       "state": "ACTIVE"
     },
     {
@@ -3167,8 +3184,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3183,7 +3200,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "0f65c1618392c39068c50c78cdd6a4182b204daddf8b9e9786702a6caf7388b6",
+      "review_hash": "7074e8774b31d634e389405960ee21744c454509eab8fe49a52513486cc2dd10",
       "state": "ACTIVE"
     },
     {
@@ -3203,8 +3220,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3219,11 +3236,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "f5770f542358beaf073105dc0662743d4b7f2ce84bdb6f478539cb26bd5800c5",
+      "review_hash": "279ab46d0661224c5c60a1bcaacaef2030f3d20285f366d839747188d2672518",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
@@ -3239,8 +3256,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/opencode_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -3255,7 +3272,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "eecd1af22cb989345da3644c40d8066f2c587bc3795055675cbd849b7d664d4e"
       },
-      "review_hash": "8725336d47d015e4e3aa8bc148ef2b080d01dc3a18294ce1eab706802b96b2d8",
+      "review_hash": "007270db6846df2303b1fcbec4440a7c8fbec371c6c59dc81f5855ea0c88dee2",
       "state": "ACTIVE"
     },
     {
@@ -3275,8 +3292,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "문서가 scripts/opencode_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
         "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
         "metadata_owner": "sidecar",
@@ -3291,7 +3308,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "fbeaa968d6e8c465bd2928d3137a97095affd13241a33d71f48169b7544d1b9d",
+      "review_hash": "4ab98efd4411de06d2684eb46087cd1ea70b6997cd1cbc93a027c1aee5c4e826",
       "state": "ACTIVE"
     },
     {
@@ -3311,8 +3328,8 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 scripts/corpus_check.py, src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/service.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -3327,7 +3344,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d5dff190c3d67c247cec72b6c5eca1d2013d05ef448f0dd83b3c6dcae905ee23"
       },
-      "review_hash": "7f7b38da88cc63ab472f2fce660194fee6b4b17fd8fa7c921a90b81be6f1905b",
+      "review_hash": "49e20f4206ca48b493c6d06c585cea91c26fc8169507030357099ec567c6fc42",
       "state": "ACTIVE"
     },
     {
@@ -3345,8 +3362,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
         "metadata_owner": "sidecar",
@@ -3361,11 +3378,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "7b091cd077bf07273dfa5f546f17ae768fc53c01ea5cf6b5226943c63ba5980c",
+      "review_hash": "99f0bb74dfa8d8750f3c5b6cf25fbaf5a428dc5dae3486e32423afb233a1dd9a",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
@@ -3381,8 +3398,8 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/app_image_up.sh, scripts/container_qualify.py, scripts/corpus_check.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
         "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
         "metadata_owner": "sidecar",
@@ -3397,11 +3414,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3e48e2ba0a7c3969cd9a580c078b77b2da3d2cc7da3df3c3e8f9be09918e1862"
       },
-      "review_hash": "1971b80b577b701c94a6a7dacc38a47b69766fce57708c95aee57d90f536af5c",
+      "review_hash": "73752291980dcd47c453efdc60813eeb33cf87f1f35547982e8cca01aaff387c",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "decision_record",
       "discovered_by": [
         "decision_index",
@@ -3440,8 +3457,8 @@
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "reason": "active decision D-067; active decision D-068; active decision D-072; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; active decision D-091; active decision D-092; active decision D-094; active decision D-095; 문서가 .ai-team/policy/documentation.json, pyproject.toml, scripts/amplai_docs.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -3456,7 +3473,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309"
       },
-      "review_hash": "d8b5c425da4e40d632fd133c17310bd97bbeba021b6e4d8efc664223655390c1",
+      "review_hash": "91e36346e150b3198e12793194e605c8634a23b59033698773349363868641b2",
       "state": "ACTIVE"
     },
     {
@@ -3476,8 +3493,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -3492,7 +3509,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "f51c9e9bb3702f54023dc18c033b5a0da4f0137d12aefe1770972ddb20e1c62d",
+      "review_hash": "46fa41aab69d00bf94d0a86dfc8f2484072f9bf323fc671e16bc0ed1a5f24ecf",
       "state": "ACTIVE"
     },
     {
@@ -3512,8 +3529,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3528,7 +3545,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "f7819afb60e4229cc215ee98e70f87c8e415446c471a267b46d69c43277d2fa5",
+      "review_hash": "3a69ca71606c8cd03928ce7f51e2b29733102deeb16fbee7570706c0f5561c5b",
       "state": "ACTIVE"
     },
     {
@@ -3553,8 +3570,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3569,7 +3586,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "d71e8d19472091073bc77a12b186b49bccfdc399de999e73d89a798aa3ee4a5d",
+      "review_hash": "f649e8c6d6bd038151057e1a8b389e48616d677050fd5c22053253f0d0656081",
       "state": "ACTIVE"
     }
   ],
@@ -3673,22 +3690,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 58,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "evidence/*.json",
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3714,22 +3731,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 46,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3755,22 +3772,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 54,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/change.json",
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3796,22 +3813,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 46,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3837,22 +3854,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 167,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3878,22 +3895,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 55,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/work/*.json",
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3919,22 +3936,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 59,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "decisions/*.json",
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3960,22 +3977,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 57,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "questions/*.json",
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4001,22 +4018,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 167,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/",
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4042,22 +4059,22 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 167,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4124,22 +4141,22 @@
       "doc_id": "amplai-foundry:docs-proposals-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 9,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4165,22 +4182,22 @@
       "doc_id": "amplai-foundry:docs-proposals-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 19,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4206,22 +4223,22 @@
       "doc_id": "amplai-foundry:docs-proposals-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 9,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "patches/",
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4247,22 +4264,22 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 116,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4288,22 +4305,22 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 96,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "speckit-tasks/SKILL.md",
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4329,22 +4346,22 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 107,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4370,22 +4387,22 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 57,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".amplai/tasks/tasks.md",
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4411,22 +4428,22 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 36,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "ui/dist/",
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4452,22 +4469,22 @@
       "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 7,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/*TRACE.json",
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -4862,22 +4879,22 @@
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 3,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -4903,22 +4920,22 @@
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 141,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "a254066b0fcfca4ca1c47ea4a4d3ea554c16af4c0fc2ebaf8ad1934bec14c9dd",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -4985,22 +5002,22 @@
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 141,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/TEST_RESULTS.json",
       "reference_hash": "b516a38537dbbd146fca293992e4228274da951178a6698522227731fd8463de",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -5272,22 +5289,22 @@
       "doc_id": "amplai-foundry:readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 196,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5313,22 +5330,22 @@
       "doc_id": "amplai-foundry:readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 196,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/",
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5477,22 +5494,22 @@
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 86,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
       "reference": "supervisor/",
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5805,22 +5822,22 @@
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 145,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".ai-team/skills/handoff/SKILL.md",
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5928,22 +5945,22 @@
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
       "line": 144,
-      "method": "Rechecked the referencing line on this tree; the same reference the D-094 review classified, so its disposition still applies.",
+      "method": "Rechecked the referencing line; the same reference an earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".agents/skills/handoff/SKILL.md",
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6135,19 +6152,19 @@
       "doc_id": "amplai-foundry:agents-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6172,19 +6189,19 @@
       "doc_id": "amplai-foundry:ai-team-contracts-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6209,19 +6226,19 @@
       "doc_id": "amplai-foundry:ai-team-evidence-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6246,19 +6263,19 @@
       "doc_id": "amplai-foundry:ai-team-knowledge-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6283,19 +6300,19 @@
       "doc_id": "amplai-foundry:ai-team-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6320,19 +6337,19 @@
       "doc_id": "amplai-foundry:ai-team-runtime-decision-async-protocol-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6357,19 +6374,19 @@
       "doc_id": "amplai-foundry:ai-team-runtime-escalation-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6394,19 +6411,19 @@
       "doc_id": "amplai-foundry:ai-team-runtime-installation-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6431,19 +6448,19 @@
       "doc_id": "amplai-foundry:ai-team-runtime-workflow-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6468,19 +6485,19 @@
       "doc_id": "amplai-foundry:ai-team-verifiers-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6505,19 +6522,19 @@
       "doc_id": "amplai-foundry:claude-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6542,19 +6559,19 @@
       "doc_id": "amplai-foundry:docs-knowledge-rules-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6579,19 +6596,19 @@
       "doc_id": "amplai-foundry:docs-lifecycle-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6616,19 +6633,19 @@
       "doc_id": "amplai-foundry:docs-memory-domain-model-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6653,19 +6670,19 @@
       "doc_id": "amplai-foundry:docs-portable-development-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6690,19 +6707,19 @@
       "doc_id": "amplai-foundry:docs-project-pack-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6727,19 +6744,19 @@
       "doc_id": "amplai-foundry:docs-proposals-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6764,19 +6781,19 @@
       "doc_id": "amplai-foundry:docs-relationships-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -6801,19 +6818,19 @@
       "doc_id": "amplai-foundry:docs-roadmap-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6838,19 +6855,19 @@
       "doc_id": "amplai-foundry:docs-speckit-taskify-bridge-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6875,19 +6892,19 @@
       "doc_id": "amplai-foundry:docs-v3-dev02_execution-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
+      "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "The OpenCode row said secret_isolation fails and the driver is not wired; it now records the Work 031 qualification, the wiring as third candidate, the env guard and the remaining /proc risk (D-095, D-091).",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -6912,19 +6929,19 @@
       "doc_id": "amplai-foundry:docs-v3-dev02_transport_sources-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "reason": "Its OpenCode entry lists server API facts and the Work 017 measurement; Work 031 changes neither and the entry stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
         "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
         "metadata_owner": "sidecar",
@@ -6949,19 +6966,19 @@
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "The only OpenCode mention scopes the local recipe example (not an LLM connection); still true.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -6986,19 +7003,19 @@
       "doc_id": "amplai-foundry:docs-v3-dev03_research_sources-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
         "metadata_owner": "sidecar",
@@ -7023,19 +7040,19 @@
       "doc_id": "amplai-foundry:docs-v3-using_amplai_work-ko-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
+      "outcome": "reviewed_unchanged",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-      "reason": "Adds the amplai ops local-opencode row and opencode to local-driver.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
         "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
         "metadata_owner": "sidecar",
@@ -7060,19 +7077,19 @@
       "doc_id": "amplai-foundry:docs-versioning-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7097,19 +7114,19 @@
       "doc_id": "amplai-foundry:docs-vision-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7134,19 +7151,19 @@
       "doc_id": "amplai-foundry:docs-workstreams-v3-real-execution-decisions-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
+      "outcome": "reviewed_unchanged",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "Appends D-095 (OpenCode as the third driver); earlier entries unchanged.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -7171,19 +7188,19 @@
       "doc_id": "amplai-foundry:readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7208,19 +7225,19 @@
       "doc_id": "amplai-foundry:tests-e2e-artifacts-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -7245,19 +7262,19 @@
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-changelog-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7282,19 +7299,19 @@
       "doc_id": "amplai-foundry:tools-amplai-loop-kit-readme-md",
       "evidence": [
         {
-          "path": "specs/019-v3-completion/document-review-evidence-031.json",
-          "sha256": "4c27dfc4c73def8ee65f994e94ee74aea9c49d9fd3ca795a82af6fa4bf5466f2"
+          "path": "specs/019-v3-completion/document-review-evidence-032.json",
+          "sha256": "64aed7c61ce9561b10aa25dd6518d55d014822c8274c2322e5a6ac6a56f179a0"
         }
       ],
-      "impact_snapshot_sha256": "f585cea2ba8db506a1ac341ab08207f65a78c58871443aca8da8686546a2d271",
-      "method": "Grepped each document for OpenCode/opencode/OPENCODE_NOT_WIRED/local-opencode/driver wording and compared the hits with the branch diff against main of the changed sources, D-095 and the recorded runs in specs/031-opencode-driver/runs/.",
+      "impact_snapshot_sha256": "6779181625486431cf8810594b479e8da79fbccd40d1019b92dd996ea6ece5a5",
+      "method": "Grepped each document for broker/mitmproxy/credential/placeholder/D-091/Work 032 wording and compared the hits with the branch diff against main (a new probe script and Work 032 result files only).",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
-      "reason": "Work 031 wires OpenCode as the third driver and adds amplai ops local-opencode. This document does not mention OpenCode, driver candidates or that command, and stays accurate.",
-      "reviewer": "claude-opus-5.5-work031-document-review",
+      "reason": "Work 032 adds a standalone broker probe script and its measured results; no product path, command, configuration or decision changes. This document stays accurate.",
+      "reviewer": "claude-opus-5.5-work032-document-review",
       "snapshot": {
-        "candidate_revision": "e3715843f47866e6de82f3aa5341ee44abb2b20d",
-        "candidate_sha256": "4c06aa7369641a7e6fcf58b60588f7e35327c62947b4a31b1b3f6f93d7341a53",
+        "candidate_revision": "9e84c4bd85c07a95baacb04a02d45e2503c5ecc3",
+        "candidate_sha256": "aad979e11bc0bc1cd5ec573d2d240ed5f52f1e50430d2d7994d5f565467eb000",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
