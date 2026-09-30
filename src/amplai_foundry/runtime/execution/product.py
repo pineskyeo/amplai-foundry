@@ -29,7 +29,7 @@ from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
-from . import prompts, releases
+from . import context_assembly, policies, prompts, releases
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
 from .steering import SteeringService
@@ -78,6 +78,9 @@ class AppConfig:
     # (possibly another branch) is never the implicit base.
     base_branch: str = "main"
     remote: str = "origin"
+    # Work 033 S3 (interfaces.md §3.3): facts for the env_bootstrap component (D-096)
+    tool_versions: tuple[tuple[str, str], ...] = ()  # container profile "tools" (deployment/*.json)
+    quick_verifiers: tuple[str, ...] = ()  # verifier ids usable as fast checks (L7)
 
 
 def git_fresh_base(repo: Path, remote: str, branch: str) -> str:
@@ -353,19 +356,6 @@ class LocalExecutionService:
         )
         if digest(global_ref) not in self.verification.global_runners:
             self.verification.register_global(global_ref, self.global_factory(app))
-        # Task-class baseline policy (design/16:16): operator decision 2026-09-28, D-079.
-        router_ref = self._put(
-            "router-policy",
-            f"{a}-router",
-            {
-                "policy_id": f"{a}-router",
-                "scope": scope.wire(),
-                "kind": "task_class_baseline",
-                "order": {"*": list(ROUTER_ORDER)},
-                "source": "operator decisions 2026-09-28 (D-079): Codex first, Claude fallback;"
-                " 2026-09-29 (Work 031 D4): OpenCode appended",
-            },
-        )
         # the class-A prompt surface each composition pins (D-089 S1); the baseline is the
         # IMPLEMENTER text the loop used before bundles, byte for byte
         prompt_ref = self._put(
@@ -375,25 +365,29 @@ class LocalExecutionService:
                 prompts.BASELINE_ID, prompts.IMPLEMENTER_BASELINE, "built-in baseline (Work 018)"
             ),
         )
+        # The v1 manifest (D-096, interfaces.md §2.3): context, budget and router carriers name
+        # the baseline components, which reproduce today's behaviour. The router keeps the id
+        # <app>-router in the layered shape; its task-class order is the operator's (D-079).
+        carriers = self._baseline_carriers(a, prompt_ref)
+        router_ref = carriers["router_policy_ref"]
         compositions = {}
         for driver_id, refs in drivers.items():
             name = f"{a}-{driver_id.split('-')[0]}"
-            compositions[driver_id] = self._put(
-                "harness-composition",
+            compositions[driver_id] = self._put_composition(
                 name,
                 {
                     "schema_version": "3.0.0",
                     "composition_id": name,
-                    "revision": 1,
                     "model_profile_ref": refs["model"],
                     "driver_profile_ref": refs["driver"],
                     "sandbox_profile_ref": refs["environment"],
                     "pack_refs": [],
                     "prompt_bundle_ref": prompt_ref,
                     "router_policy_ref": router_ref,
-                    "context_policy_ref": policy_ref,
+                    "context_policy_ref": carriers["context_policy_ref"],
+                    # the protected record stays the verification policy (class C, §2.3)
                     "verification_policy_ref": policy_ref,
-                    "budget_policy_ref": policy_ref,
+                    "budget_policy_ref": carriers["budget_policy_ref"],
                     "protocol_major": 3,
                     "qualification_ref": refs["qualification"],
                     "created_at": "2026-09-28T00:00:00Z",
@@ -439,6 +433,53 @@ class LocalExecutionService:
         result: dict[str, Any] = self.goals.apps.register(self.actors.service, binding)
         return result
 
+    def _baseline_carriers(self, app_id: str, prompt_ref: dict[str, Any]) -> dict[str, Any]:
+        """Baseline components and the carriers of the v1 manifest (idempotent per boot)."""
+        from ...meta_harness.components import ComponentService
+        from ...meta_harness.manifest import ManifestService
+
+        manifests = ManifestService(
+            self.store, self.scope, self.runtime.contracts, ComponentService(self.store, self.scope)
+        )
+        manifest = manifests.baseline(
+            self.actors.service,
+            app_id,
+            prompt_bundle_ref=prompt_ref,
+            route_order=list(ROUTER_ORDER),
+        )
+        return manifests.write(self.actors.service, manifest, app_id=app_id)
+
+    def _put_composition(self, name: str, value: dict[str, Any]) -> dict[str, Any]:
+        """Write a composition whose ``revision`` field is the store revision it is written at
+        (interfaces.md §4.1, row product.py:387); the latest one when nothing else changed.
+
+        §14 Q12: the only reader of the field is ``CompositionService.register``, which stores a
+        candidate derived from this value at that revision; no reader compares the two.
+        """
+        kind = "harness-composition"
+        existing = [r for r, _ in self.store.list_objects(self.scope, kind) if r["id"] == name]
+        latest = max(existing, key=lambda r: r["revision"]) if existing else None
+        if latest and digest({**value, "revision": latest["revision"]}) == latest["digest"]:
+            return latest
+        return self._put(kind, name, {**value, "revision": latest["revision"] + 1 if latest else 1})
+
+    def _budget_policy(self, composition_ref: dict[str, Any]) -> policies.BudgetPolicy:
+        """The budget policy of a composition, under the deployment ceiling (D-096, IC-21)."""
+        composition = self.store.get(self.scope, "harness-composition", composition_ref)
+        return policies.budget_policy(
+            self.store, self.scope, composition, ceiling=self.budget.wire()
+        )
+
+    def _repo_facts(self, app: AppConfig, workspace: Path) -> dict[str, Any]:
+        """Facts the env_bootstrap component may show (interfaces.md §4.1, row product.py:552-569):
+        the base tree, read from the plan workspace before it is discarded, and tool versions."""
+        tree, truncated = context_assembly.repo_tree(workspace)
+        return {
+            "tree": tree,
+            "tree_truncated": truncated,
+            "tool_versions": [list(pair) for pair in app.tool_versions],
+        }
+
     # -- composition selection (design/16:14-16, D-079) ---------------------------------------
     def select_composition(
         self,
@@ -456,8 +497,9 @@ class LocalExecutionService:
 
         if installed.router_ref is None:
             raise Hold("ROUTER_POLICY", "The app has no router policy")
-        policy = self.store.get(self.scope, "router-policy", installed.router_ref)
-        order = policy["order"].get(task_class or "*") or policy["order"]["*"]
+        # the layered router (D-096) or a legacy task_class_baseline one, same order semantics
+        policy = policies.router_policy(self.store, self.scope, installed.router_ref)
+        order = policy.order.get(task_class or "*") or policy.order["*"]
         # the active release may carry a promoted class-A candidate of a composition (D-089 S2)
         available = releases.effective(self.store, self.scope, installed.compositions)
         if pin is not None:
@@ -564,6 +606,10 @@ class LocalExecutionService:
                 drafted = planner.draft(
                     intent["text"], app.app_id, verifiers, workspaces[app.app_id], mode=mode
                 )
+            # before the discard: the base facts env_bootstrap may show (D-096)
+            repo_facts = {
+                a: self._repo_facts(self.apps[a].config, w) for a, w in workspaces.items()
+            }
         finally:
             for workspace in workspaces.values():
                 self.workspaces.discard(workspace)
@@ -599,6 +645,7 @@ class LocalExecutionService:
             ),
             "work_items": items,
             "base_check": base_check,
+            "repo_facts": repo_facts,
             "created_at": now(),
         }
         if draft["questions"]:
@@ -644,14 +691,16 @@ class LocalExecutionService:
             token_budget=8192,
             assembled_at=now(),
         )
+        # selected before compiling: the composition's budget policy sets the root and node
+        # budgets (interfaces.md §2.3, IC-21)
+        chosen = self.select_composition(installed, draft.get("task_class"), pin=composition)
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
             mode=mode, items=items, policy_ref=policy_ref,
+            budget=self._budget_policy(chosen["ref"]),
         )  # fmt: skip
         record["acceptance_map"] = acceptance_map
-        record["composition"] = self.select_composition(
-            installed, draft.get("task_class"), pin=composition
-        )
+        record["composition"] = chosen
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
@@ -720,11 +769,14 @@ class LocalExecutionService:
             ]
         )  # fmt: skip
         revision = previous["revision"] + 1
+        # as in plan: the selected composition's budget policy sets the node budgets
+        chosen = self.select_composition(installed, draft.get("task_class"), pin=pin)
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
             previous["context_bundle_ref"], installed, draft, mode=mode, items=items,
             policy_ref=previous["policy_ref"], revision=revision,
             previous_graph_ref=plan["graph_ref"], replan_reason=reason[:4000],
+            budget=self._budget_policy(chosen["ref"]),
         )  # fmt: skip
         record = {
             **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
@@ -734,7 +786,7 @@ class LocalExecutionService:
             "acceptance_map": acceptance_map,
             "planner_usage": drafted.get("usage"),
             "planned_with": {k: planning[k] for k in ("driver_id", "model")},
-            "composition": self.select_composition(installed, draft.get("task_class"), pin=pin),
+            "composition": chosen,
             "contract_ref": contract_ref,
             "graph_ref": graph_ref,
             "revision": revision,
@@ -833,11 +885,19 @@ class LocalExecutionService:
         revision: int = 1,
         previous_graph_ref: dict[str, Any] | None = None,
         replan_reason: str | None = None,
+        budget: policies.BudgetPolicy | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
-        """Deterministic contract + graph: one node per work item (a one-app goal is one)."""
+        """Deterministic contract + graph: one node per work item (a one-app goal is one).
+
+        ``budget`` is the goal composition's budget policy (v1 without one): the root keeps
+        min(limits, deployment ceiling) per field; each node takes the attempt policy's attempts
+        and (root tokens - aux_max_tokens) // (attempts x nodes) (interfaces.md §2.3, IC-21).
+        """
         scope, service = self.scope, self.actors.service
         policy_ref = policy_ref or installed.policy_ref
-        root = self.budget.wire()
+        ceiling = self.budget.wire()
+        budget = budget or policies.v1_budget(ceiling)
+        root = policies.root_budget(ceiling, budget.limits)
         draft = _clean_draft(draft)
         items = items or [
             {"app": installed.config.app_id, "objective": draft["objective"],
@@ -1030,10 +1090,9 @@ class LocalExecutionService:
                     "verification_profile_ref": acceptance[int(ids[0][3:]) - 1]["verifier_ref"],
                     "capabilities": mode_capabilities(a, mode),
                     "resource_claims": [{"resource": "sandbox:" + a, "mode": "exclusive_write"}],
-                    "budget": {
-                        **root,
-                        "max_tokens": root["max_tokens"] // (root["max_attempts"] * len(items)),
-                    },
+                    "budget": policies.node_budget(
+                        root, budget.attempt_policy, budget.limits, len(items)
+                    ),
                 }
             )
         graph = {

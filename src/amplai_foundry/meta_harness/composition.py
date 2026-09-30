@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -20,6 +21,11 @@ MUTABLE_B = frozenset(
         "budget_policy_ref",
         "qualification_ref",
     }
+)
+# the fields that carry the manifest (interfaces.md §2.3); a change there is classified by the
+# changed components, MUTABLE_A/B stay the rule for every other field (§1.2)
+CARRIER_FIELDS = frozenset(
+    {"prompt_bundle_ref", "context_policy_ref", "budget_policy_ref", "router_policy_ref"}
 )
 
 
@@ -57,6 +63,14 @@ class CompositionService:
     def classify(
         self, scope: Scope, baseline_ref: dict[str, Any], candidate_ref: dict[str, Any]
     ) -> dict[str, Any]:
+        """Surface class of a candidate (interfaces.md §3.2, D-096).
+
+        1. a protected field changed -> C; 2. a field outside MUTABLE_A/B changed -> D;
+        3. only carrier fields changed -> the highest class among the changed components;
+        4. otherwise (model, driver, sandbox, packs, qualification) -> B.
+        A carrier whose components cannot be read (another kind or shape) counts as B, the
+        higher of the two mutable classes, never as A.
+        """
         baseline = self.store.get(scope, "harness-composition", baseline_ref)
         candidate = self.store.get(scope, "harness-composition", candidate_ref)
         ignored = {"composition_id", "revision", "created_at"}
@@ -65,19 +79,44 @@ class CompositionService:
             for k in set(baseline) | set(candidate)
             if k not in ignored and baseline.get(k) != candidate.get(k)
         }
+        changes, unreadable = self._component_changes(scope, baseline, candidate, changed)
         if changed & PROTECTED_FIELDS:
             surface = "C"
         elif changed - MUTABLE_A - MUTABLE_B:
             surface = "D"
-        elif changed & MUTABLE_B:
-            surface = "B"
+        elif changed <= CARRIER_FIELDS:
+            classes = {c.surface_class for c in changes}
+            surface = "B" if unreadable or "B" in classes else "A"
         else:
-            surface = "A"
+            surface = "B"
         return {
             "surface_class": surface,
             "changed_fields": sorted(changed),
             "protected": sorted(changed & PROTECTED_FIELDS),
+            "changed_components": [asdict(c) for c in changes],
         }
+
+    def _component_changes(
+        self,
+        scope: Scope,
+        baseline: dict[str, Any],
+        candidate: dict[str, Any],
+        changed: set[str],
+    ) -> tuple[list[Any], list[str]]:
+        """ComponentChanges behind the changed carrier fields, and the unreadable fields."""
+        from .components import ComponentService
+        from .manifest import ManifestService
+
+        components = ComponentService(self.store, scope)
+        manifests = ManifestService(self.store, scope, self.contracts, components)
+        changes: list[Any] = []
+        unreadable: list[str] = []
+        for field in sorted(changed & CARRIER_FIELDS):
+            try:
+                changes += manifests.carrier_changes(field, baseline[field], candidate[field])
+            except (Hold, RuntimeFault, KeyError, TypeError):
+                unreadable.append(field)
+        return changes, unreadable
 
     def select(
         self,

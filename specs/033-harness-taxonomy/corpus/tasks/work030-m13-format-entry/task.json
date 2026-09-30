@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-m13-format-entry",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/m13-format-entry",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/changelog.py` with a function `format_entry(version: str, date: str, changes: list[str]) -> str` that produces one markdown changelog entry. The first line is `## <version> - <date>` (version and date inserted exactly as given; the version is not validated). Then comes one blank line. Then one line `- <change>` per change, in input order, where each change is first stripped of surrounding whitespace (Python `str.strip()`); a change that is empty after stripping is skipped. If no non-empty change remains (including an empty `changes` list), the body is the single line `- no changes`. The returned text ends with exactly one trailing newline (`\\n`) and has no other blank lines. `date` must match the shape `YYYY-MM-DD` exactly: four ASCII digits, a dash, two ASCII digits, a dash, two ASCII digits, and nothing before or after (no surrounding whitespace, no trailing newline). Only this shape is checked, not whether the date exists on a calendar (`2024-13-45` is accepted). A date that does not match raises `ValueError`, also when `changes` is empty.",
+  "acceptance": [
+    "format_entry('1.2.0', '2026-09-30', ['add x', 'fix y']) returns '## 1.2.0 - 2026-09-30\\n\\n- add x\\n- fix y\\n'",
+    "Changes are stripped ('  add x \\t' becomes '- add x') and whitespace-only or empty changes are skipped, keeping the order of the rest",
+    "format_entry('1.0.0', '2026-01-01', []) and a list of only empty or blank changes return '## 1.0.0 - 2026-01-01\\n\\n- no changes\\n'",
+    "The result ends with exactly one '\\n' and never contains two consecutive blank lines",
+    "'2024-13-45' and '0000-00-00' are accepted",
+    "'2026-9-30', '26-09-30', '2026/09/30', '2026-09-30 ', ' 2026-09-30', '2026-09-30\\n', '', 'yesterday' and '20260930' raise ValueError"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

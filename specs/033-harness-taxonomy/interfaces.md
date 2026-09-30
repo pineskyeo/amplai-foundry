@@ -2450,6 +2450,11 @@ domains) is met by own tasks alone, whatever TB2 admits.
 `build_index` at freeze collects, from validation and holdout cases only: task ids; hidden test
 file names and test function names (`def test_…` in hidden files); reference-only identifiers
 (identifiers of the reference files that appear neither in the base tree nor in the task text).
+Refined 2026-10-01 (W1 finding: 235 plain-word tokens from the 20 Work 030 tasks): a
+reference-only identifier is a token only when it is distinctive — a compound name with `_` or mixed
+case that is not a dunder, and not a Python keyword, builtin or standard-library module name
+(`leak_gate.COMPOUND`, `COMMON_NAMES`). Task ids and hidden test names are tokens whatever their
+shape.
 `LeakGate.scan` walks every string of a value (component content, proposer output) and matches ids
 case-insensitively and identifiers case-sensitively on word boundaries. Hits become 3.0.0 findings
 (`LEAK_GATE`, blocking); `MetaHarness.screen` refuses them (§3.9); a planted leak test is part of
@@ -2706,3 +2711,30 @@ Only true unknowns; each has a verification step. None of them may be implemente
   plan binding, the verifier profile and the run record (`verification/runtime/service.py:309-313`);
   the app-binding `environment_refs` requirement is in goal validation
   (`runtime/goals/validation.py:40-60`). Both are covered in §10.5 step 6.
+
+## Clarifications After W0–W1 (2026-10-01)
+
+Decided by the orchestrator from the W0–W1 agents' findings (engineering choices; none changes an
+authority or policy decision):
+
+- **Leak gate** (§10.4): distinctive reference identifiers only (see §10.4).
+- **Corpus ids** (§2.7): `CorpusService.freeze` gives each frozen corpus its own id, so the eval-corpus
+  id is `<corpus_id>-<version>` at revision 1 (a forced deviation from §2.0 versioning); the index
+  ids stay `taskindex-<corpus_id>` and `leak-<corpus_id>` with store revisions.
+- **Evaluator** (§7): a success difference inside the noise band ("unresolved") maps to
+  `inconclusive`; a safety failure in a reference arm gives `inconclusive` with reason
+  `reference_safety_failure` (never `regression`); versioned plans that declare new fields without
+  `evaluator_version_ref` are refused (`ANALYSIS_PLAN`); new descriptive field names used by S1
+  (`missing_token_pairs`, `success_axis`, `cost_axis`, `safety_failures_by_arm`,
+  `tokens_delta_mean`) are part of the contract.
+- **Feedback form v1** (§2.2): it reproduces today's rendering byte for byte, including an existing
+  defect — a string-valued detail is split into characters (e.g. `command_id` "unit" renders as
+  "u, n, i, t"). The fix is a new `feedback_form` version (an ordinary candidate), not a v1 change.
+- **Ownership**: S4 may edit `runtime/execution/policies.py` to fill `CODEX_CONFIG_ALLOWLIST` and the
+  Claude driver-option allowlist; `route_policy.baseline` needs a per-app id (S4).
+- **Golden oracles** (§4.2): the line ranges cited for `prompts.py` and `planner_codex.py` were off;
+  the oracles in `tests/golden033/` cite the real lines. `tests/e2e/test_033_golden_prompt.py`
+  builds production-shaped plans (work items, acceptance map, node); S3 extended `make_loop`
+  without changing expected text.
+- **Plan-time router check**: S3 holds a goal whose composition carries router parts it cannot
+  honour before the first claim; refusing at plan time (before the planner turn) is S4/S10.

@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-l15-cli-summary",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/l15-cli-summary",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a command-line entry point for the version summary. Create `demo_app/cli.py` with `main(argv: list[str], stdin: TextIO, stdout: TextIO, stderr: TextIO) -> int` and `demo_app/__main__.py`.\n\nBehavior of `main`:\n- `argv` is the list of command-line arguments without the program name. The only accepted arguments are the exact strings `--upper` and `--json`, each optionally, in any order; giving the same option more than once has the same effect as giving it once. Any other argument (an unknown option, a positional argument, an empty string, `--upper=1`, `-h`, ...) is a usage error: `main` writes exactly `error: usage` followed by one newline to `stderr`, writes nothing to `stdout`, and returns 2. Arguments are checked first, before `stdin` is read; with a bad argument `stdin` is never read.\n- Otherwise `main` reads all of `stdin` and parses it as JSON (`json.loads` on the full text; surrounding whitespace and a trailing newline are fine). The input is valid only if it is a JSON object whose `package_version` is a string of length at least 1 (whitespace-only counts as non-empty) and whose `stage` is a string (the empty string is allowed). Other keys are ignored. `package_version` or `stage` missing, `null`, or of any non-string type is invalid.\n- Invalid input (not valid JSON including empty input, JSON that is not an object such as a list or a number, or an object failing the rules above) makes `main` write one line `error: <reason>` plus a newline to `stderr`, where `<reason>` is a non-empty text of your choosing that contains no newline, write nothing to `stdout`, and return 2.\n- For valid input the summary line is exactly the text that `summarize(info)` from `demo_app/version_report.py` returns for the parsed object (for example `amplai 3.0.0.dev3 (DEV-03)`). `main` writes the output described next to `stdout`, writes nothing to `stderr`, and returns 0.\n- Plain output (no options) is the summary line followed by one newline.\n- With `--upper` the summary line is upper-cased with `str.upper()` before it is written.\n- With `--json` the output is instead the compact JSON object with the single key `summary`, produced exactly as `json.dumps({\"summary\": line}, separators=(\",\", \":\"))` (so `{\"summary\":\"amplai 1.0.0 (RC)\"}`, non-ASCII characters escaped as `\\uXXXX` by the default `ensure_ascii`), followed by one newline.\n- With both `--upper` and `--json`, `--upper` is applied to the summary text first and the result is then wrapped in the JSON object.\n- `main` never raises for bad arguments or bad input and never calls `sys.exit`.\n\n`demo_app/__main__.py` makes `python -m demo_app [args]` call `main(sys.argv[1:], sys.stdin, sys.stdout, sys.stderr)` and exit the process with the returned code (`sys.exit(code)`). The call happens only when the module is run as `__main__`, so importing `demo_app.__main__` has no side effects. The existing `summarize` function and its test must keep working.",
+  "acceptance": [
+    "main([], stdin, stdout, stderr) with stdin '{\"package_version\": \"3.0.0.dev3\", \"stage\": \"DEV-03\"}' writes 'amplai 3.0.0.dev3 (DEV-03)\\n' to stdout, nothing to stderr, and returns 0",
+    "--upper upper-cases the whole line ('AMPLAI 3.0.0.DEV3 (DEV-03)\\n'); --json prints '{\"summary\":\"amplai 3.0.0.dev3 (DEV-03)\"}\\n'; with both, the JSON summary value is the upper-cased line",
+    "Options may appear in any order and may be repeated; extra keys in the input object are ignored; an empty stage string is valid ('amplai 1.0.0 ()')",
+    "Invalid JSON (including empty stdin), a non-object JSON value, a missing or empty or non-string package_version, and a missing or non-string stage each produce 'error: <non-empty single-line reason>\\n' on stderr, nothing on stdout, and return code 2",
+    "An unknown option or any extra positional argument produces exactly 'error: usage\\n' on stderr, nothing on stdout, return code 2, and stdin is not read",
+    "`python -m demo_app` run as a subprocess with the JSON on its stdin prints the summary and exits 0, and exits 2 with 'error: ...' on stderr for invalid input"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,29 @@
+{
+  "task_id": "work030-m08-summarize-missing",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/m08-summarize-missing",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Change `summarize(info)` in `demo_app/version_report.py` so it copes with incomplete input. Define a new exception class `InvalidInfo`, a subclass of `ValueError`, in the same module `demo_app/version_report.py`. `summarize` still returns `amplai <package_version> (<stage>)` for complete input. If the `stage` key is missing or its value is the empty string, the stage part becomes the literal text `unknown stage`, so the result is `amplai <package_version> (unknown stage)`. If the `package_version` key is missing, or its value is not a `str`, or its value is the empty string, `summarize` raises `InvalidInfo`. The `package_version` check applies regardless of the `stage` value. The version text is used exactly as given (no stripping or other changes).",
+  "acceptance": [
+    "summarize({'package_version': '3.0.0.dev3', 'stage': 'DEV-03'}) still returns 'amplai 3.0.0.dev3 (DEV-03)'",
+    "summarize({'package_version': '1.2.3'}) returns 'amplai 1.2.3 (unknown stage)' and summarize({'package_version': '1.2.3', 'stage': ''}) returns 'amplai 1.2.3 (unknown stage)'",
+    "InvalidInfo is defined in demo_app/version_report.py and issubclass(InvalidInfo, ValueError) is true",
+    "summarize raises InvalidInfo when package_version is missing, is an empty string, or is not a str (for example the int 3 or None), whether or not stage is present",
+    "Extra keys in info are ignored"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,21 @@
+{
+  "corpus_id": "amplai-bench-v2",
+  "version": "2.0.0",
+  "split_seed": null,
+  "bases": {
+    "bench": {
+      "dir": "bases/bench",
+      "commit_file": "bases/bench.commit"
+    },
+    "demo": {
+      "app_id": "amplai-demo-app",
+      "dir": "bases/demo",
+      "base_commit": "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b"
+    },
+    "tb2": {
+      "app_id": "amplai-tb2",
+      "dir": "bases/tb2",
+      "commits_file": "bases/tb2.commits.json"
+    }
+  }
+}

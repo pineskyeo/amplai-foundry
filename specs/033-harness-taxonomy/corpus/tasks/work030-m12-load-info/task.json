@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-m12-load-info",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/m12-load-info",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/loader.py` with a function `load_info(text: str) -> dict` and an exception class `InfoError`, a subclass of `ValueError`, both defined in `demo_app/loader.py`. `load_info` parses `text` as JSON. The parsed value must be a JSON object that has a key `package_version` whose value is a non-empty string (length at least 1; no stripping, so a string of spaces counts as non-empty) and a key `stage` whose value is a string (the empty string is allowed). On success it returns the parsed dict unchanged, including any extra keys with any value types. Every failure raises `InfoError` (not a bare `json.JSONDecodeError` or `KeyError`): text that is not valid JSON (including empty text), JSON whose top level is not an object (array, string, number, boolean or null), a missing `package_version` or `stage` key, or a value of the wrong type (for example a number, boolean, null, list or object). The message of every `InfoError` starts with the exact text `invalid info:`.",
+  "acceptance": [
+    "load_info('{\"package_version\": \"3.0.0.dev3\", \"stage\": \"DEV-03\"}') returns {'package_version': '3.0.0.dev3', 'stage': 'DEV-03'}",
+    "An empty stage ('{\"package_version\": \"1.0.0\", \"stage\": \"\"}') is accepted; extra keys such as {\"n\": 1, \"tags\": [1, 2]} are kept in the result",
+    "Invalid JSON such as '', '{', 'not json' raises InfoError",
+    "Valid JSON that is not an object ('[]', '\"x\"', '3', 'true', 'null') raises InfoError",
+    "A missing package_version or stage key, an empty package_version, or a non-string package_version or stage (3, null, true, [], {}) raises InfoError",
+    "str(error) starts with 'invalid info:' for every failure kind, and InfoError is an instance of ValueError"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

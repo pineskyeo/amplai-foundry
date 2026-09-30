@@ -1,0 +1,32 @@
+{
+  "task_id": "work030-s05-truncate",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/s05-truncate",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a new module `demo_app/formatting.py` with a function `truncate(text: str, width: int) -> str` that shortens text to at most `width` characters (Python `len`). If `width` is below 1, raise ValueError (this check comes first, even when `text` is empty or short). If `len(text) <= width`, return `text` unchanged. Otherwise return the first `width - 1` characters of `text` followed by a single ellipsis character `…` (U+2026), so the result is exactly `width` characters long. Nothing is stripped or trimmed: spaces inside the kept part stay as they are.",
+  "acceptance": [
+    "truncate('hello', 5) returns 'hello' and truncate('hello', 10) returns 'hello' (text that fits is unchanged)",
+    "truncate('hello world', 8) returns 'hello w…' (7 kept characters plus the ellipsis)",
+    "truncate('abcdef', 4) returns 'abc…' and truncate('abcde', 4) returns 'abc…'",
+    "truncate('abc', 1) returns '…' and truncate('a', 1) returns 'a'",
+    "truncate('', 1) returns '' and truncate('', 5) returns ''",
+    "The kept part is not stripped: truncate('ab cd', 4) returns 'ab …' (the space stays before the ellipsis)",
+    "For any text longer than width, the result has exactly `width` characters and ends with '…' (U+2026), never three dots",
+    "truncate('abc', 0), truncate('abc', -3) and truncate('', 0) raise ValueError"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,13 @@
+You are the IMPLEMENTER for AMPLAI. The current directory is a copy of the amplai-demo-app repository at commit 9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b (no .git, network limited).
+Make the change below. Do not commit. When you are done, run the acceptance commands yourself; the result is judged by running them on a clean copy with exactly your file changes applied.
+
+Objective: Add a module `demo_app/semver.py` with a function `parse_version(text: str) -> tuple[int, int, int]` that turns a `MAJOR.MINOR.PATCH` string into a tuple of three ints. A single leading `v` is allowed (`v1.2.3`). Surrounding whitespace is ignored.
+In scope: demo_app/; tests/
+Do not: no change outside the stated behaviour
+Constraints: keep the existing public behaviour and tests passing
+Acceptance (each must pass):
+- AC-1: parse_version('1.2.3') returns (1, 2, 3) and parse_version('v10.0.7') returns (10, 0, 7)  command: `python -m pytest -q`
+- AC-2: parse_version('  2.0.1 ') returns (2, 0, 1)  command: `python -m pytest -q`
+- AC-3: Text with fewer or more than three dot-separated parts, an empty string, or a non-numeric part raises ValueError  command: `python -m pytest -q`
+- AC-4: A negative number or a part with a sign (for example '1.-2.3' or '+1.2.3') raises ValueError  command: `python -m pytest -q`
+- AC-5: the linter passes  command: `ruff check .`
