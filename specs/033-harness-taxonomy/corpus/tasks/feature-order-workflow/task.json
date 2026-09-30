@@ -1,0 +1,47 @@
+{
+  "task_id": "feature-order-workflow",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/order-workflow",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add an order status workflow to stockroom: which status changes are allowed, a history of the changes an order book has seen, and an operation that moves an order to a new status together with its effect on stock.\n\nCreate the module `stockroom/workflow.py` with:\n\n- `can_transition(old: str, new: str) -> bool`: the allowed changes are `open` -> `paid`, `open` -> `cancelled`, `paid` -> `shipped` and `paid` -> `cancelled`. Everything else is not allowed, including staying in the same status, leaving `shipped` or `cancelled`, and any name that is not a known status (the function returns `False` for those and never raises).\n- `advance(order: Order, new_status: str) -> Order`: returns a copy of `order` that differs only in its status; the given order is not changed. A `new_status` that is not one of `models.STATUSES` raises `ParseError`; a known status that `can_transition` refuses raises `TransitionError`.\n- `apply_transition(book: OrderBook, order_id: str, new_status: str, inventory: Inventory | None = None) -> Order`: moves the order with that id in `book` to `new_status` and returns the updated order.\n\nDefine the new exception class `TransitionError` in `stockroom/errors.py`; it is a subclass of `StockroomError`.\n\nAdd two methods to `OrderBook` in `stockroom/orders.py`:\n\n- `replace(order: Order) -> None` swaps the given order in for the stored order with the same `order_id`. The replaced order keeps its position: iterating the book, `by_customer` ties and `revenue_by_month` all see it where the old one was. An id that is not in the book raises `StockroomError`. When the status of the new order differs from the stored one, the pair `(old_status, new_status)` is appended to the history of that order id.\n- `history(order_id: str) -> list[tuple[str, str]]` returns a new list of the recorded `(old_status, new_status)` pairs of that order, oldest first; it is empty for an order that never changed, and an unknown id raises `StockroomError`. Orders added with `add` start with an empty history.\n\n`apply_transition` first finds the order (an unknown id raises `StockroomError`), then checks the change like `advance` does (same errors). When an `inventory` is given, the change also affects stock, line by line in the order of the order's lines: moving to `cancelled` calls `inventory.release(sku, quantity)` for each line, moving to `shipped` calls `inventory.ship(sku, quantity)` for each line, and moving to `paid` does nothing to stock. Finally the updated order replaces the old one in the book through `replace` (so the history gets its entry). The operation is all-or-nothing: if any stock call raises `StockError`, that error propagates and neither the book (order, position, history) nor the inventory has changed, even when earlier lines had been applied. When any earlier check fails (unknown order, unknown or refused status) nothing changes either. Without an `inventory` only the book is updated.",
+  "acceptance": [
+    "can_transition allows exactly open->paid, open->cancelled, paid->shipped and paid->cancelled and returns False for every other pair, including equal statuses, shipped/cancelled as the old status and unknown names",
+    "advance returns a copy with only the status changed and leaves the given order untouched; an unknown status raises ParseError and a refused change raises TransitionError, which is defined in stockroom/errors.py as a StockroomError subclass",
+    "OrderBook.replace swaps in an order with the same id at the same position and raises StockroomError for an unknown id; OrderBook.history returns a new list of (old, new) pairs recorded when replace changes the status (none when the status is unchanged or the order was only added) and raises StockroomError for an unknown id",
+    "apply_transition without an inventory updates the order in the book, returns the updated order, records the change in the history, keeps the order's position, and changes nothing when the order is unknown or the change is refused",
+    "With an inventory, moving to cancelled releases and moving to shipped ships each line's quantity (lines of the same SKU add up), and moving to paid leaves stock alone",
+    "apply_transition is all-or-nothing: a StockError from any line propagates and leaves both the book (order, position, history) and the inventory exactly as they were"
+  ],
+  "hidden_map": {
+    "test_can_transition_table": 0,
+    "test_can_transition_unknown_names": 0,
+    "test_advance_returns_copy": 1,
+    "test_advance_errors": 1,
+    "test_transition_error_is_defined_in_errors": 1,
+    "test_replace_keeps_position": 2,
+    "test_replace_unknown_id": 2,
+    "test_history_records_status_changes": 2,
+    "test_history_is_a_copy": 2,
+    "test_apply_without_inventory": 3,
+    "test_apply_failures_change_nothing": 3,
+    "test_apply_cancel_releases_stock": 4,
+    "test_apply_ship_ships_stock": 4,
+    "test_apply_paid_leaves_stock": 4,
+    "test_apply_is_all_or_nothing_on_cancel": 5,
+    "test_apply_is_all_or_nothing_on_ship": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

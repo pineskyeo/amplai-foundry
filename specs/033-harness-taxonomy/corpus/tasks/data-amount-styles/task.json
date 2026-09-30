@@ -1,0 +1,43 @@
+{
+  "task_id": "data-amount-styles",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Prices are shown only in one style (`$1,234.56`). Add a new module `stockroom/amounts.py` with two functions on integer cents. `format_amount(cents, *, style='us', symbol='', negative='minus', symbol_position='prefix') -> str` writes an amount with exactly two decimals. The styles are `us` (`1,234,567.89`), `eu` (`1.234.567,89`), `ch` (`1'234'567.89`, the ASCII apostrophe), `in` (Indian grouping: the last three integer digits, then groups of two, `12,34,567.89`, and `1,23,45,67,890.12`; integers of up to three digits are not grouped) and `plain` (`1234567.89`, no grouping); `us`, `eu` and `ch` group by three. A non-empty `symbol` is put directly before the number for `symbol_position='prefix'` and after the number with one space between for `'suffix'`. Negative amounts (`cents < 0`) are written with `negative='minus'` as `-` before everything (`-€1,234.56`), `'paren'` as the whole text, symbol included, in parentheses (`(€1,234.56)`), or `'trailing'` as `-` after everything (`€1,234.56-`); zero and positive amounts have no sign. An unknown `style`, `negative` or `symbol_position` raises `ValueError`. `parse_amount(text, *, style='us', symbol='') -> int` is the inverse and returns cents. It accepts, after stripping whitespace around the whole text, exactly these forms: one sign form (none, a leading `-`, a pair of parentheses around the rest, or a trailing `-`), then, when `symbol` is given and non-empty, optionally that symbol before the number (with any whitespace after it) or after the number (with any whitespace before it), then the number. The number has an integer part and optionally a decimal part of one or two digits after the style's decimal separator (`.` except `,` for `eu`; a decimal separator without digits, a missing integer part and more than two decimals are refused). The integer part is either plain digits, or grouped exactly as `format_amount` would group it for that style (`ch` accepts both `'` and U+2019 as the group separator, each separator independently); any other grouping is refused, for instance `1,23`, `1,,234` or `,123` for `us`, `1.23` for `eu`, `123,456` for `in`, and any separator at all for `plain`. Digits are the ASCII digits `0-9` only. Nothing else is accepted (no `+`, no whitespace inside the number or between a sign and the rest, no second sign, no symbol that was not given); every refusal is a `stockroom.errors.ParseError`, and an unknown `style` raises `ValueError`. Then add the setting `amount_style` (default `us`, environment variable `STOCKROOM_AMOUNT_STYLE`, key in the INI file as for the other settings), whose value must be exactly one of the five style names (anything else is a `ConfigError`), and make the `items` and `price` commands of `python -m stockroom` write every amount with `format_amount` in that style, the configured currency symbol as a prefix, and the `minus` form. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`format_amount(123456789, style=...)` gives `1,234,567.89`, `1.234.567,89`, `1'234'567.89`, `12,34,567.89` and `1234567.89` for `us`, `eu`, `ch`, `in`, `plain` (`us` by default); for 0, 5, 99999, 100000, 1000000, 10000000 and 123456789012 cents every style gives the expected text (for example `0.00`, `0,05`, `1'000.00`, `1,00,000.00` for 10000000 in `in`, `1,23,45,67,890.12` for 123456789012 in `in`), and `-5` gives `-0.05`",
+    "Negative forms, symbols and positions: `-123456` gives `-1,234.56`, `(1,234.56)` for `paren` and `1,234.56-` for `trailing` (a positive amount has no sign in any form); with symbol `€`: `€1,234.56`, `-€1,234.56`, `(€1,234.56)`, `€1,234.56-`; `suffix` gives `1.234,56 €` and `-1.234,56 €` for `eu`, `(1.234,56 EUR)` with `paren` and `1'234.56 CHF-` with `trailing` for `ch`; a symbol of `''` with `suffix` adds nothing; for `us`, prefix and minus the output equals `format_money` for 500 seeded random amounts and the symbols `''`, `$` and `EUR `; an unknown style, negative form or position raises `ValueError` (as does an unknown style in `parse_amount`)",
+    "`parse_amount` reads well-formed amounts in every style: for example `1,234,567.89`, `1234567.89`, `0.5`, `1,000`, `  12.50  `, `(1,234.50)`, `1,234.50-`, `-0.00` for `us`; `1.234.567,89`, `1.234` (= 1234.00), `12,5` for `eu`; `1'234'567.89`, the same with U+2019 or mixed, `1234.5` for `ch`; `12,34,567.89`, `1,23,456`, `1,234`, `1,00,000.00`, `1234567` for `in`; `1234567.89`, `7`, `1234.5-` for `plain`; the default style is `us`",
+    "A given `symbol` may stand before or after the number with whitespace in between (`€1,234.56`, `€ 1,234.56`, `1,234.56€`, `1,234.56   €`), may be absent, and goes inside the sign forms (`-€1,234.56`, `(€ 1,234.56)`, `€1,234.56-`, `-1.234,56 €` for `eu`, `CHF 1'234.50`); a symbol that was not given, a different symbol, the symbol on both sides, a symbol between a sign and the number's side (`$-1.00`, `$ -1.00`), two symbols, and a sign or symbol alone are refused with `ParseError`",
+    "Every malformed text is refused with `ParseError` in the style it is malformed for, including `''`, `' '`, `abc`, `1.234` (three decimals), `1,23`, `1,2345`, `,123`, `1,,234`, `12.`, `.5`, `1.2.3`, `--1.00`, `(1.00`, `-(1.00)`, `(-1.00)`, `-1.00-`, `- 1.00`, `( 1.00)`, `1 234.00`, `1e3`, Arabic-Indic and full-width digits, `+1.00`, `1_000`, `0x10`, `12,34,567` and `1.000,00` for `us`; `1,234,567`, `1.23`, `1.234,567`, `1,` for `eu`; `1,234.50`, `1'23.00`, `1''234` for `ch`; `1,234,567.89`, `123,456`, `1,23,45`, `1,2,345` for `in`; `1,234`, `1 234`, `1234.`, `1234.567` for `plain`",
+    "For 400 seeded amounts (fixed edge values and random amounts with 3 to 11 digits, negatives only from -100 down) and every style, negative form, symbol (`''`, `€`, `CHF`, `$`) and position, `parse_amount(format_amount(c, ...), style=..., symbol=...)` returns `c`",
+    "For 1,500 seeded non-negative amounts, every style's output has the shape of its style (`us`, `eu`, `ch`: groups of three after a group of one to three; `in`: a last group of three and groups of two before it; `plain`: no separator; always two decimals) and its digits spell the cents (with at least three digits)",
+    "`load_config` returns `amount_style` `us` by default, the value of `STOCKROOM_AMOUNT_STYLE` or of the INI key `amount_style` when it is one of `us`, `eu`, `ch`, `in`, `plain` (the environment overriding the file), and raises `ConfigError` for `EU`, `de`, the empty string, `us,eu` and `german`",
+    "With `STOCKROOM_AMOUNT_STYLE` set, `python -m stockroom items --file F` prints the prices in that style (`$1.234.567,89`, `$12,34,567.89`, `$1'234'567.89`, `$1234567.89` for the price 1234567.89, right-aligned as before) and `price --items F --sku S --quantity 3` prints the amounts of its three lines in that style (`$3.703.703,67`, `$37,03,703.67` and `$0,00` for the tax); the default output is unchanged, the settings file key works with `currency_symbol` (`EUR12,50`), and an invalid style exits with code 1 and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_formats_of_each_style": 0,
+    "test_negative_forms_symbols_and_positions": 1,
+    "test_parses_well_formed_amounts": 2,
+    "test_symbols_before_or_after_the_number": 3,
+    "test_malformed_amounts_are_refused": 4,
+    "test_round_trip_over_every_form": 5,
+    "test_written_numbers_have_the_shape_of_their_style": 6,
+    "test_amount_style_setting": 7,
+    "test_items_and_price_commands_use_the_style": 8
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

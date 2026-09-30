@@ -1,0 +1,39 @@
+{
+  "task_id": "data-compact-shares",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Reports need short numbers and percentages that add up. Add a module `stockroom/numfmt.py` with three functions. `format_compact(number: int) -> str` writes an integer compactly: below 1,000 in absolute value it is the plain integer; otherwise it uses the largest unit among `K` (10^3), `M` (10^6), `B` (10^9) and `T` (10^12) that the absolute value reaches, the value in that unit rounded half up (computed exactly, not with floats) to one decimal place, written without a trailing `.0`, followed by the unit letter and preceded by `-` for negative numbers (`1500` gives `1.5K`, `1050` gives `1.1K`, `1049` gives `1K`). If that rounding reaches 1000 in the chosen unit and a larger unit exists, the next larger unit is used instead, so `999950` gives `1M`, not `1000K`; `T` is the largest unit, so bigger values stay in `T` with one decimal and no grouping (`1234.6T`, `1000T`). `parse_compact(text: str) -> int` reads such text back: after stripping whitespace around the whole text it is an optional `-`, ASCII digits, optionally a decimal point with at least one digit, and optionally one unit letter `K`, `M`, `B` or `T` in either case; nothing else is accepted (no `+`, no inner spaces, no exponent, no missing digits before or after the point). The value, which is the number times the unit, must be a whole number, otherwise it is a `ParseError` (`1.25K` is 1250, `1.5` and `1.0001K` are refused, `12.0` is 12); every refusal is a `stockroom.errors.ParseError`. `percent_shares(values, digits=1) -> list[str]` writes the share of each non-negative integer in the total as text such as `45.3%` with `digits` decimals (none and no point for 0 digits), using the largest remainder method on exact integer arithmetic so that the shares add up to exactly 100: every share is first rounded down at that many decimals, and the missing units, in the last decimal place, go one each to the values with the largest remainders, ties going to the value that comes first in the list; when every value is zero (or the list is empty) every share is zero (`0.0%`, `0%` for 0 digits) and the list of shares is empty for an empty list. A `digits` outside 0 to 4, or a negative value in `values`, raises `ValueError`. Finally add `python -m stockroom share --orders F [--digits N]` (default 1), which takes every customer's revenue from the orders that are not cancelled (the sum of their order subtotals) and prints one line `NAME: SHARE (COMPACT)` per customer, ordered by revenue, largest first, then by name, where `SHARE` comes from `percent_shares` over the revenues in that order and `COMPACT` is `format_compact` of the revenue in whole currency units (cents divided by 100, rounded down); customers with only cancelled orders are not listed, and it prints nothing when there are none. A `--digits` outside 0 to 4 exits with code 1, `stockroom: error: ...` on stderr and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`format_compact` gives `0`, `1`, `999`, `1K` (1000 and 1049), `1.1K` (1050, 1099, 1100), `1.5K`, `1.9K` (1949), `2K`-style rounding at 1950, `999.9K` for 999949, `1M` for 999950, 999999, 1000000 and 1049999, `1.1M` for 1050000, `999.9M` for 999949999, `1B` for 999950000, `1T` for 10^12, `1000T` for 999950000000000 and `1234.6T` for 1234567890123456, and the same texts with a leading `-` for the negative numbers (plain `-5` below 1,000)",
+    "`parse_compact` reads `1.5K` and `1.5k` (1500), `2M`, `3B`, `4T`, `1.25K` (1250), `0.001K` (1), `1.000000K`, `999.9K`, `1234.6T`, `12`, `12.0`, `007`, `0`, `-1.5K`, `-0` and `  2K  `",
+    "`parse_compact` raises `ParseError` for the empty text, whitespace, a lone `K`, `1.2345K`, `1.5`, `0.5`, `1.0001K`, `1 K`, `1KK`, `1x`, `+1K`, `--1K`, `1,5K`, `.5K`, `5.K`, `1e3`, Arabic-Indic digits, `1.5 M`, `1.5Mi` and `K1`",
+    "For 4,000 seeded random numbers of 1 to 15 digits plus the values around every unit boundary, and their negatives: `format_compact` matches `-?[0-9]+(\\.[1-9])?[KMBT]?`, `parse_compact` of it is within half a tenth of the written unit of the number (exact below 1,000), formatting that parsed value gives the same text again, the parsed values never decrease as the number grows, numbers below 1,000 are plain, and `1000` followed by a unit other than `T` is never written",
+    "`percent_shares` gives `['33.4%', '33.3%', '33.3%']` for `[1, 1, 1]` (`['34%', '33%', '33%']` with 0 digits, `['33.34%', '33.33%', '33.33%']` with 2), `['66.7%', '33.3%']` for `[2, 1]`, `['33.3%', '66.7%']` for `[1, 2]`, `['50.0%', '50.0%']` for `[1, 1]`, `['100.0%']` for `[5]`, `['0.0%', '100.0%']` for `[0, 5]`, zeros for all-zero input (`0%` with 0 digits), `[]` for an empty list, six `14.3%` and a `14.2%` for seven ones, `['71.4%', '21.4%', '7.2%']` for `[500000, 150000, 50050]` (`['71%', '22%', '7%']` with 0 digits and `['71.423%', '21.427%', '7.150%']` with 3), accepts any sequence, and raises `ValueError` for digits of -1, 5 or 10 and for a negative value",
+    "For 3,000 seeded random value lists (length 1 to 12, including zeros and values up to 10^9) and 0 to 4 digits, the shares written by `percent_shares` add up to exactly 100 in their last decimal place (or are all zero for an all-zero list), each is its exact share rounded down or up (exact shares are not changed), a larger value never gets a smaller share, equal values never get a later-larger share (the earlier one is at least as large), and a value that was rounded up never has a smaller remainder than one that was rounded down (equal remainders: the earlier value wins)",
+    "`python -m stockroom share --orders F` prints `Ben Ode: 71.4% (5K)`, `Ada Moss: 21.4% (1.5K)`, `Cy Ray: 7.2% (500)` for three customers with revenues 5000.00, 1500.00 and 500.50 (a fourth customer and a later order that are cancelled are ignored), `71%`, `22%`, `7%` with `--digits 0` and `7.150%` with `--digits 3`, orders equal revenues by name (`Ada: 33.4% (100)`, `Bo: 33.3% (100)`, `Cy: 33.3% (100)`), shows `Ada: 100.0% (2M)` and `Bo: 0.0% (0)` for revenues 1999990.00 and 0.99, prints nothing when every order is cancelled, and `--digits -1` or `5` exits with code 1, empty stdout and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_compact_format_examples": 0,
+    "test_parse_compact": 1,
+    "test_parse_compact_refusals": 2,
+    "test_compact_round_trip_properties": 3,
+    "test_percent_shares_examples": 4,
+    "test_generated_shares_add_up_and_stay_close": 5,
+    "test_share_command": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

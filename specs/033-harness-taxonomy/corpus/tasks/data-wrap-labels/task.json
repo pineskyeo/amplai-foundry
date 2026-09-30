@@ -1,0 +1,37 @@
+{
+  "task_id": "data-wrap-labels",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Product labels are printed in a terminal, and names with Japanese, Korean or accented text must line up. In `stockroom/textutil.py` add `display_width(text: str) -> int`, the number of terminal columns of the text: a character counts 0 when its Unicode category (`unicodedata.category`) is `Mn`, `Me`, `Cf` or `Cc`, otherwise 2 when `unicodedata.east_asian_width` is `W` or `F`, otherwise 1. Add `wrap_text(text: str, width: int) -> list[str]`, which raises `ValueError` for a width below 1 and otherwise returns lines wrapped greedily to at most `width` columns, as follows. The text is split at `\\n` into paragraphs, each wrapped on its own; a paragraph's words are what `str.split()` gives (so any run of whitespace, including tabs, `\\r` and non-breaking spaces, is one separator and is dropped), lines have single spaces between words and no leading or trailing whitespace, and a paragraph without words gives one empty line (so `''` gives `['']`, `'a\\n\\nb'` gives `['a', '', 'b']`, `'a\\n'` gives `['a', '']`). A word goes on the current line, after a space, when the line width plus one plus the word width is at most `width`; otherwise the current line ends and, when the word is at most `width` columns wide, the word starts the next line. A word wider than `width` also ends the current line (it never shares a line with earlier words) and is cut into chunks: characters are added to a chunk in order while its width stays at most `width`, a character that would exceed it starts the next chunk, a zero-width character stays with the character before it, and a single character wider than `width` forms a chunk on its own (the only way a line can be wider than `width`). All chunks but the last are lines of their own; the last chunk is the current line, which later words may join by the same rule. Then add `python -m stockroom labels --file ITEMS_CSV [--width N]` (default 20), which prints one boxed label per item of the catalogue, in file order, separated by one empty line: a border `+` and `N + 2` hyphens and `+`, then one row `| ` + line + spaces up to `N` display columns (none if the line is already wider) + ` |` for each line of `wrap_text(NAME + '\\n' + SKU + '\\n' + PRICE, N)`, where `PRICE` is the price formatted with `format_money` and the configured currency symbol, then the same border. An empty catalogue prints nothing; a width below 1 exits with code 1, `stockroom: error: ...` on stderr and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`display_width` gives 0 for the empty text, marks and format characters (an acute accent alone, the zero-width joiner) and tabs, 1 for plain and precomposed letters and half-width katakana, 2 for `日本語` counted per character (6), `한글` (4), full-width `Ａ`, and `😀`, sums over the text (`cafe` plus a combining acute is 4, `a` joiner `b` is 2, `日本 Tea` is 8)",
+    "`wrap_text` wraps plain words greedily: `the quick brown fox` gives `['the quick', 'brown fox']` for widths 9 and 10, four one-word lines for width 8 and one line for width 100; runs of whitespace (spaces, tabs, non-breaking space, `\\r\\n`) collapse or drop; paragraphs are kept (`''`, `'   '` give `['']`, `'a\\n\\nb'`, `'a\\n'`, `'\\nb'`, `'one two\\nthree four five'` at width 9 give `['one two', 'three', 'four five']`); a width of 0 or -1 raises `ValueError`",
+    "A word wider than the width ends the current line and is cut into chunks that fill the width, the last chunk continuing as the current line: `abcdefghij` at 4 gives `['abcd', 'efgh', 'ij']`, `xx abcdefghij yy` gives `['xx', 'abcd', 'efgh', 'ij', 'yy']` at 4, `['xx', 'abcde', 'fghij', 'yy']` at 5 and `['xx', 'abcdefg', 'hij yy']` at 7, a word of exactly the width stays whole, `abcdefghijk` at 10 gives `['abcdefghij', 'k']`, and `MUG-001` at 4 gives `['MUG-', '001']`",
+    "Widths are display columns: `日本語のテキスト` gives `['日本語', 'のテキ', 'スト']` at 6 and four two-character lines at 5, `日本語` at 1 gives three one-character lines, `Blue 日本 mug` gives `['Blue', '日本', 'mug']` at 7, `['Blue', '日本 mug']` at 8 and `['Blue 日本', 'mug']` at 9, `😀😀😀` at 4, full-width `ＡＢＣ d` at 8 (one line) and 7 (two), `cafe` plus an acute keeps the accent and counts 4, and three `e`-plus-acute pairs at 2 give a line of two pairs and a line of one, each accent staying with its letter, `x日日日` at 3 gives `['x日', '日', '日']`, and a zero-width character never starts a chunk even when the chunk before it is already wider than the width: `日` plus an acute at 1 gives one line `['日́']` (the accent stays with its character)",
+    "For 3,000 seeded random texts over a fixed alphabet (ASCII letters, `-`, CJK, full-width, Hangul and emoji characters, an acute accent, a zero-width joiner, spaces, tabs and newlines) and random widths from 1 to 11: the lines equal the result of the stated algorithm, no character other than whitespace is lost or added, there are at least as many lines as paragraphs, no line has leading or trailing whitespace, and a line wider than the width consists of exactly one visible character that is itself wider than the width",
+    "`python -m stockroom labels --file F --width 10` prints the three boxed labels for `Blue Mug` (`MUG-001`, `$12.50`), `Extra Long Green Tea 100g` (wrapped into `Extra Long`, `Green Tea`, `100g`, then `TEA-010`, `$8.95`) and `日本茶 Tea` (`TEA-020`, `$5.00`, filling the ten columns with no padding, other rows padded by display columns) separated by empty lines; `--width 4` cuts `MUG-001` into `MUG-` and `001` and `$12.50` into `$12.` and `50` and pads `日本` and `茶` by display columns; the default width is 20; the configured currency symbol is used; an empty catalogue prints nothing; `--width` of 0 or -3 exits with code 1, empty stdout and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_display_width": 0,
+    "test_wrap_examples_with_plain_text": 1,
+    "test_wrap_breaks_words_that_are_too_long": 2,
+    "test_wrap_counts_display_columns": 3,
+    "test_generated_texts_keep_every_character_and_fit": 4,
+    "test_labels_command": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

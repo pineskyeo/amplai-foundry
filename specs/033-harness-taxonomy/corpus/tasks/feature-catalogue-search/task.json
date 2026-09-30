@@ -1,0 +1,41 @@
+{
+  "task_id": "feature-catalogue-search",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/catalogue-search",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add word-prefix search to the item catalogue, with a `--search` option for the `items` command.\n\nIn `stockroom/textutil.py` add `words(text: str) -> list[str]`: the lower-cased runs of ASCII letters `a-z` and digits `0-9` of `text`, in order; every other character (spaces, punctuation, hyphens and non-ASCII letters included) separates words. `words(\"Blue Mug, 2x\")` is `[\"blue\", \"mug\", \"2x\"]`, `words(\"NB-200\")` is `[\"nb\", \"200\"]` and `words(\"naïve\")` is `[\"na\", \"ve\"]`.\n\nCreate the module `stockroom/catalogue.py` with `search(items: Iterable[Item], query: str) -> list[Item]`.\n\nThe words of an item are the `words()` of its name, of its SKU and of each of its tags (the name words are also called its name words). A query word matches an item when it is a prefix of at least one word of the item (a word is a prefix of itself). An item is in the result only when every word of the query (`words(query)`) matches it.\n\nThe result is ordered best first by this key, compared in turn: (1) the number of query words that are equal to a word of the item, larger first; (2) the number of query words that are a prefix of a name word of the item, larger first; (3) the SKU, ascending in Python's default `str` order. Both numbers count query words, so a word that occurs twice in the query counts twice. Items with a full tie keep their input order. A query without any word (empty, only spaces or punctuation) matches every item: the result is all items in their input order. The result is a new list; `items` may be any iterable and is not modified.\n\nAdd the option `--search QUERY` to the `items` command (`python -m stockroom items --file ITEMS.csv [--tag TAG] [--search QUERY]`). The `--tag` filter works as before and is applied first; `search` is then applied to the remaining items, and the table lists the result in the search order. Without `--search` the command behaves exactly as before. A search without any match prints the table header and rule lines only, exit code 0.",
+  "acceptance": [
+    "textutil.words returns the lower-cased runs of ASCII letters and digits, treating every other character (including non-ASCII letters) as a separator",
+    "search matches an item only if every query word is a prefix of some word of the item's name, SKU or tags (SKU and tags are split into words too)",
+    "search orders results by: most query words equal to an item word, then most query words that prefix a name word (counted per query word, repeats count), then SKU ascending; full ties keep input order",
+    "A query without words returns all items in input order; search returns a new list, accepts any iterable and does not modify its input; no match gives []",
+    "The items command takes --search, applies --tag first, then search, and prints the table in search order; with no match only the header and rule lines are printed; without --search nothing changes"
+  ],
+  "hidden_map": {
+    "test_words": 0,
+    "test_prefix_matching_over_name_sku_and_tags": 1,
+    "test_all_words_must_match": 1,
+    "test_ranking_exact_then_name_then_sku": 2,
+    "test_repeated_query_words_count_each_time": 2,
+    "test_full_ties_keep_input_order": 2,
+    "test_empty_query_and_no_match": 3,
+    "test_input_handling": 3,
+    "test_cli_search_order": 4,
+    "test_cli_search_with_tag_and_no_match": 4,
+    "test_cli_without_search_unchanged": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

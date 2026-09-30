@@ -1,0 +1,37 @@
+{
+  "task_id": "cli_ops-json-output",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/json-output",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Make the output of `stockroom` usable by scripts. The commands `items`, `stock` and `sales` get an option `--format {text,json}` (default `text`, which keeps today's output exactly), and `stock` gets a flag `--fail-on-low`.\n\nWith `--format json` the command prints `json.dumps(data, indent=2, sort_keys=True)` followed by a newline (and nothing else on stdout), where `data` is:\n- `items`: a list with one object per listed item (after `--tag` filtering, in file order) with the keys `sku`, `name`, `price_cents` (integer), `tags` (list of the item's tags as stockroom reads them) and `reorder_level` (integer); an empty list when no item is listed.\n- `stock`: an object `{\"low\": [...]}` whose list holds one object per item below its reorder level, in the order the text format lists them, with the keys `sku`, `name`, `available` (integer, the number the text format shows before the slash) and `reorder_level`; `{\"low\": []}` when no item is low (where the text format prints `stock ok`).\n- `sales`: an object with the keys `orders` (the number of selected orders that are not cancelled), `cancelled` (the number of selected orders that are cancelled), `revenue_cents` (the sum of the subtotals of the orders that are not cancelled), `months` (an object from month `YYYY-MM` to the revenue in cents of the orders that are not cancelled placed in that month, only months that have such orders) and `top_customers` (a list of at most 3 objects `{\"customer\": ..., \"total_cents\": ...}` for the customers with the largest totals over the orders that are not cancelled, largest first, equal totals ordered by customer name). The selection is made by `--from` and `--to` exactly as the text format does it, and the figures are the ones the text format shows, in cents.\n\n`stock --fail-on-low` (with either format) prints exactly what it prints without the flag, including the warning on stderr that the command prints today, and then exits with code 3 when at least one item is below its reorder level and with code 0 otherwise. Errors keep their exit codes (1 for data and settings errors, 2 for usage errors) and never turn into 3. `--format` and `--fail-on-low` are options of the commands, written after the command name. Everything not mentioned stays as it is.",
+  "acceptance": [
+    "items --format json prints the listed items as a JSON list (sku, name, price_cents, tags, reorder_level) in json.dumps(indent=2, sort_keys=True) form with a trailing newline, honours --tag, prints [] for no match, and the text format is unchanged",
+    "stock --format json prints {\"low\": [...]} with sku, name, available and reorder_level for the low items in text order ({\"low\": []} when none), keeps the stderr warning and exit code 0, and the text format (including 'stock ok') is unchanged",
+    "sales --format json prints orders, cancelled, revenue_cents, months and top_customers computed over the selection (--from), counting only orders that are not cancelled for orders, revenue, months and customers, with at most 3 customers ordered by total then name; an empty selection gives zeros, {} and []",
+    "stock --fail-on-low gives the same stdout and stderr as without the flag and exit code 3 when an item is low, 0 when none is, for both formats",
+    "Invalid --format values are usage errors (exit 2), data errors keep exit code 1 also with --fail-on-low, and the default text output of all commands is unchanged"
+  ],
+  "hidden_map": {
+    "test_items_json": 0,
+    "test_items_json_reads_quoted_and_mixed_case_data": 0,
+    "test_stock_json": 1,
+    "test_sales_json": 2,
+    "test_sales_json_ranks_customers_and_ignores_cancelled_orders": 2,
+    "test_fail_on_low": 3,
+    "test_errors_and_unchanged_text": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

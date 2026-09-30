@@ -1,0 +1,61 @@
+{
+  "task_id": "ambiguity-fulfil-order",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-fulfil-order",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add order fulfilment. `stockroom/fulfilment.py` gets `fulfil_order(inventory: Inventory, order: Order) -> tuple[OrderLine, ...]`, which ships an order's lines out of the stock reserved for it and returns the lines it shipped, in the order they appear in the order. Shipping a line is `inventory.ship(line.sku, line.quantity)`: the units leave both the reserved and the on-hand stock. Only an order whose status is `paid` can be fulfilled; an order with any other status raises `StockError` and changes nothing. The function never ships more units of a SKU than the inventory holds reserved for it, leaves the stock of SKUs that are not in the order alone, and does not modify the order object. Every order in the tests has at most one line per SKU.",
+  "acceptance": [
+    "A paid order whose lines are all covered by reserved stock ships every line: each line's units leave the reserved and the on-hand stock of its SKU, the returned tuple holds the order's lines in their order, the stock of other SKUs is unchanged and the order object is unchanged",
+    "An order whose status is `open`, `shipped` or `cancelled` raises `StockError` and leaves every stock level as it was",
+    "Whatever the order, the stock stays consistent (reserved never exceeds on hand and nothing is negative), no SKU loses more units than it had reserved, the units that leave on-hand stock are exactly the units that leave reserved stock and are exactly the quantities of the returned lines, and the returned lines keep the order's line order",
+    "An order line whose quantity the reserved stock of its SKU does not cover is never shipped, whatever happens to the other lines of the order"
+  ],
+  "hidden_map": {
+    "test_a_paid_order_with_covered_lines_ships_them_all": 0,
+    "test_an_order_that_is_not_paid_raises_and_changes_nothing": 1,
+    "test_stock_stays_consistent_and_only_shipped_lines_leave_it": 2,
+    "test_a_shortage_raises_and_the_whole_order_stays_unshipped": 3,
+    "test_a_paid_order_with_covered_lines_ships_them_all_alt": 0,
+    "test_an_order_that_is_not_paid_raises_and_changes_nothing_alt": 1,
+    "test_stock_stays_consistent_and_only_shipped_lines_leave_it_alt": 2,
+    "test_a_shortage_ships_the_covered_lines_and_skips_the_rest": 3
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "partial",
+      "all or nothing",
+      "all-or-nothing",
+      "whole order",
+      "entire order",
+      "shortage",
+      "insufficient",
+      "not enough",
+      "not covered",
+      "short of",
+      "backorder",
+      "atomic",
+      "short",
+      "skip",
+      "not cover",
+      "doesn't cover"
+    ],
+    "interpretations": [
+      "All or nothing: when any line is not covered the call raises StockError and ships nothing, not even the covered lines",
+      "Ship what can be shipped: covered lines are shipped and the uncovered lines are skipped without an error, so the returned tuple can be shorter than the order or empty"
+    ]
+  },
+  "difficulty_declared": null
+}

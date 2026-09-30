@@ -1,0 +1,38 @@
+{
+  "task_id": "cli_ops-io-error-messages",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D14",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The `stockroom` command line crashes with a Python traceback on two kinds of bad input that it should report like every other data error. Running `python -m stockroom items --file missing.csv` prints a traceback instead of a message, and `python -m stockroom price --items data/items.csv --sku MUG-001 --quantity 1 --discount 150` does the same. The documented behaviour is that a data or settings error ends the command with exit code 1 and one line `stockroom: error: <reason>` on stderr.\n\nMake every failure that comes from the input the user supplies follow that rule:\n- An input file named by `--file` (items), `--items` or `--stock` (stock), `--orders` (sales) or `--items` (price) that does not exist, is a directory, cannot be read, or is not valid UTF-8 text. The reason contains the path exactly as it was given on the command line.\n- The settings file named by `--config` when it is not valid UTF-8 text. The reason contains the path exactly as given. (A missing file or a directory already gives the error line.)\n- A `--discount` of `price` that is below 0, above 100, or not a finite number (`nan`, `inf`, `-inf`). The reason contains the word `discount`. The values 0 and 100 are valid: a discount of 100 gives a subtotal of zero.\n\nIn all these cases stdout stays empty, stderr holds exactly the one error line (no traceback, no other text) and the exit code is 1. Runs that succeed today keep their output and exit codes.",
+  "acceptance": [
+    "For each of the commands items, stock, sales and price, an input file that does not exist ends with exit code 1, empty stdout, and stderr that is exactly one line starting with 'stockroom: error: ' and containing the path as given",
+    "An input file that is a directory gives the same single error line with exit code 1 and empty stdout, for every input option of items, stock, sales and price",
+    "An input file that is not valid UTF-8 gives the same single error line (containing the path) with exit code 1 and empty stdout, for every input option; so does a --config file that is not valid UTF-8",
+    "A price --discount below 0, above 100, or not finite (nan, inf, -inf) gives exit code 1, empty stdout and one 'stockroom: error: ' line on stderr that contains the word 'discount'",
+    "Discounts of 0 and 100 (and 10) are accepted: price output and exit code 0 are as before, and 100 gives a zero subtotal and total",
+    "Runs that succeeded before still give the same output, stderr and exit codes; data errors such as an unknown SKU still exit 1 and usage errors still exit 2"
+  ],
+  "hidden_map": {
+    "test_missing_input_file_for_every_command": 0,
+    "test_directory_as_input_file_for_every_input_option": 1,
+    "test_file_that_is_not_utf8_for_every_input_option": 2,
+    "test_config_file_that_is_not_utf8": 2,
+    "test_discount_outside_zero_to_hundred_or_not_finite": 3,
+    "test_discount_bounds_and_ordinary_values_work": 4,
+    "test_successful_and_other_failing_runs_keep_their_behaviour": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

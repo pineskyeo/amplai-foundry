@@ -1,0 +1,39 @@
+{
+  "task_id": "data-movement-log",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Warehouse scanners write a stock movement log, one movement per line, with local times and time zone offsets. Add a module `stockroom/movements.py` with a frozen dataclass `Movement(at, kind, sku, quantity, note='')` (`at` a timezone-aware `datetime`), and the functions `parse_movements(text) -> list[Movement]`, `format_movement(movement) -> str` and `apply_movements(inventory, movements) -> None`. A log line is `TIMESTAMP KIND SKU QUANTITY` optionally followed by `NOTE`; fields are separated by spaces or tabs, and spaces or tabs around the line are ignored. `TIMESTAMP` is `YYYY-MM-DDTHH:MM:SS` followed by `Z` or a numeric offset `+HH:MM` or `-HH:MM` (offset hours 00 to 23, minutes 00 to 59, `+00:00` and `-00:00` mean UTC), all ASCII digits; nothing else (no fraction, no `z`, no `+0200`, no space instead of `T`, no 1-digit parts) and no impossible date or time (`24:00:00`, second 60, `2023-02-29`) is accepted. `parse_movements` returns `at` converted to UTC (`datetime.timezone.utc`, so the instant is kept and the offset is normalised). `KIND` is exactly one of `RECEIVE`, `RESERVE`, `RELEASE`, `SHIP`. `SKU` must be a valid SKU as in `stockroom.models`. `QUANTITY` is ASCII digits with an optional leading `+`, at least 1 (`007` is 7). `NOTE`, when present, is exactly one double-quoted string and nothing after it: inside it `\\\\` is a backslash, `\\\"` a double quote, `\\n` a newline and `\\t` a tab, any other backslash sequence or a backslash at the end is an error, every other character (including `#`, `,`, tabs, carriage returns and U+2028) is taken as it is; an empty string `\"\"` is the empty note; a note without quotes, text after the closing quote, an unterminated string, or a trailing `# comment` after the fields is an error. The text is split into lines at `\\n` only (no other character ends a line, so use no `splitlines`), a `\\r` at the end of a line is dropped, blank lines and lines whose first non-blank character is `#` are skipped, and the movements come back in file order. Every `ParseError` that `parse_movements` raises has a message that starts with `line N:` where N is the 1-based physical line number, counting skipped lines. `format_movement` writes the canonical line: the time converted to UTC as `YYYY-MM-DDTHH:MM:SSZ`, then kind, SKU and quantity (no `+`, no zeros in front) separated by single spaces, then, only for a non-empty note, a space and the note in double quotes with backslash, double quote, newline and tab written as `\\\\`, `\\\"`, `\\n`, `\\t` (so no line break or tab appears in the output); a naive `at` or one with microseconds raises `ValueError`. `apply_movements` applies the movements to an `Inventory` oldest first by `at` (movements with the same instant keep the order given, and any iterable is accepted), `RECEIVE` with `receive`, `RESERVE` with `reserve`, `RELEASE` with `release`, `SHIP` with `ship`, and lets the `StockError` of the inventory propagate. Finally add `python -m stockroom replay --stock STOCK_CSV --log LOG` which loads the stock levels, parses the log, applies it and prints one line `SKU on_hand=N reserved=M` per SKU of the final snapshot in SKU order; any error exits with code 1, `stockroom: error: ...` on stderr and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`parse_movements` reads `2024-03-09T14:05:33Z RECEIVE MUG-001 12` into one `Movement` with an empty note (a trailing newline, the empty text and only blank lines are fine, every kind is accepted), converts offsets to UTC across day and year boundaries (`+02:00`, `-05:30`, `+00:00`, `-00:00`, `+05:00` at 01:00, `+01:00` at 00:30 on January 1, `-02:00` at 23:30 on December 31, `+23:59`), and the results carry a UTC offset of zero",
+    "`parse_movements` ignores comment lines, blank lines, indentation, tabs, several spaces between fields and `\\r\\n` line ends, accepts `+12` and `007` as quantities, and reads quoted notes with the four escapes (`\"a\\\\tb\"` keeps a backslash and a `t`, `\"a\\tb\"` a tab, `\"say \\\"hi\\\"\"`, `\"line1\\nline2\"`, `\"\"`), keeps `,`, `#`, raw tabs, `\\r`, U+2028 and non-ASCII letters inside notes, trims only the whitespace around the quoted string, and does not split a line at `\\r` or U+2028",
+    "Each of 38 malformed lines (wrong timestamp shapes, impossible dates and times, offsets such as `+24:00`, `+05:60` and `+0200`, lower-case `z` and kinds, unknown kinds, bad SKUs, quantities `0`, `-1`, `1.5`, `abc`, `+-1`, `+0` and Arabic-Indic digits, missing fields, an unquoted note, an unterminated note, a bad or trailing escape, text after the note, two notes, a trailing comment, `1\"a\"`) raises `ParseError` whose message starts with `line 3:` after a good line and a comment, `line 1:` alone, and `line 4:` after three blank lines",
+    "`format_movement` writes `2024-03-09T14:05:33Z RECEIVE MUG-001 12 \"x\"` for a movement at 16:05:33+02:00, no note part for an empty note, UTC conversion for offsets (`-5:30` gives `05:30:00Z`), escapes `a\"b\\c<newline>d<tab>e` as `\"a\\\"b\\\\c\\nd\\te\"` on one line, and raises `ValueError` for a naive time or a time with microseconds",
+    "For 600 seeded random logs of up to 7 movements (random offsets from -23:59 to +23:59, all kinds, quantities up to 10^9, notes of up to 12 characters from letters, digits, spaces, quotes, backslashes, `#`, newlines, tabs, carriage returns, U+2028, `,`, `=` and non-ASCII letters): `parse_movements` of the formatted lines returns the same movements (equal instants and notes, all in UTC), formatting the parsed movements gives the same lines, the same holds with `\\r\\n` line ends and with comment and blank lines between the lines",
+    "`apply_movements` orders by instant across offsets (a `SHIP` written first at `12:00+02:00` succeeds after a `RESERVE` at `08:00Z` and leaves `MUG-001` at 9 on hand and 1 reserved; a mixed log with `-01:00` and `+02:00` times gives the expected snapshot including a new SKU), keeps the given order for equal instants (the reverse order raises `StockError`), accepts iterators and an empty list, and lets `StockError` through for a ship or release of more than is reserved, a reservation of more than is on hand and a ship of an unknown SKU",
+    "`python -m stockroom replay --stock S --log L` prints `MUG-001 on_hand=9 reserved=1`, `NB-200 on_hand=40 reserved=0`, `TEA-010 on_hand=30 reserved=5` for the example log (applied in time order, with a comment, a blank line and a note), prints the unchanged levels for a log without movements, and exits with code 1, empty stdout and `stockroom: error:` on stderr for a bad line (the message names `line 3`) and for a ship of unreserved stock"
+  ],
+  "hidden_map": {
+    "test_parse_basic_lines_and_time_zones": 0,
+    "test_parse_whitespace_comments_quantities_and_notes": 1,
+    "test_bad_lines_are_refused_with_their_line_number": 2,
+    "test_format_movement": 3,
+    "test_generated_logs_round_trip": 4,
+    "test_movements_apply_oldest_first": 5,
+    "test_replay_command": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

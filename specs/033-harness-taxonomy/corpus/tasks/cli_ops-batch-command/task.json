@@ -1,0 +1,42 @@
+{
+  "task_id": "cli_ops-batch-command",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/batch-command",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a `batch` command that runs several stockroom commands from a script file, for cron jobs and reports: `python -m stockroom [--config PATH] batch SCRIPT [--keep-going]`.\n\n`SCRIPT` is a UTF-8 text file whose lines end with `\\n` or `\\r\\n`. A line that is empty or holds only whitespace, and a line whose first non-blank character is `#`, is skipped. Every other line is one command: the line is split into arguments like a POSIX shell does (Python's `shlex.split(line)`, with its default settings), and those arguments are what you would type after `python -m stockroom`. A line may therefore start with global options (`--config PATH`) before the command, and `--version` is a valid line.\n\nThe lines run in file order. Before a line runs, the batch writes `$ ` followed by the line with its leading and trailing whitespace removed, and a newline, to stdout. The command's own output then goes to stdout and stderr exactly as in a normal run, so stdout holds each header followed by that command's stdout. The status of a line is what a normal run of those arguments would exit with: 0 on success, 1 for a data or settings error (the usual `stockroom: error: ...` line), 2 for a usage error (argparse's message goes to stderr; such a line does not end the batch process by itself).\n\nThe batch stops at the first line whose status is not 0 and does not run the lines after it, unless `--keep-going` is given, in which case every line runs. The exit code of the batch is 0 when every line that ran had status 0, otherwise the status of the first line that failed. `--keep-going` may be written before or after `SCRIPT`. Nothing is printed after the last line.\n\nSettings: when the batch itself is given `--config PATH`, that settings file applies to every line that does not name a settings file of its own; a line with its own `--config` (in any spelling the argument parser accepts, such as `--config=PATH`) uses only that file. `STOCKROOM_*` environment variables apply to every line as usual, and an invalid settings file given to the batch itself ends the command before any line runs.\n\nSpecial cases: a line whose quoting cannot be split (an unbalanced quote) has status 1 and writes `stockroom: error: line N: <reason>` to stderr, where N is the 1-based line number in the script counting skipped lines (its `$ ` header is written first). A line whose command is `batch` has status 1 and writes `stockroom: error: <reason>` to stderr where the reason contains the word `nested`; it runs nothing. A script that cannot be read (missing, a directory, not valid UTF-8 text) ends the command with exit code 1 and the usual single `stockroom: error: <reason>` line, where the reason contains SCRIPT exactly as given on the command line, with nothing on stdout. A script without command lines prints nothing and exits 0.",
+  "acceptance": [
+    "Command lines run in order after a '$ <line>' header (the stripped line) on stdout; blank lines and '#' lines are skipped; arguments are split like shlex.split (quotes work); CRLF scripts work; the stdout is each header followed by that command's normal stdout and stderr is the commands' normal stderr",
+    "Without --keep-going the batch stops after the first line with a non-zero status, later lines neither run nor get a header, and the batch exits with that status (1 for a data error, 2 for a usage error)",
+    "With --keep-going (before or after SCRIPT) every line runs, and the exit code is the status of the first failing line; usage errors in a line print argparse's message and do not end the batch",
+    "A --config given to the batch applies to lines without their own --config (also when a line writes --config=PATH or an abbreviation); a line with its own --config uses only that file, even when it fails; an invalid batch-level settings file stops the command before any line; STOCKROOM_* variables apply to all lines",
+    "A line with an unbalanced quote has status 1 and writes 'stockroom: error: line N: ...' with N the physical line number, after its header",
+    "A line whose command is batch has status 1 with a 'stockroom: error: ' line mentioning 'nested' and runs nothing",
+    "A script that is missing, is a directory, or is not valid UTF-8 gives one 'stockroom: error: ' line whose reason contains SCRIPT as given on the command line, exit code 1 and empty stdout; a script with only comments and blank lines prints nothing and exits 0"
+  ],
+  "hidden_map": {
+    "test_lines_run_in_order_with_headers": 0,
+    "test_crlf_script_and_shell_quoting": 0,
+    "test_stops_at_the_first_failing_line": 1,
+    "test_keep_going_runs_every_line": 2,
+    "test_the_batch_config_is_the_default_for_each_line": 3,
+    "test_environment_settings_apply_to_every_line": 3,
+    "test_unbalanced_quote_is_a_line_error": 4,
+    "test_nested_batch_is_refused": 5,
+    "test_unreadable_script": 6,
+    "test_script_without_commands": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

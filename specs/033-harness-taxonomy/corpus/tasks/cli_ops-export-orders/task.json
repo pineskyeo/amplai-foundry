@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-export-orders",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/export-orders",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add an `export` command to `stockroom` that turns an orders CSV file into JSON for other tools: `python -m stockroom export --orders FILE [--out PATH] [--status S]... [--customer NAME] [--sort {file,placed,id}] [--limit N]`.\n\nThe command reads the orders file exactly as `sales` does. Selection: `--status` may be repeated and each value must be one of `open`, `paid`, `shipped`, `cancelled` (anything else is a usage error); an order is selected when its status is any of the given ones, and without `--status` every status is selected. `--customer NAME` selects the orders whose customer is exactly `NAME` (case-sensitive). When both are given an order must match both. The selected orders are then ordered by `--sort`: `file` (the default) keeps the order in which the orders first appear in the file, `placed` sorts by the date the order was placed, oldest first, and orders placed on the same day by order id, and `id` sorts by order id; order ids compare as plain strings (so `O-10` comes before `O-2`). Finally `--limit N` keeps only the first `N` orders of that sequence; `N` is a whole number of at least 0 (`0` gives no order) and anything else is a usage error.\n\nThe output is the JSON text that `stockroom.jsonio.dump_orders` produces for the resulting orders (a JSON list of order objects with sorted keys, indented by 2 spaces, ending with a newline; no orders give `[]` and a newline). Without `--out` it goes to stdout and stderr stays empty.\n\nWith `--out PATH` the text is written (UTF-8) to `PATH` instead, stdout stays empty and the exit code is 0. An existing file at `PATH` is replaced, not appended to. The file is replaced atomically: the text is first written to a temporary file in the same directory as `PATH`, which is then renamed over `PATH`, so that at no time a reader sees a partial file and a failure never damages an existing `PATH`. After a run, success or failure, the directory of `PATH` holds no file that was not there before, other than `PATH` itself after a success.\n\nFailures end with exit code 1 and the usual single line `stockroom: error: <reason>` on stderr, with stdout empty: an orders file that is not valid (for example a wrong header), in which case nothing is written and an existing `PATH` keeps its content; a directory of `PATH` that does not exist, and a `PATH` that is an existing directory, in which cases the reason contains `PATH` as given and no file or directory is changed or created.",
+  "acceptance": [
+    "export prints the orders of the file as dump_orders-format JSON (sorted keys, indent 2, trailing newline) in file order by default, with empty stderr and exit code 0; a selection without orders prints '[]'",
+    "--status (repeatable, union of the values) and --customer (exact, case-sensitive) select orders, combined with AND; values of --status outside open, paid, shipped, cancelled are usage errors (exit 2)",
+    "--sort placed orders by date then order id, --sort id orders by order id as plain strings, --sort file keeps the file order; other values are usage errors",
+    "--limit N keeps the first N orders after selection and sorting (0 gives '[]'); a negative or non-integer N is a usage error (exit 2)",
+    "--out PATH writes the same text to PATH (replacing existing content, also longer content), prints nothing to stdout and leaves no other file in PATH's directory",
+    "An invalid orders file gives exit code 1 and one 'stockroom: error: ' line, writes nothing and leaves an existing --out file unchanged; a missing output directory and an --out that is a directory give exit code 1 with an error line containing the path and leave no stray files",
+    "Other commands and their output are unchanged"
+  ],
+  "hidden_map": {
+    "test_export_prints_all_orders_in_file_order": 0,
+    "test_empty_selection_prints_an_empty_list": 0,
+    "test_status_and_customer_selection": 1,
+    "test_sorting": 2,
+    "test_limit": 3,
+    "test_usage_errors": 1,
+    "test_out_replaces_the_file_atomically": 4,
+    "test_failures_write_nothing": 5,
+    "test_other_commands_are_unchanged": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

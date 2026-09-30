@@ -1,0 +1,50 @@
+{
+  "task_id": "ambiguity-order-lint",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-order-lint",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add an order-file linter. `stockroom/lint.py` gets `lint_orders(text: str, items: Sequence[Item] | None = None) -> list[str]`, which checks the text of an order file (the format of `data/orders.csv`) and returns every problem found, instead of stopping at the first one, as messages of the form `line N: ...`. Rules: the text is split into lines with `str.splitlines()` and lines are numbered from 1; each line is one row (line breaks inside quotes are not supported) whose fields are read with the `csv` module from that single line, so quoted commas stay inside a field, and every field is stripped of surrounding whitespace before it is checked. If the text is empty or only whitespace the result is `[\"line 1: empty file\"]`. Line 1 is always the header: if its stripped fields are not exactly the columns `order_id, customer, placed, status, sku, quantity, unit_price` in that order the result is `[\"line 1: bad header\"]` and nothing else is checked. After the header, lines that are empty or whitespace only are skipped (they still count in the numbering). A row that does not have exactly 7 fields gives `line N: expected 7 fields, found K` and is checked no further and used for nothing else. For any other row the checks run in this order and each gives at most one message: `line N: unknown status 'X'` (the status is not one of open, paid, shipped, cancelled; case matters); `line N: bad date 'X'` (not written as four digits, `-`, two digits, `-`, two digits with ASCII digits, or not a real calendar date); `line N: bad sku 'X'` (not 2-4 capital letters, `-` and 3-5 digits); `line N: bad quantity 'X'` (not a positive whole number made of ASCII digits, so no sign, no decimals, not 0); `line N: bad price 'X'` (not ASCII digits optionally followed by `.` and one or two digits, so no sign, currency symbol, thousands separator or empty text; `0` is fine). The remaining checks apply to every such row, whether or not it had problems above: the first such row of an `order_id` fixes that order's customer, placed and status as written; each later row of the same order gives `line N: customer differs from line M for order 'ID'` for each of `customer`, `placed`, `status` (in that order, the field name in the message) whose stripped text differs from the first row's, where M is the line number of the first row; a row whose `(order_id, sku)` pair appeared on an earlier such row gives `line N: duplicate line for order 'ID' and sku 'SKU'`. When `items` is given, a row whose sku is well-formed and is not in the catalogue gives `line N: unknown item 'SKU'`, and a row whose sku is in the catalogue and whose price is well-formed but not equal to the catalogue price gives `line N: price P differs from catalogue C`, both amounts written with two decimals and no symbol (`12.50`); prices are compared as cents, so `12.5` equals `12.50`. Messages come in line order, and within a line in the order given here. New command `python -m stockroom lint-orders --orders FILE [--items FILE]`: it prints `orders ok` and exits 0 when there are no problems; otherwise it prints each message on its own line, then `N problem(s)` with the count, and exits with code 1. In all these messages quoted values are written like Python's `repr` of the stripped text.",
+  "acceptance": [
+    "A valid file gives `[]` (the sample orders with and without the sample catalogue, a header only, a quoted comma in a name, padded fields, `\\r\\n` line ends), and padded header cells are accepted",
+    "An empty or whitespace-only text gives `['line 1: empty file']`; a header that is not exactly the seven columns (missing, extra, reordered, differently cased or renamed column, or a blank first line) gives `['line 1: bad header']` and nothing else",
+    "A row with other than 7 fields gives `line N: expected 7 fields, found K` and nothing else for that row; blank lines are skipped but counted in the numbering; quoted commas stay in one field",
+    "Status, date, sku, quantity and price are each checked as specified (`Paid`, `2024-02-30`, `2024-2-3`, `20240203`, `2024-W05-1`, `0000-01-01`, `mug-001`, `MUG-1`, quantities `0`, `-1`, `1.5`, `+2` and empty, prices `-1.00`, `$5.00`, `1,250.00`, `5.`, `.5`, `5.005` and empty are problems; `0`, `7.5` and `5` are fine) and a row's problems come in that field order",
+    "Later rows of an order are compared with the first row of that order for customer, placed and status in that order, with the first row's line number in the message; rows with the wrong field count take no part",
+    "A first row that has problems of its own still defines its order; its own unknown status does not hide a difference on a later row",
+    "A repeated `(order_id, sku)` gives the duplicate message on the later row (the sku compared as stripped text, well-formed or not), together with any other problems of that row in the stated order",
+    "With a catalogue, well-formed unknown SKUs give `unknown item`, known SKUs with a well-formed different price give `price P differs from catalogue C` (two decimals, `12.5` equals `12.50`), a bad price or a bad sku gives only its own message, and without a catalogue there are no such messages",
+    "`lint-orders` prints `orders ok` and exits 0 for a clean file (with or without `--items`); otherwise it prints the messages, then `N problem(s)`, exits 1 and writes nothing to stderr, also for an empty file"
+  ],
+  "hidden_map": {
+    "test_a_clean_file_has_no_problems": 0,
+    "test_an_empty_file_and_a_bad_header_stop_the_check": 1,
+    "test_a_row_with_the_wrong_number_of_fields_is_reported_alone": 2,
+    "test_each_field_is_checked_and_problems_of_a_row_come_in_field_order": 3,
+    "test_rows_of_one_order_must_agree_with_its_first_row": 4,
+    "test_a_first_row_with_problems_still_defines_its_order": 5,
+    "test_an_order_may_not_repeat_a_sku": 6,
+    "test_with_a_catalogue_skus_and_prices_are_compared": 7,
+    "test_the_command_says_ok_or_lists_the_problems_and_exits_with_one": 8
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "A row with problems is reported in full and still counts for the order-level checks (as stated)",
+      "A row with any problem is dropped from the order-level checks (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

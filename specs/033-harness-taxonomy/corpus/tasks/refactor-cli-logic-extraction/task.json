@@ -1,0 +1,36 @@
+{
+  "task_id": "refactor-cli-logic-extraction",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "extract",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-cli-logic-extraction",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The command functions in `stockroom/cli.py` contain business logic that has nothing to do with the command line: `_cmd_items` filters the catalogue by tag, `_find` looks an item up by SKU, and `_cmd_price` works out subtotal, tax and total itself from the discount and tax settings. Move each piece to the package where it belongs so that the command functions only read input, call the logic and print: a new module `stockroom/catalogue.py` with `find_item` and `with_tag`, and a function `quote` with a result record `Quote` in `stockroom/pricing.py`. This is a pure refactor: the output, error messages and exit codes of `stockroom items` and `stockroom price` stay byte for byte the same, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`catalogue.find_item(items, sku)` returns the first item of a sequence whose SKU equals `sku` (exact match, case-sensitive) and raises `ParseError` with the message `no item <sku>` when there is none",
+    "`catalogue.with_tag(items, tag)` returns a new list of the items whose tags contain `tag` (given in any case; item tags are lower case), in the given order, and a new list of all items when `tag` is empty or `None`",
+    "`pricing.Quote` is a frozen dataclass with the fields `subtotal_cents`, `tax_cents`, `total_cents`; `pricing.quote(unit_price_cents, quantity, discount_percent=0.0, tax_bp=0)` returns the subtotal (quantity times unit price less the discount, as `apply_discount` computes it), the tax on that subtotal at `tax_bp` basis points (as `tax` computes it) and their sum, and raises `ValueError` where `apply_discount` or `tax` do",
+    "For `items` (with and without `--tag`, in any case, also an empty `--tag`) and `price` (plain, with a discount, with a tax rate and currency symbol from the environment, an unknown SKU, a quantity of 0 with an unknown SKU, a bad tax setting), run through `cli.main`, exit codes, stdout and stderr are identical to what they were before the change, including which error is reported first",
+    "`stockroom/cli.py` no longer defines `_find`, no longer refers to `apply_discount`, `tax` or an item's `tags`, and uses `find_item`, `with_tag` and `quote`"
+  ],
+  "hidden_map": {
+    "test_find_item_returns_the_first_match_or_raises_parse_error": 0,
+    "test_with_tag_filters_ignoring_case_and_keeps_order": 1,
+    "test_quote_prices_a_quantity_with_discount_and_tax": 2,
+    "test_items_and_price_commands_behave_as_before": 3,
+    "test_tag_filter_and_settings_reach_the_commands_as_before": 3,
+    "test_the_command_module_holds_no_lookup_or_price_arithmetic": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

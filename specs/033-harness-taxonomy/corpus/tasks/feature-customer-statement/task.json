@@ -1,0 +1,42 @@
+{
+  "task_id": "feature-customer-statement",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/customer-statement",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add customer statements to stockroom: a text report of one customer's orders with a running total, and a `statement` command.\n\nIn `stockroom/orders.py` add the method `OrderBook.customers() -> list[str]`: the distinct customer names of the book, each once, sorted in Python's default `str` order.\n\nIn `stockroom/report.py` add `customer_statement(book: OrderBook, customer: str, *, symbol: str = \"$\") -> str`. The customer name is matched exactly (case-sensitive). If the book has no order of that customer it raises `StockroomError` (the base class from `stockroom/errors.py`, not a subclass). Otherwise it returns these lines joined by `\"\\n\"` (no trailing newline). The orders of the customer are listed oldest first by `placed` date, orders with the same date in the order they were added to the book (the order of `OrderBook.by_customer`). Money is formatted as `money.format_money(cents, symbol)` does. The subtotal of an order is the sum of quantity times unit price over its lines (`pricing.order_subtotal`). \"Active\" orders are those whose status is not `cancelled`.\n\n1. `Statement for <customer>`\n2. `<n> order(s), <m> cancelled`, where `n` counts the active orders, written with `textutil.plural(n, \"order\")` (so `1 order`, `0 orders`, `3 orders`), and `m` counts the cancelled ones: `<plural>, <m> cancelled`.\n3. One line per order: `<placed as YYYY-MM-DD>  <order_id>  <status>  <amount>  <running>` with two spaces between the five fields and no padding. `<amount>` is the order's subtotal (shown for cancelled orders too). `<running>` is the sum of the subtotals of the active orders up to and including this line; a cancelled order adds nothing, so its line repeats the running total of the line before (`$0.00` if there is none).\n4. An empty line.\n5. `Total: <sum of the subtotals of all active orders>`\n6. `Due: <sum of the subtotals of the orders whose status is open>`\n7. `Average: <average subtotal of the active orders>` in whole cents, rounded half up (exactly half a cent rounds up), or `Average: -` when there is no active order.\n8. `Largest: <order_id> (<subtotal>)` for the active order with the largest subtotal, the earliest one in statement order when several are equally large, or `Largest: -` when there is no active order.\n\nAdd a command `python -m stockroom statement --orders ORDERS.csv [--customer NAME]`. With `--customer` it prints the statement of that customer. Without it, it prints the statements of all customers in `OrderBook.customers()` order, with a line consisting only of `---` between two statements. The currency symbol is the `currency_symbol` setting as for the other commands. A customer without orders makes the command fail with exit code 1 and the usual `stockroom: error: ...` message on stderr and nothing on stdout.",
+  "acceptance": [
+    "OrderBook.customers() returns the distinct customer names sorted in default str order (empty list for an empty book)",
+    "customer_statement returns the header lines 'Statement for <customer>' and '<plural orders>, <m> cancelled' and raises StockroomError (base class) for a customer without orders, matching the name case-sensitively",
+    "Order lines are 'DATE  ORDER_ID  STATUS  AMOUNT  RUNNING' oldest first (equal dates in insertion order); cancelled orders show their amount but add nothing to the running total and repeat the previous running total ($0.00 at the start)",
+    "After an empty line come 'Total:' (active subtotals), 'Due:' (subtotals of orders with status open), 'Average:' (active subtotal average in whole cents, exact half rounds up, '-' when no active order) and 'Largest:' (active order with the largest subtotal, earliest on ties, '-' when none)",
+    "The money format is format_money with the given symbol, and the symbol parameter is keyword-only with default '$'",
+    "The statement command prints one customer's statement with --customer, all customers in sorted order separated by a line '---' without it, uses the currency_symbol setting, and exits 1 with the usual error message and empty stdout for an unknown customer"
+  ],
+  "hidden_map": {
+    "test_customers_sorted_distinct": 0,
+    "test_header_and_unknown_customer": 1,
+    "test_order_lines_running_total_and_cancelled": 2,
+    "test_order_lines_same_date_keep_insertion_order": 2,
+    "test_footer_figures": 3,
+    "test_average_rounds_half_up": 3,
+    "test_largest_tie_and_no_active_orders": 3,
+    "test_symbol_and_format": 4,
+    "test_cli_single_customer": 5,
+    "test_cli_all_customers": 5,
+    "test_cli_unknown_customer_and_symbol_setting": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

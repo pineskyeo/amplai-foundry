@@ -1,0 +1,39 @@
+{
+  "task_id": "cli_ops-env-file",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/env-file",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Let the `stockroom` command read settings from a dotenv-style file given with a new global option `--env-file PATH`, as deployments keep them next to a service definition. The file holds `STOCKROOM_<KEY>=<value>` lines, and each value counts exactly as if the variable of that name had been set in the environment (so the usual validation of each setting applies to it). Precedence, from weakest to strongest: built-in defaults, the `--config` INI file, the `--env-file` file, the real `STOCKROOM_*` environment variables.\n\nThe file is UTF-8 text whose lines end with `\\n` or `\\r\\n` (the last line may lack one). Its syntax:\n- A line that is empty or only whitespace, and a line whose first non-blank character is `#`, is skipped.\n- Any other line is `[export ]KEY=VALUE`. Leading whitespace is ignored. The optional word `export` must be followed by at least one space or tab. `KEY` starts with an ASCII letter or `_` and continues with ASCII letters, digits and `_`; spaces and tabs are allowed before and after the `=`. `KEY` is case-sensitive.\n- A value whose first non-blank character is `\"` is double-quoted: it runs to the next unescaped `\"` on the same line, and inside it `\\\\` stands for one backslash, `\\\"` for a double quote and `\\n` for a newline character; a backslash before any other character stays a backslash. A value starting with `'` is single-quoted: it runs to the next `'` and nothing inside is special. After the closing quote the rest of the line must be blank or start, after optional spaces and tabs, with `#` (a comment). Whitespace inside quotes is kept.\n- Any other value is the rest of the line, where a comment starts at the first `#` that directly follows a space or a tab (so `a #b` has the value `a`, `a#b` has the value `a#b`, and a `#` right after the `=` belongs to the value); the value is stripped of surrounding whitespace and may be empty. Quotes and backslashes inside an unquoted value stay as written.\n- When a key appears twice, the later line wins.\n- Only keys that start with `STOCKROOM_` are used; every other well-formed line is ignored. A `STOCKROOM_` key that is not `STOCKROOM_` plus the upper-case name of a setting is an error, unlike the real environment where unknown variables are ignored.\n\nProblems in the file end the command with exit code 1 and one line on stderr: `stockroom: error: <path>: line N: <reason>` with the path as given on the command line and N the 1-based line number, for a line that has no `=` or whose key is malformed, a quote that is never closed, text after a closing quote that is not a comment, and an unknown `STOCKROOM_` key (the reason names the key). A value that a setting does not accept (for example a `tax_bp` that is not a whole number) gives the usual single error line for that setting. A file that cannot be read (missing, a directory, not valid UTF-8) gives one `stockroom: error: ` line that contains the path. In every error case stdout is empty.",
+  "acceptance": [
+    "--env-file sets settings from STOCKROOM_* lines: for example tax_bp=1000 and currency_symbol are used by price, with the precedence defaults < --config < --env-file < real environment",
+    "Plain lines parse as specified: blank and '#' lines skipped, optional 'export ' prefix (only with following whitespace), whitespace around '=' and before the key, later duplicates win, non-STOCKROOM_ and lower-case keys ignored, empty values allowed",
+    "Unquoted values end at a '#' that follows a space or tab and are trimmed; '#' without preceding whitespace stays in the value; '=' inside a value stays; non-ASCII text works",
+    "Double-quoted values process only \\\\, \\\" and \\n and keep other backslashes and inner whitespace; single-quoted values are literal; text after the closing quote may only be blank or a comment",
+    "Malformed lines (no '=', bad key, unclosed quote, junk after a closing quote, unknown STOCKROOM_ key) give exit 1, empty stdout and one 'stockroom: error: <path>: line N: <reason>' line with the right physical line number, also when the bad line is not a STOCKROOM_ line (except that well-formed foreign lines are ignored)",
+    "A value that a setting rejects, and an env file that is missing, a directory or not valid UTF-8, give exit 1, empty stdout and one 'stockroom: error: ' line (naming the path for unreadable files)",
+    "Without --env-file nothing changes, and the real environment still beats the env file and the INI file"
+  ],
+  "hidden_map": {
+    "test_env_file_values_and_precedence": 0,
+    "test_line_syntax_and_ignored_lines": 1,
+    "test_unquoted_values_and_comments": 2,
+    "test_quoted_values": 3,
+    "test_malformed_lines_report_the_line": 4,
+    "test_rejected_values_and_unreadable_files": 5,
+    "test_without_an_env_file_nothing_changes": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,40 @@
+{
+  "task_id": "feature-monthly-growth",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/monthly-growth",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a month-over-month revenue growth report to stockroom, with a `growth` command.\n\nIn `stockroom/report.py` add two functions.\n\n`monthly_growth(book: OrderBook) -> list[tuple[str, int, int | None]]` returns one tuple `(month, revenue_cents, growth_bp)` per calendar month. Revenue of a month is what `OrderBook.revenue_by_month()` reports for it: the subtotals of the orders placed in that month that are not cancelled. The list starts with the earliest month that has revenue in that report and ends with the latest one, and it contains every calendar month in between, in ascending order; a month in between that has no (non-cancelled) orders has revenue `0`. Months outside that range (for example a month before the first one that only has cancelled orders) are not listed. A book without any non-cancelled order gives `[]`.\n\n`growth_bp` is the change against the previous listed month in basis points (1 basis point = 0.01 %), that is `(revenue - previous) * 10000 / previous` computed exactly and then rounded to a whole number half up: a fraction of exactly one half rounds toward positive infinity, so `0.5` becomes `1`, `-0.5` becomes `0`, `-1.5` becomes `-1` and `2.5` becomes `3`. It is `None` for the first listed month and for any month whose previous month has revenue `0` (there is nothing to compare with).\n\n`format_growth(growth_bp: int | None) -> str` renders a growth value: `None` gives `n/a`; otherwise the value is shown as a percentage with exactly two decimals and a `%` sign, with a leading `+` for positive values and a leading `-` for negative ones and no sign for zero: `1250` gives `+12.50%`, `-307` gives `-3.07%`, `5` gives `+0.05%`, `-5` gives `-0.05%`, `0` gives `0.00%`, `-10000` gives `-100.00%`, and `123456` gives `+1234.56%`.\n\nAdd a command `python -m stockroom growth --orders ORDERS.csv`. It prints one line per month of `monthly_growth`: `<month>  <revenue>  <growth>` with two spaces between the fields and no padding, where the revenue is formatted with the `currency_symbol` setting (as `money.format_money` does) and the growth with `format_growth`. When `monthly_growth` is empty it prints the single line `no revenue`. Exit code 0 in both cases.",
+  "acceptance": [
+    "monthly_growth lists every calendar month from the first to the last month that has non-cancelled revenue, in ascending order, with revenue 0 for months in between that have none (also across year boundaries); months outside that range are not listed and a book without non-cancelled orders gives []",
+    "Each tuple is (month, revenue_cents, growth_bp) with revenue as in OrderBook.revenue_by_month",
+    "growth_bp is (revenue - previous) * 10000 / previous computed exactly and rounded half up (0.5 -> 1, -0.5 -> 0, -1.5 -> -1, 2.5 -> 3); it is None for the first month and for any month whose previous month has revenue 0",
+    "format_growth gives 'n/a' for None and otherwise a signed two-decimal percentage ('+12.50%', '-3.07%', '+0.05%', '-0.05%', '0.00%', '-100.00%', '+1234.56%')",
+    "The growth command prints '<month>  <revenue>  <growth>' per month with the currency_symbol setting, or 'no revenue' when there is nothing to report, and exits 0"
+  ],
+  "hidden_map": {
+    "test_months_fill_gaps_and_cross_years": 0,
+    "test_range_ignores_cancelled_only_edges": 0,
+    "test_empty_and_cancelled_only_books": 0,
+    "test_tuple_shape_and_revenue": 1,
+    "test_growth_values": 2,
+    "test_growth_rounds_half_up": 2,
+    "test_growth_after_zero_month_is_none": 2,
+    "test_format_growth": 3,
+    "test_cli_sample_data": 4,
+    "test_cli_no_revenue_and_symbol": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

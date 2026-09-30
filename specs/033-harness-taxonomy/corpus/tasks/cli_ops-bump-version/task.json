@@ -1,0 +1,37 @@
+{
+  "task_id": "cli_ops-bump-version",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/bump-version",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a release script `scripts/bump_version.py` that raises the project version in the two places where it is written: `python scripts/bump_version.py NEW [--root DIR] [--dry-run]`. `DIR` is the project root and defaults to the repository root, the directory above the directory that holds the script (independent of the current directory). The script uses only the standard library, only reads and writes those two files, and never imports the project.\n\n`NEW` is one of `major`, `minor`, `patch`, or an explicit version `X.Y.Z` where each part is a number written with the ASCII digits 0-9 without leading zeros (`0` itself is fine); anything else (`1.2`, `v1.2.3`, `01.2.3`, `1.2.3.4`, `1.2.x`, an empty argument, ...) is an argparse usage error: exit code 2, nothing written. Versions compare as numbers part by part (`0.10.0` is greater than `0.9.9`).\n\nWhere the version lives:\n- `DIR/stockroom/__init__.py`: the first line that is `__version__ = \"X.Y.Z\"`, with either quote style, optional spaces around `=`, and an optional trailing `# comment`.\n- `DIR/pyproject.toml`: the first line `version = \"X.Y.Z\"` (either quote style, optional leading whitespace, optional spaces around `=`, optional trailing comment) inside the `[project]` table, which runs from the line that is the header `[project]` (optionally followed by a comment) to the next table header line (a line consisting only of `[name]` or `[[name]]`, optionally followed by a comment). A `version = ...` line in any other table, before or after, is not the project version and is never changed, nor is any other line.\n\nThe current version is the `X.Y.Z` found in the two places, which must be equal. The new version is `NEW` itself when it is explicit and greater than the current version; `major` gives `(X+1).0.0`, `minor` gives `X.(Y+1).0` and `patch` gives `X.Y.(Z+1)`. On success the script rewrites exactly the version text inside the two lines, keeping every other byte of both files (quote style, spacing, comments, `\\r\\n` or `\\n` line ends, a missing final newline), prints `<current> -> <new>` and a newline to stdout, prints nothing to stderr and exits with 0. With `--dry-run` it does the same checks and prints the same line but writes nothing.\n\nErrors end with exit code 1, one line `bump_version: error: <reason>` on stderr, nothing on stdout and no file changed (both files are validated before either is written): a file that is missing; a file without such a version line (for example a `pyproject.toml` whose `[project]` table has a `dynamic` version and no `version` line), a version text that is not `X.Y.Z` (`0.4`, `0.4.0rc1`), in which cases the reason names the file (`pyproject.toml` or `stockroom/__init__.py`); the two versions differ (the reason contains both); an explicit `NEW` that is not greater than the current version (the reason contains both).",
+  "acceptance": [
+    "patch, minor and major raise the version in stockroom/__init__.py and in the [project] table of pyproject.toml, print '<current> -> <new>' and exit 0; parts compare and count as numbers (0.9.9 + patch is 0.9.10, 0.9.9 + minor is 0.10.0, major resets minor and patch)",
+    "An explicit X.Y.Z greater than the current version is written; an equal or smaller one (compared as numbers, so 0.9.10 is smaller than 0.10.0) gives exit 1 naming both versions and changes no file",
+    "Only the version text changes: quote styles, spacing, trailing comments, CRLF or LF line ends, a missing final newline and every other line stay byte for byte, including 'version' keys in other tables (before or after [project], also [[array]] tables and [project.*] tables) and a second __version__ line",
+    "Versions that differ between the two files, a missing file, a file without a version line (dynamic version), and a version that is not X.Y.Z give exit 1, one 'bump_version: error: ' line, empty stdout and no changed file; the reason names the file or both versions as specified",
+    "Invalid NEW values (1.2, v1.2.3, 01.2.3, 1.2.3.4, 1.2.x, empty, MAJOR) and missing arguments are usage errors (exit 2) that change nothing",
+    "--dry-run prints the same line and exit code but leaves both files untouched, also for the repository itself, whose current version is 0.4.0; the default root is the directory above the script's directory"
+  ],
+  "hidden_map": {
+    "test_keywords_raise_the_right_part": 0,
+    "test_explicit_versions_must_be_greater": 1,
+    "test_only_the_version_text_changes": 2,
+    "test_errors_change_nothing": 3,
+    "test_invalid_new_values_are_usage_errors": 4,
+    "test_dry_run_and_the_default_root": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

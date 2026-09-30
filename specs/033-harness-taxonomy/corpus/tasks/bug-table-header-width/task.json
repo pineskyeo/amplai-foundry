@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-table-header-width",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D11",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Text tables come out misaligned when a column header is wider than every cell below it: in the sales summary the header `Revenue` overhangs the amounts under it and the rule line is shorter than the header. Every column must be as wide as its widest cell or its header, whichever is wider. The layout rules stay: columns are separated by two spaces, the rule line has one `-` per column width (columns joined by two spaces), columns marked right-aligned align their header and their cells to the right, cells are converted with `str`, and trailing spaces are removed from every line except the rule.",
+  "acceptance": [
+    "A header wider than its cells widens the column: headers `Name`, `Quantity` with rows `a`/`1` and `bb`/`22` give `Name  Quantity`, `----  --------`, `a     1`, `bb    22`; one column `Description` with rows `a` and `bc` gives `Description`, `-----------`, `a`, `bc`",
+    "Right-aligned columns align their header and cells: headers `Item`, `Total` with rows `x`/5 and `yy`/10 and the second column right-aligned give `Item  Total`, `----  -----`, `x         5`, `yy       10`; headers `Left`, `Right` with one row `x`/`1` and both columns right-aligned give `Left  Right`, `----  -----`, `   x      1`",
+    "Each column takes the wider of its header and its widest cell: for headers `SKU`, `Name`, `Qty` with rows `MUG-001`/`Mug`/2 and `TEA-010`/`Green Tea`/10 (Qty right-aligned) the widths are 7, 9 and 3; for headers `A`, `Long header`, `C` with the row `wide cell`/`x`/`y` the widths are 9, 11 and 1",
+    "Cells that are not strings (`None`, 2.5) are shown with `str`, empty cells give no trailing spaces, and no output line other than the rule ends in a space",
+    "A table without rows is as wide as its headers: `Name  Qty` and `----  ---`",
+    "The sales summary of one open order of customer `Al` placed on 2024-01-05 for one 500-cent line renders the month table as `Month    Revenue`, `-------  -------`, `2024-01    $5.00` and the customer table as `Customer  Total`, `--------  -----`, `Al        $5.00`",
+    "`stockroom sales --orders` on the sample order file prints the month table as `Month    Revenue`, `-------  -------`, `2024-01   $67.95`, `2024-02   $54.40`, `2024-03   $27.30` and the customer table with the rule `---------  ------` under the header `Customer    Total`"
+  ],
+  "hidden_map": {
+    "test_a_header_wider_than_its_cells_widens_the_column": 0,
+    "test_right_aligned_columns_align_the_header_with_their_cells": 1,
+    "test_each_column_takes_the_wider_of_its_header_and_its_widest_cell": 2,
+    "test_cells_are_converted_to_text_and_the_table_has_no_trailing_spaces": 3,
+    "test_a_table_without_rows_is_as_wide_as_its_headers": 4,
+    "test_a_small_sales_summary_is_laid_out_by_its_headers": 5,
+    "test_the_sales_command_lays_out_the_sample_data_by_its_headers": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

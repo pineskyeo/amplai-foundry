@@ -1,0 +1,41 @@
+{
+  "task_id": "data-csv-dialects",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Order and stock files from other systems use `;`, tab or `|` instead of `,`, and European systems write prices with a decimal comma. In `stockroom/csvio.py`: add `detect_delimiter(text, header)`, which returns the delimiter among `,` `;` tab and `|` that splits the first line of `text` (as `text.splitlines()[0]`, read with the `csv` module so quoted header cells work) into exactly the cells of `header` once each cell is trimmed, and otherwise raises `ParseError` (an empty text and a text whose first line is blank are a `ParseError` too). Give `read_orders(text, delimiter=None)` and `read_stock(text, delimiter=None)` the optional delimiter: `None` means `detect_delimiter` with `ORDER_HEADER` or `STOCK_HEADER`; any other value must be one of the four delimiters or `ValueError` is raised before anything is read; an explicit delimiter that does not split the header into the expected cells is a `ParseError`, as today. The `unit_price` cell of a `,`-delimited order file is read exactly as today. In a file with any other delimiter, the trimmed cell must be either a European amount, digits with optional `.` thousands groups of exactly three digits after a first group of one to three digits (`1.250`, `12.345`, `1.234.567`) and an optional decimal comma followed by one or two digits (`1.250,5`, `12,50`), or a point amount, digits with an optional decimal point followed by one or two digits (`1.25`, `0.5`, `1250.00`); a cell that fits both means the same in both; ASCII digits only, no sign, no symbol, no spaces inside, and no other form is accepted (a cell that fits neither is a `ParseError`; in particular `1,250.00` and `1,250` are refused there). Extend `write_orders(orders, *, delimiter=',', decimal='.')`: it writes with that delimiter (the `csv` module quotes cells that need it); with the default delimiter the output is exactly what it is today, while with any other delimiter prices are written without thousands separators, as whole units, the decimal mark and two decimals (`1250,00`, `8.95`); an unknown delimiter, a decimal mark other than `.` or `,`, or the combination of delimiter `,` with decimal `,` raises `ValueError`. Reading what `write_orders` wrote, with or without an explicit delimiter, returns the same orders. `python -m stockroom sales` and `stock` read files in any of the dialects. Add `python -m stockroom convert --orders IN --out OUT [--delimiter D] [--decimal M]` (`D` is one of the single characters `,` `;` `|` or a tab character, given as the character itself and not as the word `tab`, default `,`; `M` one of `.` `,`, default `.`), which reads the order file in whatever dialect it is in, writes it to `OUT` with `write_orders(..., delimiter=D, decimal=M)`, and prints `converted N orders` (`converted 1 order` for one order); a read or write error exits with code 1, `stockroom: error: ...` on stderr and no output file. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`detect_delimiter` finds `,` `;` tab and `|` for order and stock headers (also with `\\r\\n`, quoted header cells or a space after each delimiter) and raises `ParseError` for texts such as `''`, `'\\n'`, `'a;b;c\\n1;2;3\\n'`, a header with a missing column, a header with another separator (`:`), a header that is not on the first line, and a header that belongs to the other file kind",
+    "`read_orders` and `read_stock` read hand-written files in every delimiter (quoted cells keep the delimiter inside, `\\r\\n` is fine), detect the delimiter by default and accept the matching explicit delimiter; a wrong explicit delimiter or a header that does not match raises `ParseError`; a delimiter that is not one of the four (`:`, `ab`, the empty string, a space, a newline) raises `ValueError` from both readers; an empty text raises `ParseError`",
+    "Outside `,` files the price cell is read as the European or point form: `12,50`, `12,5`, `1.250,00`, `1.250,5`, `1.250` (= 1250.00), `12.345` (= 12345.00), `100.500`, `1.000`, `1.234.567,89`, `1.25`, `1.5`, `1.50`, `0.5`, `0.05`, `0,5`, `0,05`, `0`, `7`, `1250.00`, `1250,00` and `  12,50  ` give the expected cents, a quoted `\"1.250,00\"` works, and `1,250.00`, `1,250`, `12,345`, `1,2,3`, `1.2.3`, `1.25,5,5`, `-5`, `$12,50`, `12,`, `,50`, `1.250,505`, the empty cell, `1.2500`, `1.2345`, `12.50,00`, `1 250,00`, `1e3`, `12,50 EUR` and `+1,50` raise `ParseError`, in `;`, tab and `|` files alike",
+    "`,` files read as before (`\"1,250.00\"`, `12.50`, `$3.10` are accepted, `abc` raises `ParseError`) and `write_orders(orders)` with default arguments (or with `delimiter=','` and `decimal='.'`) writes exactly the text it wrote before (prices such as `\"1,250.00\"` quoted and grouped)",
+    "`write_orders` with `delimiter=';'` writes `1250.00` and `8.95`, with `decimal=','` it writes `1250,00` and `8,95`, tab and `|` files join cells with that character, an empty order list writes only the header, a customer such as `Ada, Moss` is quoted only when the delimiter is `,`, prices of 5 cents are written `0,05`, and `delimiter=','` with `decimal=','`, an unknown delimiter (`:`, `ab`, empty) or an unknown decimal mark raises `ValueError`",
+    "For 150 seeded random order lists (customers of letters, digits, spaces, accents and the characters `; , | \\t \" ' . \\n`, prices from 0 to 10^8 cents, up to three lines per order) and every delimiter with every decimal mark except the `,`/`,` pair, `write_orders` then `read_orders` (detected or explicit delimiter) returns the same orders and `detect_delimiter` returns the delimiter that was used; an empty list round-trips too",
+    "`python -m stockroom sales` prints the same summary for the order file of `data/orders.csv` written with `;` and decimal comma, with tab, and with `|` and decimal comma, as for the original, and `python -m stockroom stock` prints the same output and warnings for the stock file written with `;`, tab or `|`",
+    "`python -m stockroom convert` writes the file that `write_orders` gives for the given dialect and prints `converted 6 orders` for `data/orders.csv` (`converted 1 order` for one); converting a `;` file back with the defaults gives the original comma text; a `,` delimiter with a `,` decimal mark, a file with another header, exit with code 1, `stockroom: error:` on stderr, empty stdout and no output file; `--delimiter` of a real tab character is accepted, and a value outside the four single characters (`:`, `ab`, the word `tab`) is a usage error with code 2"
+  ],
+  "hidden_map": {
+    "test_delimiter_is_detected_from_the_header": 0,
+    "test_readers_follow_the_delimiter": 1,
+    "test_prices_outside_comma_files": 2,
+    "test_comma_files_are_unchanged": 3,
+    "test_writer_dialects": 4,
+    "test_every_dialect_round_trips": 5,
+    "test_command_line_reads_any_dialect": 6,
+    "test_convert_command": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,50 @@
+{
+  "task_id": "feature-stock-ledger",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/stock-ledger",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a stock ledger to stockroom: a plain-text list of stock movements that can be parsed, replayed against an `Inventory`, and summarised per month, plus a `ledger` command.\n\nCreate the module `stockroom/ledger.py` with:\n\n- `Movement`, a frozen dataclass with the fields `day` (a `datetime.date`), `kind` (str), `sku` (str), `quantity` (int) and `note` (str, default `\"\"`), in that order.\n- `parse_ledger(text: str) -> list[Movement]`.\n- `apply_movements(inventory: Inventory, movements: Iterable[Movement]) -> None`.\n- `month_end_snapshots(inventory: Inventory, movements: Iterable[Movement]) -> dict[str, dict[str, tuple[int, int]]]`.\n\nLedger text has one movement per line: `DAY KIND SKU QUANTITY [NOTE]`, for example `2024-03-02 reserve MUG-001 3 web order 77`. Fields are separated by runs of spaces or tabs, and leading and trailing whitespace on a line is ignored. `DAY` is an ISO date (`YYYY-MM-DD`, as `dates.parse_date` reads it). `KIND` is one of `receive`, `reserve`, `release`, `ship`, `count`, written in lower case. `SKU` must be a valid SKU as `models.check_sku` defines it. `QUANTITY` is written with the ASCII digits 0-9 only (no sign, no decimal point, no separators) and must be at least 1, except that a `count` movement may have quantity 0. `NOTE` is optional: it is everything after the quantity field, with surrounding whitespace removed and inner whitespace kept as written; it is `\"\"` when absent. Blank lines are ignored, and so is a line whose first non-blank character is `#`; a `#` later in a line is ordinary text and belongs to the note. A line with fewer than four fields is an error. Movements must not go back in time: a movement dated earlier than the movement before it is an error (the same day is fine). Every error is a `ParseError` whose message starts with `line N:` where N is the 1-based line number of the offending line in the whole text, counting blank and comment lines.\n\n`parse_ledger` returns the movements in file order.\n\nAdd two methods to `Inventory` in `stockroom/inventory.py`:\n\n- `copy()` returns an independent `Inventory` holding the same on-hand and reserved levels; changing either afterwards does not affect the other.\n- `count(sku, quantity)` records a stocktake: the on-hand stock of `sku` becomes `quantity` and the reserved units are unchanged. A SKU that was unknown becomes known (it then appears in `snapshot()`, even with quantity 0). A `quantity` below the units currently reserved for that SKU (negative values included) raises `StockError` and changes nothing.\n\n`apply_movements` applies the movements in order: `receive`, `reserve`, `release` and `ship` call the `Inventory` method of the same name with the SKU and quantity, and `count` calls `Inventory.count`. The call is all-or-nothing: if any movement raises `StockError`, the `StockError` that `apply_movements` raises has a message containing the movement's ISO day and its SKU, and `inventory` is exactly as it was before the call, even when earlier movements in the list had succeeded.\n\n`month_end_snapshots` replays the movements in list order on a copy of `inventory` (the argument is never changed) and returns, for every month (`\"YYYY-MM\"`) in which at least one movement is dated, the `snapshot()` of the replayed inventory right after the last movement of that month in list order. The result is sorted by month. A failing movement raises `StockError` exactly as in `apply_movements`.\n\nAdd a command `python -m stockroom ledger --stock STOCK.csv --ledger LEDGER.txt [--month-ends]`. It reads the stock file like the `stock` command does, parses the ledger, and prints the levels as one line per SKU in `snapshot()` order in the form `SKU ON_HAND RESERVED` (single spaces). Without `--month-ends` it replays the whole ledger and prints the final levels. With `--month-ends` it prints, for each month of `month_end_snapshots`, a line `== YYYY-MM` followed by that month's level lines, and prints nothing else. A `ParseError` or `StockError` ends the command with exit code 1 and the usual `stockroom: error: ...` message on stderr.",
+  "acceptance": [
+    "parse_ledger returns Movement(day, kind, sku, quantity, note) per line in file order: fields separated by runs of spaces or tabs, the note is the text after the quantity with surrounding whitespace removed (inner whitespace kept, '' when absent), blank lines and lines starting with '#' are ignored, and a '#' inside a note is kept",
+    "parse_ledger rejects with ParseError: a line with fewer than four fields, a bad date, an unknown or upper-case kind, an invalid SKU, a quantity that is not plain ASCII digits (sign, decimal point, separators, empty), and quantity 0 for every kind except count (count accepts 0)",
+    "Every parse error message starts with 'line N:' with N the 1-based line number in the whole text (blank and comment lines counted); a movement dated earlier than the previous movement is an error on its own line, while equal days are accepted",
+    "Inventory.copy() returns an independent inventory with the same levels; Inventory.count(sku, quantity) sets the on-hand stock (reserved unchanged, unknown SKU becomes known even at 0) and raises StockError, changing nothing, when quantity is below the reserved units or negative",
+    "apply_movements applies receive, reserve, release and ship through the same-named Inventory methods and count through Inventory.count, in list order, and accepts any iterable",
+    "apply_movements is all-or-nothing: when any movement fails the inventory is left exactly as before (including after earlier successful movements) and the StockError message contains that movement's ISO day and SKU",
+    "month_end_snapshots returns, per month that has a dated movement, the snapshot after the last movement of that month in list order, sorted by month, without changing the given inventory, and fails like apply_movements",
+    "The ledger command prints final levels 'SKU ON_HAND RESERVED' per line, prints '== YYYY-MM' blocks with --month-ends and nothing else, and exits 1 with 'stockroom: error: ...' on stderr for a ParseError or StockError"
+  ],
+  "hidden_map": {
+    "test_parse_fields_note_and_comments": 0,
+    "test_parse_keeps_file_order_and_types": 0,
+    "test_parse_rejects_bad_fields": 1,
+    "test_parse_quantity_rules": 1,
+    "test_parse_error_line_numbers": 2,
+    "test_parse_rejects_going_back_in_time": 2,
+    "test_inventory_copy_is_independent": 3,
+    "test_inventory_count": 3,
+    "test_apply_each_kind": 4,
+    "test_apply_accepts_iterator": 4,
+    "test_apply_is_all_or_nothing": 5,
+    "test_apply_error_names_day_and_sku": 5,
+    "test_month_end_snapshots": 6,
+    "test_month_end_does_not_touch_input_and_fails_like_apply": 6,
+    "test_cli_final_levels": 7,
+    "test_cli_month_ends": 7,
+    "test_cli_errors": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,40 @@
+{
+  "task_id": "cli_ops-check-package",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/check-package",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a release check script `scripts/check_package.py` that finds packaging and documentation drift before a release: `python scripts/check_package.py [--root DIR]`. `DIR` is the project root; it defaults to the repository root, the directory above the `scripts` directory that holds the script (independent of the current directory). The script only reads files, never imports the project, and uses only the standard library (`tomllib` for TOML).\n\nIt prints one line per problem to stdout, in the form `<rule>: <message>`, the lines sorted alphabetically as plain strings, and exits with code 1. When there is no problem it prints the single line `ok` and exits with 0. Nothing is written to stderr. Bad command-line arguments are an argparse usage error (exit code 2). The rules, with their rule names:\n\n1. `pyproject`: `DIR/pyproject.toml` is missing or unreadable, is not valid TOML, has no `[project]` table, or that table has no `name` string. This gives exactly one line `pyproject: <reason>` and no other rule runs.\n2. `version`: the project's `__version__` is the text of the first line of `DIR/stockroom/__init__.py` of the form `__version__ = \"X\"` or `__version__ = 'X'` (spaces around `=` optional, a trailing `# comment` allowed, `X` taken literally). When that file or line is missing the problem is reported (the message contains `__version__`). Otherwise: when `[project]` has a string `version`, it must equal `__version__`; else when `[project].dynamic` is a list containing `\"version\"`, the table `[tool.setuptools.dynamic]` must have `version = {attr = \"stockroom.__version__\"}`; else the project has no version, which is a problem.\n3. `script`: every entry of `[project.scripts]` must have the form `module:function` (a dotted module name of identifiers and a function identifier). A malformed value, a module that has neither `DIR/<module as path>.py` nor `DIR/<module as path>/__init__.py`, and a module file with no top-level `def <function>(` (a `def` at the start of a line; an indented method does not count) are each one problem, and the message starts with the script's name.\n4. `packages`: when `[tool.setuptools]` has a `packages` list, it must contain `stockroom` and the dotted name of every subpackage of `DIR/stockroom` at any depth (a directory with an `__init__.py`, reached only through directories that have one), each missing name being one problem whose message contains the dotted name; and every listed name whose directory with `__init__.py` does not exist under `DIR` is one problem whose message contains the name. When `packages` is absent this rule does nothing.\n5. `readme`: `DIR/README.md` documents modules in table rows that start with a backticked path: a line that starts with `|` in its first column, then optional spaces or tabs, then `stockroom/NAME.py` or `scripts/NAME.py` in backticks (NAME without `/`), then optional spaces or tabs, then a second `|`, with any text after it (so `|`stockroom/cli.py`|x` and `|   `scripts/tool.py`   | x` are rows, and a line indented before the first `|` is not). Every `.py` file directly in `DIR/stockroom` whose name does not start with `_`, and every `.py` file directly in `DIR/scripts`, needs such a row (problem message contains its path, such as `stockroom/errors.py`); every such row whose file does not exist is a problem (message contains the path). A missing README is the single problem `readme: README.md is missing`.\n\nThe repository itself must pass the check, including the new script: bring the repository's documentation in line with what the script enforces.",
+  "acceptance": [
+    "'python scripts/check_package.py' prints 'ok' and exits 0 on the repository itself, from any current directory, and '--root' with the repository path gives the same; this includes README rows for files that were undocumented (stockroom/errors.py) and for the script itself",
+    "pyproject problems (missing file, invalid TOML, no [project], no name) give exactly one 'pyproject: ' line, exit 1, and no other rule's problems",
+    "version: a static version must equal __version__ (either quote style, trailing comment allowed); a missing __version__ is reported; dynamic = [\"version\"] needs [tool.setuptools.dynamic] version = {attr = \"stockroom.__version__\"}; no version at all is a problem",
+    "script: malformed targets, missing module files (module.py or module/__init__.py) and missing top-level functions are reported with the script's name; indented defs do not count",
+    "packages: every subpackage of stockroom at any depth must be listed by dotted name, listed names without a package directory are reported, directories without __init__.py are not packages, and no 'packages' key means no check",
+    "readme: undocumented non-underscore modules of stockroom/ and all modules of scripts/ are reported, rows for missing files are reported, a row is a line starting with '|' in column 1, with optional spaces or tabs after the first '|' and before the second '|' (so '|`stockroom/cli.py`|x' counts, an indented line does not), rows for other paths are ignored, and a missing README is one line",
+    "Lines are '<rule>: <message>' sorted as plain strings on stdout with exit 1 (nothing on stderr); 'ok' with exit 0 otherwise; a bad option is a usage error with exit 2; a root without a pyproject.toml gives a pyproject line"
+  ],
+  "hidden_map": {
+    "test_the_repository_passes_its_own_check": 0,
+    "test_clean_projects_pass": 6,
+    "test_pyproject_problems_stop_the_other_rules": 1,
+    "test_version_rule": 2,
+    "test_script_rule": 3,
+    "test_packages_rule": 4,
+    "test_readme_rule": 5,
+    "test_output_format_order_and_exit_codes": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

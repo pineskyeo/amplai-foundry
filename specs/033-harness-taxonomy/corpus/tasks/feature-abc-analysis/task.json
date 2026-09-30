@@ -1,0 +1,43 @@
+{
+  "task_id": "feature-abc-analysis",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/abc-analysis",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add an ABC analysis of SKUs by revenue to stockroom, with an `abc` command.\n\nCreate the module `stockroom/analysis.py` with two functions.\n\n`sku_revenue(book: OrderBook) -> dict[str, int]` returns the cents sold per SKU: for every order whose status is not `cancelled`, every line adds `quantity * unit_price_cents` to its SKU. A SKU that only occurs in cancelled orders is not in the result; a SKU sold at unit price 0 is in it with 0.\n\n`abc_classes(revenue: Mapping[str, int], *, a_pct: int = 80, b_pct: int = 95) -> dict[str, str]` classifies the SKUs of `revenue` (SKU -> cents) as `\"A\"`, `\"B\"` or `\"C\"`. The SKUs are ranked by revenue, largest first, SKUs with equal revenue by SKU in ascending `str` order; the returned dict has its keys in that ranking order. Let `total` be the sum of all revenues and `before` the sum of the revenues of the SKUs ranked ahead of the SKU at hand (0 for the first). Then the SKU is `\"A\"` when `before * 100 < a_pct * total`; otherwise `\"B\"` when `before * 100 < b_pct * total`; otherwise `\"C\"`. All comparisons are exact integer comparisons. So the SKU that carries the running share across a threshold still belongs to the class it started in, and with `total == 0` every SKU is `\"C\"`. The thresholds must satisfy `0 < a_pct < b_pct <= 100`; otherwise `ValueError` is raised (also for an empty `revenue`). A negative revenue value raises `ValueError`. An empty `revenue` gives `{}`. The argument is not modified.\n\nAdd a command `python -m stockroom abc --orders ORDERS.csv [--a PERCENT] [--b PERCENT]` with the defaults 80 and 95 for the two thresholds. It computes `sku_revenue` of the orders file and `abc_classes` with the given thresholds and prints one line per SKU in ranking order: `<class>  <sku>  <revenue>` with two spaces between the fields and no padding, the revenue formatted with the `currency_symbol` setting (as `money.format_money` does). When there is no revenue at all it prints the single line `no sales` instead. Thresholds that `abc_classes` refuses end the command with exit code 1 and `stockroom: error: ...` on stderr (nothing on stdout); an option value that is not an integer is a usage error (exit code 2, as for the other commands).",
+  "acceptance": [
+    "sku_revenue sums quantity * unit_price_cents per SKU over non-cancelled orders only; SKUs only in cancelled orders are absent, zero-price SKUs are present with 0",
+    "abc_classes ranks by revenue descending with ties by SKU ascending and returns its dict in that ranking order; an empty mapping gives {}",
+    "A SKU is A while revenue ranked before it is below a_pct percent of the total (exact integer comparison, before*100 < a_pct*total), else B while below b_pct percent, else C; the crossing SKU keeps its starting class and a zero total makes every SKU C",
+    "abc_classes raises ValueError unless 0 < a_pct < b_pct <= 100 (also for empty input) and for negative revenue values, and does not modify its argument",
+    "The abc command prints '<class>  <sku>  <revenue>' per SKU in ranking order using the currency_symbol setting, prints 'no sales' without revenue, exits 1 with an error message for refused thresholds and 2 for non-integer option values"
+  ],
+  "hidden_map": {
+    "test_sku_revenue": 0,
+    "test_sku_revenue_zero_price_and_cancelled_only": 0,
+    "test_ranking_order_and_ties": 1,
+    "test_empty_revenue": 1,
+    "test_class_boundaries": 2,
+    "test_crossing_sku_keeps_its_class": 2,
+    "test_zero_total_is_all_c": 2,
+    "test_custom_thresholds": 2,
+    "test_invalid_thresholds": 3,
+    "test_negative_revenue_and_no_mutation": 3,
+    "test_cli_defaults_on_sample_data": 4,
+    "test_cli_custom_thresholds": 4,
+    "test_cli_no_sales_and_errors": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

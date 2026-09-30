@@ -1,0 +1,62 @@
+{
+  "task_id": "ambiguity-weekly-revenue",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-weekly-revenue",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add a weekly revenue breakdown to the sales report. `stockroom/dates.py` gets `week_start(value: date) -> date`, the first day of the week that contains `value`. `OrderBook.revenue_by_week()` returns `{label: cents}` like `revenue_by_month`: the label is the ISO date (`YYYY-MM-DD`) of the week's first day, the amounts are the subtotals of the orders that are not cancelled, and the keys come in ascending order. `python -m stockroom sales --orders FILE --weekly` prints the usual summary and then, after one blank line, the line `Weekly revenue` followed by one line per week: the label, two spaces, and the revenue formatted as in the rest of the summary (currency symbol from the settings, thousands separators). The breakdown covers the same orders as the rest of the summary. Without `--weekly` the output is unchanged.",
+  "acceptance": [
+    "`week_start` never returns a date after its argument or 7 or more days before it, returns the same date for a date that is already the first day of a week, and gives the same result for all seven dates of one week (each week starts exactly 7 days after the previous one)",
+    "`revenue_by_week` adds up the subtotals of the orders of one week that are not cancelled, leaves out a week that has only cancelled orders, has ISO-date keys in ascending order, and is `{}` for an empty book",
+    "For the sample orders in `data/orders.csv` the breakdown has one entry for each week that has a non-cancelled order (5 entries), and the entries add up to 14965 cents, the `Revenue: $149.65` of the summary",
+    "`sales --weekly` prints the unchanged summary, one blank line, the line `Weekly revenue` and one line per week (label, two spaces, amount); `--from` narrows it like the rest of the summary and the currency symbol comes from the settings; without `--weekly` the output has no weekly part",
+    "An order is reported in the week that contains its placement date: the dates Saturday 2024-02-03, Sunday 2024-02-04 and Monday 2024-02-05 each get the first day of the week they belong to, in `week_start`, in `revenue_by_week` and in the `sales --weekly` labels"
+  ],
+  "hidden_map": {
+    "test_week_start_is_the_first_day_of_a_seven_day_week": 0,
+    "test_revenue_by_week_groups_by_the_week_of_the_placement_date": 1,
+    "test_weekly_breakdown_of_the_sample_orders_adds_up_to_the_revenue": 2,
+    "test_sales_weekly_prints_the_summary_then_the_weekly_lines": 3,
+    "test_sales_weekly_follows_from_and_the_currency_setting": 3,
+    "test_weeks_start_on_monday": 4,
+    "test_sample_orders_fall_in_monday_weeks": 4,
+    "test_week_start_is_the_first_day_of_a_seven_day_week_alt": 0,
+    "test_revenue_by_week_groups_by_the_week_of_the_placement_date_alt": 1,
+    "test_weekly_breakdown_of_the_sample_orders_adds_up_to_the_revenue_alt": 2,
+    "test_sales_weekly_prints_the_summary_then_the_weekly_lines_alt": 3,
+    "test_sales_weekly_follows_from_and_the_currency_setting_alt": 3,
+    "test_weeks_start_on_sunday": 4,
+    "test_sample_orders_fall_in_sunday_weeks": 4
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "monday",
+      "sunday",
+      "saturday",
+      "first day of the week",
+      "week start",
+      "start of the week",
+      "start on",
+      "iso week",
+      "which day",
+      "weekday"
+    ],
+    "interpretations": [
+      "Weeks run Monday to Sunday (the ISO week): `week_start` returns the Monday and the labels are Mondays",
+      "Weeks run Sunday to Saturday: `week_start` returns the Sunday and the labels are Sundays"
+    ]
+  },
+  "difficulty_declared": null
+}

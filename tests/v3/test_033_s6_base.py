@@ -215,7 +215,8 @@ def test_same_tree_same_commit_whatever_the_copy(tmp_path: Path) -> None:
     shutil.copytree(BENCH, copy)
     (copy / "scripts" / "make_sample_data.py").chmod(0o755)
     os.utime(copy / "README.md", (1_000_000_000, 1_000_000_000))
-    (copy / "stockroom" / "__pycache__").mkdir()
+    # the source tree may already hold a __pycache__ from running its tests (ignored by git)
+    (copy / "stockroom" / "__pycache__").mkdir(exist_ok=True)
     (copy / "stockroom" / "__pycache__" / "money.cpython-311.pyc").write_bytes(b"junk")
     env = {
         "GIT_AUTHOR_NAME": "Someone Else",

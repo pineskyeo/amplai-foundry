@@ -1,0 +1,64 @@
+{
+  "task_id": "ambiguity-stacked-coupons",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-stacked-coupons",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add percentage coupons. `stockroom/coupons.py` gets the table `COUPONS` (`WELCOME` 10 %, `BULK` 5 %, `VIP` 20 %) and `apply_coupons(cents: int, codes: Sequence[str]) -> int`, the amount in cents after the coupons; the final amount is rounded half up to a whole cent. Codes are matched case-insensitively (`welcome` is `WELCOME`), a code given more than once counts once, and an unknown code raises `ParseError` with the message `unknown coupon 'X'` (the code as it was given) before anything is applied. An order can carry several different coupons at once, and an empty list of codes leaves the amount unchanged. The `price` command gets a repeatable option `--coupon CODE`: the first output line then shows the amount after the coupons, tax is computed on that amount, and `--coupon` together with a non-zero `--discount` is refused as a data error (`stockroom: error: --coupon cannot be combined with --discount`, exit code 1).",
+  "acceptance": [
+    "A single coupon takes its percentage off: on 10000 cents `WELCOME` gives 9000, `BULK` 9500 and `VIP` 8000; an empty list gives 10000, codes are case-insensitive and a repeated code counts once",
+    "The amount after the coupons is rounded half up to a whole cent (12345 cents with `WELCOME` gives 11111, 101 with `BULK` gives 96, 103 with `WELCOME` gives 93, 0 stays 0)",
+    "An unknown code raises `ParseError` with the message `unknown coupon 'X'` and nothing is applied, even when the other codes are valid",
+    "`price --coupon CODE` prints the amount after the coupons on its first line and taxes that amount; an unknown coupon and a coupon with a non-zero `--discount` exit with code 1, print nothing on stdout and give the `stockroom: error: ...` line on stderr",
+    "When an order carries several different coupons, all of them take effect and the result does not depend on the order in which the codes are given: the amount with two or three coupons is lower than the amount with any one of them"
+  ],
+  "hidden_map": {
+    "test_a_single_coupon_takes_its_percentage_off": 0,
+    "test_the_amount_after_the_coupons_is_rounded_half_up": 1,
+    "test_an_unknown_code_is_refused_before_anything_is_applied": 2,
+    "test_price_shows_the_amount_after_a_coupon_and_taxes_that_amount": 3,
+    "test_price_refuses_unknown_coupons_and_a_coupon_with_a_discount": 3,
+    "test_several_coupons_all_take_effect_whatever_their_order": 4,
+    "test_coupons_add_up_their_percentages": 4,
+    "test_a_single_coupon_takes_its_percentage_off_alt": 0,
+    "test_the_amount_after_the_coupons_is_rounded_half_up_alt": 1,
+    "test_an_unknown_code_is_refused_before_anything_is_applied_alt": 2,
+    "test_price_shows_the_amount_after_a_coupon_and_taxes_that_amount_alt": 3,
+    "test_price_refuses_unknown_coupons_and_a_coupon_with_a_discount_alt": 3,
+    "test_several_coupons_all_take_effect_whatever_their_order_alt": 4,
+    "test_coupons_apply_one_after_the_other": 4
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "stack",
+      "additive",
+      "added together",
+      "add up",
+      "compound",
+      "sequential",
+      "one after",
+      "multiplicative",
+      "cumulative",
+      "successive",
+      "sum of the percentages",
+      "85.5"
+    ],
+    "interpretations": [
+      "Coupon percentages add up: WELCOME with BULK takes 15 % off the original amount",
+      "Coupons compound: each coupon takes its percentage off the amount left by the previous one, so WELCOME then BULK leaves 85.5 % of the original amount"
+    ]
+  },
+  "difficulty_declared": null
+}

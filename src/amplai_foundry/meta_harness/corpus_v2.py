@@ -492,8 +492,13 @@ def grade(
             "TASK_GRADING", f"{task.task_id}: planner_questions grading needs the questions"
         )
     if task.ambiguity["expected"] == "ask":
-        wanted = [s.lower() for s in task.ambiguity["must_mention_any"]]
-        named = any(w in q.lower() for q in planner_questions for w in wanted)
+        # Whole words or phrases, not substrings: "ratio" must not match "configuration"
+        # (authoring review 2026-10-01).
+        wanted = [
+            re.compile(r"(?<![a-z0-9])" + re.escape(s.lower()) + r"(?![a-z0-9])")
+            for s in task.ambiguity["must_mention_any"]
+        ]
+        named = any(w.search(q.lower()) for q in planner_questions for w in wanted)
         asked = bool(planner_questions) and named
         detail = f"expected ask: {len(planner_questions)} questions, names a required term={named}"
         return Outcome(asked, True, detail)

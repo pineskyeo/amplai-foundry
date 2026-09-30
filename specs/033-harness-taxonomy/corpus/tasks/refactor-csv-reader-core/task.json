@@ -1,0 +1,38 @@
+{
+  "task_id": "refactor-csv-reader-core",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "dedupe",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-csv-reader-core",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`read_stock` and `read_orders` in `stockroom/csvio.py` each open the text with their own csv reader and each repeat the same steps: drop blank rows, compare the header row, number the data rows for error messages. Pull those steps into one shared piece of code so that the package creates a csv reader in a single place. The two readers do not treat their input the same way today (what counts as a blank row, whether the header may be padded or preceded by blank rows, what the line numbers count); keep every one of those differences. This is a pure refactor: all readers and writers behave exactly as before, including error messages, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "The `stockroom` package creates a csv reader (`csv.reader` or `csv.DictReader`) in exactly one place",
+    "`csvio` still offers `ITEM_HEADER`, `STOCK_HEADER`, `ORDER_HEADER`, `parse_tags`, `read_items`, `write_items`, `read_stock`, `read_orders` and `write_orders` under the same names",
+    "`read_items`, `read_stock` and `read_orders` return the same result, or raise the same exception class with the same message (line numbers included), as before for the same text: empty input, blank and whitespace-only lines before, inside and after the data, rows of only empty cells, padded and wrong headers, a header with an extra empty column, rows with too few or too many fields, bad or negative numbers, bad SKUs, dates and statuses, CRLF line endings, a missing final newline, repeated order ids, quoted fields in stock and order files, and the order in which several problems in one file are reported",
+    "`read_stock` accepts blank rows before its header and cells padded with spaces in its header; `read_orders` accepts neither (a blank first line or a padded header gives `order header must be ...`) but ignores extra cells at the end of a row",
+    "`write_items` and `write_orders` produce the same text as before, `read_items(write_items(x))` and `read_orders(write_orders(x))` return `x`, and `scripts/make_sample_data.py` writes byte-identical files that the readers read back"
+  ],
+  "hidden_map": {
+    "test_the_package_creates_a_csv_reader_in_exactly_one_place": 0,
+    "test_the_public_names_of_csvio_are_kept": 1,
+    "test_read_items_is_unchanged": 2,
+    "test_read_stock_is_unchanged": 2,
+    "test_read_orders_is_unchanged": 2,
+    "test_the_two_readers_keep_their_different_header_rules": 3,
+    "test_writers_and_round_trips_are_unchanged": 4,
+    "test_sample_data_files_are_read_back_and_written_the_same": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

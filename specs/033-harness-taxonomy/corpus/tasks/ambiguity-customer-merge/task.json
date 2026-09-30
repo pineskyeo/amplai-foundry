@@ -1,0 +1,48 @@
+{
+  "task_id": "ambiguity-customer-merge",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-customer-merge",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Merge customers whose names were written in different ways. `stockroom/customers.py` gets three functions. `normalize_name(name: str) -> str` is the comparison form of a name: first every `.` character is removed, then the text is case-folded with `str.casefold()`, then every run of whitespace (as `str.split()` understands whitespace) becomes one space and the ends are stripped; no other character is touched, so `Kim, Hana` and `Hana Kim` are different customers. `merge_customers(orders: Iterable[Order]) -> dict[str, str]` maps every exact spelling of `order.customer` found in `orders` to the canonical spelling of its customer, where spellings with the same normalized form are one customer (a name whose normalized form is empty is an ordinary name and follows the same rules). The canonical spelling of a customer is the spelling written on the most orders, counting every order whatever its status; a tie goes to the spelling whose earliest order (by `placed`) is the earliest; a remaining tie goes to the smaller string in plain string order. The keys of the result are in order of first appearance in `orders`, and the result does not depend on the order of `orders` otherwise. `canonicalize(orders: Iterable[Order]) -> list[Order]` returns the orders in the same order with the customer replaced by the canonical spelling and every other field equal, leaving the given orders alone. A new command `python -m stockroom customers --orders FILE` reads an order file and prints one line per customer, sorted by canonical name in plain string order: `<canonical>: <n order(s)>, <revenue>`, where `n` counts all orders of the customer under any spelling (`1 order`, `2 orders`), and the revenue is the sum of the subtotals of those orders that are not cancelled, formatted like the other amounts (currency symbol from the settings). When the customer appears under more than one spelling, a second line follows, two spaces then `also written: ` and the spellings other than the canonical one that occur in the file, sorted in plain string order and separated by `, `. A file without orders prints nothing. The exit code is 0.",
+  "acceptance": [
+    "`normalize_name` removes dots, folds case, makes whitespace runs (tabs, newlines, non-breaking spaces) one space and strips, and touches nothing else (`Kim, Hana` stays `kim, hana`, `Stra\\u00dfe` becomes `strasse`, `...` becomes the empty string)",
+    "The canonical spelling is the one on the most orders, cancelled orders counted: three `hana kim` orders beat two other spellings, and one paid plus two cancelled `Hana Kim` orders beat two `hana kim` orders",
+    "Ties go to the spelling with the earliest order, and a remaining tie to the smaller string (`HANA KIM` before `Hana Kim` before `hana kim`)",
+    "Different normalized names stay apart (`Kim, Hana`, `hana kim Jr.`, `Hana-Kim`), the result's keys follow first appearance, the result does not depend on the order of the orders, and an empty input gives `{}`",
+    "`canonicalize` returns the orders in their order with only the customer replaced, leaves the given orders unchanged and accepts any iterable",
+    "For seeded random orders with messy spellings the mapping equals the mapping computed from the definition, also when the orders are shuffled, and `canonicalize` follows it",
+    "`customers` on the sample orders prints `Hana Kim: 2 orders, $88.35`, `Lena Berg: 2 orders, $14.80` and `Omar Diaz: 2 orders, $46.50` (a cancelled order counts as an order but not as revenue)",
+    "`customers` merges spellings, prints the canonical name, the count of all orders and the revenue of non-cancelled ones, an `  also written: ...` line with the other spellings sorted, uses the currency symbol of the settings, sorts lines by canonical name in plain string order, and prints nothing for a file without orders"
+  ],
+  "hidden_map": {
+    "test_names_are_compared_without_dots_case_or_extra_whitespace": 0,
+    "test_the_most_frequent_spelling_is_canonical_and_cancelled_orders_count": 1,
+    "test_equal_counts_go_to_the_earliest_order_then_to_the_smaller_string": 2,
+    "test_different_names_stay_apart_and_keys_follow_first_appearance": 3,
+    "test_canonicalize_renames_customers_and_keeps_everything_else": 4,
+    "test_random_orders_match_the_definition_whatever_their_order": 5,
+    "test_the_command_lists_customers_with_their_orders_and_revenue": 6,
+    "test_the_command_merges_spellings_and_names_the_other_ones": 7
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Spellings are merged by the stated normal form and the most frequent spelling wins (as stated)",
+      "Names are merged by a fuzzier similarity such as word order (contradicts the stated normal form)"
+    ]
+  },
+  "difficulty_declared": null
+}

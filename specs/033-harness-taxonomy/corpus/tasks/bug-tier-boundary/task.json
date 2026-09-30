@@ -1,0 +1,37 @@
+{
+  "task_id": "bug-tier-boundary",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D8",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "A quantity price tier is not applied at exactly its minimum quantity. With a tier \"from 10 units on, 900 per unit\" and a base price of 1000, ten units are priced at 1000 and only eleven units get 900. A tier applies from its minimum quantity on (the minimum itself included). When several tiers are reached, the one with the largest minimum quantity applies, whatever its price; when none is reached, the base price applies.",
+  "acceptance": [
+    "With the tier (10 units, 900) and base price 1000, 9 units cost 1000 each, 10, 11 and 1000 units cost 900 each",
+    "With tiers (10, 900), (50, 800) and (200, 700) and base price 1000: 1 and 9 units cost 1000, 10, 11 and 49 cost 900, 50, 51 and 199 cost 800, 200 and 201 cost 700",
+    "The result does not depend on the order of the tiers or on whether they are given as a list, a tuple or a generator",
+    "With tiers (10, 900) and (20, 950) and base price 1000: 10 and 19 units cost 900, 20 and 25 units cost 950 (the largest minimum reached wins, even when its price is higher)",
+    "A tier starting at 1 unit applies to a single unit: tier (1, 950) gives 950 for 1 unit; with tiers (1, 950) and (5, 900), 2 units cost 950 and 5 units cost 900",
+    "Without tiers, with an empty tier list, or when the quantity is below every minimum, the base price is used; a free tier (10, 0) on a base price of 0 gives 0"
+  ],
+  "hidden_map": {
+    "test_a_tier_applies_at_exactly_its_minimum_quantity": 0,
+    "test_each_of_several_tiers_applies_from_its_own_minimum": 1,
+    "test_the_order_and_the_kind_of_the_tier_collection_do_not_matter": 2,
+    "test_the_largest_minimum_reached_wins_even_when_its_price_is_higher": 3,
+    "test_a_tier_that_starts_at_one_unit_applies_to_a_single_unit": 4,
+    "test_without_a_reached_tier_the_base_price_is_used": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

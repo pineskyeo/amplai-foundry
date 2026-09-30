@@ -42,6 +42,7 @@ WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # names stay blocking whatever their shape.
 KEYWORDS = frozenset(keyword.kwlist) | frozenset(keyword.softkwlist)
 COMMON_NAMES = KEYWORDS | frozenset(dir(builtins)) | frozenset(sys.stdlib_module_names)
+PYTEST_INFRA_NAMES = frozenset({"conftest.py", "__init__.py"})
 COMPOUND = re.compile(r"^(?!__)(?=[A-Za-z0-9_]*(?:[A-Za-z0-9]_[A-Za-z0-9]|[a-z][A-Z]))")
 BOUNDARY_BEFORE, BOUNDARY_AFTER = r"(?<![A-Za-z0-9_])", r"(?![A-Za-z0-9_])"
 
@@ -95,7 +96,12 @@ def build_index(corpus: CorpusV2, splits: dict[str, str]) -> dict[str, Any]:
             continue
         hidden = {**task.hidden, **task.hidden_alt}
         found = {(task.task_id, "task_id")}
-        found |= {(PurePosixPath(name).name, "hidden_test_name") for name in hidden}
+        # pytest infrastructure file names carry no task information (authoring review 2026-10-01)
+        found |= {
+            (PurePosixPath(name).name, "hidden_test_name")
+            for name in hidden
+            if PurePosixPath(name).name not in PYTEST_INFRA_NAMES
+        }
         found |= {(name, "hidden_test_name") for name in hidden_test_functions(hidden)}
         if task.base_id not in base_words:
             root = corpus.root / corpus.bases[task.base_id]["dir"]

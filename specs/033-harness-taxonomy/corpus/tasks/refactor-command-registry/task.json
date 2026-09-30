@@ -1,0 +1,39 @@
+{
+  "task_id": "refactor-command-registry",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "restructure",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-command-registry",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Every subcommand of the `stockroom` command line is spread over three places in `stockroom/cli.py`: its options are declared in `_parser`, its behaviour is a `_cmd_*` function, and a dict `COMMANDS` at the bottom maps its name to that function. Adding a command means editing all three and the help texts live apart from the code. Restructure `cli.py` so that each command is one record in a registry and both the argument parser and the dispatch are derived from that registry when `main` runs. This is a pure refactor for the four existing commands: their help texts, usage errors, results, error messages and exit codes stay byte for byte the same, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`stockroom.cli.Command` is a frozen dataclass with the fields `name`, `help`, `configure` and `run`, in this order (so `Command(name, help, configure, run)` works positionally and by keyword); `configure(parser)` declares the options of the command on its argparse subparser, and `run(args, config)` returns the exit code",
+    "`stockroom.cli.COMMANDS` is a `dict` from command name to `Command` holding `items`, `stock`, `sales` and `price`, in this order, with the help texts `list the catalogue`, `list items below their reorder level`, `sales summary` and `price a quantity of one item`",
+    "The parser and the dispatch are built from `COMMANDS` every time `main` runs: a `Command` added to the dict is parsed with its own `configure`, listed in `--help` with its `help` text, run with the loaded settings dict (defaults, then the `--config` file, then `STOCKROOM_*` variables) and, when it raises a `StockroomError`, ends with `stockroom: error: <message>` on stderr and exit code 1 after what it already printed; a command removed from the dict is rejected as an invalid choice with exit code 2; a replaced entry is parsed and run with the replacement's `configure` and `run`",
+    "For `items`, `stock`, `sales` and `price`, run through `cli.main` with the terminal width fixed at 80, the output of `--help` (main and every subcommand), `--version`, every usage error (missing options, a bad value, an unknown command, no command), the normal results, the data errors (exit code 1, message on stderr) and the handling of settings from the environment and from `--config` are identical to what they were before the change"
+  ],
+  "hidden_map": {
+    "test_existing_commands_behave_as_before": 3,
+    "test_settings_reach_the_commands_as_before": 3,
+    "test_command_is_a_frozen_record_of_four_fields": 0,
+    "test_the_registry_holds_the_four_commands_in_order": 1,
+    "test_a_registered_command_is_parsed_run_and_listed": 2,
+    "test_a_command_gets_the_loaded_settings": 2,
+    "test_data_errors_of_a_registered_command_exit_with_one": 2,
+    "test_every_command_is_built_from_its_record": 2,
+    "test_a_removed_command_is_no_longer_accepted": 2,
+    "test_the_registry_is_read_when_main_runs_not_when_the_module_loads": 2
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

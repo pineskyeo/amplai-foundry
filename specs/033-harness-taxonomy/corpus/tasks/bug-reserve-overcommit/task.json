@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-reserve-overcommit",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D7",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Stock can be reserved beyond what is free. With 10 units on hand of which 8 are already reserved, reserving 3 more units succeeds and the available stock becomes negative; repeated reservations over-commit the same stock. Only units that are available (on hand minus reserved) may be reserved. A refused request raises a `StockError` and changes nothing.",
+  "acceptance": [
+    "With 10 units received and 6 reserved, reserving 5 raises a `StockError` and leaves 10 on hand, 6 reserved and 4 available",
+    "Reservations of 3, 3 and 4 units of a stock of 10 succeed, leaving 0 available, and a further reservation of 1 raises a `StockError`",
+    "For levels loaded with 10 on hand and 8 reserved, reserving 3 raises a `StockError`, reserving 2 succeeds (10 on hand, 10 reserved), and a SKU with 5 on hand and 5 reserved cannot be reserved at all",
+    "After 10 received, 6 reserved and 2 shipped (8 on hand, 4 reserved), reserving 5 raises a `StockError` and reserving 4 succeeds; after releasing 3, reserving 4 raises a `StockError` and reserving 3 succeeds; after receiving 2 more, reserving 2 succeeds",
+    "Reserving an unknown SKU raises a `StockError` and creates no entry; a quantity of 0 or less raises a `StockError` and changes nothing",
+    "The low-stock list follows the available stock after reservations (a refused reservation does not change it)",
+    "For a seeded random sequence of receive, reserve, release and ship calls, a reserve call succeeds exactly when its quantity is at most the available stock, every refused call leaves the levels unchanged, and the available stock never becomes negative"
+  ],
+  "hidden_map": {
+    "test_reserving_more_than_is_available_is_refused_and_changes_nothing": 0,
+    "test_repeated_reservations_fill_the_stock_exactly_and_no_further": 1,
+    "test_levels_loaded_with_reservations_count_against_new_reservations": 2,
+    "test_reserving_after_ship_and_release_uses_the_remaining_available_stock": 3,
+    "test_unknown_skus_and_non_positive_quantities": 4,
+    "test_low_stock_reflects_what_was_reserved": 5,
+    "test_random_operations_match_a_simple_model": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

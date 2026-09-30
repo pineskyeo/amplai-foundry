@@ -1,0 +1,43 @@
+{
+  "task_id": "feature-order-checks",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/order-checks",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add consistency checks for orders against the catalogue, and a `check` command that reports them.\n\nCreate the module `stockroom/checks.py` with:\n\n- `Issue`, a frozen dataclass with the fields `order_id` (str), `line` (int) and `code` (str), in that order. `line` is `0` for an issue about the whole order, otherwise the 1-based number of the order line the issue is about.\n- `check_orders(orders: Iterable[Order], items: Iterable[Item]) -> list[Issue]`.\n\n`check_orders` compares each order with the catalogue `items` (looked up by SKU) and reports these problems:\n\n- `duplicate_order` (line 0): the order's `order_id` already appeared on an earlier order of the same input. The first order with that id is not reported; every later one is. The later orders are still checked for all other problems.\n- `blank_customer` (line 0): the customer name is empty or only whitespace.\n- `no_lines` (line 0): the order has no lines.\n- `unknown_sku` (line N): the SKU of line N is not in the catalogue.\n- `price_mismatch` (line N): the SKU of line N is in the catalogue but the line's unit price differs from the catalogue price. Cancelled orders (status `cancelled`) are never checked for this problem, because their prices are historic. A line with an unknown SKU never gets `price_mismatch`.\n- `duplicate_sku` (line N): the SKU of line N also appeared on an earlier line of the same order. The first line with the SKU is not reported; every later line is (so three lines with one SKU give issues for lines 2 and 3). This is reported whatever the status is and whether or not the SKU is in the catalogue.\n\nOne line can carry several issues (for example `duplicate_sku` and `unknown_sku`). The result lists the issues of the orders in input order; within one order they are sorted by `line` ascending and, for equal lines, by `code` in ascending alphabetical order. An input without problems gives `[]`. `check_orders` does not modify its arguments and accepts any iterable for both parameters.\n\nAdd a command `python -m stockroom check --items ITEMS.csv --orders ORDERS.csv`. It reads both files like the other commands do and runs `check_orders`. When there are no issues it prints `ok` and exits with 0. Otherwise it prints one line per issue in result order, in the form `ORDER_ID:LINE: CODE` (for example `A-1004:2: price_mismatch` or `A-1005:0: no_lines`), and exits with 1. The sample data in `data/` has no issues.",
+  "acceptance": [
+    "Issue(order_id, line, code) is a frozen dataclass; check_orders returns [] for consistent orders, accepts any iterable for both arguments and does not modify them",
+    "unknown_sku is reported per line whose SKU is not in the catalogue",
+    "price_mismatch is reported per line whose unit price differs from the catalogue price, never for cancelled orders and never for a line with an unknown SKU",
+    "duplicate_sku is reported on every later line that repeats a SKU of the same order (first occurrence not reported), whatever the status or catalogue membership",
+    "Order-level issues with line 0: duplicate_order for every later order reusing an id (the first is not reported, later orders are still checked), blank_customer for empty or whitespace-only names, no_lines for an order without lines",
+    "Issues are ordered by order position in the input, then line ascending, then code alphabetically; one line may carry several issues",
+    "The check command prints 'ok' and exits 0 without issues, otherwise prints 'ORDER_ID:LINE: CODE' per issue in result order and exits 1; the sample data has no issues"
+  ],
+  "hidden_map": {
+    "test_clean_orders_and_input_handling": 0,
+    "test_unknown_sku": 1,
+    "test_price_mismatch": 2,
+    "test_price_mismatch_skipped_for_cancelled_and_unknown": 2,
+    "test_duplicate_sku": 3,
+    "test_duplicate_sku_any_status_and_unknown": 3,
+    "test_order_level_issues": 4,
+    "test_duplicate_order_still_checks_lines": 4,
+    "test_issue_ordering": 5,
+    "test_cli_sample_data_is_ok": 6,
+    "test_cli_reports_issues": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

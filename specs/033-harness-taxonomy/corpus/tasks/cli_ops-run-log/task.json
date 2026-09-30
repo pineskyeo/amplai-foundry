@@ -1,0 +1,35 @@
+{
+  "task_id": "cli_ops-run-log",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/run-log",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add an invocation log to `stockroom`, so that scheduled runs leave a trace. There is a new setting `log_file` (default: the empty string; INI key `log_file`, environment variable `STOCKROOM_LOG_FILE`) and a new global option `--log-file PATH`. The option overrides the environment variable, which overrides the INI file, which overrides the default. An empty value, from any source, means that nothing is logged, so `--log-file \"\"` switches off a log that the environment or the INI file asked for. A relative path is relative to the current directory.\n\nWhen a log file is set, every invocation of a command (`items`, `stock`, `sales` or `price`) that gets as far as running the command appends exactly one line to it after the command has finished. The file is created when it does not exist and never truncated; the file is UTF-8 and the line ends with `\\n`. The line is `<command> exit=0` when the command succeeded, and `<command> exit=1 error=<message>` when the command ended with a data or settings error, where `<message>` is the text after `stockroom: error: ` that went to stderr and `<command>` is the name of the command as typed (`items`, `stock`, `sales` or `price`). Nothing else is added to the line and the log has no timestamps.\n\nInvocations that end before a command runs are not logged: usage errors (exit code 2), `--version`, and runs whose settings cannot be loaded (an invalid settings file or environment value), even when a log file was named on the command line.\n\nWhen the log file cannot be written (its directory does not exist, it is a directory, ...), the command's own output and exit code do not change, and after everything else the command writes one more line to stderr: `stockroom: warning: cannot write log file <path>: <reason>`, with the path as it was configured. Everything else about the commands, their output and their exit codes stays as it is.",
+  "acceptance": [
+    "With --log-file, successful items, stock, sales and price runs append '<command> exit=0' lines and a failing price run (unknown SKU) appends '<command> exit=1 error=<the message of its stderr line>'; the file is created, appended to, and its old content is kept; stdout and stderr of the commands are unchanged",
+    "The setting log_file can come from the INI file and from STOCKROOM_LOG_FILE, with precedence option > environment > INI > default; an empty value from the option, the environment or the INI file turns logging off",
+    "Usage errors (exit 2), --version, and runs whose settings fail to load write no log line and create no log file",
+    "A log file that cannot be written (missing directory, a directory) leaves stdout and the exit code as they were and adds the single stderr line 'stockroom: warning: cannot write log file <path>: <reason>' after the command's own stderr output",
+    "A relative log path is relative to the current directory, and the new setting key is accepted in the INI file and the environment without an 'unknown setting' error"
+  ],
+  "hidden_map": {
+    "test_each_command_appends_one_line": 0,
+    "test_log_file_setting_and_precedence": 1,
+    "test_runs_that_do_not_reach_a_command_are_not_logged": 2,
+    "test_unwritable_log_gives_a_warning_only": 3,
+    "test_relative_path_and_settings_keys": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
