@@ -95,10 +95,10 @@ Open (asked 2026-09-30; recommendation in bold):
 |---|---|---|
 | OD-9 | What "develop with AMPLAI V3" means — **Decided 2026-09-30: (a)** | (a) workflow agents write code; V3 runs all experiments; (b) every slice is an `amplai work` goal run by V3's drivers; **(c) (a) plus a few small slices dogfooded through `amplai work`, their runs recorded as observations** |
 | OD-10 | Legacy scope | **Decided 2026-09-30: remove V1 and V2, and whatever V3 does not need.** Order: evidence-backed inventory → operator approves the list → move onto V3 only what developing the V3 way strictly requires (operator: no migration just to keep an old feature; development is V3-only from now) → remove → green CI. Last phase of this Work |
-| OD-11 | Real-run budget for this Work | S ≈ 355 trials (2 cells, ~6 h); **M ≈ 710 trials (4 cells, ~12 h)**; L ≈ 1,065 trials (6 cells, ~18 h) — plan §4 |
+| OD-11 | Real-run budget for this Work — **Proposed 2026-09-30: adaptive calibration (every corpus v2 task once per cell, then up to 5 repeats only where cells disagree or results are borderline), 4 cells, tier M recomputed with this rule** | S ≈ 355 trials (2 cells, ~6 h); **M ≈ 710 trials (4 cells, ~12 h)**; L ≈ 1,065 trials (6 cells, ~18 h) — plan §4 |
 | OD-12 | Cells in the first round — **Decided 2026-09-30: as recommended** | **codex gpt-5.6-sol {medium, high} and claude {claude-sonnet-5, claude-opus-5-5} at high**, each cell qualified first; opencode stays a routing candidate without effort variants until its variant control is measured |
 | OD-14 | Strategy selection and experiment parallelism | **Add an `execution_strategy` component (single / workgraph split / parallel read-only steps) chosen per task by the router policy, which is evaluated like any candidate; write concurrency stays 1 per repo (design 07 §4); run experiment trials concurrently (separate containers and workspaces)** |
-| OD-13 | Trace capture for the proposer | **Sanitized transcripts of meta-harness trials on the synthetic corpus only (no reasoning items, secret-scanned, proposer-readable, never exported)**; or no capture (proposer gets scores and verdict details only) |
+| OD-13 | Trace capture for the proposer — **Decided 2026-09-30: capture (the recommended option)** | **Sanitized transcripts of meta-harness trials on the synthetic corpus only (no reasoning items, secret-scanned, proposer-readable, never exported)**; or no capture (proposer gets scores and verdict details only) |
 
 ## Proposed Decisions (recorded after approval)
 
