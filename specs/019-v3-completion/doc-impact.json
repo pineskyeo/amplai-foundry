@@ -473,6 +473,7 @@
     "tests/e2e/test_rc12_meta_rehearsal.py",
     "tests/e2e/test_rc13_usage_detail.py",
     "tests/rc06_rig.py",
+    "tests/test_apply_jobs.py",
     "tests/v3/test_031_opencode_events.py",
     "tests/v3/test_031_opencode_launcher.py",
     "tests/v3/test_031_opencode_port.py",
@@ -888,6 +889,7 @@
       "tests/e2e/test_rc12_meta_rehearsal.py",
       "tests/e2e/test_rc13_usage_detail.py",
       "tests/rc06_rig.py",
+      "tests/test_apply_jobs.py",
       "tests/v3/test_031_opencode_events.py",
       "tests/v3/test_031_opencode_launcher.py",
       "tests/v3/test_031_opencode_port.py",
@@ -976,6 +978,7 @@
       "tests/e2e/test_rc12_meta_rehearsal.py",
       "tests/e2e/test_rc13_usage_detail.py",
       "tests/rc06_rig.py",
+      "tests/test_apply_jobs.py",
       "tests/v3/test_031_opencode_events.py",
       "tests/v3/test_031_opencode_launcher.py",
       "tests/v3/test_031_opencode_port.py",
@@ -1001,20 +1004,20 @@
     "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
     "unprocessed": []
   },
-  "content_hash": "31e596e06c6220dd9a13395d9524bef4f5b2aef15caeffad76f95d4458be30ae",
+  "content_hash": "16e43de4a8a46912bb48681e728b33c84dce46ef88f9c98e6fdf199909516157",
   "dependency_snapshot": {
     "base_commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72"
+      "sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7"
     },
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1033,7 +1036,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1052,7 +1055,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1071,7 +1074,7 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1090,7 +1093,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1109,7 +1112,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1128,7 +1131,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1147,7 +1150,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1166,7 +1169,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1185,7 +1188,7 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1204,7 +1207,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1223,7 +1226,7 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1242,7 +1245,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1261,7 +1264,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1280,7 +1283,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1299,7 +1302,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1318,7 +1321,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1337,7 +1340,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1356,7 +1359,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
           "metadata_owner": "sidecar",
@@ -1375,7 +1378,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1394,7 +1397,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1413,7 +1416,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1432,7 +1435,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1451,7 +1454,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
           "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
           "metadata_owner": "sidecar",
@@ -1470,7 +1473,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
           "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
           "metadata_owner": "sidecar",
@@ -1489,7 +1492,7 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
           "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
           "metadata_owner": "sidecar",
@@ -1508,7 +1511,7 @@
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
           "metadata_owner": "sidecar",
@@ -1527,7 +1530,7 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
           "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
           "metadata_owner": "sidecar",
@@ -1546,7 +1549,7 @@
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
@@ -1565,7 +1568,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1584,7 +1587,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1603,7 +1606,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+          "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
           "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -2286,6 +2289,12 @@
       },
       {
         "mode": 420,
+        "path": "tests/test_apply_jobs.py",
+        "sha256": "fff44662d9d3eb70d64f82bc507178b3e57ce7cbea7796fdada4ac1f28f0dcdc",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
         "path": "tests/v3/test_031_opencode_events.py",
         "sha256": "9fe0e002453ea33398652c7fc20403f12ae9ee3b370f103354c29125121d365f",
         "state": "PRESENT"
@@ -2299,7 +2308,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_031_opencode_port.py",
-        "sha256": "66f79bebff680feac18671ce3c0390103d7d1062d461b60ed9227703f5fd3070",
+        "sha256": "0585392313caf459500f260004a2f2437bbb2d875d89898652982f9df17be497",
         "state": "PRESENT"
       },
       {
@@ -2412,7 +2421,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+  "dependency_snapshot_hash": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -2420,7 +2429,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
+    "commit": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
   },
@@ -2450,8 +2459,8 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword knowledge,policy,runtime; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2466,7 +2475,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "871d92a19529e9dfdf26853ff1b3276030882501b44145802082e5469b0840bd",
+      "review_hash": "5d86ea7e013e1a716972ad7c2877b6ca2512054f2d11fd40de738be5107c0c01",
       "state": "ACTIVE"
     },
     {
@@ -2484,8 +2493,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2500,7 +2509,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "984c3f306a435d59b552963a909ebe4ecaf9c5f77cffcb21c346b453b8ffd02b",
+      "review_hash": "5ff37810ad4106e4feb8bedd978ff0c6a585a8f7d36b3bb16e9e95bf46daf93a",
       "state": "ACTIVE"
     },
     {
@@ -2518,8 +2527,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2534,7 +2543,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "d0f50e96fc0034dc183a82acccd2ccf4973a2ae49d253c626767e7cc0918c9f3",
+      "review_hash": "d56fc417631766da16349a9e242ac43e438302fbceebfd5aabd42e91a1a99e50",
       "state": "ACTIVE"
     },
     {
@@ -2554,8 +2563,8 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2570,7 +2579,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "fbccae37acaca15dd26f9628e1eca401d46b0c2ee88a39dcdc02958f82b3d1f7",
+      "review_hash": "8838f6490b0c5c951f0f8555fa982cb610a30f0e091bea9c29ff946abd50d2cb",
       "state": "ACTIVE"
     },
     {
@@ -2588,8 +2597,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2604,7 +2613,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "af084564a3b7896839955df700bbfcd5508d5abfe0c17e127a7c9f37ae8279c6",
+      "review_hash": "c97ad90399bb6441e42a6cfb42e66355188289180051acf4bebc77ac67ff015b",
       "state": "ACTIVE"
     },
     {
@@ -2622,8 +2631,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2638,7 +2647,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "ae7cc2b8c910fb780fbff9a3a7ac1fa6100435f057ca312816cb1f82528c289d",
+      "review_hash": "8155d61ce8e55394798973ffef8973747f5857d12fab95dc9c67b7b3fa5307b0",
       "state": "ACTIVE"
     },
     {
@@ -2663,8 +2672,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2679,7 +2688,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "5072de22d7836bd2247cbf7197f4f50aa7f45c7b64472799adf2c0ff0d509496",
+      "review_hash": "b811870af6930e7b1c8c9b1a31f87733408cf4e6a08ee1f4a5b112d2481b6118",
       "state": "ACTIVE"
     },
     {
@@ -2697,8 +2706,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2713,7 +2722,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "e954f203d46a5ab9384da0592f0b3c790a9adfb187b78908bdd97d0fdc3017f8",
+      "review_hash": "8466aeea749f4d95ed5ba60dafca41e15bfad950fbfed016ad600cbc9bda63a8",
       "state": "ACTIVE"
     },
     {
@@ -2733,8 +2742,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2749,7 +2758,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "f046624797e39c4d36f829cc2c8eb2489da9d21b86c00879fecec829d51820d4",
+      "review_hash": "f0cca2e3c037c3fa5334dc006bfedf3dc6e3ea1e1001f0d2706ae7a612ea21ed",
       "state": "ACTIVE"
     },
     {
@@ -2771,8 +2780,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2787,7 +2796,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "1e9ac621e4e4e13b9d21b8d560fcdd6dd25c701c261d9d8fc4527f266e6c88a8",
+      "review_hash": "7a84e136ab13b76ad8ba909287ea26f3ffdba84eefc314de0e18e15f1fcb6c8f",
       "state": "ACTIVE"
     },
     {
@@ -2809,8 +2818,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2825,7 +2834,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "13ca157824ad8b477e3a992fef5b85d86d65d9f0ff88685e103f231ec84d9918",
+      "review_hash": "7e872b8edeaed496f230915a2e73aa554d4046919338736623ab06a079872ae1",
       "state": "ACTIVE"
     },
     {
@@ -2847,8 +2856,8 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2863,7 +2872,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "b10b14f6d5ccb1aafdfde279116c01a21892033fa5f819cde71f7ffa53d01c8f",
+      "review_hash": "1c849f81b2e96e583dcf819366a0f55b6476b169ad438c3929a9f355a097f4f5",
       "state": "ACTIVE"
     },
     {
@@ -2883,8 +2892,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2899,7 +2908,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "1b48df2ee665f21d2c05df7bf8141f286b20f9d3a12606c388ae9e878fa69f48",
+      "review_hash": "9a7cf1527a975adead4dc4ab5834187c7876a5ad51662bb57a0df6c5f4411435",
       "state": "ACTIVE"
     },
     {
@@ -2917,8 +2926,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2933,7 +2942,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "5f3a62b76456006c0596a60c3eb2e2e8ab0b123a9a6d8d7035e4f1effc802a25",
+      "review_hash": "94fc8726476ae2d6be5545e609afefa971dd5330a1b3f57f2c6d2394eecbd3ae",
       "state": "ACTIVE"
     },
     {
@@ -2951,8 +2960,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2967,7 +2976,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "726f68047e3ee8a9b85ed8148c0f3d965787e0d20d522237d7043f05f918413f",
+      "review_hash": "238e70ed1f04a234e43371a26378134eaec5b778700b45b20d4ddfbf7a55370a",
       "state": "ACTIVE"
     },
     {
@@ -2987,8 +2996,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3003,7 +3012,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "a5ed0c209781793dcc31f0a86ee9e0fb37454ac9070e052a44c2aac5b649835f",
+      "review_hash": "0182e84dc5379ef3a86d65ff8b60d0e8b18f8025c25eaec4f8e8b5240a61bd38",
       "state": "ACTIVE"
     },
     {
@@ -3023,8 +3032,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3039,26 +3048,28 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "c9196b119be4dd72240c5696430dbe5cf73d25d9e9d83833645f7936ac16621d",
+      "review_hash": "ac12235af6022c089e170a4d299be89e352e63c93702d8e7dce7edb133803480",
       "state": "ACTIVE"
     },
     {
       "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
-        "declared_document_dependency"
+        "declared_document_dependency",
+        "knowledge_map"
       ],
       "doc_id": "amplai-foundry:docs-proposals-md",
       "document_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475",
       "evidence": [
+        ".ai-team/knowledge/map.json#proposals",
         "docs/PROPOSALS.md"
       ],
       "handled": true,
       "path": "docs/PROPOSALS.md",
-      "reason": "Owner source/metadata or exact declared dependency changed",
+      "reason": "keyword apply; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3073,7 +3084,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "f1f167a71a4957f927bd4ec1292200f8e08501b5366d25d80afee1e10748b580",
+      "review_hash": "9c8621297a8bb8a8bb69f40d75f9bbff6f0eaa4842b48c9fceae620e1d3e1bcb",
       "state": "ACTIVE"
     },
     {
@@ -3091,8 +3102,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -3107,7 +3118,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "3b47b94b240370c5ed3df51297333981588fdf09e4dae5ed2abaebaa27db8fdc",
+      "review_hash": "5b2f0b8eacaca2c9452e2385f0ec647e09b0e351d70ef145786cf5586f7d286b",
       "state": "ACTIVE"
     },
     {
@@ -3125,8 +3136,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3141,7 +3152,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "28dd80e97429363c9dce1952aa39aac149f1738af74d250ca2a4cef65cf09baa",
+      "review_hash": "ea38d5ce4b005e595e6b4f719a8f19de20501ef5935800ae4165d382ad5e2d99",
       "state": "ACTIVE"
     },
     {
@@ -3159,8 +3170,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3175,7 +3186,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "1a2a618cee77a4d388240775964824c54d1e55eecd2c412bc54456835194d19e",
+      "review_hash": "75cc0f1f5454a001b0d688fe543c410c0581dedf01746228ec192a8917af74e2",
       "state": "ACTIVE"
     },
     {
@@ -3195,8 +3206,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3211,7 +3222,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "7742f86997dac92e865161d29afeb58c728547916c813aceb06b388956907084",
+      "review_hash": "4560b14f2985c722e24675d797aef17dec3f4d2d5d7be89473b92a6779b4fa78",
       "state": "ACTIVE"
     },
     {
@@ -3231,8 +3242,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3247,7 +3258,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "28b97bf2de1b4e729ea5ba479a16bb8db859bc090493be261bb119a1f420b4b8",
+      "review_hash": "f409ef2336d85a7fa276f291eb5f07d8c54b60c381ec939c00d273404358eb83",
       "state": "ACTIVE"
     },
     {
@@ -3267,8 +3278,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/opencode_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -3283,7 +3294,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "eecd1af22cb989345da3644c40d8066f2c587bc3795055675cbd849b7d664d4e"
       },
-      "review_hash": "1ba3596e06b09a23492348475db5a17ba6b0cb380e9445e9f5b66a83f95583de",
+      "review_hash": "32a174299e8826b9e3d36532a518fade84165f4de2b333ce86e9c1c60bfaf101",
       "state": "ACTIVE"
     },
     {
@@ -3303,8 +3314,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "문서가 scripts/opencode_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
         "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
         "metadata_owner": "sidecar",
@@ -3319,7 +3330,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "32934d56a75a4232db05e80fcf0a8c21f5c0a2fc37224ccfc3e4760cf1417b1b",
+      "review_hash": "990973e49f9c386544c981d6ef9e8bd319143b2a36ff6a3add8bf4d3e92b7324",
       "state": "ACTIVE"
     },
     {
@@ -3339,8 +3350,8 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 scripts/corpus_check.py, src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/service.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -3355,7 +3366,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d5dff190c3d67c247cec72b6c5eca1d2013d05ef448f0dd83b3c6dcae905ee23"
       },
-      "review_hash": "cc956b1f3bc6b2eab1d80f2d8eaf83cba7d3052ce2e5e51bcc44ab41ba3d3161",
+      "review_hash": "b9c6b79e47eaa564e0c6c6530bd5f2410a26b3e2b438b3940eca210e06c7c100",
       "state": "ACTIVE"
     },
     {
@@ -3373,8 +3384,8 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
         "metadata_owner": "sidecar",
@@ -3389,7 +3400,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "a84c47bc672d4d2c1dd2e6f1b6d1faa536329a8bc750d0a25ee45a930d0c0b8d",
+      "review_hash": "2f325c9c43828c112b2f6366af6632918fcbf5291a5115fd4e7954c8e58f1855",
       "state": "ACTIVE"
     },
     {
@@ -3409,8 +3420,8 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/app_image_up.sh, scripts/container_qualify.py, scripts/corpus_check.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
         "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
         "metadata_owner": "sidecar",
@@ -3425,7 +3436,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3e48e2ba0a7c3969cd9a580c078b77b2da3d2cc7da3df3c3e8f9be09918e1862"
       },
-      "review_hash": "149116fc6f16dee2a522754a31335431d94eb8f3e21286ea92799f0b6dac02a8",
+      "review_hash": "e78258d080b3fbd1e4a5aeea85d5c484b8b49416447cb203fe2df423ffb7a58e",
       "state": "ACTIVE"
     },
     {
@@ -3468,8 +3479,8 @@
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "reason": "active decision D-067; active decision D-068; active decision D-072; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; active decision D-091; active decision D-092; active decision D-094; active decision D-095; 문서가 .ai-team/policy/documentation.json, pyproject.toml, scripts/amplai_docs.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -3484,7 +3495,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309"
       },
-      "review_hash": "b32e97d02f457be31cc81308b9f6f16a7803b2c26e5dd2e0299c1d40903b1dd4",
+      "review_hash": "e4f97a0a56c3607b5862cec90627666c23953ebe289a71fb25fc933219dd44cf",
       "state": "ACTIVE"
     },
     {
@@ -3504,8 +3515,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -3520,7 +3531,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "bfb4d7a876dd6ffaa22f821c020fbb34e6ad9bfd95195d11b30a445281bb6daf",
+      "review_hash": "cad0fa7fb46956f0f233a84db2730780d10bfa1ee477d8b8c20ca970c8a32c78",
       "state": "ACTIVE"
     },
     {
@@ -3540,8 +3551,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3556,7 +3567,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "b327233fdca9747dc7f83f8a4179748ca99bc4ef2cde3f009499412146592e7e",
+      "review_hash": "e7e9cdded3f502eb8158763bffa7a00303eac7bbb271cc6e67ccd322d61ab26f",
       "state": "ACTIVE"
     },
     {
@@ -3581,8 +3592,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3597,7 +3608,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "d80ad8970579d63e2806d53894cf888a2140e0d84291f1b928991199f3714557",
+      "review_hash": "b8bd0158461caedb32de176912fdb88293e65b985d45378629b4bfa49dada9a2",
       "state": "ACTIVE"
     }
   ],
@@ -3702,10 +3713,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 58,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3715,8 +3726,8 @@
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3743,10 +3754,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 46,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3756,8 +3767,8 @@
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3784,10 +3795,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 54,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3797,8 +3808,8 @@
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3825,10 +3836,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 46,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3838,8 +3849,8 @@
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3866,10 +3877,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 167,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3879,8 +3890,8 @@
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3907,10 +3918,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 55,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3920,8 +3931,8 @@
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3948,10 +3959,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 59,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -3961,8 +3972,8 @@
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3989,10 +4000,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 57,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4002,8 +4013,8 @@
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4030,10 +4041,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 167,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4043,8 +4054,8 @@
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4071,10 +4082,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 167,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4084,8 +4095,8 @@
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4153,10 +4164,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 9,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4166,8 +4177,8 @@
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4194,10 +4205,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 19,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4207,8 +4218,8 @@
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4235,10 +4246,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 9,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4248,8 +4259,8 @@
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4276,10 +4287,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 116,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4289,8 +4300,8 @@
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4317,10 +4328,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 96,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4330,8 +4341,8 @@
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4358,10 +4369,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 107,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4371,8 +4382,8 @@
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4399,10 +4410,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 57,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4412,8 +4423,8 @@
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4440,10 +4451,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 36,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4453,8 +4464,8 @@
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4481,10 +4492,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 7,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4494,8 +4505,8 @@
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -4891,10 +4902,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 3,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4904,8 +4915,8 @@
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -4932,10 +4943,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 141,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -4945,8 +4956,8 @@
       "reference_hash": "a254066b0fcfca4ca1c47ea4a4d3ea554c16af4c0fc2ebaf8ad1934bec14c9dd",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -5014,10 +5025,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 141,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5027,8 +5038,8 @@
       "reference_hash": "b516a38537dbbd146fca293992e4228274da951178a6698522227731fd8463de",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -5301,10 +5312,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 196,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5314,8 +5325,8 @@
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5342,10 +5353,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 196,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5355,8 +5366,8 @@
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5506,10 +5517,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 86,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5519,8 +5530,8 @@
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5834,10 +5845,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 145,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5847,8 +5858,8 @@
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5957,10 +5968,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "line": 144,
       "method": "Rechecked the referencing line; an earlier review classified the same reference.",
       "outcome": "reviewed_unchanged",
@@ -5970,8 +5981,8 @@
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6164,18 +6175,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9f14c345b0939c13aa6a707eb8b3c5f9de7de1e4c980ca59c178907fb0030c68",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6201,18 +6212,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6238,18 +6249,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6275,18 +6286,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "2cae83c74b81904b1221982e081d1a5f3a4ccc9811b0cd1764f18c34eb928311",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6312,18 +6323,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "bceb193e38e0a4a3d2b86ad0c6c6a3070eb82115763ca778c3aba4e943af7a8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6349,18 +6360,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6386,18 +6397,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6423,18 +6434,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6460,18 +6471,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6497,18 +6508,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6534,18 +6545,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6571,18 +6582,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6608,18 +6619,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6645,18 +6656,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6682,18 +6693,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6719,18 +6730,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6756,18 +6767,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6793,18 +6804,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -6830,18 +6841,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6867,18 +6878,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6904,18 +6915,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "02960f8202c1a73a978568bf44b97bb9bb96c285c035519c593faa4a15703c51",
         "dependency_snapshot_sha256": "025ba5ac98926185315b3f4ccd8589d02839210b3eb00d7c77838afdc36b040d",
         "metadata_owner": "sidecar",
@@ -6941,18 +6952,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e7bbc7ef0344c1a1be3fe3a97646e2210964bb083576f96dc4a143058eea69e7",
         "dependency_snapshot_sha256": "9251ac82b80569bbd38937a3ca9a072f5ceb202dfb16cfab3119999d7f7855c9",
         "metadata_owner": "sidecar",
@@ -6978,18 +6989,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "9d3f436e885d76679289d2fb702e4ccf4fb7265dda8910803ab2ee3859041352",
         "dependency_snapshot_sha256": "e736e6b451a35ff25199209b857e1771109c4d81b7df1e310b50ec712229cd87",
         "metadata_owner": "sidecar",
@@ -7015,18 +7026,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "1b73821007ef3ebc8a3e64cc38e10b2cb8e745eea0f0d6173e37ae3cc79365d7",
         "metadata_owner": "sidecar",
@@ -7052,18 +7063,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "dadabeedf99055eb3eab113d4ce1352bb0dd50b3282823167d109c932cdfaf16",
         "dependency_snapshot_sha256": "93df0a4a43f928fb9fe14ad56cca5efae41885667d9049f3ac9cdbbf75540c49",
         "metadata_owner": "sidecar",
@@ -7089,18 +7100,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7126,18 +7137,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7163,18 +7174,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "380e44d5393b7811e0d2b01aadd4f65821b84be1f221233a539c084147ee1aae",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -7200,18 +7211,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "e6b5722d2d178fa1e442a5928dbd4f3288f2e0dfb5f78300637f2626476e4507",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7237,18 +7248,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -7274,18 +7285,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -7311,18 +7322,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-ci-parallel.json",
-          "sha256": "1a2f259fdb3b8b26eea304d025990cda3fb66e9b594fb1cb8ea6ddb67fb4f600"
+          "sha256": "8a5cae20c42df13b45acdbce6f14cef90df6bda692ee9eba6f603a98aa49520d"
         }
       ],
-      "impact_snapshot_sha256": "421f07b273d53ad0fb664a167cff5fb67fed1bdbfe4a71a8743e1de7194744b0",
+      "impact_snapshot_sha256": "559e444529d560a1bc1367337fb0739afef2b96e9a52f85c91ef402b5b6a8f46",
       "method": "Compared the branch diff against main with each document; the change touches no document text, command, decision or product behaviour described in these documents.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
-      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44). This document does not describe it and stays accurate.",
+      "reason": "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome. This document does not describe it and stays accurate.",
       "reviewer": "claude-opus-5.5-ci-parallel-document-review",
       "snapshot": {
-        "candidate_revision": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
-        "candidate_sha256": "e9b3b6d8072f6b54f111cf4913d5124ae0cb00cfe4cb7eb7eaecb44654215c72",
+        "candidate_revision": "7c62eb24b7fc9c8817aa359226d926f81e00532a",
+        "candidate_sha256": "ad4e148cf3eb7ab70cdcdb41b8715bb202c10bea664d9d5a92b94635c93b00f7",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",

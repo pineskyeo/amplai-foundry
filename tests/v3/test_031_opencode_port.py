@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import queue
+import time
 import uuid
 from collections.abc import Iterator
 from dataclasses import replace
@@ -168,7 +169,10 @@ def test_one_server_per_dispatch_on_its_own_workspace(tmp_path: Path) -> None:
     assert a is not b and a.ws != b.ws
     assert a.saw_auth and (tmp_path / "native" / "dispatch-a" / CATALOG).is_file()
     assert p.poll("dispatch-a")["state"] == "running"
-    a.busy = False
+    a.busy = False  # an idle event on the stream; the driver's event thread applies it
+    deadline = time.monotonic() + 10
+    while p.poll("dispatch-a")["state"] != "completed" and time.monotonic() < deadline:
+        time.sleep(0.02)
     assert p.poll("dispatch-a")["state"] == "completed"
     receipt = p.collect("dispatch-a")
     assert receipt["process_stopped"] is True and receipt["goal_verified"] is False

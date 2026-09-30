@@ -68,6 +68,7 @@
     "tests/e2e/test_rc12_meta_rehearsal.py",
     "tests/e2e/test_rc13_usage_detail.py",
     "tests/rc06_rig.py",
+    "tests/test_apply_jobs.py",
     "tests/v3/test_031_opencode_events.py",
     "tests/v3/test_031_opencode_launcher.py",
     "tests/v3/test_031_opencode_port.py",
@@ -91,6 +92,6 @@
     "tools/amplai-loop-kit/baseline/payload/scripts/amplai_docs.py"
   ],
   "semantic_changes": [
-    "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44)."
+    "CI runs pytest in parallel with pytest-xdist (dev dependency) and runs push only on main (#44); two timing-sensitive tests wait for or accept the late-arrival outcome."
   ]
 }

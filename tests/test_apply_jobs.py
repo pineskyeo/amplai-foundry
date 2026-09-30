@@ -3061,7 +3061,10 @@ def test_competing_recovery_finalizers_create_one_terminal_result(
     with ThreadPoolExecutor(max_workers=2) as executor:
         outcomes = tuple(executor.map(resolve, range(2)))
 
-    assert all(outcome in {"PUBLISH_CLAIM_STALE", "published"} for outcome in outcomes)
+    # The loser sees a stale claim if it races the winner's claim, or an intent that is no
+    # longer recoverable if it arrives after the winner finished (seen under a loaded CI runner).
+    losers = {"PUBLISH_CLAIM_STALE", "PUBLISH_INTENT_NOT_RECOVERABLE"}
+    assert all(outcome in losers | {"published"} for outcome in outcomes), outcomes
     assert "published" in outcomes
     with store.connect() as connection:
         assert connection.execute(
